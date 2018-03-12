@@ -125,8 +125,7 @@ public class CloneOperation {
 					5000);
 			CloneCommand cloneRepository = Git.cloneRepository();
 			cloneRepository.setCredentialsProvider(credentialsProvider);
-			if (refName != null)
-				cloneRepository.setBranch(refName);
+			cloneRepository.setBranch(refName);
 			cloneRepository.setDirectory(workdir);
 			cloneRepository.setProgressMonitor(gitMonitor);
 			cloneRepository.setRemote(remoteName);
