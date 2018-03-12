@@ -36,7 +36,6 @@ import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.IO;
 
@@ -59,13 +58,7 @@ class FileDiff {
 			CorruptObjectException, IOException {
 		final ArrayList<FileDiff> r = new ArrayList<FileDiff>();
 
-		if (commit.getParentCount() > 0)
-			walk.reset(trees(commit));
-		else {
-			walk.reset();
-			walk.addTree(new EmptyTreeIterator());
-			walk.addTree(commit.getTree());
-		}
+		walk.reset(trees(commit));
 		List<DiffEntry> entries = DiffEntry.scan(walk);
 
 		for (DiffEntry entry : entries) {
