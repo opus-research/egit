@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test;
 
-import static org.eclipse.swtbot.eclipse.finder.waits.Conditions.waitForView;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -49,9 +48,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
-import org.eclipse.ui.IViewReference;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -425,28 +421,6 @@ public class TestUtil {
 		return null;
 	}
 
-	/**
-	 * Retrieves a child node with the given childNodeText.
-	 * Nodes with dirty marker are also found (without specifying > in childNodeText)
-	 * @param node
-	 * @param childNodeText
-	 * @return  child node
-	 */
-	public SWTBotTreeItem getChildNode(SWTBotTreeItem node, String childNodeText) {
-		for (SWTBotTreeItem item : node.getItems()) {
-			String itemText = item.getText();
-			StringTokenizer tok = new StringTokenizer(itemText, " ");
-			String name = tok.nextToken();
-			// may be a dirty marker
-			if (name.equals(">"))
-				name = tok.nextToken();
-			if (childNodeText.equals(name))
-				return item;
-		}
-		return null;
-	}
-
-
 	public static RevCommit getHeadCommit(Repository repository)
 			throws Exception {
 		RevCommit headCommit = null;
@@ -470,21 +444,6 @@ public class TestUtil {
 				ConfigConstants.CONFIG_KEY_NAME, TestUtil.TESTCOMMITTER_NAME);
 		config.setString(ConfigConstants.CONFIG_USER_SECTION, null,
 				ConfigConstants.CONFIG_KEY_EMAIL, TestUtil.TESTCOMMITTER_EMAIL);
-	}
-
-	public static void waitUntilViewWithGivenIdShows(final String viewId) {
-		waitForView(new BaseMatcher<IViewReference>() {
-			public boolean matches(Object item) {
-				if (item instanceof IViewReference) {
-					return viewId.equals(((IViewReference) item).getId());
-				}
-				return false;
-			}
-
-			public void describeTo(Description description) {
-				description.appendText("Wait for view with ID=" + viewId);
-			}
-		});
 	}
 
 }
