@@ -35,7 +35,7 @@ public class CommitLabelProvider extends BaseLabelProvider implements
 
 	private PersonIdent lastCommitter;
 
-	private Format format = Format.LOCALELOCAL;
+	private Format format = Format.LOCALE;
 
 	/**
 	 * Default constructor
@@ -117,7 +117,7 @@ public class CommitLabelProvider extends BaseLabelProvider implements
 		if (relative)
 			format = Format.RELATIVE;
 		else
-			format = Format.LOCALELOCAL;
+			format = Format.LOCALE;
 	}
 
 	/**
