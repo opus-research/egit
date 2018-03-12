@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -35,7 +34,6 @@ import org.eclipse.egit.ui.internal.clone.GitProjectsImportPage;
 import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -87,65 +85,11 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 		switch (node.getType()) {
 
 		case BRANCHES: {
-
-			List<RepositoryTreeNode<String>> nodes = new ArrayList<RepositoryTreeNode<String>>();
-
-			nodes.add(new RepositoryTreeNode<String>(node,
-					RepositoryTreeNodeType.LOCALBRANCHES, repo, "")); //$NON-NLS-1$
-			nodes.add(new RepositoryTreeNode<String>(node,
-					RepositoryTreeNodeType.REMOTEBRANCHES, repo, "")); //$NON-NLS-1$
-
-			return nodes.toArray();
-		}
-
-		case LOCALBRANCHES: {
 			List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
 
-			try {
-				for (Entry<String, Ref> refEntry : repo.getRefDatabase()
-						.getRefs(Constants.R_HEADS).entrySet()) {
-					refs.add(new RepositoryTreeNode<Ref>(node,
-							RepositoryTreeNodeType.REF, repo, refEntry
-									.getValue()));
-				}
-			} catch (IOException e) {
-				// TODO Exception handling
-				e.printStackTrace();
-			}
-
-			return refs.toArray();
-		}
-
-		case REMOTEBRANCHES: {
-			List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
-
-			try {
-				for (Entry<String, Ref> refEntry : repo.getRefDatabase()
-						.getRefs(Constants.R_REMOTES).entrySet()) {
-					refs.add(new RepositoryTreeNode<Ref>(node,
-							RepositoryTreeNodeType.REF, repo, refEntry
-									.getValue()));
-				}
-			} catch (IOException e) {
-				// TODO Exception handling
-				e.printStackTrace();
-			}
-
-			return refs.toArray();
-		}
-		case TAGS: {
-			List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
-
-			try {
-				for (Entry<String, Ref> refEntry : repo.getRefDatabase()
-						.getRefs(Constants.R_TAGS).entrySet()) {
-					refs.add(new RepositoryTreeNode<Ref>(node,
-							RepositoryTreeNodeType.TAG, repo, refEntry
-									.getValue()));
-				}
-			} catch (IOException e) {
-				// TODO Exception handling
-				e.printStackTrace();
+			for (Ref ref : repo.getAllRefs().values()) {
+				refs.add(new RepositoryTreeNode<Ref>(node,
+						RepositoryTreeNodeType.REF, repo, ref));
 			}
 
 			return refs.toArray();
@@ -168,41 +112,25 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 		}
 
 		case REPO: {
+			List<RepositoryTreeNode<Repository>> branches = new ArrayList<RepositoryTreeNode<Repository>>();
 
-			List<RepositoryTreeNode<? extends Object>> nodeList = new ArrayList<RepositoryTreeNode<? extends Object>>();
-
-			try {
-				Ref headRef = repo.getRef(Constants.HEAD);
-				if (headRef != null)
-
-					nodeList.add(new RepositoryTreeNode<Ref>(node,
-							RepositoryTreeNodeType.HEAD, node.getRepository(),
-							headRef));
-			} catch (IOException e) {
-				// TODO Exception handling
-				e.printStackTrace();
-			}
-
-			nodeList.add(new RepositoryTreeNode<Repository>(node,
+			branches.add(new RepositoryTreeNode<Repository>(node,
 					RepositoryTreeNodeType.BRANCHES, node.getRepository(), node
 							.getRepository()));
 
-			nodeList.add(new RepositoryTreeNode<Repository>(node,
-					RepositoryTreeNodeType.TAGS, repo, repo));
-
-			nodeList.add(new RepositoryTreeNode<Repository>(node,
+			branches.add(new RepositoryTreeNode<Repository>(node,
 					RepositoryTreeNodeType.WORKINGDIR, node.getRepository(),
 					node.getRepository()));
 
-			nodeList.add(new RepositoryTreeNode<Repository>(node,
+			branches.add(new RepositoryTreeNode<Repository>(node,
 					RepositoryTreeNodeType.PROJECTS, node.getRepository(), node
 							.getRepository()));
 
-			nodeList.add(new RepositoryTreeNode<Repository>(node,
+			branches.add(new RepositoryTreeNode<Repository>(node,
 					RepositoryTreeNodeType.REMOTES, node.getRepository(), node
 							.getRepository()));
 
-			return nodeList.toArray();
+			return branches.toArray();
 		}
 
 		case PROJECTS: {
@@ -329,18 +257,10 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 		}
 
-		case FILE:
-			// fall through
-		case REF:
-			// fall through
-		case PUSH:
-			// fall through
-		case PROJ:
-			// fall through
-		case HEAD:
-			// fall through
-		case TAG:
-			// fall through
+		case FILE: // fall through
+		case REF: // fall through
+		case PUSH: // fall through
+		case PROJ: // fall through
 		case FETCH:
 			return null;
 
