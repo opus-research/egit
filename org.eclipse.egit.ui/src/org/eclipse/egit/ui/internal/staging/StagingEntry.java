@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,7 +12,6 @@ package org.eclipse.egit.ui.internal.staging;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -50,7 +48,7 @@ public class StagingEntry implements IAdaptable {
 		PARTIALLY_MODIFIED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** not ignored, and not in the index */
-		UNTRACKED(EnumSet.of(Action.STAGE, Action.DELETE)),
+		UNTRACKED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** in conflict */
 		CONFLICTING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION,
@@ -78,8 +76,7 @@ public class StagingEntry implements IAdaptable {
 		REPLACE_WITH_HEAD_REVISION,
 		STAGE,
 		UNSTAGE,
-		DELETE,
-		LAUNCH_MERGE_TOOL,
+		LAUNCH_MERGE_TOOL
 	}
 
 	private Repository repository;
@@ -141,21 +138,14 @@ public class StagingEntry implements IAdaptable {
 		return state.getAvailableActions();
 	}
 
-	/**
-	 * @return the file corresponding to the entry
-	 */
-	public IFile getFile() {
-		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IFile resource = root.getFileForLocation(absolutePath);
-		if (resource == null)
-			resource = root.getFile(absolutePath);
-		return resource;
-	}
-
 	public Object getAdapter(Class adapter) {
 		if (adapter == IResource.class) {
-			return getFile();
+			IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
+			IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+			IResource resource = root.getFileForLocation(absolutePath);
+			if (resource == null)
+				resource = root.getFile(absolutePath);
+			return resource;
 		}
 		return null;
 	}
