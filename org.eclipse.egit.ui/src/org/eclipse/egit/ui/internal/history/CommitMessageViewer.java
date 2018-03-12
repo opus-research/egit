@@ -175,7 +175,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 	private void format() {
 		if (commit == null) {
-			setDocument(new Document(UIText.CommitMessageViewer_SelectOneCommitMessage));
+			setDocument(new Document());
 			return;
 		}
 
