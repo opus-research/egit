@@ -74,6 +74,7 @@ public class DiscardChangesOperation implements IEGitOperation {
 	 * {@link DiscardChangesOperation} for absolute paths.
 	 *
 	 * @param paths
+	 * @since 3.6
 	 */
 	public DiscardChangesOperation(Collection<IPath> paths) {
 		this(ResourceUtil.splitPathsByRepository(paths));
