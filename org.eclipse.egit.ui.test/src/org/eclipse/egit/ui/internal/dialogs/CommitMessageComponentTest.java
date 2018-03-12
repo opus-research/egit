@@ -11,55 +11,57 @@ package org.eclipse.egit.ui.internal.dialogs;
 import static org.junit.Assert.assertEquals;
 
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.IDocument;
 import org.junit.Test;
 
 public class CommitMessageComponentTest {
 
 	@Test
 	public void commitFormat_simple() {
-		String commitMessage = "Simple message";
+		IDocument document = new Document("Simple message");
 
-		String formattedMessage = CommitMessageComponent
-				.formatIssuesInCommitMessage(commitMessage);
-		assertEquals(null, formattedMessage);
+		String message = CommitMessageComponent
+				.formatIssuesInCommitMessage(document);
+		assertEquals(null, message);
 	}
 
 	@Test
 	public void commitFormat_trailingWhitespace_ok() {
-		String commitMessage = "Simple message\n\n\n";
+		IDocument document = new Document("Simple message\n\n\n");
 
-		String formattedMessage = CommitMessageComponent
-				.formatIssuesInCommitMessage(commitMessage);
-		assertEquals(null, formattedMessage);
+		String message = CommitMessageComponent
+				.formatIssuesInCommitMessage(document);
+		assertEquals(null, message);
 	}
 
 	@Test
 	public void commitFormat_MultipleLines_ok() {
-		String commitMessage = "Simple message\n\nDetails";
+		IDocument document = new Document("Summary\n\nDetails");
 
-		String formattedMessage = CommitMessageComponent
-				.formatIssuesInCommitMessage(commitMessage);
-		assertEquals(null, formattedMessage);
+		String message = CommitMessageComponent
+				.formatIssuesInCommitMessage(document);
+		assertEquals(null, message);
 	}
 
 	@Test
 	public void commitFormat_MultipleLines_notOk() {
-		String commitMessage = "Simple message\nDetails";
+		IDocument document = new Document("Summary\nDetails");
 
-		String formattedMessage = CommitMessageComponent
-				.formatIssuesInCommitMessage(commitMessage);
+		String message = CommitMessageComponent
+				.formatIssuesInCommitMessage(document);
 		assertEquals(UIText.CommitMessageComponent_MessageSecondLineNotEmpty,
-				formattedMessage);
+				message);
 	}
 
 	@Test
 	public void commitFormat_MultipleLines_notOk2() {
-		String commitMessage = "Simple message\n \nDetails";
+		IDocument document = new Document("Summary\n \nDetails");
 
-		String formattedMessage = CommitMessageComponent
-				.formatIssuesInCommitMessage(commitMessage);
+		String message = CommitMessageComponent
+				.formatIssuesInCommitMessage(document);
 		assertEquals(UIText.CommitMessageComponent_MessageSecondLineNotEmpty,
-				formattedMessage);
+				message);
 	}
 
 }
