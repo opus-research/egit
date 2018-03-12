@@ -25,12 +25,12 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.jface.dialogs.IMessageProvider;
-import org.eclipse.jface.dialogs.ProgressMonitorDialog;
-import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.resource.JFaceResources;
@@ -42,7 +42,9 @@ import org.eclipse.jface.viewers.IColorProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.jgit.lib.RepositoryCache;
+import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -56,26 +58,28 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.TreeItem;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * Searches for Git directories under a path that can be selected by the user
  */
-public class RepositorySearchDialog extends TitleAreaDialog {
+public class RepositorySearchDialog extends WizardPage {
 
 	private static final String PREF_DEEP_SEARCH = "RepositorySearchDialogDeepSearch"; //$NON-NLS-1$
 
 	private static final String PREF_PATH = "RepositorySearchDialogSearchPath"; //$NON-NLS-1$
 
 	private final Set<String> fExistingDirectories = new HashSet<String>();
+
+	private final boolean fillSearch;
 
 	private Set<String> fResult;
 
@@ -89,7 +93,9 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 
 	private Button searchButton;
 
-	private Button toggleSelectionButton;
+	private ToolItem checkAllItem;
+
+	private ToolItem uncheckAllItem;
 
 	private final ResourceManager fImageCache = new LocalResourceManager(
 			JFaceResources.getResources());
@@ -162,15 +168,22 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 	}
 
 	/**
-	 * @param parentShell
 	 * @param existingDirs
 	 */
-	public RepositorySearchDialog(Shell parentShell,
-			Collection<String> existingDirs) {
-		super(parentShell);
+	public RepositorySearchDialog(Collection<String> existingDirs) {
+		this(existingDirs, false);
+	}
+
+	/**
+	 * @param existingDirs
+	 * @param fillSearch true to fill search results when initially displayed
+	 */
+	public RepositorySearchDialog(Collection<String> existingDirs,
+			boolean fillSearch) {
+		super(
+				"searchPage", UIText.RepositorySearchDialog_SearchTitle, UIIcons.WIZBAN_IMPORT_REPO); //$NON-NLS-1$
 		this.fExistingDirectories.addAll(existingDirs);
-		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
-		setHelpAvailable(false);
+		this.fillSearch = fillSearch;
 	}
 
 	/**
@@ -182,34 +195,22 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 	}
 
 	@Override
-	protected void configureShell(Shell newShell) {
-		super.configureShell(newShell);
-		newShell.setText(UIText.RepositorySearchDialog_AddGitRepositories);
-		setTitleImage(fImageCache.createImage(UIIcons.WIZBAN_IMPORT_REPO));
-	}
-
-	@Override
-	protected void okPressed() {
-		fResult = new HashSet<String>();
+	public void dispose() {
+		fResult = getCheckedItems();
 		fResult.addAll(getCheckedItems());
-		super.okPressed();
+		super.dispose();
 	}
 
-	@Override
-	protected Control createDialogArea(Composite parent) {
-
-		Composite titleParent = (Composite) super.createDialogArea(parent);
-
-		setTitle(UIText.RepositorySearchDialog_SearchTitle);
+	public void createControl(Composite parent) {
 		setMessage(UIText.RepositorySearchDialog_searchRepositoriesMessage);
 
-		Composite main = new Composite(titleParent, SWT.NONE);
+		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(1, false));
 		main.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		Group searchGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		searchGroup.setText(UIText.RepositorySearchDialog_SearchCriteriaGroup);
-		searchGroup.setLayout(new GridLayout(3, false));
+		searchGroup.setLayout(new GridLayout(4, false));
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(searchGroup);
 
 		Label dirLabel = new Label(searchGroup, SWT.NONE);
@@ -219,8 +220,10 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 				false).hint(300, SWT.DEFAULT).applyTo(dir);
 		dir.setToolTipText(UIText.RepositorySearchDialog_EnterDirectoryToolTip);
 
-		String initialPath = prefs.get(PREF_PATH, FS.DETECTED.userHome()
-				.toString());
+		String defaultRepoPath = org.eclipse.egit.ui.Activator.getDefault()
+				.getPreferenceStore().getString(UIPreferences.DEFAULT_REPO_DIR);
+
+		String initialPath = prefs.get(PREF_PATH, defaultRepoPath);
 
 		dir.setText(initialPath);
 
@@ -236,7 +239,6 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 				dd.setFilterPath(dir.getText());
 				String directory = dd.open();
 				if (directory != null) {
-					setNeedsSearch();
 					dir.setText(directory);
 					prefs.put(PREF_PATH, directory);
 					try {
@@ -244,14 +246,27 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 					} catch (BackingStoreException e1) {
 						// ignore here
 					}
+					doSearch();
 				}
 			}
 
 		});
 
+		searchButton = new Button(searchGroup, SWT.PUSH);
+		searchButton.setText(UIText.RepositorySearchDialog_Search);
+		searchButton
+				.setToolTipText(UIText.RepositorySearchDialog_SearchTooltip);
+		searchButton.addSelectionListener(new SelectionAdapter() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				doSearch();
+			}
+		});
+
 		lookForNestedButton = new Button(searchGroup, SWT.CHECK);
 		lookForNestedButton.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER,
-				false, false, 3, 1));
+				false, false, 4, 1));
 		lookForNestedButton.setSelection(prefs.getBoolean(PREF_DEEP_SEARCH,
 				false));
 		lookForNestedButton
@@ -306,39 +321,41 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 		GridDataFactory.fillDefaults().grab(true, true).minSize(0, 300)
 				.applyTo(fTree);
 
-		Composite buttonColumn = new Composite(searchResultGroup, SWT.NONE);
-		buttonColumn.setLayout(new GridLayout(1, false));
+		ToolBar toolbar = new ToolBar(searchResultGroup, SWT.FLAT
+				| SWT.VERTICAL);
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.BEGINNING).applyTo(
-				buttonColumn);
+				toolbar);
 
-		searchButton = new Button(buttonColumn, SWT.PUSH);
-		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).applyTo(
-				searchButton);
-		searchButton.setText(UIText.RepositorySearchDialog_Search);
-		searchButton
-				.setToolTipText(UIText.RepositorySearchDialog_SearchTooltip);
-		searchButton.addSelectionListener(new SelectionAdapter() {
+		checkAllItem = new ToolItem(toolbar, SWT.PUSH);
+		checkAllItem
+				.setToolTipText(UIText.RepositorySearchDialog_CheckAllRepositories);
+		checkAllItem.setEnabled(false);
+		Image checkImage = UIIcons.CHECK_ALL.createImage();
+		UIUtils.hookDisposal(checkAllItem, checkImage);
+		checkAllItem.setImage(checkImage);
+		checkAllItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
-				doSearch();
-			}
-		});
-
-		toggleSelectionButton = new Button(buttonColumn, SWT.NONE);
-		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).applyTo(
-				toggleSelectionButton);
-		toggleSelectionButton
-				.setText(UIText.RepositorySearchDialog_ToggleSelectionButton);
-		toggleSelectionButton.setEnabled(false);
-		toggleSelectionButton.addSelectionListener(new SelectionAdapter() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				for (TreeItem item : fTreeViewer.getTree().getItems())
-					fTreeViewer.setChecked(item.getData(), !item.getChecked());
+				fTreeViewer.setAllChecked(true);
 				enableOk();
 			}
+
+		});
+
+		uncheckAllItem = new ToolItem(toolbar, SWT.PUSH);
+		uncheckAllItem
+				.setToolTipText(UIText.RepositorySearchDialog_UncheckAllRepositories);
+		uncheckAllItem.setEnabled(false);
+		Image uncheckImage = UIIcons.UNCHECK_ALL.createImage();
+		UIUtils.hookDisposal(uncheckAllItem, uncheckImage);
+		uncheckAllItem.setImage(uncheckImage);
+		uncheckAllItem.addSelectionListener(new SelectionAdapter() {
+
+			public void widgetSelected(SelectionEvent e) {
+				fTreeViewer.setAllChecked(false);
+				enableOk();
+			}
+
 		});
 
 		// TODO this isn't the most optimal way of handling this... ideally we
@@ -356,15 +373,16 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 		fTreeViewer.setContentProvider(new ContentProvider());
 		fTreeViewer.setLabelProvider(new RepositoryLabelProvider());
 
-		applyDialogFont(main);
+		setControl(main);
 
-		return main;
-	}
+		if (fillSearch)
+			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 
-	@Override
-	protected void createButtonsForButtonBar(Composite parent) {
-		super.createButtonsForButtonBar(parent);
-		enableOk();
+				public void run() {
+					if (!getControl().isDisposed())
+						doSearch();
+				}
+			});
 	}
 
 	private void findGitDirsRecursive(File root, Set<String> strings,
@@ -379,32 +397,37 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 			return;
 
 		for (File child : children) {
-			if (monitor.isCanceled()) {
+			if (monitor.isCanceled())
 				return;
-			}
+			if (!child.isDirectory())
+				continue;
 
-			if (child.isDirectory()
-					&& RepositoryCache.FileKey.isGitRepository(child,
-							FS.DETECTED)) {
+			if (FileKey.isGitRepository(child, FS.DETECTED)) {
 				try {
 					strings.add(child.getCanonicalPath());
 				} catch (IOException e) {
 					// ignore here
 				}
-				monitor
-						.setTaskName(NLS
-								.bind(
-										UIText.RepositorySearchDialog_RepositoriesFound_message,
-										Integer.valueOf(strings.size())));
-				if (!lookForNestedRepositories)
-					return;
-			} else if (child.isDirectory()) {
+				monitor.setTaskName(NLS
+						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
+								Integer.valueOf(strings.size())));
+			} else if (FileKey.isGitRepository(new File(child,
+					Constants.DOT_GIT), FS.DETECTED)) {
+				try {
+					strings.add(new File(child, Constants.DOT_GIT)
+							.getCanonicalPath());
+				} catch (IOException e) {
+					// ignore here
+				}
+				monitor.setTaskName(NLS
+						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
+								Integer.valueOf(strings.size())));
+			} else if (lookForNestedRepositories) {
 				monitor.subTask(child.getPath());
 				findGitDirsRecursive(child, strings, monitor,
 						lookForNestedRepositories);
 			}
 		}
-
 	}
 
 	private HashSet<String> getCheckedItems() {
@@ -415,89 +438,85 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 	}
 
 	private void doSearch() {
-
-		setMessage(null);
+		setMessage(UIText.RepositorySearchDialog_searchRepositoriesMessage);
 		setErrorMessage(null);
 		// perform the search...
 		final Set<String> directories = new HashSet<String>();
 		final File file = new File(dir.getText());
 		final boolean lookForNested = lookForNestedButton.getSelection();
-		if (file.exists()) {
+		if(!file.exists())
+			return;
+
+		try {
+			prefs.put(PREF_PATH, file.getCanonicalPath());
 			try {
-				prefs.put(PREF_PATH, file.getCanonicalPath());
-				try {
-					prefs.flush();
-				} catch (BackingStoreException e1) {
-					// ignore here
-				}
-			} catch (IOException e2) {
-				// ignore
+				prefs.flush();
+			} catch (BackingStoreException e1) {
+				// ignore here
 			}
-
-			IRunnableWithProgress action = new IRunnableWithProgress() {
-
-				public void run(IProgressMonitor monitor)
-						throws InvocationTargetException, InterruptedException {
-
-					try {
-						findGitDirsRecursive(file, directories, monitor,
-								lookForNested);
-					} catch (Exception ex) {
-						Activator.getDefault().getLog().log(
-								new Status(IStatus.ERROR, Activator
-										.getPluginId(), ex.getMessage(), ex));
-					}
-					if (monitor.isCanceled()) {
-						throw new InterruptedException();
-					}
-				}
-			};
-			try {
-				ProgressMonitorDialog pd = new ProgressMonitorDialog(getShell());
-				pd
-						.getProgressMonitor()
-						.setTaskName(
-								UIText.RepositorySearchDialog_ScanningForRepositories_message);
-				pd.run(true, true, action);
-
-			} catch (InvocationTargetException e1) {
-				org.eclipse.egit.ui.Activator.handleError(
-						UIText.RepositorySearchDialog_errorOccurred, e1, true);
-			} catch (InterruptedException e1) {
-				// ignore
-			}
-
-			int foundOld = 0;
-
-			final TreeSet<String> validDirs = new TreeSet<String>();
-
-			for (String foundDir : directories) {
-				if (!fExistingDirectories.contains(foundDir)) {
-					validDirs.add(foundDir);
-				} else {
-					foundOld++;
-				}
-			}
-
-			if (foundOld > 0) {
-				String message = NLS
-						.bind(
-								UIText.RepositorySearchDialog_SomeDirectoriesHiddenMessage,
-								Integer.valueOf(foundOld));
-				setMessage(message, IMessageProvider.INFORMATION);
-			} else if (directories.isEmpty())
-				setMessage(UIText.RepositorySearchDialog_NothingFoundMessage,
-						IMessageProvider.INFORMATION);
-
-			toggleSelectionButton.setEnabled(!validDirs.isEmpty());
-			fTree.clearFilter();
-			fTreeViewer.setInput(validDirs);
-			// this sets all to selected
-			fTreeViewer.setAllChecked(true);
-			enableOk();
-
+		} catch (IOException e2) {
+			// ignore
 		}
 
+		IRunnableWithProgress action = new IRunnableWithProgress() {
+
+			public void run(IProgressMonitor monitor)
+					throws InvocationTargetException, InterruptedException {
+				monitor.beginTask(
+						UIText.RepositorySearchDialog_ScanningForRepositories_message,
+						IProgressMonitor.UNKNOWN);
+				try {
+					findGitDirsRecursive(file, directories, monitor,
+							lookForNested);
+				} catch (Exception ex) {
+					Activator
+							.getDefault()
+							.getLog()
+							.log(new Status(IStatus.ERROR, Activator
+									.getPluginId(), ex.getMessage(), ex));
+				}
+				if (monitor.isCanceled()) {
+					throw new InterruptedException();
+				}
+			}
+		};
+		try {
+			getContainer().run(true, true, action);
+		} catch (InvocationTargetException e1) {
+			org.eclipse.egit.ui.Activator.handleError(
+					UIText.RepositorySearchDialog_errorOccurred, e1, true);
+		} catch (InterruptedException e1) {
+			// ignore
+		}
+
+		int foundOld = 0;
+
+		final TreeSet<String> validDirs = new TreeSet<String>();
+
+		for (String foundDir : directories) {
+			if (!fExistingDirectories.contains(foundDir)) {
+				validDirs.add(foundDir);
+			} else {
+				foundOld++;
+			}
+		}
+
+		if (foundOld > 0) {
+			String message = NLS.bind(
+					UIText.RepositorySearchDialog_SomeDirectoriesHiddenMessage,
+					Integer.valueOf(foundOld));
+			setMessage(message, IMessageProvider.INFORMATION);
+		} else if (directories.isEmpty())
+			setMessage(UIText.RepositorySearchDialog_NothingFoundMessage,
+					IMessageProvider.INFORMATION);
+
+		checkAllItem.setEnabled(!validDirs.isEmpty());
+		uncheckAllItem.setEnabled(!validDirs.isEmpty());
+		fTree.clearFilter();
+		fTreeViewer.setInput(validDirs);
+		// this sets all to selected
+		fTreeViewer.setAllChecked(true);
+		enableOk();
 	}
 
 	private void setNeedsSearch() {
@@ -517,8 +536,6 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 
 	private void enableOk() {
 		boolean enable = fTreeViewer.getCheckedElements().length > 0;
-		getButton(OK).setEnabled(enable);
-		if (enable)
-			getButton(OK).setFocus();
+		setPageComplete(enable);
 	}
 }

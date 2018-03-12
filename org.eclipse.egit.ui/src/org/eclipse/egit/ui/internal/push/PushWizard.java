@@ -12,6 +12,7 @@ package org.eclipse.egit.ui.internal.push;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -54,6 +55,8 @@ import org.eclipse.ui.PlatformUI;
  * Push operation is performed upon successful completion of this wizard.
  */
 public class PushWizard extends Wizard {
+	private static final String HELP_CONTEXT = "org.eclipse.egit.ui.PushWizard"; //$NON-NLS-1$
+
 	private static String getURIsString(final Collection<URIish> uris) {
 		final StringBuilder sb = new StringBuilder();
 		boolean first = true;
@@ -88,6 +91,7 @@ public class PushWizard extends Wizard {
 		final List<RemoteConfig> remotes = RemoteConfig
 				.getAllRemoteConfigs(localDb.getConfig());
 		repoPage = new RepositorySelectionPage(false, remotes, null);
+		repoPage.setHelpContext(HELP_CONTEXT);
 		refSpecPage = new RefSpecPage(localDb, true) {
 			@Override
 			public void setVisible(boolean visible) {
@@ -98,6 +102,7 @@ public class PushWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
+		refSpecPage.setHelpContext(HELP_CONTEXT);
 		confirmPage = new ConfirmationPage(localDb) {
 			@Override
 			public void setVisible(boolean visible) {
@@ -109,6 +114,7 @@ public class PushWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
+		confirmPage.setHelpContext(HELP_CONTEXT);
 		// TODO use/create another cool icon
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
@@ -122,7 +128,23 @@ public class PushWizard extends Wizard {
 	}
 
 	@Override
+	public boolean canFinish() {
+		if (getContainer().getCurrentPage() == repoPage) {
+			RepositorySelection sel = repoPage.getSelection();
+			if (sel.isConfigSelected()) {
+				RemoteConfig config = sel.getConfig();
+				return !config.getPushURIs().isEmpty()
+						|| !config.getURIs().isEmpty();
+			}
+		}
+		return super.canFinish();
+	}
+
+	@Override
 	public boolean performFinish() {
+		boolean calledFromRepoPage = false;
+		if (getContainer().getCurrentPage()==repoPage)
+			calledFromRepoPage = true;
 		if (repoPage.getSelection().isConfigSelected()
 				&& refSpecPage.isSaveRequested()) {
 			saveRefSpecs();
@@ -134,7 +156,7 @@ public class PushWizard extends Wizard {
 				return false;
 		}
 
-		final PushOperation operation = createPushOperation();
+		final PushOperation operation = createPushOperation(calledFromRepoPage);
 		if (operation == null)
 			return false;
 		UserPasswordCredentials credentials = repoPage.getCredentials();
@@ -146,8 +168,8 @@ public class PushWizard extends Wizard {
 			resultToCompare = confirmPage.getConfirmedResult();
 		else
 			resultToCompare = null;
-		final Job job = new PushJob(operation, resultToCompare,
-				getDestinationString());
+		final Job job = new PushJob(localDb, operation, resultToCompare,
+				getDestinationString(repoPage.getSelection()));
 
 		job.setUser(true);
 		job.schedule();
@@ -161,7 +183,7 @@ public class PushWizard extends Wizard {
 		final IWizardPage currentPage = getContainer().getCurrentPage();
 		if (currentPage == repoPage || currentPage == null)
 			return UIText.PushWizard_windowTitleDefault;
-		final String destination = getDestinationString();
+		final String destination = getDestinationString(repoPage.getSelection());
 		return NLS.bind(UIText.PushWizard_windowTitleWithDestination,
 				destination);
 	}
@@ -182,11 +204,24 @@ public class PushWizard extends Wizard {
 		}
 	}
 
-	private PushOperation createPushOperation() {
+	private PushOperation createPushOperation(boolean calledFromRepoPage) {
 		try {
 			final PushOperationSpecification spec;
 			final RemoteConfig config = repoPage.getSelection().getConfig();
-			if (confirmPage.isConfirmed()) {
+			if (calledFromRepoPage) {
+				// obtain the push ref specs from the configuration
+				// use our own list here, as the config returns a non-modifiable
+				// list
+				final Collection<RefSpec> pushSpecs = new ArrayList<RefSpec>();
+				pushSpecs.addAll(config.getPushRefSpecs());
+				final Collection<RemoteRefUpdate> updates = Transport
+						.findRemoteRefUpdatesFor(localDb, pushSpecs,
+								pushSpecs);
+				spec = new PushOperationSpecification();
+				for (final URIish uri : repoPage.getSelection().getPushURIs())
+					spec.addURIRefUpdates(uri, ConfirmationPage
+							.copyUpdates(updates));
+			} else if (confirmPage.isConfirmed()) {
 				final PushOperationResult confirmedResult = confirmPage
 						.getConfirmedResult();
 				spec = confirmedResult.deriveSpecification(confirmPage
@@ -216,7 +251,7 @@ public class PushWizard extends Wizard {
 			}
 			int timeout = Activator.getDefault().getPreferenceStore().getInt(
 					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-			return new PushOperation(localDb, spec, false, config, timeout);
+			return new PushOperation(localDb, spec, false, timeout);
 		} catch (final IOException e) {
 			ErrorDialog.openError(getShell(),
 					UIText.PushWizard_cantPrepareUpdatesTitle,
@@ -227,8 +262,7 @@ public class PushWizard extends Wizard {
 		}
 	}
 
-	private String getDestinationString() {
-		final RepositorySelection repoSelection = repoPage.getSelection();
+	static String getDestinationString(RepositorySelection repoSelection) {
 		final String destination;
 		if (repoSelection.isConfigSelected())
 			destination = repoSelection.getConfigName();
@@ -237,14 +271,16 @@ public class PushWizard extends Wizard {
 		return destination;
 	}
 
-	private class PushJob extends Job {
+	static class PushJob extends Job {
 		private final PushOperation operation;
 
 		private final PushOperationResult resultToCompare;
 
 		private final String destinationString;
 
-		public PushJob(final PushOperation operation,
+		private Repository localDb;
+
+		public PushJob(final Repository localDb, final PushOperation operation,
 				final PushOperationResult resultToCompare,
 				final String destinationString) {
 			super(NLS.bind(UIText.PushWizard_jobName, getURIsString(operation
@@ -252,6 +288,7 @@ public class PushWizard extends Wizard {
 			this.operation = operation;
 			this.resultToCompare = resultToCompare;
 			this.destinationString = destinationString;
+			this.localDb = localDb;
 		}
 
 		@Override

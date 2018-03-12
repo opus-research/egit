@@ -15,6 +15,12 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.commands.NotEnabledException;
+import org.eclipse.core.commands.NotHandledException;
+import org.eclipse.core.commands.common.NotDefinedException;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.ui.internal.components.RefContentProposal;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -25,20 +31,40 @@ import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.FontRegistry;
+import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.viewers.AbstractTreeViewer;
+import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Resource;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
+import org.eclipse.swt.widgets.Widget;
+import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.IHandlerService;
 
 /**
  * Some utilities for UI code
  */
 public class UIUtils {
 	/**
-	 * these activate the content assist; alphanumeric,
-	 * space plus some expected special chars
+	 * these activate the content assist; alphanumeric, space plus some expected
+	 * special chars
 	 */
 	private static final char[] VALUE_HELP_ACTIVATIONCHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123457890*@ <>".toCharArray(); //$NON-NLS-1$
 
@@ -90,7 +116,19 @@ public class UIUtils {
 	}
 
 	/**
-	 * @param id see {@link FontRegistry#get(String)}
+	 * Used for
+	 * {@link UIUtils#addRefContentProposalToText(Text, Repository, IRefListProvider)}
+	 */
+	public interface IRefListProvider {
+		/**
+		 * @return the List of {@link Ref}s to propose
+		 */
+		public List<Ref> getRefList();
+	}
+
+	/**
+	 * @param id
+	 *            see {@link FontRegistry#get(String)}
 	 * @return the font
 	 */
 	public static Font getFont(final String id) {
@@ -99,7 +137,8 @@ public class UIUtils {
 	}
 
 	/**
-	 * @param id see {@link FontRegistry#getBold(String)}
+	 * @param id
+	 *            see {@link FontRegistry#getBold(String)}
 	 * @return the font
 	 */
 	public static Font getBoldFont(final String id) {
@@ -108,16 +147,30 @@ public class UIUtils {
 	}
 
 	/**
-	 * Adds little bulb decoration to given control. Bulb will appear in top left
-	 * corner of control after giving focus for this control.
+	 * @param id
+	 *            see {@link FontRegistry#getItalic(String)}
+	 * @return the font
+	 */
+	public static Font getItalicFont(final String id) {
+		return PlatformUI.getWorkbench().getThemeManager().getCurrentTheme()
+				.getFontRegistry().getItalic(id);
+	}
+
+	/**
+	 * Adds little bulb decoration to given control. Bulb will appear in top
+	 * left corner of control after giving focus for this control.
 	 *
 	 * After clicking on bulb image text from <code>tooltip</code> will appear.
 	 *
-	 * @param control instance of {@link Control} object with should be decorated
-	 * @param tooltip text value which should appear after clicking on bulb image.
+	 * @param control
+	 *            instance of {@link Control} object with should be decorated
+	 * @param tooltip
+	 *            text value which should appear after clicking on bulb image.
 	 */
-	public static void addBulbDecorator(final Control control, final String tooltip) {
-		ControlDecoration dec = new ControlDecoration(control, SWT.TOP | SWT.LEFT);
+	public static void addBulbDecorator(final Control control,
+			final String tooltip) {
+		ControlDecoration dec = new ControlDecoration(control, SWT.TOP
+				| SWT.LEFT);
 
 		dec.setImage(FieldDecorationRegistry.getDefault().getFieldDecoration(
 				FieldDecorationRegistry.DEC_CONTENT_PROPOSAL).getImage());
@@ -277,4 +330,266 @@ public class UIUtils {
 		};
 	}
 
+	/**
+	 * Adds a content proposal for {@link Ref}s (branches, tags...) to a text
+	 * field
+	 *
+	 * @param textField
+	 *            the text field
+	 * @param repository
+	 *            the repository
+	 * @param refListProvider
+	 *            provides the {@link Ref}s to show in the proposal
+	 */
+	public static final void addRefContentProposalToText(final Text textField,
+			final Repository repository, final IRefListProvider refListProvider) {
+		KeyStroke stroke;
+		try {
+			stroke = KeyStroke.getInstance("M1+SPACE"); //$NON-NLS-1$
+			UIUtils.addBulbDecorator(textField, NLS.bind(
+					UIText.UIUtils_PressShortcutMessage, stroke.format()));
+		} catch (ParseException e1) {
+			Activator.handleError(e1.getMessage(), e1, false);
+			stroke = null;
+			UIUtils.addBulbDecorator(textField,
+					UIText.UIUtils_StartTypingForPreviousValuesMessage);
+		}
+
+		IContentProposalProvider cp = new IContentProposalProvider() {
+			public IContentProposal[] getProposals(String contents, int position) {
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
+
+				// make the simplest possible pattern check: allow "*"
+				// for multiple characters
+				String patternString = contents;
+				// ignore spaces in the beginning
+				while (patternString.length() > 0
+						&& patternString.charAt(0) == ' ') {
+					patternString = patternString.substring(1);
+				}
+
+				// we quote the string as it may contain spaces
+				// and other stuff colliding with the Pattern
+				patternString = Pattern.quote(patternString);
+
+				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
+
+				// make sure we add a (logical) * at the end
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
+					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
+
+				// let's compile a case-insensitive pattern (assumes ASCII only)
+				Pattern pattern;
+				try {
+					pattern = Pattern.compile(patternString,
+							Pattern.CASE_INSENSITIVE);
+				} catch (PatternSyntaxException e) {
+					pattern = null;
+				}
+
+				List<Ref> proposals = refListProvider.getRefList();
+
+				if (proposals != null)
+					for (final Ref ref : proposals) {
+						final String shortenedName = Repository
+								.shortenRefName(ref.getName());
+						if (pattern != null
+								&& !pattern.matcher(ref.getName()).matches()
+								&& !pattern.matcher(shortenedName).matches())
+							continue;
+
+						IContentProposal propsal = new RefContentProposal(
+								repository, ref);
+						resultList.add(propsal);
+					}
+
+				return resultList.toArray(new IContentProposal[resultList
+						.size()]);
+			}
+		};
+
+		ContentProposalAdapter adapter = new ContentProposalAdapter(textField,
+				new TextContentAdapter(), cp, stroke,
+				UIUtils.VALUE_HELP_ACTIVATIONCHARS);
+		// set the acceptance style to always replace the complete content
+		adapter
+				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
+	}
+
+	/**
+	 * Set enabled state of the control and all its children
+	 * @param control
+	 * @param enable
+	 */
+	public static void setEnabledRecursively(final Control control,
+			final boolean enable) {
+		control.setEnabled(enable);
+		if (control instanceof Composite)
+			for (final Control child : ((Composite) control).getChildren())
+				setEnabledRecursively(child, enable);
+	}
+
+	/**
+	 * Dispose of the resource when the widget is disposed
+	 *
+	 * @param widget
+	 * @param resource
+	 */
+	public static void hookDisposal(Widget widget, final Resource resource) {
+		if (widget == null || resource == null)
+			return;
+
+		widget.addDisposeListener(new DisposeListener() {
+
+			public void widgetDisposed(DisposeEvent e) {
+				resource.dispose();
+			}
+		});
+	}
+
+	/**
+	 * Get editor image for path
+	 *
+	 * @param path
+	 * @return image descriptor
+	 */
+	public static ImageDescriptor getEditorImage(final String path) {
+		if (path != null && path.length() > 0) {
+			final String name = new Path(path).lastSegment();
+			if (name != null)
+				return PlatformUI.getWorkbench().getEditorRegistry()
+						.getImageDescriptor(name);
+		}
+		return PlatformUI.getWorkbench().getSharedImages()
+				.getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
+	}
+
+	/**
+	 * Get size of image descriptor as point.
+	 *
+	 * @param descriptor
+	 * @return size
+	 */
+	public static Point getSize(ImageDescriptor descriptor) {
+		ImageData data = descriptor.getImageData();
+		if (data == null)
+			return new Point(0, 0);
+		return new Point(data.width, data.height);
+	}
+
+	/**
+	 * Add expand all and collapse all toolbar items to the given toolbar bound
+	 * to the given tree viewer
+	 *
+	 * @param toolbar
+	 * @param viewer
+	 * @return given toolbar
+	 */
+	public static ToolBar addExpansionItems(final ToolBar toolbar,
+			final AbstractTreeViewer viewer) {
+		ToolItem collapseItem = new ToolItem(toolbar, SWT.PUSH);
+		Image collapseImage = UIIcons.COLLAPSEALL.createImage();
+		UIUtils.hookDisposal(collapseItem, collapseImage);
+		collapseItem.setImage(collapseImage);
+		collapseItem.setToolTipText(UIText.UIUtils_CollapseAll);
+		collapseItem.addSelectionListener(new SelectionAdapter() {
+
+			public void widgetSelected(SelectionEvent e) {
+				viewer.collapseAll();
+			}
+
+		});
+
+		ToolItem expandItem = new ToolItem(toolbar, SWT.PUSH);
+		Image expandImage = UIIcons.EXPAND_ALL.createImage();
+		UIUtils.hookDisposal(expandItem, expandImage);
+		expandItem.setImage(expandImage);
+		expandItem.setToolTipText(UIText.UIUtils_ExpandAll);
+		expandItem.addSelectionListener(new SelectionAdapter() {
+
+			public void widgetSelected(SelectionEvent e) {
+				viewer.expandAll();
+			}
+
+		});
+		return toolbar;
+	}
+
+	/**
+	 * Get dialog bound settings for given class using standard section name
+	 *
+	 * @param clazz
+	 * @return dialog setting
+	 */
+	public static IDialogSettings getDialogBoundSettings(final Class<?> clazz) {
+		return getDialogSettings(clazz.getName() + ".dialogBounds"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Get dialog settings for given section name
+	 *
+	 * @param sectionName
+	 * @return dialog settings
+	 */
+	public static IDialogSettings getDialogSettings(final String sectionName) {
+		IDialogSettings settings = Activator.getDefault().getDialogSettings();
+		IDialogSettings section = settings.getSection(sectionName);
+		if (section == null)
+			section = settings.addNewSection(sectionName);
+		return section;
+	}
+
+	/**
+	 * Is viewer in a usable state?
+	 *
+	 * @param viewer
+	 * @return true if usable, false if null or underlying control is null or
+	 *         disposed
+	 */
+	public static boolean isUsable(final Viewer viewer) {
+		return viewer != null && isUsable(viewer.getControl());
+	}
+
+	/**
+	 * Is control usable?
+	 *
+	 * @param control
+	 * @return true if usable, false if null or disposed
+	 */
+	public static boolean isUsable(final Control control) {
+		return control != null && !control.isDisposed();
+	}
+
+	/**
+	 * Run command with specified id
+	 *
+	 * @param service
+	 * @param id
+	 */
+	public static void executeCommand(IHandlerService service, String id) {
+		executeCommand(service, id, null);
+	}
+
+	/**
+	 * Run command with specified id
+	 *
+	 * @param service
+	 * @param id
+	 * @param event
+	 */
+	public static void executeCommand(IHandlerService service, String id,
+			Event event) {
+		try {
+			service.executeCommand(id, event);
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, false);
+		} catch (NotDefinedException e) {
+			Activator.handleError(e.getMessage(), e, false);
+		} catch (NotEnabledException e) {
+			Activator.handleError(e.getMessage(), e, false);
+		} catch (NotHandledException e) {
+			Activator.handleError(e.getMessage(), e, false);
+		}
+	}
 }

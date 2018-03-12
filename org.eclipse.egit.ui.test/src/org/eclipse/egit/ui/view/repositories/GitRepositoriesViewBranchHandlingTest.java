@@ -15,7 +15,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.egit.core.op.BranchOperation;
@@ -29,13 +28,12 @@ import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
-import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
@@ -67,16 +65,8 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		final URIish uri = new URIish(remoteRepositoryFile.getPath());
 		final File workdir = new File(getTestDirectory(), "Cloned");
 
-		Collection<Ref> remoteRefs = getRemoteRefs(uri);
-		Ref myref = null;
-		for (Ref ref : remoteRefs) {
-			if (ref.getName().equals("refs/heads/master")) {
-				myref = ref;
-				break;
-			}
-		}
 		CloneOperation op = new CloneOperation(uri, true, null, workdir,
-				myref, "origin", 0);
+				"refs/heads/master", "origin", 0);
 		op.run(null);
 
 		clonedRepositoryFile = new File(workdir, Constants.DOT_GIT);
@@ -122,23 +112,13 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		assertEquals("Wrong number of children", 2, localItem.getNodes().size());
 
 		localItem.getNode(0).select();
-		try {
-			ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
-					.getPluginLocalizedValue("CheckoutCommand"));
-		} catch (WidgetNotFoundException e1) {
-			// expected
-		}
+		assertCheckoutNotAvailable(view);
 		localItem.getNode(1).select();
 		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("CheckoutCommand"));
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 
-		try {
-			ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
-					.getPluginLocalizedValue("CheckoutCommand"));
-		} catch (WidgetNotFoundException e) {
-			// expected
-		}
+		assertCheckoutNotAvailable(view);
 
 		localItem.getNode(0).select();
 		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
@@ -154,7 +134,13 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		localItem.expand();
 		assertEquals("Wrong number of children", 1, localItem.getNodes().size());
 	}
-	
+
+	private void assertCheckoutNotAvailable(final SWTBotView view) {
+		assertFalse("Checkout context menu item should not exist",
+				ContextMenuHelper.contextMenuItemExists(view.bot().tree(),
+						myUtil.getPluginLocalizedValue("CheckoutCommand")));
+	}
+
 	@Test
 	public void testCreateDeleteLocalBranchWithUnmerged() throws Exception {
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
@@ -189,28 +175,11 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				repositoryFile);
 		localItem.expand();
 		assertEquals("Wrong number of children", 2, localItem.getNodes().size());
-		
+
 		touchAndSubmit("Some more changes");
 
-		localItem.getNode(0).select();
-		try {
-			ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
-					.getPluginLocalizedValue("CheckoutCommand"));
-		} catch (WidgetNotFoundException e1) {
-			// expected
-		}
 		localItem.getNode(1).select();
-		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
-				.getPluginLocalizedValue("CheckoutCommand"));
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-
-		try {
-			ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
-					.getPluginLocalizedValue("CheckoutCommand"));
-		} catch (WidgetNotFoundException e) {
-			// expected
-		}
-
+		assertCheckoutNotAvailable(view);
 		localItem.getNode(0).select();
 		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("CheckoutCommand"));
@@ -220,7 +189,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		ContextMenuHelper.clickContextMenu(bot.tree(), myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		SWTBotShell confirmPopup = bot
-				.shell(UIText.RepositoriesView_ConfirmDeleteTitle);
+				.shell(UIText.UnmergedBranchDialog_Title);
 		confirmPopup.activate();
 		confirmPopup.bot().button(IDialogConstants.OK_LABEL).click();
 		refreshAndWait();
@@ -399,8 +368,9 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewMerge.label"));
 
-		String title = NLS.bind(UIText.MergeTargetSelectionDialog_TitleMerge,
-				clonedRepositoryFile.getPath().toString());
+		String title = NLS.bind(
+				UIText.MergeTargetSelectionDialog_TitleMergeWithBranch,
+				new FileRepository(clonedRepositoryFile).getBranch());
 
 		SWTBotShell mergeDialog = bot.shell(title);
 		// TODO do some merge here

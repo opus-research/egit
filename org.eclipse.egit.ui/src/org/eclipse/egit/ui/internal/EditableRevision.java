@@ -24,6 +24,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
 
 /**
  * @author simon
@@ -109,9 +110,10 @@ public class EditableRevision extends FileRevisionTypedElement implements
 
 	/**
 	 * @param fileRevision
+	 * @param encoding the file encoding
 	 */
-	public EditableRevision(IFileRevision fileRevision) {
-		super(fileRevision);
+	public EditableRevision(IFileRevision fileRevision, String encoding) {
+		super(fileRevision, encoding);
 	}
 
 	public boolean isEditable() {
@@ -131,7 +133,12 @@ public class EditableRevision extends FileRevisionTypedElement implements
 	}
 
 	public void setContent(byte[] newContent) {
-		modifiedContent = newContent;
+		if (newContent != null) {
+			modifiedContent = new byte[newContent.length];
+			System.arraycopy(newContent, 0, modifiedContent, 0,
+					newContent.length);
+		} else
+			modifiedContent = null;
 		fireContentChanged();
 	}
 
@@ -203,4 +210,13 @@ public class EditableRevision extends FileRevisionTypedElement implements
 		fChangeNotifier.fireContentChanged();
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		return super.equals(obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
 }

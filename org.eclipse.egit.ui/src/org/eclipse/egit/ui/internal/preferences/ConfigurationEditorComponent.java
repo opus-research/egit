@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,20 +23,28 @@ import java.util.StringTokenizer;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.BaseLabelProvider;
+import org.eclipse.jface.viewers.CellEditor;
+import org.eclipse.jface.viewers.EditingSupport;
+import org.eclipse.jface.viewers.ICellEditorListener;
+import org.eclipse.jface.viewers.ICellEditorValidator;
 import org.eclipse.jface.viewers.IFontProvider;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.jface.window.IShellProvider;
 import org.eclipse.jface.window.SameShellProvider;
 import org.eclipse.jface.window.Window;
@@ -45,8 +54,6 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
@@ -56,6 +63,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
@@ -67,6 +75,8 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.model.WorkbenchAdapter;
+import org.eclipse.ui.model.WorkbenchContentProvider;
 
 /**
  * A reusable UI component to display and edit a Git configuration.
@@ -83,7 +93,7 @@ public class ConfigurationEditorComponent {
 
 	private final static String DOT = "."; //$NON-NLS-1$
 
-	private final StoredConfig editableConfig;
+	private StoredConfig editableConfig;
 
 	private final IShellProvider shellProvider;
 
@@ -91,19 +101,19 @@ public class ConfigurationEditorComponent {
 
 	private final boolean useDialogFont;
 
-	private Text valueText;
+	private Composite contents;
 
-	private Button changeValue;
-
-	private Button addValue;
+	private Button newValue;
 
 	private Button remove;
-
-	private Button deleteValue;
 
 	private TreeViewer tv;
 
 	private Text location;
+
+	private final boolean changeablePath;
+
+	private boolean editable;
 
 	/**
 	 * @param parent
@@ -112,13 +122,21 @@ public class ConfigurationEditorComponent {
 	 *            to be used instead of the user configuration
 	 * @param useDialogFont
 	 *            if <code>true</code>, the current dialog font is used
+	 * @param changeablePath
+	 *            The user can change the path of the configuration file
 	 */
 	public ConfigurationEditorComponent(Composite parent, StoredConfig config,
-			boolean useDialogFont) {
+			boolean useDialogFont, boolean changeablePath) {
 		editableConfig = config;
 		this.shellProvider = new SameShellProvider(parent);
 		this.parent = parent;
 		this.useDialogFont = useDialogFont;
+		this.changeablePath = changeablePath;
+	}
+
+	void setConfig(FileBasedConfig config) throws IOException {
+		editableConfig = config;
+		restore();
 	}
 
 	/**
@@ -152,24 +170,71 @@ public class ConfigurationEditorComponent {
 	 */
 	public Control createContents() {
 		final Composite main = new Composite(parent, SWT.NONE);
-		main.setLayout(new GridLayout(1, false));
+		main.setLayout(new GridLayout(2, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
 
 		if (editableConfig instanceof FileBasedConfig) {
 			Composite locationPanel = new Composite(main, SWT.NONE);
-			locationPanel.setLayout(new GridLayout(3, false));
-			GridDataFactory.fillDefaults().grab(true, false).applyTo(
-					locationPanel);
+			locationPanel.setLayout(new GridLayout(4, false));
+			GridDataFactory.fillDefaults().grab(true, false).span(2, 1)
+					.applyTo(locationPanel);
 			Label locationLabel = new Label(locationPanel, SWT.NONE);
 			locationLabel
 					.setText(UIText.ConfigurationEditorComponent_ConfigLocationLabel);
 			// GridDataFactory.fillDefaults().applyTo(locationLabel);
-			location = new Text(locationPanel, SWT.BORDER);
-			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).grab(
-					true, false).applyTo(location);
-			location.setEditable(false);
+			int locationStyle = SWT.BORDER;
+			if (!changeablePath)
+				locationStyle |= SWT.READ_ONLY;
+			location = new Text(locationPanel, locationStyle);
+			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER)
+					.grab(true, false).applyTo(location);
+			if (changeablePath) {
+				Button selectPath = new Button(locationPanel, SWT.PUSH);
+				selectPath
+						.setText(UIText.ConfigurationEditorComponent_BrowseForPrefix);
+				selectPath.addSelectionListener(new SelectionAdapter() {
+					@Override
+					public void widgetSelected(SelectionEvent e) {
+						DirectoryDialog dialog = new DirectoryDialog(
+								getShell(), SWT.OPEN);
+						dialog.setText(UIText.ConfigurationEditorComponent_SelectGitInstallation);
+						String file = dialog.open();
+						if (file != null) {
+							File etc = new File(file, "etc"); //$NON-NLS-1$
+							File bin = new File(file, "bin"); //$NON-NLS-1$
+							if (!new File(etc, "gitconfig").exists() //$NON-NLS-1$
+									&& !new File(bin, "git").exists() //$NON-NLS-1$
+									&& (!System
+											.getProperty("os.name").startsWith("Windows") || //$NON-NLS-1$ //$NON-NLS-2$
+									!new File(bin, "git.exe").exists())) { //$NON-NLS-1$
+								MessageDialog
+										.open(SWT.ERROR,
+												getShell(),
+												UIText.ConfigurationEditorComponent_GitPrefixSelectionErrorTitle,
+												UIText.ConfigurationEditorComponent_GitPrefixSelectionErrorMessage,
+												SWT.NONE);
+								return;
+							}
+							location.setText(file);
+							try {
+								IEclipsePreferences node = new InstanceScope()
+										.getNode(org.eclipse.egit.core.Activator
+												.getPluginId());
+								node.put(GitCorePreferences.core_gitPrefix,
+										file);
+								node.flush();
+								setChangeSystemPrefix(file);
+							} catch (Exception e1) {
+								Activator
+										.logError(
+												UIText.ConfigurationEditorComponent_CannotChangeGitPrefixError,
+												e1);
+							}
+						}
+					}
+				});
+			}
 			Button openEditor = new Button(locationPanel, SWT.PUSH);
-			// GridDataFactory.fillDefaults().applyTo(openEditor);
 			openEditor
 					.setText(UIText.ConfigurationEditorComponent_OpenEditorButton);
 			openEditor
@@ -190,20 +255,70 @@ public class ConfigurationEditorComponent {
 					}
 				}
 			});
+			openEditor
+					.setEnabled(((FileBasedConfig) editableConfig).getFile() != null);
 		}
 		tv = new TreeViewer(main, SWT.SINGLE | SWT.FULL_SELECTION | SWT.BORDER);
 		Tree tree = tv.getTree();
-		GridDataFactory.fillDefaults().hint(100, 60).grab(true, true).applyTo(
-				tree);
+		GridDataFactory.fillDefaults().hint(100, 60).grab(true, true)
+				.applyTo(tree);
 		TreeColumn key = new TreeColumn(tree, SWT.NONE);
 		key.setText(UIText.ConfigurationEditorComponent_KeyColumnHeader);
 		key.setWidth(150);
 
+		final TextCellEditor editor = new TextCellEditor(tree);
+		editor.setValidator(new ICellEditorValidator() {
+
+			public String isValid(Object value) {
+				String editedValue = value.toString();
+				return editedValue.length() > 0 ? null
+						: UIText.ConfigurationEditorComponent_EmptyStringNotAllowed;
+			}
+		});
+		editor.addListener(new ICellEditorListener() {
+
+			public void editorValueChanged(boolean oldValidState,
+					boolean newValidState) {
+				setErrorMessage(editor.getErrorMessage());
+			}
+
+			public void cancelEditor() {
+				setErrorMessage(null);
+			}
+
+			public void applyEditorValue() {
+				setErrorMessage(null);
+			}
+		});
+
 		TreeColumn value = new TreeColumn(tree, SWT.NONE);
 		value.setText(UIText.ConfigurationEditorComponent_ValueColumnHeader);
 		value.setWidth(250);
+		new TreeViewerColumn(tv, value)
+				.setEditingSupport(new EditingSupport(tv) {
 
-		tv.setContentProvider(new ConfigEditorContentProvider());
+					protected void setValue(Object element, Object newValue) {
+						Entry entry = (Entry) element;
+						if (!entry.value.equals(newValue)) {
+							entry.changeValue(newValue.toString());
+							markDirty();
+						}
+					}
+
+					protected Object getValue(Object element) {
+						return ((Entry) element).value;
+					}
+
+					protected CellEditor getCellEditor(Object element) {
+						return editor;
+					}
+
+					protected boolean canEdit(Object element) {
+						return editable && element instanceof Entry;
+					}
+				});
+
+		tv.setContentProvider(new WorkbenchContentProvider());
 		Font defaultFont;
 		if (useDialogFont)
 			defaultFont = JFaceResources.getDialogFont();
@@ -214,14 +329,13 @@ public class ConfigurationEditorComponent {
 		tree.setHeaderVisible(true);
 		tree.setLinesVisible(true);
 
-		// if section or subsection is selected, we show the remove button
 		Composite buttonPanel = new Composite(main, SWT.NONE);
-		buttonPanel.setLayout(new GridLayout(2, false));
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(buttonPanel);
-		final Button newEntry = new Button(buttonPanel, SWT.PUSH);
-		GridDataFactory.fillDefaults().applyTo(newEntry);
-		newEntry.setText(UIText.ConfigurationEditorComponent_NewValueButton);
-		newEntry.addSelectionListener(new SelectionAdapter() {
+		GridLayoutFactory.fillDefaults().applyTo(buttonPanel);
+		GridDataFactory.fillDefaults().grab(false, false).applyTo(buttonPanel);
+		newValue = new Button(buttonPanel, SWT.PUSH);
+		GridDataFactory.fillDefaults().applyTo(newValue);
+		newValue.setText(UIText.ConfigurationEditorComponent_AddButton);
+		newValue.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 
@@ -245,16 +359,31 @@ public class ConfigurationEditorComponent {
 					suggestedKey = null;
 
 				AddConfigEntryDialog dlg = new AddConfigEntryDialog(getShell(),
-						editableConfig, suggestedKey);
+						suggestedKey);
 				if (dlg.open() == Window.OK) {
 					StringTokenizer st = new StringTokenizer(dlg.getKey(), DOT);
 					if (st.countTokens() == 2) {
-						editableConfig.setString(st.nextToken(), null, st
-								.nextToken(), dlg.getValue());
+						String sectionName = st.nextToken();
+						String entryName = st.nextToken();
+						Entry entry = ((GitConfig) tv.getInput()).getEntry(
+								sectionName, null, entryName);
+						if (entry == null)
+							editableConfig.setString(sectionName, null,
+									entryName, dlg.getValue());
+						else
+							entry.addValue(dlg.getValue());
 						markDirty();
 					} else if (st.countTokens() == 3) {
-						editableConfig.setString(st.nextToken(),
-								st.nextToken(), st.nextToken(), dlg.getValue());
+						String sectionName = st.nextToken();
+						String subSectionName = st.nextToken();
+						String entryName = st.nextToken();
+						Entry entry = ((GitConfig) tv.getInput()).getEntry(
+								sectionName, subSectionName, entryName);
+						if (entry == null)
+							editableConfig.setString(sectionName,
+									subSectionName, entryName, dlg.getValue());
+						else
+							entry.addValue(dlg.getValue());
 						markDirty();
 					} else
 						Activator
@@ -267,9 +396,8 @@ public class ConfigurationEditorComponent {
 		});
 		remove = new Button(buttonPanel, SWT.PUSH);
 		GridDataFactory.fillDefaults().applyTo(remove);
-		remove.setText(UIText.ConfigurationEditorComponent_RemoveAllButton);
-		remove
-				.setToolTipText(UIText.ConfigurationEditorComponent_RemoveAllTooltip);
+		remove.setText(UIText.ConfigurationEditorComponent_RemoveButton);
+		remove.setToolTipText(UIText.ConfigurationEditorComponent_RemoveTooltip);
 		remove.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -282,10 +410,9 @@ public class ConfigurationEditorComponent {
 							.openConfirm(
 									getShell(),
 									UIText.ConfigurationEditorComponent_RemoveSectionTitle,
-									NLS
-											.bind(
-													UIText.ConfigurationEditorComponent_RemoveSectionMessage,
-													section.name))) {
+									NLS.bind(
+											UIText.ConfigurationEditorComponent_RemoveSectionMessage,
+											section.name))) {
 						editableConfig.unsetSection(section.name, null);
 						markDirty();
 					}
@@ -295,88 +422,24 @@ public class ConfigurationEditorComponent {
 							.openConfirm(
 									getShell(),
 									UIText.ConfigurationEditorComponent_RemoveSubsectionTitle,
-									NLS
-											.bind(
-													UIText.ConfigurationEditorComponent_RemoveSubsectionMessage,
-													section.parent.name + DOT
-															+ section.name))) {
+									NLS.bind(
+											UIText.ConfigurationEditorComponent_RemoveSubsectionMessage,
+											section.parent.name + DOT
+													+ section.name))) {
 						editableConfig.unsetSection(section.parent.name,
 								section.name);
 						markDirty();
 					}
-				} else {
+				} else if (first instanceof Entry) {
+					((Entry) first).removeValue();
+					markDirty();
+				} else
 					Activator
 							.handleError(
 									UIText.ConfigurationEditorComponent_NoSectionSubsectionMessage,
 									null, true);
-				}
 
 				super.widgetSelected(e);
-			}
-		});
-
-		// if an entry is selected, then we show the value plus change button
-		Composite valuePanel = new Composite(main, SWT.NONE);
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(valuePanel);
-		valuePanel.setLayout(new GridLayout(3, false));
-		new Label(valuePanel, SWT.NONE)
-				.setText(UIText.ConfigurationEditorComponent_ValueLabel);
-		valueText = new Text(valuePanel, SWT.BORDER);
-		valueText
-				.setText(UIText.ConfigurationEditorComponent_NoEntrySelectedMessage);
-		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).grab(true,
-				false).applyTo(valueText);
-		// make the buttons equal width
-		Composite buttonContainer = new Composite(valuePanel, SWT.NONE);
-		buttonContainer.setLayout(new GridLayout(3, true));
-		changeValue = new Button(buttonContainer, SWT.PUSH);
-		GridDataFactory.fillDefaults().applyTo(changeValue);
-		changeValue.setText(UIText.ConfigurationEditorComponent_ChangeButton);
-		changeValue.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				IStructuredSelection sel = (IStructuredSelection) tv
-						.getSelection();
-				Object first = sel.getFirstElement();
-				if (first instanceof Entry) {
-					Entry entry = (Entry) first;
-					entry.changeValue(valueText.getText());
-					markDirty();
-				}
-			}
-		});
-		deleteValue = new Button(buttonContainer, SWT.PUSH);
-		GridDataFactory.fillDefaults().applyTo(deleteValue);
-		deleteValue.setText(UIText.ConfigurationEditorComponent_DeleteButton);
-		deleteValue.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				IStructuredSelection sel = (IStructuredSelection) tv
-						.getSelection();
-				Object first = sel.getFirstElement();
-				if (first instanceof Entry) {
-					Entry entry = (Entry) first;
-					entry.removeValue();
-					markDirty();
-				}
-
-			}
-		});
-		addValue = new Button(buttonContainer, SWT.PUSH);
-		GridDataFactory.fillDefaults().applyTo(addValue);
-		addValue.setText(UIText.ConfigurationEditorComponent_AddButton);
-		addValue.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				IStructuredSelection sel = (IStructuredSelection) tv
-						.getSelection();
-				Object first = sel.getFirstElement();
-				if (first instanceof Entry) {
-					Entry entry = (Entry) first;
-					entry.addValue(valueText.getText());
-					markDirty();
-				}
-
 			}
 		});
 
@@ -386,29 +449,61 @@ public class ConfigurationEditorComponent {
 			}
 		});
 
-		valueText.addModifyListener(new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				if (valueText.getText().length() == 0) {
-					setErrorMessage(UIText.ConfigurationEditorComponent_EmptyStringNotAllowed);
-					changeValue.setEnabled(false);
-				} else {
-					setErrorMessage(null);
-					changeValue.setEnabled(true);
-				}
-			}
-		});
-
 		initControlsFromConfig();
-		return main;
+		contents = main;
+		return contents;
+	}
+
+	/**
+	 * @return the composite containing all the controls
+	 */
+	public Composite getContents() {
+		return contents;
+	}
+
+	private boolean isWriteable(final File f) {
+		if (f.exists())
+			if (f.isFile())
+				if (f.canWrite())
+					return true;
+				else
+					return false;
+			else
+				return false;
+		// no file, can we create one
+		for (File d = f.getParentFile(); d != null; d = d.getParentFile())
+			if (d.isDirectory())
+				if (d.canWrite())
+					return true;
+				else
+					return false;
+			else if (d.exists())
+				return false;
+		// else continue
+		return false;
 	}
 
 	private void initControlsFromConfig() {
 		try {
 			editableConfig.load();
-			tv.setInput(editableConfig);
+			tv.setInput(new GitConfig(editableConfig));
+			editable = true;
 			if (editableConfig instanceof FileBasedConfig) {
-				location.setText(((FileBasedConfig) editableConfig).getFile()
-						.getPath());
+				FileBasedConfig fileConfig = (FileBasedConfig) editableConfig;
+				File configFile = fileConfig.getFile();
+				if (configFile != null)
+					if (isWriteable(configFile))
+						location.setText(configFile.getPath());
+					else {
+						location.setText(NLS
+								.bind(UIText.ConfigurationEditorComponent_ReadOnlyLocationFormat,
+										configFile.getPath()));
+						editable = false;
+					}
+				else {
+					location.setText(UIText.ConfigurationEditorComponent_NoConfigLocationKnown);
+					editable = false;
+				}
 			}
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
@@ -435,37 +530,80 @@ public class ConfigurationEditorComponent {
 		// the default implementation does nothing
 	}
 
+	/**
+	 * @param prefix
+	 *            new System prefix
+	 * @throws IOException
+	 */
+	protected void setChangeSystemPrefix(String prefix) throws IOException {
+		// the default implementation does nothing
+	}
+
 	private void updateEnablement() {
-		Object selected = ((IStructuredSelection) tv.getSelection())
-				.getFirstElement();
-
-		boolean entrySelected = selected instanceof Entry;
-		boolean sectionOrSubSectionSelected = (selected instanceof Section || selected instanceof SubSection);
-
-		if (entrySelected)
-			valueText.setText(((Entry) selected).value);
-		else
-			valueText
-					.setText(UIText.ConfigurationEditorComponent_NoEntrySelectedMessage);
-		changeValue.setEnabled(false);
-		valueText.setEnabled(entrySelected);
-		deleteValue.setEnabled(entrySelected);
-		addValue.setEnabled(entrySelected);
-		remove.setEnabled(sectionOrSubSectionSelected);
+		remove.setEnabled(editable);
+		newValue.setEnabled(editable);
 	}
 
 	private void markDirty() {
 		setDirty(true);
+		((GitConfig) tv.getInput()).refresh();
 		tv.refresh();
 	}
 
-	private final static class Section {
-		private final String name;
+	private final static class GitConfig extends WorkbenchAdapter {
 
 		private final Config config;
 
-		Section(Config config, String name) {
+		private Section[] children;
+
+		GitConfig(Config config) {
 			this.config = config;
+		}
+
+		GitConfig refresh() {
+			children = null;
+			return this;
+		}
+
+		public Object[] getChildren(Object o) {
+			if (children == null)
+				if (config != null) {
+					List<Section> sections = new ArrayList<Section>();
+					Set<String> sectionNames = config.getSections();
+					for (String sectionName : sectionNames)
+						sections.add(new Section(this, sectionName));
+					Collections.sort(sections, new Comparator<Section>() {
+
+						public int compare(Section o1, Section o2) {
+							return o1.name.compareTo(o2.name);
+						}
+					});
+					children = sections.toArray(new Section[sections.size()]);
+				} else
+					children = new Section[0];
+			return children;
+		}
+
+		public Entry getEntry(String sectionName, String subsectionName,
+				String entryName) {
+			for (Object child : getChildren(this)) {
+				Section section = (Section) child;
+				if (sectionName.equals(section.name))
+					return section.getEntry(subsectionName, entryName);
+			}
+			return null;
+		}
+	}
+
+	private final static class Section extends WorkbenchAdapter {
+		private final String name;
+
+		private final GitConfig parent;
+
+		private Object[] children;
+
+		Section(GitConfig parent, String name) {
+			this.parent = parent;
 			this.name = name;
 		}
 
@@ -490,15 +628,70 @@ public class ConfigurationEditorComponent {
 				return false;
 			return true;
 		}
+
+		public Object getParent(Object object) {
+			return parent;
+		}
+
+		public Object[] getChildren(Object o) {
+			if (children == null) {
+				List<Object> allChildren = new ArrayList<Object>();
+				Set<String> subSectionNames = parent.config
+						.getSubsections(name);
+				for (String subSectionName : subSectionNames)
+					allChildren.add(new SubSection(parent.config, this,
+							subSectionName));
+
+				Set<String> entryNames = parent.config.getNames(name);
+				for (String entryName : entryNames) {
+					String[] values = parent.config.getStringList(name, null,
+							entryName);
+					if (values.length == 1)
+						allChildren.add(new Entry(this, entryName, values[0],
+								-1));
+					else {
+						int index = 0;
+						for (String value : values)
+							allChildren.add(new Entry(this, entryName, value,
+									index++));
+					}
+				}
+				children = allChildren.toArray();
+			}
+			return children;
+		}
+
+		public String getLabel(Object o) {
+			return name;
+		}
+
+		public Entry getEntry(String subsectionName, String entryName) {
+			if (subsectionName != null) {
+				for (Object child : getChildren(this))
+					if (child instanceof SubSection
+							&& ((SubSection) child).name.equals(subsectionName))
+						return ((SubSection) child).getEntry(entryName);
+			} else
+				for (Object child : getChildren(this))
+					if (child instanceof Entry
+							&& ((Entry) child).name.equals(entryName))
+						return (Entry) child;
+			return null;
+		}
 	}
 
-	private final static class SubSection {
+	private final static class SubSection extends WorkbenchAdapter {
+
+		private final Config config;
 
 		private final Section parent;
 
 		private final String name;
 
-		SubSection(Section parent, String name) {
+		private Entry[] children;
+
+		SubSection(Config config, Section parent, String name) {
+			this.config = config;
 			this.parent = parent;
 			this.name = name;
 		}
@@ -527,9 +720,45 @@ public class ConfigurationEditorComponent {
 				return false;
 			return true;
 		}
+
+		public Object[] getChildren(Object o) {
+			if (children == null) {
+				List<Entry> entries = new ArrayList<Entry>();
+				Set<String> entryNames = config.getNames(parent.name, name);
+				for (String entryName : entryNames) {
+					String[] values = config.getStringList(parent.name, name,
+							entryName);
+					if (values.length == 1)
+						entries.add(new Entry(this, entryName, values[0], -1));
+					else {
+						int index = 0;
+						for (String value : values)
+							entries.add(new Entry(this, entryName, value,
+									index++));
+					}
+				}
+				children = entries.toArray(new Entry[entries.size()]);
+			}
+			return children;
+		}
+
+		public String getLabel(Object o) {
+			return name;
+		}
+
+		public Object getParent(Object object) {
+			return parent;
+		}
+
+		public Entry getEntry(String entryName) {
+			for (Object child : getChildren(this))
+				if (entryName.equals(((Entry) child).name))
+					return (Entry) child;
+			return null;
+		}
 	}
 
-	private final static class Entry {
+	private final static class Entry extends WorkbenchAdapter {
 
 		private final Section sectionparent;
 
@@ -603,17 +832,15 @@ public class ConfigurationEditorComponent {
 					entries = config.getStringList(sectionparent.name, null,
 							name);
 					entries[index] = newValue;
-					config.setStringList(sectionparent.name, null, name, Arrays
-							.asList(entries));
+					config.setStringList(sectionparent.name, null, name,
+							Arrays.asList(entries));
 				} else {
 					entries = config.getStringList(
 							subsectionparent.parent.name,
 							subsectionparent.name, name);
 					entries[index] = newValue;
-					config
-							.setStringList(subsectionparent.parent.name,
-									subsectionparent.name, name, Arrays
-											.asList(entries));
+					config.setStringList(subsectionparent.parent.name,
+							subsectionparent.name, name, Arrays.asList(entries));
 				}
 			}
 		}
@@ -621,9 +848,9 @@ public class ConfigurationEditorComponent {
 		private Config getConfig() {
 			Config config;
 			if (sectionparent != null)
-				config = sectionparent.config;
+				config = sectionparent.parent.config;
 			else
-				config = subsectionparent.parent.config;
+				config = subsectionparent.parent.parent.config;
 			return config;
 		}
 
@@ -701,101 +928,6 @@ public class ConfigurationEditorComponent {
 			} else if (!subsectionparent.equals(other.subsectionparent))
 				return false;
 			return true;
-		}
-	}
-
-	private static final class ConfigEditorContentProvider implements
-			ITreeContentProvider {
-		Config userConfig;
-
-		public Object[] getElements(Object inputElement) {
-			if (userConfig == null)
-				return null;
-			List<Section> sections = new ArrayList<Section>();
-			Set<String> sectionNames = userConfig.getSections();
-			for (String sectionName : sectionNames)
-				sections.add(new Section(userConfig, sectionName));
-			Collections.sort(sections, new Comparator<Section>() {
-
-				public int compare(Section o1, Section o2) {
-					return o1.name.compareTo(o2.name);
-				}
-			});
-			return sections.toArray();
-
-		}
-
-		public void dispose() {
-			userConfig = null;
-		}
-
-		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-			userConfig = (Config) newInput;
-		}
-
-		public Object[] getChildren(Object parentElement) {
-			List<Object> result = new ArrayList<Object>();
-			if (parentElement instanceof Section) {
-				Section section = (Section) parentElement;
-				Set<String> subSectionNames = userConfig
-						.getSubsections(((Section) parentElement).name);
-				for (String subSectionName : subSectionNames)
-					result.add(new SubSection(section, subSectionName));
-
-				Set<String> entryNames = userConfig.getNames(section.name);
-				for (String entryName : entryNames) {
-					String[] values = userConfig.getStringList(section.name,
-							null, entryName);
-					if (values.length == 1)
-						result
-								.add(new Entry(section, entryName, values[0],
-										-1));
-					else {
-						int index = 0;
-						for (String value : values)
-							result.add(new Entry(section, entryName, value,
-									index++));
-					}
-				}
-			}
-			if (parentElement instanceof SubSection) {
-				SubSection subSection = (SubSection) parentElement;
-				Set<String> entryNames = userConfig.getNames(
-						subSection.parent.name, subSection.name);
-				for (String entryName : entryNames) {
-					String[] values = userConfig.getStringList(
-							subSection.parent.name, subSection.name, entryName);
-					if (values.length == 1)
-						result.add(new Entry(subSection, entryName, values[0],
-								-1));
-					else {
-						int index = 0;
-						for (String value : values)
-							result.add(new Entry(subSection, entryName, value,
-									index++));
-					}
-				}
-			}
-			return result.toArray();
-		}
-
-		public Object getParent(Object element) {
-			if (element instanceof Section)
-				return null;
-			if (element instanceof SubSection)
-				return ((SubSection) element).parent;
-			if (element instanceof Entry) {
-				Entry entry = (Entry) element;
-				if (entry.sectionparent != null)
-					return entry.sectionparent;
-				return entry.subsectionparent;
-			}
-			return null;
-		}
-
-		public boolean hasChildren(Object element) {
-			return getChildren(element) != null
-					&& getChildren(element).length > 0;
 		}
 	}
 

@@ -36,7 +36,7 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.credentials.EGitCredentialsProvider;
+import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -128,6 +128,17 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 	/**
+	 * Shows an error. The error is NOT logged.
+	 *
+	 * @param message
+	 *            a localized message
+	 * @param status
+	 */
+	public static void showErrorStatus(String message, IStatus status) {
+		StatusManager.getManager().handle(status, StatusManager.SHOW);
+	}
+
+	/**
 	 * Get the theme used by this plugin.
 	 *
 	 * @return our theme.
@@ -204,6 +215,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	static boolean isActive() {
 		final AtomicBoolean ret = new AtomicBoolean();
 		final Display display = PlatformUI.getWorkbench().getDisplay();
+		if (display.isDisposed())
+			return false;
 		display.syncExec(new Runnable() {
 			public void run() {
 				ret.set(display.getActiveShell() != null);
@@ -318,7 +331,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				ISchedulingRule rule = p.getWorkspace().getRuleFactory().refreshRule(p);
 				try {
 					getJobManager().beginRule(rule, monitor);
-					p.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
+					if(p.exists()) // handle missing projects after branch switch
+						p.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
 				} catch (CoreException e) {
 					handleError(UIText.Activator_refreshFailed, e, false);
 					return new Status(IStatus.ERROR, getPluginId(), e.getMessage());
@@ -547,6 +561,17 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 */
 	public static IStatus createErrorStatus(String message, Throwable throwable) {
 		return new Status(IStatus.ERROR, getPluginId(), message, throwable);
+	}
+
+	/**
+	 * Creates an error status
+	 *
+	 * @param message
+	 *            a localized message
+	 * @return a new Status object
+	 */
+	public static IStatus createErrorStatus(String message) {
+		return new Status(IStatus.ERROR, getPluginId(), message);
 	}
 
 	/**

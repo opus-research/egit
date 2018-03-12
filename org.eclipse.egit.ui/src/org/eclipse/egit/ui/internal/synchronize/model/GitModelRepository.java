@@ -8,110 +8,111 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
-import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
-
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Commit;
+import org.eclipse.egit.core.synchronize.StagedChangeCache;
+import org.eclipse.egit.core.synchronize.WorkingTreeChangeCache;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
-import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.revwalk.RevFlagSet;
 import org.eclipse.jgit.revwalk.RevObject;
-import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Representation of Git repository in Git ChangeSet model.
  */
-public class GitModelRepository extends GitModelObject {
-
-	private final Repository repo;
-
-	private final RevCommit srcRev;
-
-	private final RevCommit dstRev;
-
-	private final IProject[] projects;
-
-	private final boolean includeLocal;
-
-	private GitModelObject[] childrens;
+public class GitModelRepository extends GitModelObjectContainer implements HasProjects {
 
 	private IPath location;
 
+	private final GitSynchronizeData gsd;
+
+	private GitModelObject[] children;
+
 	/**
-	 * @param data
+	 * @param gsd
 	 *            synchronization data
 	 * @throws IOException
-	 * @throws MissingObjectException
 	 */
-	public GitModelRepository(GitSynchronizeData data)
-			throws MissingObjectException, IOException {
+	public GitModelRepository(GitSynchronizeData gsd) throws IOException {
 		super(null);
-		repo = data.getRepository();
-		includeLocal = data.shouldIncludeLocal();
-		Set<IProject> projectSet = data.getProjects();
-		projects = projectSet.toArray(new IProject[projectSet.size()]);
-
-		srcRev = data.getSrcRevCommit();
-		dstRev = data.getDstRevCommit();
+		this.gsd = gsd;
 	}
 
 	@Override
 	public GitModelObject[] getChildren() {
-		if (childrens == null)
-			getChildrenImpl();
+		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
+		Repository repo = gsd.getRepository();
+		RevCommit srcRevCommit = gsd.getSrcRevCommit();
+		RevCommit dstRevCommit = gsd.getDstRevCommit();
+		TreeFilter pathFilter = gsd.getPathFilter();
+		List<Commit> commitCache;
+		if (srcRevCommit != null && dstRevCommit != null)
+			try {
+				commitCache = GitCommitsModelCache.build(repo, srcRevCommit,
+						dstRevCommit, pathFilter);
+			} catch (IOException e) {
+				Activator.logError(e.getMessage(), e);
+				commitCache = null;
+			}
+		else
+			commitCache = null;
+		if (commitCache != null && !commitCache.isEmpty())
+			result.addAll(getListOfCommit(commitCache));
 
-		return childrens;
+		result.addAll(getWorkingChanges());
+		disposeOldChildren();
+		children = result.toArray(new GitModelObjectContainer[result.size()]);
+
+		return children;
 	}
 
 	@Override
 	public String getName() {
-		return repo.getWorkTree().toString();
+		return gsd.getRepository().getWorkTree().toString();
+	}
+
+	public IProject[] getProjects() {
+		return gsd.getProjects().toArray(new IProject[gsd.getProjects().size()]);
 	}
 
 	@Override
-	public IProject[] getProjects() {
-		return projects;
-	}
-
-	/**
-	 * @return repository
-	 */
-	public Repository getRepository() {
-		return repo;
+	public int repositoryHashCode() {
+		return hashCode();
 	}
 
 	/**
 	 * @return source {@link RevObject}
 	 */
 	public ObjectId getSrcRev() {
-		return srcRev;
-	}
-
-	/**
-	 * @return destination {@link RevObject}
-	 */
-	public ObjectId getDstRev() {
-		return dstRev;
+		return gsd.getSrcRevCommit();
 	}
 
 	@Override
 	public IPath getLocation() {
 		if (location == null)
-			location = new Path(repo.getWorkTree().toString());
+			location = new Path(gsd.getRepository().getWorkTree().toString());
 
 		return location;
+	}
+
+	@Override
+	public int getKind() {
+		return Differencer.CHANGE;
 	}
 
 	@Override
@@ -119,46 +120,83 @@ public class GitModelRepository extends GitModelObject {
 		return true;
 	}
 
-	private void getChildrenImpl() {
-		RevWalk rw = new RevWalk(repo);
-		RevFlag localFlag = rw.newFlag("local"); //$NON-NLS-1$
-		RevFlag remoteFlag = rw.newFlag("remote"); //$NON-NLS-1$
-		RevFlagSet allFlags = new RevFlagSet();
-		allFlags.add(localFlag);
-		allFlags.add(remoteFlag);
-		rw.carry(allFlags);
-		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
+	@Override
+	public void dispose() {
+		disposeOldChildren();
+	}
 
-		rw.setRetainBody(true);
-		try {
-			RevCommit srcCommit = rw.parseCommit(srcRev);
-			srcCommit.add(localFlag);
-			rw.markStart(srcCommit);
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this)
+			return true;
 
-			RevCommit dstCommit = rw.parseCommit(dstRev);
-			dstCommit.add(remoteFlag);
-			rw.markStart(dstCommit);
-
-			for (RevCommit nextCommit : rw) {
-				if (nextCommit.hasAll(allFlags))
-					break;
-
-				if (nextCommit.has(localFlag))
-					result.add(new GitModelCommit(this, nextCommit, RIGHT));
-				else if (nextCommit.has(remoteFlag))
-					result.add(new GitModelCommit(this, nextCommit, LEFT));
-			}
-
-			if (includeLocal) {
-				result.add(new GitModelCache(this, srcCommit));
-				result.add(new GitModelWorkingTree(this, srcCommit));
-			}
-		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
+		if (obj instanceof GitModelRepository) {
+			File objWorkTree = ((GitModelRepository) obj).gsd.getRepository()
+					.getWorkTree();
+			return objWorkTree.equals(gsd.getRepository().getWorkTree());
 		}
 
+		return false;
+	}
 
-		childrens = result.toArray(new GitModelObjectContainer[result.size()]);
+	@Override
+	public int hashCode() {
+		return gsd.getRepository().getWorkTree().hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return "ModelRepository[" + gsd.getRepository().getWorkTree() + "]"; //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private List<GitModelObjectContainer> getListOfCommit(List<Commit> commitCache) {
+		Repository repo = gsd.getRepository();
+		Set<IProject> projectsSet = gsd.getProjects();
+		IProject[] projects = projectsSet.toArray(new IProject[projectsSet.size()]);
+		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
+
+		for (Commit commit : commitCache)
+			result.add(new GitModelCommit(this, repo, commit, projects));
+
+		return result;
+	}
+
+	private List<GitModelObjectContainer> getWorkingChanges() {
+		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
+		if (gsd.shouldIncludeLocal()) {
+			Repository repo = gsd.getRepository();
+			Map<String, Change> stagedChanges = StagedChangeCache.build(repo);
+			GitModelCache gitCache = new GitModelCache(this, repo,
+					stagedChanges);
+			int gitCacheLen = gitCache.getChildren().length;
+
+			Map<String, Change> workingChanges = WorkingTreeChangeCache.build(repo);
+			GitModelWorkingTree gitWorkingTree = new GitModelWorkingTree(this,
+					repo, workingChanges);
+			int gitWorkingTreeLen = gitWorkingTree.getChildren().length;
+
+			if (gitCacheLen > 0 || gitWorkingTreeLen > 0) {
+				result.add(gitCache);
+				result.add(gitWorkingTree);
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * @return repository
+	 */
+	public Repository getRepository() {
+		return gsd.getRepository();
+	}
+
+	private void disposeOldChildren() {
+		if (children == null)
+			return;
+		for (GitModelObject child : children)
+			child.dispose();
+
 	}
 
 }

@@ -16,16 +16,17 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>0.11.0-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.ui.test</artifactId>
   <packaging>eclipse-test-plugin</packaging>
 
-  <name>EGit UI Test Plug-in (Incubation)</name>
+  <name>EGit UI Test Plug-in</name>
 
   <properties>
     <local-egit-site>file:/${basedir}/../org.eclipse.egit-updatesite/target/site</local-egit-site>
+    <uitest.vmparams>-Dorg.eclipse.swtbot.search.timeout=10000 -Xmx1024m -XX:MaxPermSize=384m</uitest.vmparams>
   </properties>
 
   <repositories>
@@ -57,7 +58,7 @@
         </os>
       </activation>
       <properties>
-        <ui.test.vmargs>-Xmx512m -XX:MaxPermSize=256m -XstartOnFirstThread</ui.test.vmargs>
+        <ui.test.vmargs>${uitest.vmparams} -XstartOnFirstThread</ui.test.vmargs>
       </properties>
     </profile>
     <profile>
@@ -69,7 +70,7 @@
         </os>
       </activation>
       <properties>
-        <ui.test.vmargs>-Xmx512m -XX:MaxPermSize=256m</ui.test.vmargs>
+        <ui.test.vmargs>${uitest.vmparams}</ui.test.vmargs>
       </properties>
     </profile>
   </profiles>
@@ -77,12 +78,12 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.sonatype.tycho</groupId>
-        <artifactId>maven-osgi-test-plugin</artifactId>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-surefire-plugin</artifactId>
         <version>${tycho-version}</version>
         <configuration>
           <testSuite>org.eclipse.egit.ui.test</testSuite>
-          <testClass>org.eclipse.egit.ui.test.AllTests</testClass>
+          <testClass>org.eclipse.egit.ui.test.AllSWTAndNonSWTTests</testClass>
           <useUIHarness>true</useUIHarness>
           <useUIThread>false</useUIThread>
           <product>org.eclipse.sdk.ide</product>
@@ -91,35 +92,53 @@
           <dependencies>
             <dependency>
               <type>p2-installable-unit</type>
-              <artifactId>org.eclipse.pde.feature.group</artifactId>
-              <version>${platform-version}</version>
+              <artifactId>org.eclipse.egit.feature.group</artifactId>
+              <version>2.0.0</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
-              <artifactId>org.eclipse.egit.feature.group</artifactId>
-              <version>[0.11.0,0.12.0)</version>
+              <artifactId>org.eclipse.jgit.feature.group</artifactId>
+              <version>2.0.0</version>
+            </dependency>
+            <dependency>
+              <type>p2-installable-unit</type>
+              <artifactId>org.eclipse.pde.feature.group</artifactId>
+              <version>${platform-version}</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
               <artifactId>org.eclipse.cvs.feature.group</artifactId>
               <version>[1.1.2,2.0.0)</version>
             </dependency>
-            <dependency>
-              <type>p2-installable-unit</type>
-              <artifactId>org.eclipse.jgit.feature.group</artifactId>
-              <version>[0.11.0,0.12.0)</version>
-            </dependency>
            </dependencies>
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pmd-plugin</artifactId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.7.2</version>
+        <executions>
+          <execution>
+            <phase>test</phase>
+            <configuration>
+              <testClassesDirectory>${project.build.outputDirectory}</testClassesDirectory>
+              <includes>
+                <include>**/AllJUnitTests.java</include>
+              </includes>
+            </configuration>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 </project>

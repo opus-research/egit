@@ -10,17 +10,18 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
+import org.eclipse.jgit.transport.JschConfigSessionFactory;
+import org.eclipse.jgit.transport.OpenSshConfig;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.jsch.core.IJSchService;
 import org.eclipse.jsch.ui.UserInfoPrompter;
-import org.eclipse.jgit.transport.OpenSshConfig;
-import org.eclipse.jgit.transport.SshConfigSessionFactory;
-import org.eclipse.jgit.util.FS;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
+import com.jcraft.jsch.UserInfo;
 
-class EclipseSshSessionFactory extends SshConfigSessionFactory {
+class EclipseSshSessionFactory extends JschConfigSessionFactory {
 	private final IJSchService provider;
 
 	EclipseSshSessionFactory(final IJSchService p) {
@@ -57,7 +58,8 @@ class EclipseSshSessionFactory extends SshConfigSessionFactory {
 
 	@Override
 	protected void configure(final OpenSshConfig.Host hc, final Session session) {
-		if (!hc.isBatchMode())
+		UserInfo userInfo = session.getUserInfo();
+		if (!hc.isBatchMode() && userInfo == null)
 			new UserInfoPrompter(session);
 	}
 }

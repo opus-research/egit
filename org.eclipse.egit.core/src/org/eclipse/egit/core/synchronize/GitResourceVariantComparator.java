@@ -84,18 +84,18 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 				closeStream(remoteStream);
 			}
 		} else if (local instanceof IContainer) {
-			GitResourceVariant gitVariant = (GitResourceVariant) remote;
+			GitRemoteFolder gitVariant = (GitRemoteFolder) remote;
 			if (!remote.isContainer() || (local.exists() ^ gitVariant.exists()))
 				return false;
 
-			return local.getFullPath().equals(gitVariant.getFullPath());
+			return local.getLocation().toString().equals(gitVariant.getCachePath());
 		}
 		return false;
 	}
 
 	public boolean compare(IResourceVariant base, IResourceVariant remote) {
-		GitResourceVariant gitBase = (GitResourceVariant) base;
-		GitResourceVariant gitRemote = (GitResourceVariant) remote;
+		GitRemoteResource gitBase = (GitRemoteResource) base;
+		GitRemoteResource gitRemote = (GitRemoteResource) remote;
 
 		boolean exists = gitBase.exists() && gitRemote.exists();
 		boolean equalType = !(gitBase.isContainer() ^ gitRemote.isContainer());
@@ -111,20 +111,24 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 
 	private InputStream getLocal(IResource resource) throws CoreException {
 		if (gsd.getData(resource.getProject().getName()).shouldIncludeLocal())
-			return ((IFile) resource).getContents();
+			return getSynchronizedFile(resource).getContents();
 		else
 			try {
-				if (resource.getType() == IResource.FILE) {
-					IFile file = ((IFile) resource);
-					if (!file.isSynchronized(0))
-						file.refreshLocal(0, null);
-
-					return file.getContents();
-				} else
+				if (resource.getType() == IResource.FILE)
+					return getSynchronizedFile(resource).getContents();
+				else
 					return new ByteArrayInputStream(new byte[0]);
 			} catch (TeamException e) {
 				throw new CoreException(e.getStatus());
 			}
+	}
+
+	private IFile getSynchronizedFile(IResource resource) throws CoreException {
+		IFile file = ((IFile) resource);
+		if (!file.isSynchronized(0))
+			file.refreshLocal(0, null);
+
+		return file;
 	}
 
 	private void logException(Exception e) {

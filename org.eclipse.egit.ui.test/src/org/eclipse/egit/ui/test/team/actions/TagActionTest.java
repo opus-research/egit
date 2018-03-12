@@ -31,6 +31,7 @@ import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -83,9 +84,9 @@ public class TagActionTest extends LocalRepositoryTestCase {
 	@Test
 	public void testTagDialogShowExistingTags() throws Exception {
 		SWTBotShell tagDialog = openTagDialog();
-		int index = tagDialog.bot().tableWithLabel(
-				UIText.CreateTagDialog_existingTags).indexOf("SomeTag");
-		assertTrue("Tag is not showing", index >= 0);
+		SWTBotTable table = tagDialog.bot().tableWithLabel(
+				UIText.CreateTagDialog_existingTags);
+		TestUtil.waitUntilTableHasRowWithText(tagDialog.bot(), table, "SomeTag", 10000);
 	}
 
 	@Test
@@ -111,9 +112,12 @@ public class TagActionTest extends LocalRepositoryTestCase {
 		SWTBotTree projectExplorerTree = bot.viewById(
 				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
-		String menuString = util.getPluginLocalizedValue("TagAction_label");
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
-				menuString);
+
+		String[] menuPath = new String[] {
+				util.getPluginLocalizedValue("TeamMenu.label"),
+				util.getPluginLocalizedValue("AdvancedMenu.label"),
+				util.getPluginLocalizedValue("TagAction_label") };
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
 		SWTBotShell dialog = bot.shell(UIText.CreateTagDialog_NewTag);
 		return dialog;
 	}

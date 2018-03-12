@@ -18,8 +18,10 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
-
+import org.eclipse.egit.ui.internal.operations.GitScopeUtil;
+import org.eclipse.ui.IWorkbenchPart;
 
 /**
  * Action for adding a resource to the git index
@@ -33,7 +35,19 @@ public class AddToIndexActionHandler extends RepositoryActionHandler {
 		final IResource[] sel = getSelectedResources(event);
 		if (sel.length == 0)
 			return null;
-		final AddToIndexOperation operation = new AddToIndexOperation(sel);
+
+		IResource[] resourcesInScope;
+		try {
+			IWorkbenchPart part = getPart(event);
+			resourcesInScope = GitScopeUtil.getRelatedChanges(part, sel);
+		} catch (InterruptedException e) {
+			// ignore, we will not add the files in case the user
+			// cancels the scope operation
+			return null;
+		}
+
+		final AddToIndexOperation operation = new AddToIndexOperation(
+				resourcesInScope);
 		String jobname = UIText.AddToIndexAction_addingFiles;
 		Job job = new Job(jobname) {
 			@Override
@@ -45,6 +59,14 @@ public class AddToIndexActionHandler extends RepositoryActionHandler {
 							.getMessage(), e);
 				}
 				return Status.OK_STATUS;
+			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				if (JobFamilies.ADD_TO_INDEX.equals(family))
+					return true;
+
+				return super.belongsTo(family);
 			}
 		};
 		job.setUser(true);

@@ -18,6 +18,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.Constants;
@@ -48,6 +49,7 @@ import org.eclipse.team.core.Team;
  * @see org.eclipse.jgit.treewalk.TreeWalk
  */
 public class ContainerTreeIterator extends WorkingTreeIterator {
+
 	private static String computePrefix(final IContainer base) {
 		final RepositoryMapping rm = RepositoryMapping.getMapping(base);
 		if (rm == null)
@@ -76,6 +78,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		super(computePrefix(base), repository.getConfig().get(WorkingTreeOptions.KEY));
 		node = base;
 		init(entries());
+		initRootIterator(repository);
 	}
 
 	/**
@@ -95,6 +98,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		super("", repository.getConfig().get(WorkingTreeOptions.KEY));  //$NON-NLS-1$
 		node = root;
 		init(entries());
+		initRootIterator(repository);
 	}
 
 	/**
@@ -160,12 +164,12 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 	}
 
 	private boolean isEntryIgnoredByTeamProvider(IResource resource) {
-		if (resource instanceof IWorkspaceRoot)
+		if (resource.getType() == IResource.ROOT
+				|| resource.getType() == IResource.PROJECT)
 			return false;
 		if (Team.isIgnoredHint(resource))
 			return true;
 		return isEntryIgnoredByTeamProvider(resource.getParent());
-
 	}
 
 	/**
@@ -183,7 +187,8 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 			switch (f.getType()) {
 			case IResource.FILE:
-				if (FS.DETECTED.canExecute(asFile()))
+				if (FS.DETECTED.supportsExecute()
+						&& FS.DETECTED.canExecute(asFile()))
 					mode = FileMode.EXECUTABLE_FILE;
 				else
 					mode = FileMode.REGULAR_FILE;
@@ -218,12 +223,11 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 		@Override
 		public long getLength() {
-			if (length < 0) {
+			if (length < 0)
 				if (rsrc instanceof IFile)
 					length = asFile().length();
 				else
 					length = 0;
-			}
 			return length;
 		}
 
@@ -234,7 +238,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 		@Override
 		public InputStream openInputStream() throws IOException {
-			if (rsrc instanceof IFile) {
+			if (rsrc.getType() == IResource.FILE)
 				try {
 					return ((IFile) rsrc).getContents(true);
 				} catch (CoreException err) {
@@ -242,7 +246,6 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 					ioe.initCause(err);
 					throw ioe;
 				}
-			}
 			throw new IOException("Not a regular file: " + rsrc);  //$NON-NLS-1$
 		}
 
@@ -258,5 +261,17 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		private File asFile() {
 			return ((IFile) rsrc).getLocation().toFile();
 		}
+	}
+
+	private File asFile() {
+		final IPath location = node.getLocation();
+		return location != null ? location.toFile() : null;
+	}
+
+	protected byte[] idSubmodule(Entry e) {
+		File nodeFile = asFile();
+		if (nodeFile != null)
+			return idSubmodule(nodeFile, e);
+		return super.idSubmodule(e);
 	}
 }

@@ -13,6 +13,7 @@ import java.io.File;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.ui.common.RepoPropertiesPage;
 import org.eclipse.egit.ui.common.RepoRemoteBranchesPage;
+import org.eclipse.egit.ui.test.TestUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -20,16 +21,17 @@ public class GitCloneWizardHttpTest extends GitCloneWizardTestBase {
 
 	@BeforeClass
 	public static void setup() throws Exception {
+		TestUtil.disableProxy();
 		r = new SampleTestRepository(NUMBER_RANDOM_COMMITS, true);
 	}
 
 	@Test
 	public void canCloneARemoteRepo() throws Exception {
-		destRepo = new File(ResourcesPlugin.getWorkspace()
-				.getRoot().getLocation().toFile(), "test1");
+		destRepo = new File(ResourcesPlugin.getWorkspace().getRoot()
+				.getLocation().toFile(), "test" + System.nanoTime());
 
 		importWizard.openWizard();
-		RepoPropertiesPage propertiesPage = importWizard.openCloneWizard();
+		RepoPropertiesPage propertiesPage = importWizard.openRepoPropertiesPage();
 		propertiesPage.setURI(r.getUri());
 		propertiesPage.setUser("agitter");
 		propertiesPage.setPassword("letmein");

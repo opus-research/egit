@@ -12,12 +12,12 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceRuleFactory;
@@ -33,19 +33,23 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheCheckout;
-import org.eclipse.jgit.dircache.DirCacheEntry;
+import org.eclipse.jgit.api.CheckoutCommand;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * The operation discards changes on a set of resources. In case of a folder
- * resource all file resources in the sub tree are processed.
+ * resource all file resources in the sub tree are processed. Untracked files
+ * are ignored.
  */
 public class DiscardChangesOperation implements IEGitOperation {
+
+	String revision;
 
 	IResource[] files;
 
@@ -57,11 +61,26 @@ public class DiscardChangesOperation implements IEGitOperation {
 	 * @param files
 	 */
 	public DiscardChangesOperation(IResource[] files) {
-		this.files = files;
-		schedulingRule = calcRefreshRule(files);
+		this(files, null);
 	}
 
-	/* (non-Javadoc)
+	/**
+	 * Construct a {@link DiscardChangesOperation} object.
+	 *
+	 * @param files
+	 * @param revision
+	 */
+	public DiscardChangesOperation(IResource[] files, String revision) {
+		this.files = new IResource[files.length];
+		System.arraycopy(files, 0, this.files, 0, files.length);
+		this.revision = revision;
+		schedulingRule = MultiRule.combine(calcRefreshRule(files),
+				RuleUtil.getRuleForRepositories(files));
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
 	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
 	 */
 	public ISchedulingRule getSchedulingRule() {
@@ -100,41 +119,33 @@ public class DiscardChangesOperation implements IEGitOperation {
 
 	private void discardChanges(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(CoreText.DiscardChangesOperation_discardingChanges, 2);
-		boolean errorOccured = false;
-		List<IResource> allFiles = new ArrayList<IResource>();
-		// find all files
+		boolean errorOccurred = false;
 		for (IResource res : files) {
-			allFiles.addAll(getAllMembers(res));
-		}
-		for (IResource res : allFiles) {
 			Repository repo = getRepository(res);
 			if (repo == null) {
 				IStatus status = Activator.error(
 						CoreText.DiscardChangesOperation_repoNotFound, null);
 				throw new CoreException(status);
 			}
-			try {
-				discardChange(res, repo);
-			} catch (IOException e) {
-				errorOccured = true;
-				String message = NLS.bind(
-						CoreText.DiscardChangesOperation_discardFailed, res
-								.getFullPath());
-				Activator.logError(message, e);
-			}
+		}
+		try {
+			discardChanges();
+		} catch (GitAPIException e) {
+			errorOccurred = true;
+			Activator.logError(CoreText.DiscardChangesOperation_discardFailed, e);
 		}
 		monitor.worked(1);
 		try {
 			ProjectUtil.refreshResources(files, new SubProgressMonitor(monitor,
 					1));
 		} catch (CoreException e) {
-			errorOccured = true;
+			errorOccurred = true;
 			Activator.logError(CoreText.DiscardChangesOperation_refreshFailed,
 					e);
 		}
 		monitor.worked(1);
 		monitor.done();
-		if (errorOccured) {
+		if (errorOccurred) {
 			IStatus status = Activator.error(
 					CoreText.DiscardChangesOperation_discardFailedSeeLog, null);
 			throw new CoreException(status);
@@ -151,52 +162,20 @@ public class DiscardChangesOperation implements IEGitOperation {
 			return null;
 	}
 
-	private void discardChange(IResource res, Repository repository)
-			throws IOException {
-		String resRelPath = RepositoryMapping.getMapping(res)
-				.getRepoRelativePath(res);
-		DirCache dc = repository.lockDirCache();
-		DirCacheEntry entry = dc.getEntry(resRelPath);
-		File file = new File(res.getLocationURI());
-		DirCacheCheckout.checkoutEntry(repository, file, entry);
-		dc.unlock();
-	}
-
-	/**
-	 * @param res
-	 *            an IResource
-	 * @return An ArrayList with all members of this IResource of arbitrary
-	 *         depth. This will return just the argument res if it is a file.
-	 */
-	private ArrayList<IResource> getAllMembers(IResource res) {
-		ArrayList<IResource> ret = new ArrayList<IResource>();
-		if (res.getLocation().toFile().isFile()) {
-			ret.add(res);
-		} else {
-			getAllMembersHelper(res, ret);
-		}
-		return ret;
-	}
-
-	private void getAllMembersHelper(IResource res, ArrayList<IResource> ret) {
-		if (res instanceof IContainer) {
-			ArrayList<IResource> tmp = new ArrayList<IResource>();
-			IContainer cont = (IContainer) res;
-			try {
-				for (IResource r : cont.members()) {
-					if (r.getLocation().toFile().isFile()) {
-						tmp.add(r);
-					} else {
-						getAllMembersHelper(r, tmp);
-					}
-				}
-			} catch (CoreException e) {
-				// thrown by members()
-				// ignore children in case parent resource no longer accessible
-				return;
-			}
-
-			ret.addAll(tmp);
+	private void discardChanges() throws GitAPIException {
+		Map<Repository, Collection<String>> pathsByRepository = ResourceUtil
+				.splitResourcesByRepository(files);
+		for (Entry<Repository, Collection<String>> entry : pathsByRepository.entrySet()) {
+			Repository repository = entry.getKey();
+			Collection<String> paths = entry.getValue();
+			CheckoutCommand checkoutCommand = new Git(repository).checkout();
+			checkoutCommand.setStartPoint(this.revision);
+			if (!paths.isEmpty())
+				for (String path : paths)
+					checkoutCommand.addPath(path);
+			else
+				checkoutCommand.setAllPaths(true);
+			checkoutCommand.call();
 		}
 	}
 

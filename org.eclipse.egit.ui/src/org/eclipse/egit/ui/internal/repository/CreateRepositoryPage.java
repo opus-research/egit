@@ -12,8 +12,13 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
@@ -34,16 +39,22 @@ import org.eclipse.swt.widgets.Text;
  * Asks for a directory and whether to create a bare repository
  */
 public class CreateRepositoryPage extends WizardPage {
+	private final boolean hideBare;
 
 	private Text directoryText;
+
+	private Text nameText;
 
 	private Button bareButton;
 
 	/**
 	 * Constructs this page
+	 *
+	 * @param hideBareOption
 	 */
-	public CreateRepositoryPage() {
+	public CreateRepositoryPage(boolean hideBareOption) {
 		super(CreateRepositoryPage.class.getName());
+		this.hideBare = hideBareOption;
 		setTitle(UIText.CreateRepositoryPage_PageTitle);
 		setMessage(UIText.CreateRepositoryPage_PageMessage);
 		// we must at least enter the directory
@@ -56,8 +67,10 @@ public class CreateRepositoryPage extends WizardPage {
 		Label directoryLabel = new Label(main, SWT.NONE);
 		directoryLabel.setText(UIText.CreateRepositoryPage_DirectoryLabel);
 		directoryText = new Text(main, SWT.BORDER);
-		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).grab(true,
-				false).applyTo(directoryText);
+		directoryText.setText(Activator.getDefault().getPreferenceStore()
+				.getString(UIPreferences.DEFAULT_REPO_DIR));
+		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER)
+				.grab(true, false).applyTo(directoryText);
 		Button browseButton = new Button(main, SWT.PUSH);
 		browseButton.setText(UIText.CreateRepositoryPage_BrowseButton);
 		browseButton.addSelectionListener(new SelectionAdapter() {
@@ -75,39 +88,72 @@ public class CreateRepositoryPage extends WizardPage {
 					directoryText.setText(result);
 			}
 		});
-		bareButton = new Button(main, SWT.CHECK);
-		bareButton.setText(UIText.CreateRepositoryPage_BareCheckbox);
-		GridDataFactory.fillDefaults().indent(10, 0).span(3, 1).applyTo(bareButton);
+
+		Label nameLabel = new Label(main, SWT.NONE);
+		nameLabel.setText(UIText.CreateRepositoryPage_RepositoryNameLabel);
+		nameText = new Text(main, SWT.BORDER);
+		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER)
+				.grab(true, false).applyTo(nameText);
+
+		if (!hideBare) {
+			bareButton = new Button(main, SWT.CHECK);
+			bareButton.setText(UIText.CreateRepositoryPage_BareCheckbox);
+			GridDataFactory.fillDefaults().indent(10, 0).span(3, 1)
+					.applyTo(bareButton);
+		}
+
 		directoryText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
 		});
+		nameText.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				checkPage();
+			}
+		});
+
 		setControl(main);
+		nameText.setFocus();
 	}
 
 	/**
-	 * @return the directory where to create the Repository
+	 * @return the directory where to create the Repository (with operating
+	 *         system specific path separators)
 	 */
 	public String getDirectory() {
-		return directoryText.getText();
+		IPath path = new Path(directoryText.getText()).append(nameText.getText());
+		return path.toOSString();
 	}
 
 	/**
 	 * @return <code>true</code> if a bare Repository is to be created
 	 */
 	public boolean getBare() {
-		return bareButton.getSelection();
+		return bareButton != null && bareButton.getSelection();
 	}
 
 	void checkPage() {
 		setErrorMessage(null);
 		try {
-			String dir = directoryText.getText();
-			if (dir.length() == 0) {
+			String parentDir = directoryText.getText();
+			if (parentDir.length() == 0) {
 				setErrorMessage(UIText.CreateRepositoryPage_PleaseSelectDirectoryMessage);
 				return;
 			}
+			String name = nameText.getText();
+			if (name.length() == 0) {
+				setErrorMessage(UIText.CreateRepositoryPage_MissingNameMessage);
+				return;
+			}
+
+			IStatus status = ResourcesPlugin.getWorkspace().validateName(name, IResource.FOLDER);
+			if (!status.isOK()){
+				setErrorMessage(status.getMessage());
+				return;
+			}
+
+			String dir = getDirectory();
 			File testFile = new File(dir);
 			IPath path = new Path(dir);
 			if (!path.isAbsolute()) {

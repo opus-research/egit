@@ -11,6 +11,7 @@
 package org.eclipse.egit.core.op;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -28,9 +29,12 @@ import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
 import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.osgi.util.NLS;
@@ -85,13 +89,17 @@ public class MergeOperation implements IEGitOperation {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
 			public void run(IProgressMonitor mymonitor) throws CoreException {
-				IProject[] validProjects = ProjectUtil.getValidProjects(repository);
+				IProject[] validProjects = ProjectUtil.getValidOpenProjects(repository);
 				mymonitor.beginTask(NLS.bind(CoreText.MergeOperation_ProgressMerge, refName), 3);
 				Git git = new Git(repository);
 				mymonitor.worked(1);
 				MergeCommand merge;
 				try {
-					merge = git.merge().include(repository.getRef(refName));
+					Ref ref = repository.getRef(refName);
+					if (ref != null)
+						merge = git.merge().include(ref);
+					else
+						merge = git.merge().include(ObjectId.fromString(refName));
 				} catch (IOException e) {
 					throw new TeamException(CoreText.MergeOperation_InternalError, e);
 				}
@@ -109,6 +117,18 @@ public class MergeOperation implements IEGitOperation {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedNoHead, e);
 				} catch (ConcurrentRefUpdateException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedRefUpdate, e);
+				} catch (CheckoutConflictException e) {
+					StringBuilder builder = new StringBuilder();
+					for (String f : e.getConflictingPaths()) {
+						builder.append("\n"); //$NON-NLS-1$
+						builder.append(f);
+					}
+					throw new TeamException(
+								new Status(
+									IStatus.INFO,
+									Activator.getPluginId(),
+									MessageFormat.format(CoreText.MergeOperation_CheckoutConflict,
+									builder.toString())));
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
 				} finally {

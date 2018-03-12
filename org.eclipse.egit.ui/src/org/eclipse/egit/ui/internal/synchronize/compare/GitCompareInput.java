@@ -19,12 +19,12 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
-import org.eclipse.egit.ui.internal.LocalResourceTypedElement;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
 import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
 import org.eclipse.team.ui.mapping.SaveableComparison;
 
@@ -88,7 +88,7 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 		this.remoteCommit = remoteDataSource.getRevCommit();
 		this.ancestorCommit = ancestroDataSource.getRevCommit();
 		this.name = gitPath.lastIndexOf('/') < 0 ? gitPath : gitPath
-				.substring(gitPath.lastIndexOf('/'));
+				.substring(gitPath.lastIndexOf('/') + 1);
 	}
 
 	public String getName() {
@@ -115,12 +115,12 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 
 	public ITypedElement getLeft() {
 		return CompareUtils.getFileRevisionTypedElement(gitPath, baseCommit,
-				repo, remoteId);
+				repo, baseId);
 	}
 
 	public ITypedElement getRight() {
 		return CompareUtils.getFileRevisionTypedElement(gitPath, remoteCommit,
-				repo, baseId);
+				repo, remoteId);
 	}
 
 	public void addCompareInputChangeListener(
@@ -163,7 +163,11 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 		return false;
 	}
 
-	private String getFileRevisionLabel(ITypedElement element) {
+	/**
+	 * @param element
+	 * @return compare editor description
+	 */
+	public static String getFileRevisionLabel(ITypedElement element) {
 		if (element instanceof FileRevisionTypedElement) {
 			FileRevisionTypedElement castElement = (FileRevisionTypedElement) element;
 			if (INDEX.equals(castElement.getContentIdentifier()))

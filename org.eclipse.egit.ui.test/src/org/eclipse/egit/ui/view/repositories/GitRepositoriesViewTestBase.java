@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.view.repositories;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -33,13 +32,12 @@ import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
-import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
+import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
-import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -47,7 +45,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.After;
@@ -58,21 +55,17 @@ import org.junit.After;
 public abstract class GitRepositoriesViewTestBase extends
 		LocalRepositoryTestCase {
 
-	protected static final RepositoriesViewLabelProvider labelProvider = new RepositoriesViewLabelProvider();
-
 	// test utilities
 	protected static final TestUtil myUtil = new TestUtil();
+
+	// the human-readable view name
+	protected final static String viewName = myUtil
+			.getPluginLocalizedValue("GitRepositoriesView_name");
 
 	protected static final GitRepositoriesViewTestUtils myRepoViewUtil = new GitRepositoriesViewTestUtils();
 
 	// the "Git Repositories View" bot
 	private SWTBotView viewbot;
-
-	// the human-readable view name
-	protected final static String viewName = myUtil.getPluginLocalizedValue("GitRepositoriesView_name");
-
-	// the human readable Git category
-	private final static String gitCategory = myUtil.getPluginLocalizedValue("GitCategory_name");
 
 	/**
 	 * remove all configured repositories from the view
@@ -86,10 +79,9 @@ public abstract class GitRepositoriesViewTestBase extends
 
 		File gitDir = new File(new File(getTestDirectory(), REPO1),
 				Constants.DOT_GIT);
-		gitDir.mkdir();
 		Repository myRepository = lookupRepository(gitDir);
 		myRepository.create();
-		
+
 		// TODO Bug: for some reason, this seems to be required
 		myRepository.getConfig().setString(ConfigConstants.CONFIG_CORE_SECTION,
 				null, ConfigConstants.CONFIG_KEY_REPO_FORMAT_VERSION, "0");
@@ -149,9 +141,9 @@ public abstract class GitRepositoriesViewTestBase extends
 		untracked.addAll(Arrays.asList(commitables));
 		// commit to stable
 		CommitOperation op = new CommitOperation(commitables,
-				new ArrayList<IFile>(), untracked,
-				"Test Author <test.author@test.com>",
-				"Test Committer <test.commiter@test.com>", "Initial commit");
+				untracked, "Test Author <test.author@test.com>",
+				"Test Committer <test.commiter@test.com>",
+				"Initial commit");
 		op.execute(null);
 
 		// now create a stable branch (from master)
@@ -182,10 +174,8 @@ public abstract class GitRepositoriesViewTestBase extends
 
 		myRepository.getConfig().save();
 		// and push
-		PushConfiguredRemoteAction pa = new PushConfiguredRemoteAction(
-				myRepository, "push");
-
-		pa.run(null, false);
+		PushOperationUI pa = new PushOperationUI(myRepository, "push", 0, false);
+		pa.execute(null);
 		TestUtil.joinJobs(JobFamilies.PUSH);
 		try {
 			// delete the stable branch again
@@ -225,15 +215,7 @@ public abstract class GitRepositoriesViewTestBase extends
 
 	protected SWTBotView getOrOpenView() throws Exception {
 		if (viewbot == null) {
-			bot.menu("Window").menu("Show View").menu("Other...").click();
-			SWTBotShell shell = bot.shell("Show View").activate();
-			shell.bot().tree().expandNode(gitCategory).getNode(viewName)
-					.select();
-			shell.bot().button(IDialogConstants.OK_LABEL).click();
-
-			viewbot = bot.viewByTitle(viewName);
-
-			assertNotNull("Repositories View should not be null", viewbot);
+			viewbot = myRepoViewUtil.openRepositoriesView(bot);
 		} else
 			viewbot.setFocus();
 		return viewbot;
@@ -255,8 +237,7 @@ public abstract class GitRepositoriesViewTestBase extends
 
 	protected void assertEmpty() throws Exception {
 		final SWTBotView view = getOrOpenView();
-		final SWTBotTreeItem[] items = view.bot().tree().getAllItems();
-		assertTrue("Tree should have no items", items.length == 0);
+		view.bot().label(UIText.RepositoriesView_messsageEmpty);
 	}
 
 	protected void refreshAndWait() throws Exception {
