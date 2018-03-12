@@ -382,7 +382,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			reader = new FileReader(mergeMsg);
 			BufferedReader br = new BufferedReader(reader);
 			try {
-				StringBuilder message = new StringBuilder();
+				StringBuffer message = new StringBuffer();
 				String s;
 				String newLine = newLine();
 				while ((s = br.readLine()) != null) {

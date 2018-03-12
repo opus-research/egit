@@ -17,7 +17,6 @@ import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.transport.RemoteConfig;
 
 /**
@@ -36,9 +35,6 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 		if (property.equals("isBare")) //$NON-NLS-1$
 			return node.getRepository().isBare();
 
-		if (property.equals("isSafe")) //$NON-NLS-1$
-			return node.getRepository().getRepositoryState() == RepositoryState.SAFE;
-
 		if (property.equals("isRefCheckedOut")) { //$NON-NLS-1$
 			if (!(node.getObject() instanceof Ref))
 				return false;
@@ -52,8 +48,8 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 				else {
 					String leafname = ref.getLeaf().getName();
 					if (leafname.startsWith(Constants.R_REFS)
-							&& leafname.equals(node.getRepository()
-									.getFullBranch()))
+							&& leafname.equals(
+									node.getRepository().getFullBranch()))
 						return true;
 					else
 						ref.getLeaf().getObjectId().equals(
@@ -104,7 +100,7 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 		}
 		if (property.equals("canMerge")) { //$NON-NLS-1$
 			Repository rep = node.getRepository();
-			if (rep.getRepositoryState() != RepositoryState.SAFE)
+			if (rep.isBare())
 				return false;
 			try {
 				String branch = rep.getFullBranch();
@@ -115,14 +111,6 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 				return false;
 			}
 		}
-
-		if (property.equals("isRebasing")) //$NON-NLS-1$
-			switch (node.getRepository().getRepositoryState()) {
-			case REBASING_MERGE:
-				return true;
-			default:
-				return false;
-			}
 		return false;
 	}
 }
