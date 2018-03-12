@@ -39,7 +39,7 @@ public class SubmoduleAddTest extends GitRepositoriesViewTestBase {
 
 	private static final String ADD_SUBMODULE_CONTEXT_MENU_LABEL = "SubmoduleAddCommand.label";
 
-	private File repositoryFile;
+	private static File repositoryFile;
 
 	@Before
 	public void before() throws Exception {
