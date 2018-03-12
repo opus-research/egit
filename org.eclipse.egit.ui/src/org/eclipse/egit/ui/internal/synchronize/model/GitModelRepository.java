@@ -43,8 +43,6 @@ public class GitModelRepository extends GitModelObject {
 
 	private final IProject[] projects;
 
-	private final boolean includeLocal;
-
 	private GitModelObject[] childrens;
 
 	private IPath location;
@@ -59,7 +57,6 @@ public class GitModelRepository extends GitModelObject {
 			throws MissingObjectException, IOException {
 		super(null);
 		repo = data.getRepository();
-		includeLocal = data.shouldIncludeLocal();
 		Set<IProject> projectSet = data.getProjects();
 		projects = projectSet.toArray(new IProject[projectSet.size()]);
 
@@ -119,6 +116,7 @@ public class GitModelRepository extends GitModelObject {
 		return true;
 	}
 
+
 	private void getChildrenImpl() {
 		RevWalk rw = new RevWalk(repo);
 		RevFlag localFlag = rw.newFlag("local"); //$NON-NLS-1$
@@ -127,7 +125,7 @@ public class GitModelRepository extends GitModelObject {
 		allFlags.add(localFlag);
 		allFlags.add(remoteFlag);
 		rw.carry(allFlags);
-		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
+		List<GitModelCommit> result = new ArrayList<GitModelCommit>();
 
 		rw.setRetainBody(true);
 		try {
@@ -148,17 +146,11 @@ public class GitModelRepository extends GitModelObject {
 				else if (nextCommit.has(remoteFlag))
 					result.add(new GitModelCommit(this, nextCommit, LEFT));
 			}
-
-			if (includeLocal) {
-				result.add(new GitModelCache(this, dstCommit));
-				result.add(new GitModelWorkingTree(this, dstCommit));
-			}
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}
 
-
-		childrens = result.toArray(new GitModelObjectContainer[result.size()]);
+		childrens = result.toArray(new GitModelCommit[result.size()]);
 	}
 
 }

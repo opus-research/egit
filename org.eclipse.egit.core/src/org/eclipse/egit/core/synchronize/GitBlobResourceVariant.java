@@ -28,7 +28,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.TeamException;
 
 /**
@@ -40,9 +39,9 @@ public class GitBlobResourceVariant extends GitResourceVariant {
 
 	private final ObjectLoader blob;
 
-	GitBlobResourceVariant(Repository repo, RevCommit revCommit,
-			ObjectId objectId, String path) throws IOException {
-		super(repo, revCommit, objectId, path);
+	GitBlobResourceVariant(Repository repo, ObjectId objectId, String path)
+			throws IOException {
+		super(repo, objectId, path);
 
 		blob = repo.open(getObjectId());
 	}
