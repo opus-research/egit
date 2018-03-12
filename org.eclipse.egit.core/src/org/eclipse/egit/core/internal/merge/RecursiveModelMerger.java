@@ -153,7 +153,7 @@ public class RecursiveModelMerger extends RecursiveMerger {
 				if (treeWalk.isSubtree() && enterSubtree)
 					treeWalk.enterSubtree();
 				if (!unmergedPaths.contains(path))
-					makeInSync.add(path);
+					registerMergedPath(path);
 				continue;
 			}
 
@@ -286,7 +286,10 @@ public class RecursiveModelMerger extends RecursiveMerger {
 
 	private static String getRepoRelativePath(IResource file) {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(file);
-		return mapping.getRepoRelativePath(file);
+		if (mapping != null) {
+			return mapping.getRepoRelativePath(file);
+		}
+		return null;
 	}
 
 	/**
@@ -406,7 +409,7 @@ public class RecursiveModelMerger extends RecursiveMerger {
 				} else if (mergeContext.getDiffTree().getDiff(handledFile) == null) {
 					// If no diff, the model merger does... nothing
 					// Make sure this file will be added to the index.
-					merger.makeInSync.add(filePath);
+					merger.registerMergedPath(filePath);
 				}
 			}
 		}
@@ -503,6 +506,14 @@ public class RecursiveModelMerger extends RecursiveMerger {
 	}
 
 	private void addSyncPath(IResource resource) {
-		makeInSync.add(getRepoRelativePath(resource));
+		String repoRelativePath = getRepoRelativePath(resource);
+		registerMergedPath(repoRelativePath);
+	}
+
+	private boolean registerMergedPath(String path) {
+		if (path != null) {
+			return makeInSync.add(path);
+		}
+		return false;
 	}
 }
