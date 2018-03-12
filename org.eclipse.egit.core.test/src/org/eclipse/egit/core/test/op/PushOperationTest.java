@@ -308,7 +308,6 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		// Commit on repository 2
 		IProject project = importProject(repository2, projectName);
 		RevCommit commit = repository2.addAndCommit(project, new File(workdir2, "test.txt"), "Commit in repository 2");
-		project.delete(false, false, null);
 
 		// We want to push from repository 2 to 1 (because repository 2 already
 		// has tracking set up)
