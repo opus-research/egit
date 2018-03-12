@@ -18,19 +18,21 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 
 
 /**
  * A staged/unstaged entry in the table
  */
-public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
+public class StagingEntry extends PlatformObject
+		implements IProblemDecoratable, IDecoratableResource {
 
 	/**
 	 * State of the node
@@ -195,6 +197,7 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	/**
 	 * @return the location (path) of the entry
 	 */
+	@NonNull
 	public IPath getLocation() {
 		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
 		return absolutePath;
@@ -225,15 +228,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		} catch (CoreException e) {
 			return SEVERITY_NONE;
 		}
-	}
-
-	@Override
-	public Object getAdapter(Class adapter) {
-		if (adapter == IResource.class)
-			return getFile();
-		else if (adapter == IPath.class)
-			return getLocation();
-		return null;
 	}
 
 	@Override
@@ -282,20 +276,30 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	@Override
-	public Staged staged() {
+	public boolean isMissing() {
+		return state == State.MISSING || state == State.MISSING_AND_CHANGED;
+	}
+
+	@Override
+	public StagingState getStagingState() {
 		switch (state) {
 		case ADDED:
-			return Staged.ADDED;
+			return StagingState.ADDED;
 		case CHANGED:
-			return Staged.MODIFIED;
+			return StagingState.MODIFIED;
 		case REMOVED:
-			return Staged.REMOVED;
+			return StagingState.REMOVED;
 		case MISSING:
 		case MISSING_AND_CHANGED:
-			return Staged.REMOVED;
+			return StagingState.REMOVED;
 		default:
-			return Staged.NOT_STAGED;
+			return StagingState.NOT_STAGED;
 		}
+	}
+
+	@Override
+	public boolean isStaged() {
+		return getStagingState() != StagingState.NOT_STAGED;
 	}
 
 	@Override

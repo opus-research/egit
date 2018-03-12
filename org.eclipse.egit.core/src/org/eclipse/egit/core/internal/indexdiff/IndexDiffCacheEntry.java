@@ -34,6 +34,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
@@ -45,6 +46,7 @@ import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheIterator;
+import org.eclipse.jgit.errors.IndexReadException;
 import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.events.IndexChangedListener;
 import org.eclipse.jgit.events.ListenerHandle;
@@ -155,7 +157,7 @@ public class IndexDiffCacheEntry {
 	 * @return new job ready to be scheduled, never null
 	 */
 	public Job createRefreshResourcesAndIndexDiffJob() {
-		String repositoryName = Activator.getDefault().getRepositoryUtil()
+		final String repositoryName = Activator.getDefault().getRepositoryUtil()
 				.getRepositoryName(repository);
 		String jobName = MessageFormat
 				.format(CoreText.IndexDiffCacheEntry_refreshingProjects,
@@ -164,19 +166,49 @@ public class IndexDiffCacheEntry {
 
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {
+				final long start = System.currentTimeMillis();
+				ISchedulingRule rule = RuleUtil.getRule(repository);
 				try {
-					IProject[] validOpenProjects = ProjectUtil
-							.getValidOpenProjects(repository);
-					ProjectUtil.refreshResources(validOpenProjects, monitor);
-				} catch (CoreException e) {
-					return Activator.error(e.getMessage(), e);
+					Job.getJobManager().beginRule(rule, monitor);
+					try {
+						IProject[] validOpenProjects = ProjectUtil
+								.getValidOpenProjects(repository);
+						ProjectUtil.refreshResources(validOpenProjects,
+								monitor);
+					} catch (CoreException e) {
+						return Activator.error(e.getMessage(), e);
+					}
+					if (Activator.getDefault().isDebugging()) {
+						final long refresh = System.currentTimeMillis();
+						Activator.logInfo("Resources refresh took " //$NON-NLS-1$
+								+ (refresh - start) + " ms for " //$NON-NLS-1$
+								+ repositoryName);
+
+					}
+				} catch (OperationCanceledException e) {
+					return Status.CANCEL_STATUS;
+				} finally {
+					Job.getJobManager().endRule(rule);
 				}
 				refresh();
+				Job next = reloadJob;
+				if (next != null) {
+					try {
+						next.join();
+					} catch (InterruptedException e) {
+						return Status.CANCEL_STATUS;
+					}
+				}
+				if (Activator.getDefault().isDebugging()) {
+					final long refresh = System.currentTimeMillis();
+					Activator.logInfo("Diff took " + (refresh - start) //$NON-NLS-1$
+							+ " ms for " + repositoryName); //$NON-NLS-1$
+
+				}
 				return Status.OK_STATUS;
 			}
 
 		};
-		job.setRule(RuleUtil.getRule(repository));
 		return job;
 	}
 
@@ -305,6 +337,8 @@ public class IndexDiffCacheEntry {
 					}
 					notifyListeners();
 					return Status.OK_STATUS;
+				} catch (IndexReadException e) {
+					return Activator.error(CoreText.IndexDiffCacheEntry_cannotReadIndex, e);
 				} catch (IOException e) {
 					if (GitTraceLocation.INDEXDIFFCACHE.isActive())
 						GitTraceLocation.getTrace().trace(

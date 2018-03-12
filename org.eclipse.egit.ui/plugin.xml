@@ -84,27 +84,6 @@
                menubarPath="compareWithMenu/gitCompareWithGroup2">
          </action>
          <action
-               class="org.eclipse.egit.ui.internal.actions.IgnoreAction"
-               definitionId="org.eclipse.egit.ui.team.Ignore"
-               icon="$nl$/icons/obj16/ignore.gif"
-               id="org.eclipse.egit.ui.internal.actions.IgnoreAction"
-               label="%IgnoreAction_label"
-               menubarPath="team.main/group8"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.RemoveFromIndexAction"
-               definitionId="org.eclipse.egit.ui.team.RemoveFromIndex"
-               icon="$nl$/icons/obj16/unstage.gif"
-               id="org.eclipse.egit.ui.internal.actions.RemoveFromIndexAction"
-               label="%RemoveFromIndexAction_label"
-               menubarPath="team.main/group8"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
-               definitionId="org.eclipse.egit.ui.team.AddToIndex"
-               icon="$nl$/icons/obj16/add.gif"
-               id="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
-               label="%AddToIndexAction_label"
-               menubarPath="team.main/group8"/>
-         <action
                class="org.eclipse.egit.ui.internal.actions.ReplaceWithPreviousAction"
                enablesFor="1"
                id="org.eclipse.egit.ui.internal.actions.ReplaceWithPreviousAction"
@@ -171,6 +150,13 @@
 
    <extension
          point="org.eclipse.core.runtime.adapters">
+         <factory
+               adaptableType="org.eclipse.ui.IURIEditorInput"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter type="java.io.File" />
+            <adapter type="org.eclipse.jgit.lib.Repository" />
+            <adapter type="org.eclipse.team.ui.history.IHistoryPageSource" />
+         </factory>
          <factory
                adaptableType="org.eclipse.egit.core.internal.storage.GitFileHistoryProvider"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
@@ -295,6 +281,13 @@
             adaptableType="org.eclipse.team.ui.history.IHistoryView"
             class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
          <adapter type="org.eclipse.ui.part.IShowInSource"/>
+      </factory>
+      <factory
+            adaptableType="org.eclipse.egit.ui.internal.staging.StagingEntry"
+            class="org.eclipse.egit.ui.internal.staging.StagingEntryAdapterFactory">
+         <adapter type="org.eclipse.core.resources.IResource"/>
+         <adapter type="org.eclipse.core.runtime.IPath"/>
+         <adapter type="org.eclipse.jgit.lib.Repository"/>
       </factory>
    </extension>
 
@@ -1129,16 +1122,9 @@
                class="org.eclipse.egit.ui.internal.actions.SimpleFetchActionHandler">
          </class>
          <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <adapt
-                        type="org.eclipse.core.resources.IResource">
-                  </adapt>
-               </iterate>
-            </and>
+            <test
+                  property="GitSelection.resourcesSingleRepository">
+            </test>
          </activeWhen>
       </handler>
       <handler
@@ -1175,16 +1161,9 @@
                class="org.eclipse.egit.ui.internal.actions.SimplePushActionHandler">
          </class>
          <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <adapt
-                        type="org.eclipse.core.resources.IResource">
-                  </adapt>
-               </iterate>
-            </and>
+            <test
+                  property="GitSelection.resourcesSingleRepository">
+            </test>
          </activeWhen>
       </handler>
       <handler
@@ -1193,16 +1172,16 @@
                class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamActionHandler">
          </class>
          <activeWhen>
-            <iterate>
-               <or>
-                  <adapt
-                        type="org.eclipse.core.resources.IProject">
-                  </adapt>
+            <or>
+               <test
+                     property="GitSelection.resourcesAllInRepository">
+               </test>
+               <iterate>
                   <instanceof
                         value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
                   </instanceof>
-               </or>
-            </iterate>
+               </iterate>
+            </or>
          </activeWhen>
       </handler>
       <handler
@@ -1232,7 +1211,7 @@
          </class>
          <activeWhen>
             <test
-                  property="GitSelection.projectSingleRepository">
+                  property="GitSelection.projectsSingleRepository">
             </test>
          </activeWhen>
       </handler>
@@ -1278,7 +1257,7 @@
          </class>
          <activeWhen>
             <test
-                  property="GitSelection.projectSingleRepository">
+                  property="GitSelection.projectsSingleRepository">
             </test>
          </activeWhen>
       </handler>
@@ -1313,7 +1292,7 @@
          <activeWhen>
             <or>
                <test
-                     property="GitSelection.projectSingleRepository">
+                     property="GitSelection.projectsSingleRepository">
                </test>
                <and>
                   <count
@@ -1549,16 +1528,9 @@
                class="org.eclipse.egit.ui.internal.actions.MergeActionHandler">
          </class>
          <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <adapt
-                        type="org.eclipse.core.resources.IProject">
-                  </adapt>
-               </iterate>
-            </and>
+            <test
+                  property="GitSelection.projectsSingleRepository">
+            </test>
          </activeWhen>
       </handler>
       <handler
@@ -1588,7 +1560,7 @@
          </class>
          <activeWhen>
             <test
-                  property="GitSelection.projectSingleRepository">
+                  property="GitSelection.projectsSingleRepository">
             </test>
          </activeWhen>
       </handler>
@@ -1668,16 +1640,9 @@
                class="org.eclipse.egit.ui.internal.actions.ResetActionHandler">
          </class>
          <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <adapt
-                        type="org.eclipse.core.resources.IProject">
-                  </adapt>
-               </iterate>
-            </and>
+            <test
+                  property="GitSelection.projectsSingleRepository">
+            </test>
          </activeWhen>
       </handler>
       <handler
@@ -3849,7 +3814,7 @@
                <visibleWhen
                      checkEnabled="false">
                   <test
-                        property="GitSelection.projectSingleRepository">
+                        property="GitSelection.projectsSingleRepository">
                   </test>
                </visibleWhen>
             </menu>
@@ -3860,7 +3825,7 @@
                <visibleWhen
                      checkEnabled="false">
                   <test
-                        property="GitSelection.projectSingleRepository">
+                        property="GitSelection.projectsSingleRepository">
                   </test>
                </visibleWhen>
             </command>
@@ -3872,7 +3837,7 @@
                <visibleWhen
                      checkEnabled="false">
                   <test
-                        property="GitSelection.projectSingleRepository">
+                        property="GitSelection.projectsSingleRepository">
                   </test>
                </visibleWhen>
             </command>
@@ -3882,7 +3847,7 @@
                <visibleWhen
                      checkEnabled="false">
                   <test
-                        property="GitSelection.projectSingleRepository">
+                        property="GitSelection.projectsSingleRepository">
                   </test>
                </visibleWhen>
             </dynamic>
@@ -3925,7 +3890,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <test
-                           property="GitSelection.projectSingleRepository"
+                           property="GitSelection.projectsSingleRepository"
                            args="hasGerritConfiguration">
                      </test>
                   </visibleWhen>
@@ -3937,7 +3902,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <test
-                           property="GitSelection.projectSingleRepository"
+                           property="GitSelection.projectsSingleRepository"
                            args="hasGerritConfiguration">
                      </test>
                   </visibleWhen>
@@ -3959,7 +3924,7 @@
                <visibleWhen
                      checkEnabled="false">
                   <test
-                        property="GitSelection.projectSingleRepository">
+                        property="GitSelection.projectsSingleRepository">
                   </test>
                </visibleWhen>
             </menu>
@@ -3976,7 +3941,7 @@
                <visibleWhen
                      checkEnabled="false">
                   <test
-                        property="GitSelection.projectSingleRepository">
+                        property="GitSelection.projectsSingleRepository">
                   </test>
                </visibleWhen>
             </menu>
@@ -4058,7 +4023,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <test
-                           property="GitSelection.projectSingleRepository">
+                           property="GitSelection.projectsSingleRepository">
                      </test>
                   </visibleWhen>
                </command>
@@ -4069,7 +4034,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <test
-                           property="GitSelection.projectSingleRepository">
+                           property="GitSelection.projectsSingleRepository">
                      </test>
                   </visibleWhen>
                </command>
@@ -4110,7 +4075,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <test
-                           property="GitSelection.projectSingleRepository">
+                           property="GitSelection.projectsSingleRepository">
                      </test>
                   </visibleWhen>
                </command>
@@ -4125,7 +4090,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <test
-                           property="GitSelection.projectSingleRepository">
+                           property="GitSelection.projectsSingleRepository">
                      </test>
                   </visibleWhen>
                </command>
@@ -4187,7 +4152,7 @@
                <visibleWhen
                      checkEnabled="false">
                   <test
-                        property="GitSelection.projectSingleRepository">
+                        property="GitSelection.projectsSingleRepository">
                   </test>
                </visibleWhen>
             </command>
@@ -4200,7 +4165,7 @@
                   label="%RebaseWithDialog_label">
                <visibleWhen checkEnabled="false">
                   <test
-                        property="GitSelection.projectSingleRepository"
+                        property="GitSelection.projectsSingleRepository"
                         args="isSafe">
                   </test>
                </visibleWhen>
@@ -4214,7 +4179,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <test
-                           property="GitSelection.projectSingleRepository"
+                           property="GitSelection.projectsSingleRepository"
                            args="canAbortRebase">
                      </test>
                   </visibleWhen>
@@ -4225,7 +4190,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <test
-                           property="GitSelection.projectSingleRepository"
+                           property="GitSelection.projectsSingleRepository"
                            args="canAbortRebase">
                      </test>
                   </visibleWhen>
@@ -4236,7 +4201,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <test
-                           property="GitSelection.projectSingleRepository"
+                           property="GitSelection.projectsSingleRepository"
                            args="canContinueRebase">
                      </test>
                   </visibleWhen>
@@ -4249,7 +4214,7 @@
                <visibleWhen
                      checkEnabled="false">
                   <test
-                        property="GitSelection.projectSingleRepository">
+                        property="GitSelection.projectsSingleRepository">
                   </test>
                </visibleWhen>
             </command>
@@ -4402,6 +4367,43 @@
                      </or>
                   </iterate>
                </and>
+            </visibleWhen>
+         </command>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="popup:team.main?after=group8">
+         <command
+               commandId="org.eclipse.egit.ui.team.AddToIndex"
+               label="%AddToIndexAction_label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <test
+                     property="org.eclipse.egit.ui.resources.ResourceState.hasUnstagedChanges">
+               </test>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.team.RemoveFromIndex"
+               label="%RemoveFromIndexAction_label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <test
+                     property="org.eclipse.egit.ui.resources.ResourceState.hasStagedChanges">
+               </test>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.team.Ignore"
+               label="%IgnoreAction_label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <test
+                     property="org.eclipse.egit.ui.resources.ResourceState.hasNotIgnoredResources">
+               </test>
             </visibleWhen>
          </command>
       </menuContribution>
@@ -5087,6 +5089,10 @@
             icon="icons/obj16/add.gif">
       </image>
       <image
+            commandId="org.eclipse.egit.ui.team.RemoveFromIndex"
+            icon="icons/obj16/unstage.gif">
+      </image>
+      <image
             commandId="org.eclipse.egit.ui.team.Branch"
             icon="icons/obj16/branch_obj.gif">
       </image>
@@ -5239,7 +5245,14 @@
             class="org.eclipse.egit.ui.internal.selection.SelectionPropertyTester"
             id="org.eclipse.egit.ui.SelectionTester"
             namespace="GitSelection"
-            properties="projectSingleRepository,projectsWithRepositories,resourcesSingleRepository,fileOrFolderInRepository,resourcesAllInRepository"
+            properties="projectsSingleRepository,projectsWithRepositories,resourcesSingleRepository,fileOrFolderInRepository,resourcesAllInRepository"
+            type="java.util.Collection">
+      </propertyTester>
+      <propertyTester
+            class="org.eclipse.egit.ui.internal.resources.ResourceStatePropertyTester"
+            id="org.eclipse.egit.ui.ResourceStateTester"
+            namespace="org.eclipse.egit.ui.resources.ResourceState"
+            properties="hasStagedChanges,hasUnstagedChanges,hasNotIgnoredResources"
             type="java.util.Collection">
       </propertyTester>
    </extension>
@@ -5389,9 +5402,21 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.CompareWithRevision"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.CompareWithRefActionHandler"
+            name="%CompareWithHistoryCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.CompareWithIndexActionHandler"
             id="org.eclipse.egit.ui.team.CompareWithIndex"
             name="%CompareWithIndexCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.CompareWithCommitActionHandler"
+            id="org.eclipse.egit.ui.team.CompareWithCommit"
+            name="%CompareWithCommitCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -5417,7 +5442,13 @@
             id="org.eclipse.egit.ui.team.ReplaceWithRef"
             name="%ReplaceWithRefCommand.name">
       </command>
-            <command
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithPreviousActionHandler"
+            id="org.eclipse.egit.ui.team.ReplaceWithPrevious"
+            name="%ReplaceWithPreviousCommand.name">
+      </command>
+      <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.IgnoreActionHandler"
             id="org.eclipse.egit.ui.team.Ignore"
@@ -5812,16 +5843,6 @@
             id="org.eclipse.egit.ui.internal.commit.CommitEditorInputFactory">
       </factory>
    </extension>
-   <extension
-		point="org.eclipse.core.runtime.adapters">
-	      <factory
-	            adaptableType="org.eclipse.egit.ui.internal.staging.StagingEntry"
-				            class="org.eclipse.egit.ui.internal.staging.StagingEntryAdapterFactory">
-	         <adapter
-	               type="org.eclipse.core.resources.IResource">
-	         </adapter>
-	      </factory>
-	</extension>
     <extension point="org.eclipse.search.searchPages">
       <page
             class="org.eclipse.egit.ui.internal.search.CommitSearchPage"
@@ -6034,5 +6055,15 @@
            </iterate>
         </with>
      </definition>
+  </extension>
+  <extension
+        point="org.eclipse.ui.services">
+     <sourceProvider
+           provider="org.eclipse.egit.ui.internal.selection.RepositorySourceProvider">
+        <variable
+              name="org.eclipse.egit.ui.currentRepository"
+              priorityLevel="activeWorkbenchWindow">
+        </variable>
+     </sourceProvider>
   </extension>
 </plugin>
