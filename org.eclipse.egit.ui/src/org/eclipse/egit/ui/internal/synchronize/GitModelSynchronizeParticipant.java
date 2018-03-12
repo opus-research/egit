@@ -5,15 +5,22 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     Dariusz Luksza <dariusz@luksza.org> - initial API and implementation
+ *     Laurent Goubet <laurent.goubet@obeo.fr> - Logical Model enhancements
+ *     Gunnar Wagenknecht <gunnar@wagenknecht.org> - Logical Model enhancements
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.compare.CompareNavigator;
+import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -29,6 +36,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
@@ -39,11 +47,16 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
+import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.team.core.mapping.ISynchronizationScopeManager;
 import org.eclipse.team.core.mapping.provider.MergeContext;
 import org.eclipse.team.core.mapping.provider.SynchronizationScopeManager;
@@ -205,6 +218,25 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 	}
 
 	@Override
+	public ICompareInput asCompareInput(Object object) {
+		// check model compare input first
+		ICompareInput compareInput = super.asCompareInput(object);
+		if(compareInput != null)
+			return compareInput;
+
+		// handle file comparison in Workspace model
+		IResource resource = AdapterUtils.adapt(object, IResource.class);
+		if (resource != null && resource.getType() == IResource.FILE) {
+			GitSynchronizeData gsd = gsds.getData(resource.getProject());
+			if (!gsd.shouldIncludeLocal())
+				return getFileFromGit(gsd, resource.getLocation());
+		}
+
+		// give up
+		return null;
+	}
+
+	@Override
 	public void run(final IWorkbenchPart part) {
 		boolean launchFetch = Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH);
@@ -283,6 +315,37 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		return new SynchronizationScopeManager(
 				UIText.GitModelSynchronizeParticipant_initialScopeName,
 				mappings, context, true);
+	}
+
+	private ICompareInput getFileFromGit(GitSynchronizeData gsd, IPath location) {
+		Repository repo = gsd.getRepository();
+		File workTree = repo.getWorkTree();
+		String repoRelativeLocation = Repository.stripWorkDir(workTree,
+				location.toFile());
+
+		TreeWalk tw = new TreeWalk(repo);
+		tw.setRecursive(true);
+		tw.setFilter(PathFilter.create(repoRelativeLocation.toString()));
+		RevCommit baseCommit = gsd.getSrcRevCommit();
+		RevCommit remoteCommit = gsd.getDstRevCommit();
+
+		try {
+			int baseNth = tw.addTree(baseCommit.getTree());
+			int remoteNth = tw.addTree(remoteCommit.getTree());
+
+			if (tw.next()) {
+				ComparisonDataSource baseData = new ComparisonDataSource(
+						baseCommit, tw.getObjectId(baseNth));
+				ComparisonDataSource remoteData = new ComparisonDataSource(
+						remoteCommit, tw.getObjectId(remoteNth));
+				return new GitCompareInput(repo, baseData, baseData,
+						remoteData, repoRelativeLocation);
+			}
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+		}
+
+		return null;
 	}
 
 	private void restoreSynchronizationData(IMemento[] children) {
