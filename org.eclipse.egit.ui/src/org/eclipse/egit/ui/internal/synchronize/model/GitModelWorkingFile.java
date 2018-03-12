@@ -10,7 +10,6 @@ package org.eclipse.egit.ui.internal.synchronize.model;
 
 import java.io.IOException;
 
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitLocalCompareInput;
@@ -20,8 +19,8 @@ import org.eclipse.jgit.revwalk.RevCommit;
 class GitModelWorkingFile extends GitModelBlob {
 
 	public GitModelWorkingFile(GitModelObjectContainer parent,
-			RevCommit commit, ObjectId repoId, IPath location) throws IOException {
-		super(parent, commit, null, repoId, repoId, null, location);
+			RevCommit commit, ObjectId repoId, String name) throws IOException {
+		super(parent, commit, repoId, repoId, null, name);
 	}
 
 	@Override
@@ -29,28 +28,6 @@ class GitModelWorkingFile extends GitModelBlob {
 			ComparisonDataSource remoteData, ComparisonDataSource ancestorData) {
 		return new GitLocalCompareInput(getRepository(), ancestorData,
 				baseData, remoteData, gitPath);
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-
-		if (obj instanceof GitModelWorkingFile)
-			return ((GitModelWorkingFile) obj).getLocation()
-					.equals(getLocation());
-
-		return false;
-	}
-
-	@Override
-	public int hashCode() {
-		return getLocation().hashCode();
-	}
-
-	@Override
-	public String toString() {
-		return "ModelWorkingFile[" + getLocation() + "]"; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 }

@@ -11,15 +11,9 @@
 package org.eclipse.egit.ui.internal.history;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * Input for the {@link GitHistoryPage}
@@ -33,8 +27,6 @@ public class HistoryPageInput {
 
 	private final Object singleFile;
 
-	private final Object singleItem;
-
 	/**
 	 * @param repository
 	 *            the {@link Repository}
@@ -45,16 +37,11 @@ public class HistoryPageInput {
 			final IResource[] resourceItems) {
 		this.repo = repository;
 		list = resourceItems;
-		if (resourceItems.length == 1) {
-			singleItem = resourceItems[0];
-			if (resourceItems[0].getType() == IResource.FILE)
-				singleFile = resourceItems[0];
-			else
-				singleFile = null;
-		} else {
-			singleItem = null;
+		if (resourceItems.length == 1
+				&& resourceItems[0].getType() == IResource.FILE)
+			singleFile = resourceItems[0];
+		else
 			singleFile = null;
-		}
 		files = null;
 	}
 
@@ -67,13 +54,10 @@ public class HistoryPageInput {
 	public HistoryPageInput(final Repository repository, final File[] fileItems) {
 		this.repo = repository;
 		list = null;
-		if (fileItems.length == 1) {
-			singleItem = fileItems[0];
-			singleFile = Boolean.valueOf(fileItems[0].isFile());
-		} else {
-			singleItem = null;
+		if (fileItems.length == 1 && fileItems[0].isFile())
+			singleFile = fileItems[0];
+		else
 			singleFile = null;
-		}
 		files = fileItems;
 	}
 
@@ -85,7 +69,6 @@ public class HistoryPageInput {
 		this.repo = repository;
 		list = null;
 		singleFile = null;
-		singleItem = null;
 		files = null;
 	}
 
@@ -119,35 +102,10 @@ public class HistoryPageInput {
 	}
 
 	/**
-	 * @return the single Item, either a {@link IResource} or {@link File}, or
-	 *         <code>null</code>
-	 */
-	public Object getSingleItem() {
-		return singleItem;
-	}
-
-	/**
 	 * @return <code>true</code> if this represents a single file (either as
 	 *         {@link IResource} or as {@link File})
 	 */
 	public boolean isSingleFile() {
 		return singleFile != null;
-	}
-
-	/**
-	 * @return the HEAD Ref
-	 */
-	public Ref getHead() {
-		try {
-			Ref h = repo.getRef(Constants.HEAD);
-			if (h != null && h.isSymbolic())
-				return h;
-			return null;
-		} catch (IOException e) {
-			throw new IllegalStateException(NLS.bind(
-					UIText.GitHistoryPage_errorParsingHead, Activator
-							.getDefault().getRepositoryUtil()
-							.getRepositoryName(repo)), e);
-		}
 	}
 }

@@ -20,6 +20,7 @@ import org.eclipse.egit.core.op.IgnoreOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
+import org.eclipse.team.core.Team;
 
 /** Action for ignoring files via .gitignore. */
 public class IgnoreActionHandler extends RepositoryActionHandler {
@@ -52,8 +53,17 @@ public class IgnoreActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		// Do not consult Team.isIgnoredHint here because the user
-		// should be allowed to add ignored resources to .gitignore
-		return true;
+		if (getProjectsInRepositoryOfSelectedResources().length == 0)
+			return false;
+
+		IResource[] resources = getSelectedResources();
+		for (IResource resource : resources) {
+			// NB This does the same thing in DecoratableResourceAdapter,
+			// but
+			// neither currently consult .gitignore
+			if (!Team.isIgnoredHint(resource))
+				return true;
+		}
+		return false;
 	}
 }

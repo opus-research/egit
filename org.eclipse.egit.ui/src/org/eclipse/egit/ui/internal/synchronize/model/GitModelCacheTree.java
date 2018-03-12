@@ -13,8 +13,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.compare.structuremergeviewer.Differencer;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache.FileModelFactory;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -38,73 +36,36 @@ public class GitModelCacheTree extends GitModelTree {
 	 *            {@link ObjectId} of blob in repository
 	 * @param cacheId
 	 *            {@link ObjectId} of blob in cache
-	 * @param location
-	 *            resource location
+	 * @param name
+	 *            name of tree
 	 * @param factory
 	 * @throws IOException
 	 */
 	public GitModelCacheTree(GitModelObjectContainer parent, RevCommit commit,
-			ObjectId repoId, ObjectId cacheId, IPath location,
+			ObjectId repoId, ObjectId cacheId, String name,
 			FileModelFactory factory) throws IOException {
-		super(parent, commit, null, repoId, repoId, cacheId, location);
+		super(parent, commit, repoId, repoId, cacheId, name);
 		this.factory = factory;
 		cacheTreeMap = new HashMap<String, GitModelObject>();
 	}
 
-	@Override
-	public int getKind() {
-		// changes in working tree and cache are always outgoing modifications
-		return Differencer.RIGHT | Differencer.CHANGE;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-
-		if (obj instanceof GitModelCacheTree) {
-			GitModelCacheTree objTree = (GitModelCacheTree) obj;
-
-			return objTree.getLocation().equals(getLocation())
-					&& objTree.getBaseId().equals(getBaseId());
-		}
-
-		return false;
-	}
-
-	@Override
-	public int hashCode() {
-		return getBaseId().hashCode() ^ getLocation().hashCode();
-	}
-
-	@Override
-	public String toString() {
-		return "GitModelTree[" + getLocation() + "]"; //$NON-NLS-1$ //$NON-NLS-2$
-	}
-
 	void addChild(ObjectId repoId, ObjectId cacheId, String path)
 			throws IOException {
-		String pathKey;
-		int firstSlash = path.indexOf("/"); //$NON-NLS-1$
-		if (firstSlash > -1)
-			pathKey = path.substring(0, firstSlash);
-		else
-			pathKey = path;
-
-		IPath fullPath = getLocation().append(pathKey);
-		if (path.contains("/")) { //$NON-NLS-1$
+		String[] entrys = path.split("/"); //$NON-NLS-1$
+		String pathKey = entrys[0];
+		if (entrys.length > 1) {
 			GitModelCacheTree cacheEntry = (GitModelCacheTree) cacheTreeMap
 					.get(pathKey);
 			if (cacheEntry == null) {
 				cacheEntry = new GitModelCacheTree(this, baseCommit, repoId,
-						cacheId, fullPath, factory);
+						cacheId, pathKey, factory);
 				cacheTreeMap.put(pathKey, cacheEntry);
 			}
 			cacheEntry.addChild(repoId, cacheId,
-					path.substring(firstSlash + 1));
+					path.substring(path.indexOf('/') + 1));
 		} else
 			cacheTreeMap.put(pathKey, factory.createFileModel(this,
-					baseCommit, repoId, cacheId, fullPath));
+					baseCommit, repoId, cacheId, pathKey));
 	}
 
 	@Override

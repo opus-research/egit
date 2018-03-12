@@ -12,12 +12,9 @@
 package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
-import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
@@ -27,12 +24,17 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
+import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
+import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.variants.IResourceVariant;
@@ -42,8 +44,6 @@ import org.eclipse.team.core.variants.ResourceVariantTree;
 abstract class GitResourceVariantTree extends ResourceVariantTree {
 
 	private final GitSynchronizeDataSet gsds;
-
-	private final Map<IResource, IResourceVariant> cache = new HashMap<IResource, IResourceVariant>();
 
 	GitResourceVariantTree(ResourceVariantByteStore store,
 			GitSynchronizeDataSet gsds) {
@@ -80,9 +80,6 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 
 	private IResourceVariant fetchVariant(IResource resource,
 			IProgressMonitor monitor) throws TeamException {
-		if (cache.containsKey(resource))
-			return cache.get(resource);
-
 		GitSynchronizeData gsd = gsds.getData(resource.getProject());
 		if (gsd == null)
 			return null;
@@ -103,11 +100,10 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 			TreeWalk tw = initializeTreeWalk(repo, path);
 
 			int nth = tw.addTree(revCommit.getTree());
-			IResourceVariant variant = null;
 			if (resource.getType() == IResource.FILE) {
 				tw.setRecursive(true);
 				if (tw.next() && !tw.getObjectId(nth).equals(zeroId()))
-					variant = new GitBlobResourceVariant(repo, revCommit,
+					return new GitBlobResourceVariant(repo, revCommit,
 							tw.getObjectId(nth), path);
 			} else {
 				while (tw.next() && !path.equals(tw.getPathString())) {
@@ -120,17 +116,16 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 
 				ObjectId objectId = tw.getObjectId(nth);
 				if (!objectId.equals(zeroId()))
-					variant = new GitFolderResourceVariant(repo, revCommit, objectId, path);
+					return new GitFolderResourceVariant(repo, revCommit, objectId, path);
 			}
-			if (variant != null)
-				cache.put(resource, variant);
-			return variant;
 		} catch (IOException e) {
 			throw new TeamException(
 					NLS.bind(
 							CoreText.GitResourceVariantTree_couldNotFindResourceVariant,
 							resource), e);
 		}
+
+		return null;
 	}
 
 	@Override
@@ -178,17 +173,22 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 		}
 	}
 
-	private TreeWalk initializeTreeWalk(Repository repo, String path) {
+	private TreeWalk initializeTreeWalk(Repository repo, String path)
+			throws CorruptObjectException {
 		TreeWalk tw = new TreeWalk(repo);
 		tw.reset();
+		int ignoreNth = tw.addTree(new FileTreeIterator(repo));
 
-		tw.setFilter(PathFilter.create(path));
+		TreeFilter pathFilter = PathFilter.create(path);
+		TreeFilter ignoreFilter = new NotIgnoredFilter(ignoreNth);
+		tw.setFilter(AndTreeFilter.create(pathFilter, ignoreFilter));
 
 		return tw;
 	}
 
 	private String getPath(final IResource resource, Repository repo) {
-		return stripWorkDir(repo.getWorkTree(), resource.getLocation().toFile());
+		return Repository.stripWorkDir(repo.getWorkTree(), resource
+				.getLocation().toFile());
 	}
 
 }

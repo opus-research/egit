@@ -11,25 +11,12 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 import static org.eclipse.team.core.Team.isIgnoredHint;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.treewalk.FileTreeIterator;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.synchronize.SyncInfo;
 import org.eclipse.team.core.variants.IResourceVariant;
@@ -65,49 +52,8 @@ public class GitResourceVariantTreeSubscriber extends
 	private IResource[] roots;
 
 	@Override
-	public boolean isSupervised(IResource res) throws TeamException {
-		return gsds.contains(res.getProject()) && !isIgnoredHint(res);
-	}
-
-
-	@Override
-	public IResource[] members(IResource res) throws TeamException {
-		if(res.getType() == IResource.FILE) {
-			return new IResource[0];
-		}
-
-		GitSynchronizeData gsd = gsds.getData(res.getProject());
-		Repository repo = gsd.getRepository();
-		String path = stripWorkDir(repo.getWorkTree(), res.getLocation()
-				.toFile());
-
-		TreeWalk tw = new TreeWalk(repo);
-		if (path.length() > 0)
-			tw.setFilter(PathFilter.create(path));
-		tw.setRecursive(true);
-
-		Set<IResource> gitMembers = new HashSet<IResource>();
-		Map<String, IResource> allMembers = new HashMap<String, IResource>();
-		try {
-			tw.addTree(new FileTreeIterator(repo));
-			for (IResource member : ((IContainer) res).members())
-				allMembers.put(member.getName(), member);
-
-			while (tw.next()) {
-				if (tw.getTree(0, FileTreeIterator.class).isEntryIgnored())
-					continue;
-
-				IResource member = allMembers.get(tw.getNameString());
-				if (member != null)
-					gitMembers.add(member);
-			}
-		} catch (IOException e) {
-			throw new TeamException(e.getMessage(), e);
-		} catch (CoreException e) {
-			throw TeamException.asTeamException(e);
-		}
-
-		return gitMembers.toArray(new IResource[gitMembers.size()]);
+	public boolean isSupervised(IResource resource) throws TeamException {
+		return gsds.contains(resource.getProject()) && !isIgnoredHint(resource);
 	}
 
 	@Override

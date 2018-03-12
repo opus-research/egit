@@ -18,11 +18,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.dircache.DirCache;
+import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -36,7 +35,10 @@ import org.eclipse.jgit.treewalk.TreeWalk;
  */
 public class GitModelCache extends GitModelObjectContainer {
 
-	private final Path location;
+	/**
+	 * NTH of {@link DirCacheIterator}
+	 */
+	protected int dirCacheIteratorNth;
 
 	private final FileModelFactory fileFactory;
 
@@ -64,13 +66,13 @@ public class GitModelCache extends GitModelObjectContainer {
 		 *            {@link ObjectId} of blob in repository
 		 * @param cacheId
 		 *            {@link ObjectId} of blob in cache
-		 * @param location
+		 * @param name
 		 *            of blob
 		 * @return instance of {@link GitModelBlob}
 		 * @throws IOException
 		 */
 		GitModelBlob createFileModel(GitModelObjectContainer parent,
-				RevCommit commit, ObjectId repoId, ObjectId cacheId, IPath location)
+				RevCommit commit, ObjectId repoId, ObjectId cacheId, String name)
 				throws IOException;
 	}
 
@@ -89,10 +91,10 @@ public class GitModelCache extends GitModelObjectContainer {
 
 			public GitModelBlob createFileModel(
 					GitModelObjectContainer modelParent, RevCommit commit,
-					ObjectId repoId, ObjectId cacheId, IPath location)
+					ObjectId repoId, ObjectId cacheId, String name)
 					throws IOException {
 				return new GitModelCacheFile(modelParent, commit, repoId,
-						cacheId, location);
+						cacheId, name);
 			}
 		});
 	}
@@ -108,37 +110,11 @@ public class GitModelCache extends GitModelObjectContainer {
 		super(parent, baseCommit, RIGHT);
 		this.fileFactory = fileFactory;
 		cacheTreeMap = new HashMap<String, GitModelCacheTree>();
-		location = new Path(getRepository().getWorkTree().toString());
 	}
 
 	@Override
 	public String getName() {
 		return UIText.GitModelIndex_index;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-
-		if (obj instanceof GitModelCache
-				&& !(obj instanceof GitModelWorkingTree)) {
-			GitModelCache left = (GitModelCache) obj;
-			return left.baseCommit.equals(baseCommit)
-					&& left.getParent().equals(getParent());
-		}
-
-		return false;
-	}
-
-	@Override
-	public int hashCode() {
-		return baseCommit.hashCode() ^ getParent().hashCode();
-	}
-
-	@Override
-	public String toString() {
-		return "ModelCache"; //$NON-NLS-1$
 	}
 
 	protected GitModelObject[] getChildrenImpl() {
@@ -165,7 +141,8 @@ public class GitModelCache extends GitModelObjectContainer {
 	 * Creates and configures {@link TreeWalk} instance for
 	 * {@link GitModelCache#getChildrenImpl()} method. It is IMPORTANT to add
 	 * tree that will be used as a base as first, remote tree should be added as
-	 * second;
+	 * second; {@link GitModelCache#dirCacheIteratorNth} should be set with
+	 * value of NTH that corresponds with {@link DirCacheIterator}.
 	 *
 	 * @return configured instance of TreeW
 	 * @throws IOException
@@ -179,21 +156,31 @@ public class GitModelCache extends GitModelObjectContainer {
 		ObjectId headId = repo.getRef(Constants.HEAD).getObjectId();
 		tw.addTree(new RevWalk(repo).parseTree(headId));
 		tw.addTree(new DirCacheIterator(index));
+		dirCacheIteratorNth = 1;
 
 		return tw;
 	}
 
 	private GitModelObject extractFromCache(TreeWalk tw) throws IOException {
+		DirCacheIterator cacheIterator = tw.getTree(dirCacheIteratorNth,
+				DirCacheIterator.class);
+		if (cacheIterator == null)
+			return null;
+
+		DirCacheEntry cacheEntry = cacheIterator.getDirCacheEntry();
+		if (cacheEntry == null)
+			return null;
+
 		if (shouldIncludeEntry(tw)) {
-			String path = tw.getPathString();
+			String path = new String(tw.getRawPath());
 			ObjectId repoId = tw.getObjectId(BASE_NTH);
 			ObjectId cacheId = tw.getObjectId(REMOTE_NTH);
 
-			if (path.contains("/")) //$NON-NLS-1$
+			if (path.split("/").length > 1) //$NON-NLS-1$
 				return handleCacheTree(repoId, cacheId, path);
 
 			return fileFactory.createFileModel(this, baseCommit, repoId,
-					cacheId, getLocation().append(path));
+					cacheId, path);
 		}
 
 		return null;
@@ -211,24 +198,18 @@ public class GitModelCache extends GitModelObjectContainer {
 
 	private GitModelObject handleCacheTree(ObjectId repoId, ObjectId cacheId,
 			String path) throws IOException {
-		int firstSlash = path.indexOf("/");//$NON-NLS-1$
-		String pathKey = path.substring(0, firstSlash);
+		String pathKey = path.split("/")[0]; //$NON-NLS-1$
 		GitModelCacheTree cacheTree = cacheTreeMap.get(pathKey);
 		if (cacheTree == null) {
 			cacheTree = new GitModelCacheTree(this, baseCommit, repoId,
-					cacheId, getLocation().append(pathKey), fileFactory);
+					cacheId, pathKey, fileFactory);
 			cacheTreeMap.put(pathKey, cacheTree);
 		}
 
 		cacheTree.addChild(repoId, cacheId,
-				path.substring(firstSlash + 1));
+				path.substring(path.indexOf('/') + 1));
 
 		return cacheTree;
-	}
-
-	@Override
-	public IPath getLocation() {
-		return location;
 	}
 
 }

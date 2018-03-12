@@ -44,7 +44,7 @@ import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
  * If a single version is selected, open it, otherwise open several versions of
  * the file content.
  */
-public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
+public class ShowVersionsHandler extends AbstractHistoryCommanndHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		boolean compareMode = Boolean.TRUE.toString().equals(
 				event.getParameter(HistoryViewCommands.COMPARE_MODE_PARAM));
@@ -54,7 +54,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 		Object input = getPage().getInputInternal().getSingleFile();
 		if (input == null)
 			return null;
-		boolean errorOccurred = false;
+		boolean errorOccured = false;
 		List<ObjectId> ids = new ArrayList<ObjectId>();
 		String gitPath = null;
 		if (input instanceof IFile) {
@@ -73,7 +73,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 					Activator.logError(NLS.bind(
 							UIText.GitHistoryPage_errorLookingUpPath, gitPath,
 							commit.getId()), e);
-					errorOccurred = true;
+					errorOccured = true;
 				}
 				if (rev != null) {
 					if (compareMode) {
@@ -87,7 +87,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 						try {
 							openInCompare(event, in);
 						} catch (Exception e) {
-							errorOccurred = true;
+							errorOccured = true;
 						}
 					} else {
 						try {
@@ -97,7 +97,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 						} catch (CoreException e) {
 							Activator.logError(
 									UIText.GitHistoryPage_openFailed, e);
-							errorOccurred = true;
+							errorOccured = true;
 						}
 					}
 				} else {
@@ -120,7 +120,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 					Activator.logError(NLS.bind(
 							UIText.GitHistoryPage_errorLookingUpPath, gitPath,
 							commit.getId()), e);
-					errorOccurred = true;
+					errorOccured = true;
 				}
 				if (rev != null) {
 					if (compareMode) {
@@ -137,7 +137,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 									left, right, null);
 							openInCompare(event, in);
 						} catch (IOException e) {
-							errorOccurred = true;
+							errorOccured = true;
 						}
 					} else {
 						try {
@@ -147,7 +147,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 						} catch (CoreException e) {
 							Activator.logError(
 									UIText.GitHistoryPage_openFailed, e);
-							errorOccurred = true;
+							errorOccured = true;
 						}
 					}
 				} else {
@@ -155,7 +155,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 				}
 			}
 		}
-		if (errorOccurred)
+		if (errorOccured)
 			Activator.showError(UIText.GitHistoryPage_openFailed, null);
 		if (ids.size() > 0) {
 			StringBuilder idList = new StringBuilder(""); //$NON-NLS-1$

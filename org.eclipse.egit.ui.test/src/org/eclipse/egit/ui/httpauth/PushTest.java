@@ -50,7 +50,6 @@ public class PushTest extends EGitTestCase {
 
 	@Before
 	public void setup() throws Exception {
-		TestUtil.disableProxy();
 		remoteRepository = new SampleTestRepository(NUMBER_RANDOM_COMMITS, true);
 		localRepoPath = new File(ResourcesPlugin.getWorkspace().getRoot()
 				.getLocation().toFile(), "test1");

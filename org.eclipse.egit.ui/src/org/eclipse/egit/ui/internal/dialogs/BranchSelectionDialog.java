@@ -1,10 +1,9 @@
-/*******************************************************************************
+﻿/*******************************************************************************
  * Copyright (C) 2007, Dave Watson <dwatson@mimvista.com>
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,24 +12,16 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import static org.eclipse.ui.ISources.ACTIVE_CURRENT_SELECTION_NAME;
-
-import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.commands.IExecutionListener;
-import org.eclipse.core.commands.NotHandledException;
-import org.eclipse.core.expressions.IEvaluationContext;
+import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
-import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -40,18 +31,11 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
-import org.eclipse.ui.handlers.IHandlerService;
 
 /**
  * The branch and reset selection dialog
  */
 public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
-
-	private Button deleteteButton;
 
 	private Button renameButton;
 
@@ -65,7 +49,6 @@ public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
 	 */
 	public BranchSelectionDialog(Shell parentShell, Repository repo) {
 		super(parentShell, repo);
-		setRootsToShow(true, true, true, false);
 	}
 
 	private InputDialog getRefNameInputDialog(String prompt,
@@ -90,12 +73,6 @@ public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
 		renameButton.setFont(JFaceResources.getDialogFont());
 		renameButton.setText(UIText.BranchSelectionDialog_Rename);
 		setButtonLayoutData(renameButton);
-		((GridLayout) parent.getLayout()).numColumns++;
-
-		deleteteButton = new Button(parent, SWT.PUSH);
-		deleteteButton.setFont(JFaceResources.getDialogFont());
-		deleteteButton.setText(UIText.BranchSelectionDialog_Delete);
-		setButtonLayoutData(deleteteButton);
 		((GridLayout) parent.getLayout()).numColumns++;
 
 		renameButton.addSelectionListener(new SelectionAdapter() {
@@ -140,18 +117,24 @@ public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
 			}
 		});
 		newButton.addSelectionListener(new SelectionAdapter() {
+
 			public void widgetSelected(SelectionEvent e) {
-				CreateBranchWizard wiz = new CreateBranchWizard(repo,
-						refFromDialog());
-				if (new WizardDialog(getShell(), wiz).open() == Window.OK) {
-					String newRefName = wiz.getNewBranchName();
+				// check what Ref the user selected if any
+				Ref ref = refFromDialog();
+
+				InputDialog labelDialog = getRefNameInputDialog(NLS.bind(
+						UIText.BranchSelectionDialog_QuestionNewBranchMessage,
+						ref.getName(), Constants.R_HEADS), Constants.R_HEADS,
+						null);
+
+				if (labelDialog.open() == Window.OK) {
+					String newRefName = labelDialog.getValue();
+					CreateLocalBranchOperation cbop = new CreateLocalBranchOperation(
+							repo, newRefName, ref);
 					try {
+						cbop.execute(null);
 						branchTree.refresh();
 						markRef(Constants.R_HEADS + newRefName);
-						if (repo.getBranch().equals(newRefName))
-							// close branch selection dialog when new branch was
-							// already checked out from new branch wizard
-							BranchSelectionDialog.this.okPressed();
 					} catch (Throwable e1) {
 						reportError(
 								e1,
@@ -162,55 +145,12 @@ public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
 			}
 		});
 
-		deleteteButton.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent selectionEvent) {
-				IWorkbench workbench = PlatformUI.getWorkbench();
-				IWorkbenchWindow activeWorkbenchWindow = workbench
-						.getActiveWorkbenchWindow();
-				IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
-						.getService(IHandlerService.class);
-				// set selection in context
-				IEvaluationContext ctx = hsr.getCurrentState();
-				ctx.addVariable(ACTIVE_CURRENT_SELECTION_NAME,
-						branchTree.getSelection());
-
-				ICommandService commandService = (ICommandService) activeWorkbenchWindow
-						.getService(ICommandService.class);
-				Command deleteCommand = commandService
-						.getCommand("org.eclipse.egit.ui.RepositoriesViewDeleteBranch"); //$NON-NLS-1$
-
-				deleteCommand.addExecutionListener(new IExecutionListener() {
-					public void preExecute(String commandId,
-							ExecutionEvent event) {	/* do nothing */ }
-
-					public void postExecuteSuccess(String commandId,
-							Object returnValue) {
-						branchTree.refresh();
-					}
-
-					public void postExecuteFailure(String commandId,
-							ExecutionException exception) { /* do nothing */  }
-
-					public void notHandled(String commandId,
-							NotHandledException exception) { /* do nothing */ }
-				});
-
-				// launch deleteCommand
-				ExecutionEvent executionEvent = hsr.createExecutionEvent(
-						deleteCommand, null);
-				try {
-					deleteCommand.executeWithChecks(executionEvent);
-				} catch (Throwable e) {
-					reportError(
-							e,
-							UIText.BranchSelectionDialog_ErrorCouldNotDeleteRef,
-							refNameFromDialog());
-				}
-			}
-		});
-
 		super.createButtonsForButtonBar(parent);
 		getButton(Window.OK).setText(UIText.BranchSelectionDialog_OkCheckout);
+		// createButton(parent, IDialogConstants.OK_ID,
+		// UIText.BranchSelectionDialog_OkCheckout, true);
+		// createButton(parent, IDialogConstants.CANCEL_ID,
+		// IDialogConstants.CANCEL_LABEL, false);
 
 		// can't advance without a selection
 		getButton(Window.OK).setEnabled(!branchTree.getSelection().isEmpty());
@@ -266,6 +206,5 @@ public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
 
 		// we don't support rename on tags
 		renameButton.setEnabled(branchSelected && !tagSelected);
-		deleteteButton.setEnabled(branchSelected && !tagSelected);
 	}
 }

@@ -37,19 +37,17 @@ import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.push.PushOperationUI;
+import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
@@ -135,24 +133,13 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		File userHome = FS.DETECTED.userHome();
 		testDirectory = new File(userHome, "LocalRepositoriesTests");
 		if (testDirectory.exists())
-			FileUtils.delete(testDirectory, FileUtils.RECURSIVE
-					| FileUtils.RETRY);
+			FileUtils.delete(testDirectory, FileUtils.RECURSIVE | FileUtils.RETRY);
 		testDirectory.mkdir();
 		// we don't want to clone into <user_home> but into our test directory
 		File repoRoot = new File(testDirectory, "RepositoryRoot");
 		repoRoot.mkdir();
-		// make sure the default directory for Repos is not the user home
-		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
-		// suppress the configuration dialog
-		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, false);
-		// suppress the detached head warning dialog
-		org.eclipse.egit.ui.Activator
-				.getDefault()
-				.getPreferenceStore()
-				.setValue(UIPreferences.SHOW_DETACHED_HEAD_WARNING,
-						MessageDialogWithToggle.ALWAYS);
+		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore().setValue(
+				UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 	}
 
 	@AfterClass
@@ -189,13 +176,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	}
 
 	protected static File createProjectAndCommitToRepository() throws Exception {
-		return createProjectAndCommitToRepository(REPO1);
-	}
 
-	protected static File createProjectAndCommitToRepository(String repoName)
-			throws Exception {
-
-		File gitDir = new File(new File(testDirectory, repoName),
+		File gitDir = new File(new File(testDirectory, REPO1),
 				Constants.DOT_GIT);
 		gitDir.mkdir();
 		Repository myRepository = new FileRepository(gitDir);
@@ -312,9 +294,10 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		myRepository.getConfig().save();
 		// and push
-		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
-		PushOperationUI pa = new PushOperationUI(myRepository, config, 0, false);
-		pa.execute(null);
+		PushConfiguredRemoteAction pa = new PushConfiguredRemoteAction(
+				myRepository, "push");
+
+		pa.run(null, false);
 
 		try {
 			// delete the stable branch again

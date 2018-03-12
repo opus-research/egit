@@ -48,7 +48,6 @@ import org.eclipse.team.core.Team;
  * @see org.eclipse.jgit.treewalk.TreeWalk
  */
 public class ContainerTreeIterator extends WorkingTreeIterator {
-
 	private static String computePrefix(final IContainer base) {
 		final RepositoryMapping rm = RepositoryMapping.getMapping(base);
 		if (rm == null)
@@ -77,7 +76,6 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		super(computePrefix(base), repository.getConfig().get(WorkingTreeOptions.KEY));
 		node = base;
 		init(entries());
-		initRootIterator(repository);
 	}
 
 	/**
@@ -97,7 +95,6 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		super("", repository.getConfig().get(WorkingTreeOptions.KEY));  //$NON-NLS-1$
 		node = root;
 		init(entries());
-		initRootIterator(repository);
 	}
 
 	/**
@@ -120,9 +117,6 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		super(p);
 		node = base;
 		init(entries());
-		Repository repository = RepositoryMapping.getMapping(base)
-				.getRepository();
-		initRootIterator(repository);
 	}
 
 	@Override
@@ -166,7 +160,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 	}
 
 	private boolean isEntryIgnoredByTeamProvider(IResource resource) {
-		if (resource.getType() == IResource.ROOT)
+		if (resource instanceof IWorkspaceRoot)
 			return false;
 		if (Team.isIgnoredHint(resource))
 			return true;
@@ -189,8 +183,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 			switch (f.getType()) {
 			case IResource.FILE:
-				if (FS.DETECTED.supportsExecute()
-						&& FS.DETECTED.canExecute(asFile()))
+				if (FS.DETECTED.canExecute(asFile()))
 					mode = FileMode.EXECUTABLE_FILE;
 				else
 					mode = FileMode.REGULAR_FILE;
@@ -241,7 +234,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 		@Override
 		public InputStream openInputStream() throws IOException {
-			if (rsrc.getType() == IResource.FILE) {
+			if (rsrc instanceof IFile) {
 				try {
 					return ((IFile) rsrc).getContents(true);
 				} catch (CoreException err) {
@@ -266,5 +259,4 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			return ((IFile) rsrc).getLocation().toFile();
 		}
 	}
-
 }

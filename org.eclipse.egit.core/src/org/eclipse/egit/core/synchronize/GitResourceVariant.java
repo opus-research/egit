@@ -36,7 +36,7 @@ abstract class GitResourceVariant implements IResourceVariant {
 
 	private String name;
 
-	private IPath location;
+	private IPath fullPath;
 
 	private static final IWorkspaceRoot workspaceRoot = ResourcesPlugin
 			.getWorkspace().getRoot();
@@ -117,26 +117,25 @@ abstract class GitResourceVariant implements IResourceVariant {
 		return path;
 	}
 
-	public Object getLocation() {
-		if (location == null) {
+	protected IPath getFullPath() {
+		if (fullPath == null) {
 			IResource resource;
-			IPath absolutePath = new Path(repo.getWorkTree() + File.separator
+			IPath location = new Path(repo.getWorkTree() + File.separator
 					+ path);
 
 			if (isContainer())
-				resource = workspaceRoot.getContainerForLocation(absolutePath);
+				resource = workspaceRoot.getContainerForLocation(location);
 			else
-				resource = workspaceRoot.getFileForLocation(absolutePath);
+				resource = workspaceRoot.getFileForLocation(location);
 
-			if (resource != null && resource.exists())
-				location = resource.getLocation();
+			if (resource != null)
+				fullPath = resource.getFullPath();
 			else
-				location = new Path(path);
+				fullPath = new Path(path);
 		}
 
-		return location;
+		return fullPath;
 	}
-
 
 	public boolean exists() {
 		return true;
