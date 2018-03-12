@@ -14,6 +14,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.InputStream;
@@ -296,10 +297,11 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		final GitSynchronizeData data = new GitSynchronizeData(
 				testRepo.getRepository(), firstCommit.getName(),
 				secondCommit.getName(), true, includedResource);
-		GitSynchronizeDataSet gsdSet = new GitSynchronizeDataSet(data);
+		GitSynchronizeDataSet gitSynchDataSet = new GitSynchronizeDataSet(data);
 		final GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
-				gsdSet);
+				gitSynchDataSet);
 		subscriber.init(new NullProgressMonitor());
+
 
 		IResourceVariantTree sourceVariantTree = subscriber.getSourceTree();
 		assertNotNull(sourceVariantTree);
@@ -343,6 +345,15 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		assertNotNull(notChangingSourceVariant);
 		assertNotNull(notChangingRemoteVariant);
 
+		GitSubscriberResourceMappingContext context = new GitSubscriberResourceMappingContext(subscriber, gitSynchDataSet);
+		assertFalse(context.hasLocalChange(iNotChangingFile, new NullProgressMonitor()));
+		assertFalse(context.hasRemoteChange(iNotChangingFile, new NullProgressMonitor()));
+
+		assertFalse(context.hasLocalChange(iChangingFile, new NullProgressMonitor()));
+		assertTrue(context.hasRemoteChange(iChangingFile, new NullProgressMonitor()));
+
+		assertFalse(context.hasLocalChange(iToBeRemovedFile, new NullProgressMonitor()));
+		assertTrue(context.hasRemoteChange(iToBeRemovedFile, new NullProgressMonitor()));
 	}
 
 	private static Set<IResource> collectResources(ResourceMapping[] mappings)
