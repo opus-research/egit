@@ -877,9 +877,6 @@ public class UIText extends NLS {
 	public static String CompareTargetSelectionDialog_CompareTitle;
 
 	/** */
-	public static String CompareTargetSelectionDialog_CompareTitleEmptyPath;
-
-	/** */
 	public static String CompareTargetSelectionDialog_WindowTitle;
 
 	/** */
@@ -1916,12 +1913,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
-
-	/** */
-	public static String SpellcheckableMessageArea_redo;
-
-	/** */
-	public static String SpellcheckableMessageArea_undo;
 
 	/** */
 	public static String SpellCheckingMessageArea_copy;
@@ -4089,12 +4080,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitModelSynchonize_fetchGitDataJobName;
-
-	/** */
-	public static String FetchChangeFromGerritCommand_noRepositorySelectedTitle;
-
-	/** */
-	public static String FetchChangeFromGerritCommand_noRepositorySelectedMessage;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
