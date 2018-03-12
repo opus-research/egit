@@ -29,9 +29,6 @@ public class ActionCommands {
 	/** "Compare with head" action command id */
 	public static final String COMPARE_WITH_HEAD_ACTION = "org.eclipse.egit.ui.team.CompareWithHead"; //$NON-NLS-1$
 
-	/** "Compare index with head" action command id */
-	public static final String COMPARE_INDEX_WITH_HEAD_ACTION = "org.eclipse.egit.ui.team.CompareIndexWithHead"; //$NON-NLS-1$
-
 	/** "Compare with index" action command id */
 	public static final String COMPARE_WITH_INDEX_ACTION = "org.eclipse.egit.ui.team.CompareWithIndex"; //$NON-NLS-1$
 
@@ -58,6 +55,15 @@ public class ActionCommands {
 
 	/** "Discard changes" action command id */
 	public static final String DISCARD_CHANGES_ACTION = "org.eclipse.egit.ui.team.Discard"; //$NON-NLS-1$
+
+	/** "Replace with HEAD" action command id */
+	public static final String REPLACE_WITH_HEAD_ACTION = "org.eclipse.egit.ui.team.ReplaceWithHead"; //$NON-NLS-1$
+
+	/** "Replace with Commit" action command id */
+	public static final String REPLACE_WITH_COMMIT_ACTION = "org.eclipse.egit.ui.team.ReplaceWithCommit"; //$NON-NLS-1$
+
+	/** "Replace with Ref" action command id */
+	public static final String REPLACE_WITH_REF_ACTION = "org.eclipse.egit.ui.team.ReplaceWithRef"; //$NON-NLS-1$
 
 	/** "Disconnect" action command id */
 	public static final String DISCONNECT_ACTION = "org.eclipse.egit.ui.internal.actions.Disconnect"; //$NON-NLS-1$
