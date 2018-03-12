@@ -8,14 +8,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.text.MessageFormat;
-
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
+import org.eclipse.jface.viewers.BaseLabelProvider;
+import org.eclipse.jface.viewers.ITableColorProvider;
+import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.RGB;
@@ -23,7 +21,8 @@ import org.eclipse.swt.graphics.RGB;
 /**
  * Label provider for {@link FileDiff} objects
  */
-public class FileDiffLabelProvider extends ColumnLabelProvider {
+public class FileDiffLabelProvider extends BaseLabelProvider implements
+		ITableLabelProvider, ITableColorProvider {
 
 	private final ResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
@@ -36,13 +35,18 @@ public class FileDiffLabelProvider extends ColumnLabelProvider {
 		dimmedForegroundColor = resourceManager.createColor(dimmedForegroundRgb);
 	}
 
-	public String getText(final Object element) {
-		return ((FileDiff) element).getLabel(element);
+	public String getColumnText(final Object element, final int columnIndex) {
+		if (columnIndex == 0)
+			return ((FileDiff) element).getLabel(element);
+		return null;
 	}
 
-	public Image getImage(final Object element) {
-		final FileDiff c = (FileDiff) element;
-		return (Image) resourceManager.get(c.getImageDescriptor(c));
+	public Image getColumnImage(final Object element, final int columnIndex) {
+		if (columnIndex == 0) {
+			final FileDiff c = (FileDiff) element;
+			return (Image) resourceManager.get(c.getImageDescriptor(c));
+		}
+		return null;
 	}
 
 	@Override
@@ -51,22 +55,17 @@ public class FileDiffLabelProvider extends ColumnLabelProvider {
 		super.dispose();
 	}
 
-	public Color getForeground(Object element) {
-		final FileDiff c = (FileDiff) element;
-		if (!c.isMarked(FileDiffContentProvider.INTERESTING_MARK_TREE_FILTER_INDEX))
-			return dimmedForegroundColor;
-		else
-			return null;
+	public Color getForeground(Object element, int columnIndex) {
+		if (columnIndex == 0) {
+			final FileDiff c = (FileDiff) element;
+			if (!c.isMarked(FileDiffContentProvider.INTERESTING_MARK_TREE_FILTER_INDEX))
+				return dimmedForegroundColor;
+		}
+		return null;
 	}
 
-	@Override
-	public String getToolTipText(final Object element) {
-		final FileDiff c = (FileDiff) element;
-		if (c.getChange() == ChangeType.RENAME) {
-			return MessageFormat.format(
-					UIText.FileDiffLabelProvider_RenamedFromToolTip,
-					c.getOldPath());
-		}
+	public Color getBackground(Object element, int columnIndex) {
+		// Use default color
 		return null;
 	}
 }
