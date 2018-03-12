@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2010, 2013 Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
@@ -642,9 +642,6 @@ public class UIText extends NLS {
 	public static String ProjectsPreferencePage_RestoreBranchProjects;
 
 	/** */
-	public static String ProjectsPreferencePage_AutoIgnoreDerivedResources;
-
-	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -670,9 +667,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitProjectsImportPage_NoProjectsMessage;
-
-	/** */
-	public static String GitProjectsImportPage_SearchForNestedProjects;
 
 	/** */
 	public static String RebaseCurrentRefCommand_RebaseCanceledMessage;
@@ -3856,12 +3850,6 @@ public class UIText extends NLS {
 	public static String GitTraceConfigurationDialog_TraceFileLocationLabel;
 
 	/** */
-	public static String ImportProjectsWrongSelection;
-
-	/** */
-	public static String ImportProjectsSelectionInRepositoryRequired;
-
-	/** */
 	public static String LocalFileRevision_CurrentVersion;
 
 	/** */
@@ -4325,9 +4313,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_RefAlreadyExistsMessage;
-
-	/** */
-	public static String ValidationUtils_RefNameConflictsWithExistingMessage;
 
 	/** */
 	public static String ValidationUtils_PleaseEnterNameMessage;

@@ -216,7 +216,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 
 			// build the nodes
 			try {
-				return buildDiffContainer(repo, headCommit,
+				return buildDiffContainer(repo, rightCommit, headCommit,
 						ancestorCommit, filterPaths, rw, monitor);
 			} catch (IOException e) {
 				throw new InvocationTargetException(e);
@@ -242,7 +242,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 	}
 
 	private IDiffContainer buildDiffContainer(Repository repository,
-			RevCommit headCommit,
+			RevCommit rightCommit, RevCommit headCommit,
 			RevCommit ancestorCommit, List<String> filterPaths, RevWalk rw,
 			IProgressMonitor monitor) throws IOException, InterruptedException {
 
