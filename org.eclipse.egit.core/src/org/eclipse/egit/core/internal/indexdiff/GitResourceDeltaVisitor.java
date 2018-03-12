@@ -24,7 +24,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.GitProjectData;
@@ -96,20 +95,9 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 			return true;
 		}
 
-		Repository repositoryOfResource = null;
 		if (resource.isLinked()) {
-			IPath location = resource.getLocation();
-			if (location == null) {
-				return false;
-			}
-			repositoryOfResource = ResourceUtil.getRepository(location);
-			// Ignore linked files, folders and their children, if they're not
-			// in the same repository
-			if (repository != repositoryOfResource) {
-				return false;
-			}
-		} else {
-			repositoryOfResource = ResourceUtil.getRepository(resource);
+			// Ignore linked files, folders and their children
+			return false;
 		}
 
 		if (resource.getType() == IResource.FOLDER) {
@@ -117,18 +105,18 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 			if (gitData == null) {
 				return false;
 			}
-			if (repositoryOfResource == null || !gitData.isProtected(resource)
-					&& repositoryOfResource != repository) {
+			RepositoryMapping mapping = gitData.getRepositoryMapping(resource);
+			if (mapping == null || !gitData.isProtected(resource)
+					&& mapping.getRepository() != repository) {
 				return false;
 			}
 			if (delta.getKind() == IResourceDelta.ADDED) {
-				IPath repoRelativePath = ResourceUtil.getRepositoryRelativePath(
-						resource.getLocation(), repository);
+				String repoRelativePath = mapping.getRepoRelativePath(resource);
 				if (repoRelativePath == null) {
 					return false;
 				}
 				if (!repoRelativePath.isEmpty()) {
-					String path = repoRelativePath.toPortableString() + "/"; //$NON-NLS-1$
+					String path = repoRelativePath + "/"; //$NON-NLS-1$
 					if (isIgnoredInOldIndex(path)) {
 						return true; // keep going to catch .gitignore files.
 					}
@@ -141,7 +129,8 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 			return true;
 		}
 
-		if (repositoryOfResource != repository) {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+		if (mapping == null || mapping.getRepository() != repository) {
 			return false;
 		}
 
@@ -158,21 +147,19 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 			return false;
 		}
 
-		IPath repoRelativePath = ResourceUtil
-				.getRepositoryRelativePath(resource.getLocation(), repository);
+		String repoRelativePath = mapping.getRepoRelativePath(resource);
 		if (repoRelativePath == null) {
 			resourcesToUpdate.add(resource);
 			return true;
 		}
 
-		String path = repoRelativePath.toPortableString();
-		if (isIgnoredInOldIndex(path)) {
+		if (isIgnoredInOldIndex(repoRelativePath)) {
 			// This file is ignored in the old index, and ignore rules did not
 			// change: ignore the delta to avoid unnecessary index updates
 			return false;
 		}
 
-		filesToUpdate.add(path);
+		filesToUpdate.add(repoRelativePath);
 		resourcesToUpdate.add(resource);
 		return true;
 	}

@@ -24,19 +24,9 @@ import org.eclipse.jgit.transport.URIish;
 public class GerritUtil {
 
 	/**
-	 * The Gerrit magic push prefix {@value} .
+	 * The Gerrit push prefix {@value} .
 	 */
 	public static final String REFS_FOR = "refs/for/"; //$NON-NLS-1$
-
-	/**
-	 * The Gerrit magic push prefix {@value}
-	 */
-	public static final String REFS_PUBLISH = "refs/publish/"; //$NON-NLS-1$
-
-	/**
-	 * The Gerrit magic push prefix {@value}
-	 */
-	public static final String REFS_DRAFTS = "refs/drafts/"; //$NON-NLS-1$
 
 	/**
 	 * @param config
@@ -137,23 +127,4 @@ public class GerritUtil {
 	}
 
 
-	/**
-	 * @param rc
-	 *            the remote configuration
-	 * @return {@code true} if the remote configuration is configured for Gerrit
-	 */
-	public static boolean isGerritRemote(RemoteConfig rc) {
-		for (RefSpec pushSpec : rc.getPushRefSpecs()) {
-			String destination = pushSpec.getDestination();
-			if (destination == null) {
-				continue;
-			}
-			if (destination.startsWith(GerritUtil.REFS_FOR)
-					|| destination.startsWith(GerritUtil.REFS_PUBLISH)
-					|| destination.startsWith(GerritUtil.REFS_DRAFTS)) {
-				return true;
-			}
-		}
-		return false;
-	}
 }

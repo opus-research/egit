@@ -147,7 +147,7 @@ public class StashEditorPage extends CommitEditorPage {
 	 * @return diffs for staged changes
 	 */
 	protected FileDiff[] getStagedDiffs() {
-		List<FileDiff> stagedDiffsResult = new ArrayList<>();
+		List<FileDiff> stagedDiffsResult = new ArrayList<FileDiff>();
 		if (getCommit().getRevCommit().getParentCount() > 1) {
 			RevCommit stagedCommit = getCommit().getRevCommit().getParent(
 					PARENT_COMMIT_STAGED);
@@ -162,7 +162,7 @@ public class StashEditorPage extends CommitEditorPage {
 	 * @return diffs for unstaged and untracked changes
 	 */
 	protected FileDiff[] getUnstagedDiffs() {
-		List<FileDiff> unstagedDiffs = new ArrayList<>();
+		List<FileDiff> unstagedDiffs = new ArrayList<FileDiff>();
 
 		RevCommit stagedCommit = getCommit().getRevCommit().getParent(
 				PARENT_COMMIT_STAGED);

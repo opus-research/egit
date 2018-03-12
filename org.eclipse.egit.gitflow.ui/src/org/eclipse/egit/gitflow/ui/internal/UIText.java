@@ -42,15 +42,6 @@ public class UIText extends NLS {
 	/**	 */
 	public static String AbstractGitFlowHandler_finishConflicts;
 
-	/** */
-	public static String BranchSelectionTree_IdColumn;
-
-	/** */
-	public static String BranchSelectionTree_MessageColumn;
-
-	/** */
-	public static String BranchSelectionTree_NameColumn;
-
 	/**	 */
 	public static String FeatureFinishHandler_finishingFeature;
 
