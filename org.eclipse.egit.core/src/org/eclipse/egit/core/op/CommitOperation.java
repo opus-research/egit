@@ -71,8 +71,6 @@ public class CommitOperation implements IEGitOperation {
 
 	private boolean createChangeId;
 
-	private boolean commitIndex;
-
 	/**
 	 * @param filesToCommit
 	 *            a list of files which will be included in the commit
@@ -135,24 +133,6 @@ public class CommitOperation implements IEGitOperation {
 			this.notTracked = new HashSet<String>(notTracked);
 	}
 
-	/**
-	 * Constructs a CommitOperation that commits the index
-	 * @param repository
-	 * @param author
-	 * @param committer
-	 * @param message
-	 * @throws CoreException
-	 */
-	public CommitOperation(Repository repository, String author, String committer,
-			String message) throws CoreException {
-		this.repo = repository;
-		this.author = author;
-		this.committer = committer;
-		this.message = message;
-		this.commitIndex = true;
-	}
-
-
 	private void setRepository(IFile file) throws CoreException {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
 		if (mapping == null)
@@ -197,14 +177,14 @@ public class CommitOperation implements IEGitOperation {
 				if (commitAll)
 					commitAll(commitDate, timeZone, authorIdent, committerIdent);
 				else if (amending || commitFileList != null
-						&& commitFileList.size() > 0 || commitIndex) {
+						&& commitFileList.size() > 0) {
 					actMonitor.beginTask(
 							CoreText.CommitOperation_PerformingCommit,
-							20);
+							commitFileList.size() * 2);
 					actMonitor.setTaskName(CoreText.CommitOperation_PerformingCommit);
 					addUntracked();
 					commit();
-					actMonitor.worked(10);
+					actMonitor.worked(commitFileList.size());
 				} else if (commitWorkingDirChanges) {
 					// TODO commit -a
 				} else {
@@ -258,9 +238,8 @@ public class CommitOperation implements IEGitOperation {
 					.setAmend(amending)
 					.setMessage(message)
 					.setInsertChangeId(createChangeId);
-			if (!commitIndex)
-				for(String path:commitFileList)
-					commitCommand.setOnly(path);
+			for(String path:commitFileList)
+				commitCommand.setOnly(path);
 			commitCommand.call();
 		} catch (NoHeadException e) {
 			throw new TeamException(e.getLocalizedMessage(), e);
