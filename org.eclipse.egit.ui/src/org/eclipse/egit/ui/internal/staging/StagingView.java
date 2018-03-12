@@ -82,7 +82,6 @@ import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IAction;
@@ -2436,10 +2435,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 * Clear the view's state.
 	 * <p>
 	 * This method must be called from the UI-thread
-	 * 
-	 * @param repository
 	 */
-	private void clearRepository(@Nullable Repository repository) {
+	private void clearRepository() {
 		saveCommitMessageComponentState();
 		currentRepository = null;
 		StagingViewUpdate update = new StagingViewUpdate(null, null, null);
@@ -2448,11 +2445,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		enableCommitWidgets(false);
 		refreshAction.setEnabled(false);
 		updateSectionText();
-		if (repository != null && repository.isBare()) {
-			form.setText(UIText.StagingView_BareRepoSelection);
-		} else {
-			form.setText(UIText.StagingView_NoSelectionTitle);
-		}
+		form.setText(UIText.StagingView_NoSelectionTitle);
 	}
 
 	/**
@@ -2513,19 +2506,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 			asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					clearRepository(repository);
+					clearRepository();
 				}
 			});
 			return;
 		}
 
 		if (!isValidRepo(repository)) {
-			asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					clearRepository(repository);
-				}
-			});
 			return;
 		}
 
