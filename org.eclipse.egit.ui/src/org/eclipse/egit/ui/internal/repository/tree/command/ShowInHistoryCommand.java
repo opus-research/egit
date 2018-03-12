@@ -57,7 +57,7 @@ public class ShowInHistoryCommand extends
 					repo = node.getRepository();
 				if (repo != node.getRepository())
 					throw new ExecutionException(
-							UIText.RepositoryAction_multiRepoSelection);
+							UIText.AbstractHistoryCommanndHandler_NoUniqueRepository);
 				if (node.getType() == RepositoryTreeNodeType.FOLDER) {
 					fileList.add(((FolderNode) node).getObject());
 				}

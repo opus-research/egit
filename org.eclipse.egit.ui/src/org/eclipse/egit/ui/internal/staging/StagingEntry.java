@@ -14,19 +14,23 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
+import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.jgit.lib.Repository;
 
 
 /**
  * A staged/unstaged entry in the table
  */
-public class StagingEntry implements IAdaptable {
+public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
 	/**
 	 * State of the node
 	 */
@@ -50,7 +54,7 @@ public class StagingEntry implements IAdaptable {
 		PARTIALLY_MODIFIED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** not ignored, and not in the index */
-		UNTRACKED(EnumSet.of(Action.STAGE, Action.DELETE)),
+		UNTRACKED(EnumSet.of(Action.STAGE, Action.DELETE, Action.IGNORE)),
 
 		/** in conflict */
 		CONFLICTING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION,
@@ -79,6 +83,7 @@ public class StagingEntry implements IAdaptable {
 		STAGE,
 		UNSTAGE,
 		DELETE,
+		IGNORE,
 		LAUNCH_MERGE_TOOL,
 	}
 
@@ -145,7 +150,7 @@ public class StagingEntry implements IAdaptable {
 	 * @return the file corresponding to the entry
 	 */
 	public IFile getFile() {
-		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
+		IPath absolutePath = getLocation();
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IFile resource = root.getFileForLocation(absolutePath);
 		if (resource == null)
@@ -153,11 +158,88 @@ public class StagingEntry implements IAdaptable {
 		return resource;
 	}
 
+	/**
+	 * @return the location (path) of the entry
+	 */
+	public IPath getLocation() {
+		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
+		return absolutePath;
+	}
+
+	public int getProblemSeverity() {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IFile file = root.getFileForLocation(getLocation());
+		if (file == null)
+			return SEVERITY_NONE;
+
+		try {
+			return file.findMaxProblemSeverity(IMarker.PROBLEM, true, IResource.DEPTH_ONE);
+		} catch (CoreException e) {
+			return SEVERITY_NONE;
+		}
+	}
+
 	public Object getAdapter(Class adapter) {
 		if (adapter == IResource.class) {
 			return getFile();
 		}
 		return null;
+	}
+
+	public int getType() {
+		return IResource.FILE;
+	}
+
+	public String getName() {
+		// Not used in StagingViewLabelProvider
+		return null;
+	}
+
+	public String getRepositoryName() {
+		return null;
+	}
+
+	public String getBranch() {
+		return null;
+	}
+
+	public String getBranchStatus() {
+		return null;
+	}
+
+	public boolean isTracked() {
+		return state != State.UNTRACKED;
+	}
+
+	public boolean isIgnored() {
+		return false;
+	}
+
+	public boolean isDirty() {
+		return state == State.MODIFIED || state == State.PARTIALLY_MODIFIED;
+	}
+
+	public Staged staged() {
+		switch (state) {
+		case ADDED:
+			return Staged.ADDED;
+		case CHANGED:
+			return Staged.MODIFIED;
+		case REMOVED:
+			return Staged.REMOVED;
+		case MISSING:
+			return Staged.REMOVED;
+		default:
+			return Staged.NOT_STAGED;
+		}
+	}
+
+	public boolean hasConflicts() {
+		return state == State.CONFLICTING;
+	}
+
+	public boolean isAssumeValid() {
+		return false;
 	}
 
 	@Override

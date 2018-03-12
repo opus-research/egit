@@ -30,9 +30,10 @@ import org.eclipse.ui.IWorkbenchPart;
 public class CommitActionHandler extends RepositoryActionHandler {
 
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
-		final Repository repo = getRepository(true, event);
-		if (repo == null)
+		final Repository[] repos = getRepositories(event);
+		if (repos.length == 0)
 			return null;
+
 		final Shell shell = getShell(event);
 		IResource[] resourcesInScope;
 		try {
@@ -48,7 +49,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			// cancels the scope operation
 			return null;
 		}
-		CommitUI commitUi = new CommitUI(shell, repo, resourcesInScope,
+		CommitUI commitUi = new CommitUI(shell, repos[0], resourcesInScope,
 				false);
 		commitUi.commit();
 		return null;
@@ -56,7 +57,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return getRepository() != null;
+		return getRepositories().length > 0;
 	}
 
 }

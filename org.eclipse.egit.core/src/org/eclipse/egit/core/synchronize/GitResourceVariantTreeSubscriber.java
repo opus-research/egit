@@ -12,7 +12,6 @@
 package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.jgit.lib.Repository.stripWorkDir;
-import static org.eclipse.team.core.Team.isIgnoredHint;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -90,8 +89,7 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public boolean isSupervised(IResource res) throws TeamException {
 		return IResource.FILE == res.getType()
-				&& gsds.contains(res.getProject()) && !isIgnoredHint(res)
-				&& shouldBeIncluded(res);
+				&& gsds.contains(res.getProject()) && shouldBeIncluded(res);
 	}
 
 	/**
@@ -257,7 +255,7 @@ public class GitResourceVariantTreeSubscriber extends
 	}
 
 	private boolean shouldBeIncluded(IResource res) {
-		if (res == null || res.isLinked(IResource.CHECK_ANCESTORS))
+		if (res == null)
 			return false;
 		final IProject proj = res.getProject();
 		if (proj == null)

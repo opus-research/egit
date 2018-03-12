@@ -780,6 +780,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		attachCommitSelectionChanged();
 		initActions();
 
+		getSite().setSelectionProvider(graph.getTableView());
 		getSite().registerContextMenu(POPUP_ID, popupMgr, graph.getTableView());
 		// due to the issues described in bug 322751, it makes no
 		// sense to set a selection provider for the site here
@@ -1619,7 +1620,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					continue;
 				if (db != map.getRepository())
 					throw new IllegalStateException(
-							UIText.RepositoryAction_multiRepoSelection);
+							UIText.AbstractHistoryCommanndHandler_NoUniqueRepository);
 
 				if (showAllFilter == ShowFilter.SHOWALLFOLDER) {
 					final String path;
@@ -1896,11 +1897,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			markStartRef(walk, ref);
 	}
 
-	private void markStartRef(RevWalk walk, Ref ref) throws MissingObjectException,
-			IOException, IncorrectObjectTypeException {
-		Object refTarget = walk.parseAny(ref.getLeaf().getObjectId());
-		if (refTarget instanceof RevCommit)
-			walk.markStart((RevCommit) refTarget);
+	private void markStartRef(RevWalk walk, Ref ref) throws IOException,
+			IncorrectObjectTypeException {
+		try {
+			Object refTarget = walk.parseAny(ref.getLeaf().getObjectId());
+			if (refTarget instanceof RevCommit)
+				walk.markStart((RevCommit) refTarget);
+		} catch (MissingObjectException e) {
+			// If there is a ref which points to Nirvana then we should simply
+			// ignore this ref. We should not let a corrupt ref cause that the
+			// history view is not filled at all
+		}
 	}
 
 	private void markUninteresting(RevWalk walk, String prefix) throws IOException,
