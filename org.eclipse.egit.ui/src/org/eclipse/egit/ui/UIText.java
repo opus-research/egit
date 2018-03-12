@@ -151,6 +151,27 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_NoCommits;
 
 	/** */
+	public static String GerritConfigurationPage_configurePushToGerrit;
+
+	/** */
+	public static String GerritConfigurationPage_errorBranchName;
+
+	/** */
+	public static String GerritConfigurationPage_groupPush;
+
+	/** */
+	public static String GerritConfigurationPage_labelDestinationBranch;
+
+	/** */
+	public static String GerritConfigurationPage_PageDescription;
+
+	/** */
+	public static String GerritConfigurationPage_pushUri;
+
+	/** */
+	public static String GerritConfigurationPage_title;
+
+	/** */
 	public static String EGitCredentialsProvider_errorReadingCredentials;
 
 	/** */
@@ -2611,9 +2632,6 @@ public class UIText extends NLS {
 	public static String GitImportWithDirectoriesPage_PageTitle;
 
 	/** */
-	public static String GitImportWithDirectoriesPage_PathErrorMessage;
-
-	/** */
 	public static String GitImportWithDirectoriesPage_SelectFolderMessage;
 
 	/** */
@@ -2869,7 +2887,6 @@ public class UIText extends NLS {
 	 */
 	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.uitext"; //$NON-NLS-1$
 
-	/** */
 	/** */
 	public static String CommitAction_commit;
 

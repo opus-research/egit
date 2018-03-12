@@ -33,7 +33,6 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.errors.NoWorkTreeException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -111,8 +110,7 @@ public class GitSelectWizardPage extends WizardPage {
 		if (node != null && node.getType() == RepositoryTreeNodeType.FOLDER)
 			return ((File) node.getObject()).getPath();
 		if (node != null && node.getType() == RepositoryTreeNodeType.WORKINGDIR)
-				return  node.getRepository().getWorkTree().getPath();
-
+			return node.getRepository().getWorkTree().getPath();
 		return null;
 	}
 
@@ -259,12 +257,6 @@ public class GitSelectWizardPage extends WizardPage {
 		settings.put(PREF_WIZ, getWizardSelection());
 
 		setErrorMessage(null);
-
-		try {
-			getPath();
-		} catch (NoWorkTreeException e) {
-			setErrorMessage(UIText.GitImportWithDirectoriesPage_PathErrorMessage + e.getMessage());
-		}
 
 		if (newProjectWizard.getSelection()) {
 			setPageComplete(true);

@@ -35,6 +35,7 @@ import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.ICheckStateListener;
@@ -253,6 +254,14 @@ class SourceBranchPage extends WizardPage {
 		setPageComplete(true);
 	}
 
+	private void checkForEmptyRepo() {
+		if (isSourceRepoEmpty()) {
+			setErrorMessage(null);
+			setMessage(UIText.SourceBranchPage_repoEmpty, IMessageProvider.WARNING);
+			setPageComplete(true);
+		}
+	}
+
 	private void revalidate(final RepositorySelection newRepoSelection) {
 		if (newRepoSelection.equals(validatedRepoSelection)) {
 			// URI hasn't changed, no need to refill the page with new data
@@ -343,6 +352,7 @@ class SourceBranchPage extends WizardPage {
 		refsViewer.setInput(availableRefs);
 		refsViewer.setAllChecked(true);
 		checkPage();
+		checkForEmptyRepo();
 	}
 
 	private void transportError(final String msg) {
