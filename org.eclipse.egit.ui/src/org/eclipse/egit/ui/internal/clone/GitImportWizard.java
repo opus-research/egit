@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2012 SAP AG.
+ * Copyright (c) 2010-2011 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -31,19 +31,16 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
-import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
-import org.eclipse.egit.ui.internal.components.RepositorySelection;
-import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
+import org.eclipse.egit.ui.internal.provisional.wizards.NoRepositoryInfoException;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.URIish;
 import org.eclipse.ui.IImportWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkingSet;
@@ -54,8 +51,6 @@ import org.eclipse.ui.actions.NewProjectAction;
  * A wizard which allows to optionally clone a repository and to import projects from a repository.
  */
 public class GitImportWizard extends AbstractGitCloneWizard implements IImportWizard {
-
-	private List<CloneSourceProvider> repositoryImports;
 
 	private GitSelectRepositoryPage selectRepoPage = new GitSelectRepositoryPage();
 
@@ -73,6 +68,10 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 						}});
 				} catch (URISyntaxException e) {
 					Activator.error(UIText.GitImportWizard_errorParsingURI, e);
+				} catch (NoRepositoryInfoException e) {
+					Activator.error(UIText.GitImportWizard_noRepositoryInfo, e);
+				} catch (Exception e) {
+					Activator.error(e.getMessage(), e);
 				}
 			}
 			super.setVisible(visible);
@@ -82,8 +81,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage() ;
 
 	private GitCreateGeneralProjectPage createGeneralProjectPage = new GitCreateGeneralProjectPage();
-
-	private IRepositorySearchResult currentSearchResult;
 
 	/**
 	 * The default constructor
@@ -96,8 +93,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 
 	@Override
 	protected void addPreClonePages() {
-		repositoryImports = GitCloneSourceProviderExtension.getCloneSourceProvider();
-		addPage(new RepositoryLocationPage(repositoryImports));
 		addPage(selectRepoPage);
 	}
 
@@ -108,23 +103,15 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		addPage(createGeneralProjectPage);
 	}
 
+	@Override
+	protected List<CloneSourceProvider> getCloneSourceProvider() {
+		List<CloneSourceProvider> cloneSourceProvider = super.getCloneSourceProvider();
+		cloneSourceProvider.add(0, CloneSourceProvider.LOCAL);
+		return cloneSourceProvider;
+	}
+
 	public void init(IWorkbench workbench, IStructuredSelection selection) {
 		// nothing to do
-	}
-
-	@Override
-	protected RepositorySelection getRepositorySelection() {
-		try {
-			return (new RepositorySelection(new URIish(currentSearchResult.getGitRepositoryInfo().getCloneUri()), null));
-		} catch (URISyntaxException e) {
-			Activator.error(UIText.GitImportWizard_errorParsingURI, e);
-			return null;
-		}
-	}
-
-	@Override
-	protected UserPasswordCredentials getCredentials() {
-		return currentSearchResult.getGitRepositoryInfo().getCredentials();
 	}
 
 	@Override
@@ -133,10 +120,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			importWithDirectoriesPage.setRepository(selectRepoPage
 					.getRepository());
 			return importWithDirectoriesPage;
-		}
-		else if (page instanceof IRepositorySearchResult) {
-			currentSearchResult = (IRepositorySearchResult)page;
-			return validSource;
 		} else if (page == cloneDestination) {
 			importWithDirectoriesPage.setRepository(getClonedRepository());
 			return importWithDirectoriesPage;

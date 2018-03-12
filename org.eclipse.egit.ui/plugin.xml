@@ -1479,6 +1479,26 @@
          </activeWhen>
       </handler>
       <handler
+            commandId="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.ConfigureGerritRemoteCommand">
+         </class>
+         <activeWhen>
+             <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+         </activeWhen>
+      </handler>
+      <handler
             commandId="org.eclipse.ui.edit.rename">
          <class
                class="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand">
@@ -2163,6 +2183,26 @@
                         operator="and">
                      <instanceof
                            value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote"
+               label="%RepoViewConfigureGerritRemote.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
                      </instanceof>
                   </iterate>
                </and>
@@ -3383,6 +3423,11 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote"
+            name="%ConfigureGerritRemoteCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ChangeCredentialsCommand"
             id="org.eclipse.egit.ui.RepositoriesViewChangeCredentials"
             name="%ChangeCredentialsCommand">
@@ -4301,6 +4346,7 @@
         point="org.eclipse.egit.ui.cloneSourceProvider">
      <source
            hasFixLocation="true"
+           icon="/icons/obj16/editconfig.gif"
            label="%CloneUri.label">
      </source>
      <repositorySearchPage

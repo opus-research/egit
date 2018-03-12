@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012 SAP AG.
+ * Copyright (c) 2011 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -17,6 +17,7 @@ import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositoryServerProvider;
 import org.eclipse.egit.ui.internal.provisional.wizards.RepositoryServerInfo;
@@ -89,8 +90,8 @@ class RepositoryLocationContentProvider implements ITreeContentProvider {
 		try {
 			repositoryServerInfos = repositoryServerProvider
 					.getRepositoryServerInfos();
-		} catch (RuntimeException e) {
-			Activator.error("Error on providing repository server infos", e); //$NON-NLS-1$
+		} catch (Exception e) {
+			Activator.error(UIText.RepositoryLocationContentProvider_errorProvidingRepoServer, e);
 		}
 		return repositoryServerInfos;
 	}
