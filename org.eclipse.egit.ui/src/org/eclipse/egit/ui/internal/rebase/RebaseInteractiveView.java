@@ -36,7 +36,6 @@ import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceResources;
@@ -74,7 +73,6 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
@@ -767,35 +765,7 @@ public class RebaseInteractiveView extends ViewPart implements
 	}
 
 	private void createPopupMenu(TreeViewer planViewer) {
-		MenuManager manager = new MenuManager();
-
-		manager.add(new PlanContextMenuActionListener(
-				UIText.RebaseInteractiveStepActionToolBarProvider_PickText,
-				UIIcons.CHERRY_PICK, RebaseInteractivePlan.ElementAction.PICK,
-				planViewer, actionToolBarProvider));
-		manager.add(new PlanContextMenuActionListener(
-				UIText.RebaseInteractiveStepActionToolBarProvider_SkipText,
-				UIIcons.REBASE_SKIP, RebaseInteractivePlan.ElementAction.SKIP,
-				planViewer, actionToolBarProvider));
-		manager.add(new PlanContextMenuActionListener(
-				UIText.RebaseInteractiveStepActionToolBarProvider_EditText,
-				UIIcons.EDITCONFIG, RebaseInteractivePlan.ElementAction.EDIT,
-				planViewer, actionToolBarProvider));
-		manager.add(new PlanContextMenuActionListener(
-				UIText.RebaseInteractiveStepActionToolBarProvider_SquashText,
-				UIIcons.SQUASH, RebaseInteractivePlan.ElementAction.SQUASH,
-				planViewer, actionToolBarProvider));
-		manager.add(new PlanContextMenuActionListener(
-				UIText.RebaseInteractiveStepActionToolBarProvider_FixupText,
-				UIIcons.FIXUP, RebaseInteractivePlan.ElementAction.FIXUP,
-				planViewer, actionToolBarProvider));
-		manager.add(new PlanContextMenuActionListener(
-				UIText.RebaseInteractiveStepActionToolBarProvider_RewordText,
-				UIIcons.REWORD, RebaseInteractivePlan.ElementAction.REWORD,
-				planViewer, actionToolBarProvider));
-
-		Menu menu = manager.createContextMenu(planViewer.getControl());
-		planViewer.getControl().setMenu(menu);
+		// TODO create popup menu
 	}
 
 	private static GitDateFormatter getNewDateFormatter() {

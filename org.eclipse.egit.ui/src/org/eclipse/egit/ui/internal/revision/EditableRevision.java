@@ -7,7 +7,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 
-package org.eclipse.egit.ui.internal;
+package org.eclipse.egit.ui.internal.revision;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -30,6 +30,7 @@ import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
  * Editable revision which supports listening to content changes by adding
  * {@link IContentChangeListener}.
  */
+@SuppressWarnings("restriction")
 public class EditableRevision extends FileRevisionTypedElement implements
 		IEditableContent, IContentChangeNotifier {
 
