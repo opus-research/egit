@@ -59,7 +59,7 @@ public class FeatureCheckoutHandler extends AbstractHandler {
 				HandlerUtil.getActiveShell(event), refs,
 				UIText.FeatureCheckoutHandler_selectFeature,
 				UIText.FeatureCheckoutHandler_localFeatures,
-				Constants.R_HEADS + gfRepo.getConfig().getFeaturePrefix(), gfRepo);
+				Constants.R_HEADS + gfRepo.getConfig().getFeaturePrefix());
 
 		if (dialog.open() != Window.OK) {
 			return null;
