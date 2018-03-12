@@ -139,8 +139,7 @@ public class EgitUiEditorUtils {
 	public static IEditorPart openEditor(File file, IWorkbenchPage page) {
 		if (!file.exists())
 			return null;
-		IFile fileResource = ResourceUtil
-				.getFileForLocation(new Path(file.getAbsolutePath()), true);
+		IFile fileResource = ResourceUtil.getFileForLocation(new Path(file.getAbsolutePath()));
 		if (fileResource != null) {
 			try {
 				return IDE.openEditor(page, fileResource,
