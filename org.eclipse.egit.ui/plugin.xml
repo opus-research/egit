@@ -4204,10 +4204,6 @@
             commandId="org.eclipse.egit.ui.team.stash.create"
             icon="icons/obj16/stash-create.png">
       </image>
-      <image
-            commandId="org.eclipse.egit.ui.history.RenameBranch"
-            icon="icons/obj16/editconfig.gif">
-      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -4467,13 +4463,13 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.AssumeUnchangedActionHandler"
             id="org.eclipse.egit.ui.team.AssumeUnchanged"
-            name="%AssumeUnchangedCommand">
+            name="Assume Unchanged">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.NoAssumeUnchangedActionHandler"
             id="org.eclipse.egit.ui.team.NoAssumeUnchanged"
-            name="%NoAssumeUnchangedCommand">
+            name="No Assume Unchanged">
       </command>
    </extension>
    <extension
@@ -4538,13 +4534,8 @@
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.DeleteBranchOnCommitHandler"
             id="org.eclipse.egit.ui.history.DeleteBranch"
-            name="%DeleteBranchCommand">
+            name="Delete Branch">
       </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.RenameBranchOnCommitHandler"
-            id="org.eclipse.egit.ui.history.RenameBranch"
-            name="%RenameBranchCommand">
-      </command>      
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CreateTagOnCommitHandler"
             id="org.eclipse.egit.ui.history.CreateTag"
