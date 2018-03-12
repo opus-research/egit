@@ -38,7 +38,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 public class ShowBlameHandler extends AbstractHistoryCommandHandler {
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		GitHistoryPage page = getPage(event);
+		GitHistoryPage page = getPage();
 		Object input = page.getInputInternal().getSingleItem();
 		if (input == null)
 			return null;
@@ -48,7 +48,7 @@ public class ShowBlameHandler extends AbstractHistoryCommandHandler {
 		String path = getPath(repo, page);
 		if (path == null)
 			return null;
-		RevCommit commit = getSelectedCommit(event);
+		RevCommit commit = (RevCommit) getSelection(page).getFirstElement();
 		if (commit == null)
 			return null;
 

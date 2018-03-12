@@ -11,12 +11,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.branch.CleanupUncomittedChangesDialog;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
@@ -38,9 +36,8 @@ public final class UIRepositoryUtils {
 	 *            the repository
 	 * @param shell
 	 *            the parent shell for opening the dialog
-	 * @return true if the git status was clean or it was dirty and the user
-	 *         cleaned up the uncommitted changes and the previous action may
-	 *         continue
+	 * @return true if the user cleaned up the uncommitted changes and the
+	 *         previous action may continue
 	 * @throws GitAPIException
 	 *             if there was an error checking the repository
 	 */
@@ -50,18 +47,15 @@ public final class UIRepositoryUtils {
 		if (status.hasUncommittedChanges()) {
 			List<String> files = new ArrayList<String>(status.getModified());
 			Collections.sort(files);
-			String repoName = Activator.getDefault().getRepositoryUtil()
-					.getRepositoryName(repo);
+
 			CleanupUncomittedChangesDialog cleanupUncomittedChangesDialog = new CleanupUncomittedChangesDialog(
 					shell,
-					MessageFormat
-							.format(UIText.AbstractRebaseCommandHandler_cleanupDialog_title,
-									repoName),
+					UIText.AbstractRebaseCommandHandler_cleanupDialog_title,
 					UIText.AbstractRebaseCommandHandler_cleanupDialog_text,
 					repo, files);
 			cleanupUncomittedChangesDialog.open();
 			return cleanupUncomittedChangesDialog.shouldContinue();
 		} else
-			return true;
+			return false;
 	}
 }

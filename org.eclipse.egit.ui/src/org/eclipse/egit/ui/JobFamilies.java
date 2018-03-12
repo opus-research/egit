@@ -125,11 +125,6 @@ public class JobFamilies {
 	public static final Object REWORD = new Object();
 
 	/**
-	 * Edit commit job
-	 */
-	public static final Object EDIT = new Object();
-
-	/**
 	 * Revert commit job
 	 */
 	public static final Object REVERT_COMMIT = new Object();

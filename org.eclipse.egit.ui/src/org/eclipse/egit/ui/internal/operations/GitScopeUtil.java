@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.team.core.subscribers.Subscriber;
@@ -62,20 +61,13 @@ public class GitScopeUtil {
 		if (resources == null)
 			return new IResource[0];
 		IResource[] resourcesInScope;
-		// Only builds the logical model if the preference holds true
-		if (Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.USE_LOGICAL_MODEL)) {
-
-			try {
-				resourcesInScope = findRelatedChanges(part, resources);
-			} catch (InvocationTargetException e) {
-				Activator.handleError(
-						UIText.CommitActionHandler_errorBuildingScope,
-						e.getCause(), true);
-				// fallback to initial resource set
-				resourcesInScope = resources;
-			}
-		} else {
+		try {
+			resourcesInScope = findRelatedChanges(part, resources);
+		} catch (InvocationTargetException e) {
+			Activator.handleError(
+					UIText.CommitActionHandler_errorBuildingScope,
+					e.getCause(), true);
+			// fallback to initial resource set
 			resourcesInScope = resources;
 		}
 		return resourcesInScope;
