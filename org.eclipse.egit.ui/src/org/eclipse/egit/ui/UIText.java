@@ -669,6 +669,9 @@ public class UIText extends NLS {
 	public static String GitProjectsImportPage_NoProjectsMessage;
 
 	/** */
+	public static String GitProjectsImportPage_SearchForNestedProjects;
+
+	/** */
 	public static String RebaseCurrentRefCommand_RebaseCanceledMessage;
 
 	/** */
@@ -4313,6 +4316,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_RefAlreadyExistsMessage;
+
+	/** */
+	public static String ValidationUtils_RefNameConflictsWithExistingMessage;
 
 	/** */
 	public static String ValidationUtils_PleaseEnterNameMessage;
