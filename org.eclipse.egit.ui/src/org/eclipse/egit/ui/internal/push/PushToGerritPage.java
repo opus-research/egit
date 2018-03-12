@@ -254,8 +254,7 @@ class PushToGerritPage extends WizardPage {
 					Shell shell = PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getShell();
 					PushResultDialog dlg = new PushResultDialog(shell,
-							repository, result[0], op.getDestinationString(),
-							false);
+							repository, result[0], op.getDestinationString());
 					dlg.showConfigureButton(false);
 					dlg.open();
 				}
