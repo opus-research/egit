@@ -33,7 +33,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.ProjectReference;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CloneOperation;
@@ -41,7 +40,8 @@ import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
@@ -212,9 +212,10 @@ public class ProjectReferenceImporter {
 	private static boolean repositoryAlreadyExistsForUrl(File repositoryPath,
 			URIish gitUrl) {
 		if (repositoryPath.exists()) {
-			FileRepository existingRepository;
+			Repository existingRepository;
 			try {
-				existingRepository = new FileRepository(repositoryPath);
+				existingRepository = FileRepositoryBuilder
+						.create(repositoryPath);
 			} catch (IOException e) {
 				return false;
 			}
