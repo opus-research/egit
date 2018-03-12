@@ -775,16 +775,14 @@ class CommitGraphTable {
 
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (!input.getRepository().isBare()) {
-					if (hasMultipleRefNodes()) {
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHECKOUT,
-								UIText.GitHistoryPage_CheckoutMenuLabel2));
-					} else {
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHECKOUT,
-								UIText.GitHistoryPage_CheckoutMenuLabel));
-					}
+				if (hasMultipleRefNodes()) {
+					popupMgr.add(getCommandContributionItem(
+							HistoryViewCommands.CHECKOUT,
+							UIText.GitHistoryPage_CheckoutMenuLabel2));
+				} else {
+					popupMgr.add(getCommandContributionItem(
+							HistoryViewCommands.CHECKOUT,
+							UIText.GitHistoryPage_CheckoutMenuLabel));
 				}
 
 				popupMgr.add(getCommandContributionItem(
