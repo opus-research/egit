@@ -3479,15 +3479,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
-	public static String CommitResultLabelProvider_SectionAuthor;
-
-	/** */
-	public static String CommitResultLabelProvider_SectionMessage;
-
-	/** */
-	public static String CommitResultLabelProvider_SectionRepository;
-
-	/** */
 	public static String CommitSearchQuery_Label;
 
 	/** */
