@@ -331,9 +331,6 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_ToggleSelection_button;
 
 	/** */
-	public static String CompareWithIndexAction_FileNotInIndex;
-
-	/** */
 	public static String RepositoryAction_errorFindingRepo;
 
 	/** */
@@ -859,15 +856,6 @@ public class UIText extends NLS {
 	public static String PushAction_wrongURITitle;
 
 	/** */
-	public static String PushConfiguredRemoteAction_NoSpecDefined;
-
-	/** */
-	public static String PushConfiguredRemoteAction_NoUpdatesFoundMessage;
-
-	/** */
-	public static String PushConfiguredRemoteAction_NoUrisMessage;
-
-	/** */
 	public static String PushWizard_cantConnectToAny;
 
 	/** */
@@ -1159,6 +1147,9 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_BranchNameLabel;
 
 	/** */
+	public static String CreateBranchPage_BranchNameTooltip;
+
+	/** */
 	public static String CreateBranchPage_CheckingOutMessage;
 
 	/** */
@@ -1169,6 +1160,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_ChosseNameMessage;
+
+	/** */
+	public static String CreateBranchPage_CreateLocalBasedTitle;
+
+	/** */
+	public static String CreateBranchPage_CreateLocalTitle;
+
+	/** */
+	public static String CreateBranchPage_CreateRemoteBaseOnTitle;
+
+	/** */
+	public static String CreateBranchPage_CreateRemoteTitle;
 
 	/** */
 	public static String CreateBranchPage_CreatingBranchMessage;
@@ -1184,9 +1187,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_SourceBranchTooltip;
-
-	/** */
-	public static String CreateBranchPage_Title;
 
 	/** */
 	public static String PushResultTable_columnStatusRepo;
@@ -1262,12 +1262,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchAction_wrongURIMessage;
-
-	/** */
-	public static String FetchConfiguredRemoteAction_NoSpecsDefinedMessage;
-
-	/** */
-	public static String FetchConfiguredRemoteAction_NoUrisDefinedMessage;
 
 	/** */
 	public static String FetchResultDialog_labelEmptyResult;
@@ -1678,9 +1672,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_DeleteRepoDeterminProjectsMessage;
 
 	/** */
-	public static String RepositoriesView_DoPushMenuItem;
-
-	/** */
 	public static String RepositoriesView_Error_WindowTitle;
 
 	/** */
@@ -1688,9 +1679,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_ExistingProjects_Nodetext;
-
-	/** */
-	public static String RepositoriesView_FetchMenu;
 
 	/** */
 	public static String RepositoriesView_Import_Button;
@@ -1711,10 +1699,13 @@ public class UIText extends NLS {
 	public static String RepositoriesView_LinkWithSelection_action;
 
 	/** */
-	public static String RepositoriesView_NewBranchMenu;
+	public static String RepositoriesView_NewBranchTitle;
 
 	/** */
-	public static String RepositoriesView_NewBranchTitle;
+	public static String RepositoriesView_NewLocalBranchMenu;
+
+	/** */
+	public static String RepositoriesView_NewRemoteBranchMenu;
 
 	/** */
 	public static String RepositoriesView_NewRemoteMenu;
@@ -2055,14 +2046,7 @@ public class UIText extends NLS {
 	/** */
 	public static String CommitCombo_showSuggestedCommits;
 
-	/**
-	 * Do not in-line this into the static initializer as the
-	 * "Find Broken Externalized Strings" tool will not be
-	 * able to find the corresponding bundle file.
-	 */
-	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.uitext"; //$NON-NLS-1$
-
 	static {
-		initializeMessages(BUNDLE_NAME, UIText.class);
+		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$
 	}
 }
