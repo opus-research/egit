@@ -42,9 +42,9 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.storage.file.CheckoutEntry;
-import org.eclipse.jgit.storage.file.ReflogEntry;
-import org.eclipse.jgit.storage.file.ReflogReader;
+import org.eclipse.jgit.internal.storage.file.CheckoutEntry;
+import org.eclipse.jgit.internal.storage.file.ReflogEntry;
+import org.eclipse.jgit.internal.storage.file.ReflogReader;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
@@ -514,7 +514,7 @@ public class RepositoryUtil {
 	 * @param repository
 	 *            the repository to check
 	 * @return the fast-forward mode for the current branch
-	 * @since 2.4
+	 * @since 3.0
 	 */
 	public FastForwardMode getFastForwardMode(Repository repository) {
 		FastForwardMode ffmode = FastForwardMode.valueOf(repository.getConfig()
