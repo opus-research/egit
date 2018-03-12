@@ -2,6 +2,7 @@
 <?eclipse version="3.0"?>
 <plugin>
    <extension-point id="commitMessageProvider" name="%CommitMessageProviderExtension-point.name" schema="schema/commitMessageProvider.exsd"/>
+   <extension-point id="cloneSourceProvider" name="%CloneSourceProviderExtension-point.name" schema="schema/cloneSourceProvider.exsd"/>
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.eclipse.egit.ui.PluginPreferenceInitializer"/>
    </extension>
@@ -434,18 +435,9 @@
       </page>
       <page
             category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.SynchronizePreferencePage"
-            id="org.eclipse.egit.ui.internal.preferences.SynchronizePreferencePage"
-            name="%SynchronizePreferencePage.name">
-         <keywordReference
-               id="org.eclipse.egit.ui.keyword.git">
-         </keywordReference>
-      </page>
-      <page
-            category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"
-            id="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"
-            name="%HistoryPreferencePage.name">
+            class="org.eclipse.egit.ui.internal.preferences.ViewsPreferencePage"
+            id="org.eclipse.egit.ui.internal.preferences.ViewsPreferencePage"
+            name="%ViewsPreferencePage.name">
          <keywordReference
                id="org.eclipse.egit.ui.keyword.git">
          </keywordReference>
@@ -4288,5 +4280,15 @@
 			<property name="product" value="EGit"/>
 			<property name="component" value="Mylyn"/>
 		</mapping>
+  </extension>
+  <extension
+        point="org.eclipse.egit.ui.cloneSourceProvider">
+     <source
+           hasFixLocation="true"
+           icon="/icons/obj16/editconfig.gif"
+           label="Custom URI">
+     </source>
+     <repositorySearchPage
+           class="org.eclipse.egit.ui.internal.components.RepositorySelectionPage"></repositorySearchPage>
   </extension>
 </plugin>

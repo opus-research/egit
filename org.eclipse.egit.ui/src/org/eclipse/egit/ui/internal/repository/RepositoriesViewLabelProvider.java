@@ -343,8 +343,15 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 				StyledString dirString = new StyledString(
 						UIText.RepositoriesView_WorkingDir_treenode);
 				dirString.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-				dirString.append(node.getRepository().getWorkTree()
-						.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
+				if (node.getRepository().isBare()) {
+					dirString
+							.append(
+									UIText.RepositoriesViewLabelProvider_BareRepositoryMessage,
+									StyledString.QUALIFIER_STYLER);
+				} else {
+					dirString.append(node.getRepository().getWorkTree()
+							.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
+				}
 				return dirString;
 
 			case REF:
@@ -458,8 +465,13 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 			return refName;
 		}
 		case WORKINGDIR:
-			return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
-					+ node.getRepository().getWorkTree().getAbsolutePath();
+			if (node.getRepository().isBare())
+				return UIText.RepositoriesView_WorkingDir_treenode
+						+ " - " //$NON-NLS-1$
+						+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
+			else
+				return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
+						+ node.getRepository().getWorkTree().getAbsolutePath();
 		case REMOTE:
 			// fall through
 		case PUSH:
