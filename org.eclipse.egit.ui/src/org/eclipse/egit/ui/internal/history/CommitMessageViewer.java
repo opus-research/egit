@@ -105,7 +105,7 @@ class CommitMessageViewer extends TextViewer implements
 	private static final Cursor SYS_LINK_CURSOR = PlatformUI.getWorkbench()
 			.getDisplay().getSystemCursor(SWT.CURSOR_HAND);
 
-	private final DateFormat fmt = new SimpleDateFormat(
+	private static final DateFormat fmt = new SimpleDateFormat(
 			"yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
 
 	private final Cursor sys_normalCursor;
@@ -808,7 +808,7 @@ class CommitMessageViewer extends TextViewer implements
 					- matcher.start(), null, null, SWT.ITALIC));
 		}
 
-		// build the list of file diffs asynchronously to ensure UI
+		// build the asynchronously to ensure UI
 		// responsiveness
 		if (!currentDiffs.isEmpty())
 			buildDiffs(d, styles, monitor, trace);
