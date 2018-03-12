@@ -27,9 +27,11 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Color;
 
 /**
- * Diff style range formatter class that builds up a list of
- * {@link DiffStyleRange} instances as each {@link FileDiff} is being written to
- * an {@link IDocument}.
+ * Diff style range formatter class. This class builds up a list of
+ * {@link DiffStyleRange} instances as a {@link FileDiff} is being written to an
+ * {@link IDocument}.
+ *
+ * @author Kevin Sawicki (kevin@github.com)
  */
 public class DiffStyleRangeFormatter extends DiffFormatter {
 
@@ -70,15 +72,6 @@ public class DiffStyleRangeFormatter extends DiffFormatter {
 		 */
 		public Type diffType = Type.OTHER;
 
-		/**
-		 * Line background
-		 */
-		public Color lineBackground = null;
-
-		public boolean similarTo(StyleRange style) {
-			return super.similarTo(style) && style instanceof DiffStyleRange
-					&& diffType == ((DiffStyleRange) style).diffType;
-		}
 	}
 
 	private static class DocumentOutputStream extends OutputStream {
@@ -137,6 +130,34 @@ public class DiffStyleRangeFormatter extends DiffFormatter {
 	 */
 	public DiffStyleRangeFormatter(IDocument document) {
 		this(document, document.getLength());
+	}
+
+	/**
+	 * Update styles
+	 *
+	 * @param addColor
+	 * @param removeColor
+	 * @param hunkColor
+	 * @return this formatter
+	 */
+	public DiffStyleRangeFormatter updateStyles(Color addColor,
+			Color removeColor, Color hunkColor) {
+		for (DiffStyleRange range : ranges)
+			switch (range.diffType) {
+			case ADD:
+				range.foreground = addColor;
+				break;
+			case REMOVE:
+				range.foreground = removeColor;
+				break;
+			case HUNK:
+				range.foreground = hunkColor;
+				break;
+			default:
+				range.foreground = null;
+				break;
+			}
+		return this;
 	}
 
 	/**
