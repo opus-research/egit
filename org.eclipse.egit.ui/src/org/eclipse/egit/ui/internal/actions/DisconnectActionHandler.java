@@ -16,12 +16,13 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.job.JobUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.op.DisconnectProviderOperation;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
+import org.eclipse.team.core.RepositoryProvider;
 
 /**
  * Action to disassociate a project from its Git repository.
@@ -29,18 +30,16 @@ import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
  * @see DisconnectProviderOperation
  */
 public class DisconnectActionHandler extends RepositoryActionHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IProject[] selectedProjects = getProjectsForSelectedResources();
 		List<IProject> projects = new ArrayList<IProject>(selectedProjects.length);
 		for (IProject project : selectedProjects) {
-			if (project.isOpen() && ResourceUtil.isSharedWithGit(project)) {
+			if (project.isOpen()
+					&& RepositoryProvider.getProvider(project) instanceof GitProvider)
 				projects.add(project);
-			}
 		}
-		if (projects.isEmpty()) {
+		if (projects.isEmpty())
 			return null;
-		}
 		JobUtil.scheduleUserJob(new DisconnectProviderOperation(projects),
 				UIText.Disconnect_disconnect,
 				JobFamilies.DISCONNECT, new JobChangeAdapter() {

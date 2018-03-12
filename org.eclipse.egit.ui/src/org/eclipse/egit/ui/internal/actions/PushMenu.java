@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.action.IContributionItem;
@@ -58,10 +57,10 @@ public class PushMenu extends CompoundContributionItem implements
 		return true;
 	}
 
-	@Override
 	public void initialize(IServiceLocator locator) {
 		this.serviceLocator = locator;
-		this.handlerService = CommonUtils.getService(locator, IHandlerService.class);
+		this.handlerService = (IHandlerService) locator
+				.getService(IHandlerService.class);
 	}
 
 	@Override
@@ -76,7 +75,7 @@ public class PushMenu extends CompoundContributionItem implements
 				try {
 					String ref = repository.getFullBranch();
 					String menuLabel = UIText.PushMenu_PushHEAD;
-					if (ref != null && ref.startsWith(Constants.R_HEADS)) {
+					if (ref.startsWith(Constants.R_HEADS)) {
 						menuLabel = NLS.bind(UIText.PushMenu_PushBranch,
 								Repository.shortenRefName(ref));
 					}

@@ -83,10 +83,8 @@ public class GlobalConfigurationPageTest {
 
 	@After
 	public void after() throws Exception {
-		if (preferencePage != null) {
+		if (preferencePage != null)
 			preferencePage.close();
-		}
-		TestUtil.processUIEvents();
 	}
 
 	@AfterClass
@@ -95,7 +93,6 @@ public class GlobalConfigurationPageTest {
 		SWTBotShell preferencePage = new Eclipse().openPreferencePage(null);
 		preferencePage.bot().tree(0).getTreeItem("General").select();
 		preferencePage.bot().button(IDialogConstants.OK_LABEL).click();
-		TestUtil.processUIEvents();
 	}
 
 	@Test

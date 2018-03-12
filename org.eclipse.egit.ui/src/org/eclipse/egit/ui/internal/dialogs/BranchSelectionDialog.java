@@ -40,7 +40,6 @@ import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
@@ -107,15 +106,12 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 				/*
 				 * Overridden to check page when refreshing is done.
 				 */
-				@Override
 				protected WorkbenchJob doCreateRefreshJob() {
 					WorkbenchJob refreshJob = super.doCreateRefreshJob();
 					refreshJob.addJobChangeListener(new JobChangeAdapter() {
-						@Override
 						public void done(IJobChangeEvent event) {
 							if (event.getResult().isOK()) {
 								getDisplay().asyncExec(new Runnable() {
-									@Override
 									public void run() {
 										checkPage();
 									}
@@ -130,40 +126,33 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 			CachedCheckboxTreeViewer viewer = fTree.getCheckboxTreeViewer();
 			GridDataFactory.fillDefaults().grab(true, true).applyTo(fTree);
 			viewer.setContentProvider(new ITreeContentProvider() {
-				@Override
 				public void inputChanged(Viewer actViewer, Object oldInput,
 						Object newInput) {
 					// nothing
 				}
 
-				@Override
 				public void dispose() {
 					// nothing
 				}
 
-				@Override
 				public boolean hasChildren(Object element) {
 					return false;
 				}
 
-				@Override
 				public Object getParent(Object element) {
 					return null;
 				}
 
-				@Override
 				public Object[] getElements(Object inputElement) {
 					return ((List) inputElement).toArray();
 				}
 
-				@Override
 				public Object[] getChildren(Object parentElement) {
 					return null;
 				}
 			});
 
 			viewer.addCheckStateListener(new ICheckStateListener() {
-				@Override
 				public void checkStateChanged(CheckStateChangedEvent event) {
 					checkPage();
 				}
@@ -185,13 +174,11 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 			branchesList.setInput(nodes);
 			branchesList
 					.addSelectionChangedListener(new ISelectionChangedListener() {
-						@Override
 						public void selectionChanged(SelectionChangedEvent event) {
 							checkPage();
 						}
 					});
 			branchesList.addDoubleClickListener(new IDoubleClickListener() {
-				@Override
 				public void doubleClick(DoubleClickEvent event) {
 					buttonPressed(OK);
 				}
@@ -201,20 +188,12 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 	}
 
 	private void checkPage() {
-		Button ok = getButton(OK);
-		if (ok.isDisposed()) {
-			return;
-		}
-
-		if (multiMode) {
-			if (fTree == null || fTree.isDisposed()) {
-				return;
-			}
-			ok.setEnabled(
+		if (multiMode)
+			getButton(OK).setEnabled(
 					fTree.getCheckboxTreeViewer().getCheckedLeafCount() > 0);
-		} else {
-			ok.setEnabled(!branchesList.getSelection().isEmpty());
-		}
+		else
+			getButton(OK).setEnabled(!branchesList.getSelection().isEmpty());
+
 	}
 
 	@SuppressWarnings("unchecked")

@@ -27,13 +27,11 @@ import org.eclipse.ui.navigator.CommonDragAdapterAssistant;
  */
 public class RepositoryDragAssistant extends CommonDragAdapterAssistant {
 
-	@Override
 	public Transfer[] getSupportedTransferTypes() {
 		return new Transfer[] { LocalSelectionTransfer.getTransfer(),
 				FileTransfer.getInstance() };
 	}
 
-	@Override
 	public boolean setDragData(final DragSourceEvent event,
 			final IStructuredSelection selection) {
 		if (selection == null || selection.isEmpty())
@@ -60,7 +58,6 @@ public class RepositoryDragAssistant extends CommonDragAdapterAssistant {
 		return false;
 	}
 
-	@Override
 	public void dragFinished(final DragSourceEvent event,
 			final IStructuredSelection selection) {
 		if (LocalSelectionTransfer.getTransfer()
