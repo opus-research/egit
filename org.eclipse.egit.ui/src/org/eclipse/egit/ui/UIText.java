@@ -108,9 +108,6 @@ public class UIText extends NLS {
 	public static String GitCloneWizard_errorCannotCreate;
 
 	/** */
-	public static String GitHistoryPage_FileNotInCommit;
-
-	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
