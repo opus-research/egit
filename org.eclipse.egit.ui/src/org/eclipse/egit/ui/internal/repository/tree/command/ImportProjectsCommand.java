@@ -30,7 +30,7 @@ public class ImportProjectsCommand extends
 		case REPO:
 			// fall through
 		case WORKINGDIR:
-			path = node.getRepository().getWorkTree().toString();
+			path = node.getRepository().getWorkDir().toString();
 			break;
 		case FOLDER:
 			path = ((FolderNode) node).getObject().getPath().toString();
@@ -40,7 +40,7 @@ public class ImportProjectsCommand extends
 		}
 
 		WizardDialog dlg = new WizardDialog(
-				getView(event).getSite().getShell(),
+				getShell(event),
 				new GitCreateProjectViaWizardWizard(node.getRepository(), path));
 		dlg.open();
 

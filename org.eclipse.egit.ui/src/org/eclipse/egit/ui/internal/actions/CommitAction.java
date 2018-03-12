@@ -45,15 +45,15 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
-import org.eclipse.jgit.lib.UserConfig;
-import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.Team;
 import org.eclipse.team.core.TeamException;
@@ -134,7 +134,7 @@ public class CommitAction extends RepositoryAction {
 		String author = null;
 		String committer = null;
 		if (repository != null) {
-			final UserConfig config = repository.getConfig().get(UserConfig.KEY);
+			final RepositoryConfig config = repository.getConfig();
 			author = config.getAuthorName();
 			final String authorEmail = config.getAuthorEmail();
 			author = author + " <" + authorEmail + ">"; //$NON-NLS-1$ //$NON-NLS-2$
@@ -171,6 +171,7 @@ public class CommitAction extends RepositoryAction {
 			commitOperation.setPreviousCommit(previousCommit);
 			commitOperation.setRepos(repos);
 		}
+		commitOperation.setComputeChangeId(commitDialog.getCreateChangeId());
 		String jobname = UIText.CommitAction_CommittingChanges;
 		Job job = new Job(jobname) {
 			@Override
@@ -365,7 +366,7 @@ public class CommitAction extends RepositoryAction {
 			String repoRelativePath = map.getRepoRelativePath(resource);
 			Entry entry = index.getEntry(repoRelativePath);
 			if (entry != null)
-				return entry.isModified(map.getWorkTree());
+				return entry.isModified(map.getWorkDir());
 			return false;
 		} catch (UnsupportedEncodingException e) {
 			if (GitTraceLocation.UI.isActive())

@@ -42,7 +42,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.team.core.variants.IResourceVariant;
 import org.eclipse.team.core.variants.ResourceVariantByteStore;
 import org.eclipse.team.core.variants.SessionResourceVariantByteStore;
@@ -61,7 +60,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 	public void createGitRepository() throws Exception {
 		IProject iProject = project.project;
 		if (!gitDir.exists())
-			new FileRepository(gitDir).create();
+			new Repository(gitDir).create();
 
 		new ConnectProviderOperation(iProject, gitDir).execute(null);
 		repo = RepositoryMapping.getMapping(iProject).getRepository();

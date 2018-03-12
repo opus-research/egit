@@ -39,8 +39,6 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 
 class CommitFileDiffViewer extends TableViewer {
-	private Repository db;
-
 	private TreeWalk walker;
 
 	private Clipboard clipboard;
@@ -82,6 +80,7 @@ class CommitFileDiffViewer extends TableViewer {
 	void showTwoWayFileDiff(final FileDiff d) {
 		final GitCompareFileRevisionEditorInput in;
 
+		final Repository db = walker.getRepository();
 		final String p = d.path;
 		final RevCommit c = d.commit;
 		final ITypedElement base;
@@ -98,8 +97,7 @@ class CommitFileDiffViewer extends TableViewer {
 		return walker;
 	}
 
-	void setTreeWalk(final Repository r, final TreeWalk walk) {
-		db = r;
+	void setTreeWalk(final TreeWalk walk) {
 		walker = walk;
 	}
 
