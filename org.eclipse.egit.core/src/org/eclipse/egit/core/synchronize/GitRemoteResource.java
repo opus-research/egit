@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,6 +11,7 @@ package org.eclipse.egit.core.synchronize;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.variants.CachedResourceVariant;
 
@@ -21,6 +22,7 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 	private final RevCommit commitId;
 
 	private final ObjectId objectId;
+
 
 	GitRemoteResource(RevCommit commitId, ObjectId objectId, String path) {
 		this.path = path;
@@ -34,7 +36,20 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 	}
 
 	public String getContentIdentifier() {
-		return commitId.abbreviate(7).name() + "..."; //$NON-NLS-1$
+		if (commitId == null)
+			return ""; //$NON-NLS-1$
+
+		StringBuilder s = new StringBuilder();
+		s.append(commitId.abbreviate(7).name());
+		s.append("..."); //$NON-NLS-1$
+
+		PersonIdent authorIdent = commitId.getAuthorIdent();
+		if (authorIdent != null) {
+			s.append(" ("); //$NON-NLS-1$
+			s.append(authorIdent.getName());
+			s.append(")"); //$NON-NLS-1$
+		}
+		return s.toString();
 	}
 
 	public byte[] asBytes() {

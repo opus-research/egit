@@ -35,9 +35,7 @@ public class RemoveFromIndexActionHandler extends RepositoryActionHandler {
 		if (sel.length == 0)
 			return null;
 
-		Repository repo = getRepository(true, event);
-		if (repo == null)
-			return null;
+		Repository repo = getRepository();
 		final RemoveFromIndexOperation removeOperation = new RemoveFromIndexOperation(
 				repo, sel);
 		Job job = new Job(UIText.RemoveFromIndexAction_removingFiles) {
@@ -72,8 +70,7 @@ public class RemoveFromIndexActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return getProjectsInRepositoryOfSelectedResources().length > 0
-				&& !selectionContainsLinkedResources();
+		return getProjectsInRepositoryOfSelectedResources().length > 0;
 	}
 
 }

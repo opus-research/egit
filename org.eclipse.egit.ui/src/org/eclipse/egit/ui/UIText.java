@@ -5,6 +5,7 @@
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -34,6 +35,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
+
+	/** */
+	public static String AbstractHistoryCommanndHandler_NoUniqueRepository;
 
 	/** */
 	public static String AbstractRebaseCommand_DialogTitle;
@@ -789,6 +793,9 @@ public class UIText extends NLS {
 	public static String ReplaceTargetSelectionDialog_ReplaceTitle;
 
 	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceTitleEmptyPath;
+
+	/** */
 	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
 
 	/** */
@@ -975,6 +982,9 @@ public class UIText extends NLS {
 	public static String CompareTreeView_AnalyzingRepositoryTaskText;
 
 	/** */
+	public static String CompareTreeView_ExpandAllTooltip;
+
+	/** */
 	public static String CompareTreeView_CollapseAllTooltip;
 
 	/** */
@@ -1030,12 +1040,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoryAction_errorFindingRepoTitle;
-
-	/** */
-	public static String RepositoryAction_linkedResourceSelection;
-
-	/** */
-	public static String RepositoryAction_linkedResourceSelectionTitle;
 
 	/** */
 	public static String RepositoryAction_multiRepoSelection;
@@ -1977,19 +1981,7 @@ public class UIText extends NLS {
 	public static String ConfigurationChecker_gitPrefixWarningMessage;
 
 	/** */
-	public static String ConfigurationChecker_gitPrefixWarningTitle;
-
-	/** */
-	public static String ConfigurationChecker_checkHomeDirectory;
-
-	/** */
 	public static String ConfigurationChecker_checkConfiguration;
-
-	/** */
-	public static String ConfigurationChecker_doNotShowAgain;
-
-	/** */
-	public static String ConfigurationChecker_doNotShowGitPrefixWarningAgain;
 
 	/** */
 	public static String ConfigurationChecker_homeNotSet;
@@ -2176,6 +2168,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
+
+	/** */
+	public static String CompareUtils_errorCommonAncestor;
 
 	/** */
 	public static String ConfirmationPage_cantConnectToAnyTitle;
@@ -3078,6 +3073,9 @@ public class UIText extends NLS {
 	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
 
 	/** */
+	public static String DialogsPreferencePage_HideWarningGroupHeader;
+
+	/** */
 	public static String DialogsPreferencePage_HomeDirWarning;
 
 	/** */
@@ -3712,6 +3710,9 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenInEditorMenuLabel;
 
 	/** */
+	public static String CommitFileDiffViewer_ShowInMenuLabel;
+
+	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
 
 	/** */
@@ -3749,6 +3750,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitSynchronizeWizard_synchronize;
+
+	/** */
+	public static String GitChangeSetModelProviderLabel;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_title;
@@ -4460,6 +4464,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_CommitMessage;
+
+	/** */
+	public static String StagingView_CommitAndPush;
 
 	/** */
 	public static String StagingView_Committer;

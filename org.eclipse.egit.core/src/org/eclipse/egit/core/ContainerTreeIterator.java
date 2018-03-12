@@ -156,12 +156,6 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		return r;
 	}
 
-	@Override
-	public boolean isEntryIgnored() throws IOException {
-		return super.isEntryIgnored() ||
-			getResourceEntry().getResource().isLinked(IResource.CHECK_ANCESTORS);
-	}
-
 	/**
 	 * Wrapper for a resource in the Eclipse workspace
 	 */
