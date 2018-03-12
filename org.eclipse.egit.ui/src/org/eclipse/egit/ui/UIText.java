@@ -751,6 +751,12 @@ public class UIText extends NLS {
 	public static String CompareTreeView_WorkspaceVersionText;
 
 	/** */
+	public static String CompareUtils_errorGettingEncoding;
+
+	/** */
+	public static String CompareUtils_errorGettingHeadCommit;
+
+	/** */
 	public static String MergeHandler_SelectBranchMessage;
 
 	/** */
@@ -2377,6 +2383,9 @@ public class UIText extends NLS {
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
 
 	/** */
+	public static String DeleteBranchCommand_DeletingBranchesProgress;
+
+	/** */
 	public static String DeleteBranchDialog_DialogMessage;
 
 	/** */
@@ -2939,6 +2948,12 @@ public class UIText extends NLS {
 	public static String CommitEditorPage_LabelParent;
 
 	/** */
+	public static String CommitEditorPage_LabelTags;
+
+	/** */
+	public static String CommitEditorPage_SectionBranches;
+
+	/** */
 	public static String CommitEditorPage_SectionFiles;
 
 	/** */
@@ -2946,6 +2961,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitEditorPage_Title;
+
+	/** */
+	public static String CommitEditorPage_TooltipAuthor;
+
+	/** */
+	public static String CommitEditorPage_TooltipCommitter;
+
+	/** */
+	public static String CommitEditorPage_TooltipSignedOffByAuthor;
+
+	/** */
+	public static String CommitEditorPage_TooltipSignedOffByCommitter;
 
 	/** */
 	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
@@ -3476,6 +3503,54 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
+	public static String CommitResultLabelProvider_SectionAuthor;
+
+	/** */
+	public static String CommitResultLabelProvider_SectionMessage;
+
+	/** */
+	public static String CommitResultLabelProvider_SectionRepository;
+
+	/** */
+	public static String CommitSearchPage_Author;
+
+	/** */
+	public static String CommitSearchPage_CaseSensitive;
+
+	/** */
+	public static String CommitSearchPage_CommitId;
+
+	/** */
+	public static String CommitSearchPage_Committer;
+
+	/** */
+	public static String CommitSearchPage_ContainingText;
+
+	/** */
+	public static String CommitSearchPage_ContainingTextHint;
+
+	/** */
+	public static String CommitSearchPage_Message;
+
+	/** */
+	public static String CommitSearchPage_ParentIds;
+
+	/** */
+	public static String CommitSearchPage_RegularExpression;
+
+	/** */
+	public static String CommitSearchPage_Repositories;
+
+	/** */
+	public static String CommitSearchPage_Scope;
+
+	/** */
+	public static String CommitSearchPage_SearchAllBranches;
+
+	/** */
+	public static String CommitSearchPage_TreeId;
+
+	/** */
 	public static String CommitSearchQuery_Label;
 
 	/** */
@@ -3503,13 +3578,40 @@ public class UIText extends NLS {
 	public static String CommitSelectionDialog_IncompleteListMessage;
 
 	/** */
+	public static String CommitSelectionDialog_LinkSearch;
+
+	/** */
+	public static String CommitSelectionDialog_Message;
+
+	/** */
+	public static String CommitSelectionDialog_SectionMessage;
+
+	/** */
+	public static String CommitSelectionDialog_SectionRepo;
+
+	/** */
+	public static String CommitSelectionDialog_TaskSearching;
+
+	/** */
+	public static String CommitSelectionDialog_Title;
+
+	/** */
 	public static String CommitSelectionDialog_WindowTitle;
+
+	/** */
+	public static String CommitUI_commitFailed;
 
 	/** */
 	public static String EgitUiEditorUtils_openFailed;
 
 	/** */
 	public static String GitActionContributor_ExpandAll;
+
+	/** */
+	public static String GitActionContributor_Push;
+
+	/** */
+	public static String GitActionContributor_Pull;
 
 	/** */
 	public static String DecoratableResourceHelper_noHead;
