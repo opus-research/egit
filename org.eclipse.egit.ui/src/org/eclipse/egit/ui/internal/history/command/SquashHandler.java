@@ -36,11 +36,11 @@ import org.eclipse.jgit.revwalk.RevCommit;
 public class SquashHandler extends AbstractHistoryCommandHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Repository repository = getRepository(event);
-		List<RevCommit> commits = getSelectedCommits(event);
+		List<RevCommit> commits = getSelectedCommits();
 
 		try {
 			if (!CommitUtil.areCommitsInCurrentBranch(commits, repository)) {
-				MessageDialog.openError(getPart(event).getSite().getShell(),
+				MessageDialog.openError(getPage().getSite().getShell(),
 						UIText.SquashHandler_Error_Title,
 						UIText.SquashHandler_CommitsNotOnCurrentBranch);
 				return null;
