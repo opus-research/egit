@@ -213,12 +213,6 @@
                   type="org.eclipse.ui.model.IWorkbenchAdapter"/>
          </factory>
          <factory
-	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelCache"
-               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
-            <adapter
-                  type="org.eclipse.ui.model.IWorkbenchAdapter"/>
-         </factory>
-         <factory
 	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelTree"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
@@ -243,11 +237,6 @@
       </factory>
       <factory
             adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit"
-            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
-         <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
-      </factory>
-      <factory
-            adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelCache"
             class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
          <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
       </factory>
@@ -287,6 +276,15 @@
 		  id="org.eclipse.egit.ui.keyword.git">
 	    </keywordReference>
       </page>
+      <page name="%GitPreferences_RefreshPreferences_name"
+	    category="org.eclipse.egit.ui.GitPreferences"
+            class="org.eclipse.egit.ui.internal.preferences.RefreshPreferencesPage"
+	    id="org.eclipse.egit.ui.internal.preferences.RefreshPreferencesPage" >
+	    <keywordReference
+		  id="org.eclipse.egit.ui.keyword.git"/>
+	    <keywordReference
+		  id="org.eclipse.egit.ui.keyword.refresh"/>
+	    </page>
 	  <page name="%GitPreferences_DecoratorPreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.GitDecoratorPreferencePage"
@@ -326,6 +324,10 @@
 	  <keyword
 			id="org.eclipse.egit.ui.keyword.git"
 			label="%GitKeyword_label">
+	  </keyword>
+	  <keyword
+			id="org.eclipse.egit.ui.keyword.refresh"
+			label="%GitKeyword_Refresh_label">
 	  </keyword>
    </extension>
 
