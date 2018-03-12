@@ -39,6 +39,7 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.test.Eclipse;
@@ -54,6 +55,7 @@ import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -74,11 +76,13 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	protected static final String EMPTY_REPOSITORY = "EmptyRepository";
 
-	protected static File repositoryFile;
+	static File repositoryFile;
 
 	@Before public void setupViews() {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
+		Activator.getDefault().getPreferenceStore()
+				.setValue(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, false);
 	}
 
 	@BeforeClass public static void setupEnvironment() throws Exception {
@@ -184,11 +188,15 @@ public abstract class AbstractSynchronizeViewTest extends
 	protected SWTBot setPresentationModel(String modelName,
 			String toolbarDropDownTooltip) throws Exception {
 		SWTBotView syncView = bot.viewByTitle("Synchronize");
-		SWTBotToolbarDropDownButton dropDown = syncView
-				.toolbarDropDownButton(toolbarDropDownTooltip);
-		dropDown.menuItem(modelName).click();
-		// hide drop down
-		dropDown.pressShortcut(KeyStroke.getInstance("ESC"));
+		for (SWTBotToolbarButton button : syncView.getToolbarButtons()) {
+			if (button.getToolTipText().equals(toolbarDropDownTooltip)) {
+				SWTBotToolbarDropDownButton dropDown = (SWTBotToolbarDropDownButton) button;
+				dropDown.menuItem(modelName).click();
+				// hide drop down
+				dropDown.pressShortcut(KeyStroke.getInstance("ESC"));
+
+			}
+		}
 
 		return syncView.bot();
 	}
