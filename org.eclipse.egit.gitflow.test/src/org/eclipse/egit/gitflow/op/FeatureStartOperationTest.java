@@ -8,9 +8,9 @@
  *******************************************************************************/
 package org.eclipse.egit.gitflow.op;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.jgit.lib.Repository;
@@ -30,9 +30,10 @@ public class FeatureStartOperationTest extends AbstractFeatureOperationTest {
 				repository.getFullBranch());
 	}
 
-	public void testFeatureStartOnMaster() throws Exception {
+	@Test(expected = CoreException.class)
+	public void testFeatureStartFail() throws Exception {
 		Repository repository = testRepository.getRepository();
-		GitFlowRepository gfRepo = init("testFeatureStartOnMaster\n\nfirst commit\n");
+		GitFlowRepository gfRepo = init("testFeatureStart\n\nfirst commit\n");
 
 		BranchOperation branchOperation = new BranchOperation(repository,
 				MY_MASTER);

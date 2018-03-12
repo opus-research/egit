@@ -115,8 +115,6 @@ public class ResourcePropertyTester extends PropertyTester {
 					return true;
 				case REBASING_REBASING:
 					return true;
-				case REBASING_MERGE:
-					return true;
 				default:
 					return false;
 				}
@@ -124,8 +122,6 @@ public class ResourcePropertyTester extends PropertyTester {
 			if ("canContinueRebase".equals(property)) //$NON-NLS-1$
 				switch (state) {
 				case REBASING_INTERACTIVE:
-					return true;
-				case REBASING_MERGE:
 					return true;
 				default:
 					return false;

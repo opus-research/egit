@@ -3,7 +3,6 @@
  * Copyright (C) 2012, 2013 Tomasz Zarna <tzarna@gmail.com>
  * Copyright (C) 2014 Axel Richard <axel.richard@obeo.fr>
  * Copyright (C) 2015 Obeo
- * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,7 +14,6 @@
  *    Tomasz Zarna (IBM) - merge squash, bug 382720
  *    Axel Richard (Obeo) - merge message, bug 422886
  *    Laurent Delaigue (Obeo) - use of preferred merge strategy
- *    Stephan Hackstedt - bug 477695
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -28,15 +26,15 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
-import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
 import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
@@ -145,23 +143,23 @@ public class MergeOperation implements IEGitOperation {
 		this.message = message;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		if (mergeResult != null)
 			throw new CoreException(new Status(IStatus.ERROR, Activator
 					.getPluginId(), CoreText.OperationAlreadyExecuted));
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor mymonitor) throws CoreException {
 				IProject[] validProjects = ProjectUtil.getValidOpenProjects(repository);
-				SubMonitor progress = SubMonitor.convert(mymonitor, NLS.bind(
-						CoreText.MergeOperation_ProgressMerge, refName), 3);
+				mymonitor.beginTask(NLS.bind(CoreText.MergeOperation_ProgressMerge, refName), 3);
 				Git git = new Git(repository);
-				progress.worked(1);
-				MergeCommand merge = git.merge()
-						.setProgressMonitor(
-								new EclipseGitProgressTransformer(progress.newChild(1)));
+				mymonitor.worked(1);
+				MergeCommand merge = git.merge();
 				try {
 					Ref ref = repository.getRef(refName);
 					if (ref != null)
@@ -184,6 +182,7 @@ public class MergeOperation implements IEGitOperation {
 					merge.setMessage(message);
 				try {
 					mergeResult = merge.call();
+					mymonitor.worked(1);
 					if (MergeResult.MergeStatus.NOT_SUPPORTED.equals(mergeResult.getMergeStatus()))
 						throw new TeamException(new Status(IStatus.INFO, Activator.getPluginId(), mergeResult.toString()));
 				} catch (NoHeadException e) {
@@ -196,14 +195,15 @@ public class MergeOperation implements IEGitOperation {
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
 				} finally {
-					ProjectUtil.refreshValidProjects(validProjects,
-							progress.newChild(1));
+					ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
+							mymonitor, 1));
+					mymonitor.done();
 				}
 			}
 		};
 		// lock workspace to protect working tree changes
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, m);
+				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
 	/**
@@ -214,7 +214,6 @@ public class MergeOperation implements IEGitOperation {
 		return this.mergeResult;
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repository);
 	}

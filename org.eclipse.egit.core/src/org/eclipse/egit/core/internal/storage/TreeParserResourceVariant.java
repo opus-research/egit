@@ -51,7 +51,6 @@ public class TreeParserResourceVariant extends AbstractGitResourceVariant {
 				objectId, rawMode);
 	}
 
-	@Override
 	public IStorage getStorage(IProgressMonitor monitor) throws TeamException {
 		return new GitBlobStorage(repository, path, objectId);
 	}

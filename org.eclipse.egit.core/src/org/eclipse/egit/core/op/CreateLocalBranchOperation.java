@@ -79,7 +79,6 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 		this.upstreamConfig = null;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -88,7 +87,6 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 			monitor = m;
 
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				String taskName = NLS
 						.bind(
@@ -135,7 +133,6 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repository);
 	}

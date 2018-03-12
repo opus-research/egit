@@ -596,8 +596,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 															repository,
 															result,
 															op
-													.getDestinationString(),
-													true);
+													.getDestinationString());
 													dlg.showConfigureButton(false);
 													dlg.open();
 												}

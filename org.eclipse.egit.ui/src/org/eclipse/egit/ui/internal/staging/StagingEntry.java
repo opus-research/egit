@@ -18,21 +18,19 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 
 
 /**
  * A staged/unstaged entry in the table
  */
-public class StagingEntry extends PlatformObject
-		implements IProblemDecoratable, IDecoratableResource {
+public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
 
 	/**
 	 * State of the node
@@ -123,7 +121,7 @@ public class StagingEntry extends PlatformObject
 		this.repository = repository;
 		this.state = state;
 		this.path = path;
-		this.file = ResourceUtil.getFileForLocation(repository, path, false);
+		this.file = ResourceUtil.getFileForLocation(repository, path);
 	}
 
 	/**
@@ -197,7 +195,6 @@ public class StagingEntry extends PlatformObject
 	/**
 	 * @return the location (path) of the entry
 	 */
-	@NonNull
 	public IPath getLocation() {
 		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
 		return absolutePath;
@@ -228,6 +225,15 @@ public class StagingEntry extends PlatformObject
 		} catch (CoreException e) {
 			return SEVERITY_NONE;
 		}
+	}
+
+	@Override
+	public Object getAdapter(Class adapter) {
+		if (adapter == IResource.class)
+			return getFile();
+		else if (adapter == IPath.class)
+			return getLocation();
+		return null;
 	}
 
 	@Override
@@ -276,35 +282,20 @@ public class StagingEntry extends PlatformObject
 	}
 
 	@Override
-	public boolean isMissing() {
-		return state == State.MISSING || state == State.MISSING_AND_CHANGED;
-	}
-
-	@Override
-	public boolean hasUnstagedChanges() {
-		return !isTracked() || isDirty() || isMissing() || hasConflicts();
-	}
-
-	@Override
-	public StagingState getStagingState() {
+	public Staged staged() {
 		switch (state) {
 		case ADDED:
-			return StagingState.ADDED;
+			return Staged.ADDED;
 		case CHANGED:
-			return StagingState.MODIFIED;
+			return Staged.MODIFIED;
 		case REMOVED:
-			return StagingState.REMOVED;
+			return Staged.REMOVED;
 		case MISSING:
 		case MISSING_AND_CHANGED:
-			return StagingState.REMOVED;
+			return Staged.REMOVED;
 		default:
-			return StagingState.NOT_STAGED;
+			return Staged.NOT_STAGED;
 		}
-	}
-
-	@Override
-	public boolean isStaged() {
-		return getStagingState() != StagingState.NOT_STAGED;
 	}
 
 	@Override
@@ -313,7 +304,7 @@ public class StagingEntry extends PlatformObject
 	}
 
 	@Override
-	public boolean isAssumeUnchanged() {
+	public boolean isAssumeValid() {
 		return false;
 	}
 

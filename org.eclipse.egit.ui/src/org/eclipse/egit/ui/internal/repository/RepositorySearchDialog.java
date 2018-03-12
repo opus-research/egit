@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,8 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 479108
- *    Simon Scholz <simon.scholz@vogella.com> - Bug 476505
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -45,7 +43,6 @@ import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.util.FS;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -220,15 +217,13 @@ public class RepositorySearchDialog extends WizardPage {
 		Group searchGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		searchGroup.setText(UIText.RepositorySearchDialog_SearchCriteriaGroup);
 		searchGroup.setLayout(new GridLayout(4, false));
-		GridDataFactory.fillDefaults().grab(true, false)
-				.minSize(SWT.DEFAULT, SWT.DEFAULT).applyTo(searchGroup);
+		GridDataFactory.fillDefaults().grab(true, false).applyTo(searchGroup);
 
 		Label dirLabel = new Label(searchGroup, SWT.NONE);
 		dirLabel.setText(UIText.RepositorySearchDialog_directory);
 		dir = new Text(searchGroup, SWT.BORDER);
-		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER)
-				.grab(true, false).hint(300, SWT.DEFAULT)
-				.minSize(100, SWT.DEFAULT).applyTo(dir);
+		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).grab(true,
+				false).hint(300, SWT.DEFAULT).applyTo(dir);
 		dir.setToolTipText(UIText.RepositorySearchDialog_EnterDirectoryToolTip);
 
 		String defaultRepoPath = RepositoryUtil.getDefaultRepositoryDir();
@@ -304,8 +299,7 @@ public class RepositorySearchDialog extends WizardPage {
 		searchResultGroup
 				.setText(UIText.RepositorySearchDialog_SearchResultGroup);
 		searchResultGroup.setLayout(new GridLayout(2, false));
-		GridDataFactory.fillDefaults().grab(true, true).minSize(SWT.DEFAULT, 0)
-				.applyTo(searchResultGroup);
+		GridDataFactory.fillDefaults().applyTo(searchResultGroup);
 
 		PatternFilter filter = new PatternFilter() {
 
@@ -329,8 +323,6 @@ public class RepositorySearchDialog extends WizardPage {
 			}
 		});
 
-		// Set a reasonable minimum height here; otherwise the dialog comes up
-		// with a tree that has only a few rows visible.
 		GridDataFactory.fillDefaults().grab(true, true).minSize(0, 300)
 				.applyTo(fTree);
 
@@ -402,7 +394,7 @@ public class RepositorySearchDialog extends WizardPage {
 			});
 	}
 
-	private void findGitDirsRecursive(File root, Set<File> strings,
+	private void findGitDirsRecursive(File root, Set<String> strings,
 			IProgressMonitor monitor, boolean lookForNestedRepositories) {
 
 		if (!root.exists() || !root.isDirectory()) {
@@ -420,14 +412,14 @@ public class RepositorySearchDialog extends WizardPage {
 				continue;
 
 			if (FileKey.isGitRepository(child, FS.DETECTED)) {
-				strings.add(child.getAbsoluteFile());
+				strings.add(child.getAbsolutePath());
 				monitor.setTaskName(NLS
 						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
 								Integer.valueOf(strings.size())));
 			} else if (FileKey.isGitRepository(new File(child,
 					Constants.DOT_GIT), FS.DETECTED)) {
-				strings.add(
-						new File(child, Constants.DOT_GIT).getAbsoluteFile());
+				strings.add(new File(child, Constants.DOT_GIT)
+						.getAbsolutePath());
 				monitor.setTaskName(NLS
 						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
 								Integer.valueOf(strings.size())));
@@ -450,7 +442,7 @@ public class RepositorySearchDialog extends WizardPage {
 		setMessage(UIText.RepositorySearchDialog_searchRepositoriesMessage);
 		setErrorMessage(null);
 		// perform the search...
-		final Set<File> directories = new HashSet<>();
+		final Set<String> directories = new HashSet<String>();
 		final File file = new File(dir.getText());
 		final boolean lookForNested = lookForNestedButton.getSelection();
 		if(!file.exists())
@@ -496,12 +488,9 @@ public class RepositorySearchDialog extends WizardPage {
 
 		int foundOld = 0;
 
-		for (File foundDir : directories) {
-			String absolutePath = foundDir.getAbsolutePath();
-			if (!fExistingDirectories.contains(absolutePath)
-					&& !fExistingDirectories.contains(FileUtils
-							.canonicalize(foundDir).getAbsolutePath())) {
-				validDirs.add(absolutePath);
+		for (String foundDir : directories) {
+			if (!fExistingDirectories.contains(foundDir)) {
+				validDirs.add(foundDir);
 			} else {
 				foundOld++;
 			}
@@ -519,15 +508,7 @@ public class RepositorySearchDialog extends WizardPage {
 		checkAllItem.setEnabled(!validDirs.isEmpty());
 		uncheckAllItem.setEnabled(!validDirs.isEmpty());
 		fTree.clearFilter();
-		// Remove the minimum height that was set initially so that we get a
-		// scrollbar when the dialog is resized.
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(fTree);
 		fTreeViewer.setInput(validDirs);
-
-		if (!validDirs.isEmpty()) {
-			fTree.getFilterControl().setFocus();
-		}
-
 		enableOk();
 	}
 

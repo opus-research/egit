@@ -8,7 +8,6 @@
  * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
- * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,11 +23,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -42,13 +40,12 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
-import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
-import org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
@@ -56,7 +53,7 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
@@ -72,21 +69,14 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextListener;
-import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
-import org.eclipse.jface.text.presentation.IPresentationReconciler;
-import org.eclipse.jface.text.presentation.PresentationReconciler;
-import org.eclipse.jface.text.rules.DefaultDamagerRepairer;
-import org.eclipse.jface.text.rules.IToken;
-import org.eclipse.jface.text.rules.Token;
+import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
+import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
 import org.eclipse.jface.text.source.ISourceViewer;
-import org.eclipse.jface.text.source.SourceViewerConfiguration;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ISelection;
@@ -151,6 +141,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.editors.text.EditorsUI;
+import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.IShowInTargetList;
 import org.eclipse.ui.part.ShowInContext;
@@ -738,6 +729,20 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			final String prop = event.getProperty();
+			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(prop)) {
+				Object oldValue = event.getOldValue();
+				if (oldValue == null || !oldValue.equals(event.getNewValue())) {
+					graph.setRelativeDate(isShowingRelativeDates());
+					graph.getTableView().refresh();
+				}
+			}
+			if (UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES.equals(prop)) {
+				Object oldValue = event.getOldValue();
+				if (oldValue == null || !oldValue.equals(event.getNewValue())) {
+					graph.setShowEmailAddresses(isShowingEmailAddresses());
+					graph.getTableView().refresh();
+				}
+			}
 			if (UIPreferences.HISTORY_MAX_BRANCH_LENGTH.equals(prop)
 					|| UIPreferences.HISTORY_MAX_TAG_LENGTH.equals(prop))
 				graph.getTableView().refresh();
@@ -855,6 +860,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr,
 				this, resources);
 
+		graph.setRelativeDate(isShowingRelativeDates());
+		graph.setShowEmailAddresses(isShowingEmailAddresses());
 		Activator.getDefault().getPreferenceStore()
 				.addPropertyChangeListener(listener);
 
@@ -886,7 +893,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				.getBackground());
 
 
-		HyperlinkSourceViewer.Configuration configuration = new HyperlinkSourceViewer.Configuration(
+		TextSourceViewerConfiguration configuration = new TextSourceViewerConfiguration(
 				EditorsUI.getPreferenceStore()) {
 
 			@Override
@@ -895,63 +902,23 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			}
 
 			@Override
-			protected IHyperlinkDetector[] internalGetHyperlinkDetectors(
+			public IHyperlinkPresenter getHyperlinkPresenter(
 					ISourceViewer sourceViewer) {
-				IHyperlinkDetector[] registered = super.internalGetHyperlinkDetectors(
-						sourceViewer);
-				// Always add our special detector for commit hyperlinks; we
-				// want those to show always.
-				if (registered == null) {
-					return new IHyperlinkDetector[] {
-							new CommitMessageViewer.KnownHyperlinksDetector() };
-				} else {
-					IHyperlinkDetector[] result = new IHyperlinkDetector[registered.length
-							+ 1];
-					System.arraycopy(registered, 0, result, 0,
-							registered.length);
-					result[registered.length] = new CommitMessageViewer.KnownHyperlinksDetector();
-					return result;
-				}
+				return new MultipleHyperlinkPresenter(PlatformUI.getWorkbench()
+						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB()) {
+
+					@Override
+					public void hideHyperlinks() {
+						// We want links to always show.
+					}
+
+				};
 			}
 
 			@Override
-			public String[] getConfiguredContentTypes(
-					ISourceViewer sourceViewer) {
-				return new String[] { IDocument.DEFAULT_CONTENT_TYPE,
-						CommitMessageViewer.HEADER_CONTENT_TYPE,
-						CommitMessageViewer.FOOTER_CONTENT_TYPE };
+			public IHyperlinkDetector[] getHyperlinkDetectors(ISourceViewer sourceViewer) {
+				return getRegisteredHyperlinkDetectors(sourceViewer);
 			}
-
-			@Override
-			public IPresentationReconciler getPresentationReconciler(
-					ISourceViewer viewer) {
-				PresentationReconciler reconciler = new PresentationReconciler();
-				reconciler.setDocumentPartitioning(
-						getConfiguredDocumentPartitioning(viewer));
-				DefaultDamagerRepairer hyperlinkDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(this, viewer));
-				reconciler.setDamager(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				reconciler.setRepairer(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				TextAttribute headerDefault = new TextAttribute(
-						PlatformUI.getWorkbench().getDisplay()
-								.getSystemColor(SWT.COLOR_DARK_GRAY));
-				DefaultDamagerRepairer headerDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(this, viewer, headerDefault));
-				reconciler.setDamager(headerDamagerRepairer,
-						CommitMessageViewer.HEADER_CONTENT_TYPE);
-				reconciler.setRepairer(headerDamagerRepairer,
-						CommitMessageViewer.HEADER_CONTENT_TYPE);
-				DefaultDamagerRepairer footerDamagerRepairer = new DefaultDamagerRepairer(
-						new FooterTokenScanner(this, viewer));
-				reconciler.setDamager(footerDamagerRepairer,
-						CommitMessageViewer.FOOTER_CONTENT_TYPE);
-				reconciler.setRepairer(footerDamagerRepairer,
-						CommitMessageViewer.FOOTER_CONTENT_TYPE);
-				return reconciler;
-			}
-
 		};
 
 		commentViewer.configure(configuration);
@@ -1417,10 +1384,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					showHead = true;
 					break;
 				}
-			} else if (o instanceof HistoryPageInput) {
+			} else if (o instanceof HistoryPageInput)
 				input = (HistoryPageInput) o;
-			} else {
-				IResource resource = AdapterUtils.adapt(o, IResource.class);
+			else if (o instanceof IAdaptable) {
+				IResource resource = CommonUtils.getAdapter(((IAdaptable) o), IResource.class);
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(resource);
@@ -1433,14 +1400,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			}
 			if (repo == null) {
 				repo = AdapterUtils.adapt(o, Repository.class);
-				if (repo != null) {
-					File file = AdapterUtils.adapt(o, File.class);
-					if (file == null) {
-						input = new HistoryPageInput(repo);
-					} else {
-						input = new HistoryPageInput(repo, new File[] { file });
-					}
-				}
+				if (repo != null)
+					input = new HistoryPageInput(repo);
 			}
 			selection = AdapterUtils.adapt(o, RevCommit.class);
 
@@ -2279,7 +2240,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		IWorkbenchPartSite site = getPartSite();
 		if (site != null) {
 			final IWorkbenchSiteProgressService p;
-			p = AdapterUtils.adapt(site, IWorkbenchSiteProgressService.class);
+			p = CommonUtils.getAdapter(site, IWorkbenchSiteProgressService.class);
 			if (p != null) {
 				p.schedule(j, 0, true /* use half-busy cursor */);
 				return;
@@ -2354,6 +2315,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 	}
 
+	static boolean isShowingRelativeDates() {
+		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE);
+	}
+
+	private boolean isShowingEmailAddresses() {
+		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES);
+	}
+
 	@Override
 	public ShowInContext getShowInContext() {
 		if (fileViewer != null && fileViewer.getControl().isFocusControl())
@@ -2376,53 +2345,5 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	public String getRenamedPath(String path, ObjectId commit) {
 		return renameTracker.getPath(commit, path);
-	}
-
-	private static class FooterTokenScanner extends HyperlinkTokenScanner {
-
-		private static final Pattern ITALIC_LINE = Pattern
-				.compile("^[A-Z](?:[A-Za-z]+-)+by: "); //$NON-NLS-1$
-
-		private final IToken italicToken;
-
-		public FooterTokenScanner(SourceViewerConfiguration configuration,
-				ISourceViewer viewer) {
-			super(configuration, viewer);
-			Object defaults = defaultToken.getData();
-			TextAttribute italic;
-			if (defaults instanceof TextAttribute) {
-				TextAttribute defaultAttribute = (TextAttribute) defaults;
-				int style = defaultAttribute.getStyle() ^ SWT.ITALIC;
-				italic = new TextAttribute(defaultAttribute.getForeground(),
-						defaultAttribute.getBackground(), style,
-						defaultAttribute.getFont());
-			} else {
-				italic = new TextAttribute(null, null, SWT.ITALIC);
-			}
-			italicToken = new Token(italic);
-		}
-
-		@Override
-		protected IToken scanToken() {
-			// If we're at a "Signed-off-by" or similar footer line, make it
-			// italic.
-			try {
-				IRegion region = document
-						.getLineInformationOfOffset(currentOffset);
-				if (currentOffset == region.getOffset()) {
-					String line = document.get(currentOffset,
-							region.getLength());
-					Matcher m = ITALIC_LINE.matcher(line);
-					if (m.find()) {
-						currentOffset = Math.min(endOfRange,
-								currentOffset + region.getLength());
-						return italicToken;
-					}
-				}
-			} catch (BadLocationException e) {
-				// Ignore and return null below.
-			}
-			return null;
-		}
 	}
 }

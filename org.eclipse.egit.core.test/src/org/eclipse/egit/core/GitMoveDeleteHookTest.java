@@ -94,8 +94,8 @@ public class GitMoveDeleteHookTest {
 		SystemReader.setInstance(null);
 	}
 
-	private TestProject initRepoInsideProjectInsideWorkspace()
-			throws Exception {
+	private TestProject initRepoInsideProjectInsideWorkspace() throws IOException,
+			CoreException {
 		TestProject project = new TestProject(true, "Project-1", true, workspaceSupplement);
 		File gitDir = new File(project.getProject().getLocationURI().getPath(),
 				Constants.DOT_GIT);
@@ -108,7 +108,7 @@ public class GitMoveDeleteHookTest {
 	}
 
 	private TestProject initRepoInsideProjectOutsideWorkspace()
-			throws Exception {
+			throws IOException, CoreException {
 		TestProject project = new TestProject(true, "Project-1", false,
 				workspaceSupplement);
 		File gitDir = new File(project.getProject().getLocationURI().getPath(),
@@ -121,12 +121,12 @@ public class GitMoveDeleteHookTest {
 	}
 
 	private TestProject initRepoAboveProjectInsideWs(String srcParent, String d)
-			throws Exception {
+	throws IOException, CoreException {
 		return initRepoAboveProject(srcParent, d, true);
 	}
 
 	private TestProject initRepoAboveProject(String srcParent, String d, boolean insidews)
-			throws Exception {
+			throws IOException, CoreException {
 		registerWorkspaceRelativeTestDir(srcParent);
 		TestProject project = new TestProject(true, srcParent + "Project-1", insidews, workspaceSupplement);
 		File gd = new File(insidews?workspace:workspaceSupplement, d);
@@ -160,11 +160,11 @@ public class GitMoveDeleteHookTest {
 		assertNotNull(dirCache.getEntry("file2.txt"));
 		// Modify the content before the move
 		testUtils.changeContentOfFile(project.getProject(), file, "other text");
-		TestUtils.waitForJobs(500, 10000, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
+		testUtils.waitForJobs(10000, 1000, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 
 		file.delete(true, null);
 
-		TestUtils.waitForJobs(500, 10000, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
+		testUtils.waitForJobs(10000, 1000, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 
 		// Check index for the deleted file
 		dirCache.read();
@@ -600,7 +600,7 @@ public class GitMoveDeleteHookTest {
 
 	private void dotestMoveProjectWithinRepo(String srcParent,
 			String srcProjectName, String dstParent, String dstProjecName,
-			String gitDir, boolean sourceInsideWs) throws Exception {
+			String gitDir, boolean sourceInsideWs) throws IOException, CoreException {
 		String gdRelativeSrcParent = srcParent + srcProjectName + "/";
 		if (gdRelativeSrcParent.startsWith(gitDir))
 			gdRelativeSrcParent = gdRelativeSrcParent

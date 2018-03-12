@@ -162,7 +162,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		plugin = a;
 	}
 
-	@Override
 	public void start(final BundleContext context) throws Exception {
 
 		super.start(context);
@@ -198,7 +197,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		if (preDeleteProjectListener == null) {
 			preDeleteProjectListener = new IResourceChangeListener() {
 
-				@Override
 				public void resourceChanged(IResourceChangeEvent event) {
 					IResource resource = event.getResource();
 					if (resource instanceof IProject) {
@@ -231,7 +229,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		}
 	}
 
-	@Override
 	public void optionsChanged(DebugOptions options) {
 		// initialize the trace stuff
 		GitTraceLocation.initializeFromOptions(options, isDebugging());
@@ -248,24 +245,12 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	 * @since 4.1
 	 */
 	public MergeStrategy getPreferredMergeStrategy() {
-		// Get preferences set by user in the UI
 		final IEclipsePreferences prefs = InstanceScope.INSTANCE
 				.getNode(Activator.getPluginId());
 		String preferredMergeStrategyKey = prefs.get(
 				GitCorePreferences.core_preferredMergeStrategy, null);
-
-		// Get default preferences, wherever they are defined
-		if (preferredMergeStrategyKey == null
-				|| preferredMergeStrategyKey.isEmpty()) {
-			final IEclipsePreferences defaultPrefs = DefaultScope.INSTANCE
-					.getNode(Activator.getPluginId());
-			preferredMergeStrategyKey = defaultPrefs.get(
-					GitCorePreferences.core_preferredMergeStrategy, null);
-		}
 		if (preferredMergeStrategyKey != null
-				&& !preferredMergeStrategyKey.isEmpty()
-				&& !GitCorePreferences.core_preferredMergeStrategy_Default
-						.equals(preferredMergeStrategyKey)) {
+				&& !preferredMergeStrategyKey.isEmpty()) {
 			MergeStrategy result = MergeStrategy.get(preferredMergeStrategyKey);
 			if (result != null) {
 				return result;
@@ -321,10 +306,8 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		return secureStore;
 	}
 
-	@Override
 	public void stop(final BundleContext context) throws Exception {
 		GitProjectData.detachFromWorkspace();
-		repositoryCache.dispose();
 		repositoryCache = null;
 		indexDiffCache.dispose();
 		indexDiffCache = null;
@@ -376,7 +359,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 							true));
 		}
 
-		@Override
 		public void resourceChanged(IResourceChangeEvent event) {
 			if (!doAutoShare()) {
 				return;
@@ -384,7 +366,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			try {
 				final Set<IProject> projectCandidates = new LinkedHashSet<>();
 				event.getDelta().accept(new IResourceDeltaVisitor() {
-					@Override
 					public boolean visit(IResourceDelta delta)
 							throws CoreException {
 						return collectOpenedProjects(delta,
@@ -419,7 +400,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			if (resource.getType() != IResource.PROJECT) {
 				return false;
 			}
-			if (!resource.isAccessible() || resource.getLocation() == null) {
+			if (!resource.isAccessible()) {
 				return false;
 			}
 			projects.add((IProject) resource);
@@ -476,7 +457,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			if (projects.size() > 0) {
 				ConnectProviderOperation op = new ConnectProviderOperation(
 						projects);
-				op.setRefreshResources(false);
 				JobUtil.scheduleUserJob(op,
 						CoreText.Activator_AutoShareJobName,
 						JobFamilies.AUTO_SHARE);
@@ -563,7 +543,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			IResourceChangeListener {
 
 
-		@Override
 		public void resourceChanged(IResourceChangeEvent event) {
 			try {
 				IResourceDelta d = event.getDelta();
@@ -575,7 +554,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 				d.accept(new IResourceDeltaVisitor() {
 
-					@Override
 					public boolean visit(IResourceDelta delta)
 							throws CoreException {
 						if ((delta.getKind() & (IResourceDelta.ADDED | IResourceDelta.CHANGED)) == 0)
