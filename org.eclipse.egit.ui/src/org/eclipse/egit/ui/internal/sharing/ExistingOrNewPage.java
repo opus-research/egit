@@ -24,10 +24,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
@@ -192,11 +192,9 @@ class ExistingOrNewPage extends WizardPage {
 		repositoryToCreate.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(1,1).create());
 		repositoryToCreate.addListener(SWT.Modify, new Listener() {
 			public void handleEvent(Event e) {
-				if (repositoryToCreate.getText().equals("")) { //$NON-NLS-1$
-					button.setEnabled(false);
+				if (e.text == null)
 					return;
-				}
-				IPath fromOSString = Path.fromOSString(repositoryToCreate.getText());
+				IPath fromOSString = Path.fromOSString(e.text);
 				button.setEnabled(minumumPath
 						.matchingFirstSegments(fromOSString) == fromOSString
 						.segmentCount());

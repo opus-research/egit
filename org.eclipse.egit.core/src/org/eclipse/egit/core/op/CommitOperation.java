@@ -30,27 +30,18 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
-import org.eclipse.jgit.api.errors.JGitInternalException;
-import org.eclipse.jgit.api.errors.NoHeadException;
-import org.eclipse.jgit.api.errors.NoMessageException;
-import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
-import org.eclipse.jgit.errors.UnmergedPathException;
-import org.eclipse.jgit.lib.CommitBuilder;
+import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectInserter;
+import org.eclipse.jgit.lib.ObjectWriter;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
 import org.eclipse.jgit.lib.GitIndex.Entry;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.ChangeIdUtil;
-import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 
@@ -71,10 +62,8 @@ public class CommitOperation implements IEGitOperation {
 
 	private boolean amending = false;
 
-	private boolean commitAll = false;
-
 	// needed for amending
-	private RevCommit previousCommit;
+	private Commit previousCommit;
 
 	// needed for amending
 	private Repository[] repos;
@@ -120,47 +109,13 @@ public class CommitOperation implements IEGitOperation {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
 			public void run(IProgressMonitor monitor) throws CoreException {
-				final Date commitDate = new Date();
-				final TimeZone timeZone = TimeZone.getDefault();
-				final PersonIdent authorIdent = RawParseUtils.parsePersonIdent(author);
-				final PersonIdent committerIdent = RawParseUtils.parsePersonIdent(committer);
-				if (commitAll) {
-					for (Repository repo : repos) {
-						Git git = new Git(repo);
-						try {
-							git.commit()
-									.setAll(true)
-									.setAuthor(
-											new PersonIdent(authorIdent,
-													commitDate, timeZone))
-									.setCommitter(
-											new PersonIdent(committerIdent,
-													commitDate, timeZone))
-									.setMessage(message).call();
-						} catch (NoHeadException e) {
-							throw new TeamException(e.getLocalizedMessage(), e);
-						} catch (NoMessageException e) {
-							throw new TeamException(e.getLocalizedMessage(), e);
-						} catch (UnmergedPathException e) {
-							throw new TeamException(e.getLocalizedMessage(), e);
-						} catch (ConcurrentRefUpdateException e) {
-							throw new TeamException(
-									CoreText.MergeOperation_InternalError, e);
-						} catch (JGitInternalException e) {
-							throw new TeamException(
-									CoreText.MergeOperation_InternalError, e);
-						} catch (WrongRepositoryStateException e) {
-							throw new TeamException(e.getLocalizedMessage(), e);
-						}
-					}
-				}
-
-				else if (amending || filesToCommit != null
+				if (amending || filesToCommit != null
 						&& filesToCommit.length > 0) {
 					monitor.beginTask(
 							CoreText.CommitOperation_PerformingCommit,
 							filesToCommit.length * 2);
-					monitor.setTaskName(CoreText.CommitOperation_PerformingCommit);
+					monitor
+							.setTaskName(CoreText.CommitOperation_PerformingCommit);
 					HashMap<Repository, Tree> treeMap = new HashMap<Repository, Tree>();
 					try {
 						if (!prepareTrees(filesToCommit, treeMap, monitor)) {
@@ -278,16 +233,15 @@ public class CommitOperation implements IEGitOperation {
 		return true;
 	}
 
-	private void doCommits(String actMessage,
+	private void doCommits(String commitMessage,
 			HashMap<Repository, Tree> treeMap) throws IOException,
 			TeamException {
 
-		String commitMessage = actMessage;
 		final Date commitDate = new Date();
 		final TimeZone timeZone = TimeZone.getDefault();
 
-		final PersonIdent authorIdent = RawParseUtils.parsePersonIdent(author);
-		final PersonIdent committerIdent = RawParseUtils.parsePersonIdent(committer);
+		final PersonIdent authorIdent = new PersonIdent(author);
+		final PersonIdent committerIdent = new PersonIdent(committer);
 
 		for (java.util.Map.Entry<Repository, Tree> entry : treeMap.entrySet()) {
 			Tree tree = entry.getValue();
@@ -298,10 +252,7 @@ public class CommitOperation implements IEGitOperation {
 			ObjectId currentHeadId = repo.resolve(Constants.HEAD);
 			ObjectId[] parentIds;
 			if (amending) {
-				RevCommit[] parents = previousCommit.getParents();
-				parentIds = new ObjectId[parents.length];
-				for (int i = 0; i < parents.length; i++)
-					parentIds[i] = parents[i].getId();
+				parentIds = previousCommit.getParentIds();
 			} else {
 				if (currentHeadId != null)
 					parentIds = new ObjectId[] { currentHeadId };
@@ -319,9 +270,8 @@ public class CommitOperation implements IEGitOperation {
 				if (changeId != null)
 					commitMessage = commitMessage.replaceAll("\nChange-Id: I0000000000000000000000000000000000000000\n", "\nChange-Id: I" + changeId.getName() + "\n");  //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$
 			}
-			CommitBuilder commit = new CommitBuilder();
-			commit.setTreeId(tree.getTreeId());
-			commit.setParentIds(parentIds);
+			Commit commit = new Commit(repo, parentIds);
+			commit.setTree(tree);
 			commit.setMessage(commitMessage);
 			commit
 					.setAuthor(new PersonIdent(authorIdent, commitDate,
@@ -329,13 +279,8 @@ public class CommitOperation implements IEGitOperation {
 			commit.setCommitter(new PersonIdent(committerIdent, commitDate,
 					timeZone));
 
-			ObjectInserter inserter = repo.newObjectInserter();
-			try {
-				inserter.insert(commit);
-				inserter.flush();
-			} finally {
-				inserter.release();
-			}
+			ObjectWriter writer = new ObjectWriter(repo);
+			commit.setCommitId(writer.writeCommit(commit));
 
 			final RefUpdate ru = repo.updateRef(Constants.HEAD);
 			ru.setNewObjectId(commit.getCommitId());
@@ -372,14 +317,8 @@ public class CommitOperation implements IEGitOperation {
 						}
 					}
 				}
-
-				ObjectInserter inserter = tree.getRepository().newObjectInserter();
-				try {
-					tree.setId(inserter.insert(Constants.OBJ_TREE, tree.format()));
-					inserter.flush();
-				} finally {
-					inserter.release();
-				}
+				ObjectWriter writer = new ObjectWriter(tree.getRepository());
+				tree.setId(writer.writeTree(tree));
 			} catch (IOException e) {
 				throw new TeamException(
 						CoreText.CommitOperation_errorWritingTrees, e);
@@ -394,8 +333,8 @@ public class CommitOperation implements IEGitOperation {
 			firstLine = commitMessage.substring(0, newlineIndex);
 		}
 		String commitStr = amending ? "commit (amend):" : "commit: "; //$NON-NLS-1$ //$NON-NLS-2$
-		String result = commitStr + firstLine;
-		return result;
+		String message = commitStr + firstLine;
+		return message;
 	}
 
 	/**
@@ -410,16 +349,8 @@ public class CommitOperation implements IEGitOperation {
 	 *
 	 * @param previousCommit
 	 */
-	public void setPreviousCommit(RevCommit previousCommit) {
+	public void setPreviousCommit(Commit previousCommit) {
 		this.previousCommit = previousCommit;
-	}
-
-	/**
-	 *
-	 * @param commitAll
-	 */
-	public void setCommitAll(boolean commitAll) {
-		this.commitAll = commitAll;
 	}
 
 	/**

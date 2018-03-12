@@ -18,7 +18,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
@@ -30,8 +29,6 @@ import org.eclipse.osgi.util.NLS;
 class BlobStorage implements IStorage {
 	protected final Repository db;
 
-	protected final RepositoryUtil repositoryUtil;
-
 	private final String path;
 
 	private final ObjectId blobId;
@@ -41,7 +38,6 @@ class BlobStorage implements IStorage {
 		db = repository;
 		path = fileName;
 		blobId = blob;
-		repositoryUtil = Activator.getDefault().getRepositoryUtil();
 	}
 
 	public InputStream getContents() throws CoreException {
