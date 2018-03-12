@@ -1165,15 +1165,6 @@ public class UIText extends NLS {
 	public static String RefContentProposal_unknownObject;
 
 	/** */
-	public static String ReflogView_CommitterColumnHeader;
-
-	/** */
-	public static String ReflogView_CommitterMe;
-
-	/** */
-	public static String ReflogView_DateColumnHeader;
-
-	/** */
 	public static String ReflogView_ErrorOnOpenCommit;
 
 	/** */
@@ -2708,18 +2699,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_ExceptionLookingUpRepoMessage;
-
-	/** */
-	public static String RepositoriesView_linkAdd;
-
-	/** */
-	public static String RepositoriesView_linkClone;
-
-	/** */
-	public static String RepositoriesView_linkCreate;
-
-	/** */
-	public static String RepositoriesView_messsageEmpty;
 
 	/** */
 	public static String RepositoriesView_NothingToPasteMessage;
