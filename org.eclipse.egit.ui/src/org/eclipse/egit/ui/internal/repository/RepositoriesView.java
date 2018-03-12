@@ -799,8 +799,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 					|| element instanceof WorkingDirNode) {
 				RepositoryTreeNode treeNode = (RepositoryTreeNode) element;
 				IPath path = treeNode.getPath();
-				IResource resource = ResourceUtil.getResourceForLocation(path,
-						true);
+				IResource resource = ResourceUtil.getResourceForLocation(path);
 				if (resource != null)
 					elements.add(resource);
 			} else if (element instanceof RepositoryNode) {

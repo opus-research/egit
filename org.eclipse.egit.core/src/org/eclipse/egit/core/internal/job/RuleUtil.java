@@ -105,7 +105,7 @@ public class RuleUtil {
 		IResourceRuleFactory ruleFactory = ResourcesPlugin.getWorkspace()
 				.getRuleFactory();
 		for (IPath path : paths) {
-			IResource resource = ResourceUtil.getResourceForLocation(path, false);
+			IResource resource = ResourceUtil.getResourceForLocation(path);
 			if (resource != null) {
 				IContainer container = resource.getParent();
 				ISchedulingRule rule = ruleFactory.modifyRule(container);
