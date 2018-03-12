@@ -109,9 +109,6 @@ class CommitGraphTable {
 
 	private SWTCommitList allCommits;
 
-	// used for resolving PlotCommit objects by ids
-	private HashMap<String, PlotCommit> commitsMap = null;
-
 	private RevFlag highlight;
 
 	private HistoryPageInput input;
@@ -234,14 +231,8 @@ class CommitGraphTable {
 	}
 
 	void selectCommit(final RevCommit c) {
-		if (c instanceof PlotCommit) {
-			table.setSelection(new StructuredSelection(c));
-			table.reveal(c);
-		} else {
-			PlotCommit swtCommit = commitsMap.get(c.getId().name());
-			table.setSelection(new StructuredSelection(swtCommit));
-			table.reveal(swtCommit);
-		}
+		table.setSelection(new StructuredSelection(c));
+		table.reveal(c);
 	}
 
 	void addSelectionChangedListener(final ISelectionChangedListener l) {
@@ -287,16 +278,8 @@ class CommitGraphTable {
 		if (asArray != null && asArray.length > 0) {
 			if (oldList != list)
 				selectCommit(asArray[0]);
-				initCommitsMap();
 		} else {
 			table.getTable().deselectAll();
-		}
-	}
-
-	private void initCommitsMap() {
-		commitsMap = new HashMap<String, PlotCommit>();
-		for (PlotCommit commit : allCommits) {
-			commitsMap.put(commit.getId().name(), commit);
 		}
 	}
 
