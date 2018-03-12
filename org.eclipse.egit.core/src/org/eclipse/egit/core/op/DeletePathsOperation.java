@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +24,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
@@ -57,6 +57,7 @@ public class DeletePathsOperation implements IEGitOperation {
 
 	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor = (m != null) ? m : new NullProgressMonitor();
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
@@ -64,7 +65,7 @@ public class DeletePathsOperation implements IEGitOperation {
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, m);
+				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
 	@Override
@@ -73,8 +74,7 @@ public class DeletePathsOperation implements IEGitOperation {
 	}
 
 	private void deletePaths(IProgressMonitor monitor) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor,
-				CoreText.DeleteResourcesOperation_deletingResources,
+		monitor.beginTask(CoreText.DeleteResourcesOperation_deletingResources,
 				paths.size() + 1);
 		boolean errorOccurred = false;
 
@@ -82,9 +82,9 @@ public class DeletePathsOperation implements IEGitOperation {
 		List<IPath> refreshCachePaths = new ArrayList<IPath>();
 
 		for (IPath path : paths) {
-			IResource resource = ResourceUtil.getResourceForLocation(path);
+			IResource resource = ResourceUtil.getResourceForLocation(path, false);
 			if (resource != null && resource.exists())
-				resource.delete(false, progress.newChild(1));
+				resource.delete(false, new SubProgressMonitor(monitor, 1));
 			else {
 				File file = path.toFile();
 				if (file.exists()) {
@@ -103,13 +103,15 @@ public class DeletePathsOperation implements IEGitOperation {
 					if (file.isDirectory())
 						refreshAll = true;
 				}
-				progress.worked(1);
+				monitor.worked(1);
 			}
 		}
 
 		if (!refreshCachePaths.isEmpty())
 			refreshIndexDiffCache(refreshCachePaths, refreshAll);
-		progress.worked(1);
+		monitor.worked(1);
+
+		monitor.done();
 
 		if (errorOccurred) {
 			IStatus status = Activator.error(

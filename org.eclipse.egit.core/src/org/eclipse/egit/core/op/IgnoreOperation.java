@@ -2,7 +2,6 @@
  * Copyright (C) 2009, Alex Blewitt <alex.blewitt@gmail.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +30,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryUtil;
@@ -83,8 +82,7 @@ public class IgnoreOperation implements IEGitOperation {
 
 	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor,
-				CoreText.IgnoreOperation_taskName, paths.size());
+		monitor.beginTask(CoreText.IgnoreOperation_taskName, paths.size());
 		try {
 			for (IPath path : paths) {
 				if (monitor.isCanceled()) {
@@ -97,11 +95,11 @@ public class IgnoreOperation implements IEGitOperation {
 				// DecoratableResourceAdapter, but neither currently
 				// consult .gitignore
 				if (RepositoryUtil.canBeAutoIgnored(path)) {
-					addIgnore(progress.newChild(1), path);
-				} else {
-					progress.worked(1);
+					addIgnore(monitor, path);
 				}
+				monitor.worked(1);
 			}
+			monitor.done();
 		} catch (CoreException e) {
 			throw e;
 		} catch (Exception e) {
@@ -127,7 +125,7 @@ public class IgnoreOperation implements IEGitOperation {
 	private void addIgnore(IProgressMonitor monitor, IPath path)
 			throws UnsupportedEncodingException, CoreException, IOException {
 		IPath parent = path.removeLastSegments(1);
-		IResource resource = ResourceUtil.getResourceForLocation(path);
+		IResource resource = ResourceUtil.getResourceForLocation(path, false);
 		IContainer container = null;
 		boolean isDirectory = false;
 		if (resource != null) {
@@ -174,11 +172,12 @@ public class IgnoreOperation implements IEGitOperation {
 			IFile gitignore = container.getFile(new Path(
 					Constants.GITIGNORE_FILENAME));
 			entry = getEntry(gitignore.getLocation().toFile(), entry);
+			IProgressMonitor subMonitor = new SubProgressMonitor(monitor, 1);
 			ByteArrayInputStream entryBytes = asStream(entry);
 			if (gitignore.exists())
-				gitignore.appendContents(entryBytes, true, true, monitor);
+				gitignore.appendContents(entryBytes, true, true, subMonitor);
 			else
-				gitignore.create(entryBytes, true, monitor);
+				gitignore.create(entryBytes, true, subMonitor);
 		}
 	}
 
