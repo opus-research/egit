@@ -80,6 +80,7 @@ public class IgnoreOperation implements IEGitOperation {
 		}
 	}
 
+	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(CoreText.IgnoreOperation_taskName, paths.size());
 		try {
@@ -116,6 +117,7 @@ public class IgnoreOperation implements IEGitOperation {
 		return gitignoreOutsideWSChanged;
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return schedulingRule;
 	}
@@ -123,7 +125,7 @@ public class IgnoreOperation implements IEGitOperation {
 	private void addIgnore(IProgressMonitor monitor, IPath path)
 			throws UnsupportedEncodingException, CoreException, IOException {
 		IPath parent = path.removeLastSegments(1);
-		IResource resource = ResourceUtil.getResourceForLocation(path);
+		IResource resource = ResourceUtil.getResourceForLocation(path, false);
 		IContainer container = null;
 		boolean isDirectory = false;
 		if (resource != null) {

@@ -114,6 +114,7 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 
 		try{
 			ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
+				@Override
 				public void run(IProgressMonitor wsOpMonitor) throws CoreException {
 					ProjectReferenceImporter importer = new ProjectReferenceImporter(referenceStrings);
 					List<IProject> p = importer.run(wsOpMonitor);
@@ -128,9 +129,17 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 		return result;
 	}
 
+	@Nullable
 	@Override
 	public String asReference(URI uri, String projectName) {
-		GitURI gitURI = new GitURI(uri);
-		return asReference(gitURI.getRepository().toString(), gitURI.getTag(), gitURI.getPath().toString());
+		try {
+			GitURI gitURI = new GitURI(uri);
+			return asReference(gitURI.getRepository().toString(),
+					gitURI.getTag(), gitURI.getPath().toString());
+		} catch (IllegalArgumentException e) {
+			Activator.error(e.getMessage(), e);
+			// we must not fail but return null on invalid or unknown URI's.
+			return null;
+		}
 	}
 }

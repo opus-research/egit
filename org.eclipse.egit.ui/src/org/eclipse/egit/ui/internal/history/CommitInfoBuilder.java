@@ -4,6 +4,7 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2011, Stefan Lay <stefan.lay@sap.com>
+ * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,8 +15,7 @@
 package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -28,9 +28,11 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.history.CommitMessageViewer.ObjectLink;
+import org.eclipse.egit.ui.internal.history.FormatJob.FormatResult;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.jface.text.Region;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
@@ -44,22 +46,18 @@ import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.RevWalkUtils;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyleRange;
-import org.eclipse.swt.graphics.Color;
 
 /**
  * Class to build and format commit info in History View
  */
 public class CommitInfoBuilder {
 
-	private static final String SPACE = " "; //$NON-NLS-1$
-
 	private static final String LF = "\n"; //$NON-NLS-1$
 
 	private static final int MAXBRANCHES = 20;
 
-	private final DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
+	private static final Pattern FOOTER_PATTERN = Pattern
+			.compile("(?:\n(?:[A-Z](?:[A-Za-z]+-)*[A-Za-z]+:[^\n]*))+$"); //$NON-NLS-1$
 
 	private PlotCommit<?> commit;
 
@@ -67,11 +65,9 @@ public class CommitInfoBuilder {
 
 	private final boolean fill;
 
-	private Color linkColor;
-
-	private Color darkGrey;
-
 	private final Collection<Ref> allRefs;
+
+	private final PreferenceBasedDateFormatter dateFormatter;
 
 	/**
 	 * @param db the repository
@@ -85,29 +81,18 @@ public class CommitInfoBuilder {
 		this.commit = commit;
 		this.fill = fill;
 		this.allRefs = allRefs;
+		this.dateFormatter = PreferenceBasedDateFormatter.create();
 	}
 
 	/**
-	 * set colors for formatting
+	 * Retrieves and formats the commit info.
 	 *
-	 * @param linkColor
-	 * @param darkGrey
-	 */
-	public void setColors(Color linkColor, Color darkGrey) {
-		this.linkColor = linkColor;
-		this.darkGrey = darkGrey;
-	}
-
-	/**
-	 * Format the commit info
-	 *
-	 * @param styles styles for text formatting
 	 * @param monitor
+	 *            for progress reporting and cancellation
 	 * @return formatted commit info
 	 * @throws IOException
 	 */
-	public String format(final List<StyleRange> styles,
-			IProgressMonitor monitor) throws IOException {
+	public FormatResult format(IProgressMonitor monitor) throws IOException {
 		boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
 		if (trace)
 			GitTraceLocation.getTrace().traceEntry(
@@ -116,55 +101,23 @@ public class CommitInfoBuilder {
 		final StringBuilder d = new StringBuilder();
 		final PersonIdent author = commit.getAuthorIdent();
 		final PersonIdent committer = commit.getCommitterIdent();
+		List<GitCommitReference> hyperlinks = new ArrayList<>();
 		d.append(UIText.CommitMessageViewer_commit);
-		d.append(SPACE);
+		d.append(' ');
 		d.append(commit.getId().name());
 		d.append(LF);
 
-		if (author != null) {
-			d.append(UIText.CommitMessageViewer_author);
-			d.append(": "); //$NON-NLS-1$
-			d.append(author.getName());
-			d.append(" <"); //$NON-NLS-1$
-			d.append(author.getEmailAddress());
-			d.append("> "); //$NON-NLS-1$
-			d.append(fmt.format(author.getWhen()));
-			d.append(LF);
-		}
-
-		if (committer != null) {
-			d.append(UIText.CommitMessageViewer_committer);
-			d.append(": "); //$NON-NLS-1$
-			d.append(committer.getName());
-			d.append(" <"); //$NON-NLS-1$
-			d.append(committer.getEmailAddress());
-			d.append("> "); //$NON-NLS-1$
-			d.append(fmt.format(committer.getWhen()));
-			d.append(LF);
-		}
+		addPersonIdent(d, author, UIText.CommitMessageViewer_author);
+		addPersonIdent(d, committer, UIText.CommitMessageViewer_committer);
 
 		for (int i = 0; i < commit.getParentCount(); i++) {
-			final SWTCommit p = (SWTCommit)commit.getParent(i);
-			p.parseBody();
-			d.append(UIText.CommitMessageViewer_parent);
-			d.append(": "); //$NON-NLS-1$
-			addLink(d, styles, p);
-			d.append(" ("); //$NON-NLS-1$
-			d.append(p.getShortMessage());
-			d.append(")"); //$NON-NLS-1$
-			d.append(LF);
+			addCommit(d, (SWTCommit) commit.getParent(i),
+					UIText.CommitMessageViewer_parent, hyperlinks);
 		}
 
 		for (int i = 0; i < commit.getChildCount(); i++) {
-			final SWTCommit p = (SWTCommit)commit.getChild(i);
-			p.parseBody();
-			d.append(UIText.CommitMessageViewer_child);
-			d.append(": "); //$NON-NLS-1$
-			addLink(d, styles, p);
-			d.append(" ("); //$NON-NLS-1$
-			d.append(p.getShortMessage());
-			d.append(")"); //$NON-NLS-1$
-			d.append(LF);
+			addCommit(d, (SWTCommit) commit.getChild(i),
+					UIText.CommitMessageViewer_child, hyperlinks);
 		}
 
 		if(Activator.getDefault().getPreferenceStore().getBoolean(
@@ -179,7 +132,7 @@ public class CommitInfoBuilder {
 						Ref head = i.next();
 						RevCommit p;
 						p = rw.parseCommit(head.getObjectId());
-						addLink(d, formatHeadRef(head), styles, p);
+						addLink(d, formatHeadRef(head), hyperlinks, p);
 						if (i.hasNext()) {
 							if (count++ <= MAXBRANCHES) {
 								d.append(", "); //$NON-NLS-1$
@@ -208,79 +161,96 @@ public class CommitInfoBuilder {
 				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE)) {
 			try (RevWalk rw = new RevWalk(db)) {
 				monitor.setTaskName(UIText.CommitMessageViewer_GettingPreviousTagTaskName);
-				Ref followingTag = getNextTag(false, monitor);
-				if (followingTag != null) {
-					d.append(UIText.CommitMessageViewer_follows);
-					d.append(": "); //$NON-NLS-1$
-					RevCommit p = rw.parseCommit(followingTag
-							.getObjectId());
-					addLink(d, formatTagRef(followingTag), styles, p);
-					d.append(LF);
-				}
+				addTag(d, UIText.CommitMessageViewer_follows, rw,
+						getNextTag(false, monitor), hyperlinks);
 			} catch (IOException e) {
 				Activator.logError(e.getMessage(), e);
 			}
 
 			try (RevWalk rw = new RevWalk(db)) {
 				monitor.setTaskName(UIText.CommitMessageViewer_GettingNextTagTaskName);
-				Ref precedingTag = getNextTag(true, monitor);
-				if (precedingTag != null) {
-					d.append(UIText.CommitMessageViewer_precedes);
-					d.append(": "); //$NON-NLS-1$
-					RevCommit p = rw.parseCommit(precedingTag
-							.getObjectId());
-					addLink(d, formatTagRef(precedingTag), styles, p);
-					d.append(LF);
-				}
+				addTag(d, UIText.CommitMessageViewer_precedes, rw,
+						getNextTag(true, monitor), hyperlinks);
 			} catch (IOException e) {
 				Activator.logError(e.getMessage(), e);
 			}
 		}
 
-		makeGrayText(d, styles);
 		d.append(LF);
-		String msg = commit.getFullMessage();
-		Pattern p = Pattern.compile("\n([A-Z](?:[A-Za-z]+-)+by: [^\n]+)"); //$NON-NLS-1$
-		if (fill) {
-			Matcher spm = p.matcher(msg);
-			if (spm.find()) {
-				String subMsg = msg.substring(0, spm.end());
-				msg = subMsg.replaceAll("([\\w.,; \t])\n(\\w)", "$1 $2") //$NON-NLS-1$ //$NON-NLS-2$
-						+ msg.substring(spm.end());
+		int headerEnd = d.length();
+		String msg = commit.getFullMessage().trim();
+		// Find start of footer:
+		Matcher spm = FOOTER_PATTERN.matcher(msg);
+		int footerStart = -1;
+		if (spm.find()) {
+			if (fill) {
+				String footer = msg.substring(spm.start());
+				msg = msg.substring(0, spm.start());
+				msg = msg.replaceAll("([\\w.,; \t])\n(\\w)", "$1 $2") //$NON-NLS-1$ //$NON-NLS-2$
+						+ footer;
+				footerStart = headerEnd + msg.length() - footer.length();
+			} else {
+				footerStart = headerEnd + spm.start();
 			}
+		} else if (fill) {
+			msg = msg.replaceAll("([\\w.,; \t])\n(\\w)", "$1 $2"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		int h0 = d.length();
+
 		d.append(msg);
 		if (!msg.endsWith(LF))
 			d.append(LF);
 
-		Matcher matcher = p.matcher(msg);
-		while (matcher.find()) {
-			styles.add(new StyleRange(h0 + matcher.start(), matcher.end()
-					- matcher.start(), null, null, SWT.ITALIC));
-		}
-
 		if (trace)
 			GitTraceLocation.getTrace().traceExit(
 					GitTraceLocation.HISTORYVIEW.getLocation());
-		return d.toString();
+		return new FormatResult(d.toString(), hyperlinks, headerEnd,
+				footerStart >= 0 ? footerStart : d.length());
 	}
 
-	private void addLink(final StringBuilder d, String linkLabel,
-			final List<StyleRange> styles, final RevCommit to) {
-		final ObjectLink sr = new ObjectLink();
-		sr.targetCommit = to;
-		sr.foreground = linkColor;
-		sr.underline = true;
-		sr.start = d.length();
+	private void addLink(StringBuilder d, String linkLabel,
+			Collection<GitCommitReference> hyperlinks, RevCommit to) {
+		if (to != null) {
+			hyperlinks.add(new GitCommitReference(to,
+					new Region(d.length(), linkLabel.length())));
+		}
 		d.append(linkLabel);
-		sr.length = d.length() - sr.start;
-		styles.add(sr);
 	}
 
-	private void addLink(final StringBuilder d, final List<StyleRange> styles,
-			final RevCommit to) {
-		addLink(d, to.getId().name(), styles, to);
+	private void addLink(StringBuilder d, Collection<GitCommitReference> hyperlinks,
+ RevCommit to) {
+		addLink(d, to.getId().name(), hyperlinks, to);
+	}
+
+	private void addPersonIdent(StringBuilder d, PersonIdent ident,
+			String label) {
+		if (ident != null) {
+			d.append(label).append(": "); //$NON-NLS-1$
+			d.append(ident.getName().trim());
+			d.append(" <").append(ident.getEmailAddress().trim()).append("> "); //$NON-NLS-1$ //$NON-NLS-2$
+			d.append(dateFormatter.formatDate(ident));
+			d.append(LF);
+		}
+	}
+
+	private void addCommit(StringBuilder d, SWTCommit gitcommit, String label,
+			List<GitCommitReference> hyperlinks) throws IOException {
+		if (gitcommit != null) {
+			d.append(label).append(": "); //$NON-NLS-1$
+			gitcommit.parseBody();
+			addLink(d, hyperlinks, gitcommit);
+			d.append(" (").append(gitcommit.getShortMessage()).append(')'); //$NON-NLS-1$
+			d.append(LF);
+		}
+	}
+
+	private void addTag(StringBuilder d, String label, RevWalk walk, Ref tag,
+			List<GitCommitReference> hyperlinks) throws IOException {
+		if (tag != null) {
+			d.append(label).append(": "); //$NON-NLS-1$
+			RevCommit p = walk.parseCommit(tag.getObjectId());
+			addLink(d, formatTagRef(tag), hyperlinks, p);
+			d.append(LF);
+		}
 	}
 
 	/**
@@ -316,28 +286,6 @@ public class CommitInfoBuilder {
 		if (name.startsWith(Constants.R_TAGS))
 			return name.substring(Constants.R_TAGS.length());
 		return name;
-	}
-
-	private void makeGrayText(StringBuilder d, List<StyleRange> styles) {
-		int p0 = 0;
-		for (int i = 0; i < styles.size(); ++i) {
-			StyleRange r = styles.get(i);
-			if (p0 < r.start) {
-				StyleRange nr = new StyleRange(p0, r.start - p0, darkGrey,
-						null);
-				styles.add(i, nr);
-				p0 = r.start;
-			} else {
-				if (r.foreground == null)
-					r.foreground = darkGrey;
-				p0 = r.start + r.length;
-			}
-		}
-		if (d.length() - 1 > p0) {
-			StyleRange nr = new StyleRange(p0, d.length() - p0, darkGrey,
-					null);
-			styles.add(nr);
-		}
 	}
 
 	private String getTagsString() {

@@ -256,7 +256,7 @@ public class ProjectUtil {
 		for (String relativePath : relativePaths) {
 			IPath location = repositoryPath.append(relativePath);
 			IResource resource = ResourceUtil
-					.getResourceForLocation(location);
+					.getResourceForLocation(location, false);
 			if (resource != null) {
 				// Resource exists for path, refresh it
 				resources.add(resource);
@@ -361,6 +361,7 @@ public class ProjectUtil {
 
 		// Sorting makes us look into nested projects first
 		Arrays.sort(allProjects, new Comparator<IProject>() {
+			@Override
 			public int compare(IProject o1, IProject o2) {
 				IPath l1 = o1.getLocation();
 				IPath l2 = o2.getLocation();

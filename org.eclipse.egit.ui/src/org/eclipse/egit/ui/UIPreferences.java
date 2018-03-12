@@ -7,6 +7,7 @@
  * Copyright (C) 2013, Tobias Pfeifer <to.pfeifer@sap.com>
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
+ * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -65,6 +66,8 @@ public class UIPreferences {
 	public final static String FINDTOOLBAR_FIND_IN = "findtoolbar_find_in"; //$NON-NLS-1$
 	/** */
 	public final static String COMMIT_DIALOG_HARD_WRAP_MESSAGE = "commit_dialog_hard_wrap_message"; //$NON-NLS-1$
+	/** */
+	public final static String COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE = "commit_dialog_warn_about_message_second_line"; //$NON-NLS-1$
 	/** */
 	public final static String COMMIT_DIALOG_SIGNED_OFF_BY = "commit_dialog_signed_off_by"; //$NON-NLS-1$
 	/** */
@@ -144,7 +147,13 @@ public class UIPreferences {
 	/** */
 	public final static String DATE_FORMAT = "date_format"; //$NON-NLS-1$
 	/** */
+	public final static String DATE_FORMAT_CHOICE = "date_format_choice"; //$NON-NLS-1$
+	/** */
+	public static final String DATE_FORMAT_CUSTOM = "CUSTOM"; //$NON-NLS-1$
+	/** */
 	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";  //$NON-NLS-1$
+	/** */
+	public static final String DEFAULT_DATE_FORMAT_CHOICE = DATE_FORMAT_CUSTOM;
 	/** */
 	public static final String DEFAULT_CHANGESET_FORMAT = "[{author}] ({date}) {short_message}"; //$NON-NLS-1$
 	/** */
@@ -204,6 +213,14 @@ public class UIPreferences {
 	public static final String STAGING_VIEW_FILENAME_MODE = "StagingView_FileNameMode"; //$NON-NLS-1$
 	/** */
 	public static final String STAGING_VIEW_PRESENTATION = "StagingView_Presentation"; //$NON-NLS-1$
+
+	/** max number of files in the view to allow for the list mode */
+	public static final String STAGING_VIEW_MAX_LIMIT_LIST_MODE = "StagingView_MaxLimitListMode"; //$NON-NLS-1$
+
+	/**
+	 * List presentation mode was automatically switched to faster mode
+	 */
+	public static final String STAGING_VIEW_PRESENTATION_CHANGED = "StagingView_Presentation_Changed"; //$NON-NLS-1$
 	/** */
 	public static final String PAGE_COMMIT_PREFERENCES = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
 	/** */
@@ -218,6 +235,18 @@ public class UIPreferences {
 	public final static String REBASE_INTERACTIVE_ORDER_REVERSE = "rebase_interactive_order_reverse"; //$NON-NLS-1$
 	/** */
 	public static final String REBASE_INTERACTIVE_SYNC_SELECTION = "RebaseInteractive_SyncWithSelection"; //$NON-NLS-1$
+
+	/** */
+	public static final String WARN_BEFORE_COMMITTING = "checkBeforeCommitting"; //$NON-NLS-1$
+
+	/** */
+	public static final String WARN_BEFORE_COMMITTING_LEVEL = "warnBeforeCommitting"; //$NON-NLS-1$
+
+	/** */
+	public static final String BLOCK_COMMIT = "blockCommit"; //$NON-NLS-1$
+
+	/** */
+	public static final String BLOCK_COMMIT_LEVEL = "blockCommitCombo"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array

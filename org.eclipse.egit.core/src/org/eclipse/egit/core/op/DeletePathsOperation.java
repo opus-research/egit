@@ -55,9 +55,11 @@ public class DeletePathsOperation implements IEGitOperation {
 		schedulingRule = calculateSchedulingRule();
 	}
 
+	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor = (m != null) ? m : new NullProgressMonitor();
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
+			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				deletePaths(actMonitor);
 			}
@@ -66,6 +68,7 @@ public class DeletePathsOperation implements IEGitOperation {
 				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return schedulingRule;
 	}
@@ -79,7 +82,7 @@ public class DeletePathsOperation implements IEGitOperation {
 		List<IPath> refreshCachePaths = new ArrayList<IPath>();
 
 		for (IPath path : paths) {
-			IResource resource = ResourceUtil.getResourceForLocation(path);
+			IResource resource = ResourceUtil.getResourceForLocation(path, false);
 			if (resource != null && resource.exists())
 				resource.delete(false, new SubProgressMonitor(monitor, 1));
 			else {
