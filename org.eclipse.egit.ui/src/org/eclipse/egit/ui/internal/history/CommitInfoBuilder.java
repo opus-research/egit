@@ -394,14 +394,14 @@ public class CommitInfoBuilder {
 						public synchronized void write(byte[] b, int off,
 								int len) {
 							super.write(b, off, len);
-							try {
-								if (currentEncoding[0] == null)
-									d.append(toString("UTF-8")); //$NON-NLS-1$
-								else
-									d.append(toString(currentEncoding[0]));
-							} catch (UnsupportedEncodingException e) {
+							if (currentEncoding[0] == null)
 								d.append(toString());
-							}
+							else
+								try {
+									d.append(toString(currentEncoding[0]));
+								} catch (UnsupportedEncodingException e) {
+									d.append(toString());
+								}
 							reset();
 						}
 

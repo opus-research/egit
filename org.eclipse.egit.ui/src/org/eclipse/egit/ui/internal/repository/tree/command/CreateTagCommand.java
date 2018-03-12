@@ -1,12 +1,15 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
- *
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Dariusz Luksza <dariusz@luksza.org> - initial implementation
+ *    Mathias Kinzler (SAP AG) - move to command framework
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.actions;
+package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.io.IOException;
 
@@ -23,6 +26,7 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CreateTagDialog;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Constants;
@@ -35,16 +39,13 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * An action for creating tag.
- *
- * @see TagOperation
+ * Implements "Create Tag"
  */
-public class TagActionHandler extends RepositoryActionHandler {
-
+public class CreateTagCommand extends RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final Repository repo = getRepository(true, event);
-		if (repo == null)
-			return null;
+		RepositoryTreeNode node = getSelectedNodes(event).get(0);
+
+		final Repository repo = node.getRepository();
 
 		if (!repo.getRepositoryState().canCheckout()) {
 			MessageDialog.openError(getShell(event),
@@ -58,13 +59,13 @@ public class TagActionHandler extends RepositoryActionHandler {
 		try {
 			currentBranchName = repo.getBranch();
 		} catch (IOException e) {
-			Activator
-					.handleError(UIText.TagAction_cannotGetBranchName, e, true);
-			return null;
+			Activator.handleError(e.getMessage(), e, true);
+			// TODO correct message
+			throw new ExecutionException(e.getMessage(), e);
 		}
 
-		CreateTagDialog dialog = new CreateTagDialog(getShell(event),
-				currentBranchName, repo);
+		CreateTagDialog dialog = new CreateTagDialog(getView(event).getSite()
+				.getShell(), currentBranchName, repo);
 
 		if (dialog.open() != IDialogConstants.OK_ID)
 			return null;
@@ -76,16 +77,7 @@ public class TagActionHandler extends RepositoryActionHandler {
 		tag.setTag(tagName);
 		tag.setTagger(personIdent);
 		tag.setMessage(dialog.getTagMessage());
-
-		RevObject tagTarget;
-		try {
-			tagTarget = getTagTarget(repo, dialog.getTagCommit());
-		} catch (IOException e1) {
-			Activator.handleError(UIText.TagAction_unableToResolveHeadObjectId,
-					e1, true);
-			return null;
-		}
-		tag.setObjectId(tagTarget);
+		tag.setObjectId(getTagTarget(dialog.getTagCommit(), repo));
 
 		String tagJobName = NLS.bind(UIText.TagAction_creating, tagName);
 		final boolean shouldMoveTag = dialog.shouldOverWriteTag();
@@ -114,25 +106,32 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 		tagJob.setUser(true);
 		tagJob.schedule();
+
 		return null;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		final Repository repo = getRepository();
-		return repo != null && containsHead(repo);
+		return selectedRepositoryHasHead();
 	}
 
-	private RevObject getTagTarget(Repository repo, ObjectId objectId)
-			throws IOException {
-		RevWalk rw = new RevWalk(repo);
+	private RevObject getTagTarget(ObjectId objectId, Repository repo)
+			throws ExecutionException {
 		try {
-			if (objectId == null)
-				return rw.parseAny(repo.resolve(Constants.HEAD));
-			else
-				return rw.parseAny(objectId);
-		} finally {
-			rw.release();
+			RevWalk rw = new RevWalk(repo);
+			try {
+				if (objectId == null) {
+					return rw.parseAny(repo.resolve(Constants.HEAD));
+
+				} else {
+					return rw.parseAny(objectId);
+				}
+			} finally {
+				rw.release();
+			}
+		} catch (IOException e) {
+			throw new ExecutionException(
+					UIText.TagAction_unableToResolveHeadObjectId, e);
 		}
 	}
 }

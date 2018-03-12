@@ -1029,9 +1029,6 @@ public class UIText extends NLS {
 	public static String CleanRepositoryPage_title;
 
 	/** */
-	public static String CleanWizard_title;
-
-	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
@@ -1711,12 +1708,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefSpecPage_annotatedTagsNoTags;
-
-	/** */
-	public static String RefSpecWizard_pushTitle;
-
-	/** */
-	public static String RefSpecWizard_fetchTitle;
 
 	/** */
 	public static String QuickDiff_failedLoading;
@@ -2524,30 +2515,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushResultTable_statusOkNewTag;
-
-	/** */
-	public static String PushTagsPage_ForceUpdateButton;
-
-	/** */
-	public static String PushTagsPage_PageMessage;
-
-	/** */
-	public static String PushTagsPage_PageName;
-
-	/** */
-	public static String PushTagsPage_PageTitle;
-
-	/** */
-	public static String PushTagsPage_RemoteLabel;
-
-	/** */
-	public static String PushTagsPage_TagsLabelNoneSelected;
-
-	/** */
-	public static String PushTagsPage_TagsLabelSelected;
-
-	/** */
-	public static String PushTagsWizard_WindowTitle;
 
 	/** */
 	public static String PushToGerritPage_BranchLabel;
@@ -3813,15 +3780,6 @@ public class UIText extends NLS {
 	public static String CreateTagDialog_clearButtonTooltip;
 
 	/** */
-	public static String CreateTagDialog_CreateTagAndStartPushButton;
-
-	/** */
-	public static String CreateTagDialog_CreateTagAndStartPushToolTip;
-
-	/** */
-	public static String CreateTagDialog_CreateTagButton;
-
-	/** */
 	public static String CreateTagDialog_CreateTagOnCommitTitle;
 
 	/** */
@@ -4009,7 +3967,7 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_description;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_repository;
+	public static String GitBranchSynchronizeWizardPage_repositories;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_destination;
