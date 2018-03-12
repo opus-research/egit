@@ -190,6 +190,8 @@ public class UIPreferences {
 	/** */
 	public static final String STAGING_VIEW_FILENAME_MODE = "StagingView_FileNameMode"; //$NON-NLS-1$
 	/** */
+	public static final String STAGING_VIEW_PRESENTATION = "StagingView_Presentation"; //$NON-NLS-1$
+	/** */
 	public static final String PAGE_COMMIT_PREFERENCES = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
 	/** */
 	public static final String BLAME_IGNORE_WHITESPACE = "Blame_IgnoreWhitespace"; //$NON-NLS-1$
@@ -199,14 +201,6 @@ public class UIPreferences {
 	public static final String CLONE_WIZARD_IMPORT_PROJECTS = "CloneWizard_ImportProjects"; //$NON-NLS-1$
 	/** */
 	public static final String CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG = "CloneWizard_ShowDetailedFailureDialog"; //$NON-NLS-1$
-	/** */
-	public static final String COMMIT_WITH_WARNINGS_SCOPE = "CommitWithWarningsScope"; //$NON-NLS-1$
-	/** */
-	public static final String COMMIT_WITH_WARNINGS_ACTION = "CommitWithWarningsAction"; //$NON-NLS-1$
-	/** */
-	public static final String COMMIT_WITH_ERRORS_SCOPE = "CommitWithErrorsScope"; //$NON-NLS-1$
-	/** */
-	public static final String COMMIT_WITH_ERRORS_ACTION = "CommitWithErrorsAction"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array
