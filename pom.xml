@@ -62,6 +62,7 @@
   <properties>
     <tycho-version>0.6.0</tycho-version>
     <jgit-version>0.6.0-SNAPSHOT</jgit-version>
+    <jgit-site>${project.baseUri}../../jgit/org.eclipse.jgit.packaging/org.eclipse.jgit.updatesite/target/site</jgit-site>
     <eclipse-site>http://download.eclipse.org/releases/galileo</eclipse-site>
   </properties>
 
@@ -81,6 +82,11 @@
       <id>galileo</id>
       <layout>p2</layout>
       <url>${eclipse-site}</url>
+    </repository>
+    <repository>
+      <id>jgit</id>
+      <layout>p2</layout>
+      <url>${jgit-site}</url>
     </repository>
   </repositories>
 
