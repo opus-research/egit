@@ -15,23 +15,29 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
-import org.eclipse.jface.viewers.ColumnViewer;
-import org.eclipse.jface.viewers.LabelProvider;
-import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jface.viewers.BaseLabelProvider;
+import org.eclipse.jface.viewers.ITableLabelProvider;
+import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeColumn;
 
 /**
  * Label Provider for the Git Repositories View
  */
-public class RepositoriesViewLabelProvider extends LabelProvider {
+public class RepositoriesViewLabelProvider extends BaseLabelProvider implements
+		ITableLabelProvider {
 
 	/**
 	 * A map of regular images to their decorated counterpart.
@@ -44,9 +50,12 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 	 *
 	 * @param viewer
 	 */
-	public RepositoriesViewLabelProvider(final ColumnViewer viewer) {
+	RepositoriesViewLabelProvider(final TreeViewer viewer) {
 
 		viewer.setLabelProvider(this);
+		Tree tree = viewer.getTree();
+		TreeColumn col = new TreeColumn(tree, SWT.NONE);
+		col.setWidth(400);
 		// we could implement some hover here to display additional information
 		// viewer.getTree().addMouseTrackListener(new MouseTrackAdapter() {
 		//
@@ -129,74 +138,55 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 
 	}
 
-	@Override
-	public Image getImage(Object element) {
+	public Image getColumnImage(Object element, int columnIndex) {
 		return decorateImage(
 				((RepositoryTreeNode) element).getType().getIcon(), element);
 	}
 
-	@Override
-	public String getText(Object element) {
+	public String getColumnText(Object element, int columnIndex) {
 
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
 		switch (node.getType()) {
 		case REPO:
 			File directory = ((Repository) node.getObject()).getDirectory();
-			StringBuilder sb = new StringBuilder();
-			sb.append(directory.getParentFile().getName());
-			sb.append(" - "); //$NON-NLS-1$
-			sb.append(directory.getAbsolutePath());
-			return sb.toString();
+			return (directory.getParentFile().getName() + " - " + directory //$NON-NLS-1$
+					.getAbsolutePath());
 		case FILE:
-			// fall through
-		case FOLDER:
+		case FOLDER: // fall through
 			return ((File) node.getObject()).getName();
 		case BRANCHES:
 			return UIText.RepositoriesView_Branches_Nodetext;
-		case LOCALBRANCHES:
-			return UIText.RepositoriesViewLabelProvider_LocalBranchesNodetext;
-		case REMOTEBRANCHES:
-			return UIText.RepositoriesViewLabelProvider_RemoteBrancheNodetext;
-		case TAGS:
-			return UIText.RepositoriesViewLabelProvider_TagsNodeText;
-		case SYMBOLICREFS:
-			return UIText.RepositoriesViewLabelProvider_SymbolicRefNodeText;
 		case REMOTES:
 			return UIText.RepositoriesView_RemotesNodeText;
 		case REMOTE:
-			// fall through
-		case ERROR:
 			return (String) node.getObject();
+		case PROJECTS:
+			return UIText.RepositoriesView_ExistingProjects_Nodetext;
 		case REF:
-			// fall through
-		case TAG:
-			// fall through
-		case SYMBOLICREF:
 			Ref ref = (Ref) node.getObject();
 			// shorten the name
 			String refName = node.getRepository().shortenRefName(ref.getName());
 			if (ref.isSymbolic()) {
-				refName = refName + " - " //$NON-NLS-1$
-						+ ref.getLeaf().getName();
+				refName = refName
+						+ " - " //$NON-NLS-1$
+						+ node.getRepository().shortenRefName(
+								ref.getLeaf().getName());
 			}
 			return refName;
+		case PROJ:
+
+			File file = (File) node.getObject();
+			return file.getName();
+
 		case WORKINGDIR:
-			if (node.getRepository().getConfig().getBoolean(
-					"core", "bare", false)) //$NON-NLS-1$ //$NON-NLS-2$
-				return UIText.RepositoriesView_WorkingDir_treenode
-						+ " - " //$NON-NLS-1$
-						+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
-			else
-				return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
-						+ node.getRepository().getWorkDir().getAbsolutePath();
-		case PUSH:
-			// fall through
-		case FETCH:
-			return (String) node.getObject();
 
+			return UIText.RepositoriesView_WorkingDir_treenode
+					+ " - " //$NON-NLS-1$
+					+ node.getRepository().getWorkDir().getAbsolutePath();
+
+		default:
+			return null;
 		}
-
-		return null;
 	}
 
 	@Override
@@ -214,46 +204,30 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
 		switch (node.getType()) {
 
-		case TAG:
-			// fall through
 		case REF:
-			// if the branch or tag is checked out,
-			// we want to decorate the corresponding
-			// node with a little check indicator
-			String refName = ((Ref) node.getObject()).getName();
-
-			String branchName;
-			String compareString;
-
+			Ref ref = (Ref) node.getObject();
+			// shorten the name
+			String refName = node.getRepository().shortenRefName(ref.getName());
 			try {
-				branchName = node.getRepository().getFullBranch();
-				if (branchName == null)
-					return image;
-				if (refName.startsWith(Constants.R_HEADS)) {
-					// local branch: HEAD would be on the branch
-					compareString = refName;
-				} else if (refName.startsWith(Constants.R_TAGS)) {
-					// tag: HEAD would be on the commit id to which the tag is
-					// pointing
-					compareString = node.getRepository().mapTag(refName)
-							.getObjId().getName();
-				} else if (refName.startsWith(Constants.R_REMOTES)) {
-					// remote branch: HEAD would be on the commit id to which
-					// the branch is pointing
-					compareString = node.getRepository().mapCommit(refName)
-							.getCommitId().getName();
-				} else {
-					// some other symbolic reference
-					return image;
+				String branch = node.getBranch();
+				if (refName.equals(branch)) {
+					return getDecoratedImage(image);
 				}
 			} catch (IOException e1) {
-				return image;
+				// simply ignore here
 			}
+			return image;
 
-			if (compareString.equals(branchName)) {
-				return getDecoratedImage(image);
+		case PROJ:
+
+			File file = (File) node.getObject();
+
+			for (IProject proj : ResourcesPlugin.getWorkspace().getRoot()
+					.getProjects()) {
+				if (proj.getLocation().equals(new Path(file.getAbsolutePath()))) {
+					return getDecoratedImage(image);
+				}
 			}
-
 			return image;
 
 		default:
@@ -277,7 +251,8 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 				@Override
 				protected void drawCompositeImage(int width, int height) {
 					drawImage(image.getImageData(), 0, 0);
-					drawImage(UIIcons.OVR_CHECKEDOUT.getImageData(), 0, 0);
+					drawImage(UIIcons.OVR_CHECKEDOUT.getImageData(), 0,
+							0);
 
 				}
 			};

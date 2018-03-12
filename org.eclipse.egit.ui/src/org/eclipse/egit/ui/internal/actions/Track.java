@@ -9,16 +9,18 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.TrackOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 
 /**
  * An action to add resources to the Git repository.
@@ -29,23 +31,27 @@ public class Track extends RepositoryAction {
 
 	@Override
 	public void execute(IAction action) {
-		final TrackOperation op = new TrackOperation(getSelectedResources());
-		String jobname = UIText.Track_addToVersionControl;
-		Job job = new Job(jobname) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				try {
-					op.execute(monitor);
-				} catch (CoreException e) {
-					return Activator.createErrorStatus(e.getStatus()
-							.getMessage(), e);
-				}
-				return Status.OK_STATUS;
-			}
-		};
-		job.setRule(op.getSchedulingRule());
-		job.setUser(true);
-		job.schedule();
+		try {
+			final TrackOperation op = new TrackOperation(Arrays
+					.asList(getSelectedResources()));
+			getTargetPart().getSite().getWorkbenchWindow().run(true, false,
+					new IRunnableWithProgress() {
+						public void run(IProgressMonitor arg0)
+								throws InvocationTargetException,
+								InterruptedException {
+							try {
+								op.run(arg0);
+							} catch (CoreException e) {
+								throw new InvocationTargetException(e);
+							}
+						}
+					});
+		} catch (InvocationTargetException e) {
+			Activator.logError(UIText.Track_error, e);
+			MessageDialog.openError(getShell(), UIText.Track_error, UIText.Track_see_log);
+		} catch (InterruptedException e) {
+			MessageDialog.openError(getShell(), UIText.Track_error, e.getMessage());
+		}
 	}
 
 	@Override
