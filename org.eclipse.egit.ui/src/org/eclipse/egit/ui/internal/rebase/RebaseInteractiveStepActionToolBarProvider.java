@@ -257,11 +257,9 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			PlanElement firstSelectedEntry = (PlanElement) obj;
 			PlanElement lastSelectedEntry = firstSelectedEntry;
 
-			ElementAction type = firstSelectedEntry.getPlanElementAction();
-
-			boolean singleTypeSelected = true;
 			if (structured.size() > 1) {
 				// multi selection
+				ElementAction type = firstSelectedEntry.getPlanElementAction();
 				for (Iterator iterator = structured.iterator(); iterator
 						.hasNext();) {
 					Object selectedObj = iterator.next();
@@ -269,16 +267,14 @@ public class RebaseInteractiveStepActionToolBarProvider {
 						continue;
 					PlanElement entry = lastSelectedEntry = (PlanElement) selectedObj;
 					if (type != entry.getPlanElementAction()) {
-						singleTypeSelected = false;
-						break;
+						unselectAllActionItemsExecpt(null);
 					}
 				}
+			} else {
+				// single selection
+				unselectAllActionItemsExecpt(getItemFor(firstSelectedEntry
+						.getPlanElementAction()));
 			}
-
-			if (singleTypeSelected)
-				unselectAllActionItemsExecpt(getItemFor(type));
-			else
-				unselectAllActionItemsExecpt(null);
 
 			enableMoveButtons(firstSelectedEntry, lastSelectedEntry);
 
