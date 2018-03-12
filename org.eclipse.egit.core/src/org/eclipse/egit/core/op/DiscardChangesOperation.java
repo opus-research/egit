@@ -54,8 +54,6 @@ public class DiscardChangesOperation implements IEGitOperation {
 
 	/**
 	 * The index stage to check out for conflicting files.
-	 *
-	 * @since 3.6
 	 */
 	public enum Stage {
 		/**
@@ -102,7 +100,6 @@ public class DiscardChangesOperation implements IEGitOperation {
 	 * {@link DiscardChangesOperation} for absolute paths.
 	 *
 	 * @param paths
-	 * @since 3.6
 	 */
 	public DiscardChangesOperation(Collection<IPath> paths) {
 		this(ResourceUtil.splitPathsByRepository(paths));
@@ -120,7 +117,6 @@ public class DiscardChangesOperation implements IEGitOperation {
 	 * with revision.
 	 *
 	 * @param stage
-	 * @since 3.6
 	 */
 	public void setStage(Stage stage) {
 		if (revision != null)
