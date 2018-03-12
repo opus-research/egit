@@ -16,11 +16,12 @@ import java.util.Set;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.jgit.lib.Repository;
@@ -146,12 +147,12 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	/**
-	 * @return the file corresponding to the entry, if it exists in the
-	 *         workspace, null otherwise.
+	 * @return the file corresponding to the entry
 	 */
 	public IFile getFile() {
 		IPath absolutePath = getLocation();
-		IFile resource = ResourceUtil.getFileForLocation(absolutePath);
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IFile resource = root.getFileForLocation(absolutePath);
 		return resource;
 	}
 
