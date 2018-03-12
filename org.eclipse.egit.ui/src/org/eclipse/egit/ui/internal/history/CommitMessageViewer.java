@@ -115,7 +115,16 @@ class CommitMessageViewer extends TextViewer implements
 		// set the cursor when hovering over a link
 		t.addListener(SWT.MouseMove, new Listener() {
 			public void handleEvent(final Event e) {
-				if (getStyleRange(e.x, e.y) instanceof ObjectLink)
+				final int o;
+				try {
+					o = t.getOffsetAtLocation(new Point(e.x, e.y));
+				} catch (IllegalArgumentException err) {
+					t.setCursor(sys_normalCursor);
+					return;
+				}
+
+				final StyleRange r = t.getStyleRangeAtOffset(o);
+				if (r instanceof ObjectLink)
 					t.setCursor(SYS_LINK_CURSOR);
 				else
 					t.setCursor(sys_normalCursor);
@@ -130,7 +139,14 @@ class CommitMessageViewer extends TextViewer implements
 					return;
 				}
 
-				final StyleRange r = getStyleRange(e.x, e.y);
+				final int o;
+				try {
+					o = t.getOffsetAtLocation(new Point(e.x, e.y));
+				} catch (IllegalArgumentException err) {
+					return;
+				}
+
+				final StyleRange r = t.getStyleRangeAtOffset(o);
 				if (r instanceof ObjectLink) {
 					final RevCommit c = ((ObjectLink) r).targetCommit;
 					for (final Object l : navListeners.getListeners())
@@ -345,25 +361,6 @@ class CommitMessageViewer extends TextViewer implements
 		format();
 	}
 
-	/**
-	 * Get style range at x/y coordinates
-	 *
-	 * @param x
-	 * @param y
-	 * @return style range, will be null when no style range exists at given
-	 *         coordinates
-	 */
-	private StyleRange getStyleRange(final int x, final int y) {
-		final StyledText t = getTextWidget();
-		final int offset;
-		try {
-			offset = t.getOffsetAtLocation(new Point(x, y));
-		} catch (IllegalArgumentException e) {
-			return null;
-		}
-		if (offset < t.getCharCount())
-			return t.getStyleRangeAtOffset(offset);
-		else
-			return null;
-	}
+
+
 }
