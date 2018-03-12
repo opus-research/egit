@@ -47,10 +47,7 @@ public class AddRemoteWizard extends Wizard {
 		return page.getSelection();
 	}
 
-	/**
-	 * @return the wizard page
-	 */
-	public AddRemotePage getAddRemotePage() {
+	AddRemotePage getAddRemotePage() {
 		return page;
 	}
 
