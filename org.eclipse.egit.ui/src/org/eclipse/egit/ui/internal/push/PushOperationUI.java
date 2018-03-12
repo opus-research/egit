@@ -30,7 +30,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -161,8 +160,6 @@ public class PushOperationUI {
 		createPushOperation();
 		if (credentialsProvider != null)
 			op.setCredentialsProvider(credentialsProvider);
-		else
-			op.setCredentialsProvider(new EGitCredentialsProvider());
 		try {
 			op.run(monitor);
 			return op.getOperationResult();
