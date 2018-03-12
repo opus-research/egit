@@ -36,6 +36,7 @@ import org.eclipse.team.core.history.IFileRevision;
  * Open a file or files in a text editor
  */
 public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IStructuredSelection selection = getSelection(event);
 		if (selection.size() < 1)
@@ -44,37 +45,41 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 		if (input == null)
 			return null;
 		boolean errorOccurred = false;
-		List<ObjectId> ids = new ArrayList<ObjectId>();
+		List<ObjectId> ids = new ArrayList<>();
 		String gitPath = null;
 		if (input instanceof IFile) {
 			IFile resource = (IFile) input;
 			final RepositoryMapping map = RepositoryMapping
 					.getMapping(resource);
-			gitPath = map.getRepoRelativePath(resource);
-			Iterator<?> it = selection.iterator();
-			while (it.hasNext()) {
-				RevCommit commit = (RevCommit) it.next();
-				String commitPath = getRenamedPath(gitPath, commit);
-				IFileRevision rev = null;
-				try {
-					rev = CompareUtils.getFileRevision(commitPath, commit,
-							map.getRepository(), null);
-				} catch (IOException e) {
-					Activator.logError(NLS.bind(
-							UIText.GitHistoryPage_errorLookingUpPath,
-							commitPath, commit.getId()), e);
-					errorOccurred = true;
-				}
-				if (rev != null)
+			if (map != null) {
+				gitPath = map.getRepoRelativePath(resource);
+				Iterator<?> it = selection.iterator();
+				while (it.hasNext()) {
+					RevCommit commit = (RevCommit) it.next();
+					String commitPath = getRenamedPath(gitPath, commit);
+					IFileRevision rev = null;
 					try {
-						EgitUiEditorUtils.openTextEditor(getPart(event)
-								.getSite().getPage(), rev, null);
-					} catch (CoreException e) {
-						Activator.logError(e.getMessage(), e);
+						rev = CompareUtils.getFileRevision(commitPath, commit,
+								map.getRepository(), null);
+					} catch (IOException e) {
+						Activator.logError(NLS.bind(
+								UIText.GitHistoryPage_errorLookingUpPath,
+								commitPath, commit.getId()), e);
 						errorOccurred = true;
 					}
-				else
-					ids.add(commit.getId());
+					if (rev != null) {
+						try {
+							EgitUiEditorUtils.openTextEditor(
+									getPart(event).getSite().getPage(), rev,
+									null);
+						} catch (CoreException e) {
+							Activator.logError(e.getMessage(), e);
+							errorOccurred = true;
+						}
+					} else {
+						ids.add(commit.getId());
+					}
+				}
 			}
 		}
 		if (input instanceof File) {

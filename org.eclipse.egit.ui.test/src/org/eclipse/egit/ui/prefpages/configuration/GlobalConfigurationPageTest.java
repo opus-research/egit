@@ -20,6 +20,7 @@ import java.util.Set;
 
 import org.eclipse.egit.ui.common.EGitTestCase;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.preferences.GlobalConfigurationPreferencePage;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -29,9 +30,12 @@ import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
+import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,8 +54,6 @@ public class GlobalConfigurationPageTest {
 
 	private static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
 
-	private static final TestUtil util = new TestUtil();
-
 	private static FileBasedConfig config;
 
 	private SWTBotShell preferencePage;
@@ -68,23 +70,36 @@ public class GlobalConfigurationPageTest {
 		config.unsetSection(TESTSECTION, TESTSUBSECTION);
 		config.unsetSection(TESTSECTION, null);
 		config.save();
-		getGitConfigurationPreferencePage();
 	}
 
 	private void getGitConfigurationPreferencePage() {
-		preferencePage = new Eclipse().openPreferencePage(preferencePage);
-		SWTBotTreeItem team = preferencePage.bot().tree().getTreeItem("Team");
-		team.expand()
-				.getNode(util.getPluginLocalizedValue("GitPreferences_name"))
-				.expand()
-				.getNode(util.getPluginLocalizedValue("ConfigurationPage.name"))
-				.select();
+		if (preferencePage != null) {
+			preferencePage.close();
+			bot.waitUntil(Conditions.shellCloses(preferencePage));
+		}
+		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+
+			@Override
+			public void run() {
+				PreferencesUtil.createPreferenceDialogOn(
+						PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+								.getShell(),
+						GlobalConfigurationPreferencePage.ID, null, null)
+						.open();
+			}
+		});
+		bot.waitUntil(Conditions.shellIsActive("Preferences"));
+		preferencePage = bot.shell("Preferences");
 	}
 
 	@After
 	public void after() throws Exception {
-		if (preferencePage != null)
+		if (preferencePage != null) {
 			preferencePage.close();
+			bot.waitUntil(Conditions.shellCloses(preferencePage));
+			preferencePage = null;
+		}
+		TestUtil.processUIEvents();
 	}
 
 	@AfterClass
@@ -93,10 +108,12 @@ public class GlobalConfigurationPageTest {
 		SWTBotShell preferencePage = new Eclipse().openPreferencePage(null);
 		preferencePage.bot().tree(0).getTreeItem("General").select();
 		preferencePage.bot().button(IDialogConstants.OK_LABEL).click();
+		TestUtil.processUIEvents();
 	}
 
 	@Test
 	public void testNodes() throws Exception {
+		getGitConfigurationPreferencePage();
 		SWTBotTree configTree = preferencePage.bot().tree(1);
 		for (String section : config.getSections()) {
 			SWTBotTreeItem sectionItem = configTree.getTreeItem(section);
@@ -121,6 +138,7 @@ public class GlobalConfigurationPageTest {
 
 	@Test
 	public void testAddSectionEntry() throws Exception {
+		getGitConfigurationPreferencePage();
 		preferencePage.bot().button(
 				UIText.ConfigurationEditorComponent_AddButton).click();
 		SWTBotShell addDialog = bot
@@ -146,6 +164,7 @@ public class GlobalConfigurationPageTest {
 
 	@Test
 	public void testAddSubSectionEntry() throws Exception {
+		getGitConfigurationPreferencePage();
 		preferencePage.bot().button(
 				UIText.ConfigurationEditorComponent_AddButton).click();
 		SWTBotShell addDialog = bot
@@ -210,6 +229,7 @@ public class GlobalConfigurationPageTest {
 
 	@Test
 	public void testChecksForKey() throws Exception {
+		getGitConfigurationPreferencePage();
 		preferencePage.bot().button(
 				UIText.ConfigurationEditorComponent_AddButton).click();
 		SWTBotShell addDialog = bot
@@ -242,6 +262,7 @@ public class GlobalConfigurationPageTest {
 
 	@Test
 	public void testSubsectionWithDot() throws Exception {
+		getGitConfigurationPreferencePage();
 		preferencePage.bot()
 				.button(UIText.ConfigurationEditorComponent_AddButton).click();
 		SWTBotShell addDialog = bot
@@ -342,6 +363,7 @@ public class GlobalConfigurationPageTest {
 
 	@Test
 	public void testOpenEditor() throws Exception {
+		getGitConfigurationPreferencePage();
 		try {
 			preferencePage.bot().button(
 					UIText.ConfigurationEditorComponent_OpenEditorButton)

@@ -24,7 +24,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revplot.AbstractPlotRenderer;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
@@ -73,16 +72,14 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	/**
 	 * Map from ref name to its label coordinates
 	 */
-	private final Map<String, Point> labelCoordinates = new HashMap<String, Point>();
+	private final Map<String, Point> labelCoordinates = new HashMap<>();
 
 	/**
 	 * Set of ref names that are shown as an ellipsis
 	 */
-	private final Set<String> ellipsisTags = new HashSet<String>();
+	private final Set<String> ellipsisTags = new HashSet<>();
 
 	private int textHeight;
-
-	private boolean enableAntialias = true;
 
 	private final ResourceManager resources;
 
@@ -117,13 +114,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	void paint(final Event event, Ref actHeadRef) {
 		g = event.gc;
 
-		if (this.enableAntialias)
-			try {
-				g.setAntialias(SWT.ON);
-			} catch (SWTException e) {
-				this.enableAntialias = false;
-			}
-
 		this.headRef = actHeadRef;
 		cellX = event.x;
 		cellY = event.y;
@@ -143,6 +133,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		paintCommit(commit , event.height);
 	}
 
+	@Override
 	protected void drawLine(final Color color, final int x1, final int y1,
 			final int x2, final int y2, final int width) {
 		g.setForeground(color);
@@ -163,19 +154,22 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		g.drawOval(dotX, dotY, dotW, dotH);
 	}
 
+	@Override
 	protected void drawCommitDot(final int x, final int y, final int w,
 			final int h) {
 		drawDot(commitDotOutline, commitDotFill, x, y, w, h);
 	}
 
+	@Override
 	protected void drawBoundaryDot(final int x, final int y, final int w,
 			final int h) {
 		drawDot(sys_gray, sys_white, x, y, w, h);
 	}
 
+	@Override
 	protected void drawText(final String msg, final int x, final int y) {
 		final Point textsz = g.textExtent(msg);
-		final int texty = (y * 2 - textsz.y) / 2;
+		final int texty = (y - textsz.y) / 2;
 		g.setForeground(cellFG);
 		g.setBackground(cellBG);
 		g.drawString(msg, cellX + x, cellY + texty, true);
@@ -262,6 +256,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		Point textsz = g.stringExtent(txt);
 		int arc = textsz.y / 2;
 		final int texty = (y * 2 - textsz.y) / 2;
+		final int outerWidth = textsz.x + 7;
 
 		// Draw backgrounds
 		g.setLineWidth(1);
@@ -275,7 +270,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 				textsz.y - 2, arc - 1, arc - 1);
 
 		g.setForeground(resources.createColor(labelOuter));
-		g.drawRoundRectangle(cellX + x, cellY + texty - 1, textsz.x + 7,
+		g.drawRoundRectangle(cellX + x, cellY + texty - 1, outerWidth,
 				textsz.y + 1, arc, arc);
 
 		g.setForeground(sys_black);
@@ -286,7 +281,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		if (isHead)
 			g.setFont(oldFont);
 
-		labelCoordinates.put(name, new Point(x, x + textsz.x));
+		labelCoordinates.put(name, new Point(x, x + outerWidth));
 		return 10 + textsz.x;
 	}
 
@@ -300,6 +295,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		return isHead;
 	}
 
+	@Override
 	protected Color laneColor(final SWTLane myLane) {
 		return myLane != null ? myLane.color : sys_black;
 	}

@@ -18,11 +18,14 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.StashDropOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.handler.SelectionHandler;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.api.Git;
@@ -30,6 +33,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IWorkbenchPart;
 
 /**
  * Handler to delete a stashed commit
@@ -41,6 +45,7 @@ public class StashDropHandler extends SelectionHandler {
 	 */
 	public static final String ID = "org.eclipse.egit.ui.commit.StashDrop"; //$NON-NLS-1$
 
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final RevCommit commit = getSelectedItem(RevCommit.class, event);
 		if (commit == null)
@@ -79,6 +84,18 @@ public class StashDropHandler extends SelectionHandler {
 				return super.belongsTo(family);
 			}
 		};
+		final IWorkbenchPart part = getPart(event);
+		job.addJobChangeListener(new JobChangeAdapter() {
+			@Override
+			public void done(IJobChangeEvent event) {
+				if (event.getResult().isOK()) {
+					if (part instanceof CommitEditor) {
+						((CommitEditor) part).close(false);
+					}
+				}
+			}
+
+		});
 		job.setUser(true);
 		job.setRule(op.getSchedulingRule());
 		job.schedule();
@@ -108,6 +125,7 @@ public class StashDropHandler extends SelectionHandler {
 		final AtomicBoolean confirmed = new AtomicBoolean(false);
 
 		shell.getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				String message = MessageFormat.format(
 						UIText.StashDropCommand_confirmSingle,

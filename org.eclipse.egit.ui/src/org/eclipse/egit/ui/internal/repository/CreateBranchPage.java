@@ -47,6 +47,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -117,7 +118,7 @@ class CreateBranchPage extends WizardPage {
 
 	private Label sourceIcon;
 
-	private Label sourceNameLabel;
+	private StyledText sourceNameLabel;
 
 	private String sourceRefName = ""; //$NON-NLS-1$
 
@@ -174,6 +175,7 @@ class CreateBranchPage extends WizardPage {
 		setMessage(UIText.CreateBranchPage_ChooseNameMessage);
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(4, false));
@@ -187,7 +189,9 @@ class CreateBranchPage extends WizardPage {
 		sourceIcon.setLayoutData(GridDataFactory.fillDefaults()
 				.align(SWT.END, SWT.CENTER).create());
 
-		sourceNameLabel = new Label(main, SWT.NONE);
+		sourceNameLabel = new StyledText(main, SWT.NONE);
+		sourceNameLabel.setBackground(main.getBackground());
+		sourceNameLabel.setEditable(false);
 		sourceNameLabel.setLayoutData(GridDataFactory.fillDefaults()
 				.align(SWT.FILL, SWT.CENTER)
 				.grab(true, false).create());
@@ -211,12 +215,14 @@ class CreateBranchPage extends WizardPage {
 		nameText = new Text(main, SWT.BORDER);
 		// give focus to the nameText if label is activated using the mnemonic
 		nameLabel.addTraverseListener(new TraverseListener() {
+			@Override
 			public void keyTraversed(TraverseEvent e) {
 				nameText.setFocus();
 			}
 		});
 
 		nameText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				nameIsSuggestion = false;
 			}
@@ -233,6 +239,7 @@ class CreateBranchPage extends WizardPage {
 
 		upstreamConfigComponent
 				.addUpstreamConfigSelectionListener(new UpstreamConfigSelectionListener() {
+					@Override
 					public void upstreamConfigSelected(
 							UpstreamConfig newUpstreamConfig) {
 						upstreamConfig = newUpstreamConfig;
@@ -269,6 +276,7 @@ class CreateBranchPage extends WizardPage {
 		nameText.setFocus();
 		// add the listener just now to avoid unneeded checkPage()
 		nameText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -365,17 +373,23 @@ class CreateBranchPage extends WizardPage {
 		return nameText.getText();
 	}
 
+	public boolean checkoutNewBranch() {
+		return checkout.getSelection();
+	}
+
 	/**
+	 * @param newRefName
+	 * @param checkoutNewBranch
 	 * @param monitor
 	 * @throws CoreException
 	 * @throws IOException
 	 */
-	public void createBranch(IProgressMonitor monitor) throws CoreException,
+	public void createBranch(String newRefName, boolean checkoutNewBranch,
+			IProgressMonitor monitor)
+			throws CoreException,
 			IOException {
 		monitor.beginTask(UIText.CreateBranchPage_CreatingBranchMessage,
 				IProgressMonitor.UNKNOWN);
-
-		String newRefName = getBranchName();
 
 		final CreateLocalBranchOperation cbop;
 
@@ -385,12 +399,12 @@ class CreateBranchPage extends WizardPage {
 					myBaseCommit);
 		else
 			cbop = new CreateLocalBranchOperation(myRepository, newRefName,
-					myRepository.getRef(this.sourceRefName),
+					myRepository.findRef(this.sourceRefName),
 					upstreamConfig);
 
 		cbop.execute(monitor);
 
-		if (checkout.getSelection()) {
+		if (checkoutNewBranch) {
 			if (monitor.isCanceled())
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
@@ -434,10 +448,11 @@ class CreateBranchPage extends WizardPage {
 	}
 
 	private String getBranchNameSuggestionFromProvider() {
-		final AtomicReference<String> ref = new AtomicReference<String>();
+		final AtomicReference<String> ref = new AtomicReference<>();
 		final IBranchNameProvider branchNameProvider = getBranchNameProvider();
 		if (branchNameProvider != null)
 			SafeRunner.run(new SafeRunnable() {
+				@Override
 				public void run() throws Exception {
 					ref.set(branchNameProvider.getBranchNameSuggestion());
 				}

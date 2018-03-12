@@ -107,10 +107,11 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		final ResourceManager resources = new LocalResourceManager(
 				JFaceResources.getResources());
 		UIUtils.hookDisposal(main, resources);
-		table = new CommitGraphTable(main, null, resources);
-		table.setRelativeDate(GitHistoryPage.isShowingRelativeDates());
+		// Table never shows e-mail addresses because it might get rather wide.
+		table = new CommitGraphTable(main, null, resources, false);
 		table.getTableView().addSelectionChangedListener(
 				new ISelectionChangedListener() {
+					@Override
 					public void selectionChanged(SelectionChangedEvent event) {
 						commitId = null;
 						IStructuredSelection sel = (IStructuredSelection) event
@@ -122,6 +123,7 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 					}
 				});
 		table.getTableView().addOpenListener(new IOpenListener() {
+			@Override
 			public void open(OpenEvent event) {
 				if (getButton(OK).isEnabled())
 					buttonPressed(OK);
@@ -147,6 +149,7 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		try {
 			PlatformUI.getWorkbench().getProgressService().run(true, true,
 					new IRunnableWithProgress() {
+						@Override
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
@@ -202,6 +205,7 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 								}
 								getShell().getDisplay().asyncExec(
 										new Runnable() {
+											@Override
 											public void run() {
 												updateUi();
 											}
@@ -253,7 +257,7 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		if (filterResources == null)
 			return TreeFilter.ALL;
 
-		List<TreeFilter> filters = new ArrayList<TreeFilter>();
+		List<TreeFilter> filters = new ArrayList<>();
 		for (IResource resource : filterResources) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
 			if (mapping != null) {

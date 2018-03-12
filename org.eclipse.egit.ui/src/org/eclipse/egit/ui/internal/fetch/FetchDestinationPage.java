@@ -63,6 +63,7 @@ public class FetchDestinationPage extends WizardPage {
 		setTitle(UIText.FetchDestinationPage_PageTitle);
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(2, false));
@@ -86,6 +87,7 @@ public class FetchDestinationPage extends WizardPage {
 		destinationLabel.setText(UIText.FetchDestinationPage_DestinationLabel);
 		destinationText = new Text(main, SWT.BORDER);
 		destinationText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -94,6 +96,7 @@ public class FetchDestinationPage extends WizardPage {
 				destinationText);
 		UIUtils.addRefContentProposalToText(sourceText, repository,
 				new IRefListProvider() {
+					@Override
 					public List<Ref> getRefList() {
 						return getRemoteRefs();
 					}
@@ -141,7 +144,7 @@ public class FetchDestinationPage extends WizardPage {
 
 	private List<Ref> getRemoteRefs() {
 		if (this.trackingBranches == null) {
-			List<Ref> proposals = new ArrayList<Ref>();
+			List<Ref> proposals = new ArrayList<>();
 			try {
 				for (Ref ref : repository.getRefDatabase().getRefs(
 						Constants.R_REMOTES).values()) {

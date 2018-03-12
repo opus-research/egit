@@ -99,6 +99,9 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 					public void done(IJobChangeEvent cevent) {
 						finishRebaseInteractive();
 						IStatus result = cevent.getJob().getResult();
+						if (result == null) {
+							return;
+						}
 						// if a rebase was started, returned with an exception
 						// and left the repository in an unsafe state, try to
 						// abort and show exception
@@ -107,6 +110,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 							handleBeginError(repository, result);
 						} else if (result.getSeverity() == IStatus.CANCEL)
 							Display.getDefault().asyncExec(new Runnable() {
+								@Override
 								public void run() {
 									// don't use getShell(event) here since
 									// the active shell has changed since the
@@ -140,6 +144,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 					private void setAmending(final boolean amending,
 							final boolean openStagingView) {
 						Display.getDefault().asyncExec(new Runnable() {
+							@Override
 							public void run() {
 								try {
 									IViewPart view;
@@ -159,6 +164,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 										sv.reload(repository);
 										Display.getDefault().asyncExec(
 												new Runnable() {
+													@Override
 													public void run() {
 														sv.setAmending(amending);
 													}
@@ -184,6 +190,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 	private void handleUncommittedChanges(final Repository repository,
 			final List<String> files) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
@@ -209,6 +216,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 	}
 
 
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Repository repository = getRepository(event);
 		execute(repository);

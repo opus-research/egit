@@ -36,8 +36,7 @@ public class WorkingTreeChangeCache {
 	 * @return list of changes in working tree
 	 */
 	public static Map<String, Change> build(Repository repo) {
-		TreeWalk tw = new TreeWalk(repo);
-		try {
+		try (TreeWalk tw = new TreeWalk(repo)) {
 			int fileNth = tw.addTree(new FileTreeIterator(repo));
 			int cacheNth = tw.addTree(new DirCacheIterator(repo.readDirCache()));
 			tw.setFilter(new IndexDiffFilter(cacheNth, fileNth));
@@ -56,11 +55,10 @@ public class WorkingTreeChangeCache {
 
 				result.put(tw.getPathString(), change);
 			}
-			tw.release();
 
 			return result;
 		} catch (IOException e) {
-			Activator.error(e.getMessage(), e);
+			Activator.logError(e.getMessage(), e);
 			return new HashMap<String, GitCommitsModelCache.Change>(0);
 		}
 	}

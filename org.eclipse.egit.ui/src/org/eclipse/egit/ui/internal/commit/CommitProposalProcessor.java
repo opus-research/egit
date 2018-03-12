@@ -74,6 +74,7 @@ public abstract class CommitProposalProcessor implements IContentAssistProcessor
 			return display.toLowerCase(Locale.US).startsWith(prefix);
 		}
 
+		@Override
 		public int compareTo(CommitFile other) {
 			return display.compareTo(other.display);
 		}
@@ -122,6 +123,7 @@ public abstract class CommitProposalProcessor implements IContentAssistProcessor
 		return doc.get(start + 1, length);
 	}
 
+	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer,
 			int offset) {
 		String prefix;
@@ -134,7 +136,7 @@ public abstract class CommitProposalProcessor implements IContentAssistProcessor
 		Collection<String> messages = computeMessageProposals();
 		Set<CommitFile> files = computeFileProposals();
 
-		List<ICompletionProposal> proposals = new ArrayList<ICompletionProposal>();
+		List<ICompletionProposal> proposals = new ArrayList<>();
 		if (prefix != null && prefix.length() > 0) {
 			int replacementLength = prefix.length();
 			int replacementOffset = offset - replacementLength;
@@ -174,7 +176,7 @@ public abstract class CommitProposalProcessor implements IContentAssistProcessor
 
 	private Set<CommitFile> computeFileProposals() {
 		Collection<String> paths = computeFileNameProposals();
-		Set<CommitFile> files = new TreeSet<CommitFile>();
+		Set<CommitFile> files = new TreeSet<>();
 		for (String path : paths) {
 			String name = new Path(path).lastSegment();
 			if (name == null)
@@ -187,23 +189,28 @@ public abstract class CommitProposalProcessor implements IContentAssistProcessor
 		return files;
 	}
 
+	@Override
 	public IContextInformation[] computeContextInformation(ITextViewer viewer,
 			int offset) {
 		return null;
 	}
 
+	@Override
 	public char[] getCompletionProposalAutoActivationCharacters() {
 		return null;
 	}
 
+	@Override
 	public char[] getContextInformationAutoActivationCharacters() {
 		return null;
 	}
 
+	@Override
 	public String getErrorMessage() {
 		return null;
 	}
 
+	@Override
 	public IContextInformationValidator getContextInformationValidator() {
 		return null;
 	}

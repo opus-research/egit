@@ -72,9 +72,9 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 	private TreeViewer treeViewer;
 
-	private final Map<Repository, Set<IProject>> resources = new HashMap<Repository, Set<IProject>>();
+	private final Map<Repository, Set<IProject>> resources = new HashMap<>();
 
-	private final Map<Repository, String> selectedBranches = new HashMap<Repository, String>();
+	private final Map<Repository, String> selectedBranches = new HashMap<>();
 
 	private final Image branchImage = UIIcons.BRANCH.createImage();
 
@@ -86,6 +86,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 		setMessage(UIText.GitBranchSynchronizeWizardPage_description, WARNING);
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		Composite composite = new Composite(parent, SWT.NONE);
 		GridLayout layout = new GridLayout(1, false);
@@ -101,7 +102,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 			Repository repo = repositoryMapping.getRepository();
 			Set<IProject> projects = resources.get(repo);
 			if (projects == null) {
-				projects = new HashSet<IProject>();
+				projects = new HashSet<>();
 				resources.put(repo, projects);
 			}
 			projects.add(project);
@@ -204,7 +205,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 			@Override
 			protected CellEditor getCellEditor(Object element) {
 				Repository repo = (Repository) element;
-				List<String> refs = new LinkedList<String>(repo.getAllRefs()
+				List<String> refs = new LinkedList<>(repo.getAllRefs()
 						.keySet());
 
 				List<Ref> additionalRefs;
@@ -238,35 +239,42 @@ class GitSynchronizeWizardPage extends WizardPage {
 		});
 
 		treeViewer.setContentProvider(new ITreeContentProvider() {
+			@Override
 			public void inputChanged(Viewer viewer, Object oldInput,
 					Object newInput) {
 				// nothing to do
 			}
 
+			@Override
 			public void dispose() {
 				// nothing to do
 			}
 
+			@Override
 			public Object[] getElements(Object inputElement) {
 				return (Object[]) inputElement;
 			}
 
+			@Override
 			public boolean hasChildren(Object element) {
 				return false;
 			}
 
+			@Override
 			public Object getParent(Object element) {
 				return null;
 			}
 
+			@Override
 			public Object[] getChildren(Object parentElement) {
 				return new Object[0];
 			}
 		});
 
-		List<Repository> repositoriesList = new ArrayList<Repository>(
+		List<Repository> repositoriesList = new ArrayList<>(
 				resources.keySet());
 		Collections.sort(repositoriesList, new Comparator<Repository>() {
+			@Override
 			public int compare(Repository o1, Repository o2) {
 				String name1 = o1.getWorkTree().getName();
 				String name2 = o2.getWorkTree().getName();
@@ -339,7 +347,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 	}
 
 	Set<IProject> getSelectedProjects() {
-		Set<IProject> projects = new HashSet<IProject>();
+		Set<IProject> projects = new HashSet<>();
 		for (Repository repo : selectedBranches.keySet())
 			projects.addAll(resources.get(repo));
 

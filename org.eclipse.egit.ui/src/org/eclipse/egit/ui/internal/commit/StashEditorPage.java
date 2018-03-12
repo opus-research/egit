@@ -62,6 +62,7 @@ public class StashEditorPage extends CommitEditorPage {
 		super(editor, "stashPage", UIText.CommitEditorPage_Title); //$NON-NLS-1$
 	}
 
+	@Override
 	String getParentCommitLabel(int i) {
 		switch (i) {
 		case 0:
@@ -124,6 +125,7 @@ public class StashEditorPage extends CommitEditorPage {
 				final ScrolledForm form = getManagedForm().getForm();
 				if (UIUtils.isUsable(form))
 					form.getDisplay().syncExec(new Runnable() {
+						@Override
 						public void run() {
 							if (!UIUtils.isUsable(form))
 								return;
@@ -145,7 +147,7 @@ public class StashEditorPage extends CommitEditorPage {
 	 * @return diffs for staged changes
 	 */
 	protected FileDiff[] getStagedDiffs() {
-		List<FileDiff> stagedDiffsResult = new ArrayList<FileDiff>();
+		List<FileDiff> stagedDiffsResult = new ArrayList<>();
 		if (getCommit().getRevCommit().getParentCount() > 1) {
 			RevCommit stagedCommit = getCommit().getRevCommit().getParent(
 					PARENT_COMMIT_STAGED);
@@ -160,7 +162,7 @@ public class StashEditorPage extends CommitEditorPage {
 	 * @return diffs for unstaged and untracked changes
 	 */
 	protected FileDiff[] getUnstagedDiffs() {
-		List<FileDiff> unstagedDiffs = new ArrayList<FileDiff>();
+		List<FileDiff> unstagedDiffs = new ArrayList<>();
 
 		RevCommit stagedCommit = getCommit().getRevCommit().getParent(
 				PARENT_COMMIT_STAGED);

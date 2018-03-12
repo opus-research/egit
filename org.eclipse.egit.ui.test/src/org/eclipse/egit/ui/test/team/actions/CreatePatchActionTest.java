@@ -52,7 +52,7 @@ public class CreatePatchActionTest extends LocalRepositoryTestCase {
 			+ "-oldContent\n"
 			+ "\\ No newline at end of file\n"
 			+ "+newContent\n" //
-			+ "\\ No newline at end of file";
+			+ "\\ No newline at end of file\n";
 
 	private static final String EXPECTED_WORKSPACE_PATCH_CONTENT = //
 	"### Eclipse Workspace Patch 1.0\n" //
@@ -82,7 +82,7 @@ public class CreatePatchActionTest extends LocalRepositoryTestCase {
 			+ "+++ test.txt\n" //
 			+ "@@ -0,0 +1 @@\n" //
 			+ "+Hello, world\n" //
-			+ "\\ No newline at end of file";
+			+ "\\ No newline at end of file\n";
 
 	@Before
 	public void setup() throws Exception {
@@ -235,6 +235,7 @@ public class CreatePatchActionTest extends LocalRepositoryTestCase {
 	private static void assertClipboard(final String expected) {
 		final String[] value = { null };
 		Display.getDefault().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				Clipboard clp = new Clipboard(Display.getCurrent());
 				value[0] = (String) clp.getContents(TextTransfer.getInstance());

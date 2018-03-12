@@ -44,10 +44,12 @@ public class RepositoryRemotePropertySource implements IPropertySource {
 		myName = remoteName;
 	}
 
+	@Override
 	public Object getEditableValue() {
 		return null;
 	}
 
+	@Override
 	public IPropertyDescriptor[] getPropertyDescriptors() {
 
 		try {
@@ -59,7 +61,7 @@ public class RepositoryRemotePropertySource implements IPropertySource {
 			Activator.handleError(
 					UIText.RepositoryRemotePropertySource_ErrorHeader, e, true);
 		}
-		List<IPropertyDescriptor> resultList = new ArrayList<IPropertyDescriptor>();
+		List<IPropertyDescriptor> resultList = new ArrayList<>();
 		PropertyDescriptor desc = new PropertyDescriptor(RepositoriesView.URL,
 				UIText.RepositoryRemotePropertySource_RemoteFetchURL_label);
 		resultList.add(desc);
@@ -75,6 +77,7 @@ public class RepositoryRemotePropertySource implements IPropertySource {
 		return resultList.toArray(new IPropertyDescriptor[resultList.size()]);
 	}
 
+	@Override
 	public Object getPropertyValue(Object id) {
 		String[] list = myConfig.getStringList(RepositoriesView.REMOTE, myName,
 				(String) id);
@@ -91,15 +94,18 @@ public class RepositoryRemotePropertySource implements IPropertySource {
 		return myConfig.getString(RepositoriesView.REMOTE, myName, (String) id);
 	}
 
+	@Override
 	public boolean isPropertySet(Object id) {
 		// no default values
 		return false;
 	}
 
+	@Override
 	public void resetPropertyValue(Object id) {
 		// nothing to do
 	}
 
+	@Override
 	public void setPropertyValue(Object id, Object value) {
 		// read-only
 	}

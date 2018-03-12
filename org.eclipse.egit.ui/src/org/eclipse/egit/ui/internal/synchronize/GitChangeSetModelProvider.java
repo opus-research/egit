@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, 2015 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,7 @@ import org.eclipse.core.resources.mapping.ResourceMappingContext;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
@@ -71,8 +72,7 @@ public class GitChangeSetModelProvider extends ModelProvider {
 				}
 
 				if (object != null) {
-					ResourceMapping rm = (ResourceMapping) object
-							.getAdapter(ResourceMapping.class);
+					ResourceMapping rm = AdapterUtils.adapt(object, ResourceMapping.class);
 					return new ResourceMapping[] { rm };
 				}
 			}

@@ -164,6 +164,7 @@ public class GitCreatePatchWizard extends Wizard {
 
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
+				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException {
 					try {
@@ -206,6 +207,7 @@ public class GitCreatePatchWizard extends Wizard {
 
 	private void copyToClipboard(final String content) {
 		getShell().getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				TextTransfer plainTextTransfer = TextTransfer.getInstance();
 				Clipboard clipboard = new Clipboard(getShell().getDisplay());
@@ -219,16 +221,18 @@ public class GitCreatePatchWizard extends Wizard {
 	private TreeFilter createPathFilter(final Collection<? extends IResource> rs) {
 		if (rs == null || rs.isEmpty())
 			return null;
-		final List<PathFilter> filters = new ArrayList<PathFilter>();
+		final List<PathFilter> filters = new ArrayList<>();
 		for (IResource r : rs) {
 			RepositoryMapping rm = RepositoryMapping.getMapping(r);
-			String repoRelativePath = rm.getRepoRelativePath(r);
-			if (repoRelativePath != null)
-				if (repoRelativePath.equals("")) //$NON-NLS-1$
-					// repository selected
-					return TreeFilter.ALL;
-				else
-					filters.add(PathFilter.create(repoRelativePath));
+			if (rm != null) {
+				String repoRelativePath = rm.getRepoRelativePath(r);
+				if (repoRelativePath != null)
+					if (repoRelativePath.equals("")) //$NON-NLS-1$
+						// repository selected
+						return TreeFilter.ALL;
+					else
+						filters.add(PathFilter.create(repoRelativePath));
+			}
 		}
 		if (filters.size() == 0)
 			return null;
@@ -298,6 +302,7 @@ public class GitCreatePatchWizard extends Wizard {
 			super(pageName, title, titleImage);
 		}
 
+		@Override
 		public void createControl(Composite parent) {
 			final Composite composite = new Composite(parent, SWT.NULL);
 			GridLayout gridLayout = new GridLayout(2, false);
@@ -351,6 +356,7 @@ public class GitCreatePatchWizard extends Wizard {
 			validatePage();
 			contextLines.addModifyListener(new ModifyListener() {
 
+				@Override
 				public void modifyText(ModifyEvent e) {
 					validatePage();
 				}

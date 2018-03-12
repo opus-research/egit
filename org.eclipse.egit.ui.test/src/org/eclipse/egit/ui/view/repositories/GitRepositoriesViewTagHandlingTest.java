@@ -76,8 +76,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 		String newObject = getObjectIdOfCommit();
 		createTag("SecondTag", "The second tag");
 		refreshAndWait();
-		SWTBotTreeItem tagsItem = myRepoViewUtil.getTagsItem(tree,
-				repositoryFile).expand();
+		SWTBotTreeItem tagsItem = TestUtil.expandAndWait(
+				myRepoViewUtil.getTagsItem(tree, repositoryFile));
 		SWTBotTreeItem[] items = tagsItem.getItems();
 		assertEquals("Wrong number of tags", initialCount + 2, items.length);
 
@@ -95,8 +95,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 
 		createTag("Delete1", "The first tag");
 		refreshAndWait();
-		SWTBotTreeItem tagsItem = myRepoViewUtil.getTagsItem(tree,
-				repositoryFile).expand();
+		SWTBotTreeItem tagsItem = TestUtil.expandAndWait(
+				myRepoViewUtil.getTagsItem(tree, repositoryFile));
 		SWTBotTreeItem[] items = tagsItem.getItems();
 		assertEquals("Wrong number of tags", initialCount + 1, items.length);
 		tagsItem.select("Delete1");
@@ -124,8 +124,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 		createTag("Delete2", "The first tag");
 		createTag("Delete3", "The second tag");
 		refreshAndWait();
-		SWTBotTreeItem tagsItem = myRepoViewUtil.getTagsItem(tree,
-				repositoryFile).expand();
+		SWTBotTreeItem tagsItem = TestUtil.expandAndWait(
+				myRepoViewUtil.getTagsItem(tree, repositoryFile));
 		SWTBotTreeItem[] items = tagsItem.getItems();
 		assertEquals("Wrong number of tags", initialCount + 2, items.length);
 		tagsItem.select("Delete2", "Delete3");
@@ -151,8 +151,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 		assertFalse("Wrong content", initialContent.equals(newContent));
 		createTag("ResetToSecond", "The second tag");
 		refreshAndWait();
-		myRepoViewUtil.getTagsItem(tree, repositoryFile).expand().getNode(
-				"ResetToFirst").select();
+		TestUtil.expandAndWait(myRepoViewUtil.getTagsItem(tree, repositoryFile))
+				.getNode("ResetToFirst").select();
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("ResetCommand"));
@@ -166,6 +166,7 @@ public class GitRepositoriesViewTagHandlingTest extends
 		bot.shell(UIText.ResetTargetSelectionDialog_ResetQuestion).bot()
 				.button(IDialogConstants.YES_LABEL).click();
 
+		TestUtil.waitForJobs(50, 5000);
 		Job.getJobManager().join(JobFamilies.RESET, null);
 
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
@@ -177,8 +178,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 	public void testPushTagPreselectsTag() throws Exception {
 		createTag("tag-to-push", "Tag to push");
 		SWTBotTree tree = getOrOpenView().bot().tree();
-		myRepoViewUtil.getTagsItem(tree, repositoryFile)
-				.expand().getNode("tag-to-push").select();
+		TestUtil.expandAndWait(myRepoViewUtil.getTagsItem(tree, repositoryFile))
+				.getNode("tag-to-push").select();
 		ContextMenuHelper.clickContextMenu(tree,
 				myUtil.getPluginLocalizedValue("RepoViewPushTag.label"));
 

@@ -35,6 +35,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.common.CompareEditorTester;
+import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.swt.finder.SWTBot;
@@ -42,6 +43,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -63,7 +65,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, R_HEADS + MASTER, false);
 
 		// then
-		SWTBot viewBot = bot.viewByTitle("Synchronize").bot();
+		SWTBot viewBot = bot.viewById(ISynchronizeView.VIEW_ID).bot();
 		@SuppressWarnings("unchecked")
 		Matcher matcher = allOf(widgetOfType(Label.class),
 				withRegex("No changes in .*"));
@@ -82,7 +84,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, HEAD, true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertTrue(syncItems[0].getText().contains(PROJ1));
 	}
@@ -96,7 +98,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(INITIAL_TAG, HEAD, false);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
@@ -110,7 +112,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(INITIAL_TAG, R_TAGS + "v0.1", false);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
@@ -138,7 +140,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, HEAD + "~1", true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		assertEquals(1, syncViewTree.getAllItems().length);
 
 		SWTBotTreeItem projectTree = waitForNodeWithText(syncViewTree, PROJ1);
@@ -160,7 +162,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(EMPTY_PROJECT, "", "", true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem projectTree = waitForNodeWithText(syncViewTree,
 				EMPTY_PROJECT);
 		assertEquals(1, syncViewTree.getAllItems().length);
@@ -227,9 +229,9 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(INITIAL_TAG, HEAD, true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem projectTree = waitForNodeWithText(syncViewTree, PROJ1);
-		projectTree.expand();
+		TestUtil.expandAndWait(projectTree);
 		assertEquals(1, projectTree.getItems().length);
 	}
 
@@ -249,10 +251,10 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, null);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertTrue(syncItems[0].getText().contains(PROJ1));
-		syncItems[0].expand();
+		TestUtil.expandAndWait(syncItems[0]);
 		// WidgetNotFoundException will be thrown when node named 'new.txt' not exists
 		assertNotNull(syncItems[0].getNode(newFileName));
 	}
@@ -264,18 +266,18 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, HEAD, true);
 
 		// preconditions - sync result should contain two uncommitted changes
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertTrue(syncItems[0].getText().contains(PROJ1));
-		syncItems[0].expand();
-		syncItems[0].getItems()[0].expand();
+		TestUtil.expandAndWait(syncItems[0]);
+		TestUtil.expandAndWait(syncItems[0].getItems()[0]);
 		assertEquals(2, syncItems[0].getItems()[0].getItems().length);
 
 		// when
 		commit(PROJ1);
 
 		// then - synchronize view should be empty
-		SWTBot viewBot = bot.viewByTitle("Synchronize").bot();
+		SWTBot viewBot = bot.viewById(ISynchronizeView.VIEW_ID).bot();
 		@SuppressWarnings("unchecked")
 		Matcher matcher = allOf(widgetOfType(Label.class),
 				withRegex("No changes in .*"));
@@ -301,7 +303,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(INITIAL_TAG, HEAD, true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem workingTree = syncViewTree.expandNode(PROJ1);
 		assertEquals(1, syncViewTree.getAllItems().length);
 		assertEquals(1, workingTree.getNodes(name).size());
@@ -324,10 +326,10 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(INITIAL_TAG, HEAD, true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem workingTree = syncViewTree.expandNode(PROJ1);
 		assertEquals(1, syncViewTree.getAllItems().length);
-		workingTree.expand().getNode(name).doubleClick();
+		TestUtil.expandAndWait(workingTree).getNode(name).doubleClick();
 
 		SWTBotEditor editor = bot.editorByTitle(name);
 		editor.setFocus();
@@ -341,7 +343,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 
 	protected CompareEditorTester getCompareEditorForFileInWorkspaceModel(
 			String fileName) {
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 
 		SWTBotTreeItem projNode = waitForNodeWithText(syncViewTree, PROJ1);
 		return getCompareEditor(projNode, fileName);

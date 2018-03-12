@@ -23,6 +23,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -131,6 +132,7 @@ class RefUpdateElement extends WorkbenchAdapter {
 		return result.getPushResult(uri).getAdvertisedRef(getDstRefName());
 	}
 
+	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		switch (getStatus()) {
 		case OK:
@@ -160,17 +162,17 @@ class RefUpdateElement extends WorkbenchAdapter {
 		}
 	}
 
+	@Override
 	public String getLabel(Object object) {
 		return getStyledText(object).getString();
 	}
 
 	private RepositoryCommit[] getCommits(Ref end) {
-		final RevWalk walk = new RevWalk(reader);
-		try {
+		try (final RevWalk walk = new RevWalk(reader)) {
 			walk.setRetainBody(true);
 			walk.markStart(walk.parseCommit(update.getNewObjectId()));
 			walk.markUninteresting(walk.parseCommit(end.getObjectId()));
-			List<RepositoryCommit> commits = new ArrayList<RepositoryCommit>();
+			List<RepositoryCommit> commits = new ArrayList<>();
 			for (RevCommit commit : walk)
 				commits.add(new RepositoryCommit(repo, commit));
 			return commits.toArray(new RepositoryCommit[commits.size()]);
@@ -180,6 +182,7 @@ class RefUpdateElement extends WorkbenchAdapter {
 		}
 	}
 
+	@Override
 	public Object[] getChildren(Object object) {
 		if (children != null)
 			return children;
@@ -253,11 +256,14 @@ class RefUpdateElement extends WorkbenchAdapter {
 								StyledString.DECORATIONS_STYLER);
 				} else {
 					String separator = update.isFastForward() ? ".." : "..."; //$NON-NLS-1$ //$NON-NLS-2$
+					ObjectId objectId = oldRef.getObjectId();
+					Object oldName = objectId != null
+							? objectId.abbreviate(7).name() : "?"; //$NON-NLS-1$
 					styled.append(MessageFormat.format(
 							UIText.RefUpdateElement_CommitRangeDecoration,
 							update.getNewObjectId().abbreviate(7).name(),
-							separator, oldRef.getObjectId().abbreviate(7)
-									.name()), StyledString.DECORATIONS_STYLER);
+									separator, oldName),
+							StyledString.DECORATIONS_STYLER);
 					styled.append(' ');
 					styled.append(MessageFormat.format(
 							UIText.RefUpdateElement_CommitCountDecoration,

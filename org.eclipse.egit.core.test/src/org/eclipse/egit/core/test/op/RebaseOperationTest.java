@@ -45,6 +45,7 @@ public class RebaseOperationTest extends GitTestCase {
 
 	Git git;
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -81,18 +82,18 @@ public class RebaseOperationTest extends GitTestCase {
 		assertEquals(first, topicCommit.getParent(0));
 
 		// rebase topic onto master
-		RebaseOperation op = new RebaseOperation(
-				testRepository.getRepository(), testRepository.getRepository()
-						.getRef(MASTER));
+		RebaseOperation op = new RebaseOperation(testRepository.getRepository(),
+				testRepository.getRepository().exactRef(MASTER));
 		op.execute(null);
 
 		RebaseResult res = op.getResult();
 		assertEquals(RebaseResult.Status.UP_TO_DATE, res.getStatus());
 
-		RevCommit newTopic = new RevWalk(repository).parseCommit(repository
-				.resolve(TOPIC));
-		assertEquals(topicCommit, newTopic);
-		assertEquals(first, newTopic.getParent(0));
+		try (RevWalk rw = new RevWalk(repository)) {
+			RevCommit newTopic = rw.parseCommit(repository.resolve(TOPIC));
+			assertEquals(topicCommit, newTopic);
+			assertEquals(first, newTopic.getParent(0));
+		}
 	}
 
 	@Test
@@ -125,17 +126,17 @@ public class RebaseOperationTest extends GitTestCase {
 		assertEquals(first, topicCommit.getParent(0));
 
 		// rebase topic onto master
-		RebaseOperation op = new RebaseOperation(
-				testRepository.getRepository(), testRepository.getRepository()
-						.getRef(MASTER));
+		RebaseOperation op = new RebaseOperation(testRepository.getRepository(),
+				testRepository.getRepository().exactRef(MASTER));
 		op.execute(null);
 
 		RebaseResult res = op.getResult();
 		assertEquals(RebaseResult.Status.OK, res.getStatus());
 
-		RevCommit newTopic = new RevWalk(repository).parseCommit(repository
-				.resolve(TOPIC));
-		assertEquals(second, newTopic.getParent(0));
+		try (RevWalk rw = new RevWalk(repository)) {
+			RevCommit newTopic = rw.parseCommit(repository.resolve(TOPIC));
+			assertEquals(second, newTopic.getParent(0));
+		}
 	}
 
 	@Test
@@ -169,9 +170,8 @@ public class RebaseOperationTest extends GitTestCase {
 		assertEquals(first, topicCommit.getParent(0));
 
 		// rebase topic onto master
-		RebaseOperation op = new RebaseOperation(
-				testRepository.getRepository(), testRepository.getRepository()
-						.getRef(MASTER));
+		RebaseOperation op = new RebaseOperation(testRepository.getRepository(),
+				testRepository.getRepository().exactRef(MASTER));
 		op.execute(null);
 
 		RebaseResult res = op.getResult();
@@ -217,8 +217,8 @@ public class RebaseOperationTest extends GitTestCase {
 		assertEquals(first, topicCommit.getParent(0));
 
 		// rebase topic onto master
-		RebaseOperation op = new RebaseOperation(repository, repository
-				.getRef(MASTER));
+		RebaseOperation op = new RebaseOperation(repository,
+				repository.exactRef(MASTER));
 		op.execute(null);
 
 		RebaseResult res = op.getResult();
@@ -227,7 +227,7 @@ public class RebaseOperationTest extends GitTestCase {
 		try {
 			// let's try to start again, we should get a wrapped
 			// WrongRepositoryStateException
-			op = new RebaseOperation(repository, repository.getRef(MASTER));
+			op = new RebaseOperation(repository, repository.exactRef(MASTER));
 			op.execute(null);
 			fail("Expected Exception not thrown");
 		} catch (CoreException e) {

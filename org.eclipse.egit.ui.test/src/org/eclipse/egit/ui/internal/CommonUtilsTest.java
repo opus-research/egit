@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2011, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2013, Michael Keppler <michael.keppler@gmx.de>
+ * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +24,8 @@ import java.util.TreeSet;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.test.TestProject;
 import org.junit.Test;
 
@@ -129,5 +132,41 @@ public class CommonUtilsTest {
 		Collections.shuffle(tmp, new Random(1));
 		Collections.sort(tmp, CommonUtils.RESOURCE_NAME_COMPARATOR);
 		assertEquals(expected, tmp);
+
+		// Clean up our mess
+		IProgressMonitor monitor = new NullProgressMonitor();
+		f1.delete(false, monitor);
+		f2.delete(false, monitor);
+		f3.delete(false, monitor);
+		p.getProject().getFolder("test").delete(false, monitor);
+		p.getProject().delete(false, monitor);
+	}
+
+	@Test
+	public void testFooterOffsetNoFooter() {
+		assertEquals(-1, CommonUtils.getFooterOffset(""));
+		assertEquals(-1, CommonUtils.getFooterOffset("line 1"));
+		assertEquals(-1, CommonUtils.getFooterOffset("line 1\nFoobar"));
+		assertEquals(-1, CommonUtils.getFooterOffset("line 1\n\nFoobar"));
+		assertEquals(-1, CommonUtils.getFooterOffset("line 1\nFoo:bar"));
+		assertEquals(-1, CommonUtils.getFooterOffset("line 1\n_\nFoo:bar"));
+	}
+
+	@Test
+	public void testFooterOffset() {
+		assertEquals(8, CommonUtils.getFooterOffset("line 1\n\nFoo:bar"));
+		assertEquals(8, CommonUtils.getFooterOffset("line 1\n\nFoo:bar   "));
+		assertEquals(8, CommonUtils.getFooterOffset("line 1\n\nFoo:bar\n   "));
+		assertEquals(8, CommonUtils.getFooterOffset("line 1\n\nFoo:bar\n  \n"));
+		assertEquals(8, CommonUtils
+				.getFooterOffset("line 1\n\nFoo:bar\nFoobar: barbar"));
+		assertEquals(8, CommonUtils
+				.getFooterOffset("line 1\n\nFoo:bar\nFoobar: barbar   "));
+		assertEquals(8, CommonUtils
+				.getFooterOffset("line 1\n\nFoo:bar\nFoobar: barbar\n   "));
+		assertEquals(10,
+				CommonUtils.getFooterOffset("line 1\n  \nFoo:bar\n  \n"));
+		assertEquals(17, CommonUtils
+				.getFooterOffset("line 1\n\nFoo:bar\n\nFoobar: barbar\n   "));
 	}
 }

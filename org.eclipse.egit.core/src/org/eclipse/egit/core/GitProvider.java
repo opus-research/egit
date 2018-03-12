@@ -11,6 +11,7 @@ package org.eclipse.egit.core;
 
 import java.io.IOException;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceRuleFactory;
 import org.eclipse.core.resources.team.IMoveDeleteHook;
 import org.eclipse.core.resources.team.ResourceRuleFactory;
@@ -19,6 +20,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
 import org.eclipse.egit.core.project.GitProjectData;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistoryProvider;
 
@@ -42,23 +44,37 @@ public class GitProvider extends RepositoryProvider {
 
 	private final IResourceRuleFactory resourceRuleFactory = new GitResourceRuleFactory();
 
+	/**
+	 * Default constructor
+	 */
+	public GitProvider() {
+		super();
+	}
+
+	@Override
 	public String getID() {
 		return ID;
 	}
 
+	@Override
 	public void configureProject() throws CoreException {
-		getData().markTeamPrivateResources();
+		GitProjectData projectData = getData();
+		if (projectData != null) {
+			projectData.markTeamPrivateResources();
+		}
 	}
 
+	@Override
 	public void deconfigure() throws CoreException {
 		try {
-			GitProjectData.delete(getProject());
+			GitProjectData.deconfigure(getProject());
 		} catch (IOException e) {
 			throw new CoreException(new Status(IStatus.ERROR,
 					Activator.getPluginId(), e.getMessage(), e));
 		}
 	}
 
+	@Override
 	public boolean canHandleLinkedResources() {
 		return true;
 	}
@@ -68,6 +84,7 @@ public class GitProvider extends RepositoryProvider {
 		return true;
 	}
 
+	@Override
 	public synchronized IMoveDeleteHook getMoveDeleteHook() {
 		if (hook == null) {
 			GitProjectData _data = getData();
@@ -81,13 +98,18 @@ public class GitProvider extends RepositoryProvider {
 	 * @return information about the mapping of an Eclipse project
 	 * to a Git repository.
 	 */
+	@Nullable
 	public synchronized GitProjectData getData() {
 		if (data == null) {
-			data = GitProjectData.get(getProject());
+			IProject project = getProject();
+			if (project != null) {
+				data = GitProjectData.get(project);
+			}
 		}
 		return data;
 	}
 
+	@Override
 	public synchronized IFileHistoryProvider getFileHistoryProvider() {
 		if (historyProvider == null) {
 			historyProvider = new GitFileHistoryProvider();

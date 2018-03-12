@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, 2013, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,12 +7,13 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bugs 477281, 478877
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -30,6 +31,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryFinder;
@@ -38,6 +40,7 @@ import org.eclipse.egit.ui.internal.repository.RepositorySearchWizard;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.team.core.RepositoryProvider;
 
 /**
@@ -45,13 +48,14 @@ import org.eclipse.team.core.RepositoryProvider;
  */
 public class AddCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		RepositorySearchWizard wizard = new RepositorySearchWizard(
-				util.getConfiguredRepositories());
+				util.getConfiguredRepositories(), true);
 		WizardDialog dialog = new WizardDialog(getShell(event), wizard);
 		if (dialog.open() == Window.OK) {
 			for (String dir : wizard.getDirectories()) {
-				File repositoryDir = new File(dir);
+				File repositoryDir = FileUtils.canonicalize(new File(dir));
 				addRepository(repositoryDir);
 			}
 		}
@@ -59,15 +63,17 @@ public class AddCommand extends
 	}
 
 	private void addRepository(File repositoryDir) {
+		GerritUtil.tryToAutoConfigureForGerrit(repositoryDir);
 		util.addConfiguredRepository(repositoryDir);
-		if (doAutoShare())
+		if (doAutoShare()) {
 			autoShareProjects(repositoryDir);
+		}
 	}
 
 	private void autoShareProjects(File repositoryDir) {
 		IPath workingDirPath = new Path(repositoryDir.getAbsolutePath())
 				.removeLastSegments(1);
-		Map<IProject, File> connections = new HashMap<IProject, File>();
+		Map<IProject, File> connections = new HashMap<>();
 		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		for (IProject project : projects) {
@@ -88,10 +94,15 @@ public class AddCommand extends
 			RepositoryFinder f = new RepositoryFinder(project);
 			f.setFindInChildren(false);
 			try {
-				Collection<RepositoryMapping> mappings = f
+				List<RepositoryMapping> mappings = f
 						.find(new NullProgressMonitor());
-				if (mappings.size() == 1)
-					connections.put(project, repositoryDir);
+				if (!mappings.isEmpty()) {
+					// Connect to the first one; it's the innermost.
+					IPath gitDir = mappings.get(0).getGitDirAbsolutePath();
+					if (gitDir != null) {
+						connections.put(project, gitDir.toFile());
+					}
+				}
 			} catch (CoreException e) {
 				// Ignore this project in that case
 				continue;
@@ -100,6 +111,7 @@ public class AddCommand extends
 		if (!connections.isEmpty()) {
 			ConnectProviderOperation operation = new ConnectProviderOperation(
 					connections);
+			operation.setRefreshResources(false);
 			JobUtil.scheduleUserJob(operation,
 					CoreText.Activator_AutoShareJobName, JobFamilies.AUTO_SHARE);
 		}

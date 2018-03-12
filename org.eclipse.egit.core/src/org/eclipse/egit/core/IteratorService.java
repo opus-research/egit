@@ -13,10 +13,10 @@ import java.io.File;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 
 /**
@@ -31,24 +31,14 @@ public class IteratorService {
 	 * repository work tree folder.
 	 *
 	 * @param repository
-	 * @return <li>a {@link ContainerTreeIterator} if the work tree folder of
-	 *         the given repository resides in a project shared with Git <li>an
-	 *         {@link AdaptableFileTreeIterator} otherwise <li>{@code null} if the
-	 *         workspace is closed.
+	 * @return a {@link FileTreeIterator} or {@code null} if repository is bare
 	 */
 	public static WorkingTreeIterator createInitialIterator(
 			Repository repository) {
-		IWorkspaceRoot root;
-		try {
-			root = ResourcesPlugin.getWorkspace().getRoot();
-		} catch (IllegalStateException e) {
-			// workspace is closed
+		if (repository.isBare()) {
 			return null;
 		}
-		IContainer container = findContainer(root, repository.getWorkTree());
-		if (container != null)
-			return new ContainerTreeIterator(repository, container);
-		return new AdaptableFileTreeIterator(repository, root);
+		return new FileTreeIterator(repository);
 	}
 
 	/**
@@ -63,6 +53,8 @@ public class IteratorService {
 	 *         container does not exist
 	 */
 	public static IContainer findContainer(IWorkspaceRoot root, File file) {
+		if (!file.exists())
+			return null;
 		if (!file.isDirectory())
 			throw new IllegalArgumentException(
 					"file " + file.getAbsolutePath() + " is no directory"); //$NON-NLS-1$//$NON-NLS-2$

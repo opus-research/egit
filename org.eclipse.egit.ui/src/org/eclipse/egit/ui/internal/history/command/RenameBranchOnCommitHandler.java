@@ -26,6 +26,7 @@ import org.eclipse.swt.widgets.Shell;
  * Rename a branch pointing to a commit.
  */
 public class RenameBranchOnCommitHandler extends AbstractHistoryCommandHandler {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(event);
 		if (repository == null)
@@ -40,7 +41,7 @@ public class RenameBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 
 		final Ref branchToRename;
 		if (branchesOfCommit.size() > 1) {
-			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<Ref>(
+			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<>(
 					shell,
 					branchesOfCommit,
 					UIText.RenameBranchOnCommitHandler_SelectBranchDialogTitle,

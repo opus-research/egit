@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010, 2014 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -56,6 +56,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -160,6 +161,7 @@ public class CreatePatchOperation implements IEGitOperation {
 		this.commit = commit;
 	}
 
+	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		EclipseGitProgressTransformer gitMonitor;
 		if (monitor == null)
@@ -169,23 +171,8 @@ public class CreatePatchOperation implements IEGitOperation {
 			gitMonitor = new EclipseGitProgressTransformer(monitor);
 
 		final StringBuilder sb = new StringBuilder();
-		final DiffFormatter diffFmt = new DiffFormatter(
-				new ByteArrayOutputStream() {
-
-					@Override
-					public synchronized void write(byte[] b, int off, int len) {
-						super.write(b, off, len);
-						try {
-							if (currentEncoding == null)
-								sb.append(toString("UTF-8")); //$NON-NLS-1$
-							else
-								sb.append(toString(currentEncoding));
-						} catch (UnsupportedEncodingException e) {
-							sb.append(toString());
-						}
-						reset();
-					}
-				}) {
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		final DiffFormatter diffFmt = new DiffFormatter(outputStream) {
 			private IProject project;
 
 			@Override
@@ -194,7 +181,7 @@ public class CreatePatchOperation implements IEGitOperation {
 				// for "workspace patches" add project header each time project changes
 				if (DiffHeaderFormat.WORKSPACE == headerFormat) {
 					IProject p = getProject(ent);
-					if (!p.equals(project)) {
+					if (p != null && !p.equals(project)) {
 						project = p;
 						getOutputStream().write(
 								encodeASCII("#P " + project.getName() + "\n")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -235,20 +222,26 @@ public class CreatePatchOperation implements IEGitOperation {
 					currentEncoding = CompareCoreUtils.getResourceEncoding(repository, path);
 					diffFmt.format(ent);
 				}
-			} else
+			} else {
 				diffFmt.format(
 						new DirCacheIterator(repository.readDirCache()),
 						new FileTreeIterator(repository));
+			}
+			diffFmt.flush();
 		} catch (IOException e) {
 			Activator.logError(CoreText.CreatePatchOperation_patchFileCouldNotBeWritten, e);
 		}
 
+		try {
+			String encoding = currentEncoding != null ? currentEncoding
+					: RawParseUtils.UTF8_CHARSET.name();
+			sb.append(outputStream.toString(encoding));
+		} catch (UnsupportedEncodingException e) {
+			sb.append(outputStream.toString());
+		}
+
 		if (DiffHeaderFormat.WORKSPACE == headerFormat)
 			updateWorkspacePatchPrefixes(sb, diffFmt);
-
-		// trim newline
-		if (sb.charAt(sb.length() - 1) == '\n')
-			sb.setLength(sb.length() - 1);
 
 		patchContent = sb.toString();
 	}
@@ -263,7 +256,7 @@ public class CreatePatchOperation implements IEGitOperation {
 		URI pathUri = repository.getWorkTree().toURI().resolve(URIUtil.toURI(path));
 		IFile[] files = ResourcesPlugin.getWorkspace().getRoot()
 				.findFilesForLocationURI(pathUri);
-		Assert.isLegal(files.length == 1, NLS.bind(CoreText.CreatePatchOperation_couldNotFindProject, path, repository));
+		Assert.isLegal(files.length >= 1, NLS.bind(CoreText.CreatePatchOperation_couldNotFindProject, path,	repository));
 		return files[0].getProject();
 	}
 
@@ -403,6 +396,9 @@ public class CreatePatchOperation implements IEGitOperation {
 	 */
 	public static IPath computeWorkspacePath(final IPath path, final IProject project) {
 		RepositoryMapping rm = RepositoryMapping.getMapping(project);
+		if (rm == null) {
+			return path;
+		}
 		String repoRelativePath = rm.getRepoRelativePath(project);
 		// the relative path cannot be determined, return unchanged
 		if (repoRelativePath == null)
@@ -461,6 +457,7 @@ public class CreatePatchOperation implements IEGitOperation {
 		return name;
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return null;
 	}

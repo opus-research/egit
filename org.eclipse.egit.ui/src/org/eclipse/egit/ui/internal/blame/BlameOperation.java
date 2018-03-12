@@ -79,6 +79,7 @@ public class BlameOperation implements IEGitOperation {
 			this.commit = commit;
 		}
 
+		@Override
 		public Object getAdapter(Class adapter) {
 			if (RevCommit.class == adapter)
 				return commit;
@@ -103,6 +104,7 @@ public class BlameOperation implements IEGitOperation {
 				nonResourceFile = new File(repository.getWorkTree(), path);
 		}
 
+		@Override
 		public void selectionChanged(SelectionChangedEvent event) {
 			// Don't show the commit for the first selection change, as that was
 			// not initiated by the user directly. Instead, show the commit the
@@ -194,6 +196,7 @@ public class BlameOperation implements IEGitOperation {
 		this.lineNumberToReveal = lineNumberToReveal;
 	}
 
+	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		final RevisionInformation info = new RevisionInformation();
 
@@ -224,7 +227,7 @@ public class BlameOperation implements IEGitOperation {
 		if (result == null)
 			return;
 
-		Map<RevCommit, BlameRevision> revisions = new HashMap<RevCommit, BlameRevision>();
+		Map<RevCommit, BlameRevision> revisions = new HashMap<>();
 		int lineCount = result.getResultContents().size();
 		BlameRevision previous = null;
 		for (int i = 0; i < lineCount; i++) {
@@ -261,7 +264,12 @@ public class BlameOperation implements IEGitOperation {
 		if (previous != null)
 			previous.register();
 
+		if (shell.isDisposed()) {
+			return;
+		}
+
 		shell.getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				openEditor(info);
 			}
@@ -284,17 +292,6 @@ public class BlameOperation implements IEGitOperation {
 		}
 		if (editor == null)
 			return;
-
-		// Show history view for path
-		try {
-			IHistoryView part = (IHistoryView) page.showView(
-					IHistoryView.VIEW_ID, null, IWorkbenchPage.VIEW_VISIBLE);
-			HistoryPageInput input = createHistoryPageInputWhenEditorOpened();
-			part.showHistoryFor(input);
-		} catch (PartInitException e) {
-			Activator.handleError("Error displaying blame annotations", e, //$NON-NLS-1$
-					false);
-		}
 
 		// IRevisionRulerColumn would also be possible but using
 		// IVerticalRulerInfo seems to work in more situations.
@@ -332,30 +329,7 @@ public class BlameOperation implements IEGitOperation {
 									storage));
 	}
 
-	private HistoryPageInput createHistoryPageInputWhenEditorOpened() {
-		if (storage instanceof IFile) {
-			IResource resource = (IResource) storage;
-			if (startCommit != null) {
-				return new BlameHistoryPageInput(repository, startCommit,
-						resource);
-			} else {
-				return new HistoryPageInput(repository,
-						new IResource[] { resource });
-			}
-		} else if (!repository.isBare()) {
-			File file = new File(repository.getWorkTree(), path);
-			if (startCommit != null) {
-				return new BlameHistoryPageInput(repository, startCommit,
-						file);
-			} else {
-				return new HistoryPageInput(repository,
-						new File[] { file });
-			}
-		} else {
-			return new HistoryPageInput(repository);
-		}
-	}
-
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return null;
 	}

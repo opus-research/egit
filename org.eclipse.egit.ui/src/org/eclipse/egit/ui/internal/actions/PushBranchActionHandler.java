@@ -23,6 +23,7 @@ import org.eclipse.jgit.lib.Repository;
  * "Push Branch..." action for repository
  */
 public class PushBranchActionHandler extends RepositoryActionHandler {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Repository repository = getRepository(true, event);
 
@@ -47,14 +48,25 @@ public class PushBranchActionHandler extends RepositoryActionHandler {
 	@Override
 	public boolean isEnabled() {
 		Repository repository = getRepository();
-		return repository != null;
+		if (repository == null) {
+			return false;
+		}
+		try {
+			Ref head = repository.exactRef(Constants.HEAD);
+			if (head != null && head.getObjectId() != null) {
+				return true;
+			}
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+		}
+		return false;
 	}
 
 	private Ref getBranchRef(Repository repository) {
 		try {
 			String fullBranch = repository.getFullBranch();
 			if (fullBranch != null && fullBranch.startsWith(Constants.R_HEADS))
-				return repository.getRef(fullBranch);
+				return repository.exactRef(fullBranch);
 		} catch (IOException e) {
 			Activator.handleError(e.getLocalizedMessage(), e, false);
 		}

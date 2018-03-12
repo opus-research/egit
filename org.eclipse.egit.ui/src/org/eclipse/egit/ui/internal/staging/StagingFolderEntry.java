@@ -16,6 +16,7 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
+import org.eclipse.jgit.annotations.NonNull;
 
 /**
  * A staged/unstaged folder entry in the tree
@@ -40,7 +41,8 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 		this.repoLocation = repoLocation;
 		this.repoRelativePath = repoRelativePath;
 		this.nodePath = nodePath;
-		this.container = ResourceUtil.getContainerForLocation(getLocation());
+		this.container = ResourceUtil.getContainerForLocation(getLocation(),
+				false);
 	}
 
 	/**
@@ -51,6 +53,7 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 		return container;
 	}
 
+	@Override
 	public int getProblemSeverity() {
 		if (container == null)
 			return SEVERITY_NONE;
@@ -63,6 +66,7 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 		}
 	}
 
+	@Override
 	public Object getAdapter(Class adapter) {
 		if (adapter == IResource.class || adapter == IContainer.class)
 			return getContainer();
@@ -81,6 +85,8 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 	/**
 	 * @return the absolute path corresponding to the folder entry
 	 */
+	@SuppressWarnings("null")
+	@NonNull
 	public IPath getLocation() {
 		return repoLocation.append(repoRelativePath);
 	}

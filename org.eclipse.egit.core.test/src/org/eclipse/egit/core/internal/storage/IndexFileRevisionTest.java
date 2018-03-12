@@ -33,6 +33,7 @@ import org.junit.Test;
 public class IndexFileRevisionTest extends GitTestCase {
 	private Repository repository;
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -40,6 +41,7 @@ public class IndexFileRevisionTest extends GitTestCase {
 		repository.create();
 	}
 
+	@Override
 	@After
 	public void tearDown() throws Exception {
 		repository.close();
@@ -116,14 +118,11 @@ public class IndexFileRevisionTest extends GitTestCase {
 			throws IOException {
 		DirCacheEntry entry = new DirCacheEntry(path, stage);
 		entry.setFileMode(FileMode.REGULAR_FILE);
-		ObjectInserter inserter = repository.newObjectInserter();
-		try {
+		try (ObjectInserter inserter = repository.newObjectInserter()) {
 			ObjectId blob = inserter.insert(Constants.OBJ_BLOB,
 					data.getBytes("UTF-8"));
 			entry.setObjectId(blob);
 			inserter.flush();
-		} finally {
-			inserter.release();
 		}
 		return entry;
 	}

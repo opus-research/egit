@@ -2,6 +2,9 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Google Inc.
+ * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
+ * Copyright (C) 2016, Andre Bossert <anb0s@anbos.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,10 +19,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -29,8 +32,11 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.QualifiedName;
@@ -41,13 +47,19 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
-import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryCache;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
@@ -61,12 +73,13 @@ public class GitProjectData {
 
 	private static final Map<IProject, GitProjectData> projectDataCache = new HashMap<IProject, GitProjectData>();
 
-	private static Set<RepositoryChangeListener> repositoryChangeListeners = new HashSet<RepositoryChangeListener>();
+	private static Set<RepositoryMappingChangeListener> repositoryChangeListeners = new HashSet<RepositoryMappingChangeListener>();
 
 	@SuppressWarnings("synthetic-access")
 	private static final IResourceChangeListener rcl = new RCL();
 
 	private static class RCL implements IResourceChangeListener {
+		@Override
 		@SuppressWarnings("synthetic-access")
 		public void resourceChanged(final IResourceChangeEvent event) {
 			switch (event.getType()) {
@@ -80,6 +93,9 @@ public class GitProjectData {
 					Activator.logError(e.getMessage(), e);
 				}
 				break;
+			case IResourceChangeEvent.POST_CHANGE:
+				update(event);
+				break;
 			default:
 				break;
 			}
@@ -91,14 +107,12 @@ public class GitProjectData {
 
 	/**
 	 * Start listening for resource changes.
-	 *
-	 * @param includeChange true to listen to content changes
 	 */
-	public static void attachToWorkspace(final boolean includeChange) {
+	public static void attachToWorkspace() {
 		trace("attachToWorkspace - addResourceChangeListener");  //$NON-NLS-1$
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				rcl,
-				(includeChange ? IResourceChangeEvent.POST_CHANGE : 0)
+				IResourceChangeEvent.POST_CHANGE
 						| IResourceChangeEvent.PRE_CLOSE
 						| IResourceChangeEvent.PRE_DELETE);
 	}
@@ -122,25 +136,25 @@ public class GitProjectData {
 	 *            the new listener to register. Must not be null.
 	 */
 	public static synchronized void addRepositoryChangeListener(
-			final RepositoryChangeListener objectThatCares) {
+			final RepositoryMappingChangeListener objectThatCares) {
 		if (objectThatCares == null)
 			throw new NullPointerException();
 		repositoryChangeListeners.add(objectThatCares);
 	}
 
 	/**
-	 * Remove a registered {@link RepositoryChangeListener}
+	 * Remove a registered {@link RepositoryMappingChangeListener}
 	 *
 	 * @param objectThatCares
 	 *            The listener to remove
 	 */
 	public static synchronized void removeRepositoryChangeListener(
-			final RepositoryChangeListener objectThatCares) {
+			final RepositoryMappingChangeListener objectThatCares) {
 		repositoryChangeListeners.remove(objectThatCares);
 	}
 
 	/**
-	 * Notify registered {@link RepositoryChangeListener}s of a change.
+	 * Notify registered {@link RepositoryMappingChangeListener}s of a change.
 	 *
 	 * @param which
 	 *            the repository which has had changes occur within it.
@@ -150,12 +164,12 @@ public class GitProjectData {
 
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				RepositoryChangeListener[] listeners = getRepositoryChangeListeners();
+				RepositoryMappingChangeListener[] listeners = getRepositoryChangeListeners();
 				monitor.beginTask(
 						CoreText.GitProjectData_repositoryChangedTaskName,
 						listeners.length);
 
-				for (RepositoryChangeListener listener : listeners) {
+				for (RepositoryMappingChangeListener listener : listeners) {
 					listener.repositoryChanged(which);
 					monitor.worked(1);
 				}
@@ -184,9 +198,9 @@ public class GitProjectData {
 	 *
 	 * @return a copy of the current repository change listeners
 	 */
-	private static synchronized RepositoryChangeListener[] getRepositoryChangeListeners() {
+	private static synchronized RepositoryMappingChangeListener[] getRepositoryChangeListeners() {
 		return repositoryChangeListeners
-				.toArray(new RepositoryChangeListener[repositoryChangeListeners
+				.toArray(new RepositoryMappingChangeListener[repositoryChangeListeners
 						.size()]);
 	}
 
@@ -196,11 +210,11 @@ public class GitProjectData {
 	 *         Git provider is not associated with the project or an exception
 	 *         occurred
 	 */
-	public synchronized static GitProjectData get(final IProject p) {
+	@Nullable
+	public synchronized static GitProjectData get(final @NonNull IProject p) {
 		try {
 			GitProjectData d = lookup(p);
-			if (d == null
-					&& RepositoryProvider.getProvider(p) instanceof GitProvider) {
+			if (d == null && ResourceUtil.isSharedWithGit(p)) {
 				d = new GitProjectData(p).load();
 				cache(p, d);
 			}
@@ -229,6 +243,26 @@ public class GitProjectData {
 	}
 
 	/**
+	 * Drop the Eclipse project from our association of projects/repositories
+	 * and remove all RepositoryMappings.
+	 *
+	 * @param p
+	 *            to deconfigure
+	 * @throws IOException
+	 *             if the property file cannot be removed.
+	 */
+	public static void deconfigure(final IProject p) throws IOException {
+		trace("deconfigure(" + p.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+		GitProjectData d = lookup(p);
+		if (d == null) {
+			deletePropertyFiles(p);
+		} else {
+			d.deletePropertyFilesAndUncache();
+			unmap(d);
+		}
+	}
+
+	/**
 	 * Add the Eclipse project to our association of projects/repositories
 	 *
 	 * @param p
@@ -240,6 +274,94 @@ public class GitProjectData {
 		trace("add(" + p.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		cache(p, d);
+	}
+
+	/**
+	 * Update mappings of EGit-managed projects in response to new DOT_GIT
+	 * repositories appearing.
+	 *
+	 * @param event
+	 *            A {@link IResourceChangeEvent#POST_CHANGE} event
+	 */
+	public static void update(IResourceChangeEvent event) {
+		// If the project is EGit-managed, let's see if this added any DOT_GIT
+		// files or folders. If so, update the project's RepositoryMappings
+		// and then mark as team private, if anything added. We won't get
+		// deletions of DOT_GIT directories or files here, those are
+		// "protected" and the GitMoveDeleteHook will prevent their deletion --
+		// the project has to be disconnected first.
+		final Set<GitProjectData> modified = new HashSet<>();
+		try {
+			event.getDelta().accept(new IResourceDeltaVisitor() {
+				@Override
+				public boolean visit(IResourceDelta delta)
+						throws CoreException {
+					IResource resource = delta.getResource();
+					int type = resource.getType();
+					if (type == IResource.ROOT) {
+						return true;
+					} else if (type == IResource.PROJECT) {
+						return (delta.getKind() & (IResourceDelta.ADDED
+								| IResourceDelta.CHANGED)) != 0
+								&& ResourceUtil.isSharedWithGit(resource);
+					}
+					// Files & folders
+					if ((delta.getKind() & (IResourceDelta.ADDED
+							| IResourceDelta.CHANGED)) == 0
+							|| resource.isLinked()) {
+						return false;
+					}
+					IPath location = resource.getLocation();
+					if (location == null) {
+						return false;
+					}
+					if (!Constants.DOT_GIT.equals(resource.getName())) {
+						return type == IResource.FOLDER;
+					}
+					// A file or folder named .git
+					File gitCandidate = location.toFile().getParentFile();
+					File git = new FileRepositoryBuilder()
+							.addCeilingDirectory(gitCandidate)
+							.findGitDir(gitCandidate).getGitDir();
+					if (git == null) {
+						return false;
+					}
+					// Yes, indeed a valid git directory.
+					GitProjectData data = get(resource.getProject());
+					if (data == null) {
+						return false;
+					}
+					RepositoryMapping m = RepositoryMapping
+							.create(resource.getParent(), git);
+					// Is its working directory really here? If not,
+					// a submodule folder may have been copied.
+					try {
+						Repository r = Activator.getDefault()
+								.getRepositoryCache().lookupRepository(git);
+						if (m != null && r != null
+								&& gitCandidate.equals(r.getWorkTree())) {
+							if (data.map(m)) {
+								data.mappings.put(m.getContainerPath(), m);
+								modified.add(data);
+							}
+						}
+					} catch (IOException e) {
+						Activator.logError(e.getMessage(), e);
+					}
+					return false;
+				}
+			});
+		} catch (CoreException e) {
+			Activator.logError(e.getMessage(), e);
+		} finally {
+			for (GitProjectData data : modified) {
+				try {
+					data.store();
+				} catch (CoreException e) {
+					Activator.logError(e.getMessage(), e);
+				}
+			}
+		}
 	}
 
 	static void trace(final String m) {
@@ -259,6 +381,23 @@ public class GitProjectData {
 		if (projectDataCache.remove(p) != null) {
 			trace("uncacheDataFor(" //$NON-NLS-1$
 				+ p.getName() + ")"); //$NON-NLS-1$
+		}
+	}
+
+	private static void unmap(GitProjectData data) {
+		for (RepositoryMapping m : data.mappings.values()) {
+			IContainer c = m.getContainer();
+			if (c != null && c.isAccessible()) {
+				try {
+					c.setSessionProperty(MAPPING_KEY, null);
+					// Team private members are re-set in
+					// DisconnectProviderOperation
+				} catch (CoreException e) {
+					Activator.logWarning(MessageFormat.format(
+							CoreText.GitProjectData_failedToUnmapRepoMapping,
+							c.getFullPath()), e);
+				}
+			}
 		}
 	}
 
@@ -283,7 +422,7 @@ public class GitProjectData {
 
 	private final IProject project;
 
-	private final Collection<RepositoryMapping> mappings = new ArrayList<RepositoryMapping>();
+	private final Map<IPath, RepositoryMapping> mappings = new HashMap<>();
 
 	private final Set<IResource> protectedResources = new HashSet<IResource>();
 
@@ -311,8 +450,19 @@ public class GitProjectData {
 	 */
 	public void setRepositoryMappings(final Collection<RepositoryMapping> newMappings) {
 		mappings.clear();
-		mappings.addAll(newMappings);
+		for (RepositoryMapping mapping : newMappings) {
+			mappings.put(mapping.getContainerPath(), mapping);
+		}
 		remapAll();
+	}
+
+	/**
+	 * Get repository mappings
+	 *
+	 * @return the repository mappings for a project
+	 */
+	public final Map<IPath, RepositoryMapping> getRepositoryMappings() {
+		return mappings;
 	}
 
 	/**
@@ -321,8 +471,7 @@ public class GitProjectData {
 	 * @throws CoreException
 	 */
 	public void markTeamPrivateResources() throws CoreException {
-		for (final Object rmObj : mappings) {
-			final RepositoryMapping rm = (RepositoryMapping)rmObj;
+		for (final RepositoryMapping rm : mappings.values()) {
 			final IContainer c = rm.getContainer();
 			if (c == null)
 				continue; // Not fully mapped yet?
@@ -333,6 +482,9 @@ public class GitProjectData {
 					final Repository r = rm.getRepository();
 					final File dotGitDir = dotGit.getLocation().toFile()
 							.getCanonicalFile();
+					// TODO: .git *files* with gitdir: "redirect"
+					// TODO: check whether Repository.getDirectory() is
+					// canonicalized! If not, this check will fail anyway.
 					if (dotGitDir.equals(r.getDirectory())) {
 						trace("teamPrivate " + dotGit);  //$NON-NLS-1$
 						dotGit.setTeamPrivateMember(true);
@@ -342,6 +494,17 @@ public class GitProjectData {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Determines whether the project this instance belongs to has any inner
+	 * repositories like submodules or nested repositories.
+	 *
+	 * @return {@code true} if the project has inner repositories; {@code false}
+	 *         otherwise.
+	 */
+	public boolean hasInnerRepositories() {
+		return !protectedResources.isEmpty();
 	}
 
 	/**
@@ -356,7 +519,9 @@ public class GitProjectData {
 	 * @param resource any workbench resource contained within this project.
 	 * @return the mapping for the specified project
 	 */
-	public RepositoryMapping getRepositoryMapping(IResource resource) {
+	@Nullable
+	public /* TODO static */ RepositoryMapping getRepositoryMapping(
+			@Nullable IResource resource) {
 		IResource r = resource;
 		try {
 			for (; r != null; r = r.getParent()) {
@@ -406,7 +571,7 @@ public class GitProjectData {
 			final FileOutputStream o = new FileOutputStream(tmp);
 			try {
 				final Properties p = new Properties();
-				for (final RepositoryMapping repoMapping : mappings) {
+				for (final RepositoryMapping repoMapping : mappings.values()) {
 					repoMapping.store(p);
 				}
 				p.store(o, "GitProjectData");  //$NON-NLS-1$
@@ -454,25 +619,40 @@ public class GitProjectData {
 			for (final Object keyObj : p.keySet()) {
 				final String key = keyObj.toString();
 				if (RepositoryMapping.isInitialKey(key)) {
-					mappings.add(new RepositoryMapping(p, key));
+					RepositoryMapping mapping = new RepositoryMapping(p, key);
+					mappings.put(mapping.getContainerPath(), mapping);
 				}
 			}
 		} finally {
 			o.close();
 		}
 
-		remapAll();
+		if (!remapAll()) {
+			try {
+				store();
+			} catch (CoreException e) {
+				IStatus status = e.getStatus();
+				Activator.logError(status.getMessage(), status.getException());
+			}
+		}
 		return this;
 	}
 
-	private void remapAll() {
+	private boolean remapAll() {
 		protectedResources.clear();
-		for (final RepositoryMapping repoMapping : mappings) {
-			map(repoMapping);
+		boolean allMapped = true;
+		Iterator<RepositoryMapping> iterator = mappings.values().iterator();
+		while (iterator.hasNext()) {
+			RepositoryMapping m = iterator.next();
+			if (!map(m)) {
+				iterator.remove();
+				allMapped = false;
+			}
 		}
+		return allMapped;
 	}
 
-	private void map(final RepositoryMapping m) {
+	private boolean map(final RepositoryMapping m) {
 		final IResource r;
 		final File git;
 		final IResource dotGit;
@@ -483,30 +663,34 @@ public class GitProjectData {
 		if (r instanceof IContainer) {
 			c = (IContainer) r;
 		} else if (r != null) {
-			c = (IContainer) r.getAdapter(IContainer.class);
+			c = Utils.getAdapter(r, IContainer.class);
 		}
 
 		if (c == null) {
-			logAndUnmapGoneMappedResource(m);
-			return;
+			logAndUnmapGoneMappedResource(m, null);
+			return false;
 		}
 		m.setContainer(c);
 
-		git = m.getGitDirAbsolutePath().toFile();
-		if (!git.isDirectory() || !new File(git, "config").isFile()) { //$NON-NLS-1$
-			logAndUnmapGoneMappedResource(m);
-			return;
+		IPath absolutePath = m.getGitDirAbsolutePath();
+		if (absolutePath == null) {
+			logAndUnmapGoneMappedResource(m, c);
+			return false;
+		}
+		git = absolutePath.toFile();
+
+		if (!RepositoryCache.FileKey.isGitRepository(git, FS.DETECTED)) {
+			logAndUnmapGoneMappedResource(m, c);
+			return false;
 		}
 
 		try {
 			m.setRepository(Activator.getDefault().getRepositoryCache()
 					.lookupRepository(git));
 		} catch (IOException ioe) {
-			logAndUnmapGoneMappedResource(m);
-			return;
+			logAndUnmapGoneMappedResource(m, c);
+			return false;
 		}
-
-		m.fireRepositoryChanged();
 
 		trace("map "  //$NON-NLS-1$
 				+ c
@@ -520,37 +704,73 @@ public class GitProjectData {
 		}
 
 		dotGit = c.findMember(Constants.DOT_GIT);
-		if (dotGit != null && dotGit.getLocation().toFile().equals(git)) {
+		if (dotGit != null) {
 			protect(dotGit);
 		}
+
+		fireRepositoryChanged(m);
+
+		return true;
 	}
 
-	private void logAndUnmapGoneMappedResource(final RepositoryMapping m) {
+	private void logAndUnmapGoneMappedResource(final RepositoryMapping m,
+			final IContainer c) {
 		Activator.logError(MessageFormat.format(
 				CoreText.GitProjectData_mappedResourceGone, m.toString()),
 				new FileNotFoundException(m.getContainerPath().toString()));
 		m.clear();
-		try {
-			RepositoryProvider.unmap(getProject());
-		} catch (TeamException e) {
-			Activator.logError(CoreText.GitProjectData_UnmappingGoneResourceFailed, e);
+		if (c instanceof IProject) {
+			UnmapJob unmapJob = new UnmapJob((IProject) c);
+			unmapJob.schedule();
+		} else if (c != null) {
+			try {
+				c.setSessionProperty(MAPPING_KEY, null);
+			} catch (CoreException e) {
+				Activator.logWarning(MessageFormat.format(
+						CoreText.GitProjectData_failedToUnmapRepoMapping,
+						c.getFullPath()), e);
+			}
 		}
 	}
 
 	private void protect(IResource resource) {
 		IResource c = resource;
+		try {
+			c.setTeamPrivateMember(true);
+		} catch (CoreException e) {
+			Activator.logError(MessageFormat.format(
+					CoreText.GitProjectData_FailedToMarkTeamPrivate,
+					c.getFullPath()), e);
+		}
 		while (c != null && !c.equals(getProject())) {
 			trace("protect " + c);  //$NON-NLS-1$
 			protectedResources.add(c);
+			c = c.getParent();
+		}
+	}
+
+	private static class UnmapJob extends Job {
+
+		private final IProject project;
+
+		private UnmapJob(IProject project) {
+			super(MessageFormat.format(CoreText.GitProjectData_UnmapJobName,
+					project.getName()));
+			this.project = project;
+		}
+
+		@Override
+		protected IStatus run(IProgressMonitor monitor) {
 			try {
-				c.setTeamPrivateMember(true);
-			} catch (CoreException e) {
-				Activator.logError(MessageFormat.format(
-						CoreText.GitProjectData_FailedToMarkTeamPrivate,
-						c.getFullPath()),
+				RepositoryProvider.unmap(project);
+				return Status.OK_STATUS;
+			} catch (TeamException e) {
+				return new Status(IStatus.ERROR, Activator.getPluginId(),
+						MessageFormat.format(
+								CoreText.GitProjectData_UnmappingGoneResourceFailed,
+								project.getName()),
 						e);
 			}
-			c = c.getParent();
 		}
 	}
 }

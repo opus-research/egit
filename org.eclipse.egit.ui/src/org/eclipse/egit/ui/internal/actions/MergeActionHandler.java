@@ -45,6 +45,7 @@ import org.eclipse.ui.PlatformUI;
  */
 public class MergeActionHandler extends RepositoryActionHandler {
 
+	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(true, event);
 		if (repository == null)
@@ -83,6 +84,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 					IStatus result = cevent.getJob().getResult();
 					if (result.getSeverity() == IStatus.CANCEL)
 						Display.getDefault().asyncExec(new Runnable() {
+							@Override
 							public void run() {
 								// don't use getShell(event) here since
 								// the active shell has changed since the
@@ -101,6 +103,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 								.getException(), true);
 					else
 						Display.getDefault().asyncExec(new Runnable() {
+							@Override
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
@@ -140,7 +143,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 	public static boolean checkMergeIsPossible(Repository repository, Shell shell) {
 		String message = null;
 		try {
-			Ref head = repository.getRef(Constants.HEAD);
+			Ref head = repository.exactRef(Constants.HEAD);
 			if (head == null || !head.isSymbolic())
 				message = UIText.MergeAction_HeadIsNoBranch;
 			else if (!repository.getRepositoryState().equals(

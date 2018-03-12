@@ -1,10 +1,13 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2012 Marek Zawirski <marek.zawirski@gmail.com> and others.
+ * Copyright (C) 2008, 2015 Marek Zawirski <marek.zawirski@gmail.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *           Karsten Panier <karsten.panier@aysada.org> - Bug 441357
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.components;
 
@@ -191,7 +194,7 @@ public class RefSpecPanel {
 
 	private static List<RefContentProposal> createProposalsFilteredRemote(
 			final List<RefContentProposal> proposals) {
-		final List<RefContentProposal> result = new ArrayList<RefContentProposal>();
+		final List<RefContentProposal> result = new ArrayList<>();
 		for (final RefContentProposal p : proposals) {
 			final String content = p.getContent();
 			if (content.equals(Constants.HEAD)
@@ -213,7 +216,7 @@ public class RefSpecPanel {
 		control.show();
 	}
 
-	private final List<RefSpec> specs = new ArrayList<RefSpec>();
+	private final List<RefSpec> specs = new ArrayList<>();
 
 	private final Composite panel;
 
@@ -281,7 +284,7 @@ public class RefSpecPanel {
 
 	private final boolean pushSpecs;
 
-	private final List<SelectionChangeListener> listeners = new LinkedList<SelectionChangeListener>();
+	private final List<SelectionChangeListener> listeners = new LinkedList<>();
 
 	private final ImageRegistry imageRegistry;
 
@@ -331,6 +334,7 @@ public class RefSpecPanel {
 		createTableGroup();
 
 		addRefSpecTableListener(new SelectionChangeListener() {
+			@Override
 			public void selectionChanged() {
 				validateSpecs();
 			}
@@ -367,20 +371,20 @@ public class RefSpecPanel {
 		final List<RefContentProposal> remoteProposals = createContentProposals(
 				remoteRefs, null);
 		remoteProposalProvider.setProposals(remoteProposals);
-		remoteRefNames = new HashSet<String>();
+		remoteRefNames = new HashSet<>();
 		for (final RefContentProposal p : remoteProposals)
 			remoteRefNames.add(p.getContent());
 
 		Ref HEAD = null;
 		try {
-			HEAD = localDb.getRef(Constants.HEAD);
+			HEAD = localDb.exactRef(Constants.HEAD);
 		} catch (IOException e) {
 			Activator.logError("Couldn't read HEAD from local repository", e); //$NON-NLS-1$
 		}
 		final List<RefContentProposal> localProposals = createContentProposals(
 				localDb.getAllRefs().values(), HEAD);
 		localProposalProvider.setProposals(localProposals);
-		localRefNames = new HashSet<String>();
+		localRefNames = new HashSet<>();
 		for (final RefContentProposal ref : localProposals)
 			localRefNames.add(ref.getContent());
 
@@ -627,6 +631,7 @@ public class RefSpecPanel {
 		errorTextColor = new Color(panel.getDisplay(), 255, 0, 0);
 
 		panel.addDisposeListener(new DisposeListener() {
+			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				imageRegistry.dispose();
 				errorBackgroundColor.dispose();
@@ -677,6 +682,7 @@ public class RefSpecPanel {
 		creationSrcDecoration = createAssistedDecoratedCombo(creationPanel,
 				getRefsProposalProvider(pushSpecs),
 				new IContentProposalListener() {
+					@Override
 					public void proposalAccepted(IContentProposal proposal) {
 						tryAutoCompleteSrcToDst();
 					}
@@ -685,6 +691,7 @@ public class RefSpecPanel {
 		creationSrcCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
 				false));
 		creationSrcCombo.addTraverseListener(new TraverseListener() {
+			@Override
 			public void keyTraversed(TraverseEvent e) {
 				// SWT.TRAVERSE_RETURN may be also reasonable here, but
 				// it can be confused with RETURN for content proposal
@@ -709,6 +716,7 @@ public class RefSpecPanel {
 		creationDstDecoration = createAssistedDecoratedCombo(creationPanel,
 				getRefsProposalProvider(!pushSpecs),
 				new IContentProposalListener() {
+					@Override
 					public void proposalAccepted(IContentProposal proposal) {
 						tryAutoCompleteDstToSrc();
 					}
@@ -717,6 +725,7 @@ public class RefSpecPanel {
 		creationDstCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
 				false));
 		creationDstCombo.addTraverseListener(new TraverseListener() {
+			@Override
 			public void keyTraversed(TraverseEvent e) {
 				// SWT.TRAVERSE_RETURN may be also reasonable here, but
 				// it can be confused with RETURN for content proposal
@@ -740,12 +749,16 @@ public class RefSpecPanel {
 
 		validateCreationPanel();
 		final ModifyListener validator = new ModifyListener() {
+			@Override
 			public void modifyText(final ModifyEvent e) {
 				validateCreationPanel();
 			}
 		};
 		creationSrcCombo.addModifyListener(validator);
 		creationDstCombo.addModifyListener(validator);
+		Control[] tabList = new Control[] { creationSrcCombo, creationDstCombo,
+				creationButton };
+		creationPanel.setTabList(tabList);
 	}
 
 	private void createDeleteCreationPanel() {
@@ -789,6 +802,7 @@ public class RefSpecPanel {
 		validateDeleteCreationPanel();
 
 		deleteRefCombo.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(final ModifyEvent e) {
 				validateDeleteCreationPanel();
 			}
@@ -848,6 +862,7 @@ public class RefSpecPanel {
 		updateAddPredefinedButton(addTagsButton, Transport.REFSPEC_TAGS);
 
 		addRefSpecTableListener(new SelectionChangeListener() {
+			@Override
 			public void selectionChanged() {
 				updateAddPredefinedButton(addConfiguredButton,
 						predefinedConfigured);
@@ -910,12 +925,14 @@ public class RefSpecPanel {
 		tableViewer.setInput(specs);
 
 		tableViewer.setComparer(new IElementComparer() {
+			@Override
 			public boolean equals(Object a, Object b) {
 				// need that as viewers are not designed to support 2 equals
 				// object, while we have RefSpec#equals implemented
 				return a == b;
 			}
 
+			@Override
 			public int hashCode(Object element) {
 				return element.hashCode();
 			}
@@ -1000,6 +1017,7 @@ public class RefSpecPanel {
 					setRefSpec(oldSpec, newSpec);
 					tableViewer.getControl().getDisplay().asyncExec(
 							new Runnable() {
+								@Override
 								public void run() {
 									tableViewer.editElement(newSpec,
 											srcColumnIndex);
@@ -1301,7 +1319,7 @@ public class RefSpecPanel {
 		forceUpdateAllButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				final List<RefSpec> specsCopy = new ArrayList<RefSpec>(specs);
+				final List<RefSpec> specsCopy = new ArrayList<>(specs);
 				for (final RefSpec spec : specsCopy) {
 					if (!isDeleteRefSpec(spec))
 						setRefSpec(spec, spec.setForceUpdate(true));
@@ -1326,6 +1344,7 @@ public class RefSpecPanel {
 		updateRemoveAllSpecButton();
 
 		addRefSpecTableListener(new SelectionChangeListener() {
+			@Override
 			public void selectionChanged() {
 				updateForceUpdateAllButton();
 				updateRemoveAllSpecButton();
@@ -1608,7 +1627,7 @@ public class RefSpecPanel {
 	}
 
 	private void validateSpecsCrossDst() {
-		final Map<String, RefSpec> dstsSpecsMap = new HashMap<String, RefSpec>();
+		final Map<String, RefSpec> dstsSpecsMap = new HashMap<>();
 		try {
 			for (final RefSpec spec : specs) {
 				if (!spec.isWildcard()) {
@@ -1709,7 +1728,8 @@ public class RefSpecPanel {
 
 	private List<RefContentProposal> createContentProposals(
 			final Collection<Ref> refs, final Ref HEAD) {
-		final TreeSet<Ref> set = new TreeSet<Ref>(new Comparator<Ref>() {
+		final TreeSet<Ref> set = new TreeSet<>(new Comparator<Ref>() {
+			@Override
 			public int compare(Ref o1, Ref o2) {
 				// lexicographical ordering by name seems to be fine
 				return o1.getName().compareTo(o2.getName());
@@ -1719,7 +1739,7 @@ public class RefSpecPanel {
 		if (HEAD != null)
 			set.add(HEAD);
 
-		final List<RefContentProposal> result = new ArrayList<RefContentProposal>(
+		final List<RefContentProposal> result = new ArrayList<>(
 				set.size());
 		for (final Ref r : set)
 			result.add(new RefContentProposal(localDb, r));
@@ -1728,7 +1748,7 @@ public class RefSpecPanel {
 
 	private List<RefContentProposal> createProposalsFilteredLocal(
 			final List<RefContentProposal> proposals) {
-		final List<RefContentProposal> result = new ArrayList<RefContentProposal>();
+		final List<RefContentProposal> result = new ArrayList<>();
 		for (final RefContentProposal p : proposals) {
 			final String content = p.getContent();
 			if (pushSpecs) {
@@ -1788,9 +1808,10 @@ public class RefSpecPanel {
 			this.proposals = proposals;
 		}
 
+		@Override
 		public IContentProposal[] getProposals(final String contents,
 				int position) {
-			final List<RefContentProposal> result = new ArrayList<RefContentProposal>();
+			final List<RefContentProposal> result = new ArrayList<>();
 
 			if (contents.indexOf('*') != -1 || contents.indexOf('?') != -1) {
 				// contents contains wildcards

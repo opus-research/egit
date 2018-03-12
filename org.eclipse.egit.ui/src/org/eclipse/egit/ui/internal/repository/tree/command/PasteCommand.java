@@ -47,6 +47,7 @@ import org.eclipse.swt.dnd.TextTransfer;
 public class PasteCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// we check if the pasted content is a directory
 		// repository location and try to add this
@@ -90,23 +91,26 @@ public class PasteCommand extends
 
 			if (util.addConfiguredRepository(file)) {
 				// let's do the auto-refresh the rest
-			} else
+			} else {
 				errorMessage = NLS.bind(
 						UIText.RepositoriesView_PasteRepoAlreadyThere, content);
-
+			}
 			return null;
 		} finally {
-			if (clip != null)
+			if (clip != null) {
 				// we must dispose ourselves
 				clip.dispose();
-			if (errorMessage != null)
-				Activator.handleError(errorMessage, null, true);
+			}
+			if (errorMessage != null) {
+				Activator.showError(errorMessage, null);
+			}
 		}
 	}
 
 	private URIish getCloneURI(String content) {
-		if (content != null && content.startsWith("git clone")) //$NON-NLS-1$
-			content = content.substring(9);
+		if (content.startsWith("git clone")) { //$NON-NLS-1$
+			content = content.substring("git clone".length()); //$NON-NLS-1$
+		}
 		URIish finalURI;
 		try {
 			finalURI = new URIish(content.trim());
@@ -114,13 +118,12 @@ public class PasteCommand extends
 					|| Protocol.GIT.handles(finalURI)
 					|| Protocol.HTTP.handles(finalURI)
 					|| Protocol.HTTPS.handles(finalURI)
-					|| Protocol.SSH.handles(finalURI))
+					|| Protocol.SSH.handles(finalURI)) {
 				return finalURI;
-			else
-				return null;
+			}
 		} catch (URISyntaxException e) {
-			Activator.handleError(e.getLocalizedMessage(), e, true);
-			return null;
+			// Swallow, caller will show an error message when we return null
 		}
+		return null;
 	}
 }

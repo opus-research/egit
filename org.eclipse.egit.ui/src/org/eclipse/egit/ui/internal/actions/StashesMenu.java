@@ -45,6 +45,7 @@ public class StashesMenu extends CompoundContributionItem implements
 
 	private IServiceLocator serviceLocator;
 
+	@Override
 	public void initialize(IServiceLocator locator) {
 		this.serviceLocator = locator;
 	}
@@ -53,7 +54,7 @@ public class StashesMenu extends CompoundContributionItem implements
 	protected IContributionItem[] getContributionItems() {
 		Repository repository = getRepository();
 
-		List<IContributionItem> items = new ArrayList<IContributionItem>();
+		List<IContributionItem> items = new ArrayList<>();
 
 		items.add(createStashChangesItem(repository));
 		items.add(new Separator());
@@ -93,7 +94,7 @@ public class StashesMenu extends CompoundContributionItem implements
 			if (stashCommits.isEmpty())
 				return Collections.singleton(createNoStashedChangesItem());
 
-			List<IContributionItem> items = new ArrayList<IContributionItem>(
+			List<IContributionItem> items = new ArrayList<>(
 					stashCommits.size());
 
 			int index = 0;

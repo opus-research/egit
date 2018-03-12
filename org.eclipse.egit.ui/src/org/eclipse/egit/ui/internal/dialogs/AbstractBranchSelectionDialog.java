@@ -278,6 +278,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 				tree);
 		branchTree.addSelectionChangedListener(new ISelectionChangedListener() {
 
+			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				String refName = refNameFromDialog();
 				refNameSelected(refName);
@@ -286,6 +287,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 
 		// double-click support
 		branchTree.addDoubleClickListener(new IDoubleClickListener() {
+			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				RepositoryTreeNode node = (RepositoryTreeNode) ((IStructuredSelection) branchTree
 						.getSelection()).getFirstElement();
@@ -330,7 +332,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		// be enabled.
 		setOkButtonEnabled(false);
 
-		List<RepositoryTreeNode> roots = new ArrayList<RepositoryTreeNode>();
+		List<RepositoryTreeNode> roots = new ArrayList<>();
 		if ((settings & SHOW_LOCAL_BRANCHES) != 0)
 			roots.add(localBranches);
 		if ((settings & SHOW_REMOTE_BRANCHES) != 0)
@@ -366,9 +368,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	/**
 	 * Enables the OK button. No-op in case Dialog#createButtonsForButtonBar has
 	 * been overridden and the button has not been created.
-	 * 
+	 *
 	 * @param enabled
-	 * 
+	 *
 	 * @see org.eclipse.jface.dialogs.Dialog#createButtonsForButtonBar(Composite)
 	 */
 	protected void setOkButtonEnabled(boolean enabled) {
@@ -379,7 +381,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	/**
 	 * Returns <code>true</code> if the OK button has been created and is
 	 * enabled.
-	 * 
+	 *
 	 * @return the OK button's enabled state or <code>false</code> if the button
 	 *         has not been created.
 	 */
@@ -403,17 +405,17 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		RepositoryTreeNode node;
 		try {
 			if (refName.startsWith(Constants.R_HEADS)) {
-				Ref ref = repo.getRef(refName);
+				Ref ref = repo.exactRef(refName);
 				if (ref == null)
 					return false;
 				node = new RefNode(localBranches, repo, ref);
 			} else if (refName.startsWith(Constants.R_REMOTES)) {
-				Ref ref = repo.getRef(refName);
+				Ref ref = repo.exactRef(refName);
 				if (ref == null)
 					return false;
 				node = new RefNode(remoteBranches, repo, ref);
 			} else if (Constants.HEAD.equals(refName)) {
-				Ref ref = repo.getRef(refName);
+				Ref ref = repo.exactRef(refName);
 				if (ref == null)
 					return false;
 				node = new AdditionalRefNode(references, repo, ref);
@@ -422,13 +424,13 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 						.mapCommitToRef(repo, refName, false);
 				if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_REMOTES)) {
-					Ref ref = repo.getRef(mappedRef);
+					Ref ref = repo.exactRef(mappedRef);
 					if (ref == null)
 						return false;
 					node = new RefNode(remoteBranches, repo, ref);
 				} else if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_TAGS)) {
-					Ref ref = repo.getRef(mappedRef);
+					Ref ref = repo.exactRef(mappedRef);
 					if (ref == null)
 						return false;
 					node = new TagNode(tags, repo, ref);

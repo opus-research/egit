@@ -2,6 +2,7 @@
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +27,7 @@ import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
@@ -33,7 +35,9 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
-import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
+import org.eclipse.egit.ui.internal.jobs.RepositoryJob;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
@@ -44,10 +48,7 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Wizard allowing user to specify all needed data to push to another repository
@@ -116,8 +117,7 @@ public class PushWizard extends Wizard {
 			}
 		};
 		confirmPage.setHelpContext(HELP_CONTEXT);
-		// TODO use/create another cool icon
-		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
+		setDefaultPageImageDescriptor(UIIcons.WIZBAN_PUSH);
 		setNeedsProgressMonitor(true);
 	}
 
@@ -162,7 +162,7 @@ public class PushWizard extends Wizard {
 			return false;
 		UserPasswordCredentials credentials = repoPage.getCredentials();
 		if (credentials != null)
-			operation.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
+			operation.setCredentialsProvider(new EGitCredentialsProvider(
 					credentials.getUser(), credentials.getPassword()));
 		final PushOperationResult resultToCompare;
 		if (confirmPage.isShowOnlyIfChangedSelected())
@@ -213,7 +213,7 @@ public class PushWizard extends Wizard {
 				// obtain the push ref specs from the configuration
 				// use our own list here, as the config returns a non-modifiable
 				// list
-				final Collection<RefSpec> pushSpecs = new ArrayList<RefSpec>();
+				final Collection<RefSpec> pushSpecs = new ArrayList<>();
 				pushSpecs.addAll(config.getPushRefSpecs());
 				final Collection<RemoteRefUpdate> updates = Transport
 						.findRemoteRefUpdatesFor(localDb, pushSpecs,
@@ -272,7 +272,7 @@ public class PushWizard extends Wizard {
 		return destination;
 	}
 
-	static class PushJob extends Job {
+	static class PushJob extends RepositoryJob {
 		private final PushOperation operation;
 
 		private final PushOperationResult resultToCompare;
@@ -280,6 +280,8 @@ public class PushWizard extends Wizard {
 		private final String destinationString;
 
 		private Repository localDb;
+
+		private PushOperationResult operationResult;
 
 		public PushJob(final Repository localDb, final PushOperation operation,
 				final PushOperationResult resultToCompare,
@@ -293,7 +295,7 @@ public class PushWizard extends Wizard {
 		}
 
 		@Override
-		protected IStatus run(final IProgressMonitor monitor) {
+		protected IStatus performJob(final IProgressMonitor monitor) {
 			try {
 				operation.run(monitor);
 			} catch (final InvocationTargetException e) {
@@ -301,27 +303,34 @@ public class PushWizard extends Wizard {
 						UIText.PushWizard_unexpectedError, e.getCause());
 			}
 
-			final PushOperationResult result = operation.getOperationResult();
-			if (!result.isSuccessfulConnectionForAnyURI()) {
-				return new Status(IStatus.ERROR, Activator.getPluginId(), NLS
-						.bind(UIText.PushWizard_cantConnectToAny, result
-								.getErrorStringForAllURis()));
+			operationResult = operation.getOperationResult();
+			if (!operationResult.isSuccessfulConnectionForAnyURI()) {
+				return new Status(IStatus.ERROR, Activator.getPluginId(),
+						NLS.bind(UIText.PushWizard_cantConnectToAny,
+								operationResult.getErrorStringForAllURis()));
 			}
 
-			if (resultToCompare == null || !result.equals(resultToCompare)) {
-				PlatformUI.getWorkbench().getDisplay().asyncExec(
-						new Runnable() {
-							public void run() {
-								final Shell shell = PlatformUI.getWorkbench()
-										.getActiveWorkbenchWindow().getShell();
-								final Dialog dialog = new PushResultDialog(
-										shell, localDb, result,
-										destinationString);
-								dialog.open();
-							}
-						});
-			}
 			return Status.OK_STATUS;
 		}
+
+		@Override
+		protected IAction getAction() {
+			Repository repo = localDb;
+			if (repo != null && (resultToCompare == null
+					|| !resultToCompare.equals(operationResult))) {
+				return new ShowPushResultAction(repo, operationResult,
+						destinationString, true);
+			}
+			return null;
+		}
+
+		@Override
+		public boolean belongsTo(Object family) {
+			if (JobFamilies.PUSH.equals(family)) {
+				return true;
+			}
+			return super.belongsTo(family);
+		}
+
 	}
 }

@@ -58,7 +58,8 @@ public class FileDiff extends WorkbenchAdapter {
 	/**
 	 * Comparator for sorting FileDiffs based on getPath().
 	 */
-	public static Comparator<FileDiff> PATH_COMPARATOR = new Comparator<FileDiff>() {
+	public static final Comparator<FileDiff> PATH_COMPARATOR = new Comparator<FileDiff>() {
+		@Override
 		public int compare(FileDiff o1, FileDiff o2) {
 			return o1.getPath().compareTo(o2.getPath());
 		}
@@ -120,7 +121,7 @@ public class FileDiff extends WorkbenchAdapter {
 			final RevCommit[] parents,
 			final TreeFilter... markTreeFilters) throws MissingObjectException,
 			IncorrectObjectTypeException, CorruptObjectException, IOException {
-		final ArrayList<FileDiff> r = new ArrayList<FileDiff>();
+		final ArrayList<FileDiff> r = new ArrayList<>();
 
 		if (parents.length > 0) {
 			walk.reset(trees(commit, parents));
@@ -132,7 +133,7 @@ public class FileDiff extends WorkbenchAdapter {
 
 		if (walk.getTreeCount() <= 2) {
 			List<DiffEntry> entries = DiffEntry.scan(walk, false, markTreeFilters);
-			List<DiffEntry> xentries = new LinkedList<DiffEntry>(entries);
+			List<DiffEntry> xentries = new LinkedList<>(entries);
 			RenameDetector detector = new RenameDetector(repository);
 			detector.addAll(entries);
 			List<DiffEntry> renames = detector.compute(walk.getObjectReader(),
@@ -230,11 +231,8 @@ public class FileDiff extends WorkbenchAdapter {
 			return;
 		}
 
-		ObjectReader reader = db.newObjectReader();
-		try {
+		try (ObjectReader reader = db.newObjectReader()) {
 			outputEclipseDiff(d, db, reader, diffFmt);
-		} finally {
-			reader.release();
 		}
 	}
 
@@ -289,7 +287,7 @@ public class FileDiff extends WorkbenchAdapter {
 	}
 
 	private String getProjectRelativePath(Repository db, String repoPath) {
-		IResource resource = ResourceUtil.getFileForLocation(db, repoPath);
+		IResource resource = ResourceUtil.getFileForLocation(db, repoPath, false);
 		if (resource == null)
 			return null;
 		return resource.getProjectRelativePath().toString();
@@ -355,7 +353,7 @@ public class FileDiff extends WorkbenchAdapter {
 	 * @return non-null but possibly empty array of object ids
 	 */
 	public ObjectId[] getBlobs() {
-		List<ObjectId> objectIds = new ArrayList<ObjectId>();
+		List<ObjectId> objectIds = new ArrayList<>();
 		if (diffEntry.getOldId() != null)
 			objectIds.add(diffEntry.getOldId().toObjectId());
 		if (diffEntry.getNewId() != null)
@@ -369,7 +367,7 @@ public class FileDiff extends WorkbenchAdapter {
 	 * @return non-null but possibly empty array of file modes
 	 */
 	public FileMode[] getModes() {
-		List<FileMode> modes = new ArrayList<FileMode>();
+		List<FileMode> modes = new ArrayList<>();
 		if (diffEntry.getOldMode() != null)
 			modes.add(diffEntry.getOldMode());
 		if (diffEntry.getOldMode() != null)
@@ -415,6 +413,7 @@ public class FileDiff extends WorkbenchAdapter {
 				|| diffEntry.getNewMode() == FileMode.GITLINK;
 	}
 
+	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		final ImageDescriptor base;
 		if (!isSubmodule())
@@ -436,6 +435,7 @@ public class FileDiff extends WorkbenchAdapter {
 		}
 	}
 
+	@Override
 	public String getLabel(Object object) {
 		return getPath();
 	}

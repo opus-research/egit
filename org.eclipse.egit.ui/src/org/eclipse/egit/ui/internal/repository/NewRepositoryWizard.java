@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bugs 477281, 478877
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -34,6 +35,7 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
 
@@ -72,7 +74,8 @@ public class NewRepositoryWizard extends Wizard implements INewWizard {
 		try {
 			boolean isBare = myCreatePage.getBare();
 			File gitDir = Git.init()
-					.setDirectory(new File(myCreatePage.getDirectory()))
+					.setDirectory(FileUtils.canonicalize(
+							new File(myCreatePage.getDirectory())))
 					.setBare(isBare)
 					.call().getRepository().getDirectory();
 			this.repository = Activator.getDefault().getRepositoryCache()
@@ -113,7 +116,7 @@ public class NewRepositoryWizard extends Wizard implements INewWizard {
 	 * @param projects
 	 */
 	private void autoShareProjects(Repository repoToCreate, IProject[] projects) {
-		final Map<IProject, File> projectsMap = new HashMap<IProject, File>();
+		final Map<IProject, File> projectsMap = new HashMap<>();
 		for (IProject project : projects)
 			projectsMap.put(project, repoToCreate.getDirectory());
 		ConnectProviderOperation op = new ConnectProviderOperation(projectsMap);
@@ -121,6 +124,7 @@ public class NewRepositoryWizard extends Wizard implements INewWizard {
 				JobFamilies.AUTO_SHARE);
 	}
 
+	@Override
 	public void init(IWorkbench workbench, IStructuredSelection selection) {
 		// nothing to initialize
 	}

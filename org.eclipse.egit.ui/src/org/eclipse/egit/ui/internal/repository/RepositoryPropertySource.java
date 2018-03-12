@@ -201,14 +201,30 @@ public class RepositoryPropertySource implements IPropertySource {
 							public void run() {
 								changeModeAction.getAction().setText(
 										aMode.getText());
-								editAction.getAction().setEnabled(
-										aMode != DisplayMode.EFFECTIVE);
+								boolean enabled = true;
+								switch (aMode) {
+								case EFFECTIVE:
+									enabled = false;
+									break;
+								case SYSTEM:
+									enabled = systemConfig.getFile() != null
+											&& systemConfig.getFile()
+													.canWrite();
+									break;
+								default:
+									// Nothing; enabled is true
+									break;
+								}
+								editAction.getAction().setEnabled(enabled);
 								myPage.refresh();
 							}
 
 							@Override
 							public boolean isEnabled() {
-								return aMode != getCurrentMode();
+								return aMode != getCurrentMode()
+										&& (aMode != DisplayMode.SYSTEM
+												|| systemConfig
+														.getFile() != null);
 							}
 
 							@Override
@@ -332,10 +348,12 @@ public class RepositoryPropertySource implements IPropertySource {
 		return sb.toString();
 	}
 
+	@Override
 	public Object getEditableValue() {
 		return null;
 	}
 
+	@Override
 	public IPropertyDescriptor[] getPropertyDescriptors() {
 		try {
 			systemConfig.load();
@@ -348,7 +366,7 @@ public class RepositoryPropertySource implements IPropertySource {
 			showExceptionMessage(e);
 		}
 
-		List<IPropertyDescriptor> resultList = new ArrayList<IPropertyDescriptor>();
+		List<IPropertyDescriptor> resultList = new ArrayList<>();
 
 		StoredConfig config;
 		String category;
@@ -386,6 +404,9 @@ public class RepositoryPropertySource implements IPropertySource {
 		}
 		case SYSTEM: {
 			prefix = SYSTEM_ID_PREFIX;
+			if (systemConfig.getFile() == null) {
+				return new IPropertyDescriptor[0];
+			}
 			String location = systemConfig.getFile().getAbsolutePath();
 			category = NLS
 					.bind(UIText.RepositoryPropertySource_GlobalConfigurationCategory,
@@ -418,17 +439,22 @@ public class RepositoryPropertySource implements IPropertySource {
 		return resultList.toArray(new IPropertyDescriptor[0]);
 	}
 
+	@Override
 	public Object getPropertyValue(Object id) {
 		String actId = ((String) id);
 		Object value = null;
 		if (actId.startsWith(SYSTEM_ID_PREFIX)) {
-			value = getValueFromConfig(systemConfig, actId.substring(4));
+			value = getValueFromConfig(systemConfig,
+					actId.substring(SYSTEM_ID_PREFIX.length()));
 		} else if (actId.startsWith(USER_ID_PREFIX)) {
-			value = getValueFromConfig(userHomeConfig, actId.substring(4));
+			value = getValueFromConfig(userHomeConfig,
+					actId.substring(USER_ID_PREFIX.length()));
 		} else if (actId.startsWith(REPO_ID_PREFIX)) {
-			value = getValueFromConfig(repositoryConfig, actId.substring(4));
+			value = getValueFromConfig(repositoryConfig,
+					actId.substring(REPO_ID_PREFIX.length()));
 		} else if (actId.startsWith(EFFECTIVE_ID_PREFIX)) {
-			value = getValueFromConfig(effectiveConfig, actId.substring(4));
+			value = getValueFromConfig(effectiveConfig,
+					actId.substring(EFFECTIVE_ID_PREFIX.length()));
 		}
 		if (value == null)
 			// the text editor needs this to work
@@ -437,14 +463,17 @@ public class RepositoryPropertySource implements IPropertySource {
 		return value;
 	}
 
+	@Override
 	public boolean isPropertySet(Object id) {
 		return false;
 	}
 
+	@Override
 	public void resetPropertyValue(Object id) {
 		// no editing here
 	}
 
+	@Override
 	public void setPropertyValue(Object id, Object value) {
 		// no editing here
 	}
@@ -501,7 +530,7 @@ public class RepositoryPropertySource implements IPropertySource {
 			Composite main = (Composite) super.createDialogArea(parent);
 			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).grab(true,
 					true).applyTo(main);
-			editor = new ConfigurationEditorComponent(main, myConfig, true, false) {
+			editor = new ConfigurationEditorComponent(main, myConfig, true) {
 				@Override
 				protected void setErrorMessage(String message) {
 					EditDialog.this.setErrorMessage(message);

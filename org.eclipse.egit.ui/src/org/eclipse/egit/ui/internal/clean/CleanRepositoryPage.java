@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
+ * Copyright (C) 2015, Philipp Bumann <bumannp@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,7 +17,7 @@ import java.util.TreeSet;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
@@ -64,6 +65,7 @@ public class CleanRepositoryPage extends WizardPage {
 		setMessage(UIText.CleanRepositoryPage_message);
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
@@ -112,6 +114,7 @@ public class CleanRepositoryPage extends WizardPage {
 		setPageComplete(false);
 		cleanTable.addCheckStateListener(new ICheckStateListener() {
 
+			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				updatePageComplete();
 			}
@@ -179,6 +182,7 @@ public class CleanRepositoryPage extends WizardPage {
 
 		if(visible)
 			getShell().getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					updateCleanItems();
 				}
@@ -188,6 +192,7 @@ public class CleanRepositoryPage extends WizardPage {
 	private void updateCleanItems() {
 		try {
 			getContainer().run(true, false, new IRunnableWithProgress() {
+				@Override
 				public void run(IProgressMonitor monitor) throws InvocationTargetException,
 						InterruptedException {
 					monitor.beginTask(UIText.CleanRepositoryPage_findingItems, IProgressMonitor.UNKNOWN);
@@ -200,6 +205,7 @@ public class CleanRepositoryPage extends WizardPage {
 						final Set<String> paths = command.call();
 
 						getShell().getDisplay().syncExec(new Runnable() {
+							@Override
 							public void run() {
 								cleanTable.setInput(paths);
 							}
@@ -229,7 +235,7 @@ public class CleanRepositoryPage extends WizardPage {
 	 * @return the items to clean.
 	 */
 	public Set<String> getItemsToClean() {
-		Set<String> result = new TreeSet<String>();
+		Set<String> result = new TreeSet<>();
 		for(Object ele : cleanTable.getCheckedElements()) {
 			String str = ele.toString();
 
@@ -250,9 +256,11 @@ public class CleanRepositoryPage extends WizardPage {
 			final Set<String> itemsToClean = getItemsToClean();
 
 			getContainer().run(true, false, new IRunnableWithProgress() {
+				@Override
 				public void run(IProgressMonitor monitor) throws InvocationTargetException,
 						InterruptedException {
-					monitor.beginTask(UIText.CleanRepositoryPage_cleaningItems, IProgressMonitor.UNKNOWN);
+					SubMonitor subMonitor = SubMonitor.convert(monitor,
+							UIText.CleanRepositoryPage_cleaningItems, 1);
 
 					Git git = Git.wrap(repository);
 					CleanCommand command = git.clean().setDryRun(false);
@@ -267,12 +275,11 @@ public class CleanRepositoryPage extends WizardPage {
 
 					try {
 						IProject[] projects = ProjectUtil.getProjectsContaining(repository, itemsToClean);
-						ProjectUtil.refreshResources(projects, new SubProgressMonitor(monitor, 1));
+						ProjectUtil.refreshResources(projects,
+								subMonitor.newChild(1));
 					} catch (CoreException e) {
 						// could not refresh... not a "real" problem
 					}
-
-					monitor.done();
 				}
 			});
 		} catch (Exception e) {

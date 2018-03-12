@@ -95,9 +95,6 @@ public class ActionCommands {
 	/** "Push branch" action command id */
 	public static final String PUSH_BRANCH_ACTION = "org.eclipse.egit.ui.team.PushBranch"; //$NON-NLS-1$
 
-	/** "Rename Branch" action command id */
-	public static final String RENAME_BRANCH_ACTION = "org.eclipse.egit.ui.team.RenameBranch"; //$NON-NLS-1$
-
 	/** "Simple Push" action command id */
 	public static final String SIMPLE_PUSH_ACTION = "org.eclipse.egit.ui.team.SimplePush"; //$NON-NLS-1$
 
@@ -109,12 +106,6 @@ public class ActionCommands {
 
 	/** "Rebase" action command id */
 	public static final String REBASE_ACTION = "org.eclipse.egit.ui.team.Rebase"; //$NON-NLS-1$
-
-	/** "Show History" action command id */
-	public static final String SHOW_HISTORY = "org.eclipse.egit.ui.team.ShowHistory"; //$NON-NLS-1$
-
-	/** "Show Repository View" action command id */
-	public static final String SHOW_REPO_VIEW = "org.eclipse.egit.ui.team.ShowRepositoriesView"; //$NON-NLS-1$
 
 	/** "Stash Changes" action command id */
 	public static final String STASH_CREATE = "org.eclipse.egit.ui.team.stash.create"; //$NON-NLS-1$
@@ -133,6 +124,9 @@ public class ActionCommands {
 
 	/** "Pull from upstream configuration" action command id */
 	public static final String PULL_FROM_UPSTREAM_CONFIG = "org.eclipse.egit.ui.team.PullFromUpstreamConfig"; //$NON-NLS-1$
+
+	/** "Pull with a config dialog" action command id */
+	public static final String PULL_WITH_OPTIONS = "org.eclipse.egit.ui.team.PullWithOptions"; //$NON-NLS-1$
 
 	/** "Merge Tool" action command id */
 	public static final String MERGE_TOOL_ACTION = "org.eclipse.egit.ui.team.MergeTool"; //$NON-NLS-1$

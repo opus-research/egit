@@ -39,6 +39,7 @@ import org.eclipse.swt.widgets.Shell;
  */
 public class DeleteTagOnCommitHandler extends AbstractHistoryCommandHandler {
 
+	@Override
 	public Object execute(ExecutionEvent event)
 			throws ExecutionException {
 		final Repository repository = getRepository(event);
@@ -56,7 +57,7 @@ public class DeleteTagOnCommitHandler extends AbstractHistoryCommandHandler {
 		// show a dialog in case there are multiple tags on the selected commit
 		final List<Ref> tagsToDelete;
 		if (tags.size() > 1) {
-			BranchSelectionDialog<Ref> dialog = new BranchSelectionDialog<Ref>(
+			BranchSelectionDialog<Ref> dialog = new BranchSelectionDialog<>(
 					shell,
 					tags,
 					UIText.DeleteTagOnCommitHandler_SelectTagDialogTitle,
@@ -107,8 +108,9 @@ public class DeleteTagOnCommitHandler extends AbstractHistoryCommandHandler {
 			final Repository repository, final List<Ref> tagsToDelete)
 			throws InvocationTargetException,
 			InterruptedException {
-		new ProgressMonitorDialog(shell).run(false, false,
+		new ProgressMonitorDialog(shell).run(true, false,
 				new IRunnableWithProgress() {
+					@Override
 					public void run(IProgressMonitor monitor)
 							throws InvocationTargetException,
 							InterruptedException {
@@ -130,7 +132,7 @@ public class DeleteTagOnCommitHandler extends AbstractHistoryCommandHandler {
 	}
 
 	private List<Ref> getTagsOfCommit(IStructuredSelection selection) {
-		final List<Ref> tagsOfCommit = new ArrayList<Ref>();
+		final List<Ref> tagsOfCommit = new ArrayList<>();
 		if (selection.isEmpty())
 			return tagsOfCommit;
 		PlotCommit commit = (PlotCommit) selection.getFirstElement();

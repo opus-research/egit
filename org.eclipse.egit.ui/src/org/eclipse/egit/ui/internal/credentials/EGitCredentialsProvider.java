@@ -120,6 +120,7 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 		final boolean[] result = new boolean[1];
 
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
@@ -218,9 +219,10 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 	}
 
 	private UserPasswordCredentials getCredentialsFromUser(final URIish uri) {
-		final AtomicReference<UserPasswordCredentials> aRef = new AtomicReference<UserPasswordCredentials>(
+		final AtomicReference<UserPasswordCredentials> aRef = new AtomicReference<>(
 				null);
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();

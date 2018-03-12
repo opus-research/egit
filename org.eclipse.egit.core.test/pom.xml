@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>3.6.0-SNAPSHOT</version>
+    <version>4.5.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.core.test</artifactId>
@@ -24,16 +24,32 @@
 
   <name>EGit Core Test Plug-in</name>
 
-  <properties>
-    <coretest.vmparams></coretest.vmparams>
-  </properties>
-
   <build>
     <plugins>
       <plugin>
         <groupId>org.eclipse.tycho</groupId>
-        <artifactId>tycho-surefire-plugin</artifactId>
+        <artifactId>target-platform-configuration</artifactId>
         <version>${tycho-version}</version>
+        <configuration>
+          <dependency-resolution>
+            <extraRequirements>
+              <requirement>
+                <type>eclipse-feature</type>
+                <id>org.eclipse.jgit</id>
+                <versionRange>0.0.0</versionRange>
+              </requirement>
+              <requirement>
+                <type>eclipse-plugin</type>
+                <id>org.eclipse.egit.core</id>
+                <versionRange>0.0.0</versionRange>
+              </requirement>
+            </extraRequirements>
+          </dependency-resolution>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-surefire-plugin</artifactId>
         <configuration>
           <excludes>
             <!-- test mojo matches TestProject be default and treats it as PojoTest -->
@@ -42,15 +58,6 @@
           <argLine>${test.vmparams} ${coretest.vmparams}</argLine>
           <useUIHarness>false</useUIHarness>
           <useUIThread>false</useUIThread>
-          <dependency-resolution>
-            <extraRequirements>
-              <requirement>
-                <type>eclipse-feature</type>
-                <id>org.eclipse.jgit.java7</id>
-                <versionRange>0.0.0</versionRange>
-              </requirement>
-            </extraRequirements>
-          </dependency-resolution>
         </configuration>
       </plugin>
     </plugins>

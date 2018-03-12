@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
-import static org.eclipse.egit.core.project.RepositoryMapping.findRepositoryMapping;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 
 import java.io.IOException;
@@ -63,6 +62,7 @@ public class RemoveFromIndexOperation implements IEGitOperation {
 		this.pathsByRepository = ResourceUtil.splitResourcesByRepository(resources);
 	}
 
+	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor = (m != null) ? m : new NullProgressMonitor();
 
@@ -81,39 +81,41 @@ public class RemoveFromIndexOperation implements IEGitOperation {
 				monitor.worked(1);
 			} catch (GitAPIException e) {
 				Activator.logError(e.getMessage(), e);
-			} finally {
-				findRepositoryMapping(repository).fireRepositoryChanged();
 			}
 		}
 
 		monitor.done();
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRuleForRepositories(pathsByRepository.keySet());
 	}
 
 	private static GitCommand<?> prepareCommand(Repository repository,
 			Collection<String> paths) {
-		Git git = new Git(repository);
-		if (hasHead(repository)) {
-			ResetCommand resetCommand = git.reset();
-			resetCommand.setRef(HEAD);
-			for (String path : paths)
-				resetCommand.addPath(getCommandPath(path));
-			return resetCommand;
-		} else {
-			RmCommand rmCommand = git.rm();
-			rmCommand.setCached(true);
-			for (String path : paths)
-				rmCommand.addFilepattern(getCommandPath(path));
-			return rmCommand;
+		try (Git git = new Git(repository)) {
+			if (hasHead(repository)) {
+				ResetCommand resetCommand = git.reset();
+				resetCommand.setRef(HEAD);
+				for (String path : paths) {
+					resetCommand.addPath(getCommandPath(path));
+				}
+				return resetCommand;
+			} else {
+				RmCommand rmCommand = git.rm();
+				rmCommand.setCached(true);
+				for (String path : paths) {
+					rmCommand.addFilepattern(getCommandPath(path));
+				}
+				return rmCommand;
+			}
 		}
 	}
 
 	private static boolean hasHead(Repository repository) {
 		try {
-			Ref head = repository.getRef(HEAD);
+			Ref head = repository.exactRef(HEAD);
 			return head != null && head.getObjectId() != null;
 		} catch (IOException e) {
 			return false;
