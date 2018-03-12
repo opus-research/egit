@@ -97,9 +97,6 @@ public class UIText extends NLS {
 	public static String AddToIndexCommand_addingFilesFailed;
 
 	/** */
-	public static String RemoveFromIndexAction_removingFiles;
-
-	/** */
 	public static String BlameInformationControl_Author;
 
 	/** */
@@ -1195,6 +1192,9 @@ public class UIText extends NLS {
 	public static String RefSpecPanel_fetch;
 
 	/** */
+	public static String RefSpecPanel_fetchTitle;
+
+	/** */
 	public static String RefSpecPanel_srcFetchDescription;
 
 	/** */
@@ -1247,6 +1247,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefSpecPanel_push;
+
+	/** */
+	public static String RefSpecPanel_pushTitle;
 
 	/** */
 	public static String RefSpecPanel_srcPushDescription;

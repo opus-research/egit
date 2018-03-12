@@ -9,8 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test;
 
-import static org.eclipse.jgit.lib.Constants.HEAD;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -35,7 +33,6 @@ import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.NoMessageException;
 import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
 import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.errors.UnmergedPathException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -411,16 +408,7 @@ public class TestRepository {
 		String repoPath = getRepoRelativePath(path);
 		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
 
-		DirCacheEntry dcEntry = dc.getEntry(repoPath);
-		if (dcEntry == null)
-			return false;
-
-		Ref headRef = repository.getRef(HEAD);
-		RevCommit commit = new RevWalk(repository).parseCommit(headRef.getObjectId());
-
-		TreeWalk tw = TreeWalk.forPath(repository, repoPath, commit.getTree());
-		// check does object ID's for given file are different in repo and in index
-		return tw == null || !dcEntry.getObjectId().equals(tw.getObjectId(0));
+		return dc.getEntry(repoPath) != null;
 	}
 
 	public long lastModifiedInIndex(String path) throws IOException {
