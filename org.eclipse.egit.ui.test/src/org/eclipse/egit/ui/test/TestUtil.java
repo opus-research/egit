@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -29,13 +28,9 @@ import java.util.StringTokenizer;
 import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.commit.CommitHelper;
-import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -429,21 +424,4 @@ public class TestUtil {
 			headCommit = new RevWalk(repository).parseCommit(parentId);
 		return headCommit;
 	}
-	
-	public static void checkHeadCommit(Repository repository, String author,
-			String committer, String message) throws Exception {
-		CommitInfo commitInfo = CommitHelper.getHeadCommitInfo(repository);
-		assertEquals(author, commitInfo.getAuthor());
-		assertEquals(committer, commitInfo.getCommitter());
-		assertEquals(message, commitInfo.getCommitMessage());
-	}
-
-	public static void configureTestCommitterAsUser(Repository repository) {
-		StoredConfig config = repository.getConfig();
-		config.setString(ConfigConstants.CONFIG_USER_SECTION, null,
-				ConfigConstants.CONFIG_KEY_NAME, TestUtil.TESTCOMMITTER_NAME);
-		config.setString(ConfigConstants.CONFIG_USER_SECTION, null,
-				ConfigConstants.CONFIG_KEY_EMAIL, TestUtil.TESTCOMMITTER_EMAIL);
-	}
-
 }
