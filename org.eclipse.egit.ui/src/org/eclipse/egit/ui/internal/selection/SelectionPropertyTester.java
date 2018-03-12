@@ -8,19 +8,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.selection;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.ResourcePropertyTester;
-import org.eclipse.jface.text.ITextSelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.ui.IWorkingSet;
 
@@ -36,7 +31,7 @@ public class SelectionPropertyTester extends PropertyTester {
 			if (collection.size() != 1)
 				return false;
 
-			Repository repository = getRepositoryOfProjects(collection, true);
+			Repository repository = getRepository(collection, true);
 			if (repository == null)
 				return false;
 
@@ -48,28 +43,7 @@ public class SelectionPropertyTester extends PropertyTester {
 			return true;
 
 		} else if ("projectsWithRepositories".equals(property)) { //$NON-NLS-1$
-			Repository repository = getRepositoryOfProjects(collection, false);
-			return repository != null;
-
-		} else if ("resourcesSingleRepository".equals(property)) { //$NON-NLS-1$
-			if (collection.isEmpty())
-				return false;
-
-			Object firstElement = collection.iterator().next();
-			IStructuredSelection selection;
-			if (collection.size() == 1 && firstElement instanceof ITextSelection) {
-				selection = SelectionUtils.getStructuredSelection((ITextSelection) firstElement);
-			} else {
-				selection = new StructuredSelection(new ArrayList<Object>(
-						collection));
-			}
-
-			// It may seem like we could just use SelectionUtils.getRepository
-			// here. The problem: It would also return a repository for a node
-			// in the repo view. But this property is just for resources.
-			IResource[] resources = SelectionUtils
-					.getSelectedResources(selection);
-			Repository repository = getRepositoryOfResources(resources);
+			Repository repository = getRepository(collection, false);
 			return repository != null;
 		}
 		return false;
@@ -82,7 +56,7 @@ public class SelectionPropertyTester extends PropertyTester {
 	 *            <code>true</code> if only a single repository is allowed
 	 * @return the repository if any was found, <code>null</code> otherwise
 	 */
-	private static Repository getRepositoryOfProjects(Collection<?> collection,
+	private static Repository getRepository(Collection<?> collection,
 			boolean single) {
 		Repository repo = null;
 		for (Object element : collection) {
@@ -110,22 +84,11 @@ public class SelectionPropertyTester extends PropertyTester {
 		return repo;
 	}
 
-	/**
-	 * @param resources
-	 *            the resources
-	 * @return the repository that all the mapped resources map to,
-	 *         <code>null</code> otherwise
-	 */
-	private static Repository getRepositoryOfResources(IResource[] resources) {
-		Repository repo = null;
-		for (IResource resource : resources) {
-			Repository r = getRepositoryOfMapping(resource);
-			if (r != null && repo != null && r != repo)
-				return null;
-			else if (r != null)
-				repo = r;
-		}
-		return repo;
+	private static Repository getRepositoryOfMapping(IProject project) {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+		if (mapping != null)
+			return mapping.getRepository();
+		return null;
 	}
 
 	private static Repository getRepositoryOfProject(Object object) {
@@ -135,10 +98,4 @@ public class SelectionPropertyTester extends PropertyTester {
 		return null;
 	}
 
-	private static Repository getRepositoryOfMapping(IResource resource) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-		if (mapping != null)
-			return mapping.getRepository();
-		return null;
-	}
 }
