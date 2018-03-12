@@ -608,10 +608,8 @@ class ExistingOrNewPage extends WizardPage {
 			setPageComplete(pageComplete);
 			// provide a warning if Repository is created in workspace
 			for (IProject project : myWizard.projects) {
-				if (button.isEnabled()
-						&& ResourcesPlugin.getWorkspace().getRoot()
-								.getLocation()
-								.isPrefixOf(project.getLocation())) {
+				if (ResourcesPlugin.getWorkspace().getRoot().getLocation()
+						.isPrefixOf(project.getLocation())) {
 					setMessage(
 							UIText.ExistingOrNewPage_RepoCreationInWorkspaceCreationWarning,
 							IMessageProvider.WARNING);
