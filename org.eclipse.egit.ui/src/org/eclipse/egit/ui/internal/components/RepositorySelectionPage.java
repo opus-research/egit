@@ -65,8 +65,6 @@ import org.eclipse.ui.PlatformUI;
  */
 public class RepositorySelectionPage extends WizardPage {
 
-	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
-
 	private final static String USED_URIS_PREF = "RepositorySelectionPage.UsedUris"; //$NON-NLS-1$
 
 	private static final int REMOTE_CONFIG_TEXT_MAX_LENGTH = 80;
@@ -115,9 +113,9 @@ public class RepositorySelectionPage extends WizardPage {
 
 	private IPreviousValueProposalHandler uriProposalHandler;
 
-	private String user = EMPTY_STRING;
+	private String user;
 
-	private String password = EMPTY_STRING;
+	private String password;
 
 	private boolean storeInSecureStore = true;
 
@@ -500,7 +498,7 @@ public class RepositorySelectionPage extends WizardPage {
 				DirectoryDialog dialog = new DirectoryDialog(getShell());
 				// if a file-uri was selected before, let's try to open
 				// the directory dialog on the same directory
-				if (!uriText.getText().equals(EMPTY_STRING)) {
+				if (!uriText.getText().equals("")) { //$NON-NLS-1$
 					try {
 						URI testUri = URI.create(uriText.getText().replace(
 								'\\', '/'));
@@ -600,7 +598,7 @@ public class RepositorySelectionPage extends WizardPage {
 				final int idx = scheme.getSelectionIndex();
 				if (idx < 0) {
 					setURI(uri.setScheme(null));
-					scheme.setToolTipText(EMPTY_STRING);
+					scheme.setToolTipText(""); //$NON-NLS-1$
 				} else {
 					setURI(uri.setScheme(nullString(scheme.getItem(idx))));
 					scheme.setToolTipText(Protocol.values()[idx].getTooltip());
@@ -666,7 +664,7 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void safeSet(final Text text, final String value) {
-		text.setText(value != null ? value : EMPTY_STRING);
+		text.setText(value != null ? value : ""); //$NON-NLS-1$
 	}
 
 	private boolean isURISelected() {
@@ -751,13 +749,10 @@ public class RepositorySelectionPage extends WizardPage {
 			if (uriText.getText().length() == 0) {
 				selectionIncomplete(null);
 				return;
-			} else if (uriText.getText().endsWith(" ")) { //$NON-NLS-1$
-				selectionIncomplete(UIText.RepositorySelectionPage_UriMustNotHaveTrailingSpacesMessage);
-				return;
 			}
 
 			try {
-				final URIish finalURI = new URIish(uriText.getText().trim());
+				final URIish finalURI = new URIish(uriText.getText());
 				String proto = finalURI.getScheme();
 				if (proto == null && scheme.getSelectionIndex() >= 0)
 					proto = scheme.getItem(scheme.getSelectionIndex());
@@ -842,7 +837,7 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private String unamp(String s) {
-		return s.replace("&", EMPTY_STRING); //$NON-NLS-1$
+		return s.replace("&", ""); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private void selectionIncomplete(final String errorMessage) {
@@ -958,7 +953,7 @@ public class RepositorySelectionPage extends WizardPage {
 			if (u.getPort() > 0)
 				portText.setText(Integer.toString(u.getPort()));
 			else
-				portText.setText(EMPTY_STRING);
+				portText.setText(""); //$NON-NLS-1$
 
 			if (u.getScheme() != null) {
 				scheme.select(scheme.indexOf(u.getScheme()));
@@ -971,11 +966,11 @@ public class RepositorySelectionPage extends WizardPage {
 			// leave uriText as it is, but clean up underlying uri and
 			// decomposed fields
 			uri = new URIish();
-			hostText.setText(EMPTY_STRING);
-			pathText.setText(EMPTY_STRING);
-			userText.setText(EMPTY_STRING);
-			passText.setText(EMPTY_STRING);
-			portText.setText(EMPTY_STRING);
+			hostText.setText(""); //$NON-NLS-1$
+			pathText.setText(""); //$NON-NLS-1$
+			userText.setText(""); //$NON-NLS-1$
+			passText.setText(""); //$NON-NLS-1$
+			portText.setText(""); //$NON-NLS-1$
 			scheme.select(-1);
 		} finally {
 			eventDepth--;

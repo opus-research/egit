@@ -18,7 +18,6 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIIcons;
@@ -51,8 +50,6 @@ import org.eclipse.ui.ide.IDE;
 
 class GitSynchronizeWizardPage extends WizardPage {
 
-	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace().getRoot();
-
 	private CheckboxTreeViewer treeViewer;
 
 	private Map<Repository, Set<IProject>> repositories;
@@ -81,7 +78,8 @@ class GitSynchronizeWizardPage extends WizardPage {
 		composite.setLayout(layout);
 
 		repositories = new HashMap<Repository, Set<IProject>>();
-		for (IProject project : ROOT.getProjects()) {
+		for (IProject project : ResourcesPlugin.getWorkspace().getRoot()
+				.getProjects()) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
 			if (mapping != null) {
 				Repository repository = mapping.getRepository();

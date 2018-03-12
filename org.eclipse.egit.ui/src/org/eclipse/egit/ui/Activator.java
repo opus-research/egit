@@ -204,8 +204,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	static boolean isActive() {
 		final AtomicBoolean ret = new AtomicBoolean();
 		final Display display = PlatformUI.getWorkbench().getDisplay();
-		if (display.isDisposed())
-			return false;
 		display.syncExec(new Runnable() {
 			public void run() {
 				ret.set(display.getActiveShell() != null);
@@ -549,17 +547,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 */
 	public static IStatus createErrorStatus(String message, Throwable throwable) {
 		return new Status(IStatus.ERROR, getPluginId(), message, throwable);
-	}
-
-	/**
-	 * Creates an error status
-	 *
-	 * @param message
-	 *            a localized message
-	 * @return a new Status object
-	 */
-	public static IStatus createErrorStatus(String message) {
-		return new Status(IStatus.ERROR, getPluginId(), message);
 	}
 
 	/**

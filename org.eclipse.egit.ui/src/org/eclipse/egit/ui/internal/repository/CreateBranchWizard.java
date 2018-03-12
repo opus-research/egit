@@ -27,7 +27,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
  * Creates a branch based on another branch or on a commit.
  */
 public class CreateBranchWizard extends Wizard {
-	private String newBranchName;
 	/**
 	 * @param repository
 	 *            the repository
@@ -65,7 +64,6 @@ public class CreateBranchWizard extends Wizard {
 						throws InvocationTargetException, InterruptedException {
 					CreateBranchPage cp = (CreateBranchPage) getPages()[0];
 					try {
-						newBranchName = cp.getBranchName();
 						cp.createBranch(monitor);
 					} catch (CoreException ce) {
 						throw new InvocationTargetException(ce);
@@ -82,12 +80,5 @@ public class CreateBranchWizard extends Wizard {
 			// ignore here
 		}
 		return true;
-	}
-
-	/**
-	 * @return the name (without ref/heads/) of the new branch
-	 */
-	public String getNewBranchName() {
-		return newBranchName;
 	}
 }

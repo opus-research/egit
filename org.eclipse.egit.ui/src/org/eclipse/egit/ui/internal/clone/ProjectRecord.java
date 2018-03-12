@@ -5,7 +5,6 @@
  * Copyright (C) 2009, Mykola Nikishov <mn@mn.com.ua>
  * Copyright (C) 2010, Wim Jongman <wim.jongman@remainsoftware.com>
  * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
- * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,33 +21,37 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.osgi.util.NLS;
 
-/**
- * Used for creating projects out of .project files
- */
-public class ProjectRecord {
-	private final File projectSystemFile;
+class ProjectRecord {
+	File projectSystemFile;
 
-	private String projectName;
+	String projectName;
 
-	private IProjectDescription description;
+	IProjectDescription description;
 
 	/**
 	 * Create a record for a project based on the info in the file.
 	 *
 	 * @param file
 	 */
-	public ProjectRecord(File file) {
+	ProjectRecord(File file) {
 		projectSystemFile = file;
-		IPath path = new Path(projectSystemFile.getPath());
+		initProjectDescription();
+	}
+
+	/**
+	 * Set the name of the project based on the projectFile.
+	 */
+	private void initProjectDescription() {
 		try {
-			description = ResourcesPlugin.getWorkspace()
-					.loadProjectDescription(path);
-			projectName = description.getName();
+				IPath path = new Path(projectSystemFile.getPath());
+				description = ResourcesPlugin.getWorkspace()
+						.loadProjectDescription(path);
+				projectName = description.getName();
 		} catch (CoreException e) {
-			description = null;
-			projectName = path.lastSegment();
+			// no good couldn't get the name
 		}
 	}
 
@@ -62,35 +65,16 @@ public class ProjectRecord {
 	}
 
 	/**
-	 * Gets the label to be used when rendering this project record in the UI.
+	 * Gets the label to be used when rendering this project record in the
+	 * UI.
 	 *
 	 * @return String the label
 	 */
 	public String getProjectLabel() {
 		String path = projectSystemFile.getParent();
 
-		return NLS.bind("{0} ({1})", projectName, path); //$NON-NLS-1$
-	}
-
-	/**
-	 * @return the project description
-	 */
-	public IProjectDescription getProjectDescription() {
-		return description;
-	}
-
-	/**
-	 * @param description
-	 */
-	public void setProjectDescription(IProjectDescription description) {
-		this.description = description;
-	}
-
-	/**
-	 * @return the file used in the constructor
-	 */
-	public File getProjectSystemFile() {
-		return projectSystemFile;
+		return NLS.bind(UIText.WizardProjectsImportPage_projectLabel,
+				projectName, path);
 	}
 
 	@Override
