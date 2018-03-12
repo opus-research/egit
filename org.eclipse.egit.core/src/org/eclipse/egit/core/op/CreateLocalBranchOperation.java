@@ -95,7 +95,8 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 								CoreText.CreateLocalBranchOperation_CreatingBranchMessage,
 								name);
 				actMonitor.beginTask(taskName, 1);
-				try (Git git = new Git(repository)) {
+				Git git = new Git(repository);
+				try {
 					if (ref != null) {
 						SetupUpstreamMode mode;
 						if (upstreamConfig == UpstreamConfig.NONE)
