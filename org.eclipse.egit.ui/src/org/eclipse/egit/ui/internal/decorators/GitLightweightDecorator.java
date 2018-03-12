@@ -32,11 +32,8 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.QualifiedName;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.internal.util.ExceptionCollector;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryChangeListener;
@@ -336,8 +333,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 			}
 		}
 
-		// Immediately fire label provider changed event
-		fireLabelEvent();
+		// Re-trigger decoration process (in UI thread)
+		fireLabelEvent(new LabelProviderChangedEvent(this));
 	}
 
 	/**
@@ -662,12 +659,12 @@ public class GitLightweightDecorator extends LabelProvider implements
 		if (prop.equals(TeamUI.GLOBAL_IGNORES_CHANGED)
 				|| prop.equals(TeamUI.GLOBAL_FILE_TYPES_CHANGED)
 				|| prop.equals(Activator.DECORATORS_CHANGED)) {
-			postLabelEvent(null);
+			postLabelEvent(new LabelProviderChangedEvent(this));
 		} else if (prop.equals(UIPreferences.THEME_UncommittedChangeBackgroundColor)
 				|| prop.equals(UIPreferences.THEME_UncommittedChangeFont)
 				|| prop.equals(UIPreferences.THEME_UncommittedChangeForegroundColor)) {
 			ensureFontAndColorsCreated(fonts, colors);
-			postLabelEvent(null); // TODO do I really need this?
+			postLabelEvent(new LabelProviderChangedEvent(this)); // TODO do I really need this?
 		}
 	}
 
@@ -760,15 +757,16 @@ public class GitLightweightDecorator extends LabelProvider implements
 			}
 		}
 
-		postLabelEvent(resourcesToUpdate.toArray());
+		postLabelEvent(new LabelProviderChangedEvent(this, resourcesToUpdate
+				.toArray()));
 	}
 
 	public void onIndexChanged(IndexChangedEvent e) {
-		postLabelEvent(null);
+		postLabelEvent(new LabelProviderChangedEvent(this));
 	}
 
 	public void onRefsChanged(RefsChangedEvent e) {
-		postLabelEvent(null);
+		postLabelEvent(new LabelProviderChangedEvent(this));
 	}
 
 	/**
@@ -780,7 +778,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 	public void repositoryChanged(RepositoryMapping mapping) {
 		// Until we find a way to refresh visible labels within a project
 		// we have to use this blanket refresh that includes all projects.
-		postLabelEvent(null);
+		postLabelEvent(new LabelProviderChangedEvent(this));
 	}
 
 	// -------- Helper methods --------
@@ -809,13 +807,13 @@ public class GitLightweightDecorator extends LabelProvider implements
 	}
 
 	/**
-	 * Post a label event to the LabelEventJob
+	 * Post the label event to the UI thread
 	 *
-	 * @param elements
-	 *            The elements to update
+	 * @param event
+	 *            The event to post
 	 */
-	private void postLabelEvent(final Object[] elements) {
-		if (elements == null) {
+	private void postLabelEvent(final LabelProviderChangedEvent event) {
+		if (event.getElement() == null) {
 			// Update all elements
 			final IWorkspaceRoot root = ResourcesPlugin.getWorkspace()
 					.getRoot();
@@ -826,8 +824,11 @@ public class GitLightweightDecorator extends LabelProvider implements
 			} catch (CoreException e) {
 				handleException(root, e);
 			}
+
+			fireLabelEvent(event);
 		} else {
 			// Update specific elements
+			Object[] elements = event.getElements();
 			for (Object element : elements) {
 				final IResource resource = getResource(element);
 				if (resource != null)
@@ -838,15 +839,13 @@ public class GitLightweightDecorator extends LabelProvider implements
 						// Ignore
 					}
 			}
-		}
 
-		LabelEventJob.getInstance().postLabelEvent(this);
+			// Fire a generic event
+			fireLabelEvent(new LabelProviderChangedEvent(this));
+		}
 	}
 
-	void fireLabelEvent() {
-		final LabelProviderChangedEvent event = new LabelProviderChangedEvent(
-				this);
-		// Re-trigger decoration process (in UI thread)
+	private void fireLabelEvent(final LabelProviderChangedEvent event) {
 		Display.getDefault().asyncExec(new Runnable() {
 			public void run() {
 				fireLabelProviderChanged(event);
@@ -866,57 +865,5 @@ public class GitLightweightDecorator extends LabelProvider implements
 	private static void handleException(IResource resource, CoreException e) {
 		if (resource == null || resource.isAccessible())
 			exceptions.handleException(e);
-	}
-}
-
-/**
- * Job reducing label events to prevent unnecessary (i.e. redundant) event
- * processing
- */
-class LabelEventJob extends Job {
-
-	/**
-	 * Constant defining the waiting time (in milliseconds) until an event is
-	 * fired
-	 */
-	private static final long DELAY = 100L;
-
-	private static LabelEventJob instance = new LabelEventJob("LabelEventJob"); //$NON-NLS-1$
-
-	/**
-	 * Get the LabelEventJob singleton
-	 *
-	 * @return the LabelEventJob singleton
-	 */
-	static LabelEventJob getInstance() {
-		return instance;
-	}
-
-	private LabelEventJob(final String name) {
-		super(name);
-	}
-
-	private GitLightweightDecorator glwDecorator = null;
-
-	/**
-	 * Post a label event
-	 *
-	 * @param decorator
-	 *            The GitLightweightDecorator that is used to fire a
-	 *            LabelProviderChangedEvent
-	 */
-	void postLabelEvent(final GitLightweightDecorator decorator) {
-		if (this.glwDecorator == null)
-			this.glwDecorator = decorator;
-		if (getState() == SLEEPING || getState() == WAITING)
-			cancel();
-		schedule(DELAY);
-	}
-
-	@Override
-	protected IStatus run(IProgressMonitor monitor) {
-		if (glwDecorator != null)
-			glwDecorator.fireLabelEvent();
-		return Status.OK_STATUS;
 	}
 }
