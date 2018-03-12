@@ -10,9 +10,8 @@ package org.eclipse.egit.core.test;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -72,13 +71,11 @@ public abstract class GitTestCase {
 		Activator.getDefault().getRepositoryCache().clear();
 		if (gitDir.exists())
 			FileUtils.delete(gitDir, FileUtils.RECURSIVE | FileUtils.RETRY);
-		SystemReader.setInstance(null);
 	}
 
 	protected ObjectId createFile(Repository repository, IProject actProject, String name, String content) throws IOException {
 		File file = new File(actProject.getProject().getLocation().toFile(), name);
-		Writer fileWriter = new OutputStreamWriter(new FileOutputStream(
-				file), "UTF-8");
+		FileWriter fileWriter = new FileWriter(file);
 		fileWriter.write(content);
 		fileWriter.close();
 		byte[] fileContents = IO.readFully(file);

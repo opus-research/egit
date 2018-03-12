@@ -11,10 +11,10 @@
 package org.eclipse.egit.ui.internal.branch;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.ui.Activator;
@@ -33,6 +33,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -96,8 +97,12 @@ public class BranchResultDialog extends MessageDialog {
 				}
 			});
 		} else if (result.getStatus() == CheckoutResult.Status.OK) {
-			if (RepositoryUtil.isDetachedHead(repository))
-				showDetachedHeadWarning();
+			try {
+				if (ObjectId.isId(repository.getFullBranch()))
+					showDetachedHeadWarning();
+			} catch (IOException e) {
+				Activator.logError(e.getMessage(), e);
+			}
 		}
 	}
 
@@ -156,8 +161,7 @@ public class BranchResultDialog extends MessageDialog {
 		}
 		if (shouldCheckout) {
 			super.buttonPressed(buttonId);
-			BranchOperationUI op = BranchOperationUI.checkoutWithoutQuestion(
-					repository, target);
+			BranchOperationUI op = BranchOperationUI.checkout(repository, target);
 			op.start();
 		}
 	}
@@ -182,7 +186,7 @@ public class BranchResultDialog extends MessageDialog {
 						.getPreferenceStore();
 
 				if (store.getBoolean(UIPreferences.SHOW_DETACHED_HEAD_WARNING)) {
-					String toggleMessage = UIText.BranchResultDialog_DetachedHeadWarningDontShowAgain;
+					String toggleMessage = UIText.BranchResultDialog_dontShowAgain;
 					MessageDialogWithToggle.openInformation(PlatformUI
 							.getWorkbench().getActiveWorkbenchWindow()
 							.getShell(),

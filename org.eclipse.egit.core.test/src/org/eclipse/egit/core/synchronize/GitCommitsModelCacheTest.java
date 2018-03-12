@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,7 @@ import static org.eclipse.jgit.junit.JGitTestUtil.writeTrashFile;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
@@ -76,8 +76,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c, 1);
-		assertFileAddition(c,
-				leftResult.get(0).getChildren().get("a.txt"),
+		assertFileDeletion(c, leftResult.get(0).getChildren().get("a.txt"),
 				"a.txt", LEFT);
 		// right asserts, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
@@ -104,7 +103,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c, 1);
 		assertThat(leftResult.get(0).getChildren().size(), is(1));
-		assertFileAddition(c,
+		assertFileDeletion(c,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
 		// right asserts, after changing sides addition becomes deletion
@@ -138,10 +137,10 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertThat(leftResult.get(0).getShortMessage(), is("first commit"));
 		assertThat(leftResult.get(0).getChildren(), notNullValue());
 		assertThat(leftResult.get(0).getChildren().size(), is(2));
-		assertFileAddition(c,
+		assertFileDeletion(c,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
-		assertFileAddition(c,
+		assertFileDeletion(c,
 				leftResult.get(0).getChildren().get("folder2/b.txt"), "b.txt",
 				LEFT);
 		// right asserts, after changing sides addition becomes deletion
@@ -178,7 +177,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertThat(leftResult.get(0).getShortMessage(), is("first commit"));
 		assertThat(leftResult.get(0).getChildren(), notNullValue());
 		assertThat(leftResult.get(0).getChildren().size(), is(1));
-		assertFileAddition(c,
+		assertFileDeletion(c,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
 	}
@@ -203,10 +202,10 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertCommit(leftResult.get(0), c, 2);
 		assertThat(leftResult.get(0).getChildren().size(), is(2));
-		assertFileAddition(c,
+		assertFileDeletion(c,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
-		assertFileAddition(c,
+		assertFileDeletion(c,
 				leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt",
 				LEFT);
 		// right asserts, after changing sides addition becomes deletion
@@ -238,7 +237,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 1);
-		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("a.txt"),
+		assertFileChange(c1, c2, leftResult.get(0).getChildren().get("a.txt"),
 				"a.txt", LEFT);
 		// right asserts
 		assertThat(rightResult, notNullValue());
@@ -263,7 +262,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 1);
-		assertFileChange(c2, c1,
+		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
 		// right asserts
@@ -297,10 +296,10 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertThat(leftResult.get(0).getShortMessage(), is("second commit"));
 		assertThat(leftResult.get(0).getChildren(), notNullValue());
 		assertThat(leftResult.get(0).getChildren().size(), is(2));
-		assertFileChange(c2, c1,
+		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
-		assertFileChange(c2, c1,
+		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder2/b.txt"), "b.txt",
 				LEFT);
 		// right asserts
@@ -335,10 +334,10 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertCommit(leftResult.get(0), c2, 2);
-		assertFileChange(c2, c1,
+		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
-		assertFileChange(c2, c1,
+		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt",
 				LEFT);
 		// right asserts
@@ -374,11 +373,11 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		// left asserts
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 3);
-		assertFileDeletion(c2, c1,
+		assertFileAddition(c1, c2,
 				leftResult.get(0).getChildren().get("a.txt"), "a.txt", LEFT);
-		assertFileAddition(c2, c1,
+		assertFileDeletion(c1, c2,
 				leftResult.get(0).getChildren().get("b.txt"), "b.txt", LEFT);
-		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("c.txt"),
+		assertFileChange(c1, c2, leftResult.get(0).getChildren().get("c.txt"),
 				"c.txt", LEFT);
 		// right asserts
 		assertThat(rightResult, notNullValue());
@@ -413,13 +412,13 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 3);
-		assertFileDeletion(c2, c1,
+		assertFileAddition(c1, c2,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
-		assertFileAddition(c2, c1,
+		assertFileDeletion(c1, c2,
 				leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt",
 				LEFT);
-		assertFileChange(c2, c1,
+		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder/c.txt"), "c.txt",
 				LEFT);
 		// right asserts
@@ -461,13 +460,13 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertThat(leftResult.get(0).getShortMessage(), is("second commit"));
 		assertThat(leftResult.get(0).getChildren(), notNullValue());
 		assertThat(leftResult.get(0).getChildren().size(), is(3));
-		assertFileDeletion(c2, c1,
+		assertFileAddition(c1, c2,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
-		assertFileAddition(c2, c1,
+		assertFileDeletion(c1, c2,
 				leftResult.get(0).getChildren().get("folder1/b.txt"), "b.txt",
 				LEFT);
-		assertFileChange(c2, c1,
+		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder2/c.txt"), "c.txt",
 				LEFT);
 		// right asserts
@@ -537,23 +536,32 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		commonFileAssertions(actual, parent, change, name);
 		if (direction == LEFT) {
 			assertThat(change.getKind(), is(LEFT | ADDITION));
+			assertThat(change.getRemoteCommitId(), not(ZERO_ID));
+			assertThat(change.getObjectId(), nullValue());
 		} else { // should be Differencer.Right
 			assertThat(change.getKind(), is(RIGHT | ADDITION));
+			assertThat(change.getObjectId(), not(ZERO_ID));
+			assertThat(change.getRemoteObjectId(), nullValue());
 		}
-		assertThat(change.getObjectId(), not(ZERO_ID));
-		assertThat(change.getRemoteObjectId(), nullValue());
+	}
+
+	private void assertFileDeletion(RevCommit parent, Change change,
+			String name, int direction) {
+		assertFileDeletion(null, parent, change, name, direction);
 	}
 
 	private void assertFileDeletion(RevCommit actual, RevCommit parent,
 			Change change, String name, int direction) {
 		commonFileAssertions(actual, parent, change, name);
 		if (direction == LEFT) {
+			assertThat(change.getRemoteObjectId(), nullValue());
+			assertThat(change.getObjectId(), not(ZERO_ID));
 			assertThat(change.getKind(), is(LEFT | DELETION));
 		} else { // should be Differencer.Right
 			assertThat(change.getKind(), is(RIGHT | DELETION));
+			assertThat(change.getObjectId(), nullValue());
+			assertThat(change.getRemoteObjectId(), not(ZERO_ID));
 		}
-		assertThat(change.getObjectId(), nullValue());
-		assertThat(change.getRemoteObjectId(), not(ZERO_ID));
 	}
 
 	private void commonFileAssertions(RevCommit actual, RevCommit parent,

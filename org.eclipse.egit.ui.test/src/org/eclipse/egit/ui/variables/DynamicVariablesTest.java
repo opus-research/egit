@@ -10,10 +10,7 @@ package org.eclipse.egit.ui.variables;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Collections;
 
 import org.eclipse.core.resources.IProject;
@@ -28,7 +25,6 @@ import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.common.EGitTestCase;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.api.Git;
@@ -36,7 +32,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.FileUtils;
-import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.ui.PlatformUI;
@@ -103,10 +98,7 @@ public class DynamicVariablesTest extends EGitTestCase {
 		RepositoryProvider.map(project, GitProvider.class.getName());
 		RepositoryProvider.map(project2, GitProvider.class.getName());
 
-		File f = new File(repository.getWorkTree(), TEST_PROJECT + "/"
-				+ TEST_FILE);
-		Writer fileWriter = new OutputStreamWriter(new FileOutputStream(f),
-				"UTF-8");
+		FileWriter fileWriter = new FileWriter(new File(repository.getWorkTree(), TEST_PROJECT+"/"+TEST_FILE));
 		fileWriter.write("Some data");
 		fileWriter.close();
 		FileWriter fileWriter2 = new FileWriter(new File(repository2.getWorkTree(), TEST_FILE2));
@@ -180,10 +172,7 @@ public class DynamicVariablesTest extends EGitTestCase {
 			String argument) throws CoreException {
 		IResource findMember = project.findMember(TEST_FILE);
 
-		SWTBotView explorerView = TestUtil.showExplorerView();
-		final ISelectionProvider selectionProvider = explorerView
-				.getViewReference().getView(true).getSite()
-				.getSelectionProvider();
+		final ISelectionProvider selectionProvider = bot.viewByTitle("Package Explorer").getViewReference().getView(true).getSite().getSelectionProvider();
 		final StructuredSelection structuredSelection = new StructuredSelection(
 				findMember);
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {

@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -61,11 +60,6 @@ import org.eclipse.swt.widgets.Widget;
  * @see GitHistoryPage
  */
 public class FindToolbar extends Composite {
-	/**
-	 * Preference value for searching all the fields
-	 */
-	public static final int PREFS_FINDIN_ALL = 0;
-
 	private static final int PREFS_FINDIN_COMMENTS = 1;
 
 	private static final int PREFS_FINDIN_AUTHOR = 2;
@@ -101,13 +95,7 @@ public class FindToolbar extends Composite {
 
 	private String lastErrorPattern;
 
-	private ToolItem prefsDropDown;
-
 	private Menu prefsMenu;
-
-	private MenuItem caseItem;
-
-	private MenuItem allItem;
 
 	private MenuItem commitIdItem;
 
@@ -120,8 +108,6 @@ public class FindToolbar extends Composite {
 	private Image nextIcon;
 
 	private Image previousIcon;
-
-	private Image allIcon;
 
 	private Image commitIdIcon;
 
@@ -146,7 +132,6 @@ public class FindToolbar extends Composite {
 		errorBackgroundColor = new Color(getDisplay(), new RGB(255, 150, 150));
 		nextIcon = UIIcons.ELCL16_NEXT.createImage();
 		previousIcon = UIIcons.ELCL16_PREVIOUS.createImage();
-		allIcon = UIIcons.SEARCH_COMMIT.createImage();
 		commitIdIcon = UIIcons.ELCL16_ID.createImage();
 		commentsIcon = UIIcons.ELCL16_COMMENTS.createImage();
 		authorIcon = UIIcons.ELCL16_AUTHOR.createImage();
@@ -181,48 +166,47 @@ public class FindToolbar extends Composite {
 		final ToolBar toolBar = new ToolBar(this, SWT.FLAT);
 		new ToolItem(toolBar, SWT.SEPARATOR);
 
-		prefsDropDown = new ToolItem(toolBar, SWT.DROP_DOWN);
+		final ToolItem prefsItem = new ToolItem(toolBar, SWT.DROP_DOWN);
 		prefsMenu = new Menu(getShell(), SWT.POP_UP);
-		caseItem = new MenuItem(prefsMenu, SWT.CHECK);
+		final MenuItem caseItem = new MenuItem(prefsMenu, SWT.CHECK);
 		caseItem.setText(UIText.HistoryPage_findbar_ignorecase);
 		new MenuItem(prefsMenu, SWT.SEPARATOR);
-		allItem = createFindInMenuItem();
-		allItem.setText(UIText.HistoryPage_findbar_all);
-		allItem.setImage(allIcon);
-		commentsItem = createFindInMenuItem();
+		commentsItem = new MenuItem(prefsMenu, SWT.RADIO);
 		commentsItem.setText(UIText.HistoryPage_findbar_comments);
 		commentsItem.setImage(commentsIcon);
-		authorItem = createFindInMenuItem();
+		authorItem = new MenuItem(prefsMenu, SWT.RADIO);
 		authorItem.setText(UIText.HistoryPage_findbar_author);
 		authorItem.setImage(authorIcon);
-		commitIdItem = createFindInMenuItem();
+		commitIdItem = new MenuItem(prefsMenu, SWT.RADIO);
 		commitIdItem.setText(UIText.HistoryPage_findbar_commit);
 		commitIdItem.setImage(commitIdIcon);
-		committerItem = createFindInMenuItem();
+		committerItem = new MenuItem(prefsMenu, SWT.RADIO);
 		committerItem.setText(UIText.HistoryPage_findbar_committer);
 		committerItem.setImage(committerIcon);
 
-		prefsDropDown.addListener(SWT.Selection, new Listener() {
+		prefsItem.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				if (event.detail == SWT.ARROW) {
-					// Arrow clicked, show drop down menu
-					Rectangle itemBounds = prefsDropDown.getBounds();
+					Rectangle itemBounds = prefsItem.getBounds();
 					Point point = toolBar.toDisplay(itemBounds.x, itemBounds.y
 							+ itemBounds.height);
 					prefsMenu.setLocation(point);
 					prefsMenu.setVisible(true);
 				} else {
-					// Button clicked, cycle to next option
-					if (allItem.getSelection())
-						selectFindInItem(commentsItem);
-					else if (commentsItem.getSelection())
-						selectFindInItem(authorItem);
-					else if (authorItem.getSelection())
-						selectFindInItem(commitIdItem);
-					else if (commitIdItem.getSelection())
-						selectFindInItem(committerItem);
-					else if (committerItem.getSelection())
-						selectFindInItem(allItem);
+					switch (store.getInt(UIPreferences.FINDTOOLBAR_FIND_IN)) {
+					case PREFS_FINDIN_COMMENTS:
+						commentsItem.notifyListeners(SWT.Selection, null);
+						break;
+					case PREFS_FINDIN_AUTHOR:
+						authorItem.notifyListeners(SWT.Selection, null);
+						break;
+					case PREFS_FINDIN_COMMITID:
+						commitIdItem.notifyListeners(SWT.Selection, null);
+						break;
+					case PREFS_FINDIN_COMMITTER:
+						committerItem.notifyListeners(SWT.Selection, null);
+						break;
+					}
 				}
 			}
 		});
@@ -243,9 +227,18 @@ public class FindToolbar extends Composite {
 		progressBar.setMinimum(0);
 		progressBar.setMaximum(100);
 
+		final FindToolbar thisToolbar = this;
 		patternField.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
-				final FindToolbarThread finder = createFinder();
+				final FindToolbarThread finder = new FindToolbarThread();
+				finder.pattern = ((Text) e.getSource()).getText();
+				finder.fileRevisions = fileRevisions;
+				finder.toolbar = thisToolbar;
+				finder.ignoreCase = caseItem.getSelection();
+				finder.findInCommitId = commitIdItem.getSelection();
+				finder.findInComments = commentsItem.getSelection();
+				finder.findInAuthor = authorItem.getSelection();
+				finder.findInCommitter = committerItem.getSelection();
 				getDisplay().timerExec(200, new Runnable() {
 					public void run() {
 						finder.start();
@@ -260,7 +253,15 @@ public class FindToolbar extends Composite {
 						&& findResults.size() == 0) {
 					// If the toolbar was cleared and has a pattern typed,
 					// then we redo the find with the new table data.
-					final FindToolbarThread finder = createFinder();
+					final FindToolbarThread finder = new FindToolbarThread();
+					finder.pattern = patternField.getText();
+					finder.fileRevisions = fileRevisions;
+					finder.toolbar = thisToolbar;
+					finder.ignoreCase = caseItem.getSelection();
+					finder.findInCommitId = commitIdItem.getSelection();
+					finder.findInComments = commentsItem.getSelection();
+					finder.findInAuthor = authorItem.getSelection();
+					finder.findInCommitter = committerItem.getSelection();
 					finder.start();
 					patternField.setSelection(0, 0);
 				} else {
@@ -331,16 +332,66 @@ public class FindToolbar extends Composite {
 				.getBoolean(UIPreferences.FINDTOOLBAR_IGNORE_CASE));
 
 		int selectedPrefsItem = store.getInt(UIPreferences.FINDTOOLBAR_FIND_IN);
-		if (selectedPrefsItem == PREFS_FINDIN_ALL)
-			selectFindInItem(allItem);
-		else if (selectedPrefsItem == PREFS_FINDIN_COMMENTS)
-			selectFindInItem(commentsItem);
-		else if (selectedPrefsItem == PREFS_FINDIN_AUTHOR)
-			selectFindInItem(authorItem);
-		else if (selectedPrefsItem == PREFS_FINDIN_COMMITID)
-			selectFindInItem(commitIdItem);
-		else if (selectedPrefsItem == PREFS_FINDIN_COMMITTER)
-			selectFindInItem(committerItem);
+
+		commentsItem.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				prefsItem.setImage(commentsIcon);
+				prefsItem
+						.setToolTipText(UIText.HistoryPage_findbar_changeto_author);
+				prefsItemChanged(PREFS_FINDIN_AUTHOR, commentsItem);
+			}
+		});
+		if (selectedPrefsItem == PREFS_FINDIN_COMMENTS) {
+			commentsItem.setSelection(true);
+			prefsItem.setImage(commentsIcon);
+			prefsItem
+					.setToolTipText(UIText.HistoryPage_findbar_changeto_author);
+		}
+
+		authorItem.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				prefsItem.setImage(authorIcon);
+				prefsItem
+						.setToolTipText(UIText.HistoryPage_findbar_changeto_commit);
+				prefsItemChanged(PREFS_FINDIN_COMMITID, authorItem);
+			}
+		});
+		if (selectedPrefsItem == PREFS_FINDIN_AUTHOR) {
+			authorItem.setSelection(true);
+			prefsItem.setImage(authorIcon);
+			prefsItem
+					.setToolTipText(UIText.HistoryPage_findbar_changeto_commit);
+		}
+
+		commitIdItem.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				prefsItem.setImage(commitIdIcon);
+				prefsItem
+						.setToolTipText(UIText.HistoryPage_findbar_changeto_committer);
+				prefsItemChanged(PREFS_FINDIN_COMMITTER, commitIdItem);
+			}
+		});
+		if (selectedPrefsItem == PREFS_FINDIN_COMMITID) {
+			commitIdItem.setSelection(true);
+			prefsItem.setImage(commitIdIcon);
+			prefsItem
+					.setToolTipText(UIText.HistoryPage_findbar_changeto_committer);
+		}
+
+		committerItem.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				prefsItem.setImage(committerIcon);
+				prefsItem
+						.setToolTipText(UIText.HistoryPage_findbar_changeto_comments);
+				prefsItemChanged(PREFS_FINDIN_COMMENTS, committerItem);
+			}
+		});
+		if (selectedPrefsItem == PREFS_FINDIN_COMMITTER) {
+			committerItem.setSelection(true);
+			prefsItem.setImage(committerIcon);
+			prefsItem
+					.setToolTipText(UIText.HistoryPage_findbar_changeto_comments);
+		}
 
 		registerDisposal();
 	}
@@ -353,7 +404,6 @@ public class FindToolbar extends Composite {
 				errorBackgroundColor.dispose();
 				nextIcon.dispose();
 				previousIcon.dispose();
-				allIcon.dispose();
 				commitIdIcon.dispose();
 				commentsIcon.dispose();
 				authorIcon.dispose();
@@ -362,42 +412,7 @@ public class FindToolbar extends Composite {
 		});
 	}
 
-	private MenuItem createFindInMenuItem() {
-		final MenuItem menuItem = new MenuItem(prefsMenu, SWT.RADIO);
-		menuItem.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				selectFindInItem(menuItem);
-			}
-		});
-		return menuItem;
-	}
-
-	private void selectFindInItem(final MenuItem menuItem) {
-		if (menuItem == allItem)
-			selectFindInItem(menuItem, PREFS_FINDIN_ALL, allIcon,
-					UIText.HistoryPage_findbar_changeto_comments);
-		else if (menuItem == commentsItem)
-			selectFindInItem(menuItem, PREFS_FINDIN_COMMENTS, commentsIcon,
-					UIText.HistoryPage_findbar_changeto_author);
-		else if (menuItem == authorItem)
-			selectFindInItem(menuItem, PREFS_FINDIN_AUTHOR, authorIcon,
-					UIText.HistoryPage_findbar_changeto_commit);
-		else if (menuItem == commitIdItem)
-			selectFindInItem(menuItem, PREFS_FINDIN_COMMITID, commitIdIcon,
-					UIText.HistoryPage_findbar_changeto_committer);
-		else if (menuItem == committerItem)
-			selectFindInItem(menuItem, PREFS_FINDIN_COMMITTER, committerIcon,
-					UIText.HistoryPage_findbar_changeto_all);
-	}
-
-	private void selectFindInItem(MenuItem menuItem, int preferenceValue,
-			Image dropDownIcon, String dropDownToolTip) {
-		prefsDropDown.setImage(dropDownIcon);
-		prefsDropDown.setToolTipText(dropDownToolTip);
-		findInPreferenceChanged(preferenceValue, menuItem);
-	}
-
-	private void findInPreferenceChanged(int findin, MenuItem item) {
+	private void prefsItemChanged(int findin, MenuItem item) {
 		store.setValue(UIPreferences.FINDTOOLBAR_FIND_IN, findin);
 		if (store.needsSaving()){
 			try {
@@ -406,33 +421,12 @@ public class FindToolbar extends Composite {
 				Activator.handleError(e.getMessage(), e, false);
 			}
 		}
-		allItem.setSelection(false);
 		commitIdItem.setSelection(false);
 		commentsItem.setSelection(false);
 		authorItem.setSelection(false);
 		committerItem.setSelection(false);
 		item.setSelection(true);
 		clear();
-	}
-
-	private FindToolbarThread createFinder() {
-		final FindToolbarThread finder = new FindToolbarThread();
-		finder.pattern = patternField.getText();
-		finder.fileRevisions = fileRevisions;
-		finder.toolbar = this;
-		finder.ignoreCase = caseItem.getSelection();
-		if (allItem.getSelection()) {
-			finder.findInCommitId = true;
-			finder.findInComments = true;
-			finder.findInAuthor = true;
-			finder.findInCommitter = true;
-		} else {
-			finder.findInCommitId = commitIdItem.getSelection();
-			finder.findInComments = commentsItem.getSelection();
-			finder.findInAuthor = authorItem.getSelection();
-			finder.findInCommitter = committerItem.getSelection();
-		}
-		return finder;
 	}
 
 	/**
@@ -494,7 +488,8 @@ public class FindToolbar extends Composite {
 				// Don't keep beeping every time if the user is deleting
 				// a long not found pattern
 				if (lastErrorPattern == null
-						|| !lastErrorPattern.startsWith(pattern)) {
+						|| (lastErrorPattern != null && !lastErrorPattern
+								.startsWith(pattern))) {
 					getDisplay().beep();
 					nextButton.setEnabled(false);
 					previousButton.setEnabled(false);

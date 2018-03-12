@@ -39,7 +39,6 @@ import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.common.SharingWizard;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.Eclipse;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -55,7 +54,6 @@ import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotCombo;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,14 +78,10 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
 						.getAbsoluteFile().toString());
 
-		TestUtil.showExplorerView();
+		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
+		bot.viewByTitle("Package Explorer").show();
 
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(IResource.DEPTH_INFINITE, null);
-	}
-
-	@AfterClass
-	public static void afterClass() {
-		SystemReader.setInstance(null);
 	}
 
 	private static String createProject(String projectName) {
@@ -147,7 +141,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 
 	@Before
 	public void setupViews() {
-		TestUtil.showExplorerView();
+		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
+		bot.viewByTitle("Package Explorer").show();
 		sharingWizard = new SharingWizard();
 	}
 

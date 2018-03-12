@@ -132,7 +132,7 @@ public class IgnoreOperationTest extends GitTestCase {
 		IFile ignore = project.getProject().getFile(
 				Constants.GITIGNORE_FILENAME);
 		assertFalse(ignore.exists());
-		ignore.create(new ByteArrayInputStream(existing.getBytes("UTF-8")),
+		ignore.create(new ByteArrayInputStream(existing.getBytes()),
 				IResource.FORCE, new NullProgressMonitor());
 
 		IFolder binFolder = project.getProject().getFolder("bin");

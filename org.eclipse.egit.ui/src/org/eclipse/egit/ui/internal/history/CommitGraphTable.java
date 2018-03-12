@@ -36,7 +36,6 @@ import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
@@ -597,19 +596,10 @@ class CommitGraphTable {
 		}
 
 		private String getHoverText(Ref r) {
-			StringBuilder sb = new StringBuilder();
 			String name = r.getName();
-			sb.append(name);
-			if (r.isSymbolic()) {
-				sb.append(": "); //$NON-NLS-1$
-				sb.append(r.getLeaf().getName());
-			}
-			String description = GitLabelProvider.getRefDescription(r);
-			if (description != null) {
-				sb.append("\n"); //$NON-NLS-1$
-				sb.append(description);
-			}
-			return sb.toString();
+			if (r.isSymbolic())
+				name += ": " + r.getLeaf().getName(); //$NON-NLS-1$
+			return name;
 		}
 	}
 
@@ -775,16 +765,14 @@ class CommitGraphTable {
 
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (!input.getRepository().isBare()) {
-					if (hasMultipleRefNodes()) {
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHECKOUT,
-								UIText.GitHistoryPage_CheckoutMenuLabel2));
-					} else {
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHECKOUT,
-								UIText.GitHistoryPage_CheckoutMenuLabel));
-					}
+				if (hasMultipleRefNodes()) {
+					popupMgr.add(getCommandContributionItem(
+							HistoryViewCommands.CHECKOUT,
+							UIText.GitHistoryPage_CheckoutMenuLabel2));
+				} else {
+					popupMgr.add(getCommandContributionItem(
+							HistoryViewCommands.CHECKOUT,
+							UIText.GitHistoryPage_CheckoutMenuLabel));
 				}
 
 				popupMgr.add(getCommandContributionItem(
@@ -819,9 +807,6 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.REBASECURRENT,
 						UIText.GitHistoryPage_rebaseMenuItem));
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.REBASE_INTERACTIVE_CURRENT,
-						UIText.GitHistoryPage_rebaseInteractiveMenuItem));
 				popupMgr.add(new Separator());
 
 				MenuManager resetManager = new MenuManager(
