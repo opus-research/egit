@@ -13,7 +13,6 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.IOException;
 
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -24,7 +23,6 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -147,13 +145,7 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 						committer.setText(""); //$NON-NLS-1$
 						return;
 					} else {
-						if (RepositoryUtil.isDetachedHead(repo)) {
-							setMessage(
-									UIText.ResetTargetSelectionDialog_DetachedHeadState,
-									IMessageProvider.INFORMATION);
-						} else {
-							setMessage(""); //$NON-NLS-1$
-						}
+						setMessage(""); //$NON-NLS-1$
 						parsedCommitish = text;
 						getButton(OK).setEnabled(true);
 						RevWalk rw = new RevWalk(repo);
@@ -274,13 +266,5 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		if (selected != null)
 			return selected;
 		return parsedCommitish;
-	}
-
-	@Override
-	protected boolean markRef(String refName) {
-		// preselect HEAD if in the detached HEAD state
-		return super
-				.markRef(RepositoryUtil.isDetachedHead(repo) ? Constants.HEAD
-						: refName);
 	}
 }
