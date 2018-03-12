@@ -354,11 +354,6 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		newLabel(g, UIText.RepositorySelectionPage_promptPassword + ":"); //$NON-NLS-1$
 		passText = new Text(g, SWT.BORDER | SWT.PASSWORD);
 		passText.setLayoutData(createFieldGridData());
-		passText.addModifyListener(new ModifyListener() {
-			public void modifyText(final ModifyEvent e) {
-				setURI(uri.setPass(nullString(passText.getText())));
-			}
-		});
 		return g;
 	}
 
@@ -533,9 +528,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			}
 
 			try {
-				URIish finalURI = new URIish(uriText.getText());
-				finalURI = finalURI.setPass(passText.getText());
-
+				final URIish finalURI = new URIish(uriText.getText());
 				String proto = finalURI.getScheme();
 				if (proto == null && scheme.getSelectionIndex() >= 0)
 					proto = scheme.getItem(scheme.getSelectionIndex());
