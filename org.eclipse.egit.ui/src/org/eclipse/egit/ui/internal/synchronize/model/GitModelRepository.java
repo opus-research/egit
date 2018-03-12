@@ -156,17 +156,13 @@ public class GitModelRepository extends GitModelObject {
 			RevCommit srcCommit = rw.parseCommit(srcRev);
 
 			if (includeLocal) {
-				GitModelCache gitCache = new GitModelCache(this, srcCommit);
-				int gitCacheLen = gitCache.getChildren().length;
+				GitModelCache gitModelCache = new GitModelCache(this, srcCommit);
+				if (gitModelCache.getChildren().length > 0)
+					result.add(gitModelCache);
 
-				GitModelWorkingTree gitWorkingTree = getLocaWorkingTreeChanges();
-				int gitWorkingTreeLen = gitWorkingTree != null ? gitWorkingTree
-						.getChildren().length : 0;
-
-				if (gitCacheLen > 0 || gitWorkingTreeLen > 0) {
-					result.add(gitCache);
-					result.add(gitWorkingTree);
-				}
+				GitModelWorkingTree gitModelWorkingTree = getLocaWorkingTreeChanges();
+				if (gitModelWorkingTree != null)
+					result.add(gitModelWorkingTree);
 			}
 
 			if (srcRev.equals(dstRev))
@@ -204,7 +200,10 @@ public class GitModelRepository extends GitModelObject {
 
 	private GitModelWorkingTree getLocaWorkingTreeChanges() {
 		try {
-			return new GitModelWorkingTree(this);
+			GitModelWorkingTree gitModelWorkingTree = new GitModelWorkingTree(this);
+
+			if (gitModelWorkingTree.getChildren().length > 0)
+				return gitModelWorkingTree;
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}
