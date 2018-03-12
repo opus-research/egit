@@ -681,12 +681,6 @@ public class UIText extends NLS {
 	public static String RebaseCurrentRefCommand_ErrorGettingCurrentBranchMessage;
 
 	/** */
-	public static String RebaseInteractiveHandler_EditMessageDialogText;
-
-	/** */
-	public static String RebaseInteractiveHandler_EditMessageDialogTitle;
-
-	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_SkipText;
 
 	/** */
@@ -4640,6 +4634,21 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_Pull;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionFetchHead;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionHead;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionHeadSymbolic;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionOrigHead;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionStash;
 
 	/** */
 	public static String GitLabelProvider_UnableToRetrieveLabel;
