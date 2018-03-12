@@ -135,12 +135,8 @@ public class PushOperationUI {
 		job.addJobChangeListener(new JobChangeAdapter() {
 			@Override
 			public void done(IJobChangeEvent event) {
-				if (event.getResult().isOK())
-					PushResultDialog.show(repository, op.getOperationResult(),
-							destinationString);
-				else
-					Activator.handleError(event.getResult().getMessage(), event
-							.getResult().getException(), true);
+				PushResultDialog.show(repository, op.getOperationResult(),
+						destinationString);
 			}
 		});
 	}
