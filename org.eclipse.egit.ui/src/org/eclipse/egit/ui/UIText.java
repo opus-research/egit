@@ -592,9 +592,6 @@ public class UIText extends NLS {
 	public static String ProjectsPreferencePage_AutoShareProjects;
 
 	/** */
-	public static String ProjectsPreferencePage_RestoreBranchProjects;
-
-	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -1624,12 +1621,6 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_notFound;
 
 	/** */
-	public static String HistoryPreferencePage_MaxBranchLength;
-
-	/** */
-	public static String HistoryPreferencePage_MaxTagLength;
-
-	/** */
 	public static String PullOperationUI_ConnectionProblem;
 
 	/** */
@@ -2632,9 +2623,6 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_bindingBranchName;
 
 	/** */
-	public static String DecoratorPreferencesPage_bindingBranchStatus;
-
-	/** */
 	public static String DecoratorPreferencesPage_bindingDirtyFlag;
 
 	/** */
@@ -2813,6 +2801,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesViewContentProvider_ExceptionNodeText;
+
+	/** */
+	public static String RepositoriesViewLabelProvider_BareRepositoryMessage;
 
 	/** */
 	public static String RepositoriesViewLabelProvider_LocalNodetext;
