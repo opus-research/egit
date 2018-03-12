@@ -139,17 +139,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @param initialText
 	 */
 	public SpellcheckableMessageArea(Composite parent, String initialText) {
-		this(parent, initialText, SWT.BORDER);
-	}
-
-	/**
-	 * @param parent
-	 * @param initialText
-	 * @param styles
-	 */
-	public SpellcheckableMessageArea(Composite parent, String initialText,
-			int styles) {
-		super(parent, styles);
+		super(parent, SWT.BORDER);
 		setLayout(new FillLayout());
 
 		AnnotationModel annotationModel = new AnnotationModel();
@@ -384,10 +374,7 @@ public class SpellcheckableMessageArea extends Composite {
 		return support;
 	}
 
-	/**
-	 * Create margin painter and add to source viewer
-	 */
-	protected void createMarginPainter() {
+	private void createMarginPainter() {
 		MarginPainter marginPainter = new MarginPainter(sourceViewer);
 		marginPainter.setMarginRulerColumn(MAX_LINE_WIDTH);
 		marginPainter.setMarginRulerColor(Display.getDefault().getSystemColor(
