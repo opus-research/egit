@@ -16,7 +16,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
@@ -30,24 +29,21 @@ import org.eclipse.jgit.lib.Repository;
 public class ProjectUtil {
 
 	/**
-	 * The method returns all valid open projects contained in the given Git
+	 * The method returns all valid projects contained in the given Git
 	 * repository. A project is considered as valid if the .project file exists.
 	 * @see ProjectUtil#refreshValidProjects(IProject[], IProgressMonitor)
 	 * @param repository
-	 * @return valid open projects
+	 * @return valid projects
 	 * @throws CoreException
 	 */
-	public static IProject[] getValidOpenProjects(Repository repository)
+	public static IProject[] getValidProjects(Repository repository)
 			throws CoreException {
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		List<IProject> result = new ArrayList<IProject>();
 		final File parentFile = repository.getWorkTree();
 		for (IProject p : projects) {
-			IPath projectLocation = p.getLocation();
-			if (!p.isOpen() || projectLocation == null)
-				continue;
-			String projectFilePath = projectLocation
+			String projectFilePath = p.getLocation()
 					.append(".project").toOSString(); //$NON-NLS-1$
 			File projectFile = new File(projectFilePath);
 			if (projectFile.exists()) {
@@ -65,7 +61,7 @@ public class ProjectUtil {
 	 * The method refreshes the given projects. Projects with missing .project
 	 * file are deleted. The method should be called in the following flow:<br>
 	 * <ol>
-	 * <li>Call {@link ProjectUtil#getValidOpenProjects(Repository)}
+	 * <li>Call {@link ProjectUtil#getValidProjects(Repository)}
 	 * <li>Perform a workdir checkout (e.g. branch, reset)
 	 * <li>Call
 	 * {@link ProjectUtil#refreshValidProjects(IProject[], IProgressMonitor)}
