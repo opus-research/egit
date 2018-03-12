@@ -15,30 +15,21 @@ package org.eclipse.egit.core.op;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.jgit.dircache.DirCacheCheckout;
-import org.eclipse.jgit.errors.NotSupportedException;
-import org.eclipse.jgit.errors.TransportException;
-import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.api.CloneCommand;
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.storage.file.FileBasedConfig;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
-import org.eclipse.jgit.transport.FetchResult;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
@@ -57,19 +48,15 @@ public class CloneOperation {
 
 	private final File gitdir;
 
-	private final Ref ref;
+	private final String refName;
 
 	private final String remoteName;
 
 	private final int timeout;
 
-	private FileRepository local;
-
-	private RemoteConfig remoteConfig;
-
-	private FetchResult fetchResult;
-
 	private CredentialsProvider credentialsProvider;
+
+	private List<PostCloneTask> postCloneTasks;
 
 	/**
 	 * Create a new clone operation.
@@ -85,22 +72,24 @@ public class CloneOperation {
 	 * @param workdir
 	 *            working directory to clone to. The directory may or may not
 	 *            already exist.
-	 * @param ref
-	 *            ref to be checked out after clone.
+	 * @param refName
+	 *            full name of ref to be checked out after clone, e.g.
+	 *            refs/heads/master, or null for no checkout
 	 * @param remoteName
 	 *            name of created remote config as source remote (typically
 	 *            named "origin").
-	 * @param timeout timeout in seconds
+	 * @param timeout
+	 *            timeout in seconds
 	 */
 	public CloneOperation(final URIish uri, final boolean allSelected,
 			final Collection<Ref> selectedBranches, final File workdir,
-			final Ref ref, final String remoteName, int timeout) {
+			final String refName, final String remoteName, int timeout) {
 		this.uri = uri;
 		this.allSelected = allSelected;
 		this.selectedBranches = selectedBranches;
 		this.workdir = workdir;
 		this.gitdir = new File(workdir, Constants.DOT_GIT);
-		this.ref = ref;
+		this.refName = refName;
 		this.remoteName = remoteName;
 		this.timeout = timeout;
 	}
@@ -128,18 +117,36 @@ public class CloneOperation {
 		else
 			monitor = pm;
 
+		EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(
+				monitor);
+		Repository repository = null;
 		try {
 			monitor.beginTask(NLS.bind(CoreText.CloneOperation_title, uri),
 					5000);
-			try {
-				doInit(new SubProgressMonitor(monitor, 100));
-				doFetch(new SubProgressMonitor(monitor, 4000));
-				doCheckout(new SubProgressMonitor(monitor, 900));
-			} finally {
-				closeLocal();
+			CloneCommand cloneRepository = Git.cloneRepository();
+			cloneRepository.setCredentialsProvider(credentialsProvider);
+			cloneRepository.setBranch(refName);
+			cloneRepository.setDirectory(workdir);
+			cloneRepository.setProgressMonitor(gitMonitor);
+			cloneRepository.setRemote(remoteName);
+			cloneRepository.setURI(uri.toString());
+			cloneRepository.setTimeout(timeout);
+			cloneRepository.setCloneAllBranches(allSelected);
+			if (selectedBranches != null) {
+				List<String> branches = new ArrayList<String>();
+				for (Ref branch : selectedBranches)
+					branches.add(branch.getName());
+				cloneRepository.setBranchesToClone(branches);
 			}
+			Git git = cloneRepository.call();
+			repository = git.getRepository();
+			if (postCloneTasks != null)
+				for (PostCloneTask task : postCloneTasks)
+					task.execute(git.getRepository(), monitor);
 		} catch (final Exception e) {
 			try {
+				if (repository != null)
+					repository.close();
 				FileUtils.delete(workdir, FileUtils.RECURSIVE);
 			} catch (IOException ioe) {
 				throw new InvocationTargetException(ioe);
@@ -150,6 +157,8 @@ public class CloneOperation {
 				throw new InvocationTargetException(e);
 		} finally {
 			monitor.done();
+			if (repository != null)
+				repository.close();
 		}
 	}
 
@@ -161,107 +170,29 @@ public class CloneOperation {
 		return gitdir;
 	}
 
-	private void closeLocal() {
-		if (local != null) {
-			local.close();
-			local = null;
-		}
+	/**
+	 * @param task to be performed after clone
+	 */
+	public synchronized void addPostCloneTask(PostCloneTask task) {
+		if (postCloneTasks == null)
+			postCloneTasks = new ArrayList<PostCloneTask>();
+		postCloneTasks.add(task);
 	}
 
-	private void doInit(final IProgressMonitor monitor)
-			throws URISyntaxException, IOException {
-		monitor.setTaskName(CoreText.CloneOperation_initializingRepository);
+	/**
+	 * A task which can be added to be performed after clone
+	 */
+	public interface PostCloneTask  {
 
-		local = new FileRepository(gitdir);
-		local.create();
-
-		if (ref != null && ref.getName().startsWith(Constants.R_HEADS)) {
-			final RefUpdate head = local.updateRef(Constants.HEAD);
-			head.disableRefLog();
-			head.link(ref.getName());
-		}
-
-		FileBasedConfig config = local.getConfig();
-		remoteConfig = new RemoteConfig(config, remoteName);
-		remoteConfig.addURI(uri);
-
-		final String dst = Constants.R_REMOTES + remoteConfig.getName();
-		RefSpec wcrs = new RefSpec();
-		wcrs = wcrs.setForceUpdate(true);
-		wcrs = wcrs.setSourceDestination(Constants.R_HEADS
-				+ "*", dst + "/*"); //$NON-NLS-1$ //$NON-NLS-2$
-
-		if (allSelected) {
-			remoteConfig.addFetchRefSpec(wcrs);
-		} else {
-			for (final Ref selectedRef : selectedBranches)
-				if (wcrs.matchSource(selectedRef))
-					remoteConfig.addFetchRefSpec(wcrs.expandFromSource(selectedRef));
-		}
-
-		// we're setting up for a clone with a checkout
-		config.setBoolean(
-				ConfigConstants.CONFIG_CORE_SECTION, null, ConfigConstants.CONFIG_KEY_BARE, false);
-
-		remoteConfig.update(config);
-
-		// branch is like 'Constants.R_HEADS + branchName', we need only
-		// the 'branchName' part
-		if (ref != null && ref.getName().startsWith(Constants.R_HEADS)) {
-			String branchName = ref.getName().substring(Constants.R_HEADS.length());
-
-			// setup the default remote branch for branchName
-			config.setString(ConfigConstants.CONFIG_BRANCH_SECTION, branchName, ConfigConstants.CONFIG_KEY_REMOTE, remoteName);
-			config.setString(ConfigConstants.CONFIG_BRANCH_SECTION, branchName, ConfigConstants.CONFIG_KEY_MERGE, ref.getName());
-		}
-		config.save();
-	}
-
-	private void doFetch(final IProgressMonitor monitor)
-			throws NotSupportedException, TransportException {
-		final Transport tn = Transport.open(local, remoteConfig);
-		if (credentialsProvider != null)
-			tn.setCredentialsProvider(credentialsProvider);
-		tn.setTimeout(this.timeout);
-		try {
-			final EclipseGitProgressTransformer pm;
-			pm = new EclipseGitProgressTransformer(monitor);
-			fetchResult = tn.fetch(pm, null);
-		} finally {
-			tn.close();
-		}
-	}
-
-	private void doCheckout(final IProgressMonitor monitor) throws IOException {
-		if (ref == null)
-			return;
-		final Ref head = fetchResult.getAdvertisedRef(ref.getName());
-		if (head == null || head.getObjectId() == null)
-			return;
-
-		final RevWalk rw = new RevWalk(local);
-		final RevCommit mapCommit;
-		try {
-			mapCommit = rw.parseCommit(head.getObjectId());
-		} finally {
-			rw.release();
-		}
-
-		final RefUpdate u;
-
-		boolean detached = !head.getName().startsWith(Constants.R_HEADS);
-		u = local.updateRef(Constants.HEAD, detached);
-		u.setNewObjectId(mapCommit.getId());
-		u.forceUpdate();
-
-		monitor.setTaskName(CoreText.CloneOperation_checkingOutFiles);
-		DirCacheCheckout dirCacheCheckout = new DirCacheCheckout(
-				local, null, local.lockDirCache(), mapCommit.getTree());
-		dirCacheCheckout.setFailOnConflict(true);
-		boolean result = dirCacheCheckout.checkout();
-		if (!result)
-			// this should never happen when writing in an empty folder
-			throw new IOException("Internal error occurred on checking out files"); //$NON-NLS-1$
-		monitor.setTaskName(CoreText.CloneOperation_writingIndex);
+		/**
+		 * Executes the task
+		 * @param repository the cloned git repository
+		 *
+		 * @param monitor
+		 *            a progress monitor, or <code>null</code> if progress reporting
+		 *            and cancellation are not desired
+		 * @throws CoreException
+		 */
+		void execute(Repository repository, IProgressMonitor monitor) throws CoreException;
 	}
 }
