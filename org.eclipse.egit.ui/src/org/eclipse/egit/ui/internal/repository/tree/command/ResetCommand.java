@@ -123,9 +123,7 @@ public class ResetCommand extends
 				return true;
 			}
 		};
-		WizardDialog dlg = new WizardDialog(getShell(event), wiz);
-		dlg.setHelpAvailable(false);
-		dlg.open();
+		new WizardDialog(getShell(event), wiz).open();
 
 		return null;
 	}
