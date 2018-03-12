@@ -112,25 +112,6 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 	}
 
 	/**
-	 * @param shell
-	 * @param repository
-	 * @param remoteName
-	 *            the remote name to use
-	 * @return the dialog to open, or null
-	 */
-	public static Dialog getDialog(Shell shell, Repository repository,
-			String remoteName) {
-		RemoteConfig configToUse;
-		try {
-			configToUse = new RemoteConfig(repository.getConfig(), remoteName);
-		} catch (URISyntaxException e) {
-			Activator.handleError(e.getMessage(), e, true);
-			return null;
-		}
-		return new SimpleConfigureFetchDialog(shell, repository, configToUse);
-	}
-
-	/**
 	 * @param repository
 	 * @return the configured remote for the current branch, or the default
 	 *         remote; <code>null</code> if a local branch is checked out that
@@ -186,7 +167,6 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 			RemoteConfig config) {
 		super(shell);
 		setHelpAvailable(false);
-		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repository = repository;
 		this.config = config;
 	}
@@ -322,9 +302,8 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 
 		specViewer = new TableViewer(refSpecGroup, SWT.BORDER | SWT.MULTI);
 		specViewer.setContentProvider(ArrayContentProvider.getInstance());
-		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 150).minSize(
-				SWT.DEFAULT, 30).span(5, 1).grab(true, true).applyTo(
-				specViewer.getTable());
+		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 150).span(5, 1).grab(
+				true, true).applyTo(specViewer.getTable());
 
 		specViewer.getTable().addKeyListener(new KeyAdapter() {
 			@Override
