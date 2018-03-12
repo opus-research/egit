@@ -49,28 +49,7 @@ public class ContextMenuHelper {
 	 */
 	public static void clickContextMenu(final AbstractSWTBot<?> bot,
 			final String... texts) {
-		int failCount = 0;
-		long sleepTime = 250;
-		while (failCount < 5)
-			try {
-				clickContextMenuInternal(bot, texts);
-				break;
-			} catch (WidgetNotFoundException e) {
-				if (failCount == 4)
-					throw e;
-				System.out.println("clickContextMenu failed. Retrying in " + sleepTime + " ms");
-				failCount++;
-				try {
-					Thread.sleep(sleepTime);
-					sleepTime *= 2;
-				} catch (InterruptedException e1) {
-					// empty
-				}
-			}
-	}
 
-	private static void clickContextMenuInternal(final AbstractSWTBot<?> bot,
-			final String... texts) {
 		// show
 		final MenuItem menuItem = UIThreadRunnable
 				.syncExec(new WidgetResult<MenuItem>() {
@@ -83,9 +62,10 @@ public class ContextMenuHelper {
 						return theItem;
 					}
 				});
-		if (menuItem == null)
+		if (menuItem == null) {
 			throw new WidgetNotFoundException("Could not find menu: "
 					+ Arrays.asList(texts));
+		}
 
 		// click
 		click(menuItem);
@@ -98,6 +78,17 @@ public class ContextMenuHelper {
 				hide(menuItem.getParent());
 			}
 		});
+	}
+
+	public static boolean contextMenuItemExists(final AbstractSWTBot<?> bot,
+			final String... texts) {
+		final MenuItem menuItem = UIThreadRunnable
+				.syncExec(new WidgetResult<MenuItem>() {
+					public MenuItem run() {
+						return getMenuItem(bot, texts);
+					}
+				});
+		return menuItem != null;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -114,9 +105,9 @@ public class ContextMenuHelper {
 				Matcher<Object> matcher = allOf(instanceOf(MenuItem.class),
 						withMnemonic(text));
 				theItem = show(menu, matcher);
-				if (theItem != null)
+				if (theItem != null) {
 					menu = theItem.getMenu();
-				else {
+				} else {
 					hide(menu);
 					break;
 				}
@@ -157,9 +148,10 @@ public class ContextMenuHelper {
 						return theItem;
 					}
 				});
-		if (menuItem == null)
+		if (menuItem == null) {
 			throw new WidgetNotFoundException("Could not find menu: "
 					+ Arrays.asList(texts));
+		}
 		// hide
 		UIThreadRunnable.syncExec(new VoidResult() {
 			public void run() {
@@ -175,9 +167,11 @@ public class ContextMenuHelper {
 		if (menu != null) {
 			menu.notifyListeners(SWT.Show, new Event());
 			MenuItem[] items = menu.getItems();
-			for (final MenuItem menuItem : items)
-				if (matcher.matches(menuItem))
+			for (final MenuItem menuItem : items) {
+				if (matcher.matches(menuItem)) {
 					return menuItem;
+				}
+			}
 			menu.notifyListeners(SWT.Hide, new Event());
 		}
 		return null;
@@ -199,7 +193,8 @@ public class ContextMenuHelper {
 
 	private static void hide(final Menu menu) {
 		menu.notifyListeners(SWT.Hide, new Event());
-		if (menu.getParentMenu() != null)
+		if (menu.getParentMenu() != null) {
 			hide(menu.getParentMenu());
+		}
 	}
 }
