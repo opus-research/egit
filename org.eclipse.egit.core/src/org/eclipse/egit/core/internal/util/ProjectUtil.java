@@ -31,10 +31,7 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryCache.FileKey;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -66,8 +63,8 @@ public class ProjectUtil {
 			IPath projectLocation = p.getLocation();
 			if (!p.isOpen() || projectLocation == null)
 				continue;
-			String projectFilePath = projectLocation.append(
-					IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
+			String projectFilePath = projectLocation
+					.append(".project").toOSString(); //$NON-NLS-1$
 			File projectFile = new File(projectFilePath);
 			if (projectFile.exists()) {
 				final File file = p.getLocation().toFile();
@@ -103,11 +100,7 @@ public class ProjectUtil {
 			for (IProject p : projects) {
 				if (monitor.isCanceled())
 					break;
-				IPath projectLocation = p.getLocation();
-				if (projectLocation == null)
-					continue;
-				String projectFilePath = projectLocation.append(
-						IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
+				String projectFilePath = p.getLocation().append(".project").toOSString();  //$NON-NLS-1$
 				File projectFile = new File(projectFilePath);
 				if (projectFile.exists())
 						p.refreshLocal(IResource.DEPTH_INFINITE,
@@ -185,10 +178,6 @@ public class ProjectUtil {
 			final File directory, final Set<String> visistedDirs,
 			final IProgressMonitor monitor) {
 		if (directory == null)
-			return false;
-
-		if (directory.getName().equals(Constants.DOT_GIT)
-				&& FileKey.isGitRepository(directory, FS.DETECTED))
 			return false;
 
 		IProgressMonitor pm = monitor;
