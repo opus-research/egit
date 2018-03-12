@@ -374,29 +374,17 @@ public class RepositoryUtil {
 	 */
 	public boolean removeDir(File file) {
 		synchronized (prefs) {
-			try {
-				String canonicalDir = file.getCanonicalPath();
 
-				boolean removed = removeDir(canonicalDir);
+			String dir = getPath(file);
 
-				if (removed || canonicalDir.equals(file.getAbsolutePath()))
-					return removed;
-
-				return removeDir(file.getAbsolutePath());
-			} catch (IOException e) {
-				return removeDir(file.getAbsolutePath());
+			Set<String> dirStrings = new HashSet<String>();
+			dirStrings.addAll(getConfiguredRepositories());
+			if (dirStrings.remove(dir)) {
+				saveDirs(dirStrings);
+				return true;
 			}
+			return false;
 		}
-	}
-
-	private boolean removeDir(String dir) {
-		Set<String> dirStrings = new HashSet<String>();
-		dirStrings.addAll(getConfiguredRepositories());
-		if (dirStrings.remove(dir)) {
-			saveDirs(dirStrings);
-			return true;
-		}
-		return false;
 	}
 
 	private void saveDirs(Set<String> gitDirStrings) {
@@ -486,7 +474,7 @@ public class RepositoryUtil {
 			return null;
 		} finally {
 			if (walk != null)
-				walk.release();
+				walk.close();
 		}
 	}
 
@@ -524,7 +512,7 @@ public class RepositoryUtil {
 					walk.enterSubtree();
 			}
 		} finally {
-			walk.release();
+			walk.close();
 		}
 		return false;
 	}
