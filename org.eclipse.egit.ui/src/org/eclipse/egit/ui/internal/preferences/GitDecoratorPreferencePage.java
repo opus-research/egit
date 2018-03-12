@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2000, 2007 IBM Corporation and others.
  * Copyright (C) 2009, Tor Arne Vestbø <torarnv@gmail.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,7 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,7 +28,6 @@ import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
 import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.preference.PreferenceStore;
@@ -40,7 +37,6 @@ import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
-import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.DecorationContext;
 import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.IDecoration;
@@ -52,7 +48,6 @@ import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -107,42 +102,42 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 	static {
 		final PreviewResource project = new PreviewResource(
-				"Project", IResource.PROJECT, "repository" + '|' + RepositoryState.MERGING.getDescription(), "master", true, false, true, Staged.NOT_STAGED, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"Project", IResource.PROJECT, "master", true, false, true, Staged.NOT_STAGED, false, false); //$NON-NLS-1$ //$NON-NLS-2$1
 		final ArrayList<PreviewResource> children = new ArrayList<PreviewResource>();
 
 		children
 				.add(new PreviewResource(
-						"folder", IResource.FOLDER, "repository", null, true, false, true, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"folder", IResource.FOLDER, null, true, false, true, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$
 		children
 				.add(new PreviewResource(
-						"tracked.txt", IResource.FILE, "repository", null, true, false, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"tracked.txt", IResource.FILE, null, true, false, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$
 		children
 				.add(new PreviewResource(
-						"untracked.txt", IResource.FILE, "repository", null, false, false, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"untracked.txt", IResource.FILE, null, false, false, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$
 		children
 				.add(new PreviewResource(
-						"ignored.txt", IResource.FILE, "repository", null, false, true, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"ignored.txt", IResource.FILE, null, false, true, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$
 		children
 				.add(new PreviewResource(
-						"dirty.txt", IResource.FILE, "repository", null, true, false, true, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"dirty.txt", IResource.FILE, null, true, false, true, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$
 		children
 				.add(new PreviewResource(
-						"staged.txt", IResource.FILE, "repository", null, true, false, false, Staged.MODIFIED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"staged.txt", IResource.FILE, null, true, false, false, Staged.MODIFIED, false, false)); //$NON-NLS-1$
 		children
 				.add(new PreviewResource(
-						"partially-staged.txt", IResource.FILE, "repository", null, true, false, true, Staged.MODIFIED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"partially-staged.txt", IResource.FILE, null, true, false, true, Staged.MODIFIED, false, false)); //$NON-NLS-1$
 		children
 				.add(new PreviewResource(
-						"added.txt", IResource.FILE, "repository", null, true, false, false, Staged.ADDED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"added.txt", IResource.FILE, null, true, false, false, Staged.ADDED, false, false)); //$NON-NLS-1$
 		children
 				.add(new PreviewResource(
-						"removed.txt", IResource.FILE, "repository", null, true, false, false, Staged.REMOVED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"removed.txt", IResource.FILE, null, true, false, false, Staged.REMOVED, false, false)); //$NON-NLS-1$
 		children
 				.add(new PreviewResource(
-						"conflict.txt", IResource.FILE, "repository", null, true, false, true, Staged.NOT_STAGED, true, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"conflict.txt", IResource.FILE, null, true, false, true, Staged.NOT_STAGED, true, false)); //$NON-NLS-1$
 		children
 				.add(new PreviewResource(
-						"assume-valid.txt", IResource.FILE, "repository", null, true, false, false, Staged.NOT_STAGED, false, true)); //$NON-NLS-1$ //$NON-NLS-2$
+						"assume-valid.txt", IResource.FILE, null, true, false, false, Staged.NOT_STAGED, false, true)); //$NON-NLS-1$
 		project.children = children;
 		PREVIEW_FILESYSTEM_ROOT = Collections.singleton(project);
 
@@ -161,8 +156,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 				UIText.DecoratorPreferencesPage_bindingDirtyFlag);
 		PROJECT_BINDINGS.put(DecorationHelper.BINDING_STAGED_FLAG,
 				UIText.DecoratorPreferencesPage_bindingStagedFlag);
-		PROJECT_BINDINGS.put(DecorationHelper.BINDING_REPOSITORY_NAME,
-				UIText.GitDecoratorPreferencePage_bindingRepositoryNameFlag);
 		PROJECT_BINDINGS.put(DecorationHelper.BINDING_BRANCH_NAME,
 				UIText.DecoratorPreferencesPage_bindingBranchName);
 	}
@@ -369,12 +362,12 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					UIPreferences.DECORATOR_FILETEXT_DECORATION);
 			folderTextFormat = new FormatEditor(composite,
 					UIText.DecoratorPreferencesPage_folderFormatLabel,
-					UIText.DecoratorPreferencesPage_addVariablesAction2,
+					UIText.DecoratorPreferencesPage_addVariablesAction,
 					FILE_AND_FOLDER_BINDINGS,
 					UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
 			projectTextFormat = new FormatEditor(composite,
 					UIText.DecoratorPreferencesPage_projectFormatLabel,
-					UIText.DecoratorPreferencesPage_addVariablesAction3,
+					UIText.DecoratorPreferencesPage_addVariablesAction,
 					PROJECT_BINDINGS,
 					UIPreferences.DECORATOR_PROJECTTEXT_DECORATION);
 
@@ -448,7 +441,20 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					}
 				};
 
-				final IStructuredContentProvider contentsProvider = ArrayContentProvider.getInstance();
+				final IStructuredContentProvider contentsProvider = new IStructuredContentProvider() {
+					public Object[] getElements(Object inputElement) {
+						return ((Collection) inputElement).toArray();
+					}
+
+					public void dispose() {
+						// No-op
+					}
+
+					public void inputChanged(Viewer viewer, Object oldInput,
+							Object newInput) {
+						// No-op
+					}
+				};
 
 				final ListSelectionDialog dialog = new ListSelectionDialog(text
 						.getShell(), bindings.entrySet(), contentsProvider,
@@ -605,13 +611,9 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		IPreferenceStore store = getPreferenceStore();
 		final boolean okToClose = performOk(store);
 		if (store.needsSaving()) {
-			try {
-				((IPersistentPreferenceStore)store).save();
-				Activator.broadcastPropertyChange(new PropertyChangeEvent(this,
-						Activator.DECORATORS_CHANGED, null, null));
-			} catch (IOException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			}
+			Activator.getDefault().savePluginPreferences();
+			Activator.broadcastPropertyChange(new PropertyChangeEvent(this,
+					Activator.DECORATORS_CHANGED, null, null));
 		}
 		return okToClose;
 	}
@@ -798,8 +800,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	private static class PreviewResource implements IDecoratableResource {
 		private final String name;
 
-		private final String repositoryName;
-
 		private final String branch;
 
 		private final int type;
@@ -818,12 +818,11 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private boolean assumeValid;
 
-		public PreviewResource(String name, int type, String repositoryName, String branch,
+		public PreviewResource(String name, int type, String branch,
 				boolean tracked, boolean ignored, boolean dirty, Staged staged,
 				boolean conflicts, boolean assumeValid) {
 
 			this.name = name;
-			this.repositoryName = repositoryName;
 			this.branch = branch;
 			this.type = type;
 			this.children = Collections.EMPTY_LIST;
@@ -837,10 +836,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		public String getName() {
 			return name;
-		}
-
-		public String getRepositoryName() {
-			return repositoryName;
 		}
 
 		public int getType() {
@@ -876,7 +871,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 	}
 
-	private static class PreviewDecoration implements IDecoration {
+	private class PreviewDecoration implements IDecoration {
 
 		private List<String> prefixes = new ArrayList<String>();
 

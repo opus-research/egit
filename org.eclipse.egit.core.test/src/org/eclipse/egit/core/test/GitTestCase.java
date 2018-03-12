@@ -9,68 +9,55 @@
 package org.eclipse.egit.core.test;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
+import org.eclipse.jgit.lib.Constants;
 
-import org.eclipse.core.resources.IProject;
+import junit.framework.TestCase;
+
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.jgit.junit.MockSystemReader;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectWriter;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.util.IO;
 import org.eclipse.jgit.util.SystemReader;
-import org.junit.After;
-import org.junit.Before;
 
-public abstract class GitTestCase {
-
-	protected final TestUtils testUtils = new TestUtils();
+public abstract class GitTestCase extends TestCase {
 
 	protected TestProject project;
 
 	protected File gitDir;
 
-	@Before
-	public void setUp() throws Exception {
-		MockSystemReader mockSystemReader = new MockSystemReader();
-		SystemReader.setInstance(mockSystemReader);
-		mockSystemReader.setProperty(Constants.GIT_CEILING_DIRECTORIES_KEY,
-				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
+	protected void setUp() throws Exception {
+		super.setUp();
+		((MockSystemReader) SystemReader.getInstance()).setProperty(
+				Constants.GIT_CEILING_DIRECTORIES_KEY, ResourcesPlugin
+						.getWorkspace().getRoot().getLocation().toFile()
 						.getAbsoluteFile().toString());
 		project = new TestProject(true);
 		gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), Constants.DOT_GIT);
-		testUtils.deleteRecursive(gitDir);
+		rmrf(gitDir);
 	}
 
-	@After
-	public void tearDown() throws Exception {
+	protected void tearDown() throws Exception {
+		super.tearDown();
 		project.dispose();
-		testUtils.deleteRecursive(gitDir);
+		rmrf(gitDir);
 	}
 
-	protected ObjectId createFile(Repository repository, IProject actProject, String name, String content) throws IOException {
-		File file = new File(actProject.getProject().getLocation().toFile(), name);
-		FileWriter fileWriter = new FileWriter(file);
-		fileWriter.write(content);
-		fileWriter.close();
-		ObjectWriter objectWriter = new ObjectWriter(repository);
-		return objectWriter.writeBlob(file);
+	private void rmrf(File d) throws IOException {
+		if (!d.exists())
+			return;
+
+		File[] files = d.listFiles();
+		if (files != null) {
+			for (int i = 0; i < files.length; ++i) {
+				if (files[i].isDirectory())
+					rmrf(files[i]);
+				else if (!files[i].delete())
+					throw new IOException(files[i] + " in use or undeletable");
+			}
+		}
+		if (!d.delete())
+			throw new IOException(d + " in use or undeletable");
+		assert !d.exists();
 	}
 
-	protected ObjectId createFileCorruptShort(Repository repository, IProject actProject, String name, String content) throws IOException {
-		ObjectId id = createFile(repository, actProject, name, content);
-		File file = new File(repository.getDirectory(), "objects/" + id.name().substring(0,2) + "/" + id.name().substring(2));
-		byte[] readFully = IO.readFully(file);
-		file.delete();
-		FileOutputStream fileOutputStream = new FileOutputStream(file);
-		byte[] truncatedData = new byte[readFully.length - 1];
-		System.arraycopy(readFully, 0, truncatedData, 0, truncatedData.length);
-		fileOutputStream.write(truncatedData);
-		fileOutputStream.close();
-		return id;
-	}
 }

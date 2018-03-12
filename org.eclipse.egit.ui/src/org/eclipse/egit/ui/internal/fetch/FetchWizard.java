@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +28,9 @@ import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
+import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.lib.Repository;
@@ -37,9 +39,6 @@ import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.Transport;
-import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Wizard allowing user to specify all needed data to fetch from another
@@ -67,15 +66,8 @@ public class FetchWizard extends Wizard {
 		this.localDb = localDb;
 		final List<RemoteConfig> remotes = RemoteConfig
 				.getAllRemoteConfigs(localDb.getConfig());
-		repoPage = new RepositorySelectionPage(true, remotes, null);
-		refSpecPage = new RefSpecPage(localDb, false) {
-			@Override
-			public void setVisible(boolean visible) {
-				if (visible)
-					setSelection(repoPage.getSelection());
-				super.setVisible(visible);
-			}
-		};
+		repoPage = new RepositorySelectionPage(true, remotes);
+		refSpecPage = new RefSpecPage(localDb, false, repoPage);
 		// TODO use/create another cool icon
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
@@ -114,9 +106,6 @@ public class FetchWizard extends Wizard {
 				getSourceString());
 		fetchJob.setUser(true);
 		fetchJob.schedule();
-
-		repoPage.saveUriInPrefs();
-
 		return true;
 	}
 

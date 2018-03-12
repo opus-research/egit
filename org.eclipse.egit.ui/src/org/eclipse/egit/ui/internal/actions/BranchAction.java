@@ -10,7 +10,19 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
+import java.lang.reflect.InvocationTargetException;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
+import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
+import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Action for selecting a branch and checking it out.
@@ -18,10 +30,53 @@ import org.eclipse.egit.core.op.BranchOperation;
  * @see BranchOperation
  */
 public class BranchAction extends RepositoryAction {
-	/**
-	 * Constructs this action
-	 */
-	public BranchAction() {
-		super(ActionCommands.BRANCH_ACTION);
+	@Override
+	public void run(IAction action) {
+		final Repository repository = getRepository(true);
+		if (repository == null)
+			return;
+
+		if (!repository.getRepositoryState().canCheckout()) {
+			MessageDialog.openError(getShell(), "Cannot checkout now",
+					"Repository state:"
+							+ repository.getRepositoryState().getDescription());
+			return;
+		}
+
+		BranchSelectionDialog dialog = new BranchSelectionDialog(getShell(), repository);
+		dialog.setShowResetType(false);
+		if (dialog.open() != IDialogConstants.OK_ID) {
+			return;
+		}
+
+		final String refName = dialog.getRefName();
+		try {
+			getTargetPart().getSite().getWorkbenchWindow().run(true, false,
+					new IRunnableWithProgress() {
+				public void run(final IProgressMonitor monitor)
+				throws InvocationTargetException {
+					try {
+						new BranchOperation(repository, refName).run(monitor);
+						GitLightweightDecorator.refresh();
+					} catch (final CoreException ce) {
+						ce.printStackTrace();
+						Display.getDefault().asyncExec(new Runnable() {
+							public void run() {
+								handle(ce, "Error while switching branches", "Unable to switch branches");
+							}
+						});
+					}
+				}
+			});
+		} catch (InvocationTargetException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return getRepository(false) != null;
 	}
 }

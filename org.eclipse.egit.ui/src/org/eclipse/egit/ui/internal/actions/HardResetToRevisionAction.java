@@ -10,37 +10,20 @@ package org.eclipse.egit.ui.internal.actions;
 
 import java.util.List;
 
-import org.eclipse.egit.core.op.IEGitOperation;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.egit.core.op.ResetOperation;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.lib.AnyObjectId;
 
 /**
  * Hard reset to selected revision
  */
-public class HardResetToRevisionAction extends AbstractRevCommitOperationAction {
+public class HardResetToRevisionAction extends AbstractRevObjectAction {
 
 	@Override
-	protected IEGitOperation createOperation(final List<RevCommit> commits) {
+	protected IWorkspaceRunnable createOperation(IAction act, List selection) {
 		return new ResetOperation(getActiveRepository(),
-				commits.get(0).getName(),
+				((AnyObjectId) selection.get(0)).name(),
 				ResetOperation.ResetType.HARD);
 	}
-
-	@Override
-	protected String getJobName() {
-		return UIText.HardResetToRevisionAction_hardReset;
-	}
-
-	@Override
-	public void run(IAction act) {
-		if (!MessageDialog.openQuestion(wp.getSite().getShell(),
-				UIText.ResetTargetSelectionDialog_ResetQuestion,
-				UIText.ResetTargetSelectionDialog_ResetConfirmQuestion))
-			return;
-		super.run(act);
-	}
-
 }

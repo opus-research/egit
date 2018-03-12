@@ -18,11 +18,11 @@ import java.util.Map;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.GitProjectData;
@@ -30,7 +30,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * Remove one or more existing files/folders from the Git repository.
@@ -44,8 +43,8 @@ import org.eclipse.osgi.util.NLS;
  * Resources are only scheduled for removal in the index-
  * </p>
  */
-public class UntrackOperation implements IEGitOperation {
-	private final Collection<? extends IResource> rsrcList;
+public class UntrackOperation implements IWorkspaceRunnable {
+	private final Collection rsrcList;
 
 	private final IdentityHashMap<Repository, DirCacheEditor> edits;
 
@@ -58,16 +57,13 @@ public class UntrackOperation implements IEGitOperation {
 	 *            collection of {@link IResource}s which should be removed from
 	 *            the relevant Git repositories.
 	 */
-	public UntrackOperation(final Collection<? extends IResource> rsrcs) {
+	public UntrackOperation(final Collection rsrcs) {
 		rsrcList = rsrcs;
 		edits = new IdentityHashMap<Repository, DirCacheEditor>();
 		mappings = new IdentityHashMap<RepositoryMapping, Object>();
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public void execute(IProgressMonitor m) throws CoreException {
+	public void run(IProgressMonitor m) throws CoreException {
 		if (m == null)
 			m = new NullProgressMonitor();
 
@@ -76,21 +72,23 @@ public class UntrackOperation implements IEGitOperation {
 
 		m.beginTask(CoreText.AddOperation_adding, rsrcList.size() * 200);
 		try {
-			for (IResource obj : rsrcList) {
-				remove(obj);
+			for (Object obj : rsrcList) {
+				obj = ((IAdaptable) obj).getAdapter(IResource.class);
+				if (obj instanceof IResource)
+					remove((IResource) obj);
 				m.worked(200);
 			}
 
 			for (Map.Entry<Repository, DirCacheEditor> e : edits.entrySet()) {
 				final Repository db = e.getKey();
 				final DirCacheEditor editor = e.getValue();
-				m.setTaskName(NLS.bind(CoreText.UntrackOperation_writingIndex, db.getDirectory()));
+				m.setTaskName("Writing index for " + db.getDirectory());
 				editor.commit();
 			}
 		} catch (RuntimeException e) {
-			throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, e));
+			throw Activator.error(CoreText.UntrackOperation_failed, e);
 		} catch (IOException e) {
-			throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, e));
+			throw Activator.error(CoreText.UntrackOperation_failed, e);
 		} finally {
 			for (final RepositoryMapping rm : mappings.keySet())
 				rm.fireRepositoryChanged();
@@ -98,13 +96,6 @@ public class UntrackOperation implements IEGitOperation {
 			mappings.clear();
 			m.done();
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
-	 */
-	public ISchedulingRule getSchedulingRule() {
-		return new MultiRule(rsrcList.toArray(new IResource[rsrcList.size()]));
 	}
 
 	private void remove(final IResource path) throws CoreException {
@@ -122,7 +113,7 @@ public class UntrackOperation implements IEGitOperation {
 			try {
 				e = DirCache.lock(db).editor();
 			} catch (IOException err) {
-				throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, err));
+				throw Activator.error(CoreText.UntrackOperation_failed, err);
 			}
 			edits.put(db, e);
 			mappings.put(rm, rm);

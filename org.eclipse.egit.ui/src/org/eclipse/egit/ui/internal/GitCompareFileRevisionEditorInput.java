@@ -28,9 +28,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.internal.core.history.LocalFileRevision;
 import org.eclipse.team.internal.ui.TeamUIMessages;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
@@ -226,13 +224,13 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		if(left != null && left instanceof GitResourceNode) {
 			String ci = ((GitResourceNode)left).getContentIdentifier();
 			if(ci != null) {
-				cc.setLeftLabel(truncatedRevision(ci));
+				cc.setLeftLabel(ci.substring(0, 7) + ".."); //$NON-NLS-1$
 			}
 		}
 		if(right != null && right instanceof GitResourceNode) {
 			String ci = ((GitResourceNode)right).getContentIdentifier();
 			if(ci != null) {
-				cc.setRightLabel(truncatedRevision(ci));
+				cc.setRightLabel(ci.substring(0, 7) + ".."); //$NON-NLS-1$
 			}
 		}
 		if (getLeftRevision() != null) {
@@ -241,28 +239,11 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		} else if (getResource(input) != null) {
 			String label = NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_workspace, new Object[]{ input.getLeft().getName() });
 			cc.setLeftLabel(label);
-		} else {
-			cc.setLeftLabel(left.getName());
 		}
 		if (getRightRevision() != null) {
 			String rightLabel = getFileRevisionLabel(getRightRevision());
 			cc.setRightLabel(rightLabel);
-		} else {
-			cc.setRightLabel(right.getName());
 		}
-
-	}
-
-	/*
-	 * Returns a truncated revision identifier if it is long
-	 *
-	 * Consider moving to CompareUtils if used elsewhere'
-	 */
-	private String truncatedRevision(String ci) {
-		if(ci.length() > 10)
-			return ci.substring(0, 7) + "..."; //$NON-NLS-1$
-		else
-			return ci;
 	}
 
 	private String getFileRevisionLabel(FileRevisionTypedElement element) {
@@ -270,7 +251,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		if (fileObject instanceof LocalFileRevision){
 			return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_localRevision, new Object[]{element.getName(), element.getTimestamp()});
 		} else {
-			return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_repository, new Object[]{element.getName(), truncatedRevision(element.getContentIdentifier()), element.getAuthor()});
+			return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_repository, new Object[]{element.getName(), element.getContentIdentifier(), element.getAuthor()});
 		}
 	}
 
@@ -280,8 +261,8 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	public String getToolTipText() {
 		Object[] titleObject = new Object[3];
 		titleObject[0] = getLongName(left);
-		titleObject[1] = truncatedRevision(getContentIdentifier(getLeftRevision()));
-		titleObject[2] = truncatedRevision(getContentIdentifier(getRightRevision()));
+		titleObject[1] = getContentIdentifier(getLeftRevision());
+		titleObject[2] = getContentIdentifier(getRightRevision());
 		return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_compareResourceAndVersions, titleObject);
 	}
 
@@ -291,8 +272,8 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	public String getTitle() {
 		Object[] titleObject = new Object[3];
 		titleObject[0] = getShortName(left);
-		titleObject[1] = truncatedRevision(getContentIdentifier(getLeftRevision()));
-		titleObject[2] = truncatedRevision(getContentIdentifier(getRightRevision()));
+		titleObject[1] = getContentIdentifier(getLeftRevision());
+		titleObject[2] = getContentIdentifier(getRightRevision());
 		return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_compareResourceAndVersions, titleObject);
 	}
 
@@ -348,10 +329,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 						return TeamUIMessages.CompareFileRevisionEditorInput_1;
 					}
 				} catch (CoreException e) {
-					Activator
-							.logError(
-									UIText.GitCompareFileRevisionEditorInput_contentIdentifier,
-									e);
+					Activator.logError("Problem getting content identifier", e);
 				}
 			} else {
 				return fileRevisionElement.getContentIdentifier();
@@ -423,34 +401,5 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			}
 		}
 	}
-	/**
-	 * ITypedElement without content. May be used to indicate that a file is not
-	 * available.
-	 */
-	public static class EmptyTypedElement implements ITypedElement{
-
-		private String name;
-
-		/**
-		 * @param name the name used for display
-		 */
-		public EmptyTypedElement(String name) {
-			this.name = name;
-		}
-
-		public Image getImage() {
-			return null;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public String getType() {
-			return ITypedElement.UNKNOWN_TYPE;
-		}
-
-	}
-
 
 }

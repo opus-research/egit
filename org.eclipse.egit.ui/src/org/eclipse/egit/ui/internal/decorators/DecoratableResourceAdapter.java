@@ -29,6 +29,7 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.team.core.Team;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
@@ -37,9 +38,7 @@ import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -47,7 +46,6 @@ import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
-import org.eclipse.team.core.Team;
 
 class DecoratableResourceAdapter implements IDecoratableResource {
 
@@ -61,9 +59,7 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 
 	private final IPreferenceStore store;
 
-	private final String branch;
-
-	private final String repositoryName;
+	private String branch = ""; //$NON-NLS-1$
 
 	private boolean tracked = false;
 
@@ -92,14 +88,9 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 		headId = repository.resolve(Constants.HEAD);
 
 		store = Activator.getDefault().getPreferenceStore();
-		String repoName = Activator.getDefault().getRepositoryUtil().getRepositoryName(repository);
-		RepositoryState state = repository.getRepositoryState();
-		if (state != RepositoryState.SAFE)
-			repositoryName = repoName + '|' + state.getDescription();
-		else
-			repositoryName = repoName;
 
-		branch = getShortBranch();
+		// TODO: Add option to shorten branch name to 6 chars if it's a SHA
+		branch = repository.getBranch();
 
 		TreeWalk treeWalk = createThreeWayTreeWalk();
 		if (treeWalk == null)
@@ -119,23 +110,7 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 		}
 	}
 
-	private String getShortBranch() throws IOException {
-		Ref head = repository.getRef(Constants.HEAD);
-		if (head != null && !head.isSymbolic()) {
-			String refString = Activator.getDefault().getRepositoryUtil()
-					.mapCommitToRef(repository, repository.getFullBranch(),
-							false);
-			if (refString != null) {
-				return repository.getFullBranch().substring(0, 7)
-						+ "... (" + refString + ")"; //$NON-NLS-1$ //$NON-NLS-2$
-			} else
-				return repository.getFullBranch().substring(0, 7) + "..."; //$NON-NLS-1$
-		}
-
-		return repository.getBranch();
-	}
-
-	private void extractResourceProperties(TreeWalk treeWalk) throws IOException {
+	private void extractResourceProperties(TreeWalk treeWalk) {
 		final ContainerTreeIterator workspaceIterator = treeWalk.getTree(
 				T_WORKSPACE, ContainerTreeIterator.class);
 		final ResourceEntry resourceEntry = workspaceIterator != null ? workspaceIterator
@@ -185,10 +160,12 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			dirty = false;
 			assumeValid = true;
 		} else {
-			if (workspaceIterator != null
-					&& workspaceIterator.isModified(indexEntry, true, true,
-							repository.getFS()))
+			if (!timestampMatches(indexEntry, resourceEntry))
 				dirty = true;
+
+			// TODO: Consider doing a content check here, to rule out false
+			// positives, as we might get mismatch between timestamps, even
+			// if the content is the same.
 		}
 	}
 
@@ -236,7 +213,7 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			return false;
 		}
 
-		private boolean shouldRecurse(TreeWalk treeWalk) throws IOException {
+		private boolean shouldRecurse(TreeWalk treeWalk) {
 			final WorkingTreeIterator workspaceIterator = treeWalk.getTree(
 					T_WORKSPACE, WorkingTreeIterator.class);
 
@@ -368,9 +345,30 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 		return treeWalk;
 	}
 
-	private static boolean isIgnored(IResource resource) throws IOException {
+	private static boolean timestampMatches(DirCacheEntry indexEntry,
+			ResourceEntry resourceEntry) {
+		long tIndex = indexEntry.getLastModified();
+		long tWorkspaceResource = resourceEntry.getLastModified();
+
+
+		// C-Git under Windows stores timestamps with 1-seconds resolution,
+		// so we need to check to see if this is the case here, and possibly
+		// fix the timestamp of the resource to match the resolution of the
+		// index.
+		// It also appears the timestamp in Java on Linux may also be rounded
+		// in which case the index timestamp may have subseconds, but not
+		// the timestamp from the workspace resource.
+		// If either timestamp looks rounded we skip the subscond part.
+		if (tIndex % 1000 == 0 || tWorkspaceResource % 1000 == 0) {
+			return tIndex / 1000 == tWorkspaceResource / 1000;
+		} else {
+			return tIndex == tWorkspaceResource;
+		}
+	}
+
+	private static boolean isIgnored(IResource resource) {
 		// TODO: Also read ignores from .git/info/excludes et al.
-		return Team.isIgnoredHint(resource) || RepositoryMapping.isIgnored(resource);
+		return Team.isIgnoredHint(resource);
 	}
 
 	public String getName() {
@@ -379,10 +377,6 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 
 	public int getType() {
 		return resource.getType();
-	}
-
-	public String getRepositoryName() {
-		return repositoryName;
 	}
 
 	public String getBranch() {

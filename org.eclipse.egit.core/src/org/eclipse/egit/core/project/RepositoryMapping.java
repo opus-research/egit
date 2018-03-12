@@ -24,20 +24,20 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.GitProvider;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
-import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
-import org.eclipse.team.core.RepositoryProvider;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 
 /**
  * This class keeps track
  */
 public class RepositoryMapping {
 	static boolean isInitialKey(final String key) {
-		return key.endsWith(".gitdir");  //$NON-NLS-1$
+		return key.endsWith(".gitdir");
 	}
 
 	private final String containerPath;
@@ -49,7 +49,6 @@ public class RepositoryMapping {
 	private String workdirPrefix;
 
 	private IContainer container;
-
 
 	/**
 	 * Construct a {@link RepositoryMapping} for a previously connected project.
@@ -93,9 +92,9 @@ public class RepositoryMapping {
 				gitdirPath = remainder.toPortableString().substring(device.length());
 		} else if (gLocParent.isPrefixOf(cLoc)) {
 			cnt = cLoc.segmentCount() - cLoc.matchingFirstSegments(gLocParent);
-			p = "";  //$NON-NLS-1$
+			p = "";
 			while (cnt-- > 0) {
-				p += "../";  //$NON-NLS-1$
+				p += "../";
 			}
 			p += gLoc.segment(gLoc.segmentCount() - 1);
 			gitdirPath = p;
@@ -144,8 +143,8 @@ public class RepositoryMapping {
 			workdirPrefix = getWorkDir().getAbsolutePath();
 		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
-		if (!workdirPrefix.endsWith("/"))  //$NON-NLS-1$
-			workdirPrefix += "/";  //$NON-NLS-1$
+		if (!workdirPrefix.endsWith("/"))
+			workdirPrefix += "/";
 	}
 
 	/**
@@ -169,13 +168,11 @@ public class RepositoryMapping {
 	}
 
 	synchronized void store(final Properties p) {
-		p.setProperty(containerPath + ".gitdir", gitdirPath);  //$NON-NLS-1$
+		p.setProperty(containerPath + ".gitdir", gitdirPath);
 	}
 
 	public String toString() {
-		return "RepositoryMapping[" //$NON-NLS-1$
-				+ containerPath + " -> " //$NON-NLS-1$
-				+ gitdirPath + "]"; //$NON-NLS-1$
+		return "RepositoryMapping[" + containerPath + " -> " + gitdirPath + "]";
 	}
 
 	/**
@@ -224,7 +221,7 @@ public class RepositoryMapping {
 		if (pLen > pfxLen)
 			return p.substring(pfxLen);
 		else if (p.length() == pfxLen - 1)
-			return "";  //$NON-NLS-1$
+			return "";
 		return null;
 	}
 
@@ -256,63 +253,4 @@ public class RepositoryMapping {
 	public String getGitDir() {
 		return gitdirPath;
 	}
-
-	/**
-	 * @return The GIT DIR absolute path
-	 */
-	public IPath getGitDirAbsolutePath() {
-		return container.getLocation().append(getGitDirPath());
-	}
-	/**
-	 * Refresh a git ignore file in the cache. There is no function for
-	 * deleting nodes, any node refreshed here will automatically be cleared.
-	 * Nodes will not be parsed again until a call to {@link #isIgnored(IResource)}
-	 * is made.
-	 * <br>
-	 * This function will refresh the parent of the target resource.
-	 *
-	 * @param resource
-	 * 			  The .gitignore file to refresh for.
-	 * @throws IOException
-	 * 			  Failed to initialize cache.
-	 *
-	 *
-	 */
-	public void refreshIgnoreNode(IResource resource) throws IOException {
-		if (db.getIgnoreCache() != null) {
-			db.getIgnoreCache().addIgnoreNode(resource.getParent().getLocation().toFile());
-		}
-	}
-
-	/**
-	 * Refreshes rules located at the base of this ignore cache. Will re-initialize
-	 * the .gitignore and/or exclude rules at this location.
-	 *
-	 * @throws IOException
-	 */
-	public void refreshBase() throws IOException {
-		if (db.getIgnoreCache() != null) {
-			db.getIgnoreCache().readRulesAtBase();
-		}
-	}
-
-	/**
-	 * Check the ignored status of the given resource. Resource must be
-	 * part of a RepositoryMapping. Returns false if no mapping can be found.
-	 *
-	 * @param rsrc
-	 * 			  Resource to check.
-	 * @return True if resource is ignored. False if the resource is not
-	 * ignored or if there is no RepositoryMapping for the resource
-	 * @throws IOException
-	 * 			  Failed to check ignore status
-	 */
-	public static boolean isIgnored(IResource rsrc) throws IOException {
-		RepositoryMapping m = getMapping(rsrc);
-		if (m != null) {
-			return m.getRepository().getIgnoreCache().isIgnored(m.getRepoRelativePath(rsrc));
-		}
-		return false;
-	}
-
 }
