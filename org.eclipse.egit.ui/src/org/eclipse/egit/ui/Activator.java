@@ -13,7 +13,6 @@ import java.net.Authenticator;
 import java.net.ProxySelector;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,8 +29,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.nternal.trace.GitTraceLocation;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.lib.IndexChangedEvent;
@@ -40,8 +39,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jsch.core.IJSchService;
-import org.eclipse.osgi.service.debug.DebugOptions;
-import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -52,7 +49,7 @@ import org.osgi.framework.ServiceReference;
 /**
  * This is a plugin singleton mostly controlling logging.
  */
-public class Activator extends AbstractUIPlugin implements DebugOptionsListener {
+public class Activator extends AbstractUIPlugin {
 
 	/**
 	 *  The one and only instance
@@ -170,13 +167,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
-
-        // register this as DebugOptions listener
-		Hashtable<String, String> props = new Hashtable<String, String>(4);
-		// we want to get notified about our own DebugOptions
-		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle().getSymbolicName());
-		context.registerService(DebugOptionsListener.class.getName(), this, props);
-
 		setupSSH(context);
 		setupProxy(context);
 		setupRepoChangeScanner();
@@ -292,6 +282,12 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 		// FIXME, need to be more intelligent about this to avoid too much work
 		private static final long REPO_SCAN_INTERVAL = 10000L;
+		// volatile in order to ensure thread synchronization
+		private volatile boolean doReschedule = true;
+
+		void setReschedule(boolean reschedule){
+			doReschedule = reschedule;
+		}
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
@@ -333,7 +329,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 					GitTraceLocation.getTrace().trace(
 							GitTraceLocation.UI.getLocation(),
 							"Rescheduling " + getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
-				schedule(REPO_SCAN_INTERVAL);
+				if (doReschedule)
+					schedule(REPO_SCAN_INTERVAL);
 			} catch (Exception e) {
 				// TODO is this the right location?
 				if (GitTraceLocation.UI.isActive())
@@ -353,6 +350,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 	private void setupRepoChangeScanner() {
 		rcs = new RCS();
+		rcs.setSystem(true);
 		rcs.schedule(RCS.REPO_SCAN_INTERVAL);
 	}
 
@@ -379,10 +377,14 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 	public void stop(final BundleContext context) throws Exception {
+
 		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(),
 					"Trying to cancel " + rcs.getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		rcs.setReschedule(false);
+
 		rcs.cancel();
 		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
@@ -396,11 +398,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(), "Jobs terminated"); //$NON-NLS-1$
+
 		super.stop(context);
 		plugin = null;
-	}
-
-	public void optionsChanged(DebugOptions options) {
-		GitTraceLocation.initializeFromOptions(options, isDebugging());
 	}
 }
