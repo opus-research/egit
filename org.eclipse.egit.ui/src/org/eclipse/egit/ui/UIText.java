@@ -229,6 +229,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_openFailed;
 
 	/** */
+	public static String GitHistoryPage_seeLog;
+
+	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -1300,6 +1303,15 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
 
 	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotRenameRef2;
+
+	/** */
+	public static String BranchSelectionDialog_BranchSelectionDialog_CreateFailedTitle;
+
+	/** */
+	public static String BranchSelectionDialog_BranchSelectionDialog_RenamedFailedTitle;
+
+	/** */
 	public static String BranchSelectionDialog_BranchSuffix_Current;
 
 	/** */
@@ -1589,21 +1601,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_WorkingDir_treenode;
-
-	/** */
-	public static String RepositoriesViewContentProvider_ExceptionNodeText;
-
-	/** */
-	public static String RepositoriesViewLabelProvider_LocalBranchesNodetext;
-
-	/** */
-	public static String RepositoriesViewLabelProvider_RemoteBrancheNodetext;
-
-	/** */
-	public static String RepositoriesViewLabelProvider_SymbolicRefNodeText;
-
-	/** */
-	public static String RepositoriesViewLabelProvider_TagsNodeText;
 
 	/** */
 	public static String DiscardChangesAction_confirmActionTitle;

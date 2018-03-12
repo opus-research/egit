@@ -201,8 +201,9 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 						UIText.GitCloneWizard_CloneCanceledMessage);
 				return false;
 			} catch (Exception e) {
-				Activator.handleError(UIText.GitCloneWizard_CloneFailedHeading,
-						e, true);
+				Activator.logError(UIText.GitCloneWizard_CloneFailedHeading, e);
+				MessageDialog.openError(getShell(),
+						UIText.GitCloneWizard_CloneFailedHeading, e.toString());
 				return false;
 			}
 		}
