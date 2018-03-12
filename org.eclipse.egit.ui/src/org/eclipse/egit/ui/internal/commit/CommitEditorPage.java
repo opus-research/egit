@@ -140,7 +140,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		return (Image) this.resources.get(descriptor);
 	}
 
-	Section createSection(Composite parent, FormToolkit toolkit,
+	private Section createSection(Composite parent, FormToolkit toolkit,
 			int span) {
 		Section section = toolkit.createSection(parent,
 				ExpandableComposite.TITLE_BAR | ExpandableComposite.TWISTIE
@@ -150,7 +150,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		return section;
 	}
 
-	Composite createSectionClient(Section parent, FormToolkit toolkit) {
+	private Composite createSectionClient(Section parent, FormToolkit toolkit) {
 		Composite client = toolkit.createComposite(parent);
 		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
 				.applyTo(client);
@@ -214,7 +214,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		return userArea;
 	}
 
-	void updateSectionClient(Section section, Composite client,
+	private void updateSectionClient(Section section, Composite client,
 			FormToolkit toolkit) {
 		hookExpansionGrabbing(section);
 		toolkit.paintBordersFor(client);
@@ -292,8 +292,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		return tags;
 	}
 
-	void createTagsArea(Composite parent, FormToolkit toolkit,
-			int span) {
+	private void createTagsArea(Composite parent, FormToolkit toolkit, int span) {
 		Composite tagArea = toolkit.createComposite(parent);
 		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false)
 				.applyTo(tagArea);
@@ -307,17 +306,14 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		GridLayoutFactory.fillDefaults().spacing(1, 1).applyTo(tagLabelArea);
 	}
 
-	void fillIndexDiffs(FileDiff[] diffs) {
+	private void fillDiffs(FileDiff[] diffs) {
 		diffViewer.setInput(diffs);
-		diffSection.setText(getIndexDiffSectionTitle(Integer.valueOf(diffs.length)));
+		diffSection.setText(MessageFormat.format(
+				UIText.CommitEditorPage_SectionFiles,
+				Integer.valueOf(diffs.length)));
 	}
 
-	String getIndexDiffSectionTitle(Integer numChanges) {
-		return MessageFormat.format(UIText.CommitEditorPage_SectionFiles,
-				numChanges);
-	}
-
-	void fillTags(FormToolkit toolkit, List<Ref> tags) {
+	private void fillTags(FormToolkit toolkit, List<Ref> tags) {
 		for (Control child : tagLabelArea.getChildren())
 			child.dispose();
 
@@ -415,7 +411,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 				Integer.valueOf(result.size())));
 	}
 
-	void createIndexChangesArea(Composite parent, FormToolkit toolkit, int span) {
+	private void createFilesArea(Composite parent, FormToolkit toolkit, int span) {
 		diffSection = createSection(parent, toolkit, span);
 		diffSection.setText(UIText.CommitEditorPage_SectionFilesEmpty);
 		Composite filesArea = createSectionClient(diffSection, toolkit);
@@ -433,7 +429,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		updateSectionClient(diffSection, filesArea, toolkit);
 	}
 
-	RepositoryCommit getCommit() {
+	private RepositoryCommit getCommit() {
 		return (RepositoryCommit) getEditor()
 				.getAdapter(RepositoryCommit.class);
 	}
@@ -461,14 +457,10 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 		createHeaderArea(displayArea, toolkit, 2);
 		createMessageArea(displayArea, toolkit, 2);
-		createChangesArea(displayArea, toolkit);
+		createFilesArea(displayArea, toolkit, 1);
+		createBranchesArea(displayArea, toolkit, 1);
 
 		loadSections();
-	}
-
-	void createChangesArea(Composite displayArea, FormToolkit toolkit) {
-		createIndexChangesArea(displayArea, toolkit, 1);
-		createBranchesArea(displayArea, toolkit, 1);
 	}
 
 	private List<Ref> loadTags() {
@@ -505,7 +497,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		}
 	}
 
-	void loadSections() {
+	private void loadSections() {
 		RepositoryCommit commit = getCommit();
 		Job refreshJob = new Job(MessageFormat.format(
 				UIText.CommitEditorPage_JobName, commit.getRevCommit().name())) {
@@ -525,7 +517,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 								return;
 
 							fillTags(getManagedForm().getToolkit(), tags);
-							fillIndexDiffs(diffs);
+							fillDiffs(diffs);
 							fillBranches(branches);
 							form.layout(true, true);
 						}
