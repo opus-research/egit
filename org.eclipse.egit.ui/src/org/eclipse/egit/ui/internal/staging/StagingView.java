@@ -848,7 +848,12 @@ public class StagingView extends ViewPart {
 				case UNTRACKED:
 				default:
 					menuMgr.add(createItem(ActionCommands.DISCARD_CHANGES_ACTION, tableViewer));	// replace with index
-					menuMgr.add(createItem(ActionCommands.ADD_TO_INDEX, tableViewer));
+					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
+						@Override
+						public void run() {
+							stage((IStructuredSelection) tableViewer.getSelection());
+						}
+					});
 				}
 			}
 		});
@@ -1240,7 +1245,7 @@ public class StagingView extends ViewPart {
 		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
-		amendPreviousCommitAction.setEnabled(amendAllowed(helper));
+		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
 	}
 
 	private void loadExistingState(CommitHelper helper,
@@ -1257,7 +1262,7 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(oldState.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
-		boolean amendAllowed = amendAllowed(helper);
+		boolean amendAllowed = helper.amendAllowed();
 		commitMessageComponent.setAmendAllowed(amendAllowed);
 		if (!amendAllowed) {
 			commitMessageComponent.setAmending(false);
@@ -1286,17 +1291,12 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(helper.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
-		commitMessageComponent.setAmendAllowed(amendAllowed(helper));
+		commitMessageComponent.setAmendAllowed(helper.amendAllowed());
 		commitMessageComponent.setAmending(false);
 		commitMessageComponent.setSignedOff(false);
 		commitMessageComponent.setCreateChangeId(false);
 		commitMessageComponent.updateUI();
 		commitMessageComponent.enableListers(true);
-	}
-
-	private boolean amendAllowed(CommitHelper commitHelper) {
-		return !commitHelper.isMergedResolved()
-				&& !commitHelper.isCherryPickResolved();
 	}
 
 	private boolean userEnteredCommmitMessage() {
