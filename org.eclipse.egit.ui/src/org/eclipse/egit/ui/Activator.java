@@ -69,8 +69,6 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	public static final String DECORATORS_CHANGED = "org.eclipse.egit.ui.DECORATORS_CHANGED"; //$NON-NLS-1$
 
-	private RepositoryUtil repositoryUtil;
-
 	/**
 	 * @return the {@link Activator} singleton.
 	 */
@@ -161,7 +159,6 @@ public class Activator extends AbstractUIPlugin {
 
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
-		repositoryUtil = new RepositoryUtil();
 
 		if (isDebugging()) {
 			ServiceTracker debugTracker = new ServiceTracker(context,
@@ -404,8 +401,6 @@ public class Activator extends AbstractUIPlugin {
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(), "Jobs terminated"); //$NON-NLS-1$
 
-		repositoryUtil.dispose();
-		repositoryUtil = null;
 		super.stop(context);
 		plugin = null;
 	}
@@ -438,10 +433,4 @@ public class Activator extends AbstractUIPlugin {
 		return new Status(IStatus.ERROR, getPluginId(), message, throwable);
 	}
 
-	/**
-	 * @return the {@link RepositoryUtil} instance
-	 */
-	public RepositoryUtil getRepositoryUtil() {
-		return repositoryUtil;
-	}
 }
