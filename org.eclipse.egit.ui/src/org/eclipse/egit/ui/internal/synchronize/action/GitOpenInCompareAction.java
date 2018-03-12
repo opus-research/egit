@@ -26,6 +26,8 @@ import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.synchronize.compare.LocalNonWorkspaceTypedElement;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCacheFile;
+import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
+import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelWorkingFile;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.viewers.ISelection;
@@ -85,11 +87,29 @@ public class GitOpenInCompareAction extends Action {
 		ITypedElement left;
 		ITypedElement right;
 		if (obj instanceof GitModelWorkingFile) {
-			IFile file = ResourceUtil.getFileForLocation(obj.getLocation());
-			if (file == null)
-				left = new LocalNonWorkspaceTypedElement(obj.getLocation());
-			else
+			IPath location = obj.getLocation();
+			if (location == null) {
+				return;
+			}
+			IFile file = ResourceUtil.getFileForLocation(location, false);
+			if (file == null) {
+				Repository repository = null;
+				GitModelObject modelObject = obj;
+				while (modelObject != null) {
+					if (modelObject instanceof GitModelRepository) {
+						repository = ((GitModelRepository) modelObject)
+								.getRepository();
+						break;
+					}
+					modelObject = modelObject.getParent();
+				}
+				if (repository == null) {
+					return;
+				}
+				left = new LocalNonWorkspaceTypedElement(repository, location);
+			} else {
 				left = SaveableCompareEditorInput.createFileElement(file);
+			}
 			right = getCachedFileElement(obj);
 		} else if (obj instanceof GitModelCacheFile) {
 			left = getCachedFileElement(obj);

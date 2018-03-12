@@ -2,6 +2,7 @@
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2016, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +34,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.storage.IndexFileRevision;
 import org.eclipse.egit.core.internal.storage.OpenWorkspaceVersionEnabled;
 import org.eclipse.egit.ui.internal.CommonUtils;
@@ -43,15 +45,11 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.core.history.IFileRevision;
-import org.eclipse.team.internal.ui.Utils;
 import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter.ISharedDocumentAdapterListener;
 import org.eclipse.team.internal.ui.synchronize.LocalResourceSaveableComparison;
 import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
@@ -64,7 +62,6 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.Saveable;
 import org.eclipse.ui.SaveablesLifecycleEvent;
-import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
  * The input provider for the compare editor when working on resources
@@ -402,10 +399,10 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			if (fileObject instanceof LocalFileRevision){
 				try {
 					IStorage storage = ((LocalFileRevision) fileObject).getStorage(new NullProgressMonitor());
-					if (CompareUtils.getAdapter(storage, IFileState.class) != null){
+					if (AdapterUtils.adapt(storage, IFileState.class) != null) {
 						//local revision
 						return UIText.GitCompareFileRevisionEditorInput_LocalRevision;
-					} else if (CompareUtils.getAdapter(storage, IFile.class) != null) {
+					} else if (AdapterUtils.adapt(storage, IFile.class) != null) {
 						//current revision
 						return UIText.GitCompareFileRevisionEditorInput_CurrentRevision;
 					}
@@ -532,24 +529,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			IWorkbenchPage page = window.getActivePage();
 			IEditorPart editor = EgitUiEditorUtils.openEditor(workspaceFile,
 					page);
-			selectLine(editor, selectedLine);
-		}
-
-		private void selectLine(IEditorPart editorPart, int selectedLine) {
-			if (editorPart instanceof ITextEditor) {
-				ITextEditor editor = (ITextEditor) editorPart;
-				IDocument document = editor.getDocumentProvider().getDocument(
-						editor.getEditorInput());
-				if (document != null)
-					try {
-						IRegion line = document
-								.getLineInformation(selectedLine);
-						editor.selectAndReveal(line.getOffset(), 0);
-					} catch (BadLocationException e) {
-						// line seems not to exist in
-						// workspace version
-					}
-			}
+			EgitUiEditorUtils.revealLine(editor, selectedLine);
 		}
 	}
 
@@ -657,8 +637,8 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 
 		private ISaveablesLifecycleListener getSaveablesLifecycleListener(
 				IWorkbenchPart part) {
-			ISaveablesLifecycleListener listener = (ISaveablesLifecycleListener) Utils
-					.getAdapter(part, ISaveablesLifecycleListener.class);
+			ISaveablesLifecycleListener listener = AdapterUtils.adapt(part,
+					ISaveablesLifecycleListener.class);
 			if (listener == null)
 				listener = CommonUtils.getService(part.getSite(), ISaveablesLifecycleListener.class);
 			return listener;
@@ -682,6 +662,19 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		@Override
 		public void handleDocumentSaved() {
 			// Ignore
+		}
+
+		@Override
+		public void doSave(IProgressMonitor monitor) throws CoreException {
+			// SaveableComparison unconditionally resets the dirty flag to
+			// false, but LocalResourceSaveableComparison's performSave may not
+			// actually save: if the file has been changed outside the compare
+			// editor, it displays a dialog that the user may cancel.
+			if (isDirty()) {
+				performSave(monitor);
+				// LocalResourecSaveableComparison does already reset the dirty
+				// flag if it did save.
+			}
 		}
 	}
 

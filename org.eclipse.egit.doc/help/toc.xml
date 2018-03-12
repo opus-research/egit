@@ -102,6 +102,7 @@
 			<topic href="help/EGit/User_Guide/Tasks.html#Working_with_Gitflow" label="Working with Gitflow">
 				<topic href="help/EGit/User_Guide/Tasks.html#Enabling_Gitflow_for_a_repository" label="Enabling Gitflow for a repository"></topic>
 				<topic href="help/EGit/User_Guide/Tasks.html#Starting_a_feature.2Frelease.2Fhotfix" label="Starting a feature/release/hotfix"></topic>
+				<topic href="help/EGit/User_Guide/Tasks.html#Starting_release_from_a_commit_other_than_HEAD" label="Starting release from a commit other than HEAD"></topic>
 			</topic>
 			<topic href="help/EGit/User_Guide/Tasks.html#Inspecting_the_state_of_the_Repository" label="Inspecting the state of the Repository">
 				<topic href="help/EGit/User_Guide/Tasks.html#Label_Decorations" label="Label Decorations">
@@ -441,32 +442,25 @@
 		</topic>
 		<topic href="help/JGit/User_Guide/Updating-This-Document.html" label="Updating This Document"></topic>
 	</topic>
-	<topic href="help/EGit/New_and_Noteworthy/4.0/4.0.html" label="EGit 4.0 New and Noteworthy">
-		<topic href="help/EGit/New_and_Noteworthy/4.0/4.0.html" label="EGit">
-			<topic href="help/EGit/New_and_Noteworthy/4.0/4.0.html#Features" label="Features"></topic>
-			<topic href="help/EGit/New_and_Noteworthy/4.0/4.0.html#Usability_Improvements" label="Usability Improvements"></topic>
-			<topic href="help/EGit/New_and_Noteworthy/4.0/4.0.html#Performance_Improvements" label="Performance Improvements"></topic>
-			<topic href="help/EGit/New_and_Noteworthy/4.0/4.0.html#Build_and_release_engineering" label="Build and release engineering"></topic>
+	<topic href="help/EGit/New_and_Noteworthy/4.5/4.5.html" label="EGit 4.5 New and Noteworthy">
+		<topic href="help/EGit/New_and_Noteworthy/4.5/4.5.html" label="EGit">
+			<topic href="help/EGit/New_and_Noteworthy/4.5/4.5.html#Features" label="Features"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/4.5/4.5.html#Performance" label="Performance"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/4.5/4.5.html#Releng" label="Releng"></topic>
 		</topic>
-		<topic href="help/EGit/New_and_Noteworthy/4.0/Bug-Fixes.html" label="Bug Fixes"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/4.0/Contributors.html" label="Contributors"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/4.0/Updating-This-Document.html" label="Updating This Document"></topic>
+		<topic href="help/EGit/New_and_Noteworthy/4.5/Bug-Fixes.html" label="Bug Fixes"></topic>
+		<topic href="help/EGit/New_and_Noteworthy/4.5/Contributors.html" label="Contributors"></topic>
+		<topic href="help/EGit/New_and_Noteworthy/4.5/Updating-This-Document.html" label="Updating This Document"></topic>
 	</topic>
-	<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html" label="JGit 4.0 New and Noteworthy">
-		<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html" label="JGit">
-			<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html#Update_to_Java_7" label="Update to Java 7"></topic>
-			<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html#API_cleanup" label="API cleanup"></topic>
-			<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html#Configuration" label="Configuration"></topic>
-			<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html#Protocol" label="Protocol"></topic>
-			<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html#Hooks" label="Hooks"></topic>
-			<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html#Misc._Enhancements" label="Misc. Enhancements"></topic>
-			<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html#Introduce_logging" label="Introduce logging"></topic>
-			<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html#Performance_Improvements" label="Performance Improvements"></topic>
-			<topic href="help/JGit/New_and_Noteworthy/4.0/4.0.html#Build_and_release_engineering" label="Build and release engineering"></topic>
+	<topic href="help/JGit/New_and_Noteworthy/4.5/4.5.html" label="JGit 4.5 New and Noteworthy">
+		<topic href="help/JGit/New_and_Noteworthy/4.5/4.5.html" label="JGit">
+			<topic href="help/JGit/New_and_Noteworthy/4.5/4.5.html#Features" label="Features"></topic>
+			<topic href="help/JGit/New_and_Noteworthy/4.5/4.5.html#JGit_Command_Line" label="JGit Command Line"></topic>
+			<topic href="help/JGit/New_and_Noteworthy/4.5/4.5.html#LFS" label="LFS"></topic>
 		</topic>
-		<topic href="help/JGit/New_and_Noteworthy/4.0/Bug-Fixes.html" label="Bug Fixes"></topic>
-		<topic href="help/JGit/New_and_Noteworthy/4.0/Contributors.html" label="Contributors"></topic>
-		<topic href="help/JGit/New_and_Noteworthy/4.0/Updating-This-Document.html" label="Updating This Document"></topic>
+		<topic href="help/JGit/New_and_Noteworthy/4.5/Bug-Fixes.html" label="Bug Fixes"></topic>
+		<topic href="help/JGit/New_and_Noteworthy/4.5/Contributors.html" label="Contributors"></topic>
+		<topic href="help/JGit/New_and_Noteworthy/4.5/Updating-This-Document.html" label="Updating This Document"></topic>
 	</topic>
 	<topic href="help/EGit/Git_For_Eclipse_Users/Git-For-Eclipse-Users.html" label="Git for Eclipse Users">
 		<topic href="help/EGit/Git_For_Eclipse_Users/Git-For-Eclipse-Users.html" label="Centralised version control systems"></topic>
@@ -483,27 +477,27 @@
 	</topic>
 	<topic href="help/EGit/Contributor_Guide/Contributor-Guide.html" label="EGit Contributor Guide">
 		<topic href="help/EGit/Contributor_Guide/Contributor-Guide.html" label="Communication"></topic>
-		<topic href="help/EGit/Contributor_Guide/Obtaining-Sources.html" label="Obtaining Sources">
-			<topic href="help/EGit/Contributor_Guide/Obtaining-Sources.html#Cloning" label="Cloning">
-				<topic href="help/EGit/Contributor_Guide/Obtaining-Sources.html#On_the_command_line" label="On the command line"></topic>
-				<topic href="help/EGit/Contributor_Guide/Obtaining-Sources.html#Using_EGit_.28see_.5Bhttp:.2F.2Fwww.eclipse.org.2Fegit.2Fdownload.2F_download_page.5D.29" label="Using EGit (see [http://www.eclipse.org/egit/download/ download page])"></topic>
+		<topic href="help/EGit/Contributor_Guide/Automated-Developer-Setup.html" label="Automated Developer Setup"></topic>
+		<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html" label="Manual Developer Setup">
+			<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#Obtaining_Sources" label="Obtaining Sources">
+				<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#Cloning" label="Cloning">
+					<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#On_the_command_line" label="On the command line"></topic>
+					<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#Using_EGit_.28see_.5Bhttp:.2F.2Fwww.eclipse.org.2Fegit.2Fdownload.2F_download_page.5D.29" label="Using EGit (see [http://www.eclipse.org/egit/download/ download page])"></topic>
+				</topic>
+				<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#Repositories" label="Repositories">
+					<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#EGit" label="EGit"></topic>
+					<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#JGit" label="JGit"></topic>
+					<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#EGit_GitHub_Integration" label="EGit GitHub Integration"></topic>
+					<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#EGit_PDE_Tools" label="EGit PDE Tools"></topic>
+				</topic>
 			</topic>
-			<topic href="help/EGit/Contributor_Guide/Obtaining-Sources.html#Repositories" label="Repositories">
-				<topic href="help/EGit/Contributor_Guide/Obtaining-Sources.html#EGit" label="EGit"></topic>
-				<topic href="help/EGit/Contributor_Guide/Obtaining-Sources.html#JGit" label="JGit"></topic>
-				<topic href="help/EGit/Contributor_Guide/Obtaining-Sources.html#EGit_GitHub_Integration" label="EGit GitHub Integration"></topic>
-				<topic href="help/EGit/Contributor_Guide/Obtaining-Sources.html#EGit_PDE_Tools" label="EGit PDE Tools"></topic>
+			<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#Development_IDE_Configuration" label="Development IDE Configuration">
+				<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#Tools" label="Tools"></topic>
+				<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#Java_Requirements" label="Java Requirements"></topic>
+				<topic href="help/EGit/Contributor_Guide/Manual-Developer-Setup.html#Dependencies" label="Dependencies"></topic>
 			</topic>
 		</topic>
-		<topic href="help/EGit/Contributor_Guide/Development-IDE-Configuration.html" label="Development IDE Configuration">
-			<topic href="help/EGit/Contributor_Guide/Development-IDE-Configuration.html#Tools" label="Tools"></topic>
-			<topic href="help/EGit/Contributor_Guide/Development-IDE-Configuration.html#Java_Requirements" label="Java Requirements"></topic>
-			<topic href="help/EGit/Contributor_Guide/Development-IDE-Configuration.html#Dependencies" label="Dependencies">
-				<topic href="help/EGit/Contributor_Guide/Development-IDE-Configuration.html#Option_1:_Use_a_Target_Platform" label="Option 1: Use a Target Platform"></topic>
-				<topic href="help/EGit/Contributor_Guide/Development-IDE-Configuration.html#Option_2:_Install_from_Orbit_P2_Repository" label="Option 2: Install from Orbit P2 Repository"></topic>
-			</topic>
-			<topic href="help/EGit/Contributor_Guide/Development-IDE-Configuration.html#Running" label="Running"></topic>
-		</topic>
+		<topic href="help/EGit/Contributor_Guide/Running-EGit-from-Eclipse.html" label="Running EGit from Eclipse"></topic>
 		<topic href="help/EGit/Contributor_Guide/Builds.html" label="Builds">
 			<topic href="help/EGit/Contributor_Guide/Builds.html#JGit_2" label="JGit"></topic>
 			<topic href="help/EGit/Contributor_Guide/Builds.html#EGit_2" label="EGit"></topic>
@@ -531,7 +525,10 @@
 		</topic>
 		<topic href="help/EGit/Contributor_Guide/Bugs.html" label="Bugs">
 			<topic href="help/EGit/Contributor_Guide/Bugs.html#Links" label="Links">
-				<topic href="help/EGit/Contributor_Guide/Bugs.html#Filing_Bugs" label="Filing Bugs"></topic>
+				<topic href="help/EGit/Contributor_Guide/Bugs.html#Filing_Bugs" label="Filing Bugs">
+					<topic href="help/EGit/Contributor_Guide/Bugs.html#How_to_file_bugs" label="How to file bugs"></topic>
+					<topic href="help/EGit/Contributor_Guide/Bugs.html#File_a_bug" label="File a bug"></topic>
+				</topic>
 				<topic href="help/EGit/Contributor_Guide/Bugs.html#Bug_Reports_and_Links" label="Bug Reports and Links"></topic>
 			</topic>
 			<topic href="help/EGit/Contributor_Guide/Bugs.html#Keywords" label="Keywords"></topic>

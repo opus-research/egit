@@ -8,6 +8,7 @@
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
  * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -67,6 +68,10 @@ public class UIPreferences {
 	/** */
 	public final static String COMMIT_DIALOG_HARD_WRAP_MESSAGE = "commit_dialog_hard_wrap_message"; //$NON-NLS-1$
 	/** */
+	public final static String ALWAYS_USE_STAGING_VIEW = "always_use_staging_view"; //$NON-NLS-1$
+	/** */
+	public final static String AUTO_STAGE_ON_COMMIT = "auto_stage_on_commit"; //$NON-NLS-1$
+	/** */
 	public final static String COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE = "commit_dialog_warn_about_message_second_line"; //$NON-NLS-1$
 	/** */
 	public final static String COMMIT_DIALOG_SIGNED_OFF_BY = "commit_dialog_signed_off_by"; //$NON-NLS-1$
@@ -125,6 +130,8 @@ public class UIPreferences {
 	/** */
 	public final static String DECORATOR_PROJECTTEXT_DECORATION = "decorator_projecttext_decoration"; //$NON-NLS-1$
 	/** */
+	public final static String DECORATOR_SUBMODULETEXT_DECORATION = "decorator_submoduletext_decoration"; //$NON-NLS-1$
+	/** */
 	public final static String DECORATOR_SHOW_TRACKED_ICON = "decorator_show_tracked_icon"; //$NON-NLS-1$
 	/** */
 	public final static String DECORATOR_SHOW_UNTRACKED_ICON = "decorator_show_untracked_icon"; //$NON-NLS-1$
@@ -133,7 +140,7 @@ public class UIPreferences {
 	/** */
 	public final static String DECORATOR_SHOW_CONFLICTS_ICON = "decorator_show_conflicts_icon"; //$NON-NLS-1$
 	/** */
-	public final static String DECORATOR_SHOW_ASSUME_VALID_ICON = "decorator_show_assume_valid_icon"; //$NON-NLS-1$
+	public final static String DECORATOR_SHOW_ASSUME_UNCHANGED_ICON = "decorator_show_assume_valid_icon"; //$NON-NLS-1$
 	/** */
 	public final static String DECORATOR_SHOW_DIRTY_ICON = "decorator_show_dirty_icon"; //$NON-NLS-1$
 	/** */
@@ -147,7 +154,13 @@ public class UIPreferences {
 	/** */
 	public final static String DATE_FORMAT = "date_format"; //$NON-NLS-1$
 	/** */
+	public final static String DATE_FORMAT_CHOICE = "date_format_choice"; //$NON-NLS-1$
+	/** */
+	public static final String DATE_FORMAT_CUSTOM = "CUSTOM"; //$NON-NLS-1$
+	/** */
 	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";  //$NON-NLS-1$
+	/** */
+	public static final String DEFAULT_DATE_FORMAT_CHOICE = DATE_FORMAT_CUSTOM;
 	/** */
 	public static final String DEFAULT_CHANGESET_FORMAT = "[{author}] ({date}) {short_message}"; //$NON-NLS-1$
 	/** */
@@ -249,14 +262,29 @@ public class UIPreferences {
 	 *            the String value
 	 * @param cnt
 	 *            number of entries in the returned array
-	 * @return the preference values for the array.
+	 * @return the preference values for the array, or null if the string cannot
+	 *         be parsed or doesn't have {@code cnt} elements, or any value is
+	 *         <= 0.
 	 */
 	public static int[] stringToIntArray(final String value, final int cnt) {
+		if (value == null) {
+			return null;
+		}
+		final String[] values = value.split(","); //$NON-NLS-1$
+		if (values.length != cnt) {
+			return null;
+		}
 		final int[] r = new int[cnt];
-		if (value != null) {
-			final String[] e = value.split(","); //$NON-NLS-1$
-			for (int i = 0; i < Math.min(e.length, r.length); i++)
-				r[i] = Integer.parseInt(e[i].trim());
+		for (int i = 0; i < values.length; i++) {
+			try {
+				int val = Integer.parseInt(values[i].trim());
+				if (val <= 0) {
+					return null;
+				}
+				r[i] = val;
+			} catch (NumberFormatException e) {
+				return null;
+			}
 		}
 		return r;
 	}

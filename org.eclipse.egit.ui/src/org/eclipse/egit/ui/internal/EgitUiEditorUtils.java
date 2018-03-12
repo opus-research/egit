@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2000, 2013 IBM Corporation and others.
+ * Copyright (c) 2000, 2016 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,14 +19,19 @@ import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.util.OpenStrategy;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.IEditorDescriptor;
@@ -36,8 +41,9 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.EditorsUI;
-import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.part.MultiPageEditorPart;
+import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
  * Taken from the Team UI plug in Utils class
@@ -54,14 +60,15 @@ public class EgitUiEditorUtils {
 	public static IEditorPart openEditor(IWorkbenchPage page,
 			IFileRevision revision, IProgressMonitor monitor)
 			throws CoreException {
-		IStorage file = revision.getStorage(monitor);
+		SubMonitor progress = SubMonitor.convert(monitor, 2);
+		IStorage file = revision.getStorage(progress.newChild(1));
 		if (file instanceof IFile) {
 			// if this is the current workspace file, open it
 			return IDE.openEditor(page, (IFile) file, OpenStrategy
 					.activateOnOpen());
 		} else {
 			FileRevisionEditorInput fileRevEditorInput = FileRevisionEditorInput
-					.createEditorInputFor(revision, monitor);
+					.createEditorInputFor(revision, progress.newChild(1));
 			IEditorPart part = openEditor(page, fileRevEditorInput);
 			return part;
 		}
@@ -82,9 +89,10 @@ public class EgitUiEditorUtils {
 	public static void openTextEditor(IWorkbenchPage page,
 			IFileRevision revision, IProgressMonitor monitor)
 			throws CoreException {
+		SubMonitor progress = SubMonitor.convert(monitor, 1);
 		FileRevisionEditorInput fileRevEditorInput = FileRevisionEditorInput
-				.createEditorInputFor(revision, monitor);
-		openEditor(page, fileRevEditorInput, "org.eclipse.ui.DefaultTextEditor"); //$NON-NLS-1$
+				.createEditorInputFor(revision, progress.newChild(1));
+		openEditor(page, fileRevEditorInput, EditorsUI.DEFAULT_TEXT_EDITOR_ID);
 	}
 
 	/**
@@ -93,7 +101,7 @@ public class EgitUiEditorUtils {
 	 * @return the part
 	 * @throws PartInitException
 	 */
-	private static IEditorPart openEditor(IWorkbenchPage page,
+	public static IEditorPart openEditor(IWorkbenchPage page,
 			FileRevisionEditorInput editorInput) throws PartInitException {
 		String id = getEditorId(editorInput);
 		return openEditor(page, editorInput, id);
@@ -118,11 +126,11 @@ public class EgitUiEditorUtils {
 			}
 			return part;
 		} catch (PartInitException e) {
-			if (editorId.equals("org.eclipse.ui.DefaultTextEditor")) { //$NON-NLS-1$
+			if (editorId.equals(EditorsUI.DEFAULT_TEXT_EDITOR_ID)) {
 				throw e;
 			} else {
 				return page.openEditor(editorInput,
-						"org.eclipse.ui.DefaultTextEditor"); //$NON-NLS-1$
+						EditorsUI.DEFAULT_TEXT_EDITOR_ID);
 			}
 		}
 	}
@@ -136,28 +144,23 @@ public class EgitUiEditorUtils {
 	 * @param page
 	 * @return the created editor or null in case of an error
 	 */
+	@Nullable
 	public static IEditorPart openEditor(File file, IWorkbenchPage page) {
-		if (!file.exists())
+		if (!file.exists()) {
 			return null;
-		IFile fileResource = ResourceUtil.getFileForLocation(new Path(file.getAbsolutePath()));
-		if (fileResource != null) {
-			try {
-				return IDE.openEditor(page, fileResource,
+		}
+		IPath path = new Path(file.getAbsolutePath());
+		IFile ifile = ResourceUtil.getFileForLocation(path, true);
+		try {
+			if (ifile != null) {
+				return IDE.openEditor(page, ifile,
 						OpenStrategy.activateOnOpen());
-			} catch (PartInitException e) {
-				Activator.handleError(UIText.EgitUiEditorUtils_openFailed, e,
-						true);
+			} else {
+				IFileStore store = EFS.getLocalFileSystem().getStore(path);
+				return IDE.openEditorOnFileStore(page, store);
 			}
-		} else {
-			IFileStore store = EFS.getLocalFileSystem().getStore(
-					new Path(file.getAbsolutePath()));
-			try {
-				return IDE.openEditor(page, new FileStoreEditorInput(store),
-						EditorsUI.DEFAULT_TEXT_EDITOR_ID);
-			} catch (PartInitException e) {
-				Activator.handleError(UIText.EgitUiEditorUtils_openFailed, e,
-						true);
-			}
+		} catch (PartInitException e) {
+			Activator.handleError(UIText.EgitUiEditorUtils_openFailed, e, true);
 		}
 		return null;
 	}
@@ -175,7 +178,7 @@ public class EgitUiEditorUtils {
 				.getDefaultEditor(fileName, type);
 		String id;
 		if (descriptor == null || descriptor.isOpenExternal()) {
-			id = "org.eclipse.ui.DefaultTextEditor"; //$NON-NLS-1$
+			id = EditorsUI.DEFAULT_TEXT_EDITOR_ID;
 		} else {
 			id = descriptor.getId();
 		}
@@ -219,5 +222,47 @@ public class EgitUiEditorUtils {
 					.findContentTypeFor(fileName);
 		}
 		return type;
+	}
+
+	/**
+	 * Reveals the given {@code lineNo} if it is greater than zero and the
+	 * editor is an {@link ITextEditor}.
+	 *
+	 * @param editor
+	 *            to reveal the line in
+	 * @param lineNo
+	 *            to reveal
+	 */
+	public static void revealLine(IEditorPart editor, int lineNo) {
+		if (lineNo < 0) {
+			return;
+		}
+		ITextEditor textEditor = getTextEditor(editor);
+		if (textEditor == null) {
+			return;
+		}
+		IDocument document = textEditor.getDocumentProvider()
+				.getDocument(textEditor.getEditorInput());
+		if (document == null) {
+			return;
+		}
+		try {
+			textEditor.selectAndReveal(document.getLineOffset(lineNo), 0);
+		} catch (BadLocationException e) {
+			// Ignore
+		}
+	}
+
+	private static ITextEditor getTextEditor(IEditorPart editor) {
+		if (editor instanceof ITextEditor) {
+			return (ITextEditor) editor;
+		} else if (editor instanceof MultiPageEditorPart) {
+			Object nestedEditor = ((MultiPageEditorPart) editor)
+					.getSelectedPage();
+			if (nestedEditor instanceof ITextEditor) {
+				return (ITextEditor) nestedEditor;
+			}
+		}
+		return null;
 	}
 }

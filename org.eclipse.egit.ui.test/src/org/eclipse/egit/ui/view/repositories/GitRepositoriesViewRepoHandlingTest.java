@@ -21,6 +21,7 @@ import java.io.File;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -237,14 +238,16 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotTree viewerTree = getOrOpenView().bot().tree();
 
 		TableCollection selection = viewerTree.selection();
-		assertTrue("Selection should contain one element",
-				selection.rowCount() == 1);
+		assertEquals("Selection should contain one element: " + selection, 1,
+				selection.rowCount());
 		String nodeText = selection.get(0).get(0);
 		assertTrue("Node text should contain project name", projectItem
 				.getText().startsWith(nodeText));
 
 		view.show();
-		projectItem.expand().getNode(FOLDER).expand().getNode(FILE1).select();
+		SWTBotTreeItem item = TestUtil.expandAndWait(projectItem);
+		item = TestUtil.expandAndWait(item.getNode(FOLDER));
+		item.getNode(FILE1).select();
 
 		ContextMenuHelper.clickContextMenuSync(explorerTree, "Show In",
 				viewName);
@@ -288,6 +291,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotTreeItem item = shell.bot().tree().getAllItems()[0];
 		item.check();
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
+		TestUtil.joinJobs(org.eclipse.egit.core.JobFamilies.AUTO_SHARE);
 		refreshAndWait();
 		assertHasRepo(repositoryFile);
 	}
@@ -317,6 +321,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotText pathText = shell.bot().text(0);
 		pathText.setText(pathText.getText() + "Cloned");
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
+		TestUtil.joinJobs(JobFamilies.CLONE);
 		refreshAndWait();
 		assertHasClonedRepo();
 	}

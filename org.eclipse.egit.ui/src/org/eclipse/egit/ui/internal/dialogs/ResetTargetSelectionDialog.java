@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, 2013, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,6 +8,7 @@
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
  *    Mathias Kinzler (SAP AG) - use the abstract super class
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
@@ -15,9 +16,10 @@ import java.io.IOException;
 
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.IMessageProvider;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -30,7 +32,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.GitDateFormatter;
-import org.eclipse.jgit.util.GitDateFormatter.Format;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.FocusEvent;
@@ -51,7 +52,7 @@ import org.eclipse.swt.widgets.Text;
  * Dialog for selecting a reset target.
  */
 public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
-
+	private static final String RESET_TYPE_SETTING = "ResetTargetSelectionDialog.resetType"; //$NON-NLS-1$
 	private static final int SWT_NONE = 0;
 	private ResetType resetType = ResetType.MIXED;
 	private Text anySha1;
@@ -65,8 +66,8 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 	private Label committer;
 
-	private final GitDateFormatter gitDateFormatter = new GitDateFormatter(
-			Format.LOCALE);
+	private final GitDateFormatter gitDateFormatter = PreferenceBasedDateFormatter
+			.create();
 
 	/**
 	 * Construct a dialog to select a branch to reset to
@@ -200,12 +201,16 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 				}
 			}
 		});
+		IDialogSettings settings = Activator.getDefault().getDialogSettings();
+		if (settings.get(RESET_TYPE_SETTING) != null) {
+			resetType = ResetType.valueOf(settings.get(RESET_TYPE_SETTING));
+		}
 		createResetButton(g,
 				UIText.ResetTargetSelectionDialog_ResetTypeSoftButton,
 				ResetType.SOFT);
 		createResetButton(g,
 				UIText.ResetTargetSelectionDialog_ResetTypeMixedButton,
-				ResetType.MIXED).setSelection(true);
+				ResetType.MIXED);
 		createResetButton(g,
 				UIText.ResetTargetSelectionDialog_ResetTypeHardButton,
 				ResetType.HARD);
@@ -222,6 +227,7 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 					resetType = type;
 			}
 		});
+		button.setSelection(type == resetType);
 		return button;
 	}
 
@@ -260,12 +266,12 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	@Override
 	protected void okPressed() {
 		if (resetType == ResetType.HARD) {
-			if (!MessageDialog.openQuestion(getShell(),
-					UIText.ResetTargetSelectionDialog_ResetQuestion,
-					UIText.ResetTargetSelectionDialog_ResetConfirmQuestion)) {
+			if (!CommandConfirmation.confirmHardReset(getShell(), repo)) {
 				return;
 			}
 		}
+		IDialogSettings settings = Activator.getDefault().getDialogSettings();
+		settings.put(RESET_TYPE_SETTING, resetType.name());
 		super.okPressed();
 	}
 

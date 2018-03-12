@@ -3,11 +3,15 @@
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Andre Bossert <anb0s@anbos.de> - Cleaning up the DecoratableResourceAdapter
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
@@ -18,19 +22,21 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 
 
 /**
  * A staged/unstaged entry in the table
  */
-public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
+public class StagingEntry extends PlatformObject
+		implements IProblemDecoratable, IDecoratableResource {
 
 	/**
 	 * State of the node
@@ -100,7 +106,10 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	private final Repository repository;
 	private final State state;
 	private final String path;
-	private final IFile file;
+
+	private boolean fileLoaded;
+
+	private IFile file;
 
 	private String name;
 
@@ -121,7 +130,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		this.repository = repository;
 		this.state = state;
 		this.path = path;
-		this.file = ResourceUtil.getFileForLocation(repository, path);
 	}
 
 	/**
@@ -189,12 +197,17 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	 *         workspace, null otherwise.
 	 */
 	public IFile getFile() {
+		if (!fileLoaded) {
+			fileLoaded = true;
+			file = ResourceUtil.getFileForLocation(repository, path, false);
+		}
 		return file;
 	}
 
 	/**
 	 * @return the location (path) of the entry
 	 */
+	@NonNull
 	public IPath getLocation() {
 		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
 		return absolutePath;
@@ -217,23 +230,16 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 
 	@Override
 	public int getProblemSeverity() {
-		if (file == null)
+		IFile f = getFile();
+		if (f == null)
 			return SEVERITY_NONE;
 
 		try {
-			return file.findMaxProblemSeverity(IMarker.PROBLEM, true, IResource.DEPTH_ONE);
+			return f.findMaxProblemSeverity(IMarker.PROBLEM, true,
+					IResource.DEPTH_ZERO);
 		} catch (CoreException e) {
 			return SEVERITY_NONE;
 		}
-	}
-
-	@Override
-	public Object getAdapter(Class adapter) {
-		if (adapter == IResource.class)
-			return getFile();
-		else if (adapter == IPath.class)
-			return getLocation();
-		return null;
 	}
 
 	@Override
@@ -266,6 +272,11 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	@Override
+	public String getCommitMessage() {
+		return null;
+	}
+
+	@Override
 	public boolean isTracked() {
 		return state != State.UNTRACKED;
 	}
@@ -282,20 +293,35 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	@Override
-	public Staged staged() {
+	public boolean isMissing() {
+		return state == State.MISSING || state == State.MISSING_AND_CHANGED;
+	}
+
+	@Override
+	public boolean hasUnstagedChanges() {
+		return !isTracked() || isDirty() || isMissing() || hasConflicts();
+	}
+
+	@Override
+	public StagingState getStagingState() {
 		switch (state) {
 		case ADDED:
-			return Staged.ADDED;
+			return StagingState.ADDED;
 		case CHANGED:
-			return Staged.MODIFIED;
+			return StagingState.MODIFIED;
 		case REMOVED:
-			return Staged.REMOVED;
+			return StagingState.REMOVED;
 		case MISSING:
 		case MISSING_AND_CHANGED:
-			return Staged.REMOVED;
+			return StagingState.REMOVED;
 		default:
-			return Staged.NOT_STAGED;
+			return StagingState.NOT_STAGED;
 		}
+	}
+
+	@Override
+	public boolean isStaged() {
+		return getStagingState() != StagingState.NOT_STAGED;
 	}
 
 	@Override
@@ -304,13 +330,13 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	@Override
-	public boolean isAssumeValid() {
+	public boolean isAssumeUnchanged() {
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return "StagingEntry[" + state + " " + path + "]"; //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
+		return "StagingEntry[" + state + ' ' + path + ']'; //$NON-NLS-1$
 	}
 
 	@Override
@@ -339,5 +365,10 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		if (state != other.state)
 			return false;
 		return true;
+	}
+
+	@Override
+	public boolean isRepositoryContainer() {
+		return false;
 	}
 }

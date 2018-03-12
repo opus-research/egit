@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2014 SAP AG and others.
+ * Copyright (c) 2011, 2016 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  *    Robin Stocker <robin@nibor.org> - Unify workbench and PathNode tree code
  *    Marc Khouzam <marc.khouzam@ericsson.com> - Add compare mode toggle
  *    Marc Khouzam <marc.khouzam@ericsson.com> - Skip expensive computations for equal content (bug 431610)
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Prevent NPE on empty content
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
@@ -28,12 +29,9 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
@@ -43,10 +41,10 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
+import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView.PathNode.Type;
 import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
@@ -101,8 +99,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
@@ -156,11 +152,11 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 	private IWorkbenchAction compareModeAction;
 
-	private Map<IPath, FileNode> fileNodes = new HashMap<IPath, FileNode>();
+	private Map<IPath, FileNode> fileNodes = new HashMap<>();
 
-	private Map<IPath, ContainerNode> containerNodes = new HashMap<IPath, ContainerNode>();
+	private Map<IPath, ContainerNode> containerNodes = new HashMap<>();
 
-	private List<IWorkbenchAction> actionsToDispose = new ArrayList<IWorkbenchAction>();
+	private List<IWorkbenchAction> actionsToDispose = new ArrayList<>();
 
 	private Object input;
 
@@ -280,8 +276,10 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 						compareInput);
 			} else {
 				IFile file = fileNode.getFile();
-				if (file != null)
-					openFileInEditor(file.getLocation().toOSString());
+				if (file != null) {
+					DiffViewer.openFileInEditor(file.getLocation().toFile(),
+							-1);
+				}
 			}
 		}
 	}
@@ -343,8 +341,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	private void setResourceInput(final IResource[] input) {
 		if (input.length > 0) {
 			// we must make sure to only show the topmost resources as roots
-			List<IResource> resources = new ArrayList<IResource>(input.length);
-			List<IPath> allPaths = new ArrayList<IPath>(input.length);
+			List<IResource> resources = new ArrayList<>(input.length);
+			List<IPath> allPaths = new ArrayList<>(input.length);
 			for (IResource originalInput : input) {
 				allPaths.add(originalInput.getFullPath());
 			}
@@ -535,8 +533,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			int baseTreeIndex;
 			if (baseCommit == null) {
 				checkIgnored = true;
-				baseTreeIndex = tw.addTree(new AdaptableFileTreeIterator(
-						repository, ResourcesPlugin.getWorkspace().getRoot()));
+				baseTreeIndex = tw.addTree(new FileTreeIterator(repository));
 			} else
 				baseTreeIndex = tw.addTree(new CanonicalTreeParser(null,
 						repository.newObjectReader(), baseCommit.getTree()));
@@ -550,7 +547,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 			if (input instanceof IResource[]) {
 				IResource[] resources = (IResource[]) input;
-				List<TreeFilter> orFilters = new ArrayList<TreeFilter>(
+				List<TreeFilter> orFilters = new ArrayList<>(
 						resources.length);
 
 				for (IResource resource : resources) {
@@ -636,7 +633,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				if (type != Type.FILE_BOTH_SIDES_SAME) {
 
 					file = ResourceUtil.getFileForLocation(repository,
-						repoRelativePath);
+						repoRelativePath, false);
 				}
 
 				if (baseVersionIterator != null) {
@@ -696,10 +693,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	private long getEntrySize(TreeWalk tw, AbstractTreeIterator iterator)
 			throws MissingObjectException, IncorrectObjectTypeException,
 			IOException {
-		if (iterator instanceof ContainerTreeIterator)
-			return ((ContainerTreeIterator) iterator).getEntryContentLength();
-		if (iterator instanceof FileTreeIterator)
+		if (iterator instanceof FileTreeIterator) {
 			return ((FileTreeIterator) iterator).getEntryContentLength();
+		}
 		try {
 			return tw.getObjectReader().getObjectSize(
 					iterator.getEntryObjectId(), Constants.OBJ_BLOB);
@@ -815,7 +811,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	 */
 	static class ContainerNode extends PathNode {
 
-		private final List<PathNode> children = new ArrayList<PathNode>();
+		private final List<PathNode> children = new ArrayList<>();
 		private final IContainer resource;
 		private boolean onlyEqualContent = false;
 
@@ -916,6 +912,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		@Override
 		public Object[] getElements(Object inputElement) {
 			ContainerNode rootContainer = containerNodes.get(new Path("")); //$NON-NLS-1$
+			if (rootContainer == null) {
+				return new PathNode[0];
+			}
 			if (rootContainer.isOnlyEqualContent() && !showEquals)
 				return new String[] { UIText.CompareTreeView_NoDifferencesFoundMessage };
 
@@ -1088,7 +1087,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	public ShowInContext getShowInContext() {
 		IPath repoPath = getRepositoryPath();
 		ITreeSelection selection = (ITreeSelection) tree.getSelection();
-		List<IResource> resources = new ArrayList<IResource>();
+		List<IResource> resources = new ArrayList<>();
 		for (Iterator it = selection.iterator(); it.hasNext();) {
 			Object obj = it.next();
 			if (obj instanceof IResource)
@@ -1097,7 +1096,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				PathNode pathNode = (PathNode) obj;
 				IResource resource = ResourceUtil
 						.getResourceForLocation(repoPath.append(pathNode
-								.getRepoRelativePath()));
+								.getRepoRelativePath()), false);
 				if (resource != null)
 					resources.add(resource);
 			}
@@ -1115,18 +1114,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		getSite().registerContextMenu(manager, tree);
 	}
 
-	private void openFileInEditor(String filePath) {
-		IWorkbenchWindow window = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
-		File file = new File(filePath);
-		if (!file.exists()) {
-			String message = NLS.bind(UIText.CommitFileDiffViewer_FileDoesNotExist, filePath);
-			Activator.showError(message, null);
-		}
-		IWorkbenchPage page = window.getActivePage();
-		EgitUiEditorUtils.openEditor(file, page);
-	}
-
 	private IAction createOpenAction(ITreeSelection selection) {
 		final List<String> pathsToOpen = getSelectedPaths(selection);
 		if (pathsToOpen == null || pathsToOpen.isEmpty())
@@ -1134,17 +1121,19 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 		return new Action(
 				UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel) {
+
 			@Override
 			public void run() {
-				for (String filePath : pathsToOpen)
-					openFileInEditor(filePath);
+				for (String filePath : pathsToOpen) {
+					DiffViewer.openFileInEditor(new File(filePath), -1);
+				}
 			}
 		};
 	}
 
 	private List<String> getSelectedPaths(ITreeSelection selection) {
 		IPath repoPath = getRepositoryPath();
-		List<String> pathsToOpen = new ArrayList<String>();
+		List<String> pathsToOpen = new ArrayList<>();
 		for (Iterator it = selection.iterator(); it.hasNext();) {
 			Object obj = it.next();
 			if (obj instanceof IFile) {

@@ -1,30 +1,31 @@
 /*******************************************************************************
- * Copyright (C) 2014, Konrad Kügler <swamblumat-eclipsebugs@yahoo.de> and others.
+ * Copyright (C) 2014, 2016 Konrad Kügler <swamblumat-eclipsebugs@yahoo.de> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 495777
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.dialogs.CommandConfirmation;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchSite;
-import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 
@@ -48,17 +49,17 @@ public class ResetMenu {
 				UIText.GitHistoryPage_ResetMenuLabel, UIIcons.RESET,
 				"Reset"); //$NON-NLS-1$
 
-		Map<String, String> parameters = new HashMap<String, String>();
+		Map<String, String> parameters = new HashMap<>();
 		parameters.put(RESET_MODE, ResetType.SOFT.name());
 		resetManager.add(getCommandContributionItem(RESET,
 				UIText.GitHistoryPage_ResetSoftMenuLabel, parameters, site));
 
-		parameters = new HashMap<String, String>();
+		parameters = new HashMap<>();
 		parameters.put(RESET_MODE, ResetType.MIXED.name());
 		resetManager.add(getCommandContributionItem(RESET,
 				UIText.GitHistoryPage_ResetMixedMenuLabel, parameters, site));
 
-		parameters = new HashMap<String, String>();
+		parameters = new HashMap<>();
 		parameters.put(RESET_MODE, ResetType.HARD.name());
 		resetManager.add(getCommandContributionItem(RESET,
 				UIText.GitHistoryPage_ResetHardMenuLabel, parameters, site));
@@ -76,26 +77,21 @@ public class ResetMenu {
 	}
 
 	/**
-	 * @param event
+	 * @param shell
 	 * @param repo
 	 * @param commitId
-	 * @param resetMode
-	 * @throws ExecutionException
+	 * @param resetType
 	 */
-	public static void performReset(ExecutionEvent event,
-			final Repository repo, final ObjectId commitId, String resetMode)
-			throws ExecutionException {
-		final ResetType resetType = ResetType.valueOf(resetMode);
+	public static void performReset(Shell shell,
+			final Repository repo, final ObjectId commitId,
+			ResetType resetType) {
 
 		final String jobName;
 		switch (resetType) {
 		case HARD:
-			if (!MessageDialog.openQuestion(
-					HandlerUtil.getActiveShellChecked(event),
-					UIText.ResetTargetSelectionDialog_ResetQuestion,
-					UIText.ResetTargetSelectionDialog_ResetConfirmQuestion))
+			if (!CommandConfirmation.confirmHardReset(shell, repo)) {
 				return;
-
+			}
 			jobName = UIText.HardResetToRevisionAction_hardReset;
 			break;
 		case SOFT:

@@ -9,6 +9,8 @@ package org.eclipse.egit.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.Authenticator;
+import java.net.ProxySelector;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Collections;
@@ -17,9 +19,11 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
@@ -37,6 +41,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IRegistryEventListener;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Plugin;
@@ -59,12 +64,15 @@ import org.eclipse.egit.core.securestorage.EGitSecureStore;
 import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.merge.MergeStrategy;
+import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.util.FS;
+import org.eclipse.jsch.core.IJSchService;
 import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 
 /**
  * The plugin class for the org.eclipse.egit.core plugin. This
@@ -175,6 +183,9 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		context.registerService(DebugOptionsListener.class.getName(), this,
 				props);
 
+		setupSSH(context);
+		setupProxy(context);
+
 		repositoryCache = new RepositoryCache();
 		indexDiffCache = new IndexDiffCache();
 		try {
@@ -182,7 +193,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		} catch (RuntimeException e) {
 			logError(CoreText.Activator_ReconfigureWindowCacheError, e);
 		}
-		GitProjectData.attachToWorkspace(true);
+		GitProjectData.attachToWorkspace();
 
 		repositoryUtil = new RepositoryUtil();
 
@@ -192,6 +203,30 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		registerAutoIgnoreDerivedResources();
 		registerPreDeleteResourceChangeListener();
 		registerMergeStrategyRegistryListener();
+	}
+
+	@SuppressWarnings("unchecked")
+	private void setupSSH(final BundleContext context) {
+		final ServiceReference ssh;
+
+		ssh = context.getServiceReference(IJSchService.class.getName());
+		if (ssh != null) {
+			SshSessionFactory.setInstance(new EclipseSshSessionFactory(
+					(IJSchService) context.getService(ssh)));
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void setupProxy(final BundleContext context) {
+		final ServiceReference proxy;
+
+		proxy = context.getServiceReference(IProxyService.class.getName());
+		if (proxy != null) {
+			ProxySelector.setDefault(new EclipseProxySelector(
+					(IProxyService) context.getService(proxy)));
+			Authenticator.setDefault(new EclipseAuthenticator(
+					(IProxyService) context.getService(proxy)));
+		}
 	}
 
 	private void registerPreDeleteResourceChangeListener() {
@@ -248,12 +283,24 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	 * @since 4.1
 	 */
 	public MergeStrategy getPreferredMergeStrategy() {
+		// Get preferences set by user in the UI
 		final IEclipsePreferences prefs = InstanceScope.INSTANCE
 				.getNode(Activator.getPluginId());
 		String preferredMergeStrategyKey = prefs.get(
 				GitCorePreferences.core_preferredMergeStrategy, null);
+
+		// Get default preferences, wherever they are defined
+		if (preferredMergeStrategyKey == null
+				|| preferredMergeStrategyKey.isEmpty()) {
+			final IEclipsePreferences defaultPrefs = DefaultScope.INSTANCE
+					.getNode(Activator.getPluginId());
+			preferredMergeStrategyKey = defaultPrefs.get(
+					GitCorePreferences.core_preferredMergeStrategy, null);
+		}
 		if (preferredMergeStrategyKey != null
-				&& !preferredMergeStrategyKey.isEmpty()) {
+				&& !preferredMergeStrategyKey.isEmpty()
+				&& !GitCorePreferences.core_preferredMergeStrategy_Default
+						.equals(preferredMergeStrategyKey)) {
 			MergeStrategy result = MergeStrategy.get(preferredMergeStrategyKey);
 			if (result != null) {
 				return result;
@@ -270,6 +317,9 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	 * @since 4.1
 	 */
 	public Collection<MergeStrategyDescriptor> getRegisteredMergeStrategies() {
+		if (mergeStrategyRegistryListener == null) {
+			return Collections.emptyList();
+		}
 		return mergeStrategyRegistryListener.getStrategies();
 	}
 
@@ -311,15 +361,11 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 	@Override
 	public void stop(final BundleContext context) throws Exception {
-		GitProjectData.detachFromWorkspace();
-		repositoryCache = null;
-		indexDiffCache.dispose();
-		indexDiffCache = null;
-		repositoryUtil.dispose();
-		repositoryUtil = null;
-		secureStore = null;
-		super.stop(context);
-		plugin = null;
+		if (mergeStrategyRegistryListener != null) {
+			Platform.getExtensionRegistry()
+					.removeListener(mergeStrategyRegistryListener);
+			mergeStrategyRegistryListener = null;
+		}
 		if (preDeleteProjectListener != null) {
 			ResourcesPlugin.getWorkspace().removeResourceChangeListener(preDeleteProjectListener);
 			preDeleteProjectListener = null;
@@ -327,13 +373,25 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		if (ignoreDerivedResourcesListener != null) {
 			ResourcesPlugin.getWorkspace().removeResourceChangeListener(
 					ignoreDerivedResourcesListener);
+			ignoreDerivedResourcesListener.stop();
 			ignoreDerivedResourcesListener = null;
 		}
 		if (shareGitProjectsJob != null) {
 			ResourcesPlugin.getWorkspace().removeResourceChangeListener(
 					shareGitProjectsJob);
+			shareGitProjectsJob.stop();
 			shareGitProjectsJob = null;
 		}
+		GitProjectData.detachFromWorkspace();
+		indexDiffCache.dispose();
+		indexDiffCache = null;
+		repositoryCache.clear();
+		repositoryCache = null;
+		repositoryUtil.dispose();
+		repositoryUtil = null;
+		secureStore = null;
+		super.stop(context);
+		plugin = null;
 	}
 
 	private void registerAutoShareProjects() {
@@ -361,6 +419,22 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			return p.getBoolean(GitCorePreferences.core_autoShareProjects, d
 					.getBoolean(GitCorePreferences.core_autoShareProjects,
 							true));
+		}
+
+		public void stop() {
+			boolean isRunning = !checkProjectsJob.cancel();
+			Job.getJobManager().cancel(JobFamilies.AUTO_SHARE);
+			try {
+				if (isRunning) {
+					checkProjectsJob.join();
+				}
+				Job.getJobManager().join(JobFamilies.AUTO_SHARE,
+						new NullProgressMonitor());
+			} catch (OperationCanceledException e) {
+				// Ignore
+			} catch (InterruptedException e) {
+				logError(e.getLocalizedMessage(), e);
+			}
 		}
 
 		@Override
@@ -406,7 +480,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			if (resource.getType() != IResource.PROJECT) {
 				return false;
 			}
-			if (!resource.isAccessible()) {
+			if (!resource.isAccessible() || resource.getLocation() == null) {
 				return false;
 			}
 			projects.add((IProject) resource);
@@ -449,6 +523,9 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 			final Map<IProject, File> projects = new HashMap<IProject, File>();
 			for (IProject project : projectsToCheck) {
+				if (monitor.isCanceled()) {
+					return Status.CANCEL_STATUS;
+				}
 				if (project.isAccessible()) {
 					try {
 						visitConnect(project, projects);
@@ -463,6 +540,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			if (projects.size() > 0) {
 				ConnectProviderOperation op = new ConnectProviderOperation(
 						projects);
+				op.setRefreshResources(false);
 				JobUtil.scheduleUserJob(op,
 						CoreText.Activator_AutoShareJobName,
 						JobFamilies.AUTO_SHARE);
@@ -485,12 +563,12 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			}
 			RepositoryFinder f = new RepositoryFinder(project);
 			f.setFindInChildren(false);
-			Collection<RepositoryMapping> mappings = f.find(new NullProgressMonitor());
-			if (mappings.size() != 1) {
+			List<RepositoryMapping> mappings = f
+					.find(new NullProgressMonitor());
+			if (mappings.isEmpty()) {
 				return;
 			}
-
-			RepositoryMapping m = mappings.iterator().next();
+			RepositoryMapping m = mappings.get(0);
 			IPath gitDirPath = m.getGitDirAbsolutePath();
 			if (gitDirPath == null || gitDirPath.segmentCount() == 0) {
 				return;
@@ -512,9 +590,21 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			}
 
 			// connect
-			final File repositoryDir = gitDirPath.toFile();
+			File repositoryDir = gitDirPath.toFile();
 			projects.put(project, repositoryDir);
 
+			// If we had more than one mapping: add the last one as
+			// 'configured' repository. We don't want to add submodules,
+			// that would only lead to problems when a configured repository
+			// is deleted.
+			int nofMappings = mappings.size();
+			if (nofMappings > 1) {
+				IPath lastPath = mappings.get(nofMappings - 1)
+						.getGitDirAbsolutePath();
+				if (lastPath != null) {
+					repositoryDir = lastPath.toFile();
+				}
+			}
 			try {
 				Activator.getDefault().getRepositoryUtil()
 						.addConfiguredRepository(repositoryDir);
@@ -545,9 +635,51 @@ public class Activator extends Plugin implements DebugOptionsListener {
 						true));
 	}
 
+	/**
+	 * @return {@code true} if files that get deleted should be automatically
+	 *         staged
+	 * @since 4.6
+	 */
+	public static boolean autoStageDeletion() {
+		IEclipsePreferences d = DefaultScope.INSTANCE
+				.getNode(Activator.getPluginId());
+		IEclipsePreferences p = InstanceScope.INSTANCE
+				.getNode(Activator.getPluginId());
+		boolean autoStageDeletion = p.getBoolean(
+				GitCorePreferences.core_autoStageDeletion,
+				d.getBoolean(GitCorePreferences.core_autoStageDeletion, false));
+		return autoStageDeletion;
+	}
+
+	/**
+	 * @return {@code true} if files that are moved should be automatically
+	 *         staged
+	 * @since 4.6
+	 */
+	public static boolean autoStageMoves() {
+		IEclipsePreferences d = DefaultScope.INSTANCE
+				.getNode(Activator.getPluginId());
+		IEclipsePreferences p = InstanceScope.INSTANCE
+				.getNode(Activator.getPluginId());
+		boolean autoStageMoves = p.getBoolean(
+				GitCorePreferences.core_autoStageMoves,
+				d.getBoolean(GitCorePreferences.core_autoStageMoves, false));
+		return autoStageMoves;
+	}
 	private static class IgnoreDerivedResources implements
 			IResourceChangeListener {
 
+		public void stop() {
+			Job.getJobManager().cancel(JobFamilies.AUTO_IGNORE);
+			try {
+				Job.getJobManager().join(JobFamilies.AUTO_IGNORE,
+						new NullProgressMonitor());
+			} catch (OperationCanceledException e) {
+				// Ignore
+			} catch (InterruptedException e) {
+				logError(e.getLocalizedMessage(), e);
+			}
+		}
 
 		@Override
 		public void resourceChanged(IResourceChangeEvent event) {

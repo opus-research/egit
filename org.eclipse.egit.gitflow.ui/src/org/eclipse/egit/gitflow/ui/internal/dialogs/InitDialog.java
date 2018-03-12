@@ -55,13 +55,13 @@ import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.InitParameters;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.databinding.dialog.TitleAreaDialogSupport;
 import org.eclipse.jface.databinding.dialog.ValidationMessageProvider;
 import org.eclipse.jface.databinding.fieldassist.ControlDecorationSupport;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -79,7 +79,7 @@ import org.eclipse.swt.widgets.Text;
  * Dialog to gather inputs for the git flow init operation.
  */
 public class InitDialog extends TitleAreaDialog {
-	private final class BranchValidator implements IValidator {
+	private static final class BranchValidator implements IValidator {
 		@Override
 		public IStatus validate(Object value) {
 			if (value == null || !isValidRefName(R_HEADS + value)) {
@@ -89,7 +89,7 @@ public class InitDialog extends TitleAreaDialog {
 		}
 	}
 
-	private final class BranchExistsValidator implements IValidator {
+	private static final class BranchExistsValidator implements IValidator {
 		private List<String> list;
 
 		public BranchExistsValidator(List<Ref> branchList) {
@@ -123,8 +123,6 @@ public class InitDialog extends TitleAreaDialog {
 	private Text versionTagText;
 
 	private static final String DUMMY_POSTFIX = "dummy"; //$NON-NLS-1$
-
-	private static final int TEXT_HEIGHT = 15;
 
 	private static final int TEXT_WIDTH = 100;
 
@@ -198,7 +196,7 @@ public class InitDialog extends TitleAreaDialog {
 	private Text createLabeledText(Composite container, String label) {
 		new Label(container, SWT.NONE).setText(label);
 		Text result = new Text(container, SWT.BORDER);
-		GridDataFactory.swtDefaults().hint(TEXT_WIDTH, TEXT_HEIGHT).applyTo(result);
+		GridDataFactory.swtDefaults().hint(TEXT_WIDTH, SWT.DEFAULT).applyTo(result);
 		return result;
 	}
 
@@ -289,7 +287,7 @@ public class InitDialog extends TitleAreaDialog {
 
 	private boolean isMasterBranchAvailable(String master, Repository repository) {
 		try {
-			return repository.getRef(R_HEADS + master) != null;
+			return repository.exactRef(R_HEADS + master) != null;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

@@ -56,7 +56,8 @@ import org.eclipse.ui.actions.NewProjectAction;
 public class GitImportWizard extends AbstractGitCloneWizard implements IImportWizard {
 	private static final String GIT_IMPORT_SECTION = "GitImportWizard"; //$NON-NLS-1$
 
-	private GitSelectRepositoryPage selectRepoPage = new GitSelectRepositoryPage();
+	private GitSelectRepositoryPage selectRepoPage = new GitSelectRepositoryPage(
+			false);
 
 	private GitSelectWizardPage importWithDirectoriesPage = new GitSelectWizardPage(){
 		@Override
@@ -236,8 +237,8 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			throws InvocationTargetException, InterruptedException {
 		switch (importWithDirectoriesPage.getWizardSelection()) {
 		case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD: {
-			final Set<ProjectRecord> projectsToCreate = new HashSet<ProjectRecord>();
-			final List<IWorkingSet> workingSets = new ArrayList<IWorkingSet>();
+			final Set<ProjectRecord> projectsToCreate = new HashSet<>();
+			final List<IWorkingSet> workingSets = new ArrayList<>();
 			// get the data from the pages in the UI thread
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 				@Override

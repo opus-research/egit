@@ -1,10 +1,13 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2014 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2011, 2016 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 486594
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
@@ -17,12 +20,16 @@ import java.util.TreeMap;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
+import org.eclipse.egit.ui.internal.dialogs.CheckoutDialog;
+import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.action.ContributionItem;
+import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.window.Window;
+import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.lib.CheckoutEntry;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
@@ -67,11 +74,13 @@ public class SwitchToMenu extends ContributionItem implements
 	 */
 	public SwitchToMenu(String id) {
 		super(id);
-		branchImage = UIIcons.BRANCH.createImage();
-		newBranchImage = UIIcons.CREATE_BRANCH.createImage();
-		// create the "checked out" image
-		checkedOutImage = SWTUtils.getDecoratedImage(branchImage,
-				UIIcons.OVR_CHECKEDOUT);
+		ResourceManager pluginResources = Activator.getDefault()
+				.getResourceManager();
+		branchImage = UIIcons.getImage(pluginResources, UIIcons.BRANCH);
+		newBranchImage = UIIcons.getImage(pluginResources,
+				UIIcons.CREATE_BRANCH);
+		checkedOutImage = UIIcons.getImage(pluginResources,
+				UIIcons.CHECKED_OUT_BRANCH);
 	}
 
 	@Override
@@ -95,16 +104,28 @@ public class SwitchToMenu extends ContributionItem implements
 				String sourceRef = repository.getConfig().getString(
 						ConfigConstants.CONFIG_WORKFLOW_SECTION, null,
 						ConfigConstants.CONFIG_KEY_DEFBRANCHSTARTPOINT);
+				CreateBranchWizard wiz = null;
 				try {
-					Ref ref = repository.getRef(sourceRef);
-					if (ref != null)
-						BranchOperationUI.createWithRef(repository,
-								ref.getName()).start();
-					else
-						BranchOperationUI.create(repository).start();
+					Ref ref = null;
+					if (sourceRef != null) {
+						ref = repository.findRef(sourceRef);
+					}
+					if (ref != null) {
+						wiz = new CreateBranchWizard(repository, ref.getName());
+					} else {
+						wiz = new CreateBranchWizard(repository,
+								repository.getFullBranch());
+					}
 				} catch (IOException e1) {
-					BranchOperationUI.create(repository).start();
+					// Ignore
 				}
+				if (wiz == null) {
+					wiz = new CreateBranchWizard(repository);
+				}
+				WizardDialog dlg = new WizardDialog(e.display.getActiveShell(),
+						wiz);
+				dlg.setHelpAvailable(false);
+				dlg.open();
 			}
 		});
 		createSeparator(menu);
@@ -112,7 +133,7 @@ public class SwitchToMenu extends ContributionItem implements
 			String currentBranch = repository.getFullBranch();
 			Map<String, Ref> localBranches = repository.getRefDatabase().getRefs(
 					Constants.R_HEADS);
-			TreeMap<String, Ref> sortedRefs = new TreeMap<String, Ref>(
+			TreeMap<String, Ref> sortedRefs = new TreeMap<>(
 					CommonUtils.STRING_ASCENDING_COMPARATOR);
 
 			// Add the MAX_NUM_MENU_ENTRIES most recently used branches first
@@ -177,7 +198,14 @@ public class SwitchToMenu extends ContributionItem implements
 			others.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					BranchOperationUI.checkout(repository).start();
+					CheckoutDialog dialog = new CheckoutDialog(
+							e.display.getActiveShell(), repository);
+					if (dialog.open() == Window.OK) {
+						BranchOperationUI
+								.checkout(repository, dialog.getRefName())
+								.start();
+					}
+
 				}
 			});
 		} catch (IOException e) {
@@ -218,10 +246,4 @@ public class SwitchToMenu extends ContributionItem implements
 		handlerService = CommonUtils.getService(serviceLocator, IHandlerService.class);
 	}
 
-	@Override
-	public void dispose() {
-		branchImage.dispose();
-		newBranchImage.dispose();
-		checkedOutImage.dispose();
-	}
 }

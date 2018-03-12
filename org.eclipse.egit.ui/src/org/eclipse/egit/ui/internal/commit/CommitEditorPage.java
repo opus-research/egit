@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2015 GitHub Inc. and others.
+ *  Copyright (c) 2011, 2016 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - preference-based date formatting
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
@@ -18,7 +19,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -28,10 +28,12 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
+import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
@@ -42,6 +44,7 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
+import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.ViewerSorter;
@@ -53,6 +56,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.RevWalkUtils;
+import org.eclipse.jgit.util.GitDateFormatter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.events.DisposeEvent;
@@ -79,13 +83,15 @@ import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Hyperlink;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
+import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
 
 /**
  * Commit editor page class displaying author, committer, parent commits,
  * message, and file information in form sections.
  */
-public class CommitEditorPage extends FormPage implements ISchedulingRule {
+public class CommitEditorPage extends FormPage
+		implements ISchedulingRule, IShowInSource {
 
 	private static final String SIGNED_OFF_BY = "Signed-off-by: {0} <{1}>"; //$NON-NLS-1$
 
@@ -170,11 +176,23 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 				person.getEmailAddress());
 	}
 
-	private String replaceSignedOffByLine(String message, PersonIdent person) {
-		Pattern pattern = Pattern.compile(
-				"^\\s*" + Pattern.quote(getSignedOffByLine(person)) //$NON-NLS-1$
-						+ "\\s*$", Pattern.MULTILINE); //$NON-NLS-1$
-		return pattern.matcher(message).replaceAll(""); //$NON-NLS-1$
+	private void setPerson(Text text, PersonIdent person, boolean isAuthor) {
+		PreferenceBasedDateFormatter formatter = PreferenceBasedDateFormatter
+				.create();
+		boolean isRelative = formatter
+				.getFormat() == GitDateFormatter.Format.RELATIVE;
+		String textTemplate = null;
+		if (isAuthor) {
+			textTemplate = isRelative
+					? UIText.CommitEditorPage_LabelAuthorRelative
+					: UIText.CommitEditorPage_LabelAuthor;
+		} else {
+			textTemplate = isRelative
+					? UIText.CommitEditorPage_LabelCommitterRelative
+					: UIText.CommitEditorPage_LabelCommitter;
+		}
+		text.setText(MessageFormat.format(textTemplate, person.getName(),
+				person.getEmailAddress(), formatter.formatDate(person)));
 	}
 
 	private Composite createUserArea(Composite parent, FormToolkit toolkit,
@@ -193,14 +211,23 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 		boolean signedOff = isSignedOffBy(person);
 
-		Text userText = new Text(userArea, SWT.FLAT | SWT.READ_ONLY);
-		userText.setText(MessageFormat.format(
-				author ? UIText.CommitEditorPage_LabelAuthor
-						: UIText.CommitEditorPage_LabelCommitter, person
-						.getName(), person.getEmailAddress(), person.getWhen()));
+		final Text userText = new Text(userArea, SWT.FLAT | SWT.READ_ONLY);
+		setPerson(userText, person, author);
 		toolkit.adapt(userText, false, false);
 		userText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
-
+		IPropertyChangeListener uiPrefsListener = (event) -> {
+			String property = event.getProperty();
+			if (UIPreferences.DATE_FORMAT.equals(property)
+					|| UIPreferences.DATE_FORMAT_CHOICE.equals(property)) {
+				setPerson(userText, person, author);
+				userText.requestLayout();
+			}
+		};
+		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(uiPrefsListener);
+		userText.addDisposeListener((e) -> {
+			Activator.getDefault().getPreferenceStore()
+					.removePropertyChangeListener(uiPrefsListener);
+		});
 		GridDataFactory.fillDefaults().span(signedOff ? 1 : 2, 1)
 				.applyTo(userText);
 		if (signedOff) {
@@ -292,7 +319,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 	private List<Ref> getTags() {
 		Repository repository = getCommit().getRepository();
-		List<Ref> tags = new ArrayList<Ref>(repository.getTags().values());
+		List<Ref> tags = new ArrayList<>(repository.getTags().values());
 		Collections.sort(tags, new Comparator<Ref>() {
 
 			@Override
@@ -371,13 +398,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 		RevCommit commit = getCommit().getRevCommit();
 		String message = commit.getFullMessage();
-
-		PersonIdent author = commit.getAuthorIdent();
-		if (author != null)
-			message = replaceSignedOffByLine(message, author);
-		PersonIdent committer = commit.getCommitterIdent();
-		if (committer != null)
-			message = replaceSignedOffByLine(message, committer);
 
 		SpellcheckableMessageArea textContent = new SpellcheckableMessageArea(
 				messageArea, message, true, toolkit.getBorderStyle()) {
@@ -465,7 +485,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 	}
 
 	RepositoryCommit getCommit() {
-		return CommonUtils.getAdapter(getEditor(), RepositoryCommit.class);
+		return AdapterUtils.adapt(getEditor(), RepositoryCommit.class);
 	}
 
 	/**
@@ -507,7 +527,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		RepositoryCommit repoCommit = getCommit();
 		RevCommit commit = repoCommit.getRevCommit();
 		Repository repository = repoCommit.getRepository();
-		List<Ref> tags = new ArrayList<Ref>();
+		List<Ref> tags = new ArrayList<>();
 		for (Ref tag : getTags()) {
 			tag = repository.peel(tag);
 			ObjectId id = tag.getPeeledObjectId();
@@ -524,7 +544,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		Repository repository = getCommit().getRepository();
 		RevCommit commit = getCommit().getRevCommit();
 		try (RevWalk revWalk = new RevWalk(repository)) {
-			Map<String, Ref> refsMap = new HashMap<String, Ref>();
+			Map<String, Ref> refsMap = new HashMap<>();
 			refsMap.putAll(repository.getRefDatabase().getRefs(
 					Constants.R_HEADS));
 			refsMap.putAll(repository.getRefDatabase().getRefs(
@@ -588,11 +608,12 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		return rule == this;
 	}
 
-	ShowInContext getShowInContext() {
-		if (diffViewer != null && diffViewer.getControl().isFocusControl())
+	@Override
+	public ShowInContext getShowInContext() {
+		if (diffViewer != null && diffViewer.getControl().isFocusControl()) {
 			return diffViewer.getShowInContext();
-		else
-			return null;
+		}
+		return null;
 	}
 
 }

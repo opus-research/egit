@@ -28,13 +28,13 @@
 				<td style="width: 60%" align="center"></td>
 				<td style="width: 20%" align="right" valign="top">Tests</td>
 			</tr>
-		</table><hr/>
+		</table><hr class="navigation-separator"/>
 		<h1 id="Documentation">Documentation</h1>
 		<h2 id="JGit_3">JGit</h2>
 		<p>The JGit project generates a project report and javadocs using a Maven site. This Maven site is deployed to 
 			<a href="http://download.eclipse.org/jgit/site/$" target="egit_external">http://download.eclipse.org/jgit/site/$</a>{project.version}.
 			E.g. 
-			<a href="http://download.eclipse.org/jgit/site/3.5.0.201409260305-r/" target="egit_external">http://download.eclipse.org/jgit/site/3.5.0.201409260305-r/</a>
+			<a href="http://download.eclipse.org/jgit/site/4.4.1.201607150455-r/" target="egit_external">http://download.eclipse.org/jgit/site/4.4.1.201607150455-r/</a>
 		</p>
 		<p>Generating the site:</p>
 		<pre><b>$ mvn site:site</b>
@@ -53,13 +53,17 @@
      &lt;id&gt;jgit.website&lt;/id&gt;
      &lt;username&gt;username&lt;/username&gt;
      &lt;privateKey&gt;${user.home}/.ssh/id_rsa&lt;/privateKey&gt;
+     &lt;password&gt;{&lt;encrypted passphrase&gt;}&lt;/password&gt;
      &lt;filePermissions&gt;664&lt;/filePermission&gt;
      &lt;directoryPermissions&gt;775&lt;/directoryPermissions&gt;
      &lt;configuration&gt;&lt;/configuration&gt;
 &lt;/server&gt;
 </pre>
-		<p>To deploy the site from EGit HIPP (Hudson) at 
-			<a href="https://hudson.eclipse.org/egit/" target="egit_external">https://hudson.eclipse.org/egit/</a> enable the Maven profile 
+		<p>Password encryption for Maven is described in 
+			<a href="https://maven.apache.org/guides/mini/guide-encryption.html" target="egit_external">https://maven.apache.org/guides/mini/guide-encryption.html</a>
+		</p>
+		<p>To deploy the site from JGit HIPP (Hudson) at 
+			<a href="https://hudson.eclipse.org/jgit/" target="egit_external">https://hudson.eclipse.org/jgit/</a> enable the Maven profile 
 			<b>build-server</b> and add the Maven goals 
 			<b>site:site site:deploy</b>.
 		</p>
@@ -88,7 +92,7 @@
 		<p>The aim is to generate new documentation every month or so (or just on demand). If you're making big changes or want the documentation refreshed, please let us know on the egit-dev mailing list.</p>
 		<p>
 			<br/>
-		</p><hr/>
+		</p><hr class="navigation-separator"/>
 		<table class="navigation" style="width: 100%;" border="0" summary="navigation">
 			<tr>
 				<td style="width: 20%" align="left">

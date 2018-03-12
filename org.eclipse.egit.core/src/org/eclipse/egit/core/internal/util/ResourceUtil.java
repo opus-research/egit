@@ -3,6 +3,7 @@
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, 2015 Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -52,8 +53,9 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.egit.core.synchronize.IgnoreInGitSynchronizations;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.team.core.RepositoryProvider;
@@ -68,6 +70,14 @@ public class ResourceUtil {
 	private final static QualifiedName PROVIDER_PROP_KEY = new QualifiedName(
 			"org.eclipse.team.core", "repository"); //$NON-NLS-1$ //$NON-NLS-2$
 
+	// Our own session property to cache the provider ID of the configured
+	// repository provider.
+	private final static QualifiedName PROVIDER_ID = new QualifiedName(
+			"org.eclipse.egit.core", "repositoryProviderID"); //$NON-NLS-1$ //$NON-NLS-2$
+
+	// Value for PROVIDER_ID to mark unshared projects.
+	private final static Object PROJECT_IS_UNSHARED = new Object();
+
 	/**
 	 * Return the corresponding resource if it exists and has the Git repository
 	 * provider.
@@ -77,39 +87,52 @@ public class ResourceUtil {
 	 *
 	 * @param location
 	 *            the path to check
+	 * @param innerMost
+	 *            check if there are multiple candidates in the workspace and
+	 *            return innermost resource. <b>Note</b>, this check is
+	 *            expensive and should not be used in performance critical code.
 	 * @return the resources, or null
 	 */
 	@Nullable
-	public static IResource getResourceForLocation(@NonNull IPath location) {
-		IFile file = getFileForLocation(location);
+	public static IResource getResourceForLocation(@NonNull IPath location, boolean innerMost) {
+		IFile file = getFileForLocation(location, innerMost);
 		if (file != null) {
 			return file;
 		}
-		return getContainerForLocation(location);
+		return getContainerForLocation(location, innerMost);
 	}
 
 	/**
 	 * Return the corresponding file if it exists and has the Git repository
 	 * provider.
 	 * <p>
-	 * The returned file will be relative to the most nested non-closed
-	 * Git-managed project.
+	 * If checkNested argument is true, the returned file will be relative to
+	 * the most nested non-closed Git-managed project.
 	 *
 	 * @param location
+	 * @param innerMost
+	 *            check if there are multiple candidates in the workspace and
+	 *            return innermost resource. <b>Note</b>, this check is
+	 *            expensive and should not be used in performance critical code.
 	 * @return the file, or null
 	 */
 	@Nullable
-	public static IFile getFileForLocation(@NonNull IPath location) {
+	public static IFile getFileForLocation(@NonNull IPath location,
+			boolean innerMost) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IFile file = root.getFileForLocation(location);
 		if (file == null) {
 			return null;
 		}
-		if (isValid(file)) {
+		if (!innerMost && isValid(file)) {
 			return file;
 		}
 		URI uri = URIUtil.toURI(location);
-		return getFileForLocationURI(root, uri);
+		IFile file2 = getFileForLocationURI(root, uri);
+		if (file2 == null && isValid(file)) {
+			return file;
+		}
+		return file2;
 	}
 
 	/**
@@ -132,18 +155,26 @@ public class ResourceUtil {
 	 */
 	public static boolean isSharedWithGit(@NonNull IResource resource) {
 		IProject project = resource.getProject();
-		if (!project.isAccessible()) {
+		if (project == null || !project.isAccessible()) {
 			return false;
 		}
 		try {
 			// Look for an existing provider
 			GitProvider provider = lookupProviderProp(project);
-			if (provider != null) {
+			if (provider != null || MappingJob.isKnownGitProject(project)) {
+				// Is mapped or in the process of being mapped.
 				return true;
+			} else if (isMarkedAsNotSharedWithGit(project)) {
+				return false;
 			}
 			// There isn't one so check the persistent property
 			String existingID = project
 					.getPersistentProperty(PROVIDER_PROP_KEY);
+			if (existingID == null) {
+				markAsUnshared(project);
+			} else {
+				markAsShared(project, existingID);
+			}
 			boolean isGitProvider = GitProvider.ID.equals(existingID);
 			if (isGitProvider) {
 				MappingJob.initProviderAsynchronously(project);
@@ -159,15 +190,20 @@ public class ResourceUtil {
 
 		private final static MappingJob INSTANCE = new MappingJob();
 
-		private static void initProviderAsynchronously(
+		public static void initProviderAsynchronously(
 				@NonNull IProject project) {
 			synchronized (INSTANCE.projects) {
-				if (INSTANCE.projects.contains(project)) {
+				if (!INSTANCE.projects.add(project)) {
 					return;
 				}
-				INSTANCE.projects.add(project);
 			}
 			INSTANCE.schedule();
+		}
+
+		public static boolean isKnownGitProject(@NonNull IProject project) {
+			synchronized (INSTANCE.projects) {
+				return INSTANCE.projects.contains(project);
+			}
 		}
 
 		HashSet<IProject> projects = new LinkedHashSet<>();
@@ -228,13 +264,25 @@ public class ResourceUtil {
 			if (provider != null) {
 				return provider;
 			}
+			if (MappingJob.isKnownGitProject(project)
+					|| isMarkedAsNotSharedWithGit(project)) {
+				// Is in the process of being mapped, but isn't mapped yet, or
+				// isn't shared with us at all.
+				return null;
+			}
 			String existingID = project
 					.getPersistentProperty(PROVIDER_PROP_KEY);
-			boolean isGitProvider = GitProvider.ID.equals(existingID);
-			if (isGitProvider) {
-				MappingJob.initProviderAsynchronously(project);
+			if (existingID == null) {
+				markAsUnshared(project);
+			} else {
+				markAsShared(project, existingID);
+				boolean isGitProvider = GitProvider.ID.equals(existingID);
+				if (isGitProvider) {
+					MappingJob.initProviderAsynchronously(project);
+				}
 			}
 			// not loaded yet, but we can't load it because it will use locks
+			// or not a GitProvider
 			return null;
 		} catch (CoreException e) {
 			Activator.getDefault().getLog().log(e.getStatus());
@@ -249,10 +297,76 @@ public class ResourceUtil {
 	private static GitProvider lookupProviderProp(IProject project)
 			throws CoreException {
 		Object provider = project.getSessionProperty(PROVIDER_PROP_KEY);
-		if (provider instanceof GitProvider) {
-			return (GitProvider) provider;
+		if (provider != null) {
+			if (provider instanceof RepositoryProvider) {
+				markAsShared(project, ((RepositoryProvider) provider).getID());
+				if (provider instanceof GitProvider) {
+					return (GitProvider) provider;
+				}
+			} else {
+				// Must be the RepositoryProvider's NOT_MAPPED marker
+				markAsUnshared(project);
+			}
 		}
 		return null;
+	}
+
+	/**
+	 * Sets the session property {@link #PROVIDER_ID} to
+	 * {@link #PROJECT_IS_UNSHARED} to indicate that the project is not shared
+	 * at all.
+	 *
+	 * @param project
+	 *            to mark
+	 */
+	private static void markAsUnshared(@NonNull IProject project) {
+		try {
+			project.setSessionProperty(PROVIDER_ID, PROJECT_IS_UNSHARED);
+		} catch (CoreException e) {
+			// Ignore since this is "only" an optimization
+		}
+	}
+
+	/**
+	 * Sets the session property {@link #PROVIDER_ID} to the given
+	 * {@code providerId}, or removes the property if the id is {@code null}.
+	 *
+	 * @param project
+	 *            to mark
+	 * @param providerId
+	 *            Id of the {@link RepositoryProvider} associated with the
+	 *            project, if known, or {@code null} otherwise.
+	 */
+	private static void markAsShared(@NonNull IProject project,
+			@Nullable String providerId) {
+		try {
+			project.setSessionProperty(PROVIDER_ID, providerId);
+		} catch (CoreException e) {
+			// Ignore since this is "only" an optimization
+		}
+	}
+
+	/**
+	 * Tests the session property {@link #PROVIDER_ID}.
+	 *
+	 * @param project
+	 *            to test
+	 * @return {@code true} is the project is marked as known to be unshared
+	 */
+	private static boolean isMarkedAsNotSharedWithGit(
+			@NonNull IProject project) {
+		try {
+			Object property = project.getSessionProperty(PROVIDER_ID);
+			if (property == PROJECT_IS_UNSHARED) {
+				return true;
+			} else if (property instanceof String
+					&& !GitProvider.ID.equals(property)) {
+				return true;
+			}
+		} catch (CoreException e) {
+			// Ignore and fall through
+		}
+		return false;
 	}
 
 	/**
@@ -263,20 +377,29 @@ public class ResourceUtil {
 	 * Git-managed project.
 	 *
 	 * @param location
+	 * @param innerMost
+	 *            check if there are multiple candidates in the workspace and
+	 *            return innermost resource. <b>Note</b>, this check is
+	 *            expensive and should not be used in performance critical code.
 	 * @return the container, or null
 	 */
 	@Nullable
-	public static IContainer getContainerForLocation(@NonNull IPath location) {
+	public static IContainer getContainerForLocation(@NonNull IPath location,
+			boolean innerMost) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IContainer dir = root.getContainerForLocation(location);
 		if (dir == null) {
 			return null;
 		}
-		if (isValid(dir)) {
+		if (!innerMost && isValid(dir)) {
 			return dir;
 		}
 		URI uri = URIUtil.toURI(location);
-		return getContainerForLocationURI(root, uri);
+		IContainer dir2 = getContainerForLocationURI(root, uri);
+		if (dir2 == null && isValid(dir)) {
+			return dir;
+		}
+		return dir2;
 	}
 
 	/**
@@ -290,13 +413,17 @@ public class ResourceUtil {
 	 *            the repository of the file
 	 * @param repoRelativePath
 	 *            the repository-relative path of the file to search for
+	 * @param innerMost
+	 *            check if there are multiple candidates in the workspace and
+	 *            return innermost resource. <b>Note</b>, this check is
+	 *            expensive and should not be used in performance critical code.
 	 * @return the IFile corresponding to this path, or null
 	 */
 	@Nullable
 	public static IFile getFileForLocation(@NonNull Repository repository,
-			@NonNull String repoRelativePath) {
+			@NonNull String repoRelativePath, boolean innerMost) {
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
-		return getFileForLocation(path);
+		return getFileForLocation(path, innerMost);
 	}
 
 	/**
@@ -509,6 +636,11 @@ public class ResourceUtil {
 				if (resources.length > 0) {
 					// get mappings from model provider if there are matching resources
 					final ModelProvider model = candidate.getModelProvider();
+					IgnoreInGitSynchronizations adapter = model
+							.getAdapter(IgnoreInGitSynchronizations.class);
+					if (adapter != null) {
+						continue;
+					}
 					final ResourceMapping[] modelMappings = model.getMappings(
 							resource, context, new NullProgressMonitor());
 					for (ResourceMapping mapping : modelMappings)
@@ -562,5 +694,66 @@ public class ResourceUtil {
 		((IFile) resource).appendContents(
 				new ByteArrayInputStream(new byte[0]), IResource.KEEP_HISTORY,
 				null);
+	}
+
+	/**
+	 * Determines the repository containing the resource.
+	 *
+	 * @param resource
+	 *            to get the repository for
+	 * @return the {@link Repository}, or {@code null} if none found.
+	 */
+	@Nullable
+	public static Repository getRepository(@NonNull IResource resource) {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+		if (mapping != null) {
+			return mapping.getRepository();
+		}
+		return Activator.getDefault().getRepositoryCache()
+				.getRepository(resource);
+	}
+
+	/**
+	 * Determines the repository containing the given {@link IPath}.
+	 *
+	 * @param path
+	 *            to get the repository for
+	 * @return the {@link Repository}, or {@code null} if none found.
+	 */
+	@Nullable
+	public static Repository getRepository(@NonNull IPath path) {
+		return Activator.getDefault().getRepositoryCache().getRepository(path);
+	}
+
+	/**
+	 * Makes a given path relative to the working directory of the given
+	 * repository. If the repository is bare or the path is {@code null} or is
+	 * not in that working directory, {@code null} is returned. Returns an empty
+	 * path if the given path <em>is</em> the working directory.
+	 *
+	 * @param path
+	 *            to make relative
+	 * @param repository
+	 *            to make the path relative to
+	 * @return the repository-relative path, or {@code null} if the path is not
+	 *         inside the repository's working directory.
+	 */
+	@Nullable
+	public static IPath getRepositoryRelativePath(@Nullable IPath path,
+			@NonNull Repository repository) {
+		if (path == null || repository.isBare()) {
+			return null;
+		}
+		java.nio.file.Path workingDirectory = repository.getWorkTree().toPath();
+		java.nio.file.Path toRelativize = path.toFile().toPath();
+		if (toRelativize.startsWith(workingDirectory)) {
+			int n = workingDirectory.getNameCount();
+			int m = toRelativize.getNameCount();
+			if (n == m) {
+				return new Path(""); //$NON-NLS-1$
+			}
+			return Path.fromOSString(toRelativize.subpath(n, m).toString());
+		}
+		return null;
 	}
 }

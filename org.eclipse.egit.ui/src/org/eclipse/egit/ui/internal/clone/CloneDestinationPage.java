@@ -5,6 +5,7 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,9 +32,11 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -58,7 +61,7 @@ import org.eclipse.ui.dialogs.WorkingSetGroup;
  */
 public class CloneDestinationPage extends WizardPage {
 
-	private final List<Ref> availableRefs = new ArrayList<Ref>();
+	private final List<Ref> availableRefs = new ArrayList<>();
 
 	private RepositorySelection validatedRepoSelection;
 
@@ -130,22 +133,24 @@ public class CloneDestinationPage extends WizardPage {
 	 * @param head
 	 *            HEAD in source repository
 	 */
-	public void setSelection(RepositorySelection repositorySelection, List<Ref> availableRefs, List<Ref> branches, Ref head){
+	public void setSelection(@NonNull RepositorySelection repositorySelection,
+			List<Ref> availableRefs, List<Ref> branches, Ref head) {
 		this.availableRefs.clear();
 		this.availableRefs.addAll(availableRefs);
 		checkPreviousPagesSelections(repositorySelection, branches, head);
-		revalidate(repositorySelection,branches, head);
+		revalidate(repositorySelection, branches, head);
 	}
 
 	private void checkPreviousPagesSelections(
-			RepositorySelection repositorySelection, List<Ref> branches,
-			Ref head) {
+			@NonNull RepositorySelection repositorySelection,
+			List<Ref> branches, Ref head) {
 		if (!repositorySelection.equals(validatedRepoSelection)
 				|| !branches.equals(validatedSelectedBranches)
-				|| !head.equals(validatedHEAD))
+				|| (head != null && !head.equals(validatedHEAD))) {
 			setPageComplete(false);
-		else
+		} else {
 			checkPage();
+		}
 	}
 
 	private void createDestinationGroup(final Composite parent) {
@@ -308,7 +313,7 @@ public class CloneDestinationPage extends WizardPage {
 	 * @return location the user wants to store this repository.
 	 */
 	public File getDestinationFile() {
-		return new File(directoryText.getText());
+		return FileUtils.canonicalize(new File(directoryText.getText()));
 	}
 
 	/**
@@ -434,10 +439,11 @@ public class CloneDestinationPage extends WizardPage {
 		return canCreateSubdir(parent.getParentFile());
 	}
 
-	private void revalidate(RepositorySelection repoSelection, List<Ref> branches, Ref head) {
+	private void revalidate(@NonNull RepositorySelection repoSelection,
+			List<Ref> branches, Ref head) {
 		if (repoSelection.equals(validatedRepoSelection)
 				&& branches.equals(validatedSelectedBranches)
-				&& head.equals(validatedHEAD)) {
+				&& head != null && head.equals(validatedHEAD)) {
 			checkPage();
 			return;
 		}

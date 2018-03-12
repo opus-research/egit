@@ -204,7 +204,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 				return avaliableProviders;
 
 		int capacity = avaliableProviders.length + 1;
-		ArrayList<ModelProvider> providers = new ArrayList<ModelProvider>(
+		ArrayList<ModelProvider> providers = new ArrayList<>(
 				capacity);
 		providers.add(GitChangeSetModelProvider.getProvider());
 
@@ -418,14 +418,14 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 	private Set<IResource> getIncludedResources(IMemento memento) {
 		IMemento child = memento.getChild(INCLUDED_PATHS_NODE_KEY);
-		Set<IResource> result = new HashSet<IResource>();
+		Set<IResource> result = new HashSet<>();
 		if (child != null) {
 			IMemento[] pathNode = child.getChildren(INCLUDED_PATH_KEY);
 			if (pathNode != null) {
 				for (IMemento path : pathNode) {
 					String includedPath = path.getString(INCLUDED_PATH_KEY);
 					IResource resource = ResourceUtil
-							.getResourceForLocation(new Path(includedPath));
+							.getResourceForLocation(new Path(includedPath), false);
 					if (resource != null)
 						result.add(resource);
 				}

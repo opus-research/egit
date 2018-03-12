@@ -74,6 +74,9 @@ public class CoreText extends NLS {
 	public static String GitFlowOperation_unableToCheckout;
 
 	/** */
+	public static String GitFlowOperation_unableToMerge;
+
+	/** */
 	public static String GitFlowRepository_gitFlowRepositoryMayNotBeEmpty;
 
 	/** */
@@ -98,6 +101,6 @@ public class CoreText extends NLS {
 	public static String ReleaseStartOperation_releaseNameAlreadyExists;
 
 	/** */
-	public static String ReleaseStartOperation_unableToFindCommit;
+	public static String StartOperation_unableToFindCommitFor;
 
 }

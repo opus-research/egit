@@ -30,7 +30,7 @@ import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.InitParameters;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.egit.gitflow.internal.CoreText;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -168,7 +168,7 @@ public final class InitOperation extends GitFlowOperation {
 
 	private boolean isMasterBranchAvailable() throws CoreException {
 		try {
-			return repository.getRepository().getRef(R_HEADS + master) != null;
+			return repository.getRepository().exactRef(R_HEADS + master) != null;
 		} catch (IOException e) {
 			throw new CoreException(error(e.getMessage(), e));
 		}

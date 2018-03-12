@@ -6,6 +6,8 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
  * Copyright (C) 2012, Stefan Lay <stefan.lay@sap.com>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -59,6 +61,7 @@ import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -123,8 +126,9 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 
 			@Override
 			public void setVisible(boolean visible) {
-				if (visible) {
-					setSelection(getRepositorySelection());
+				RepositorySelection selection = getRepositorySelection();
+				if (selection != null && visible) {
+					setSelection(selection);
 					setCredentials(getCredentials());
 				}
 				super.setVisible(visible);
@@ -133,11 +137,13 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		cloneDestination = new CloneDestinationPage() {
 			@Override
 			public void setVisible(boolean visible) {
-				if (visible)
-					setSelection(getRepositorySelection(),
+				RepositorySelection selection = getRepositorySelection();
+				if (selection != null && visible) {
+					setSelection(selection,
 							validSource.getAvailableBranches(),
 							validSource.getSelectedBranches(),
 							validSource.getHEAD());
+				}
 				super.setVisible(visible);
 			}
 		};
@@ -256,6 +262,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		op.setCredentialsProvider(credentialsProvider);
 		op.setCloneSubmodules(cloneDestination.isCloneSubmodules());
 
+		rememberHttpHost(op, uri);
 		configureFetchSpec(op, gitRepositoryInfo, remoteName);
 		configurePush(op, gitRepositoryInfo, remoteName);
 		configureRepositoryConfig(op, gitRepositoryInfo);
@@ -292,8 +299,10 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	}
 
 	/**
-	 * @return the repository selected by the user
+	 * @return the repository selected by the user or {@code null} if an error
+	 *         occurred
 	 */
+	@Nullable
 	protected RepositorySelection getRepositorySelection() {
 		try {
 			return (new RepositorySelection(new URIish(currentSearchResult.getGitRepositoryInfo().getCloneUri()), null));
@@ -321,6 +330,16 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		} catch (Exception e) {
 			Activator.error(e.getMessage(), e);
 			return null;
+		}
+	}
+
+	private void rememberHttpHost(CloneOperation op, URIish uri) {
+		String scheme = uri.getScheme();
+		if (scheme != null && scheme.toLowerCase().startsWith("http")) { //$NON-NLS-1$
+			String host = uri.getHost();
+			if (host != null) {
+				op.addPostCloneTask(new RememberHostTask(host));
+			}
 		}
 	}
 
@@ -372,13 +391,13 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {
-				List<File> files = new ArrayList<File>();
+				List<File> files = new ArrayList<>();
 				ProjectUtil.findProjectFiles(files, repository.getWorkTree(),
 						true, monitor);
 				if (files.isEmpty())
 					return Status.OK_STATUS;
 
-				Set<ProjectRecord> records = new LinkedHashSet<ProjectRecord>();
+				Set<ProjectRecord> records = new LinkedHashSet<>();
 				for (File file : files)
 					records.add(new ProjectRecord(file));
 				try {

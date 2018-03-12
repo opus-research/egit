@@ -17,16 +17,18 @@ import org.eclipse.core.resources.mapping.ResourceMappingContext;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
+import org.eclipse.egit.core.synchronize.IgnoreInGitSynchronizations;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 
 /**
  * Represents the provider of Git logical model.
  */
-public class GitChangeSetModelProvider extends ModelProvider {
+public class GitChangeSetModelProvider extends ModelProvider
+		implements IgnoreInGitSynchronizations {
 
 	/**
 	 * Id of model provider
@@ -72,8 +74,7 @@ public class GitChangeSetModelProvider extends ModelProvider {
 				}
 
 				if (object != null) {
-					ResourceMapping rm = CommonUtils.getAdapter(object,
-							ResourceMapping.class);
+					ResourceMapping rm = AdapterUtils.adapt(object, ResourceMapping.class);
 					return new ResourceMapping[] { rm };
 				}
 			}
