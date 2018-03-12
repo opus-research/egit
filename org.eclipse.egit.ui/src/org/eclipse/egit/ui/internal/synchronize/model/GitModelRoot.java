@@ -23,8 +23,6 @@ public class GitModelRoot {
 
 	private final GitSynchronizeDataSet gsds;
 
-	private GitModelObject[] children;
-
 	/**
 	 * @param gsds
 	 */
@@ -43,30 +41,14 @@ public class GitModelRoot {
 	 * @return children
 	 */
 	public GitModelObject[] getChildren() {
-		if (children == null)
-			children = getChildrenImpl();
-
-		return children;
-	}
-
-	/**
-	 *  Disposes all nested resources
-	 */
-	public void dispose() {
-		for (GitModelObject child : children)
-			child.dispose();
-
-		gsds.dispose();
-	}
-
-	private GitModelObject[] getChildrenImpl() {
 		List<GitModelObject> restult = new ArrayList<GitModelObject>();
 		try {
 			if (gsds.size() == 1) {
 				GitSynchronizeData gsd = gsds.iterator().next();
 				GitModelRepository repoModel = new GitModelRepository(gsd);
 
-				return repoModel.getChildren();
+				for (GitModelObject obj : repoModel.getChildren())
+					restult.add(obj);
 			} else
 				for (GitSynchronizeData data : gsds) {
 					GitModelRepository repoModel = new GitModelRepository(data);
