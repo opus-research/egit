@@ -385,6 +385,12 @@ public class UIText extends NLS {
 	public static String GitDocument_errorResolveQuickdiff;
 
 	/** */
+	public static String GitDocument_ReloadJobError;
+
+	/** */
+	public static String GitDocument_ReloadJobName;
+
+	/** */
 	public static String GitHistoryPage_AllChangesInRepoHint;
 
 	/** */
@@ -1040,6 +1046,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
+
+	/** */
+	public static String CancelAfterSaveDialog_Title;
 
 	/** */
 	public static String CleanRepositoryPage_cleanDirs;
@@ -2471,6 +2480,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_ChooseNameMessage;
+
+	/** */
+	public static String CreateBranchPage_CreateBranchNameProviderFailed;
 
 	/** */
 	public static String CreateBranchPage_CreatingBranchMessage;
@@ -4830,6 +4842,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_CommitToolTip;
+
+	/** */
+	public static String StagingView_cancelCommitAfterSaving;
 
 	/** */
 	public static String StagingView_checkoutFailed;
