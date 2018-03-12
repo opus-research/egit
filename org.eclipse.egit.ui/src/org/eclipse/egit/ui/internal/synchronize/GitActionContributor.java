@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,10 +8,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
-import static org.eclipse.egit.ui.internal.UIIcons.EXPAND_ALL;
-import static org.eclipse.egit.ui.internal.UIIcons.PULL;
-import static org.eclipse.egit.ui.internal.UIIcons.PUSH;
-import static org.eclipse.egit.ui.internal.UIText.GitActionContributor_ExpandAll;
+import static org.eclipse.egit.ui.UIIcons.EXPAND_ALL;
+import static org.eclipse.egit.ui.UIIcons.PULL;
+import static org.eclipse.egit.ui.UIIcons.PUSH;
+import static org.eclipse.egit.ui.UIText.GitActionContributor_ExpandAll;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.ADD_TO_INDEX;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.COMMIT_ACTION;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.IGNORE_ACTION;
@@ -28,7 +28,7 @@ import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.synchronize.action.ExpandAllModelAction;
 import org.eclipse.egit.ui.internal.synchronize.action.GitOpenInCompareAction;
 import org.eclipse.egit.ui.internal.synchronize.action.OpenWorkingFileAction;
@@ -63,9 +63,6 @@ class GitActionContributor extends SynchronizePageActionGroup {
 	public void fillContextMenu(IMenuManager menu) {
 		IStructuredSelection selection = (IStructuredSelection) getContext()
 				.getSelection();
-		if (selection.isEmpty())
-			return;
-
 		Object element = selection.getFirstElement();
 		IResource resource = ResourceUtil.getResource(element);
 		if (resource != null) {

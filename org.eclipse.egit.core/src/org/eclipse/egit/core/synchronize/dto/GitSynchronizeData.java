@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, 2011 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,13 @@ import static org.eclipse.jgit.lib.Constants.R_REMOTES;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -79,7 +78,7 @@ public class GitSynchronizeData {
 
 	private TreeFilter pathFilter;
 
-	private Set<IResource> includedResources;
+	private Set<IContainer> includedPaths;
 
 	private static class RemoteConfig {
 		final String remote;
@@ -91,10 +90,7 @@ public class GitSynchronizeData {
 	}
 
 	/**
-	 * Constructs {@link GitSynchronizeData} object for all resources.
-	 * Equivalent to
-	 * <code>new GitSynchronizeData(repository, srcRev, dstRev, includeLocal, null)</code>
-	 * .
+	 * Constructs {@link GitSynchronizeData} object
 	 *
 	 * @param repository
 	 * @param srcRev
@@ -106,29 +102,10 @@ public class GitSynchronizeData {
 	 */
 	public GitSynchronizeData(Repository repository, String srcRev,
 			String dstRev, boolean includeLocal) throws IOException {
-		this(repository, srcRev, dstRev, includeLocal, null);
-	}
-
-	/**
-	 * Constructs a {@link GitSynchronizeData} object while restricting it to a
-	 * set of resources.
-	 *
-	 * @param repository
-	 * @param srcRev
-	 * @param dstRev
-	 * @param includeLocal
-	 * @param includedResources
-	 *            either the set of resources to include in synchronization or
-	 *            {@code null} to synchronize all resources.
-	 * @throws IOException
-	 */
-	public GitSynchronizeData(Repository repository, String srcRev,
-			String dstRev, boolean includeLocal,
-			Set<IResource> includedResources) throws IOException {
 		isNotNull(repository);
 		isNotNull(srcRev);
 		isNotNull(dstRev);
-		this.repo = repository;
+		repo = repository;
 		this.srcRev = srcRev;
 		this.dstRev = dstRev;
 		this.includeLocal = includeLocal;
@@ -145,25 +122,12 @@ public class GitSynchronizeData {
 		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();
 
 		projects = new HashSet<IProject>();
-		final Iterable<? extends IResource> includedResourceIterable;
-		if (includedResources == null)
-			// include all project in synchronization
-			includedResourceIterable = Arrays.asList(ROOT.getProjects());
-		else
-			includedResourceIterable = includedResources;
-		for (IResource res : includedResourceIterable) {
-			IProject project = res.getProject();
+		final IProject[] workspaceProjects = ROOT.getProjects();
+		for (IProject project : workspaceProjects) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
 			if (mapping != null && mapping.getRepository() == repo)
 				projects.add(project);
 		}
-
-		// do not set field if includedResources is null, some methods expect
-		// #getIncludedResources() to return <null> to know it should
-		// synchronize all resources.
-		if (includedResources != null)
-			setIncludedResources(includedResources);
-
 		updateRevs();
 	}
 
@@ -270,16 +234,16 @@ public class GitSynchronizeData {
 	}
 
 	/**
-	 * @param includedResources
-	 *            list of resources to be synchronized
+	 * @param includedPaths
+	 *            list of containers to be synchronized
 	 */
-	public void setIncludedResources(Set<IResource> includedResources) {
-		this.includedResources = includedResources;
+	public void setIncludedPaths(Set<IContainer> includedPaths) {
+		this.includedPaths = includedPaths;
 		Set<String> paths = new HashSet<String>();
 		RepositoryMapping rm = RepositoryMapping.findRepositoryMapping(repo);
-		for (IResource resource : includedResources) {
-			String repoRelativePath = rm.getRepoRelativePath(resource);
-			if (repoRelativePath != null && repoRelativePath.length() > 0)
+		for (IContainer container : includedPaths) {
+			String repoRelativePath = rm.getRepoRelativePath(container);
+			if (repoRelativePath.length() > 0)
 				paths.add(repoRelativePath);
 		}
 
@@ -288,11 +252,11 @@ public class GitSynchronizeData {
 	}
 
 	/**
-	 * @return set of included resources or {@code null} when all resources
-	 *         should be included
+	 * @return set of included paths or {@code null} when all paths should be
+	 *         included
 	 */
-	public Set<IResource> getIncludedResources() {
-		return includedResources;
+	public Set<IContainer> getIncludedPaths() {
+		return includedPaths;
 	}
 
 	/**
@@ -301,8 +265,8 @@ public class GitSynchronizeData {
 	public void dispose() {
 		if (projects != null)
 			projects.clear();
-		if (includedResources != null)
-			includedResources.clear();
+		if (includedPaths != null)
+			includedPaths.clear();
 	}
 
 	/**

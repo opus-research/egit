@@ -5,8 +5,7 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010-2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012, Daniel megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +17,8 @@ package org.eclipse.egit.ui.internal.history;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -33,11 +30,11 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
@@ -59,10 +56,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
-import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
-import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
-import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ISelection;
@@ -70,8 +63,6 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.diff.DiffConfig;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.events.ListenerHandle;
@@ -85,7 +76,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revplot.PlotWalk;
 import org.eclipse.jgit.revwalk.FollowFilter;
-import org.eclipse.jgit.revwalk.RenameCallback;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevObject;
@@ -105,6 +95,8 @@ import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.MenuDetectEvent;
+import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
@@ -115,23 +107,19 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.team.ui.history.HistoryPage;
-import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.dialogs.PreferencesUtil;
-import org.eclipse.ui.editors.text.EditorsUI;
-import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
 import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.IShowInTargetList;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
-		ISchedulingRule, TableLoader, IShowInSource, IShowInTargetList {
+		ISchedulingRule, TableLoader, IShowInSource {
 
 	private static final int INITIAL_ITEM = -1;
 
@@ -659,9 +647,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private boolean currentFollowRenames;
 
-	/** Tracks the file names that are to be highlighted in the diff file viewer */
-	private Set<String> fileViewerInterestingPaths;
-
 	// react on changes to the relative date preference
 	private final IPropertyChangeListener listener = new IPropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent event) {
@@ -788,35 +773,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		revInfoSplit = new SashForm(graphDetailSplit, SWT.HORIZONTAL);
 		commentViewer = new CommitMessageViewer(revInfoSplit, getSite(), getPartSite());
-
-		TextSourceViewerConfiguration configuration = new TextSourceViewerConfiguration(
-				EditorsUI.getPreferenceStore()) {
-
-			public int getHyperlinkStateMask(ISourceViewer sourceViewer) {
-				return SWT.NONE;
-			}
-
-			@Override
-			public IHyperlinkPresenter getHyperlinkPresenter(
-					ISourceViewer sourceViewer) {
-				return new MultipleHyperlinkPresenter(PlatformUI.getWorkbench()
-						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB()) {
-
-					@Override
-					public void hideHyperlinks() {
-						// We want links to always show.
-					}
-
-				};
-			}
-
-			public IHyperlinkDetector[] getHyperlinkDetectors(ISourceViewer sourceViewer) {
-				return getRegisteredHyperlinkDetectors(sourceViewer);
-			}
-		};
-
-		commentViewer.configure(configuration);
-
 		fileViewer = new CommitFileDiffViewer(revInfoSplit, getSite());
 		findToolbar = new FindToolbar(historyControl);
 
@@ -937,9 +893,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				} finally {
 					walk.dispose();
 				}
-
-				if (input.getSingleFile() != null)
-					fileViewer.selectFirstInterestingElement();
 			}
 		});
 		commentViewer
@@ -966,6 +919,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		actions = new GitHistoryPageActions(this);
 		setupToolBar();
 		setupViewMenu();
+
+		graph.getControl().addMenuDetectListener(new MenuDetectListener() {
+			public void menuDetected(MenuDetectEvent e) {
+				popupMgr.add(actions.showFilesAction);
+				popupMgr.add(actions.showCommentAction);
+			}
+		});
 	}
 
 	private void setupToolBar() {
@@ -1501,16 +1461,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return this.input;
 	}
 
-	void setWarningTextInUIThread(final Job j) {
-		graph.getControl().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				if (!graph.getControl().isDisposed() && job == j) {
-					setWarningText(UIText.GitHistoryPage_ListIncompleteWarningMessage);
-				}
-			}
-		});
-	}
-
 	@SuppressWarnings("boxing")
 	void showCommitList(final Job j, final SWTCommitList list,
 			final SWTCommit[] asArray, final RevCommit toSelect, final boolean incomplete, final RevFlag highlightFlag) {
@@ -1527,8 +1477,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					graph.setInput(highlightFlag, list, asArray, input, true);
 					if (toSelect != null)
 						graph.selectCommit(toSelect);
-					if (getFollowRenames())
-						updateInterestingPathsOfFileViewer();
 					if (trace)
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.HISTORYVIEW.getLocation(),
@@ -1546,10 +1494,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		if (trace)
 			GitTraceLocation.getTrace().traceExit(
 					GitTraceLocation.HISTORYVIEW.getLocation());
-	}
-
-	private void updateInterestingPathsOfFileViewer() {
-		fileViewer.setInterestingPaths(fileViewerInterestingPaths);
 	}
 
 	private void setWarningText(String warning) {
@@ -1679,7 +1623,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					continue;
 				if (db != map.getRepository())
 					throw new IllegalStateException(
-							UIText.RepositoryAction_multiRepoSelection);
+							UIText.AbstractHistoryCommanndHandler_NoUniqueRepository);
 
 				if (showAllFilter == ShowFilter.SHOWALLFOLDER) {
 					final String path;
@@ -1803,7 +1747,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	private TreeWalk setupFileViewer(RevWalk walk, Repository db, List<FilterPath> paths) {
 		final TreeWalk fileWalker = createFileWalker(walk, db, paths);
 		fileViewer.setTreeWalk(db, fileWalker);
-		fileViewer.setInterestingPaths(fileViewerInterestingPaths);
 		fileViewer.refresh();
 		fileViewer.addSelectionChangedListener(commentViewer);
 		return fileWalker;
@@ -1822,7 +1765,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			for (FilterPath filterPath : paths)
 				selectedPaths.add(filterPath.getPath());
 
-			fileViewerInterestingPaths = new HashSet<String>(selectedPaths);
 			TreeFilter followFilter = createFollowFilterFor(selectedPaths);
 			walk.setTreeFilter(followFilter);
 		} else if (paths.size() > 0) {
@@ -1833,11 +1775,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 			walk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
 					.createFromStrings(stringPaths), TreeFilter.ANY_DIFF));
-			fileViewerInterestingPaths = new HashSet<String>(stringPaths);
 		} else {
 			pathFilters = null;
 			walk.setTreeFilter(TreeFilter.ALL);
-			fileViewerInterestingPaths = null;
 		}
 		return fileWalker;
 	}
@@ -1852,30 +1792,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		if (paths == null || paths.isEmpty())
 			throw new IllegalArgumentException("paths must not be null nor empty"); //$NON-NLS-1$
 
-		DiffConfig diffConfig = currentRepo.getConfig().get(DiffConfig.KEY);
-
 		List<TreeFilter> followFilters = new ArrayList<TreeFilter>(paths.size());
 		for (String path : paths)
-			followFilters.add(createFollowFilter(path, diffConfig));
+			followFilters.add(FollowFilter.create(path));
 
 		if (followFilters.size() == 1)
 			return followFilters.get(0);
 
 		return OrTreeFilter.create(followFilters);
-	}
-
-	private FollowFilter createFollowFilter(String path, DiffConfig diffConfig) {
-		FollowFilter followFilter = FollowFilter.create(path, diffConfig);
-		followFilter.setRenameCallback(new RenameCallback() {
-			@Override
-			public void renamed(DiffEntry entry) {
-				if (fileViewerInterestingPaths != null) {
-					fileViewerInterestingPaths.add(entry.getOldPath());
-					fileViewerInterestingPaths.add(entry.getNewPath());
-				}
-			}
-		});
-		return followFilter;
 	}
 
 	/**
@@ -1979,10 +1903,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	private void markStartRef(RevWalk walk, Ref ref) throws IOException,
 			IncorrectObjectTypeException {
 		try {
-			RevObject refTarget = walk.parseAny(ref.getLeaf().getObjectId());
-			RevObject peeled = walk.peel(refTarget);
-			if (peeled instanceof RevCommit)
-				walk.markStart((RevCommit) peeled);
+			Object refTarget = walk.parseAny(ref.getLeaf().getObjectId());
+			if (refTarget instanceof RevCommit)
+				walk.markStart((RevCommit) refTarget);
 		} catch (MissingObjectException e) {
 			// If there is a ref which points to Nirvana then we should simply
 			// ignore this ref. We should not let a corrupt ref cause that the
@@ -2034,9 +1957,5 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			return fileViewer.getShowInContext();
 		else
 			return null;
-	}
-
-	public String[] getShowInTargetIds() {
-		return new String[] { IHistoryView.VIEW_ID };
 	}
 }

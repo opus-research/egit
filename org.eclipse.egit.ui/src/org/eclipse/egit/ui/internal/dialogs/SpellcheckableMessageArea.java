@@ -1,5 +1,8 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Benjamin Muskalla <bmuskalla@eclipsesource.com> and others.
+ * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2011-2012, IBM Corporation
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +26,8 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuListener;
@@ -48,9 +51,6 @@ import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.WhitespaceCharacterPainter;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistant;
-import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
-import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
-import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
 import org.eclipse.jface.text.quickassist.IQuickAssistProcessor;
 import org.eclipse.jface.text.reconciler.IReconciler;
@@ -69,23 +69,17 @@ import org.eclipse.jgit.util.IntList;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.BidiSegmentEvent;
 import org.eclipse.swt.custom.BidiSegmentListener;
-import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Layout;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.ActiveShellExpression;
 import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
@@ -107,11 +101,6 @@ import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
 public class SpellcheckableMessageArea extends Composite {
 
 	static final int MAX_LINE_WIDTH = 72;
-
-	private static final Cursor SYS_LINK_CURSOR = PlatformUI.getWorkbench()
-			.getDisplay().getSystemCursor(SWT.CURSOR_HAND);
-
-	private final Cursor sys_normalCursor;
 
 	private static class TextViewerAction extends Action implements IUpdate {
 
@@ -192,7 +181,7 @@ public class SpellcheckableMessageArea extends Composite {
 			}
 		}
 
-		protected String getPreferenceKey() {
+		private String getPreferenceKey() {
 			return preferenceKey;
 		}
 
@@ -217,20 +206,11 @@ public class SpellcheckableMessageArea extends Composite {
 		protected ITextViewer getTextViewer() {
 			return viewer;
 		}
-
-		protected IPreferenceStore getStore() {
-			return store;
-		}
 	}
 
 	private final SourceViewer sourceViewer;
 
-	private TextSourceViewerConfiguration configuration;
-
 	private BidiSegmentListener hardWrapSegmentListener;
-
-	// XXX: workaround for https://bugs.eclipse.org/400727
-	private int brokenBidiPlatformTextWidth;
 
 	private ActionHandler quickFixActionHandler;
 
@@ -269,18 +249,14 @@ public class SpellcheckableMessageArea extends Composite {
 		AnnotationModel annotationModel = new AnnotationModel();
 		sourceViewer = new SourceViewer(this, null, null, true, SWT.MULTI
 				| SWT.V_SCROLL | SWT.WRAP);
-		getTextWidget().setAlwaysShowScrollBars(false);
 		getTextWidget().setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
 
-		sys_normalCursor = sourceViewer.getTextWidget().getCursor();
 		int endSpacing = 2;
 		int textWidth = getCharWidth() * MAX_LINE_WIDTH + endSpacing;
 		int textHeight = getLineHeight() * 7;
 		Point size = getTextWidget().computeSize(textWidth, textHeight);
 		getTextWidget().setSize(size);
-
-		computeBrokenBidiPlatformTextWidth(size.x);
 
 		getTextWidget().setEditable(!readOnly);
 
@@ -293,9 +269,6 @@ public class SpellcheckableMessageArea extends Composite {
 					getDisplay().asyncExec(new Runnable() {
 						public void run() {
 							configureHardWrap();
-							if (brokenBidiPlatformTextWidth != -1) {
-								layout();
-							}
 						}
 					});
 				}
@@ -310,35 +283,11 @@ public class SpellcheckableMessageArea extends Composite {
 
 		Document document = new Document(initialText);
 
-		configuration = new TextSourceViewerConfiguration(
-				EditorsUI
+		sourceViewer.configure(new TextSourceViewerConfiguration(EditorsUI
 				.getPreferenceStore()) {
-
-			public int getHyperlinkStateMask(ISourceViewer targetViewer) {
-				return SWT.NONE;
-			}
 
 			protected Map getHyperlinkDetectorTargets(ISourceViewer targetViewer) {
 				return getHyperlinkTargets();
-			}
-
-			@Override
-			public IHyperlinkPresenter getHyperlinkPresenter(
-					ISourceViewer targetViewer) {
-				return new MultipleHyperlinkPresenter(PlatformUI.getWorkbench()
-						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB()) {
-
-					@Override
-					public void hideHyperlinks() {
-						// We want links to always show.
-					}
-
-				};
-			}
-
-			public IHyperlinkDetector[] getHyperlinkDetectors(
-					ISourceViewer targetViewer) {
-				return getRegisteredHyperlinkDetectors(sourceViewer);
 			}
 
 			@Override
@@ -358,15 +307,8 @@ public class SpellcheckableMessageArea extends Composite {
 				return assistant;
 			}
 
-		};
-
-		sourceViewer.configure(configuration);
+		});
 		sourceViewer.setDocument(document, annotationModel);
-
-		for (StyleRange styleRange : UIUtils
-				.getHyperlinkDetectorStyleRanges(sourceViewer,
-						configuration.getHyperlinkDetectors(sourceViewer)))
-			sourceViewer.getTextWidget().setStyleRange(styleRange);
 
 		configureContextMenu();
 
@@ -378,24 +320,6 @@ public class SpellcheckableMessageArea extends Composite {
 		});
 	}
 
-	private void computeBrokenBidiPlatformTextWidth(int textWidth) {
-		class BidiSegmentListenerTester implements BidiSegmentListener {
-			boolean called;
-
-			public void lineGetSegments(BidiSegmentEvent event) {
-				called = true;
-			}
-		}
-		BidiSegmentListenerTester tester = new BidiSegmentListenerTester();
-		StyledText textWidget = getTextWidget();
-		textWidget.addBidiSegmentListener(tester);
-		textWidget.setText(" "); //$NON-NLS-1$
-		textWidget.computeSize(SWT.DEFAULT, SWT.DEFAULT);
-		textWidget.removeBidiSegmentListener(tester);
-
-		brokenBidiPlatformTextWidth = tester.called ? -1 : textWidth;
-	}
-
 	private boolean isEditable(ISourceViewer viewer) {
 		return viewer != null && viewer.getTextWidget().getEditable();
 	}
@@ -403,7 +327,7 @@ public class SpellcheckableMessageArea extends Composite {
 	private void configureHardWrap() {
 		if (shouldHardWrap()) {
 			if (hardWrapSegmentListener == null) {
-				final StyledText textWidget = getTextWidget();
+				StyledText textWidget = getTextWidget();
 				hardWrapSegmentListener = new BidiSegmentListener() {
 					public void lineGetSegments(BidiSegmentEvent e) {
 						int[] segments = calculateWrapOffsets(e.lineText, MAX_LINE_WIDTH);
@@ -417,43 +341,12 @@ public class SpellcheckableMessageArea extends Composite {
 				};
 				textWidget.addBidiSegmentListener(hardWrapSegmentListener);
 				textWidget.setText(textWidget.getText()); // XXX: workaround for https://bugs.eclipse.org/384886
-
-				if (brokenBidiPlatformTextWidth != -1) {
-					Layout restrictedWidthLayout = new Layout() {
-						@Override
-						protected Point computeSize(Composite composite,
-								int wHint, int hHint, boolean flushCache) {
-							Point size = SpellcheckableMessageArea.this
-									.getSize();
-							Rectangle trim = SpellcheckableMessageArea.this
-									.computeTrim(0, 0, 0, 0);
-							size.x -= trim.width;
-							size.y -= trim.height;
-							if (size.x > brokenBidiPlatformTextWidth)
-								size.x = brokenBidiPlatformTextWidth;
-							return size;
-						}
-
-						@Override
-						protected void layout(Composite composite,
-								boolean flushCache) {
-							Point size = computeSize(composite, SWT.DEFAULT,
-									SWT.DEFAULT, flushCache);
-							textWidget.setBounds(0, 0, size.x, size.y);
-						}
-					};
-					setLayout(restrictedWidthLayout);
-				}
 			}
-
 		} else if (hardWrapSegmentListener != null) {
 			StyledText textWidget = getTextWidget();
 			textWidget.removeBidiSegmentListener(hardWrapSegmentListener);
 			textWidget.setText(textWidget.getText()); // XXX: workaround for https://bugs.eclipse.org/384886
 			hardWrapSegmentListener = null;
-
-			if (brokenBidiPlatformTextWidth != -1)
-				setLayout(new FillLayout());
 		}
 	}
 
@@ -513,38 +406,6 @@ public class SpellcheckableMessageArea extends Composite {
 			private IPainter whitespaceCharPainter;
 
 			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				String property = event.getProperty();
-				if (property.equals(getPreferenceKey())
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_CARRIAGE_RETURN
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LINE_FEED
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_WHITESPACE_CHARACTER_ALPHA_VALUE
-								.equals(property)) {
-					synchronizeWithPreference();
-				}
-			}
-
-			@Override
 			protected void toggleState(boolean checked) {
 				if (checked)
 					installPainter();
@@ -559,21 +420,7 @@ public class SpellcheckableMessageArea extends Composite {
 				Assert.isTrue(whitespaceCharPainter == null);
 				ITextViewer v = getTextViewer();
 				if (v instanceof ITextViewerExtension2) {
-					IPreferenceStore store = getStore();
-					whitespaceCharPainter = new WhitespaceCharacterPainter(
-							v,
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_CARRIAGE_RETURN),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LINE_FEED),
-							store.getInt(AbstractTextEditor.PREFERENCE_WHITESPACE_CHARACTER_ALPHA_VALUE));
+					whitespaceCharPainter = new WhitespaceCharacterPainter(v);
 					((ITextViewerExtension2) v).addPainter(whitespaceCharPainter);
 				}
 			}
@@ -728,14 +575,6 @@ public class SpellcheckableMessageArea extends Composite {
 			sourceViewer.addTextListener(new ITextListener() {
 
 				public void textChanged(TextEvent event) {
-					textWidget.setStyleRanges(
-							new StyleRange[0]);
-					for (StyleRange styleRange : UIUtils
-							.getHyperlinkDetectorStyleRanges(
-									sourceViewer,
-									configuration
-											.getHyperlinkDetectors(sourceViewer)))
-						textWidget.setStyleRange(styleRange);
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)
@@ -743,36 +582,11 @@ public class SpellcheckableMessageArea extends Composite {
 				}
 			});
 
-		// set the cursor when hovering over a link
-		textWidget.addListener(SWT.MouseMove, new Listener() {
-			public void handleEvent(final Event e) {
-				StyleRange styleRange = getStyleRange(e.x, e.y);
-				if (styleRange != null && styleRange.underline)
-					textWidget.setCursor(SYS_LINK_CURSOR);
-				else
-					textWidget.setCursor(sys_normalCursor);
-			}
-		});
-
 		textWidget.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				showWhitespaceAction.dispose();
 			}
 		});
-	}
-
-	private StyleRange getStyleRange(final int x, final int y) {
-		final StyledText t = sourceViewer.getTextWidget();
-		final int offset;
-		try {
-			offset = t.getOffsetAtLocation(new Point(x, y));
-		} catch (IllegalArgumentException e) {
-			return null;
-		}
-		if (offset < t.getCharCount())
-			return t.getStyleRangeAtOffset(offset);
-		else
-			return null;
 	}
 
 	private void addProposals(final SubMenuManager quickFixMenu) {

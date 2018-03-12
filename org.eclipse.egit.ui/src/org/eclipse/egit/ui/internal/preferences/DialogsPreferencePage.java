@@ -11,7 +11,7 @@ package org.eclipse.egit.ui.internal.preferences;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
@@ -59,9 +59,6 @@ public class DialogsPreferencePage extends FieldEditorPreferencePage implements
 				UIPreferences.SHOW_INITIAL_CONFIG_DIALOG,
 				UIText.DialogsPreferencePage_ShowInitialConfigCheckbox,
 				confirmDialogsGroup));
-		addField(new BooleanFieldEditor(
-				UIPreferences.SHOW_CHECKOUT_CONFIRMATION,
-				UIText.DialogsPreferencePage_ShowCheckoutConfirmation, confirmDialogsGroup));
 
 		addField(new BooleanFieldEditor(UIPreferences.SHOW_REBASE_CONFIRM,
 				UIText.DialogsPreferencePage_RebaseCheckbox, confirmDialogsGroup));

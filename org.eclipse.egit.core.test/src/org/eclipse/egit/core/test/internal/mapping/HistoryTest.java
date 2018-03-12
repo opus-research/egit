@@ -14,10 +14,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -30,7 +28,7 @@ import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
@@ -62,7 +60,7 @@ public class HistoryTest extends GitTestCase {
 		// ensure we are working on an empty repository
 		if (gitDir.exists())
 			FileUtils.delete(gitDir, FileUtils.RECURSIVE | FileUtils.RETRY);
-		thisGit = FileRepositoryBuilder.create(gitDir);
+		thisGit = new FileRepository(gitDir);
 		workDir = thisGit.getWorkTree();
 		thisGit.create();
 
@@ -86,10 +84,9 @@ public class HistoryTest extends GitTestCase {
 
 	private File createFile(String name, String content) throws IOException {
 		File f = new File(workDir, name);
-		Writer fileWriter = null;
+		FileWriter fileWriter = null;
 		try {
-			fileWriter = new OutputStreamWriter(new FileOutputStream(f),
-					"UTF-8");
+			fileWriter = new FileWriter(f);
 			fileWriter.write(content);
 		} finally {
 			if (fileWriter != null)

@@ -12,7 +12,7 @@ package org.eclipse.egit.ui.internal.preferences;
 
 import java.util.StringTokenizer;
 
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.swt.SWT;
@@ -106,7 +106,7 @@ public class AddConfigEntryDialog extends TitleAreaDialog {
 				return;
 			}
 			StringTokenizer st = new StringTokenizer(keyText.getText(), "."); //$NON-NLS-1$
-			if (st.countTokens() < 2) {
+			if (st.countTokens() < 2 || st.countTokens() > 3) {
 				setErrorMessage(UIText.AddConfigEntryDialog_KeyComponentsMessage);
 				hasError = true;
 				return;

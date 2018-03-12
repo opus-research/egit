@@ -27,7 +27,7 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -398,15 +398,9 @@ public class ConfigurationEditorComponent {
 						else
 							entry.addValue(dlg.getValue());
 						markDirty();
-					} else if (st.countTokens() > 2) {
-						int n = st.countTokens();
+					} else if (st.countTokens() == 3) {
 						String sectionName = st.nextToken();
-						StringBuilder b = new StringBuilder(st.nextToken());
-						for (int i = 0; i < n - 3; i++) {
-							b.append(DOT);
-							b.append(st.nextToken());
-						}
-						String subSectionName = b.toString();
+						String subSectionName = st.nextToken();
 						String entryName = st.nextToken();
 						Entry entry = ((GitConfig) tv.getInput()).getEntry(
 								sectionName, subSectionName, entryName);
