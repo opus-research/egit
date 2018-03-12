@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2011, 2015 Tasktop Technologies Inc. and others.
- * Copyright (C) 2015, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,6 +29,7 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.team.core.subscribers.Subscriber;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.ui.IContributorResourceAdapter;
 import org.eclipse.ui.IWorkbenchPart;
@@ -87,18 +87,14 @@ public class GitScopeUtil {
 	 * {@link IResource}s
 	 *
 	 * @param resources
-	 * @param monitor
 	 * @return {@link SubscriberScopeManager}
 	 */
 	private static SubscriberScopeManager createScopeManager(
-			final IResource[] resources, IProgressMonitor monitor) {
+			final IResource[] resources) {
 		ResourceMapping[] mappings = GitScopeUtil
 				.getResourceMappings(resources);
 		GitSynchronizeDataSet set = new GitSynchronizeDataSet();
-		final GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
-				set);
-		monitor.setTaskName(UIText.GitModelSynchronize_fetchGitDataJobName);
-		subscriber.init(monitor);
+		Subscriber subscriber = new GitResourceVariantTreeSubscriber(set);
 		SubscriberScopeManager manager = new SubscriberScopeManager(
 				UIText.GitScopeOperation_GitScopeManager, mappings, subscriber,
 				true);
@@ -172,8 +168,8 @@ public class GitScopeUtil {
 			IProgressMonitor monitor) throws InterruptedException,
 			InvocationTargetException {
 
-		SubscriberScopeManager manager = GitScopeUtil.createScopeManager(
-				selectedResources, new SubProgressMonitor(monitor, 50));
+		SubscriberScopeManager manager = GitScopeUtil
+				.createScopeManager(selectedResources);
 		GitScopeOperation buildScopeOperation = GitScopeOperationFactory
 				.getFactory().createGitScopeOperation(part, manager);
 

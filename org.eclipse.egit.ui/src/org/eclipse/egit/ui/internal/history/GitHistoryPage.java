@@ -1006,9 +1006,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					fileViewer.setInput(null);
 					return;
 				}
-				if (input == null) {
-					return;
-				}
+
 				final PlotCommit<?> c = (PlotCommit<?>) sel.getFirstElement();
 				commentViewer.setInput(c);
 				final PlotWalk walk = new PlotWalk(input.getRepository());
