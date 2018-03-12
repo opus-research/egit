@@ -24,9 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.CreatePatchOperation;
@@ -160,7 +158,8 @@ public class GitCreatePatchWizard extends Wizard {
 		operation.setContextLines(Integer.parseInt(optionsPage.contextLines.getText()));
 		operation.setPathFilter(createPathFilter(resources));
 
-		final File file = locationPage.getFile();
+		final File file = !locationPage.fsRadio.getSelection() ? locationPage
+				.getFile() : null;
 
 		if (!(file == null || validateFile(file)))
 			return false;
@@ -173,15 +172,9 @@ public class GitCreatePatchWizard extends Wizard {
 						operation.execute(monitor);
 
 						String content = operation.getPatchContent();
-						if (file != null) {
+						if (file != null)
 							writeToFile(file, content);
-							IFile[] files = ResourcesPlugin.getWorkspace()
-									.getRoot()
-									.findFilesForLocationURI(file.toURI());
-							for (int i = 0; i < files.length; i++)
-								files[i].refreshLocal(IResource.DEPTH_ZERO,
-										monitor);
-						} else
+						else
 							copyToClipboard(content);
 					} catch (IOException e) {
 						throw new InvocationTargetException(e);
