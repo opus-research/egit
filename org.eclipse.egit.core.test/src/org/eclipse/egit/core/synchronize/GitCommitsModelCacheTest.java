@@ -83,12 +83,12 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c, initialTagId());
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(leftResult.size(), is(1));
 		assertEmptyCommit(leftResult.get(0), c, LEFT);
 
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertThat(rightResult.size(), is(1));
 		assertEmptyCommit(rightResult.get(0), c, RIGHT);
@@ -130,12 +130,12 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c, initialTagId());
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c, 1);
 		assertFileDeletion(c, leftResult.get(0).getChildren().get("a.txt"), "a.txt", LEFT | DELETION);
 
-		// right asserts, after changing sides addition becomes deletion
+		// right assertions, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c, 1);
 		assertFileAddition(c, rightResult.get(0).getChildren().get("a.txt"), "a.txt", RIGHT | ADDITION);
@@ -154,13 +154,13 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c, initialTagId());
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c, 1);
 		assertThat(leftResult.get(0).getChildren().size(), is(1));
 		assertFileDeletion(c, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | DELETION);
 
-		// right asserts, after changing sides addition becomes deletion
+		// right assertions, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c, 1);
 		assertThat(rightResult.get(0).getChildren().size(), is(1));
@@ -182,7 +182,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c, initialTagId());
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertThat(leftResult.get(0).getShortMessage(), is("first commit"));
@@ -193,7 +193,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		assertFileDeletion(c, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | DELETION);
 		assertFileDeletion(c, leftResult.get(0).getChildren().get("folder2/b.txt"), "b.txt",LEFT | DELETION);
 
-		// right asserts, after changing sides addition becomes deletion
+		// right assertions, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
 		assertThat(Integer.valueOf(rightResult.size()), is(Integer.valueOf(1)));
 		assertThat(rightResult.get(0).getShortMessage(), is("first commit"));
@@ -219,7 +219,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c, initialTagId());
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertCommit(leftResult.get(0), c, 2);
@@ -229,7 +229,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		assertFileDeletion(c, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | DELETION);
 		assertFileDeletion(c, leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt", LEFT | DELETION);
 
-		// right asserts, after changing sides addition becomes deletion
+		// right assertions, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
 		assertThat(Integer.valueOf(rightResult.size()), is(Integer.valueOf(1)));
 		assertCommit(rightResult.get(0), c, 2);
@@ -255,12 +255,12 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1);
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 1);
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("a.txt"), "a.txt", LEFT | CHANGE);
 
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c2, 1);
 		assertFileChange(c2, c1, rightResult.get(0).getChildren().get("a.txt"), "a.txt", RIGHT | CHANGE);
@@ -281,12 +281,12 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1);
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 1);
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | CHANGE);
 
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c2, 1);
 		assertFileChange(c2, c1, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | CHANGE);
@@ -311,7 +311,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1);
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertThat(leftResult.get(0).getShortMessage(), is("second commit"));
@@ -322,7 +322,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | CHANGE);
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("folder2/b.txt"), "b.txt",LEFT | CHANGE);
 
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertThat(Integer.valueOf(rightResult.size()), is(Integer.valueOf(1)));
 		assertThat(rightResult.get(0).getShortMessage(), is("second commit"));
@@ -350,7 +350,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1);
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertCommit(leftResult.get(0), c2, 2);
@@ -358,7 +358,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | CHANGE);
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt", LEFT | CHANGE);
 
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertThat(Integer.valueOf(rightResult.size()), is(Integer.valueOf(1)));
 		assertCommit(rightResult.get(0), c2, 2);
@@ -388,14 +388,14 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 
 		// then
 
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 3);
 		assertFileAddition(c2, c1, leftResult.get(0).getChildren().get("a.txt"), "a.txt", LEFT | ADDITION);
 		assertFileDeletion(c2, c1, leftResult.get(0).getChildren().get("b.txt"), "b.txt", LEFT | DELETION);
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("c.txt"), "c.txt", LEFT | CHANGE);
 
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c2, 3);
 		assertFileDeletion(c2, c1, rightResult.get(0).getChildren().get("a.txt"), "a.txt", RIGHT | DELETION);
@@ -423,14 +423,14 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1);
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 3);
 		assertFileAddition(c2, c1, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | ADDITION);
 		assertFileDeletion(c2, c1, leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt", LEFT | DELETION);
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("folder/c.txt"), "c.txt", LEFT | CHANGE);
 
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c2, 3);
 		assertFileDeletion(c2, c1, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | DELETION);
@@ -459,7 +459,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1);
 
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertThat(leftResult.get(0).getShortMessage(), is("second commit"));
@@ -471,7 +471,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 		assertFileDeletion(c2, c1, leftResult.get(0).getChildren().get("folder1/b.txt"), "b.txt", LEFT | DELETION);
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("folder2/c.txt"), "c.txt", LEFT | CHANGE);
 
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertThat(Integer.valueOf(rightResult.size()), is(Integer.valueOf(1)));
 		assertThat(rightResult.get(0).getShortMessage(), is("second commit"));
@@ -516,7 +516,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 
 	private void assertFileChange(RevCommit actual, RevCommit parent,
 			Change change, String name, int direction) {
-		commonFileAssertations(actual, parent, change, name, direction);
+		commonFileAssertions(actual, parent, change, name, direction);
 		assertThat(change.getObjectId(), not(ZERO_ID));
 		assertThat(change.getRemoteObjectId(), not(ZERO_ID));
 	}
@@ -528,7 +528,7 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 
 	private void assertFileAddition(RevCommit actual, RevCommit parent,
 			Change change, String name, int direction) {
-		commonFileAssertations(actual, parent, change, name, direction);
+		commonFileAssertions(actual, parent, change, name, direction);
 		assertThat(change.getObjectId(), not(ZERO_ID));
 		assertThat(change.getRemoteObjectId(), nullValue());
 	}
@@ -541,12 +541,12 @@ public class GitCommitsModelCacheTest extends LocalDiskRepositoryTestCase {
 
 	private void assertFileDeletion(RevCommit actual, RevCommit parent,
 			Change change, String name, int direction) {
-		commonFileAssertations(actual, parent, change, name, direction);
+		commonFileAssertions(actual, parent, change, name, direction);
 		assertThat(change.getObjectId(), nullValue());
 		assertThat(change.getRemoteObjectId(), not(ZERO_ID));
 	}
 
-	private void commonFileAssertations(RevCommit actual, RevCommit parent,
+	private void commonFileAssertions(RevCommit actual, RevCommit parent,
 			Change change, String name, int direction) {
 		assertThat(change, notNullValue());
 		assertThat(change.getCommitId().toObjectId(), is(actual.getId()));
