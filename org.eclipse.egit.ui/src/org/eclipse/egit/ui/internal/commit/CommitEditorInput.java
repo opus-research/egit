@@ -25,6 +25,8 @@ import org.eclipse.ui.IPersistableElement;
 /**
  * Commit editor input class. This class wraps a {@link RepositoryCommit} to be
  * viewed in an editor.
+ *
+ * @author Kevin Sawicki (kevin@github.com)
  */
 public class CommitEditorInput extends PlatformObject implements IEditorInput {
 
@@ -38,35 +40,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput {
 	public CommitEditorInput(RepositoryCommit commit) {
 		Assert.isNotNull(commit, "Repository commit cannot be null"); //$NON-NLS-1$
 		this.commit = commit;
-	}
-
-	/**
-	 * @see java.lang.Object#hashCode()
-	 */
-	public int hashCode() {
-		return commit.getRevCommit().hashCode();
-	}
-
-	/**
-	 * @see java.lang.Object#equals(java.lang.Object)
-	 */
-	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-		else if (obj instanceof CommitEditorInput) {
-			RepositoryCommit inputCommit = ((CommitEditorInput) obj).commit;
-			return commit.getRevCommit().equals(inputCommit.getRevCommit())
-					&& commit.getRepository().equals(
-							inputCommit.getRepository());
-		} else
-			return false;
-	}
-
-	/**
-	 * @see java.lang.Object#toString()
-	 */
-	public String toString() {
-		return getName();
 	}
 
 	/**

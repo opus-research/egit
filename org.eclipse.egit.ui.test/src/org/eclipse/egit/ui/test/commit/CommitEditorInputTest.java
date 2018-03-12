@@ -30,6 +30,8 @@ import org.junit.Test;
 
 /**
  * Unit tests for {@link CommitEditorInput}
+ * 
+ * @author Kevin Sawicki (kevin@github.com)
  */
 public class CommitEditorInputTest extends LocalRepositoryTestCase {
 

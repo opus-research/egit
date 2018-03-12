@@ -25,15 +25,17 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
  * Class that encapsulates a particular {@link Repository} instance and
  * {@link RevCommit} instance.
  *
- * This class computes and provides access to the {@link FileDiff} objects
- * introduced by the commit.
+ * This class also provides access to the {@link FileDiff} objects introduced by
+ * the commit.
+ *
+ * @author Kevin Sawicki (kevin@github.com)
  */
 public class RepositoryCommit extends PlatformObject {
 
 	/**
 	 * NAME_LENGTH
 	 */
-	public static final int NAME_LENGTH = 8;
+	public static final int NAME_LENGTH = 7;
 
 	private Repository repository;
 

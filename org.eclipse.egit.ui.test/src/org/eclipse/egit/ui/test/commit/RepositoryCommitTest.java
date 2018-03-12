@@ -31,6 +31,8 @@ import org.junit.Test;
 
 /**
  * Unit tests of {@link RepositoryCommit}
+ * 
+ * @author Kevin Sawicki (kevin@github.com)
  */
 public class RepositoryCommitTest extends LocalRepositoryTestCase {
 
