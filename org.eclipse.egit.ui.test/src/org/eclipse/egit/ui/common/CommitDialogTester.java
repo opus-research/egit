@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,10 +12,8 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
-import org.eclipse.egit.ui.test.SWTBotTreeColumn;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarToggleButton;
@@ -54,9 +52,10 @@ public class CommitDialogTester {
 		commitDialog = dialogShell;
 	}
 
-	public static CommitDialogTester openCommitDialog(String projectName) {
-		clickCommitAction(projectName);
+	public static CommitDialogTester openCommitDialog(String projectName)
+			throws Exception {
 		SWTWorkbenchBot workbenchBot = new SWTWorkbenchBot();
+		openCommitDialog(projectName, workbenchBot);
 		SWTBotShell shell = workbenchBot
 				.shell(UIText.CommitDialog_CommitChanges);
 		return new CommitDialogTester(shell);
@@ -64,14 +63,16 @@ public class CommitDialogTester {
 
 	public static NoFilesToCommitPopup openCommitDialogExpectNoFilesToCommit(
 			String projectName) throws Exception {
-		clickCommitAction(projectName);
 		SWTWorkbenchBot workbenchBot = new SWTWorkbenchBot();
+		openCommitDialog(projectName, workbenchBot);
 		return new NoFilesToCommitPopup(
 				workbenchBot.shell(UIText.CommitAction_noFilesToCommit));
 	}
 
-	private static void clickCommitAction(String projectName) {
-		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
+	private static void openCommitDialog(String projectName,
+			SWTWorkbenchBot workbenchBot) {
+		SWTBotTree projectExplorerTree = workbenchBot
+				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		util.getProjectItems(projectExplorerTree, projectName)[0].select();
 		String menuString = util.getPluginLocalizedValue("CommitAction_label");
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
@@ -98,10 +99,6 @@ public class CommitDialogTester {
 		commitDialog.bot().button(UIText.CommitDialog_Commit).click();
 		// wait until commit is completed
 		Job.getJobManager().join(JobFamilies.COMMIT, null);
-	}
-
-	public void cancel() {
-		commitDialog.bot().button(IDialogConstants.CANCEL_LABEL).click();
 	}
 
 	public void setAmend(boolean amend) {
@@ -187,9 +184,4 @@ public class CommitDialogTester {
 		return button.isChecked();
 	}
 
-	public void sortByName() {
-		final Tree tree = commitDialog.bot().tree().widget;
-		SWTBotTreeColumn column = SWTBotTreeColumn.getColumn(tree, 1);
-		column.click();
-	}
 }
