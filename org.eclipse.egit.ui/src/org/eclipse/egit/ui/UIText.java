@@ -400,9 +400,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_errorParsingHead;
 
 	/** */
-	public static String GitHistoryPage_errorReadingAdditionalRefs;
-
-	/** */
 	public static String GitHistoryPage_errorSettingStartPoints;
 
 	/** */
@@ -503,12 +500,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
-
-	/** */
-	public static String GitPreferenceRoot_BlameGroupHeader;
-
-	/** */
-	public static String GitPreferenceRoot_BlameIgnoreWhitespaceLabel;
 
 	/** */
 	public static String GitPreferenceRoot_fetchBeforeSynchronization;
@@ -3837,18 +3828,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SynchronizeFetchJob_FetchFailedMessage;
-
-	/** */
-	public static String EGitCredentialsProvider_question;
-
-	/** */
-	public static String EGitCredentialsProvider_information;
-
-	/** */
-	public static String CustomPromptDialog_provide_information_for;
-
-	/** */
-	public static String CustomPromptDialog_information_about;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
