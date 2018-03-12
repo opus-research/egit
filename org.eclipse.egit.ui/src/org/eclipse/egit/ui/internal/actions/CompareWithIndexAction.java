@@ -26,7 +26,6 @@ import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
@@ -42,39 +41,15 @@ public class CompareWithIndexAction extends RepositoryAction {
 	@Override
 	public void execute(IAction action) {
 		final IResource resource = getSelectedResources()[0];
+		final RepositoryMapping mapping = RepositoryMapping.getMapping(resource.getProject());
+		final Repository repository = mapping.getRepository();
+		final String gitPath = mapping.getRepoRelativePath(resource);
+
+		final IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
 
 		final IFile baseFile = (IFile) resource;
-		final ITypedElement base = SaveableCompareEditorInput
-				.createFileElement(baseFile);
+		final ITypedElement base = SaveableCompareEditorInput.createFileElement(baseFile);
 
-		final ITypedElement next = getHeadTypedElement(baseFile);
-
-		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-				base, next, null);
-		CompareUI.openCompareEditor(in);
-	}
-
-	private ITypedElement getHeadTypedElement(final IFile baseFile) {
-		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile
-				.getProject());
-		final Repository repository = mapping.getRepository();
-		String gitPath = mapping.getRepoRelativePath(baseFile);
-
-		try {
-			GitIndex index = repository.getIndex();
-			if (index.getEntry(gitPath) == null) {
-				// the file cannot be found in the index
-				return new GitCompareFileRevisionEditorInput.EmptyTypedElement(
-						NLS.bind(UIText.CompareWithIndexAction_FileNotInIndex,
-								baseFile.getName()));
-			}
-		} catch (IOException e) {
-			return new GitCompareFileRevisionEditorInput.EmptyTypedElement(
-					NLS.bind(UIText.CompareWithIndexAction_FileNotInIndex,
-							baseFile.getName()));
-		}
-
-		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
 		final EditableRevision next = new EditableRevision(nextFile);
 
 		IContentChangeListener listener = new IContentChangeListener() {
@@ -82,13 +57,14 @@ public class CompareWithIndexAction extends RepositoryAction {
 				final byte[] newContent = next.getModifiedContent();
 				try {
 					final GitIndex index = repository.getIndex();
-					final File file = new File(baseFile.getLocation()
-							.toString());
+					final File file = new File(baseFile.getLocation().toString());
 					index.add(mapping.getWorkDir(), file, newContent);
 					index.write();
 				} catch (IOException e) {
-					handle(new TeamException(
-							UIText.CompareWithIndexAction_errorOnAddToIndex, e),
+					handle(
+							new TeamException(
+									UIText.CompareWithIndexAction_errorOnAddToIndex,
+									e),
 							UIText.CompareWithIndexAction_errorOnAddToIndex,
 							UIText.CompareWithIndexAction_errorOnAddToIndex);
 					return;
@@ -97,7 +73,10 @@ public class CompareWithIndexAction extends RepositoryAction {
 		};
 
 		next.addContentChangeListener(listener);
-		return next;
+
+		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
+				base, next, null);
+		CompareUI.openCompareEditor(in);
 	}
 
 	@Override
