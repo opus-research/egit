@@ -13,56 +13,54 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
+import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.FileUtils;
 
 /**
- * Operation to delete a collection of (untracked) paths, even it they are
+ * Operation to delete a collection of (untracked) resources, even it they are
  * non-workspace resources.
  */
-public class DeletePathsOperation implements IEGitOperation {
+public class DeleteResourcesOperation implements IEGitOperation {
 
-	private final Collection<IPath> paths;
+	private final Collection<IResource> resources;
 
 	private final ISchedulingRule schedulingRule;
 
 	/**
-	 * @param paths
+	 * @param resources
 	 *            the files to delete
 	 */
-	public DeletePathsOperation(final Collection<IPath> paths) {
-		this.paths = paths;
-		schedulingRule = calculateSchedulingRule();
+	public DeleteResourcesOperation(final Collection<IResource> resources) {
+		this.resources = resources;
+
+		IResource[] r = resources.toArray(new IResource[resources.size()]);
+		schedulingRule = RuleUtil.getRuleForRepositories(r);
 	}
 
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor = (m != null) ? m : new NullProgressMonitor();
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 			public void run(IProgressMonitor actMonitor) throws CoreException {
-				deletePaths(actMonitor);
+				deleteResources(actMonitor);
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
@@ -73,23 +71,21 @@ public class DeletePathsOperation implements IEGitOperation {
 		return schedulingRule;
 	}
 
-	private void deletePaths(IProgressMonitor monitor) throws CoreException {
+	private void deleteResources(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(CoreText.DeleteResourcesOperation_deletingResources,
-				paths.size() + 1);
+				resources.size() + 1);
 		boolean errorOccurred = false;
 
-		boolean refreshAll = false;
-		List<IPath> refreshCachePaths = new ArrayList<IPath>();
+		List<IResource> refreshCacheResources = new ArrayList<IResource>();
 
-		for (IPath path : paths) {
-			IResource resource = ResourceUtil.getResourceForLocation(path);
-			if (resource != null && resource.exists())
+		for (IResource resource : resources) {
+			if (resource.exists())
 				resource.delete(false, new SubProgressMonitor(monitor, 1));
 			else {
-				File file = path.toFile();
+				File file = resource.getFullPath().toFile();
 				if (file.exists()) {
 					try {
-						FileUtils.delete(file, FileUtils.RECURSIVE);
+						FileUtils.delete(file);
 					} catch (IOException e) {
 						errorOccurred = true;
 						String message = MessageFormat
@@ -97,18 +93,14 @@ public class DeletePathsOperation implements IEGitOperation {
 										file.getPath());
 						Activator.logError(message, e);
 					}
-					refreshCachePaths.add(path);
-					// Selectively refreshing an IndexDiffCacheEntry only works for files,
-					// so refresh all in case of a directory
-					if (file.isDirectory())
-						refreshAll = true;
+					refreshCacheResources.add(resource);
 				}
 				monitor.worked(1);
 			}
 		}
 
-		if (!refreshCachePaths.isEmpty())
-			refreshIndexDiffCache(refreshCachePaths, refreshAll);
+		if (!refreshCacheResources.isEmpty())
+			refreshIndexDiffCache(refreshCacheResources);
 		monitor.worked(1);
 
 		monitor.done();
@@ -120,18 +112,9 @@ public class DeletePathsOperation implements IEGitOperation {
 		}
 	}
 
-	private ISchedulingRule calculateSchedulingRule() {
-		Set<IContainer> containers = new HashSet<IContainer>();
-		for (IPath path : paths) {
-			IResource resource = ResourceUtil.getResourceForLocation(path);
-			if (resource != null)
-				containers.add(resource.getParent());
-		}
-		return new MultiRule(containers.toArray(new IResource[containers.size()]));
-	}
-
-	private void refreshIndexDiffCache(List<IPath> refreshCachePaths, boolean refreshAll) {
-		Map<Repository, Collection<String>> resourcesByRepository = ResourceUtil.splitPathsByRepository(refreshCachePaths);
+	private void refreshIndexDiffCache(List<IResource> refreshCacheResources) {
+		IResource[] r = refreshCacheResources.toArray(new IResource[refreshCacheResources.size()]);
+		Map<Repository, Collection<String>> resourcesByRepository = ResourceUtil.splitResourcesByRepository(r);
 		for (Map.Entry<Repository, Collection<String>> entry : resourcesByRepository.entrySet()) {
 			Repository repository = entry.getKey();
 			Collection<String> files = entry.getValue();
@@ -139,10 +122,7 @@ public class DeletePathsOperation implements IEGitOperation {
 			IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();
 			IndexDiffCacheEntry cacheEntry = cache.getIndexDiffCacheEntry(repository);
 			if (cacheEntry != null)
-				if (refreshAll)
-					cacheEntry.refresh();
-				else
-					cacheEntry.refreshFiles(files);
+				cacheEntry.refreshFiles(files);
 		}
 	}
 }

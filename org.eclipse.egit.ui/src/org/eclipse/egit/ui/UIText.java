@@ -2940,9 +2940,6 @@ public class UIText extends NLS {
 	public static String DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox;
 
 	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteProjectsCheckbox;
-
-	/** */
 	public static String DeleteTagCommand_messageConfirmMultipleTag;
 
 	/** */
@@ -2955,13 +2952,10 @@ public class UIText extends NLS {
 	public static String DeleteTagCommand_titleConfirm;
 
 	/** */
-	public static String DeleteResourcesOperationUI_confirmActionTitle;
+	public static String DeleteResourcesAction_confirmActionTitle;
 
 	/** */
-	public static String DeleteResourcesOperationUI_confirmActionMessage;
-
-	/** */
-	public static String DeleteResourcesOperationUI_deleteFailed;
+	public static String DeleteResourcesAction_confirmActionMessage;
 
 	/** */
 	public static String IgnoreActionHandler_addToGitignore;
@@ -3397,15 +3391,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeTargetSelectionDialog_TitleMergeWithBranch;
-
-	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeGroup;
-
-	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeCommitButton;
-
-	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeSquashButton;
 
 	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
@@ -4432,10 +4417,10 @@ public class UIText extends NLS {
 	public static String StagingView_Commit;
 
 	/** */
-	public static String StagingView_CommitToolTip;
+	public static String StagingView_checkoutFailed;
 
 	/** */
-	public static String StagingView_checkoutFailed;
+	public static String StagingView_deleteFailed;
 
 	/** */
 	public static String StagingView_commitFailed;
@@ -4616,12 +4601,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CloneFailureDialog_checkList;
-
-	/** */
-	public static String GarbageCollectCommand_jobTitle;
-
-	/** */
-	public static String GarbageCollectCommand_failed;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
