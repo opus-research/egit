@@ -10,11 +10,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commands.shared;
 
-import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
-import org.eclipse.jgit.lib.Ref;
 
 /**
  * Implements "Continue Rebase"
@@ -25,11 +22,6 @@ public class ContinueRebaseCommand extends AbstractRebaseCommandHandler {
 	 */
 	public ContinueRebaseCommand() {
 		super(Operation.CONTINUE, UIText.ContinueRebaseCommand_JobName,
-				UIText.ContinueRebaseCommand_CancelDialogMessage, true);
-	}
-
-	@Override
-	protected Ref getRef(ExecutionEvent event) throws ExecutionException {
-		return null;
+				UIText.ContinueRebaseCommand_CancelDialogMessage);
 	}
 }
