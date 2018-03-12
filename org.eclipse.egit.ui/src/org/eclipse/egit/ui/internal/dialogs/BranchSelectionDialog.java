@@ -64,8 +64,8 @@ public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public BranchSelectionDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo);
-		setRootsToShow(true, true, true, false);
+		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
+				| SHOW_TAGS | SELECT_CURRENT_REF | EXPAND_LOCAL_BRANCHES_NODE);
 	}
 
 	private InputDialog getRefNameInputDialog(String prompt,
@@ -148,6 +148,10 @@ public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
 					try {
 						branchTree.refresh();
 						markRef(Constants.R_HEADS + newRefName);
+						if (repo.getBranch().equals(newRefName))
+							// close branch selection dialog when new branch was
+							// already checked out from new branch wizard
+							BranchSelectionDialog.this.okPressed();
 					} catch (Throwable e1) {
 						reportError(
 								e1,
