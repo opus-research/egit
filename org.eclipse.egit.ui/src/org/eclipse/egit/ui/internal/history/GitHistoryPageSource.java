@@ -17,16 +17,6 @@ import org.eclipse.ui.part.Page;
  * A helper class for constructing the {@link GitHistoryPage}.
  */
 public class GitHistoryPageSource extends HistoryPageSource {
-
-	/**
-	 * The instance to use if needed.
-	 */
-	public static final GitHistoryPageSource INSTANCE = new GitHistoryPageSource();
-
-	private GitHistoryPageSource() {
-		super();
-	}
-
 	@Override
 	public boolean canShowHistoryFor(final Object object) {
 		return GitHistoryPage.canShowHistoryFor(object);
@@ -36,15 +26,5 @@ public class GitHistoryPageSource extends HistoryPageSource {
 	public Page createPage(final Object object) {
 		// don't set the input, the framework does this for us
 		return new GitHistoryPage();
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		return obj instanceof GitHistoryPageSource;
-	}
-
-	@Override
-	public int hashCode() {
-		return 42;
 	}
 }
