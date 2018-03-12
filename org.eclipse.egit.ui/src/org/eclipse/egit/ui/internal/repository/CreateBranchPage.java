@@ -83,8 +83,6 @@ class CreateBranchPage extends WizardPage {
 
 	private Button buttonConfigNone;
 
-	boolean shouldCheckoutNewBranch;
-
 	/**
 	 * Constructs this page.
 	 * <p>
@@ -284,10 +282,8 @@ class CreateBranchPage extends WizardPage {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				checkPage();
-				shouldCheckoutNewBranch = checkout.getSelection();
 			}
 		});
-		shouldCheckoutNewBranch = checkout.getSelection();
 
 		Dialog.applyDialogFont(main);
 		setControl(main);
@@ -396,10 +392,6 @@ class CreateBranchPage extends WizardPage {
 			new BranchOperationUI(myRepository, Constants.R_HEADS + newRefName)
 					.run(monitor);
 		}
-	}
-
-	public boolean isNewBranchCheckouted() {
-		return shouldCheckoutNewBranch;
 	}
 
 	private UpstreamConfig getDefaultUpstreamConfig(Repository repo,
