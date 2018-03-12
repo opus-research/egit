@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010, 2016 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,6 +8,7 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Marc Khouzam (Ericsson)  - Add an option not to checkout the new branch
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 493935
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.fetch;
 
@@ -29,6 +30,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.op.TagOperation;
@@ -42,6 +44,7 @@ import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.BranchEditDialog;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
+import org.eclipse.egit.ui.internal.gerrit.GerritDialogSettings;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -103,9 +106,6 @@ import org.eclipse.ui.PlatformUI;
  * Fetch a change from Gerrit
  */
 public class FetchGerritChangePage extends WizardPage {
-	private static final String FETCH_GERRIT_CHANGE_PAGE_SECTION = "FetchGerritChangePage"; //$NON-NLS-1$
-
-	private static final String LAST_URI_POSTFIX = ".lastUri"; //$NON-NLS-1$
 
 	private static final String RUN_IN_BACKGROUND = "runInBackground"; //$NON-NLS-1$
 
@@ -166,7 +166,7 @@ public class FetchGerritChangePage extends WizardPage {
 								.getRepositoryName(repository)));
 		setMessage(UIText.FetchGerritChangePage_PageMessage);
 		settings = getDialogSettings();
-		lastUriKey = repository + LAST_URI_POSTFIX;
+		lastUriKey = repository + GerritDialogSettings.LAST_URI_SUFFIX;
 
 		branchValidator = ValidationUtils.getRefNameInputValidator(repository,
 				Constants.R_HEADS, true);
@@ -176,12 +176,8 @@ public class FetchGerritChangePage extends WizardPage {
 
 	@Override
 	protected IDialogSettings getDialogSettings() {
-		IDialogSettings s = Activator.getDefault().getDialogSettings();
-		IDialogSettings section = s
-				.getSection(FETCH_GERRIT_CHANGE_PAGE_SECTION);
-		if (section == null)
-			section = s.addNewSection(FETCH_GERRIT_CHANGE_PAGE_SECTION);
-		return section;
+		return GerritDialogSettings
+				.getSection(GerritDialogSettings.FETCH_FROM_GERRIT_SECTION);
 	}
 
 	@Override
@@ -189,6 +185,7 @@ public class FetchGerritChangePage extends WizardPage {
 		Clipboard clipboard = new Clipboard(parent.getDisplay());
 		String clipText = (String) clipboard.getContents(TextTransfer
 				.getInstance());
+		clipboard.dispose();
 		String defaultUri = null;
 		String defaultCommand = null;
 		String defaultChange = null;
@@ -383,27 +380,33 @@ public class FetchGerritChangePage extends WizardPage {
 				.applyTo(runInBackgroud);
 		runInBackgroud.setText(UIText.FetchGerritChangePage_RunInBackground);
 
-		// get all available URIs from the repository
+		// get all available Gerrit URIs from the repository
 		SortedSet<String> uris = new TreeSet<>();
 		try {
 			for (RemoteConfig rc : RemoteConfig.getAllRemoteConfigs(repository
 					.getConfig())) {
-				if (rc.getURIs().size() > 0)
-					uris.add(rc.getURIs().get(0).toPrivateString());
-				for (URIish u : rc.getPushURIs())
-					uris.add(u.toPrivateString());
+				if (GerritUtil.isGerritFetch(rc)) {
+					if (rc.getURIs().size() > 0) {
+						uris.add(rc.getURIs().get(0).toPrivateString());
+					}
+					for (URIish u : rc.getPushURIs()) {
+						uris.add(u.toPrivateString());
+					}
+				}
 
 			}
 		} catch (URISyntaxException e) {
 			Activator.handleError(e.getMessage(), e, false);
 			setErrorMessage(e.getMessage());
 		}
-		for (String aUri : uris)
+		for (String aUri : uris) {
 			uriCombo.add(aUri);
-		if (defaultUri != null)
+		}
+		if (defaultUri != null) {
 			uriCombo.setText(defaultUri);
-		else
+		} else {
 			selectLastUsedUri();
+		}
 		restoreRunInBackgroundSelection();
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
@@ -803,8 +806,9 @@ public class FetchGerritChangePage extends WizardPage {
 		bop.execute(monitor);
 
 		if (doCheckout) {
-			CheckoutCommand co = new Git(repository).checkout();
-			try {
+			CheckoutCommand co = null;
+			try (Git git = new Git(repository)) {
+				co = git.checkout();
 				co.setName(textForBranch).call();
 			} catch (CheckoutConflictException e) {
 				final CheckoutResult result = co.getResult();
