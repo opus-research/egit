@@ -27,7 +27,10 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
@@ -38,6 +41,8 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
+import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
@@ -53,12 +58,17 @@ import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextListener;
+import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
 import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
@@ -101,12 +111,16 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.ControlAdapter;
+import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -128,6 +142,7 @@ import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.IShowInTargetList;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
+import org.eclipse.ui.progress.UIJob;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
@@ -624,6 +639,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	/** Viewer displaying the currently selected commit of {@link #graph}. */
 	private CommitMessageViewer commentViewer;
 
+	private DiffViewer diffViewer;
+
 	/** Viewer displaying file difference implied by {@link #graph}'s commit. */
 	private CommitFileDiffViewer fileViewer;
 
@@ -683,6 +700,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			if (UIPreferences.HISTORY_MAX_BRANCH_LENGTH.equals(prop)
 					|| UIPreferences.HISTORY_MAX_TAG_LENGTH.equals(prop))
 				graph.getTableView().refresh();
+			if (UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP.equals(prop)) {
+				setWrap(((Boolean) event.getNewValue()).booleanValue());
+			}
+
 		}
 	};
 
@@ -695,6 +716,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	private List<FilterPath> pathFilters;
 
 	private Runnable refschangedRunnable;
+
+	private final RenameTracker renameTracker = new RenameTracker();
+
+	private ScrolledComposite commentAndDiffScrolledComposite;
+
+	private Composite commentAndDiffComposite;
 
 	/**
 	 * Determine if the input can be shown in this viewer.
@@ -787,7 +814,31 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				.addPropertyChangeListener(listener);
 
 		revInfoSplit = new SashForm(graphDetailSplit, SWT.HORIZONTAL);
-		commentViewer = new CommitMessageViewer(revInfoSplit, getSite(), getPartSite());
+
+		commentAndDiffScrolledComposite = new ScrolledComposite(revInfoSplit,
+				SWT.H_SCROLL | SWT.V_SCROLL);
+		commentAndDiffScrolledComposite.setExpandHorizontal(true);
+		commentAndDiffScrolledComposite.setExpandVertical(true);
+
+		commentAndDiffComposite = new Composite(commentAndDiffScrolledComposite, SWT.NONE);
+		commentAndDiffScrolledComposite.setContent(commentAndDiffComposite);
+		commentAndDiffComposite.setLayout(GridLayoutFactory.fillDefaults()
+				.create());
+
+		commentViewer = new CommitMessageViewer(commentAndDiffComposite,
+				getSite(), getPartSite());
+		commentViewer.getControl().setLayoutData(
+				GridDataFactory.fillDefaults().grab(true, false).create());
+
+		commentViewer.addTextListener(new ITextListener() {
+			public void textChanged(TextEvent event) {
+				resizeCommentAndDiffScrolledComposite();
+			}
+		});
+
+		commentAndDiffComposite.setBackground(commentViewer.getControl()
+				.getBackground());
+
 
 		TextSourceViewerConfiguration configuration = new TextSourceViewerConfiguration(
 				EditorsUI.getPreferenceStore()) {
@@ -817,7 +868,37 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		commentViewer.configure(configuration);
 
+		diffViewer = new DiffViewer(commentAndDiffComposite, null, SWT.NONE, false);
+		diffViewer.getControl().setLayoutData(
+				GridDataFactory.fillDefaults().grab(true, false).create());
+		diffViewer.setEditable(false);
+
+		setWrap(store
+				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP));
+
+		commentAndDiffScrolledComposite.addControlListener(new ControlAdapter() {
+			@Override
+			public void controlResized(ControlEvent e) {
+				if (commentViewer.getTextWidget().getWordWrap())
+					resizeCommentAndDiffScrolledComposite();
+			}
+		});
+
 		fileViewer = new CommitFileDiffViewer(revInfoSplit, getSite());
+		fileViewer.addSelectionChangedListener(new ISelectionChangedListener() {
+			public void selectionChanged(SelectionChangedEvent event) {
+				ISelection selection = event.getSelection();
+				List<FileDiff> diffs = new ArrayList<FileDiff>();
+				if (selection instanceof IStructuredSelection) {
+					IStructuredSelection sel = (IStructuredSelection) selection;
+					for (Object obj : sel.toList())
+						if (obj instanceof FileDiff)
+							diffs.add((FileDiff) obj);
+				}
+				formatDiffs(diffs);
+			}
+		});
+
 		findToolbar = new FindToolbar(historyControl);
 
 		layoutSashForm(graphDetailSplit,
@@ -1051,6 +1132,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				if (i instanceof IWorkbenchAction)
 					((IWorkbenchAction) i).dispose();
 		}
+		renameTracker.reset(null);
 		super.dispose();
 	}
 
@@ -1805,8 +1887,69 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		fileViewer.setTreeWalk(db, fileWalker);
 		fileViewer.setInterestingPaths(fileViewerInterestingPaths);
 		fileViewer.refresh();
-		fileViewer.addSelectionChangedListener(commentViewer);
 		return fileWalker;
+	}
+
+	private void formatDiffs(final List<FileDiff> diffs) {
+		final Repository repository = fileViewer.getRepository();
+		Job formatJob = new Job(UIText.GitHistoryPage_FormatDiffJobName) {
+			protected IStatus run(IProgressMonitor monitor) {
+				final IDocument document = new Document();
+				final DiffStyleRangeFormatter formatter = new DiffStyleRangeFormatter(
+						document);
+
+				monitor.beginTask("", diffs.size()); //$NON-NLS-1$
+				for (FileDiff diff : diffs) {
+					if (monitor.isCanceled())
+						break;
+					if (diff.getCommit().getParentCount() > 1)
+						break;
+					monitor.setTaskName(diff.getPath());
+					try {
+						formatter.write(repository, diff);
+					} catch (IOException ignore) {
+						// Ignored
+					}
+					monitor.worked(1);
+				}
+				monitor.done();
+				UIJob uiJob = new UIJob(UIText.GitHistoryPage_FormatDiffJobName) {
+					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
+						if (UIUtils.isUsable(diffViewer)) {
+							diffViewer.setDocument(document);
+							diffViewer.setFormatter(formatter);
+							resizeCommentAndDiffScrolledComposite();
+						}
+						return Status.OK_STATUS;
+					}
+				};
+				uiJob.schedule();
+				return Status.OK_STATUS;
+			}
+		};
+		formatJob.schedule();
+	}
+
+	private void setWrap(boolean wrap) {
+		commentViewer.getTextWidget().setWordWrap(wrap);
+		diffViewer.getTextWidget().setWordWrap(wrap);
+		resizeCommentAndDiffScrolledComposite();
+	}
+
+	private void resizeCommentAndDiffScrolledComposite() {
+		int widthHint;
+		if (commentViewer.getTextWidget().getWordWrap()) {
+			widthHint = commentAndDiffScrolledComposite.getClientArea().width;
+			if (commentAndDiffScrolledComposite.getVerticalBar() != null
+					&& !commentAndDiffScrolledComposite.getVerticalBar().isVisible())
+				widthHint -= commentAndDiffScrolledComposite.getVerticalBar().getSize().x;
+		} else {
+			widthHint = SWT.DEFAULT;
+		}
+		Point size = commentAndDiffComposite
+				.computeSize(widthHint, SWT.DEFAULT);
+		commentAndDiffComposite.setSize(size);
+		commentAndDiffScrolledComposite.setMinSize(size);
 	}
 
 	private TreeWalk createFileWalker(RevWalk walk, Repository db, List<FilterPath> paths) {
@@ -1825,6 +1968,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			fileViewerInterestingPaths = new HashSet<String>(selectedPaths);
 			TreeFilter followFilter = createFollowFilterFor(selectedPaths);
 			walk.setTreeFilter(followFilter);
+			walk.setRevFilter(renameTracker.getFilter());
+
 		} else if (paths.size() > 0) {
 			pathFilters = paths;
 			List<String> stringPaths = new ArrayList<String>(paths.size());
@@ -1858,9 +2003,15 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		for (String path : paths)
 			followFilters.add(createFollowFilter(path, diffConfig));
 
-		if (followFilters.size() == 1)
+		if (followFilters.size() == 1) {
+			FollowFilter followFilter = (FollowFilter) followFilters.get(0);
+			renameTracker.reset(followFilter.getPath());
 			return followFilters.get(0);
+		}
 
+		// TODO: this scenario is not supported by JGit: RewriteTreeFilter
+		// can not handle composite TreeFilters and expects a plain
+		// FollowFilter for rename detection.
 		return OrTreeFilter.create(followFilters);
 	}
 
@@ -1869,6 +2020,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		followFilter.setRenameCallback(new RenameCallback() {
 			@Override
 			public void renamed(DiffEntry entry) {
+				renameTracker.getCallback().renamed(entry);
 				if (fileViewerInterestingPaths != null) {
 					fileViewerInterestingPaths.add(entry.getOldPath());
 					fileViewerInterestingPaths.add(entry.getNewPath());
@@ -2038,5 +2190,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	public String[] getShowInTargetIds() {
 		return new String[] { IHistoryView.VIEW_ID };
+	}
+
+	/**
+	 * Get renamed path in given commit with initial starting path
+	 *
+	 * @param path
+	 * @param commit
+	 * @return actual path in commit
+	 */
+	public String getRenamedPath(String path, ObjectId commit) {
+		return renameTracker.getPath(commit, path);
 	}
 }
