@@ -32,7 +32,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevCommitList;
 import org.eclipse.jgit.revwalk.RevObject;
 
-/**  
+/**
  * Representation of Git repository in Git ChangeSet model.
  */
 public class GitModelRepository extends GitModelObject {
