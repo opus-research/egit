@@ -10,6 +10,7 @@
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * Copyright (C) 2013, Ben Hammen <hammenb@gmail.com>
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
+ * Copyright (C) 2014, Red Hat Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -1115,30 +1116,6 @@ public class UIText extends NLS {
 	public static String CheckoutHandler_SelectBranchTitle;
 
 	/** */
-	public static String CherryPickHandler_NoCherryPickPerformedMessage;
-
-	/** */
-	public static String CherryPickHandler_NoCherryPickPerformedTitle;
-
-	/** */
-	public static String CherryPickHandler_CherryPickConflictsMessage;
-
-	/** */
-	public static String CherryPickHandler_CherryPickConflictsTitle;
-
-	/** */
-	public static String CherryPickHandler_CherryPickFailedMessage;
-
-	/** */
-	public static String CherryPickHandler_CouldNotDeleteFile;
-
-	/** */
-	public static String CherryPickHandler_ErrorMsgTemplate;
-
-	/** */
-	public static String CherryPickHandler_IndexDirty;
-
-	/** */
 	public static String CherryPickHandler_JobName;
 
 	/** */
@@ -1146,12 +1123,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickHandler_ConfirmTitle;
-
-	/** */
-	public static String CherryPickHandler_unknown;
-
-	/** */
-	public static String CherryPickHandler_WorktreeDirty;
 
 	/** */
 	public static String CherryPickOperation_InternalError;
@@ -2006,7 +1977,22 @@ public class UIText extends NLS {
 	public static String PushAction_wrongURITitle;
 
 	/** */
-	public static String PushBranchPage_BranchNameLabel;
+	public static String PushBranchPage_CommitLabel;
+
+	/** */
+	public static String PushBranchPage_RemoteBranchNameLabel;
+
+	/** */
+	public static String PushBranchPage_CannotAccessCommitDescription;
+
+	/** */
+	public static String PushBranchPage_LocalBranchLabel;
+
+	/** */
+	public static String PushBranchPage_Source;
+
+	/** */
+	public static String PushBranchPage_Destination;
 
 	/** */
 	public static String PushBranchPage_ChooseBranchNameError;
@@ -2873,10 +2859,19 @@ public class UIText extends NLS {
 	public static String WindowCachePreferencePage_streamFileThreshold;
 
 	/** */
+	public static String BasicConfigurationDialog_ConfigLocationInfo;
+
+	/** */
 	public static String BasicConfigurationDialog_DialogMessage;
 
 	/** */
 	public static String BasicConfigurationDialog_DialogTitle;
+
+	/** */
+	public static String BasicConfigurationDialog_DontShowAgain;
+
+	/** */
+	public static String BasicConfigurationDialog_OpenPreferencePage;
 
 	/** */
 	public static String BasicConfigurationDialog_UserEmailLabel;
@@ -3960,10 +3955,19 @@ public class UIText extends NLS {
 	public static String CommitEditor_couldNotShowRepository;
 
 	/** */
+	public static String CommitEditor_couldNotFindStashCommit;
+
+	/** */
+	public static String CommitEditor_couldNotGetStashIndex;
+
+	/** */
 	public static String CommitEditor_showGitRepo;
 
 	/** */
-	public static String CommitEditor_TitleHeader;
+	public static String CommitEditor_TitleHeaderCommit;
+
+	/** */
+	public static String CommitEditor_TitleHeaderStashedCommit;
 
 	/** */
 	public static String CommitEditorInput_Name;
@@ -4015,6 +4019,21 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitEditorPage_TooltipSignedOffByCommitter;
+
+	/** */
+	public static String StashEditorPage_UnstagedChanges;
+
+	/** */
+	public static String StashEditorPage_StagedChanges;
+
+	/** */
+	public static String StashEditorPage_LabelParent0;
+
+	/** */
+	public static String StashEditorPage_LabelParent1;
+
+	/** */
+	public static String StashEditorPage_LabelParent2;
 
 	/** */
 	public static String Header_contextMenu_copy;
@@ -4581,18 +4600,6 @@ public class UIText extends NLS {
 	public static String SimplePushActionHandler_NothingToPushDialogTitle;
 
 	/** */
-	public static String SimplePushSpecPage_message;
-
-	/** */
-	public static String SimplePushSpecPage_pushAheadInfo;
-
-	/** */
-	public static String SimplePushSpecPage_TargetRefName;
-
-	/** */
-	public static String SimplePushSpecPage_title;
-
-	/** */
 	public static String SkipRebaseCommand_CancelDialogMessage;
 
 	/** */
@@ -4989,7 +4996,22 @@ public class UIText extends NLS {
 	public static String StashDropCommand_dropFailed;
 
 	/** */
+	public static String StashDropCommand_stashCommitNotFound;
+
+	/** */
 	public static String StashDropCommand_jobTitle;
+
+	/** */
+	public static String StashesMenu_StashChangesActionText;
+
+	/** */
+	public static String StashesMenu_StashListError;
+
+	/** */
+	public static String StashesMenu_NoStashedChangesText;
+
+	/** */
+	public static String StashesMenu_StashItemText;
 
 	/** */
 	public static String SubmoduleAddCommand_AddError;
@@ -5152,6 +5174,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchEditDialog_Title;
+
+	/** */
+	public static String PushMenu_PushHEAD;
+
+	/** */
+	public static String PushMenu_PushBranch;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
