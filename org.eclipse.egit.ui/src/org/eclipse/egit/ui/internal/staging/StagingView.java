@@ -13,7 +13,6 @@ import static org.eclipse.ui.ISources.ACTIVE_MENU_SELECTION_NAME;
 import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.operations.IUndoContext;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IContainer;
@@ -53,6 +53,10 @@ import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
+import org.eclipse.egit.ui.internal.commands.shared.AbortRebaseCommand;
+import org.eclipse.egit.ui.internal.commands.shared.AbstractRebaseCommandHandler;
+import org.eclipse.egit.ui.internal.commands.shared.ContinueRebaseCommand;
+import org.eclipse.egit.ui.internal.commands.shared.SkipRebaseCommand;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitJob;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
@@ -65,6 +69,7 @@ import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
+import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -83,7 +88,11 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.util.LocalSelectionTransfer;
+import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jface.viewers.ContentViewer;
 import org.eclipse.jface.viewers.DecoratingLabelProvider;
 import org.eclipse.jface.viewers.IBaseLabelProvider;
@@ -93,29 +102,29 @@ import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.ITreeViewerListener;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TreeExpansionEvent;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.RmCommand;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheEditor;
-import org.eclipse.jgit.dircache.DirCacheEntry;
-import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.events.ListenerHandle;
+import org.eclipse.jgit.events.RefsChangedEvent;
+import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
@@ -420,6 +429,23 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private Button commitAndPushButton;
 
+	private Section rebaseSection;
+
+	private Button rebaseContinueButton;
+
+	private Button rebaseSkipButton;
+
+	private Button rebaseAbortButton;
+
+	private ListenerHandle refsChangedListener;
+
+	private LocalResourceManager resources = new LocalResourceManager(
+			JFaceResources.getResources());
+
+	private Image getImage(ImageDescriptor descriptor) {
+		return (Image) this.resources.get(descriptor);
+	}
+
 	@Override
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
@@ -428,15 +454,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
+				resources.dispose();
 				toolkit.dispose();
 			}
 		});
 
 		form = toolkit.createForm(parent);
 
-		Image repoImage = UIIcons.REPOSITORY.createImage();
-		UIUtils.hookDisposal(form, repoImage);
-		form.setImage(repoImage);
+		form.setImage(getImage(UIIcons.REPOSITORY));
 		form.setText(UIText.StagingView_NoSelectionTitle);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(form);
 		toolkit.decorateFormHeading(form);
@@ -503,10 +528,66 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
+		enableAutoExpand(unstagedViewer);
+		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
 
-		commitMessageSection = toolkit.createSection(
-				horizontalSashForm, ExpandableComposite.TITLE_BAR);
+		Composite rebaseAndCommitComposite = toolkit.createComposite(horizontalSashForm);
+		rebaseAndCommitComposite.setLayout(GridLayoutFactory.fillDefaults().create());
+
+		rebaseSection = toolkit.createSection(rebaseAndCommitComposite,
+				ExpandableComposite.TITLE_BAR);
+		rebaseSection.setText(UIText.StagingView_RebaseLabel);
+
+		Composite rebaseComposite = toolkit.createComposite(rebaseSection);
+		toolkit.paintBordersFor(rebaseComposite);
+		rebaseSection.setClient(rebaseComposite);
+
+		rebaseSection.setLayoutData(GridDataFactory.fillDefaults().create());
+		rebaseComposite.setLayout(GridLayoutFactory.fillDefaults()
+				.numColumns(3).equalWidth(true).create());
+		GridDataFactory buttonGridData = GridDataFactory.fillDefaults().align(
+				SWT.FILL, SWT.CENTER);
+
+		this.rebaseAbortButton = toolkit.createButton(rebaseComposite,
+				UIText.StagingView_RebaseAbort, SWT.PUSH);
+		rebaseAbortButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				rebaseAbort();
+			}
+		});
+		rebaseAbortButton.setImage(getImage(UIIcons.REBASE_ABORT));
+		buttonGridData.applyTo(rebaseAbortButton);
+
+		this.rebaseSkipButton = toolkit.createButton(rebaseComposite,
+				UIText.StagingView_RebaseSkip, SWT.PUSH);
+		rebaseSkipButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				rebaseSkip();
+			}
+		});
+		rebaseSkipButton.setImage(getImage(UIIcons.REBASE_SKIP));
+		buttonGridData.applyTo(rebaseSkipButton);
+
+		this.rebaseContinueButton = toolkit.createButton(rebaseComposite,
+				UIText.StagingView_RebaseContinue, SWT.PUSH);
+		rebaseContinueButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				rebaseContinue();
+			}
+		});
+		rebaseContinueButton.setImage(getImage(UIIcons.REBASE_CONTINUE));
+		buttonGridData.applyTo(rebaseContinueButton);
+
+		updateRebaseButtonVisibility(false);
+
+		commitMessageSection = toolkit.createSection(rebaseAndCommitComposite,
+				ExpandableComposite.TITLE_BAR);
 		commitMessageSection.setText(UIText.StagingView_CommitMessage);
+		commitMessageSection.setLayoutData(GridDataFactory.fillDefaults()
+				.grab(true, true).create());
 
 		Composite commitMessageToolbarComposite = toolkit
 				.createComposite(commitMessageSection);
@@ -623,17 +704,21 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.grab(true, false).create());
 
 		Composite buttonsContainer = toolkit.createComposite(composite);
-		GridDataFactory.fillDefaults().grab(true, false).span(2,1).indent(0, 8)
-			.applyTo(buttonsContainer);
-		GridLayoutFactory.fillDefaults().numColumns(2).applyTo(buttonsContainer);
+		GridDataFactory.fillDefaults().grab(true, false).span(2, 1)
+				.indent(0, 8).applyTo(buttonsContainer);
+		GridLayoutFactory.fillDefaults().numColumns(2)
+				.applyTo(buttonsContainer);
 
 		Label filler = toolkit.createLabel(buttonsContainer, ""); //$NON-NLS-1$
-		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).grab(true, true).applyTo(filler);
+		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL)
+				.grab(true, true).applyTo(filler);
 
-		Composite commitButtonsContainer = toolkit.createComposite(buttonsContainer);
+		Composite commitButtonsContainer = toolkit
+				.createComposite(buttonsContainer);
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER)
 				.applyTo(commitButtonsContainer);
-		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(true).applyTo(commitButtonsContainer);
+		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(true)
+				.applyTo(commitButtonsContainer);
 
 		this.commitAndPushButton = toolkit.createButton(commitButtonsContainer,
 				UIText.StagingView_CommitAndPush, SWT.PUSH);
@@ -648,7 +733,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		this.commitButton = toolkit.createButton(commitButtonsContainer,
 				UIText.StagingView_Commit, SWT.PUSH);
-
+		commitButton.setImage(getImage(UIIcons.COMMIT));
+		commitButton.setText(UIText.StagingView_Commit);
 		commitButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -714,6 +800,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
+		enableAutoExpand(stagedViewer);
+		addListenerToDisableAutoExpandOnCollapse(stagedViewer);
 
 		selectionChangedListener = new ISelectionListener() {
 			public void selectionChanged(IWorkbenchPart part,
@@ -759,6 +847,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 			public void updateChangeIdToggleSelection(boolean selection) {
 				addChangeIdAction.setChecked(selection);
 			}
+
+			public void statusUpdated() {
+				updateMessage();
+			}
 		};
 		commitMessageComponent = new CommitMessageComponent(listener);
 		commitMessageComponent.attachControls(commitMessageText, authorText,
@@ -788,14 +880,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 		});
 
-		ModifyListener modifyListener = new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				updateMessage();
-			}
-		};
-		authorText.addModifyListener(modifyListener);
-		committerText.addModifyListener(modifyListener);
-
 		// react on selection changes
 		IWorkbenchPartSite site = getSite();
 		ISelectionService srv = (ISelectionService) site
@@ -803,12 +887,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		srv.addPostSelectionListener(selectionChangedListener);
 
 		// Use current selection to populate staging view
-		ISelection selection = srv.getSelection();
-		if (selection != null && !selection.isEmpty()) {
-			IWorkbenchPart part = site.getPage().getActivePart();
-			if (part != null)
-				selectionChangedListener.selectionChanged(part, selection);
-		}
+		UIUtils.notifySelectionChangedWithCurrentSelection(
+				selectionChangedListener, site);
 
 		site.setSelectionProvider(unstagedViewer);
 
@@ -829,6 +909,38 @@ public class StagingView extends ViewPart implements IShowInSource {
 		stagedViewer.addFilter(filter);
 	}
 
+	private void executeRebaseOperation(AbstractRebaseCommandHandler command) {
+		try {
+			command.execute(currentRepository);
+		} catch (ExecutionException e) {
+			Activator.showError(e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Abort rebase command in progress
+	 */
+	protected void rebaseAbort() {
+		AbortRebaseCommand abortCommand = new AbortRebaseCommand();
+		executeRebaseOperation(abortCommand);
+	}
+
+	/**
+	 * Rebase next commit and continue rebase in progress
+	 */
+	protected void rebaseSkip() {
+		SkipRebaseCommand skipCommand = new SkipRebaseCommand();
+		executeRebaseOperation(skipCommand);
+	}
+
+	/**
+	 * Continue rebase command in progress
+	 */
+	protected void rebaseContinue() {
+		ContinueRebaseCommand continueCommand = new ContinueRebaseCommand();
+		executeRebaseOperation(continueCommand);
+	}
+
 	private void createUnstagedToolBarComposite() {
 		Composite unstagedToolbarComposite = toolkit
 				.createComposite(unstagedSection);
@@ -839,6 +951,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				unstagedViewer.expandAll();
+				enableAutoExpand(unstagedViewer);
 			}
 		};
 		unstagedExpandAllAction.setImageDescriptor(UIIcons.EXPAND_ALL);
@@ -847,6 +960,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				unstagedViewer.collapseAll();
+				disableAutoExpand(unstagedViewer);
 			}
 		};
 		unstagedCollapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
@@ -870,6 +984,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				stagedViewer.expandAll();
+				enableAutoExpand(stagedViewer);
 			}
 		};
 		stagedExpandAllAction.setImageDescriptor(UIIcons.EXPAND_ALL);
@@ -878,6 +993,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				stagedViewer.collapseAll();
+				disableAutoExpand(stagedViewer);
 			}
 		};
 		stagedCollapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
@@ -899,6 +1015,27 @@ public class StagingView extends ViewPart implements IShowInSource {
 		layout.marginLeft = 0;
 		layout.marginRight = 0;
 		return layout;
+	}
+
+	private static void addListenerToDisableAutoExpandOnCollapse(
+			TreeViewer treeViewer) {
+		treeViewer.addTreeListener(new ITreeViewerListener() {
+			public void treeCollapsed(TreeExpansionEvent event) {
+				disableAutoExpand(event.getTreeViewer());
+			}
+
+			public void treeExpanded(TreeExpansionEvent event) {
+				// Nothing to do
+			}
+		});
+	}
+
+	private static void enableAutoExpand(AbstractTreeViewer treeViewer) {
+		treeViewer.setAutoExpandLevel(AbstractTreeViewer.ALL_LEVELS);
+	}
+
+	private static void disableAutoExpand(AbstractTreeViewer treeViewer) {
+		treeViewer.setAutoExpandLevel(0);
 	}
 
 	/**
@@ -959,13 +1096,22 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
-		authorText.setEnabled(enabled);
+		enableAuthorText(enabled);
 		refreshAction.setEnabled(enabled);
 		amendPreviousCommitAction.setEnabled(enabled);
 		signedOffByAction.setEnabled(enabled);
 		addChangeIdAction.setEnabled(enabled);
 		commitButton.setEnabled(enabled);
 		commitAndPushButton.setEnabled(enabled);
+	}
+
+	private void enableAuthorText(boolean enabled) {
+		if (currentRepository != null
+				&& currentRepository.getRepositoryState().equals(
+				RepositoryState.CHERRY_PICKING_RESOLVED))
+			authorText.setEnabled(false);
+		else
+			authorText.setEnabled(enabled);
 	}
 
 	private void updateToolbar() {
@@ -1240,7 +1386,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			warningLabel.showMessage(message);
 			needsRedraw = true;
 		} else {
-			needsRedraw = warningLabel.isVisible();
+			needsRedraw = warningLabel.getVisible();
 			warningLabel.hideMessage();
 		}
 		// Without this explicit redraw, the ControlDecoration of the
@@ -1286,7 +1432,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		menuMgr.addMenuListener(new IMenuListener() {
 
 			public void menuAboutToShow(IMenuManager manager) {
-				IStructuredSelection selection = (IStructuredSelection) treeViewer.getSelection();
+				final IStructuredSelection selection = (IStructuredSelection) treeViewer
+						.getSelection();
 				if (selection.isEmpty())
 					return;
 
@@ -1343,14 +1490,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
 						@Override
 						public void run() {
-							stage(fileSelection);
+							stage(selection);
 						}
 					});
 				if (addUnstage)
 					menuMgr.add(new Action(UIText.StagingView_UnstageItemMenuLabel) {
 						@Override
 						public void run() {
-							unstage(fileSelection);
+							unstage(selection);
 						}
 					});
 				boolean selectionIncludesNonWorkspaceResources = selectionIncludesNonWorkspaceResources(fileSelection);
@@ -1753,100 +1900,49 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (selection.isEmpty())
 			return;
 
-		RevCommit headRev = null;
-		try {
-			final Ref head = currentRepository.getRef(Constants.HEAD);
-			// head.getObjectId() is null if the repository does not contain any
-			// commit
-			if (head.getObjectId() != null)
-				headRev = new RevWalk(currentRepository).parseCommit(head
-						.getObjectId());
-		} catch (IOException e1) {
-			// TODO fix text
-			MessageDialog.openError(getSite().getShell(),
-					UIText.CommitAction_MergeHeadErrorTitle,
-					UIText.CommitAction_ErrorReadingMergeMsg);
+		List<String> paths = processUnstageSelection(selection);
+		if (paths.isEmpty())
 			return;
-		}
-
-		final DirCache dirCache;
-		final DirCacheEditor edit;
-		try {
-			dirCache = currentRepository.lockDirCache();
-			edit = dirCache.editor();
-		} catch (IOException e) {
-			// TODO fix text
-			MessageDialog.openError(getSite().getShell(),
-					UIText.CommitAction_MergeHeadErrorTitle,
-					UIText.CommitAction_ErrorReadingMergeMsg);
-			return;
-		}
 
 		try {
-			processUnstageSelection(selection, headRev, edit);
-
-			try {
-				edit.commit();
-			} catch (IOException e) {
-				// TODO fix text
-				MessageDialog.openError(getSite().getShell(),
-						UIText.CommitAction_MergeHeadErrorTitle,
-						UIText.CommitAction_ErrorReadingMergeMsg);
-			}
-		} finally {
-			dirCache.unlock();
+			Git git = new Git(currentRepository);
+			ResetCommand reset = git.reset();
+			for (String path : paths)
+				reset.addPath(path);
+			reset.call();
+		} catch (GitAPIException e) {
+			Activator.handleError(e.getMessage(), e, true);
 		}
 	}
 
-	private void processUnstageSelection(IStructuredSelection selection,
-			final RevCommit headRev, final DirCacheEditor edit) {
+	private List<String> processUnstageSelection(IStructuredSelection selection) {
+		List<String> paths = new ArrayList<String>();
 		resetPathsToExpand();
 		for (Object element : selection.toList()) {
 			if (element instanceof StagingEntry) {
 				StagingEntry entry = (StagingEntry) element;
-				updateDirCache(headRev, edit, entry);
+				addUnstagePath(entry, paths);
 				addPathAndParentPaths(entry.getParentPath(), pathsToExpandInUnstaged);
 			} else if (element instanceof StagingFolderEntry) {
 				StagingFolderEntry folder = (StagingFolderEntry) element;
 				List<StagingEntry> entries = getContentProvider(stagedViewer)
 						.getStagingEntriesFiltered(folder);
 				for (StagingEntry entry : entries)
-					updateDirCache(headRev, edit, entry);
+					addUnstagePath(entry, paths);
 				addExpandedPathsBelowFolder(folder, stagedViewer,
 						pathsToExpandInUnstaged);
 			}
 		}
+		return paths;
 	}
 
-	private void updateDirCache(final RevCommit headRev,
-			final DirCacheEditor edit, final StagingEntry entry) {
+	private void addUnstagePath(StagingEntry entry, List<String> paths) {
 		switch (entry.getState()) {
 		case ADDED:
-			edit.add(new DirCacheEditor.DeletePath(entry.getPath()));
-			break;
 		case CHANGED:
 		case REMOVED:
-			// set the index object id/file mode back to our head revision
-			try {
-				final TreeWalk tw = TreeWalk.forPath(currentRepository,
-						entry.getPath(), headRev.getTree());
-				if (tw != null)
-					edit.add(new DirCacheEditor.PathEdit(entry.getPath()) {
-						@Override
-						public void apply(DirCacheEntry ent) {
-							ent.setFileMode(tw.getFileMode(0));
-							ent.setObjectId(tw.getObjectId(0));
-							// for index & working tree compare
-							ent.setLastModified(0);
-						}
-					});
-			} catch (IOException e) {
-				// TODO fix text
-				MessageDialog.openError(getSite().getShell(),
-						UIText.CommitAction_MergeHeadErrorTitle,
-						UIText.CommitAction_ErrorReadingMergeMsg);
-			}
-			break;
+			paths.add(entry.getPath());
+			return;
 		default:
 			// unstaged
 		}
@@ -1900,6 +1996,27 @@ public class StagingView extends ViewPart implements IShowInSource {
 		form.setText(UIText.StagingView_NoSelectionTitle);
 	}
 
+	/**
+	 * Show rebase buttons only if a rebase operation is in progress
+	 *
+	 * @param isRebasing
+	 *            {@code}true if rebase is in progress
+	 */
+	protected void updateRebaseButtonVisibility(final boolean isRebasing) {
+		Display.getDefault().asyncExec(new Runnable() {
+			public void run() {
+				showControl(rebaseSection, isRebasing);
+				rebaseSection.getParent().layout(true);
+			}
+
+			private void showControl(Control c, final boolean show) {
+				c.setVisible(show);
+				GridData g = (GridData) c.getLayoutData();
+				g.exclude = !show;
+			}
+		});
+	}
+
 	private void reload(final Repository repository) {
 		if (form.isDisposed())
 			return;
@@ -1918,18 +2035,29 @@ public class StagingView extends ViewPart implements IShowInSource {
 		final boolean repositoryChanged = currentRepository != repository;
 
 		asyncExec(new Runnable() {
+
 			public void run() {
 				if (form.isDisposed())
 					return;
 
 				final IndexDiffData indexDiff = doReload(repository);
+				boolean indexDiffAvailable = (indexDiff != null);
 
-				boolean indexDiffAvailable = indexDiff !=  null;
-
-				if (repositoryChanged)
+				if (repositoryChanged) {
 					// Reset paths, they're from the old repository
 					resetPathsToExpand();
+					if (refsChangedListener != null)
+						refsChangedListener.remove();
+					refsChangedListener = repository.getListenerList()
+							.addRefsChangedListener(new RefsChangedListener() {
 
+								public void onRefsChanged(RefsChangedEvent event) {
+									updateRebaseButtonVisibility(repository
+											.getRepositoryState().isRebasing());
+								}
+
+							});
+				}
 				final StagingViewUpdate update = new StagingViewUpdate(currentRepository, indexDiff, null);
 				Object[] unstagedExpanded = unstagedViewer
 						.getExpandedElements();
@@ -1941,11 +2069,26 @@ public class StagingView extends ViewPart implements IShowInSource {
 						pathsToExpandInUnstaged);
 				expandPreviousExpandedAndPaths(stagedExpanded, stagedViewer,
 						pathsToExpandInStaged);
-				enableCommitWidgets(indexDiffAvailable);
-				boolean commitEnabled =
-						indexDiffAvailable && repository.getRepositoryState().canCommit();
+				enableCommitWidgets(indexDiffAvailable
+						&& indexDiff.getConflicting().isEmpty());
+
+				updateRebaseButtonVisibility(repository.getRepositoryState()
+						.isRebasing());
+
+				boolean commitEnabled = indexDiffAvailable
+						&& repository.getRepositoryState().canCommit()
+						&& indexDiff.getConflicting().isEmpty();
 				commitButton.setEnabled(commitEnabled);
-				commitAndPushButton.setEnabled(commitEnabled);
+
+				boolean commitAndPushEnabled = commitEnabled
+						&& !repository.getRepositoryState().isRebasing();
+				commitAndPushButton.setEnabled(commitAndPushEnabled);
+
+				boolean rebaseContinueEnabled = indexDiffAvailable
+						&& repository.getRepositoryState().isRebasing()
+						&& indexDiff.getConflicting().isEmpty();
+				rebaseContinueButton.setEnabled(rebaseContinueEnabled);
+
 				form.setText(StagingView.getRepositoryName(repository));
 				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
 				updateSectionText();
@@ -1969,6 +2112,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private void expandPreviousExpandedAndPaths(Object[] previous,
 			TreeViewer viewer, Set<IPath> additionalPaths) {
+		// Auto-expand is on, so don't change expanded items
+		if (viewer.getAutoExpandLevel() == AbstractTreeViewer.ALL_LEVELS)
+			return;
+
 		Set<IPath> paths = new HashSet<IPath>(additionalPaths);
 		// Instead of just expanding the previous elements directly, also expand
 		// all parent paths. This makes it work in case of "re-folding" of
@@ -2083,9 +2230,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		String chIdLine = "Change-Id: I" + ObjectId.zeroId().name(); //$NON-NLS-1$
 
-		if (currentRepository.getConfig().getBoolean(
-				ConfigConstants.CONFIG_GERRIT_SECTION,
-				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false)
+		if (GerritUtil.getCreateChangeId(currentRepository.getConfig())
 				&& commitMessageComponent.getCreateChangeId()) {
 			if (message.trim().equals(chIdLine))
 				return false;
@@ -2216,6 +2361,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		InstanceScope.INSTANCE.getNode(
 				org.eclipse.egit.core.Activator.getPluginId())
 				.removePreferenceChangeListener(prefListener);
+		if (refsChangedListener != null)
+			refsChangedListener.remove();
 	}
 
 	private void asyncExec(Runnable runnable) {

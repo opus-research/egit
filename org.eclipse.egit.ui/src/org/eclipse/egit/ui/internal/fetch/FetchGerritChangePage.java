@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -36,12 +36,8 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
-import org.eclipse.egit.ui.internal.components.BranchSelectionComponent;
-import org.eclipse.egit.ui.internal.dialogs.BranchEditDialog;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
-import org.eclipse.egit.ui.internal.dialogs.LocalBranchSelectionDialog;
 import org.eclipse.jface.bindings.keys.KeyStroke;
-import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
@@ -85,6 +81,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
 
 /**
@@ -121,7 +118,9 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Text tagText;
 
-	private BranchSelectionComponent branchGroup;
+	private Label branchTextlabel;
+
+	private Text branchText;
 
 	private String refName;
 
@@ -211,13 +210,13 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		});
 
-		branchGroup = new BranchSelectionComponent(checkoutGroup, repository) {
-			protected LocalBranchSelectionDialog createDialog(Shell shell,
-					String branch) {
-				return new BranchEditDialog(shell, repository, branch);
-			}
-		};
-		branchGroup.addModifyListener(new ModifyListener() {
+		branchTextlabel = new Label(checkoutGroup, SWT.NONE);
+		GridDataFactory.defaultsFor(branchTextlabel).exclude(false)
+				.applyTo(branchTextlabel);
+		branchTextlabel.setText(UIText.FetchGerritChangePage_BranchNameText);
+		branchText = new Text(checkoutGroup, SWT.SINGLE | SWT.BORDER);
+		GridDataFactory.fillDefaults().grab(true, false).applyTo(branchText);
+		branchText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -291,13 +290,13 @@ public class FetchGerritChangePage extends WizardPage {
 			public void modifyText(ModifyEvent e) {
 				Change change = Change.fromRef(refText.getText());
 				if (change != null) {
-					branchGroup.setBranchName(NLS
+					branchText.setText(NLS
 							.bind(UIText.FetchGerritChangePage_SuggestedRefNamePattern,
 									change.getChangeNumber(),
 									change.getPatchSetNumber()));
-					tagText.setText(branchGroup.getSelectedBranchName());
+					tagText.setText(branchText.getText());
 				} else {
-					branchGroup.setBranchName(""); //$NON-NLS-1$
+					branchText.setText(""); //$NON-NLS-1$
 					tagText.setText(""); //$NON-NLS-1$
 				}
 				checkPage();
@@ -371,17 +370,23 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private void checkPage() {
 		boolean createBranchSelected = createBranch.getSelection();
-		branchGroup.setVisible(createBranchSelected);
+		branchText.setEnabled(createBranchSelected);
+		branchText.setVisible(createBranchSelected);
+		branchTextlabel.setVisible(createBranchSelected);
+		GridData gd = (GridData) branchText.getLayoutData();
+		gd.exclude = !createBranchSelected;
+		gd = (GridData) branchTextlabel.getLayoutData();
+		gd.exclude = !createBranchSelected;
 
 		boolean createTagSelected = createTag.getSelection();
 		tagText.setEnabled(createTagSelected);
 		tagText.setVisible(createTagSelected);
 		tagTextlabel.setVisible(createTagSelected);
-		GridData gd = (GridData) tagText.getLayoutData();
+		gd = (GridData) tagText.getLayoutData();
 		gd.exclude = !createTagSelected;
 		gd = (GridData) tagTextlabel.getLayoutData();
 		gd.exclude = !createTagSelected;
-		tagText.getParent().layout();
+		branchText.getParent().layout(true);
 
 		boolean showActivateAdditionalRefs = false;
 		showActivateAdditionalRefs = (checkout.getSelection() || dontCheckout
@@ -410,8 +415,8 @@ public class FetchGerritChangePage extends WizardPage {
 				return;
 			}
 
-			boolean emptyRefName = (createBranchSelected && branchGroup
-					.getSelectedBranchName().length() == 0)
+			boolean emptyRefName = (createBranchSelected && branchText
+					.getText().length() == 0)
 					|| (createTagSelected && tagText.getText().length() == 0);
 			if (emptyRefName) {
 				setErrorMessage(UIText.FetchGerritChangePage_ProvideRefNameMessage);
@@ -419,13 +424,13 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 
 			boolean existingRefName = (createBranchSelected && repository
-					.getRef(branchGroup.getSelectedBranchName()) != null)
+					.getRef(branchText.getText()) != null)
 					|| (createTagSelected && repository.getRef(tagText
 							.getText()) != null);
 			if (existingRefName) {
 				setErrorMessage(NLS.bind(
 						UIText.FetchGerritChangePage_ExistingRefMessage,
-						branchGroup.getSelectedBranchName()));
+						branchText.getText()));
 				return;
 			}
 		} catch (IOException e1) {
@@ -496,7 +501,7 @@ public class FetchGerritChangePage extends WizardPage {
 		final boolean doActivateAdditionalRefs = (checkout.getSelection() || dontCheckout
 				.getSelection()) && activateAdditionalRefs.getSelection();
 		final String textForTag = tagText.getText();
-		final String textForBranch = branchGroup.getSelectedBranchName();
+		final String textForBranch = branchText.getText();
 
 		storeRunInBackgroundSelection();
 
@@ -679,16 +684,12 @@ public class FetchGerritChangePage extends WizardPage {
 	}
 
 	private void addRefContentProposalToText(final Text textField) {
-		KeyStroke stroke;
-		try {
-			stroke = KeyStroke.getInstance("CTRL+SPACE"); //$NON-NLS-1$
+		KeyStroke stroke = UIUtils
+				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
+		if (stroke != null)
 			UIUtils.addBulbDecorator(textField, NLS.bind(
 					UIText.FetchGerritChangePage_ContentAssistTooltip,
 					stroke.format()));
-		} catch (ParseException e1) {
-			Activator.handleError(e1.getMessage(), e1, false);
-			stroke = null;
-		}
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			public IContentProposal[] getProposals(String contents, int position) {
