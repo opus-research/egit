@@ -16,16 +16,19 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.rebase.RebaseHelper;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.ISources;
 
@@ -35,7 +38,7 @@ import org.eclipse.ui.ISources;
 public class RebaseCurrentRefCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		BasicConfigurationDialog.show();
+
 		RepositoryTreeNode node = getSelectedNodes(event).get(0);
 
 		final Repository repository = node.getRepository();
@@ -60,8 +63,18 @@ public class RebaseCurrentRefCommand extends
 		String jobname = NLS.bind(
 				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName, ref
 						.getName());
-		RebaseHelper.runRebaseJob(repository, jobname, ref);
-		return null;
+		RevWalk rw = new RevWalk(repository);
+		RevCommit commit;
+		try {
+			commit = rw.parseCommit(ref.getObjectId());
+		} catch (MissingObjectException e) {
+			throw new ExecutionException("Failed to resolve upstream " + ref, e); //$NON-NLS-1$ FIXME
+		} catch (IncorrectObjectTypeException e) {
+			throw new ExecutionException("Rebase failed " + ref, e); //$NON-NLS-1$ FIXME
+		} catch (IOException e) {
+			throw new ExecutionException("Rebase failed " + ref, e); //$NON-NLS-1$ FIXME
+		}
+		return RebaseHelper.basicExecute(repository, jobname, commit);
 	}
 
 	@Override
