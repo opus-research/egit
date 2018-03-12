@@ -62,15 +62,14 @@ public class GitModelCacheTree extends GitModelTree {
 		if (obj == this)
 			return true;
 
-		if (obj == null)
-			return false;
+		if (obj instanceof GitModelCacheTree) {
+			GitModelCacheTree objTree = (GitModelCacheTree) obj;
 
-		if (obj.getClass() != getClass())
-			return false;
-
-		GitModelCacheTree objTree = (GitModelCacheTree) obj;
-		return objTree.getLocation().equals(getLocation())
+			return objTree.getLocation().equals(getLocation())
 					&& objTree.getBaseId().equals(getBaseId());
+		}
+
+		return false;
 	}
 
 	@Override

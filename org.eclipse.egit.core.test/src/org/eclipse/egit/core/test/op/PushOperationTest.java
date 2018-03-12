@@ -232,13 +232,14 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		return pop;
 	}
 
-	private static final class LogListener implements ILogListener {
+	private final class LogListener implements ILogListener {
 		private boolean loggedSomething = false;
 		private boolean loggedException = false;
 
 		public void logging(IStatus status, String plugin) {
 			loggedSomething = true;
 			loggedException = status.getException() != null;
+
 		}
 
 		public boolean loggedSomething() {
