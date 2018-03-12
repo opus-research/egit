@@ -109,7 +109,6 @@ public class RebaseResultDialog extends MessageDialog {
 	public static void show(final RebaseResult result,
 			final Repository repository) {
 		boolean shouldShow = result.getStatus() == Status.STOPPED
-				|| result.getStatus() == Status.STASH_APPLY_CONFLICTS
 				|| Activator.getDefault().getPreferenceStore().getBoolean(
 						UIPreferences.SHOW_REBASE_CONFIRM);
 
@@ -162,11 +161,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_NothingToCommit;
 		case INTERACTIVE_PREPARED:
 			return UIText.RebaseResultDialog_InteractivePrepared;
-		case UNCOMMITTED_CHANGES:
-			return UIText.RebaseResultDialog_UncommittedChanges;
-		case STASH_APPLY_CONFLICTS:
-			return UIText.RebaseResultDialog_SuccessfullyFinished + ".\n" + //$NON-NLS-1$
-					UIText.RebaseResultDialog_stashApplyConflicts;
 		default:
 			throw new IllegalStateException(status.name());
 		}
@@ -194,11 +188,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_StatusFastForward;
 		case NOTHING_TO_COMMIT:
 			return UIText.RebaseResultDialog_StatusNothingToCommit;
-		case UNCOMMITTED_CHANGES:
-			return UIText.RebaseResultDialog_UncommittedChanges;
-		case STASH_APPLY_CONFLICTS:
-			return UIText.RebaseResultDialog_SuccessfullyFinished + ".\n" + //$NON-NLS-1$
-					UIText.RebaseResultDialog_stashApplyConflicts;
 		}
 		return status.toString();
 	}
@@ -544,12 +533,14 @@ public class RebaseResultDialog extends MessageDialog {
 			if (startMergeButton.getSelection()) {
 				super.buttonPressed(buttonId);
 				// open the merge tool
+				List<IProject> validProjects = new ArrayList<IProject>();
 				IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 						.getProjects();
 				for (IProject project : projects) {
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(project);
 					if (mapping != null && mapping.getRepository().equals(repo)) {
+						validProjects.add(project);
 						try {
 							// make sure to refresh before opening the merge
 							// tool
@@ -561,14 +552,20 @@ public class RebaseResultDialog extends MessageDialog {
 						}
 					}
 				}
-				List<IPath> locationList = new ArrayList<IPath>();
+				List<IResource> resourceList = new ArrayList<IResource>();
 				IPath repoWorkdirPath = new Path(repo.getWorkTree().getPath());
 				for (String repoPath : conflictPaths) {
-					IPath location = repoWorkdirPath.append(repoPath);
-					locationList.add(location);
+					IPath filePath = repoWorkdirPath.append(repoPath);
+					for (IProject project : validProjects)
+						if (project.getLocation().isPrefixOf(filePath)) {
+							IResource res = project.getFile(filePath
+									.removeFirstSegments(project.getLocation()
+											.segmentCount()));
+							resourceList.add(res);
+						}
 				}
-				IPath[] locations = locationList.toArray(new IPath[locationList
-						.size()]);
+				IResource[] resources = new IResource[resourceList.size()];
+				resourceList.toArray(resources);
 				int mergeMode = Activator.getDefault().getPreferenceStore()
 						.getInt(UIPreferences.MERGE_MODE);
 				CompareEditorInput input;
@@ -577,11 +574,10 @@ public class RebaseResultDialog extends MessageDialog {
 					if (dlg.open() != Window.OK)
 						return;
 					input = new GitMergeEditorInput(dlg.useWorkspace(),
-							locations);
+							resources);
 				} else {
 					boolean useWorkspace = mergeMode == 1;
-					input = new GitMergeEditorInput(useWorkspace,
-							locations);
+					input = new GitMergeEditorInput(useWorkspace, resources);
 				}
 				CompareUI.openCompareEditor(input);
 				return;
