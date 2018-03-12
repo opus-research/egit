@@ -327,7 +327,8 @@ public class GitProjectData {
 	 * @throws CoreException
 	 */
 	public void markTeamPrivateResources() throws CoreException {
-		for (final RepositoryMapping rm : mappings) {
+		for (final Object rmObj : mappings) {
+			final RepositoryMapping rm = (RepositoryMapping)rmObj;
 			final IContainer c = rm.getContainer();
 			if (c == null)
 				continue; // Not fully mapped yet?
