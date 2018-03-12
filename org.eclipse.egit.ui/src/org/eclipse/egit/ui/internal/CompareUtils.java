@@ -19,6 +19,7 @@ package org.eclipse.egit.ui.internal;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
@@ -58,7 +59,6 @@ import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.CoreConfig.AutoCRLF;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
@@ -67,12 +67,9 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.WorkingTreeOptions;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
-import org.eclipse.jgit.util.IO;
-import org.eclipse.jgit.util.io.EolCanonicalizingInputStream;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
@@ -519,12 +516,11 @@ public class CompareUtils {
 	 *            we'll synchronize the whole repository).
 	 * @param repository
 	 *            The repository to load file revisions from.
-	 * @param leftRev
-	 *            Left revision of the comparison (usually the local or "new"
-	 *            revision). Won't be used if <code>includeLocal</code> is
-	 *            <code>true</code>.
-	 * @param rightRev
-	 *            Right revision of the comparison (usually the "old" revision).
+	 * @param srcRev
+	 *            Source revision of the comparison (or "left" side). Won't be
+	 *            used if <code>includeLocal</code> is <code>true</code>.
+	 * @param dstRev
+	 *            Destination revision of the comparison ("right" side).
 	 * @param includeLocal
 	 *            If <code>true</code>, this will use the local data as the
 	 *            "left" side of the comparison.
@@ -534,24 +530,25 @@ public class CompareUtils {
 	 * @throws IOException
 	 */
 	public static void compare(IResource[] resources, Repository repository,
-			String leftRev, String rightRev, boolean includeLocal,
+			String srcRev, String dstRev, boolean includeLocal,
 			IWorkbenchPage page) throws IOException {
 		if (resources.length == 1 && resources[0] instanceof IFile
 				&& canDirectlyOpenInCompare((IFile) resources[0])) {
 			if (includeLocal)
 				compareWorkspaceWithRef(repository, (IFile) resources[0],
-						rightRev, page);
+						dstRev, page);
 			else {
 				final IFile file = (IFile) resources[0];
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
 				final String gitPath = mapping.getRepoRelativePath(file);
 
-				compareBetween(repository, gitPath, leftRev, rightRev, page);
+				compareBetween(repository, gitPath, srcRev,
+						dstRev, page);
 			}
 		} else
-			GitModelSynchronize.synchronize(resources, repository, leftRev,
-					rightRev, includeLocal);
+			GitModelSynchronize.synchronize(resources, repository, srcRev,
+					dstRev, includeLocal);
 	}
 
 	/**
@@ -561,12 +558,11 @@ public class CompareUtils {
 	 *            Location of the file to compare.
 	 * @param repository
 	 *            The repository to load file revisions from.
-	 * @param leftRev
-	 *            Left revision of the comparison (usually the local or "new"
-	 *            revision). Won't be used if <code>includeLocal</code> is
-	 *            <code>true</code>.
-	 * @param rightRev
-	 *            Right revision of the comparison (usually the "old" revision).
+	 * @param srcRev
+	 *            Source revision of the comparison (or "left" side). Won't be
+	 *            used if <code>includeLocal</code> is <code>true</code>.
+	 * @param dstRev
+	 *            Destination revision of the comparison ("right" side).
 	 * @param includeLocal
 	 *            If <code>true</code>, this will use the local data as the
 	 *            "left" side of the comparison.
@@ -576,37 +572,37 @@ public class CompareUtils {
 	 * @throws IOException
 	 */
 	public static void compare(IPath location, Repository repository,
-			String leftRev, String rightRev, boolean includeLocal,
+			String srcRev, String dstRev, boolean includeLocal,
 			IWorkbenchPage page) throws IOException {
 		if (includeLocal)
-			compareLocalWithRef(repository, location, rightRev, page);
+			compareLocalWithRef(repository, location, dstRev, page);
 		else {
 			final String gitPath = RepositoryMapping.getMapping(location)
 					.getRepoRelativePath(location);
-			compareBetween(repository, gitPath, leftRev, rightRev, page);
+			compareBetween(repository, gitPath, srcRev, dstRev, page);
 		}
 	}
 
 	private static void compareBetween(Repository repository, String gitPath,
-			String leftRev, String rightRev, IWorkbenchPage page)
+			String srcRev, String dstRev, IWorkbenchPage page)
 			throws IOException {
-		final ITypedElement left = getTypedElementFor(repository, gitPath,
-				leftRev);
-		final ITypedElement right = getTypedElementFor(repository, gitPath,
-				rightRev);
+		final ITypedElement src = getTypedElementFor(repository, gitPath,
+				srcRev);
+		final ITypedElement dst = getTypedElementFor(repository, gitPath,
+				dstRev);
 
 		final ITypedElement commonAncestor;
-		if (left != null && right != null && !GitFileRevision.INDEX.equals(leftRev)
-				&& !GitFileRevision.INDEX.equals(rightRev))
+		if (src != null && dst != null && !GitFileRevision.INDEX.equals(srcRev)
+				&& !GitFileRevision.INDEX.equals(dstRev))
 			commonAncestor = getTypedElementForCommonAncestor(repository,
-					gitPath, leftRev, rightRev);
+					gitPath, srcRev, dstRev);
 		else
 			commonAncestor = null;
 
 		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-				left, right, commonAncestor, null);
-		in.getCompareConfiguration().setLeftLabel(leftRev);
-		in.getCompareConfiguration().setRightLabel(rightRev);
+				src, dst, commonAncestor, null);
+		in.getCompareConfiguration().setLeftLabel(srcRev);
+		in.getCompareConfiguration().setRightLabel(dstRev);
 
 		if (page != null)
 			openInCompare(page, in);
@@ -755,14 +751,48 @@ public class CompareUtils {
 	}
 
 	private static ITypedElement getIndexTypedElement(
-			final Repository repository, final String gitPath, String encoding) {
+			final Repository repository, final String gitPath,
+			String encoding) throws IOException {
+		DirCache dc = repository.lockDirCache();
+		final DirCacheEntry entry;
+		try {
+			entry = dc.getEntry(gitPath);
+		} finally {
+			dc.unlock();
+		}
+
 		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
 		final EditableRevision next = new EditableRevision(nextFile, encoding);
 
 		IContentChangeListener listener = new IContentChangeListener() {
 			public void contentChanged(IContentChangeNotifier source) {
 				final byte[] newContent = next.getModifiedContent();
-				setIndexEntryContents(repository, gitPath, newContent);
+				DirCache cache = null;
+				try {
+					cache = repository.lockDirCache();
+					DirCacheEditor editor = cache.editor();
+					if (newContent.length == 0)
+						editor.add(new DirCacheEditor.DeletePath(gitPath));
+					else
+						editor.add(new DirCacheEntryEditor(gitPath,
+								repository, entry, newContent));
+					try {
+						editor.commit();
+					} catch (RuntimeException e) {
+						if (e.getCause() instanceof IOException)
+							throw (IOException) e.getCause();
+						else
+							throw e;
+					}
+
+				} catch (IOException e) {
+					Activator.handleError(
+							UIText.CompareWithIndexAction_errorOnAddToIndex, e,
+							true);
+				} finally {
+					if (cache != null)
+						cache.unlock();
+				}
 			}
 		};
 
@@ -770,98 +800,45 @@ public class CompareUtils {
 		return next;
 	}
 
-	/**
-	 * Set contents on index entry of specified path. Line endings of contents
-	 * are canonicalized if configured.
-	 *
-	 * @param repository
-	 * @param gitPath
-	 * @param newContent
-	 *            content with working directory line endings
-	 */
-	private static void setIndexEntryContents(final Repository repository,
-			final String gitPath, final byte[] newContent) {
-		DirCache cache = null;
-		try {
-			cache = repository.lockDirCache();
-			DirCacheEditor editor = cache.editor();
-			if (newContent.length == 0) {
-				editor.add(new DirCacheEditor.DeletePath(gitPath));
-			} else {
-				int length;
-				byte[] content;
-				WorkingTreeOptions workingTreeOptions = repository.getConfig()
-						.get(WorkingTreeOptions.KEY);
-				AutoCRLF autoCRLF = workingTreeOptions.getAutoCRLF();
-				switch (autoCRLF) {
-				case FALSE:
-					content = newContent;
-					length = newContent.length;
-					break;
-				case INPUT:
-				case TRUE:
-					EolCanonicalizingInputStream in = new EolCanonicalizingInputStream(
-							new ByteArrayInputStream(newContent), true);
-					// Canonicalization should lead to same or shorter length
-					// (CRLF to LF), so we don't have to expand the byte[].
-					content = new byte[newContent.length];
-					length = IO.readFully(in, content, 0);
-					break;
-				default:
-					throw new IllegalArgumentException(
-							"Unknown autocrlf option " + autoCRLF); //$NON-NLS-1$
-				}
-
-				editor.add(new DirCacheEntryEditor(gitPath, repository,
-						content, length));
-			}
-			try {
-				editor.commit();
-			} catch (RuntimeException e) {
-				if (e.getCause() instanceof IOException)
-					throw (IOException) e.getCause();
-				else
-					throw e;
-			}
-
-		} catch (IOException e) {
-			Activator.handleError(
-					UIText.CompareWithIndexAction_errorOnAddToIndex, e, true);
-		} finally {
-			if (cache != null)
-				cache.unlock();
-		}
-	}
-
 	private static class DirCacheEntryEditor extends DirCacheEditor.PathEdit {
 
 		private final Repository repo;
 
-		private final byte[] content;
-		private final int contentLength;
+		private final DirCacheEntry oldEntry;
+
+		private final byte[] newContent;
 
 		public DirCacheEntryEditor(String path, Repository repo,
-				byte[] content, int contentLength) {
+				DirCacheEntry oldEntry, byte[] newContent) {
 			super(path);
 			this.repo = repo;
-			this.content = content;
-			this.contentLength = contentLength;
+			this.oldEntry = oldEntry;
+			this.newContent = newContent;
 		}
 
 		@Override
 		public void apply(DirCacheEntry ent) {
 			ObjectInserter inserter = repo.newObjectInserter();
-			if (ent.getFileMode() != FileMode.REGULAR_FILE)
+			if (oldEntry != null)
+				ent.copyMetaData(oldEntry);
+			else
 				ent.setFileMode(FileMode.REGULAR_FILE);
 
-			ent.setLength(contentLength);
+			ent.setLength(newContent.length);
 			ent.setLastModified(System.currentTimeMillis());
+			InputStream in = new ByteArrayInputStream(newContent);
 			try {
-				ent.setObjectId(inserter.insert(Constants.OBJ_BLOB, content, 0,
-						contentLength));
+				ent.setObjectId(inserter.insert(Constants.OBJ_BLOB,
+						newContent.length, in));
 				inserter.flush();
 			} catch (IOException ex) {
 				throw new RuntimeException(ex);
+			} finally {
+				try {
+					in.close();
+				} catch (IOException e) {
+					// ignore here
+				}
 			}
 		}
 	}
