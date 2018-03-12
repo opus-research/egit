@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>3.2.0-SNAPSHOT</version>
+    <version>3.0.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.ui.test</artifactId>
@@ -61,7 +61,7 @@
         </os>
       </activation>
       <properties>
-        <ui.test.vmargs>${test.vmparams} ${uitest.vmparams}</ui.test.vmargs>
+        <ui.test.vmargs>${uitest.vmparams}</ui.test.vmargs>
       </properties>
     </profile>
   </profiles>
@@ -74,7 +74,8 @@
         <version>${tycho-version}</version>
         <configuration>
           <includes>
-            <include>**/*Test.java</include>
+            <include>**/AllJUnitTests.java</include>
+            <include>**/AllSWTAndNonSWTTests.java</include>
           </includes>
           <useUIHarness>true</useUIHarness>
           <useUIThread>false</useUIThread>
@@ -86,13 +87,13 @@
               <type>p2-installable-unit</type>
               <groupId>org.eclipse.egit.feature</groupId>
               <artifactId>org.eclipse.egit.feature.group</artifactId>
-              <version>3.2.0</version>
+              <version>3.0.2</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
               <groupId>org.eclipse.jgit.feature</groupId>
               <artifactId>org.eclipse.jgit.feature.group</artifactId>
-              <version>3.2.0</version>
+              <version>3.0.2</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>

@@ -5,7 +5,7 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010-2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012, Daniel megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
@@ -59,10 +59,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
-import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
-import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
-import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ISelection;
@@ -121,8 +117,6 @@ import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.dialogs.PreferencesUtil;
-import org.eclipse.ui.editors.text.EditorsUI;
-import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
@@ -786,35 +780,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		revInfoSplit = new SashForm(graphDetailSplit, SWT.HORIZONTAL);
 		commentViewer = new CommitMessageViewer(revInfoSplit, getSite(), getPartSite());
-
-		TextSourceViewerConfiguration configuration = new TextSourceViewerConfiguration(
-				EditorsUI.getPreferenceStore()) {
-
-			public int getHyperlinkStateMask(ISourceViewer sourceViewer) {
-				return SWT.NONE;
-			}
-
-			@Override
-			public IHyperlinkPresenter getHyperlinkPresenter(
-					ISourceViewer sourceViewer) {
-				return new MultipleHyperlinkPresenter(PlatformUI.getWorkbench()
-						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB()) {
-
-					@Override
-					public void hideHyperlinks() {
-						// We want links to always show.
-					}
-
-				};
-			}
-
-			public IHyperlinkDetector[] getHyperlinkDetectors(ISourceViewer sourceViewer) {
-				return getRegisteredHyperlinkDetectors(sourceViewer);
-			}
-		};
-
-		commentViewer.configure(configuration);
-
 		fileViewer = new CommitFileDiffViewer(revInfoSplit, getSite());
 		findToolbar = new FindToolbar(historyControl);
 
@@ -935,9 +900,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				} finally {
 					walk.dispose();
 				}
-
-				if (input.getSingleFile() != null)
-					fileViewer.selectFirstInterestingElement();
 			}
 		});
 		commentViewer
@@ -1967,10 +1929,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	private void markStartRef(RevWalk walk, Ref ref) throws IOException,
 			IncorrectObjectTypeException {
 		try {
-			RevObject refTarget = walk.parseAny(ref.getLeaf().getObjectId());
-			RevObject peeled = walk.peel(refTarget);
-			if (peeled instanceof RevCommit)
-				walk.markStart((RevCommit) peeled);
+			Object refTarget = walk.parseAny(ref.getLeaf().getObjectId());
+			if (refTarget instanceof RevCommit)
+				walk.markStart((RevCommit) refTarget);
 		} catch (MissingObjectException e) {
 			// If there is a ref which points to Nirvana then we should simply
 			// ignore this ref. We should not let a corrupt ref cause that the

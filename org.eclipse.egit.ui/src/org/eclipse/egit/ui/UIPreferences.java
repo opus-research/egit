@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
+
+
 /**
  * Preferences used by the EGit UI plug-in.
  * <p>
@@ -106,12 +108,6 @@ public class UIPreferences {
 	/** */
 	public final static String THEME_DiffRemoveForegroundColor = "org.eclipse.egit.ui.DiffRemoveForegroundColor"; //$NON-NLS-1$
 	/** */
-	public final static String THEME_IgnoredResourceForegroundColor = "org.eclipse.egit.ui.IgnoredResourceForegroundColor"; //$NON-NLS-1$
-	/** */
-	public final static String THEME_IgnoredResourceBackgroundColor = "org.eclipse.egit.ui.IgnoredResourceBackgroundColor"; //$NON-NLS-1$
-	/** */
-	public final static String THEME_IgnoredResourceFont = "org.eclipse.egit.ui.IgnoredResourceFont"; //$NON-NLS-1$
-	/** */
 	public final static String DECORATOR_RECOMPUTE_ANCESTORS = "decorator_recompute_ancestors"; //$NON-NLS-1$
 	/** */
 	public final static String DECORATOR_FILETEXT_DECORATION = "decorator_filetext_decoration"; //$NON-NLS-1$
@@ -172,9 +168,6 @@ public class UIPreferences {
 	/** */
 	public static final String SHOW_DETACHED_HEAD_WARNING = "show_detached_head_warning"; //$NON-NLS-1$
 	/** */
-	public static final String SHOW_CHECKOUT_CONFIRMATION = "show_checkout_confirmation"; //$NON-NLS-1$
-
-	/** */
 	public static final String TREE_COMPARE_SHOW_EQUALS = "CompareTreeView_ShowEquals"; //$NON-NLS-1$
 	/** */
 	public static final String HISTORY_MAX_NUM_COMMITS = "HistoryView_MaxNumberOfCommmits"; //$NON-NLS-1$
@@ -192,8 +185,6 @@ public class UIPreferences {
 	public static final String STAGING_VIEW_SYNC_SELECTION = "StagingView_SyncWithSelection"; //$NON-NLS-1$
 	/** */
 	public static final String STAGING_VIEW_FILENAME_MODE = "StagingView_FileNameMode"; //$NON-NLS-1$
-	/** */
-	public static final String STAGING_VIEW_PRESENTATION = "StagingView_Presentation"; //$NON-NLS-1$
 	/** */
 	public static final String PAGE_COMMIT_PREFERENCES = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
 	/** */
