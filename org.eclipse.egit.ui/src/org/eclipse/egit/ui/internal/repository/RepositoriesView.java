@@ -8,7 +8,6 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Dariusz Luksza <dariusz@luksza.org> - add synchronization feature
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Only check out on double-click
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -51,8 +50,6 @@ import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceColors;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -361,25 +358,24 @@ public class RepositoriesView extends CommonNavigator {
 	protected CommonViewer createCommonViewer(Composite aParent) {
 		ConfigurationChecker.checkConfiguration();
 		CommonViewer viewer = super.createCommonViewer(aParent);
-		// handle the double-click event for tags and branches
-		viewer.addDoubleClickListener(new IDoubleClickListener() {
-			public void doubleClick(DoubleClickEvent event) {
-				TreeSelection sel = (TreeSelection) event.getSelection();
-				RepositoryTreeNode element = (RepositoryTreeNode) sel
-						.getFirstElement();
-				if (element instanceof RefNode || element instanceof TagNode) {
-					executeOpenCommand();
-				}
-			}
-		});
-		// handle open event for the working directory
+		// handle the double-click event
 		viewer.addOpenListener(new IOpenListener() {
+
 			public void open(OpenEvent event) {
 				TreeSelection sel = (TreeSelection) event.getSelection();
 				RepositoryTreeNode element = (RepositoryTreeNode) sel
 						.getFirstElement();
-				if (element instanceof FileNode) {
-					executeOpenCommand();
+
+				if (element instanceof RefNode || element instanceof FileNode
+						|| element instanceof TagNode) {
+					IHandlerService srv = (IHandlerService) getViewSite()
+							.getService(IHandlerService.class);
+
+					try {
+						srv.executeCommand("org.eclipse.egit.ui.RepositoriesViewOpen", null); //$NON-NLS-1$
+					} catch (Exception e) {
+						Activator.handleError(e.getMessage(), e, false);
+					}
 				}
 			}
 		});
@@ -400,17 +396,6 @@ public class RepositoriesView extends CommonNavigator {
 			layout.topControl = emptyArea;
 
 		return viewer;
-	}
-
-	private void executeOpenCommand() {
-		IHandlerService srv = (IHandlerService) getViewSite()
-				.getService(IHandlerService.class);
-
-		try {
-			srv.executeCommand("org.eclipse.egit.ui.RepositoriesViewOpen", null); //$NON-NLS-1$
-		} catch (Exception e) {
-			Activator.handleError(e.getMessage(), e, false);
-		}
 	}
 
 	private void activateContextService() {

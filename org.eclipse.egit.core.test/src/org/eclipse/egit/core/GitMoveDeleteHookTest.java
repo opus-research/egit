@@ -17,8 +17,8 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.core.filesystem.URIUtil;
 import org.eclipse.core.resources.IProject;
@@ -58,7 +58,7 @@ public class GitMoveDeleteHookTest {
 
 	Repository repository;
 
-	Set<File> testDirs = new HashSet<File>();
+	List<File> gitDirs = new ArrayList<File>();
 
 	File workspaceSupplement;
 
@@ -77,14 +77,13 @@ public class GitMoveDeleteHookTest {
 	}
 
 	@After
-	public void tearDown() throws IOException, CoreException {
+	public void tearDown() throws IOException {
 		if (testRepository != null)
 			testRepository.dispose();
 		repository = null;
-		for (File d : testDirs)
+		for (File d : gitDirs)
 			if (d.exists())
 				FileUtils.delete(d, FileUtils.RECURSIVE | FileUtils.RETRY);
-		ResourcesPlugin.getWorkspace().getRoot().delete(IResource.FORCE, null);
 	}
 
 	private TestProject initRepoInsideProjectInsideWorkspace() throws IOException,
@@ -92,11 +91,10 @@ public class GitMoveDeleteHookTest {
 		TestProject project = new TestProject(true, "Project-1", true, workspaceSupplement);
 		File gitDir = new File(project.getProject().getLocationURI().getPath(),
 				Constants.DOT_GIT);
-		testDirs.add(gitDir);
+		gitDirs.add(gitDir);
 		testRepository = new TestRepository(gitDir);
 		repository = testRepository.getRepository();
 		testRepository.connect(project.getProject());
-		registerWorkspaceRelativeTestDir("Project-1");
 		return project;
 	}
 
@@ -106,7 +104,7 @@ public class GitMoveDeleteHookTest {
 				workspaceSupplement);
 		File gitDir = new File(project.getProject().getLocationURI().getPath(),
 				Constants.DOT_GIT);
-		testDirs.add(gitDir);
+		gitDirs.add(gitDir);
 		testRepository = new TestRepository(gitDir);
 		repository = testRepository.getRepository();
 		testRepository.connect(project.getProject());
@@ -120,12 +118,11 @@ public class GitMoveDeleteHookTest {
 
 	private TestProject initRepoAboveProject(String srcParent, String d, boolean insidews)
 			throws IOException, CoreException {
-		registerWorkspaceRelativeTestDir(srcParent);
 		TestProject project = new TestProject(true, srcParent + "Project-1", insidews, workspaceSupplement);
 		File gd = new File(insidews?workspace:workspaceSupplement, d);
 
 		File gitDir = new File(gd, Constants.DOT_GIT);
-		testDirs.add(gitDir);
+		gitDirs.add(gitDir);
 		testRepository = new TestRepository(gitDir);
 		repository = testRepository.getRepository();
 		testRepository.connect(project.getProject());
@@ -332,7 +329,6 @@ public class GitMoveDeleteHookTest {
 		addToIndexOperation.execute(null);
 		IProjectDescription description = project.getProject().getDescription();
 		description.setName("P2");
-		registerWorkspaceRelativeTestDir("P2");
 		project.getProject().move(description,
 				IResource.FORCE | IResource.SHALLOW, null);
 		IProject project2 = ResourcesPlugin.getWorkspace().getRoot()
@@ -527,9 +523,6 @@ public class GitMoveDeleteHookTest {
 			gdRelativeDstParent = gdRelativeDstParent
 					.substring(gitDir.length());
 
-		registerWorkspaceRelativeTestDirProject(srcParent, srcProjectName);
-		registerWorkspaceRelativeTestDirProject(dstParent, dstProjecName);
-
 		// Old cruft may be laying around
 		TestProject project = initRepoAboveProject(srcParent, gitDir, sourceInsideWs);
 		IProject project0 = project.getProject().getWorkspace().getRoot()
@@ -580,20 +573,5 @@ public class GitMoveDeleteHookTest {
 		assertEquals(oldContentId,
 				dirCache.getEntry(gdRelativeDstParent + "file.txt")
 						.getObjectId());
-	}
-
-
-	private void registerWorkspaceRelativeTestDirProject(String parent, String projName) {
-		if ((parent != null) && !parent.equals(""))
-			registerWorkspaceRelativeTestDir(parent);
-		else
-			registerWorkspaceRelativeTestDir(projName);
-	}
-
-	private void registerWorkspaceRelativeTestDir(String relativeDir) {
-		if ((relativeDir != null) && !relativeDir.equals("")) {
-			File d = new File(workspace, relativeDir);
-			testDirs.add(d);
-		}
 	}
 }
