@@ -24,6 +24,7 @@ import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -363,10 +364,8 @@ public class SpellcheckableMessageArea extends Composite {
 		sourceViewer.configure(configuration);
 		sourceViewer.setDocument(document, annotationModel);
 
-		StyleRange[] styleRanges = UIUtils
-				.getHyperlinkDetectorStyleRanges(sourceViewer,
-						configuration.getHyperlinkDetectors(sourceViewer));
-		sourceViewer.getTextWidget().setStyleRanges(styleRanges);
+		UIUtils.applyHyperlinkDetectorStyleRanges(sourceViewer,
+				configuration.getHyperlinkDetectors(sourceViewer));
 
 		configureContextMenu();
 
@@ -730,12 +729,8 @@ public class SpellcheckableMessageArea extends Composite {
 				public void textChanged(TextEvent event) {
 					textWidget.setStyleRanges(
 							new StyleRange[0]);
-					StyleRange[] styleRanges = UIUtils
-							.getHyperlinkDetectorStyleRanges(
-									sourceViewer,
-									configuration
-											.getHyperlinkDetectors(sourceViewer));
-					textWidget.setStyleRanges(styleRanges);
+					UIUtils.applyHyperlinkDetectorStyleRanges(sourceViewer,
+							configuration.getHyperlinkDetectors(sourceViewer));
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)
@@ -831,8 +826,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 *         found.
 	 */
 	protected IHandlerService getHandlerService() {
-		return (IHandlerService) PlatformUI.getWorkbench().getService(
-				IHandlerService.class);
+		return CommonUtils.getService(PlatformUI.getWorkbench(), IHandlerService.class);
 	}
 
 	private SourceViewerDecorationSupport configureAnnotationPreferences() {

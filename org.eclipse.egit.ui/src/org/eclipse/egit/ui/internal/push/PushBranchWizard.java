@@ -17,6 +17,7 @@ import java.util.Set;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
@@ -49,7 +50,6 @@ public class PushBranchWizard extends Wizard {
 	private PushBranchPage pushBranchPage;
 	private ConfirmationPage confirmationPage;
 
-	private boolean dryRun = false;
 
 	/**
 	 * @param repository
@@ -103,17 +103,8 @@ public class PushBranchWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
-	}
 
-	/**
-	 * @param repository the repository the ref belongs to
-	 * @param refToPush
-	 * @param dryRun only the configuration is done without a push
-	 */
-	public PushBranchWizard(final Repository repository, Ref refToPush,
-			boolean dryRun) {
-		this(repository, refToPush);
-		this.dryRun = dryRun;
+		setDefaultPageImageDescriptor(UIIcons.WIZBAN_PUSH);
 	}
 
 	@Override
@@ -121,10 +112,7 @@ public class PushBranchWizard extends Wizard {
 		if (addRemotePage != null)
 			addPage(addRemotePage);
 		addPage(pushBranchPage);
-
-		if (!dryRun) {
-			addPage(confirmationPage);
-		}
+		addPage(confirmationPage);
 	}
 
 	@Override
@@ -138,10 +126,7 @@ public class PushBranchWizard extends Wizard {
 
 	@Override
 	public boolean canFinish() {
-		if (!dryRun) {
-			return getContainer().getCurrentPage() == confirmationPage;
-		}
-		return getContainer().getCurrentPage() == pushBranchPage;
+		return getContainer().getCurrentPage() == confirmationPage;
 	}
 
 	@Override
@@ -155,9 +140,7 @@ public class PushBranchWizard extends Wizard {
 			}
 			if (pushBranchPage.isConfigureUpstreamSelected())
 				configureUpstream();
-			if (!dryRun) {
-				startPush();
-			}
+			startPush();
 		} catch (IOException e) {
 			confirmationPage.setErrorMessage(e.getMessage());
 			return false;

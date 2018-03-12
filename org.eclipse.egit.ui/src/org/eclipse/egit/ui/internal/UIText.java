@@ -11,6 +11,7 @@
  * Copyright (C) 2013, Ben Hammen <hammenb@gmail.com>
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * Copyright (C) 2014, Red Hat Inc.
+ * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -594,6 +595,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FollowRenames;
 
 	/** */
+	public static String GitHistoryPage_FormatDiffJobName;
+
+	/** */
 	public static String GitHistoryPage_FilterSubMenuLabel;
 
 	/** */
@@ -765,6 +769,9 @@ public class UIText extends NLS {
 	public static String RebaseInteractiveStepActionToolBarProvider_UndoText;
 
 	/** */
+	public static String RebaseInteractiveView_HeadingStep;
+
+	/** */
 	public static String RebaseInteractiveView_HeadingAction;
 
 	/** */
@@ -903,10 +910,16 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_StatusNothingToCommit;
 
 	/** */
+	public static String RebaseResultDialog_StatusInteractivePrepared;
+
+	/** */
 	public static String RebaseResultDialog_StatusOK;
 
 	/** */
 	public static String RebaseResultDialog_StatusStopped;
+
+	/** */
+	public static String RebaseResultDialog_StatusEdit;
 
 	/** */
 	public static String RebaseResultDialog_StatusUpToDate;
@@ -1914,10 +1927,16 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_changeto_committer;
 
 	/** */
+	public static String HistoryPage_findbar_changeto_reference;
+
+	/** */
 	public static String HistoryPage_findbar_exceeded;
 
 	/** */
 	public static String HistoryPage_findbar_notFound;
+
+	/** */
+	public static String HistoryPage_findbar_reference;
 
 	/** */
 	public static String HistoryPreferencePage_MaxBranchLength;
@@ -2029,6 +2048,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushBranchPage_UpstreamConfigOverwriteWarning;
+
+	/** */
+	public static String PushBranchPage_advancedWizardLink;
+
+	/** */
+	public static String PushBranchPage_advancedWizardLinkTooltip;
 
 	/** */
 	public static String PushBranchWizard_WindowTitle;
@@ -2169,6 +2194,9 @@ public class UIText extends NLS {
 	public static String CommitDialog_SelectAll;
 
 	/** */
+	public static String CommitDialog_SelectForCommit;
+
+	/** */
 	public static String CommitDialog_ShowUntrackedFiles;
 
 	/** */
@@ -2227,6 +2255,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_MessageNoFilesSelected;
+
+	/** */
+	public static String CommitDialog_OpenStagingViewError;
+
+	/** */
+	public static String CommitDialog_OpenStagingViewLink;
+
+	/** */
+	public static String CommitDialog_OpenStagingViewToolTip;
 
 	/** */
 	public static String CommitDialog_Path;
@@ -2368,15 +2405,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitMessageViewer_MoreBranches;
-
-	/** */
-	public static String CommitMessageViewer_BuildDiffListTaskName;
-
-	/** */
-	public static String CommitMessageViewer_BuildDiffTaskName;
-
-	/** */
-	public static String CommitMessageViewer_CanNotRenderDiffMessage;
 
 	/** */
 	public static String CommitMessageViewer_tags;
@@ -2551,6 +2579,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushResultDialog_label;
+
+	/** */
+	public static String PushResultDialog_label_failed;
 
 	/** */
 	public static String PushResultDialog_title;
@@ -3222,6 +3253,15 @@ public class UIText extends NLS {
 	public static String DeleteRepositoryConfirmDialog_DeleteProjectsCheckbox;
 
 	/** */
+	public static String DeleteTagOnCommitHandler_SelectTagDialogMessage;
+
+	/** */
+	public static String DeleteTagOnCommitHandler_SelectTagDialogTitle;
+
+	/** */
+	public static String DeleteTagCommand_deletingTagsProgress;
+
+	/** */
 	public static String DeleteTagCommand_messageConfirmMultipleTag;
 
 	/** */
@@ -3312,7 +3352,13 @@ public class UIText extends NLS {
 	public static String RepositoriesView_RemotesNodeText;
 
 	/** */
+	public static String RepositoriesView_TagDeletionFailureMessage;
+
+	/** */
 	public static String RepositoriesView_WorkingDir_treenode;
+
+	/** */
+	public static String RepositoriesViewActionProvider_OpenWithMenu;
 
 	/** */
 	public static String RepositoriesViewContentProvider_ExceptionNodeText;
@@ -3798,42 +3844,6 @@ public class UIText extends NLS {
 	public static String MultiPullResultDialog_WindowTitle;
 
 	/** */
-	public static String MultiPushResultDialog_DetailsButton;
-
-	/** */
-	public static String MultiPushResultDialog_ErrorsOccuredColumnHeader;
-
-	/** */
-	public static String MultiPushResultDialog_NoErrors;
-
-	/** */
-	public static String MultiPushResultDialog_OkStatus;
-
-	/** */
-	public static String MultiPushResultDialog_OverallStatusColumnHeader;
-
-	/** */
-	public static String MultiPushResultDialog_RepositoryColumnHeader;
-
-	/** */
-	public static String MultiPushResultDialog_UnknownStatus;
-
-	/** */
-	public static String MultiPushResultDialog_WindowTitle;
-
-	/** */
-	public static String MultiPushResultDialog_FailedStatus;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_PushingTaskName;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_PushingMultipleTaskName;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_NotTriedMessage;
-
-	/** */
 	public static String UIIcons_errorDeterminingIconBase;
 
 	/** */
@@ -4132,6 +4142,9 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_DeleteBranchAction;
 
 	/** */
+	public static String CommitGraphTable_DeleteTagAction;
+
+	/** */
 	public static String CommitGraphTable_HoverAdditionalTags;
 
 	/** */
@@ -4210,10 +4223,16 @@ public class UIText extends NLS {
 	public static String ImportProjectsSelectionInRepositoryRequired;
 
 	/** */
+	public static String ImportChangedProjectsCommand_ImportingChangedProjects;
+
+	/** */
 	public static String InteractiveRebaseView_abortItem_text;
 
 	/** */
 	public static String InteractiveRebaseView_continueItem_text;
+
+	/** */
+	public static String InteractiveRebaseView_LinkSelection;
 
 	/** */
 	public static String InteractiveRebaseView_refreshItem_text;
@@ -5006,6 +5025,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
+
+	/** */
+	public static String StagingViewLabelProvider_SymlinkError;
 
 	/** */
 	public static String StashApplyCommand_applyFailed;

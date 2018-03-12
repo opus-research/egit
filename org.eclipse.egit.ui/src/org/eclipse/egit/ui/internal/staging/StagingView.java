@@ -49,6 +49,7 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
+import org.eclipse.egit.ui.internal.GitLabels;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
@@ -454,7 +455,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if (userEnteredCommmitMessage())
+				if (!commitMessageComponent.isAmending()
+						&& userEnteredCommitMessage())
 					saveCommitMessageComponentState();
 				else
 					deleteCommitMessageComponentState();
@@ -499,7 +501,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.applyTo(unstagedViewer.getControl());
 		unstagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		unstagedViewer.getTree().setLinesVisible(true);
 		unstagedViewer.setLabelProvider(createLabelProvider(unstagedViewer));
 		unstagedViewer.setContentProvider(createStagingContentProvider(true));
 		unstagedViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
@@ -673,7 +674,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 			@Override
 			protected IHandlerService getHandlerService() {
-				return (IHandlerService) getSite().getService(IHandlerService.class);
+				return CommonUtils.getService(getSite(), IHandlerService.class);
 			}
 		};
 		commitMessageText.setData(FormToolkit.KEY_DRAW_BORDER,
@@ -763,7 +764,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.applyTo(stagedViewer.getControl());
 		stagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		stagedViewer.getTree().setLinesVisible(true);
 		stagedViewer.setLabelProvider(createLabelProvider(stagedViewer));
 		stagedViewer.setContentProvider(createStagingContentProvider(false));
 		stagedViewer.addDragSupport(
@@ -878,8 +878,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		// react on selection changes
 		IWorkbenchPartSite site = getSite();
-		ISelectionService srv = (ISelectionService) site
-				.getService(ISelectionService.class);
+		ISelectionService srv = CommonUtils.getService(site, ISelectionService.class);
 		srv.addPostSelectionListener(selectionChangedListener);
 
 		// Use current selection to populate staging view
@@ -1350,7 +1349,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private TreeViewer createTree(Composite composite) {
 		Tree tree = toolkit.createTree(composite, SWT.FULL_SELECTION
 				| SWT.MULTI);
-		tree.setLinesVisible(true);
 		TreeViewer treeViewer = new TreeViewer(tree);
 		return treeViewer;
 	}
@@ -1444,7 +1442,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		case MISSING:
 		case MISSING_AND_CHANGED:
 		case MODIFIED:
-		case PARTIALLY_MODIFIED:
+		case MODIFIED_AND_CHANGED:
+		case MODIFIED_AND_ADDED:
 		case CONFLICTING:
 		case UNTRACKED:
 		default:
@@ -1928,7 +1927,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 			break;
 		case CONFLICTING:
 		case MODIFIED:
-		case PARTIALLY_MODIFIED:
+		case MODIFIED_AND_CHANGED:
+		case MODIFIED_AND_ADDED:
 		case UNTRACKED:
 			addPaths.add(entry.getPath());
 			break;
@@ -2068,7 +2068,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 			amendPreviousCommitAction.setChecked(isAmending);
 			amendPreviousCommitAction.run();
 		}
+	}
 
+	/**
+	 * @param message
+	 *            commit message to set for current repository
+	 */
+	public void setCommitMessage(String message) {
+		commitMessageText.setText(message);
 	}
 
 	/**
@@ -2156,7 +2163,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 						&& noConflicts;
 				rebaseContinueButton.setEnabled(rebaseContinueEnabled);
 
-				form.setText(StagingView.getRepositoryName(repository));
+				form.setText(GitLabels.getStyledLabelSafe(repository).toString());
 				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
 				enableCommitWidgets(indexDiffAvailable && noConflicts);
 				updateSectionText();
@@ -2228,7 +2235,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
 		if (repositoryChanged)
-			if (userEnteredCommmitMessage())
+			if (commitMessageComponent.isAmending()
+					|| userEnteredCommitMessage())
 				saveCommitMessageComponentState();
 			else
 				deleteCommitMessageComponentState();
@@ -2246,14 +2254,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadInitialState(helper);
 			else
 				loadExistingState(helper, oldState);
-		} else // repository did not change
-			if (userEnteredCommmitMessage()) {
+		} else { // repository did not change
+			if (!commitMessageComponent.isAmending()
+					&& userEnteredCommitMessage()) {
 				if (!commitMessageComponent.getHeadCommit().equals(
 						helper.getPreviousCommit()))
 					addHeadChangedWarning(commitMessageComponent
 							.getCommitMessage());
 			} else
 				loadInitialState(helper);
+		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
 		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
@@ -2315,7 +2325,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		commitMessageComponent.enableListeners(true);
 	}
 
-	private boolean userEnteredCommmitMessage() {
+	private boolean userEnteredCommitMessage() {
 		if (commitMessageComponent.getRepository() == null)
 			return false;
 		String message = commitMessageComponent.getCommitMessage().replace(
@@ -2367,16 +2377,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private CommitMessageComponentState loadCommitMessageComponentState() {
 		return CommitMessageComponentStateManager.loadState(currentRepository);
-	}
-
-	private static String getRepositoryName(Repository repository) {
-		String repoName = Activator.getDefault().getRepositoryUtil()
-				.getRepositoryName(repository);
-		RepositoryState state = repository.getRepositoryState();
-		if (state != RepositoryState.SAFE)
-			return repoName + '|' + state.getDescription();
-		else
-			return repoName;
 	}
 
 	private Collection<String> getStagedFileNames() {
@@ -2434,8 +2434,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 		});
 
-		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) getSite()
-				.getService(IWorkbenchSiteProgressService.class);
+		IWorkbenchSiteProgressService service = CommonUtils.getService(getSite(), IWorkbenchSiteProgressService.class);
 		if (service != null)
 			service.schedule(commitJob, 0, true);
 		else
@@ -2465,8 +2464,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	public void dispose() {
 		super.dispose();
 
-		ISelectionService srv = (ISelectionService) getSite().getService(
-				ISelectionService.class);
+		ISelectionService srv = CommonUtils.getService(getSite(), ISelectionService.class);
 		srv.removePostSelectionListener(selectionChangedListener);
 
 		if(cacheEntry != null)
