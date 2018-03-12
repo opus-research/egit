@@ -83,18 +83,13 @@ public class GitMoveDeleteHookTest {
 
 	@After
 	public void tearDown() throws IOException, CoreException {
-		Activator.getDefault().getRepositoryCache().clear();
 		if (testRepository != null)
 			testRepository.dispose();
 		repository = null;
-		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects();
-		for (IProject project : projects)
-			project.delete(false, false, null);
 		for (File d : testDirs)
-			FileUtils.delete(d, FileUtils.RECURSIVE | FileUtils.RETRY
-					| FileUtils.SKIP_MISSING);
-		testUtils.deleteTempDirs();
+			if (d.exists())
+				FileUtils.delete(d, FileUtils.RECURSIVE | FileUtils.RETRY);
+		ResourcesPlugin.getWorkspace().getRoot().delete(IResource.FORCE, null);
 	}
 
 	private TestProject initRepoInsideProjectInsideWorkspace() throws IOException,
