@@ -100,8 +100,6 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 		}
 		if (property.equals("canMerge")) { //$NON-NLS-1$
 			Repository rep = node.getRepository();
-			if (rep.isBare())
-				return false;
 			try {
 				String branch = rep.getFullBranch();
 				if (branch == null)
