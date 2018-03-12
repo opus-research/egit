@@ -8,14 +8,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.synchronize.GitSubscriberMergeContext;
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.team.core.mapping.provider.SynchronizationContext;
 import org.eclipse.team.ui.TeamUI;
 import org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration;
@@ -25,8 +20,6 @@ import org.eclipse.team.ui.synchronize.ModelSynchronizeParticipant;
  * Git model synchronization participant
  */
 public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant {
-
-	private static final String WORKSPACE_MODEL_PROVIDER = "org.eclipse.core.resources.modelProvider"; //$NON-NLS-1$
 
 	/**
 	 * Id of model compare participant
@@ -67,35 +60,26 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 	@Override
 	public ModelProvider[] getEnabledModelProviders() {
-		boolean addGitProvider = true;
-		List<ModelProvider> providers = new ArrayList<ModelProvider>();
-		boolean includeResourceModel = includeResourceModelProvider();
 		ModelProvider[] enabledProviders = super.getEnabledModelProviders();
-
-		for (ModelProvider provider : enabledProviders) {
-			String providerId = provider.getId();
-			if (!providerId.equals(WORKSPACE_MODEL_PROVIDER)
-					|| includeResourceModel)
-				providers.add(provider);
-
-			if (addGitProvider
-					&& providerId.equals(GitChangeSetModelProvider.ID))
-				addGitProvider = false;
+		for (int i = 0; i < enabledProviders.length; i++) {
+			ModelProvider provider = enabledProviders[i];
+			if (provider.getId().equals(GitChangeSetModelProvider.ID))
+				return enabledProviders;
 		}
 
-		if (addGitProvider)
-			providers.add(GitChangeSetModelProvider.getProvider());
+		ModelProvider[] extended = new ModelProvider[enabledProviders.length + 1];
+		for (int i = 0; i < enabledProviders.length; i++) {
+			extended[i] = enabledProviders[i];
+		}
 
-		return providers.toArray(new ModelProvider[providers.size()]);
-	}
+		GitChangeSetModelProvider provider = GitChangeSetModelProvider
+				.getProvider();
 
-	private boolean includeResourceModelProvider() {
-		GitSubscriberMergeContext context = (GitSubscriberMergeContext) getContext();
-		for (GitSynchronizeData gsd : context.getSyncData())
-			if (!gsd.shouldIncludeLocal())
-				return false;
+		if (provider == null)
+			return enabledProviders;
 
-		return true;
+		extended[extended.length - 1] = provider;
+		return extended;
 	}
 
 }
