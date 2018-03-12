@@ -1546,9 +1546,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_ErrorNoMessage;
 
 	/** */
-	public static String CommitDialog_File;
-
-	/** */
 	public static String CommitDialog_SelectAll;
 
 	/** */
@@ -1594,13 +1591,22 @@ public class UIText extends NLS {
 	public static String CommitDialog_AddChangeIdLabel;
 
 	/** */
-	public static String CommitDialog_AddChangeIdTooltip;
-
-	/** */
 	public static String CommitDialog_WrongTypeOfCommitMessageProvider;
 
 	/** */
 	public static String CommitDialog_ConfigureLink;
+
+	/** */
+	public static String CommitDialog_Files;
+
+	/** */
+	public static String CommitDialog_Message;
+
+	/** */
+	public static String CommitDialog_Path;
+
+	/** */
+	public static String CommitDialog_Title;
 
 	/** */
 	public static String ConfigurationChecker_checkHomeDirectory;
@@ -3657,15 +3663,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SynchronizeWithMenu_custom;
-
-	/** */
-	public static String SynchronizeFetchJob_JobName;
-
-	/** */
-	public static String SynchronizeFetchJob_TaskName;
-
-	/** */
-	public static String SynchronizeFetchJob_SubTaskName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
