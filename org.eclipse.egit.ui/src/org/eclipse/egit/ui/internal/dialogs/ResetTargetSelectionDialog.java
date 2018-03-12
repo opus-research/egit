@@ -13,7 +13,6 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.IOException;
 
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -24,7 +23,6 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -147,13 +145,7 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 						committer.setText(""); //$NON-NLS-1$
 						return;
 					} else {
-						if (RepositoryUtil.isDetachedHead(repo)) {
-							setMessage(
-									UIText.ResetTargetSelectionDialog_DetachedHeadState,
-									IMessageProvider.INFORMATION);
-						} else {
-							setMessage(""); //$NON-NLS-1$
-						}
+						setMessage(""); //$NON-NLS-1$
 						parsedCommitish = text;
 						getButton(OK).setEnabled(true);
 						RevWalk rw = new RevWalk(repo);
@@ -190,26 +182,31 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 				}
 			}
 		});
-
-		createResetButton(g,
-				UIText.ResetTargetSelectionDialog_ResetTypeSoftButton,
-				ResetType.SOFT);
-		createResetButton(g,
-				UIText.ResetTargetSelectionDialog_ResetTypeMixedButton,
-				ResetType.MIXED);
-		createResetButton(g,
-				UIText.ResetTargetSelectionDialog_ResetTypeHardButton,
-				ResetType.HARD);
-	}
-
-	private void createResetButton(Composite parent, String text,
-			final ResetType type) {
-		Button button = new Button(parent, SWT.RADIO);
-		button.setText(text);
-		button.addListener(SWT.Selection, new Listener() {
+		Button soft = new Button(g, SWT.RADIO);
+		soft.setText(UIText.ResetTargetSelectionDialog_ResetTypeSoftButton);
+		soft.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				if (((Button) event.widget).getSelection())
-					resetType = type;
+					resetType = ResetType.SOFT;
+			}
+		});
+
+		Button medium = new Button(g, SWT.RADIO);
+		medium.setSelection(true);
+		medium.setText(UIText.ResetTargetSelectionDialog_ResetTypeMixedButton);
+		medium.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event event) {
+				if (((Button) event.widget).getSelection())
+					resetType = ResetType.MIXED;
+			}
+		});
+
+		Button hard = new Button(g, SWT.RADIO);
+		hard.setText(UIText.ResetTargetSelectionDialog_ResetTypeHardButton);
+		hard.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event event) {
+				if (((Button) event.widget).getSelection())
+					resetType = ResetType.HARD;
 			}
 		});
 	}
@@ -269,13 +266,5 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		if (selected != null)
 			return selected;
 		return parsedCommitish;
-	}
-
-	@Override
-	protected boolean markRef(String refName) {
-		// preselect HEAD if in the detached HEAD state
-		return super
-				.markRef(RepositoryUtil.isDetachedHead(repo) ? Constants.HEAD
-						: refName);
 	}
 }
