@@ -24,20 +24,16 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.variants.IResourceVariant;
 import org.eclipse.team.core.variants.IResourceVariantTree;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
+public class GitResourceVariantTreeSubscriberTest2 extends GitTestCase {
 
 	private Repository repo;
 
@@ -63,38 +59,6 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 	}
 
 	/**
-	 * This test simulates that user work and made some changes on branch 'test'
-	 * and then try to synchronize "test" and 'master' branch.
-	 *
-	 * @throws Exception
-	 */
-	@Test
-	public void shouldReturnSrcBranchAsBase() throws Exception {
-		// when
-		String fileName = "Main.java";
-		File file = testRepo.createFile(iProject, fileName);
-		RevCommit commit = testRepo.appendContentAndCommit(iProject, file,
-				"class Main {}", "initial commit");
-		IFile mainJava = testRepo.getIFile(iProject, file);
-		testRepo.createAndCheckoutBranch(Constants.HEAD, Constants.R_HEADS
-				+ "test");
-		testRepo.appendContentAndCommit(iProject, file, "// test1",
-				"secont commit");
-
-		// given
-		GitResourceVariantTreeSubscriber grvts = createGitResourceVariantTreeSubscriber(
-				Constants.HEAD, Constants.R_HEADS + Constants.MASTER);
-		grvts.getBaseTree();
-		IResourceVariantTree baseTree = grvts.getBaseTree();
-
-		// then
-		IResourceVariant actual = commonAssertionsForBaseTree(baseTree,
-				mainJava);
-		assertEquals(commit.abbreviate(7).name() + "...",
-				actual.getContentIdentifier());
-	}
-
-	/**
 	 * Both source and destination branches has some different commits but they
 	 * has also common ancestor. This situation is described more detailed in
 	 * bug #317934
@@ -106,7 +70,6 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 	 * @throws Exception
 	 */
 	@Test
-	@Ignore
 	public void shouldReturnCommonAncestorAsBase() throws Exception {
 		// when
 		String fileName = "Main.java";
@@ -115,7 +78,6 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 				"class Main {}", "initial commit");
 		IFile mainJava = testRepo.getIFile(iProject, file);
 		// this should be our common ancestor
-		ObjectId fileId = findFileId(commit, mainJava);
 
 		testRepo.createAndCheckoutBranch(Constants.HEAD, Constants.R_HEADS
 				+ "test");
@@ -135,46 +97,8 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 		// then
 		IResourceVariant actual = commonAssertionsForBaseTree(baseTree,
 				mainJava);
-		assertEquals(fileId.getName(), actual.getContentIdentifier());
-	}
-
-	/**
-	 * This test passes when it is run as a stand alone test case, but it fails
-	 * when it is run as part of test suite. It throws NPE when it try's to
-	 * checkout master branch.
-	 *
-	 * @throws Exception
-	 */
-	@Test
-	@Ignore
-	public void shouldReturnRemoteTree() throws Exception {
-		// when
-		String fileName = "Main.java";
-		File file = testRepo.createFile(iProject, fileName);
-		testRepo.appendContentAndCommit(iProject, file,
-				"class Main {}", "initial commit");
-		IFile mainJava = testRepo.getIFile(iProject, file);
-
-		testRepo.createAndCheckoutBranch(Constants.HEAD, Constants.R_HEADS
-				+ "test");
-		RevCommit commit = testRepo.appendContentAndCommit(iProject, file, "// test 1",
-				"second commit");
-		ObjectId fileId = findFileId(commit, mainJava);
-
-		// given
-		GitResourceVariantTreeSubscriber grvts = createGitResourceVariantTreeSubscriber(
-				Constants.HEAD, "test");
-		grvts.getBaseTree();
-		IResourceVariantTree remoteTree = grvts.getRemoteTree();
-
-		// then
-		assertNotNull(remoteTree);
-		assertTrue(remoteTree instanceof GitRemoteResourceVariantTree);
-		IResourceVariant resourceVariant = remoteTree
-				.getResourceVariant(mainJava);
-		assertNotNull(resourceVariant);
-		assertTrue(resourceVariant instanceof GitResourceVariant);
-		assertEquals(fileId.getName(), resourceVariant.getContentIdentifier());
+		assertEquals(commit.abbreviate(7).name() + "...",
+				actual.getContentIdentifier());
 	}
 
 	private GitResourceVariantTreeSubscriber createGitResourceVariantTreeSubscriber(
@@ -183,20 +107,6 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 		GitSynchronizeDataSet gsds = new GitSynchronizeDataSet(gsd);
 		new GitResourceVariantTreeSubscriber(gsds);
 		return new GitResourceVariantTreeSubscriber(gsds);
-	}
-
-	private ObjectId findFileId(RevCommit commit, IFile mainJava)
-			throws Exception {
-		TreeWalk tw = new TreeWalk(repo);
-		tw.reset();
-		tw.setRecursive(true);
-		String path = Repository.stripWorkDir(repo.getWorkTree(), mainJava
-				.getLocation().toFile());
-		tw.setFilter(PathFilter.create(path));
-		int nth = tw.addTree(commit.getTree());
-		tw.next();
-
-		return tw.getObjectId(nth);
 	}
 
 	private IResourceVariant commonAssertionsForBaseTree(

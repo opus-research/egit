@@ -167,13 +167,13 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 				case FAILED:
 					tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(),
 							0, CoreText.MoveDeleteHook_operationError, null));
-					return I_AM_DONE;
+					break;
 				case UNTRACKED:
 					// we are not responsible for moving untracked files
 					return FINISH_FOR_ME;
 				}
+				tree.standardMoveFolder(srcf, dstf, updateFlags, monitor);
 			}
-			tree.standardMoveFolder(srcf, dstf, updateFlags, monitor);
 		} catch (IOException e) {
 			tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(), 0,
 					CoreText.MoveDeleteHook_operationError, e));
