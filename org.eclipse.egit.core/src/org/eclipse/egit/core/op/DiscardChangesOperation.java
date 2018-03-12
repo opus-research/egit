@@ -90,8 +90,8 @@ public class DiscardChangesOperation implements IEGitOperation {
 		else
 			monitor = m;
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
-			public void run(IProgressMonitor actMonitor) throws CoreException {
-				discardChanges(actMonitor);
+			public void run(IProgressMonitor monitor) throws CoreException {
+				discardChanges(monitor);
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
