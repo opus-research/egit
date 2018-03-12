@@ -59,7 +59,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.FollowFilter;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
@@ -705,7 +704,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		String path = RepositoryMapping.getMapping(resource.getProject())
 				.getRepoRelativePath(resource);
 		RevWalk rw = new RevWalk(repository);
-		rw.sort(RevSort.COMMIT_TIME_DESC);
 		try {
 			if (path.length() > 0) {
 				DiffConfig diffConfig = repository.getConfig().get(
