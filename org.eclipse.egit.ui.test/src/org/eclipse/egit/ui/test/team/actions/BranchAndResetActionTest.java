@@ -13,8 +13,6 @@ package org.eclipse.egit.ui.test.team.actions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -52,6 +50,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.RawParseUtils;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
@@ -60,6 +59,7 @@ import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.utils.TableCollection;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
@@ -126,8 +126,10 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void testCheckoutLocalBranches() throws Exception {
-		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "stable" });
-		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "master" });
+		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "master" },
+				new String[] { LOCAL_BRANCHES, "stable" });
+		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "stable" },
+				new String[] { LOCAL_BRANCHES, "master" });
 	}
 
 	@Test
@@ -135,7 +137,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		String charset = ResourcesPlugin.getWorkspace().getRoot().getProject(
 				PROJ1).getDefaultCharset();
 		try {
-			checkoutAndVerify(new String[] { LOCAL_BRANCHES, "stable" });
+			checkoutAndVerify(new String[] { LOCAL_BRANCHES, "master" },
+					new String[] { LOCAL_BRANCHES, "stable" });
 			ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ1)
 					.getFolder(FOLDER).getFile(FILE1).setContents(
 							new ByteArrayInputStream("New content"
@@ -181,7 +184,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		final Image projectImage = PlatformUI.getWorkbench().getSharedImages()
 				.getImage(SharedImages.IMG_OBJ_PROJECT);
 		// checkout stable
-		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "stable" });
+		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "master" },
+				new String[] { LOCAL_BRANCHES, "stable" });
 		// add a file
 		IFile toBeDeleted = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(PROJ1).getFolder(FOLDER).getFile("ToBeDeleted");
@@ -276,9 +280,11 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void testResetToLocalBranch() throws Exception {
-		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "stable" });
+		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "master" },
+				new String[] { LOCAL_BRANCHES, "stable" });
 		String stable = getTestFileContent();
-		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "master" });
+		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "stable" },
+				new String[] { LOCAL_BRANCHES, "master" });
 		String master = getTestFileContent();
 		assertFalse(stable.equals(master));
 		SWTBotShell resetDialog = openResetDialog();
@@ -299,77 +305,39 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	public void testCreateDeleteBranch() throws Exception {
-		assertNull(lookupRepository(repositoryFile).resolve("newBranch"));
-		SWTBotShell dialog = openCreateBranchDialog();
-		dialog.bot().tree().getTreeItem(LOCAL_BRANCHES).expand().getNode("master").select();
-		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+	public void testCreateBranch() throws Exception {
+		SWTBotShell dialog = openBranchDialog();
+		dialog.bot().button(UIText.BranchSelectionDialog_NewBranch).click();
+		SWTBotShell branchNameDialog = bot
+				.shell(UIText.CreateBranchWizard_NewBranchTitle);
+		SWTBotText branchName = bot.textWithId("BranchName");
+		branchName.setText("master");
+		assertFalse(branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL)
+				.isEnabled());
+		branchName.setText("NewBranch");
+		// suppress checkout so that the dialog remains open
+		branchNameDialog.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
+				.deselect();
+		branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 
-		SWTBotShell newBranchDialog = bot.shell(UIText.CreateBranchWizard_NewBranchTitle);
-		newBranchDialog.bot().textWithId("BranchName").setText("newBranch");
-		newBranchDialog.bot().checkBox(UIText.CreateBranchPage_CheckoutButton).deselect();
-		newBranchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-
+		assertEquals("New Branch should be selected", "NewBranch", bot.tree()
+				.selection().get(0, 0));
+		bot.button(UIText.BranchSelectionDialog_OkCheckout).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-		assertNotNull(lookupRepository(repositoryFile).resolve("newBranch"));
-
-		SWTBotShell deleteBranchDialog = openDeleteBranchDialog();
-		deleteBranchDialog.bot().tree().getTreeItem(LOCAL_BRANCHES).expand().getNode("newBranch").select();
-		deleteBranchDialog.bot().button(IDialogConstants.OK_LABEL).click();
-		
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-		assertNull(lookupRepository(repositoryFile).resolve("newBranch"));		
+		assertEquals("New Branch should be checked out", "NewBranch",
+				lookupRepository(repositoryFile).getBranch());
 	}
 
-	private SWTBotShell openCheckoutBranchDialog() {
+	private SWTBotShell openBranchDialog() {
 		SWTBotTree projectExplorerTree = bot.viewById(
 				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
-		String[] menuPath = new String[] {
-				util.getPluginLocalizedValue("TeamMenu.label"),
-				util.getPluginLocalizedValue("SwitchToMenu.label"),
-				UIText.SwitchToMenu_OtherMenuLabel };
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
-		SWTBotShell dialog = bot.shell(UIText.CheckoutDialog_WindowTitle);
-		return dialog;
-	}
-
-	private SWTBotShell openCreateBranchDialog() {
-		SWTBotTree projectExplorerTree = bot.viewById(
-				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
-		getProjectItem(projectExplorerTree, PROJ1).select();
-		String[] menuPath = new String[] {
-				util.getPluginLocalizedValue("TeamMenu.label"),
-				util.getPluginLocalizedValue("SwitchToMenu.label"),
-				UIText.SwitchToMenu_NewBranchMenuLabel };
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
-		SWTBotShell dialog = bot.shell(UIText.CreateBranchDialog_WindowTitle);
-		return dialog;
-	}
-
-	private SWTBotShell openRenameBranchDialog() {
-		SWTBotTree projectExplorerTree = bot.viewById(
-				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
-		getProjectItem(projectExplorerTree, PROJ1).select();
-		String[] menuPath = new String[] {
-				util.getPluginLocalizedValue("TeamMenu.label"),
-				util.getPluginLocalizedValue("AdvancedMenu.label"),
-				util.getPluginLocalizedValue("RenameBranchMenu.label") };
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
-		SWTBotShell dialog = bot.shell(UIText.RenameBranchDialog_WindowTitle);
-		return dialog;
-	}
-
-	private SWTBotShell openDeleteBranchDialog() {
-		SWTBotTree projectExplorerTree = bot.viewById(
-				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
-		getProjectItem(projectExplorerTree, PROJ1).select();
-		String[] menuPath = new String[] {
-				util.getPluginLocalizedValue("TeamMenu.label"),
-				util.getPluginLocalizedValue("AdvancedMenu.label"),
-				util.getPluginLocalizedValue("DeleteBranchMenu.label") };
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
-		SWTBotShell dialog = bot.shell(UIText.DeleteBranchDialog_WindowTitle);
+		String menuString = util.getPluginLocalizedValue("BranchAction_label");
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
+				menuString);
+		SWTBotShell dialog = bot.shell(NLS.bind(
+				UIText.BranchSelectionDialog_TitleCheckout, repositoryFile
+						.toString()));
 		return dialog;
 	}
 
@@ -378,8 +346,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String menuString = util.getPluginLocalizedValue("ResetAction_label");
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, util
-				.getPluginLocalizedValue("TeamMenu.label"), menuString);
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
+				menuString);
 		SWTBotShell dialog = bot
 				.shell(UIText.ResetTargetSelectionDialog_WindowTitle);
 		return dialog;
@@ -387,35 +355,50 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void testRenameBranch() throws Exception {
-		SWTBotShell dialog = openRenameBranchDialog();
-
-		dialog.bot().tree().getTreeItem(LOCAL_BRANCHES).expand().getNode("stable").select();
-		dialog.bot().button(UIText.RenameBranchDialog_RenameButtonLabel).click();
-
-		SWTBotShell newNameDialog = bot.shell(UIText.RenameBranchDialog_RenameBranchDialogNewNameInputWindowTitle);
-		newNameDialog.bot().text().setText("master");
-		assertFalse(newNameDialog.bot().button(IDialogConstants.OK_LABEL)
+		SWTBotShell dialog = openBranchDialog();
+		dialog.bot().button(UIText.BranchSelectionDialog_NewBranch).click();
+		SWTBotShell branchNameDialog = bot
+				.shell(UIText.CreateBranchWizard_NewBranchTitle);
+		SWTBotText branchName = bot.textWithId("BranchName");
+		branchName.setText("master");
+		assertFalse(branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL)
 				.isEnabled());
-		
-		newNameDialog.bot().text().setText("renamed");
-		newNameDialog.bot().button(IDialogConstants.OK_LABEL).click();
+		branchName.setText("Unrenamed");
+		// suppress checkout so that the dialog remains open
+		branchNameDialog.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
+				.deselect();
+		branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 
+		assertEquals("New Branch should be selected", "Unrenamed", bot.tree()
+				.selection().get(0, 0));
+
+		bot.button(UIText.BranchSelectionDialog_Rename).click();
+
+		branchNameDialog = bot
+				.shell(UIText.BranchSelectionDialog_QuestionNewBranchTitle);
+		assertFalse(branchNameDialog.bot().button(IDialogConstants.OK_LABEL)
+				.isEnabled());
+		branchNameDialog.bot().text().setText("Renamed");
+		bot.button(IDialogConstants.OK_LABEL).click();
+
+		bot.button(UIText.BranchSelectionDialog_OkCheckout).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-		dialog= openRenameBranchDialog();
-		dialog.bot().tree().getTreeItem(LOCAL_BRANCHES).expand().getNode("renamed");
-		dialog.close();
+		assertEquals("New Branch should be checked out", "Renamed",
+				lookupRepository(repositoryFile).getBranch());
 	}
 
 	@Test
 	public void testCheckoutTags() throws Exception {
-		checkoutAndVerify(new String[] { TAGS, "SomeTag" });
+		checkoutAndVerify(new String[] { LOCAL_BRANCHES, "master" },
+				new String[] { TAGS, "SomeTag" });
 	}
 
-	private void checkoutAndVerify(String[] newBranch)
+	private void checkoutAndVerify(String[] currentBranch, String[] newBranch)
 			throws IOException, Exception {
-		SWTBotShell dialog = openCheckoutBranchDialog();
+		SWTBotShell dialog = openBranchDialog();
 		TableCollection tc = dialog.bot().tree().selection();
-		assertEquals("Wrong selection count", 0, tc.rowCount());
+		assertEquals("Wrong selection count", 1, tc.rowCount());
+		assertEquals("Wrong item selected", currentBranch[1], tc.get(0, 0));
 
 		dialog.bot().tree().getTreeItem(newBranch[0]).expand().getNode(
 				newBranch[1]).select();
@@ -425,7 +408,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 
 		Repository repo = lookupRepository(repositoryFile);
 
-		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+		dialog.bot().button(UIText.BranchSelectionDialog_OkCheckout).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		if (ObjectId.isId(repo.getBranch())) {
 			String mapped = Activator.getDefault().getRepositoryUtil()
@@ -437,14 +420,14 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 	}
 
 	private void checkout(String[] newBranch) throws Exception {
-		SWTBotShell dialog = openCheckoutBranchDialog();
+		SWTBotShell dialog = openBranchDialog();
 		dialog.bot().tree().getTreeItem(newBranch[0]).expand().getNode(
 				newBranch[1]).select();
 		TableCollection tc = dialog.bot().tree().selection();
 		assertEquals("Wrong selection count", 1, tc.rowCount());
 		assertEquals("Wrong item selected", newBranch[1], tc.get(0, 0));
 
-		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+		dialog.bot().button(UIText.BranchSelectionDialog_OkCheckout).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 	}
 
