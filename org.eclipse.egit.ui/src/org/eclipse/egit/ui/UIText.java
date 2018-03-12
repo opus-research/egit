@@ -40,12 +40,6 @@ public class UIText extends NLS {
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
-	public static String Activator_DefaultRepoFolderIsFile;
-
-	/** */
-	public static String Activator_DefaultRepoFolderNotCreated;
-
-	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
@@ -428,9 +422,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
-
-	/** */
-	public static String GitPreferenceRoot_fetchBeforeSynchronization;
 
 	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
@@ -1912,9 +1903,6 @@ public class UIText extends NLS {
 	public static String CreateRepositoryPage_DirectoryLabel;
 
 	/** */
-	public static String CreateRepositoryPage_MissingNameMessage;
-
-	/** */
 	public static String CreateRepositoryPage_NotADirectoryMessage;
 
 	/** */
@@ -1931,9 +1919,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateRepositoryPage_PleaseUseAbsoluePathMessage;
-
-	/** */
-	public static String CreateRepositoryPage_RepositoryNameLabel;
 
 	/** */
 	public static String PushResultDialog_ConfigureButton;
@@ -3047,10 +3032,7 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_repositories;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_destination;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
+	public static String GitBranchSynchronizeWizardPage_branches;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
@@ -3162,15 +3144,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NonDeletedFilesTree_ResourcePathsButton;
-
-	/** */
-	public static String NoteDetailsPage_ContentSection;
-
-	/** */
-	public static String NotesBlock_NotesSection;
-
-	/** */
-	public static String NotesEditorPage_Title;
 
 	/** */
 	public static String OpenWorkingFileAction_text;
@@ -3689,34 +3662,7 @@ public class UIText extends NLS {
 	public static String StagingView_Commit;
 
 	/** */
-	public static String StagingView_commitFailed;
-
-	/** */
-	public static String StagingView_committingNotPossible;
-
-	/** */
-	public static String StagingView_headCommitChanged;
-
-	/** */
-	public static String StagingView_noStagedFiles;
-
-	/** */
 	public static String SynchronizeWithMenu_custom;
-
-	/** */
-	public static String SynchronizeFetchJob_JobName;
-
-	/** */
-	public static String SynchronizeFetchJob_TaskName;
-
-	/** */
-	public static String SynchronizeFetchJob_SubTaskName;
-
-	/** */
-	public static String SynchronizeFetchJob_FetchFailedTitle;
-
-	/** */
-	public static String SynchronizeFetchJob_FetchFailedMessage;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
