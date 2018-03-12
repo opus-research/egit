@@ -14,9 +14,9 @@ import java.text.SimpleDateFormat;
 
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.swt.graphics.Image;
 
 class GraphLabelProvider extends BaseLabelProvider implements
 		ITableLabelProvider {
@@ -26,6 +26,8 @@ class GraphLabelProvider extends BaseLabelProvider implements
 
 	private PersonIdent lastAuthor;
 
+	private PersonIdent lastCommitter;
+
 	GraphLabelProvider() {
 		fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
 	}
@@ -34,14 +36,25 @@ class GraphLabelProvider extends BaseLabelProvider implements
 		final RevCommit c = (RevCommit) element;
 		if (columnIndex == 0)
 			return c.getShortMessage();
-
-		final PersonIdent author = authorOf(c);
-		if (author != null) {
-			switch (columnIndex) {
-			case 1:
-				return author.getName() + " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
-			case 2:
-				return fmt.format(author.getWhen());
+		if (columnIndex == 3)
+			return c.getId().abbreviate(8).name() + "..."; //$NON-NLS-1$
+		if (columnIndex == 1 || columnIndex == 2) {
+			final PersonIdent author = authorOf(c);
+			if (author != null) {
+				switch (columnIndex) {
+				case 1:
+					return author.getName()
+							+ " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+				case 2:
+					return fmt.format(author.getWhen());
+				}
+			}
+		}
+		if (columnIndex == 4) {
+			final PersonIdent committer = committerOf(c);
+			if (committer != null) {
+				return committer.getName()
+						+ " <" + committer.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 
@@ -52,8 +65,18 @@ class GraphLabelProvider extends BaseLabelProvider implements
 		if (lastCommit != c) {
 			lastCommit = c;
 			lastAuthor = c.getAuthorIdent();
+			lastCommitter = c.getCommitterIdent();
 		}
 		return lastAuthor;
+	}
+
+	private PersonIdent committerOf(final RevCommit c) {
+		if (lastCommit != c) {
+			lastCommit = c;
+			lastAuthor = c.getAuthorIdent();
+			lastCommitter = c.getCommitterIdent();
+		}
+		return lastCommitter;
 	}
 
 	public Image getColumnImage(final Object element, final int columnIndex) {

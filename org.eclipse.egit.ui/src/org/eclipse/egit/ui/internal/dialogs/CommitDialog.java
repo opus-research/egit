@@ -12,7 +12,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,16 +19,20 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
 import org.eclipse.egit.core.op.AddToIndexOperation;
@@ -44,6 +47,7 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
@@ -54,12 +58,10 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.GitIndex;
+import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.Tree;
-import org.eclipse.jgit.lib.TreeEntry;
-import org.eclipse.jgit.lib.GitIndex.Entry;
+import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.util.ChangeIdUtil;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.SWT;
@@ -71,12 +73,14 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
@@ -88,6 +92,7 @@ import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
 import org.eclipse.team.core.history.IFileHistoryProvider;
 import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
@@ -163,7 +168,7 @@ public class CommitDialog extends Dialog {
 				IDialogConstants.CANCEL_LABEL, false);
 	}
 
-	CommitMessageArea commitText;
+	SpellcheckableMessageArea commitText;
 	Text authorText;
 	Text committerText;
 	Button amendingButton;
@@ -192,9 +197,11 @@ public class CommitDialog extends Dialog {
 		label.setText(UIText.CommitDialog_CommitMessage);
 		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
 
-		commitText = new CommitMessageArea(container, commitMessage);
+		commitText = new SpellcheckableMessageArea(container, commitMessage);
+		Point size = commitText.getTextWidget().getSize();
+		int minHeight = commitText.getTextWidget().getLineHeight() * 3;
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
-				.hint(600, 200).create());
+				.hint(size).minSize(size.x, minHeight).align(SWT.FILL, SWT.FILL).create());
 		commitText.setText(commitMessage);
 
 		// allow to commit with ctrl-enter
@@ -240,6 +247,20 @@ public class CommitDialog extends Dialog {
 
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(committerText, COMMITTER_VALUES_PREF);
 
+		Link preferencesLink = new Link(container, SWT.NONE);
+		preferencesLink.setText(UIText.CommitDialog_ConfigureLink);
+		preferencesLink.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				String preferencePageId = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
+				PreferenceDialog dialog = PreferencesUtil
+						.createPreferenceDialogOn(getShell(), preferencePageId,
+								new String[] { preferencePageId }, null);
+				dialog.open();
+				commitText.reconfigure();
+			}
+		});
+
 		amendingButton = new Button(container, SWT.CHECK);
 		if (amending) {
 			amendingButton.setSelection(amending);
@@ -256,6 +277,7 @@ public class CommitDialog extends Dialog {
 			public void widgetSelected(SelectionEvent arg0) {
 				if (!amendingButton.getSelection()) {
 					originalChangeId = null;
+					authorText.setText(author);
 				}
 				else {
 					saveOriginalChangeId();
@@ -267,8 +289,8 @@ public class CommitDialog extends Dialog {
 						commitText.setText(curText
 								+ previousCommitMessage.replaceAll(
 										"\n", Text.DELIMITER)); //$NON-NLS-1$
-						authorText.setText(previousAuthor);
 					}
+					authorText.setText(previousAuthor);
 				}
 				refreshChangeIdText();
 			}
@@ -397,7 +419,9 @@ public class CommitDialog extends Dialog {
 			// pre-emptively check any preselected files
 			for (IFile selectedFile : preselectedFiles) {
 				for (CommitItem item : items) {
-					if (item.file.equals(selectedFile)) {
+					if (item.file.equals(selectedFile) &&
+							!item.status.equals(UIText.CommitDialog_StatusUntracked) &&
+							!item.status.equals(UIText.CommitDialog_StatusAssumeUnchaged)) {
 						filesViewer.setChecked(item, true);
 						break;
 					}
@@ -414,6 +438,8 @@ public class CommitDialog extends Dialog {
 		int changeIdOffset = findOffsetOfChangeIdLine(previousCommitMessage);
 		if (changeIdOffset > 0) {
 			int endOfChangeId = findNextEOL(changeIdOffset, previousCommitMessage);
+			if (endOfChangeId < 0)
+				endOfChangeId = previousCommitMessage.length()-1;
 			int sha1Offset = changeIdOffset + "\nChange-Id: I".length(); //$NON-NLS-1$
 			try {
 				originalChangeId = ObjectId.fromString(previousCommitMessage.substring(sha1Offset, endOfChangeId));
@@ -530,6 +556,9 @@ public class CommitDialog extends Dialog {
 				} catch (CoreException e) {
 					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
 					return;
+				} catch (IOException e) {
+					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
+					return;
 				}
 			}
 		});
@@ -537,57 +566,69 @@ public class CommitDialog extends Dialog {
 		return menu;
 	}
 
-	private static String getFileStatus(IFile file) {
+	/** Retrieve file status from an already calculated IndexDiff
+	 * @param path
+	 * @param indexDiff
+	 * @return file status
+	 */
+	private static String getFileStatus(String path, IndexDiff indexDiff) {
 		String prefix = UIText.CommitDialog_StatusUnknown;
-
-		try {
-			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(file.getProject());
-
-			Repository repo = repositoryMapping.getRepository();
-			GitIndex index = repo.getIndex();
-			Tree headTree = repo.mapTree(Constants.HEAD);
-
-			String repoPath = repositoryMapping.getRepoRelativePath(file);
-			TreeEntry headEntry = (headTree == null ? null : headTree.findBlobMember(repoPath));
-			boolean headExists = (headTree == null ? false : headTree.existsBlob(repoPath));
-
-			Entry indexEntry = index.getEntry(repoPath);
-			if (headEntry == null) {
+		if (indexDiff.getAssumeUnchanged().contains(path)) {
+			prefix = UIText.CommitDialog_StatusAssumeUnchaged;
+		} else if (indexDiff.getAdded().contains(path)) {
+			// added
+			if (indexDiff.getModified().contains(path))
+				prefix = UIText.CommitDialog_StatusAddedIndexDiff;
+			else
 				prefix = UIText.CommitDialog_StatusAdded;
-				if (indexEntry == null) {
-					prefix = UIText.CommitDialog_StatusUntracked;
-				}
-				else if (indexEntry.isModified(repositoryMapping.getWorkTree()))
-					prefix = UIText.CommitDialog_StatusAddedIndexDiff;
-			} else if (indexEntry == null) {
-				prefix = UIText.CommitDialog_StatusRemoved;
-			} else if (headExists
-					&& !headEntry.getId().equals(indexEntry.getObjectId())) {
+		} else if (indexDiff.getChanged().contains(path)) {
+			// changed
+			if (indexDiff.getModified().contains(path))
+				prefix = UIText.CommitDialog_StatusModifiedIndexDiff;
+			else
 				prefix = UIText.CommitDialog_StatusModified;
-
-				if (indexEntry.isModified(repositoryMapping.getWorkTree()))
-					prefix = UIText.CommitDialog_StatusModifiedIndexDiff;
-			} else if (!new File(repositoryMapping.getWorkTree(), indexEntry
-					.getName()).isFile()) {
-				prefix = UIText.CommitDialog_StatusRemovedNotStaged;
-			} else if (indexEntry.isModified(repositoryMapping.getWorkTree())) {
-				prefix = UIText.CommitDialog_StatusModifiedNotStaged;
-			}
-
-		} catch (Exception e) {
-			Activator.logError(UIText.CommitDialog_problemFindingFileStatus, e);
-			prefix = e.getMessage();
+		} else if (indexDiff.getUntracked().contains(path)) {
+			// untracked
+			if (indexDiff.getRemoved().contains(path))
+				prefix = UIText.CommitDialog_StatusRemovedUntracked;
+			else
+				prefix = UIText.CommitDialog_StatusUntracked;
+		} else if (indexDiff.getRemoved().contains(path)) {
+			// removed
+			prefix = UIText.CommitDialog_StatusRemoved;
+		} else if (indexDiff.getMissing().contains(path)) {
+			// missing
+			prefix = UIText.CommitDialog_StatusRemovedNotStaged;
+		} else if (indexDiff.getModified().contains(path)) {
+			// modified (and not changed!)
+			prefix = UIText.CommitDialog_StatusModifiedNotStaged;
 		}
-
 		return prefix;
+	}
+
+	/** Retrieve file status
+	 * @param file
+	 * @return file status
+	 * @throws IOException
+	 */
+	private static String getFileStatus(IFile file) throws IOException {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
+		String path = mapping.getRepoRelativePath(file);
+		Repository repo = mapping.getRepository();
+		AdaptableFileTreeIterator fileTreeIterator = new AdaptableFileTreeIterator(
+				repo, ResourcesPlugin.getWorkspace().getRoot());
+		IndexDiff indexDiff = new IndexDiff(repo, Constants.HEAD, fileTreeIterator);
+		Set<String> repositoryPaths = Collections.singleton(path);
+		indexDiff.setFilter(PathFilterGroup.createFromStrings(repositoryPaths));
+		indexDiff.diff();
+		return getFileStatus(path, indexDiff);
 	}
 
 	/**
 	 * @return The message the user entered
 	 */
 	public String getCommitMessage() {
-		return commitMessage.replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$;
+		return commitMessage;
 	}
 
 	/**
@@ -728,7 +769,7 @@ public class CommitDialog extends Dialog {
 
 	@Override
 	protected void okPressed() {
-		commitMessage = commitText.getText();
+		commitMessage = commitText.getCommitMessage();
 		author = authorText.getText().trim();
 		committer = committerText.getText().trim();
 		signedOff = signedOffButton.getSelection();
@@ -781,12 +822,16 @@ public class CommitDialog extends Dialog {
 	 * removals
 	 *
 	 * @param files potentially affected by a new commit
+	 * @param indexDiffs IndexDiffs of the related repositories
 	 */
-	public void setFileList(ArrayList<IFile> files) {
+	public void setFileList(ArrayList<IFile> files, Map<Repository, IndexDiff> indexDiffs) {
 		items.clear();
 		for (IFile file : files) {
+			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(file.getProject());
+			Repository repo = repositoryMapping.getRepository();
+			String path = repositoryMapping.getRepoRelativePath(file);
 			CommitItem item = new CommitItem();
-			item.status = getFileStatus(file);
+			item.status = getFileStatus(path, indexDiffs.get(repo));
 			item.file = file;
 			items.add(item);
 		}

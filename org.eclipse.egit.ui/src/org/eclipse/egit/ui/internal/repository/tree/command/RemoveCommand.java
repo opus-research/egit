@@ -32,11 +32,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchSite;
@@ -66,32 +66,33 @@ public class RemoveCommand extends
 		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) activeSite
 				.getService(IWorkbenchSiteProgressService.class);
 
-		if (delete)
-			try {
-				List<RepositoryNode> selectedNodes = getSelectedNodes(event);
-				String title = UIText.RemoveCommand_DeleteConfirmTitle;
-				if (selectedNodes.size() > 1) {
-					String message = NLS.bind(
-							UIText.RemoveCommand_DeleteConfirmSingleMessage,
-							Integer.valueOf(selectedNodes.size()));
-					if (!MessageDialog.openConfirm(getShell(event), title,
-							message))
-						return;
-				} else if (selectedNodes.size() == 1) {
-					String name = org.eclipse.egit.core.Activator.getDefault()
-							.getRepositoryUtil().getRepositoryName(
-									selectedNodes.get(0).getObject());
-					String message = NLS.bind(
-							UIText.RemoveCommand_DeleteConfirmMultiMessage,
-							name);
-					if (!MessageDialog.openConfirm(getShell(event), title,
-							message))
-						return;
-				}
-			} catch (ExecutionException e) {
-				Activator.handleError(e.getMessage(), e, false);
-				return;
+		// get selected nodes
+		final List<RepositoryNode> selectedNodes;
+		try {
+			selectedNodes = getSelectedNodes(event);
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, true);
+			return;
+		}
+
+		if (delete) {
+			String title = UIText.RemoveCommand_DeleteConfirmTitle;
+			if (selectedNodes.size() > 1) {
+				String message = NLS.bind(
+						UIText.RemoveCommand_DeleteConfirmSingleMessage,
+						Integer.valueOf(selectedNodes.size()));
+				if (!MessageDialog.openConfirm(getShell(event), title, message))
+					return;
+			} else if (selectedNodes.size() == 1) {
+				String name = org.eclipse.egit.core.Activator.getDefault()
+						.getRepositoryUtil()
+						.getRepositoryName(selectedNodes.get(0).getObject());
+				String message = NLS.bind(
+						UIText.RemoveCommand_DeleteConfirmMultiMessage, name);
+				if (!MessageDialog.openConfirm(getShell(event), title, message))
+					return;
 			}
+		}
 
 		Job job = new Job("Remove Repositories Job") { //$NON-NLS-1$
 
@@ -102,14 +103,6 @@ public class RemoveCommand extends
 				monitor
 						.setTaskName(UIText.RepositoriesView_DeleteRepoDeterminProjectsMessage);
 
-				List<RepositoryNode> selectedNodes;
-				try {
-					selectedNodes = getSelectedNodes(event);
-				} catch (ExecutionException e) {
-					Activator.logError(e.getMessage(), e);
-					return new Status(IStatus.ERROR, Activator.getPluginId(), e
-							.getMessage(), e);
-				}
 				for (RepositoryNode node : selectedNodes) {
 					if (node.getRepository().isBare())
 						continue;
@@ -168,47 +161,23 @@ public class RemoveCommand extends
 				for (RepositoryNode node : selectedNodes) {
 					util.removeDir(node.getRepository().getDirectory());
 				}
-				Display.getDefault().asyncExec(new Runnable() {
-					public void run() {
-						RepositoriesView view;
-						try {
-							view = getView(event);
-							view.getCommonViewer().refresh();
-						} catch (ExecutionException e) {
-							Activator.logError(e.getMessage(), e);
-						}
-					}
-				});
 
 				if (delete) {
 					try {
 						for (RepositoryNode node : selectedNodes) {
 							Repository repo = node.getRepository();
 							if (!repo.isBare())
-								deleteRecursive(repo.getWorkTree());
-							deleteRecursive(repo.getDirectory());
+								FileUtils.delete(repo.getWorkTree(),
+										FileUtils.RECURSIVE | FileUtils.RETRY);
+							FileUtils.delete(repo.getDirectory(),
+									FileUtils.RECURSIVE | FileUtils.RETRY
+											| FileUtils.SKIP_MISSING);
 						}
 					} catch (IOException e) {
 						return Activator.createErrorStatus(e.getMessage(), e);
 					}
 				}
 				return Status.OK_STATUS;
-			}
-
-			private void deleteRecursive(File fileToDelete) throws IOException {
-				if (fileToDelete == null)
-					return;
-				if (fileToDelete.exists()) {
-					if (fileToDelete.isDirectory()) {
-						for (File file : fileToDelete.listFiles()) {
-							deleteRecursive(file);
-						}
-					}
-					if (!fileToDelete.delete())
-						throw new IOException(NLS.bind(
-								UIText.RemoveCommand_DeleteFailureMessage,
-								fileToDelete.getAbsolutePath()));
-				}
 			}
 		};
 

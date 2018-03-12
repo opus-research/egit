@@ -34,6 +34,7 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.launching.JavaRuntime;
+import org.eclipse.jgit.util.FileUtils;
 import org.osgi.framework.Bundle;
 
 public class TestProject {
@@ -105,7 +106,7 @@ public class TestProject {
 
 	public IType createType(IPackageFragment pack, String cuName, String source)
 			throws JavaModelException {
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append("package " + pack.getElementName() + ";\n");
 		buf.append("\n");
 		buf.append(source);
@@ -136,8 +137,11 @@ public class TestProject {
 		waitForIndexer();
 		if (project.exists())
 			project.delete(true, true, null);
-		else
-			testUtils.deleteRecursive(new File(location));
+		else {
+			File f = new File(location);
+			if (f.exists())
+				FileUtils.delete(f, FileUtils.RECURSIVE | FileUtils.RETRY);
+		}
 	}
 
 	private IFolder createBinFolder() throws CoreException {

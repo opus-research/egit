@@ -69,8 +69,6 @@ public class RepositoryMapping {
 		final IPath gLoc = Path.fromOSString(gitDir.getAbsolutePath())
 				.removeTrailingSeparator();
 		final IPath gLocParent = gLoc.removeLastSegments(1);
-		String p;
-		int cnt;
 
 		container = mappedContainer;
 		containerPath = container.getProjectRelativePath().toPortableString();
@@ -84,13 +82,13 @@ public class RepositoryMapping {
 			else
 				gitdirPath = remainder.toPortableString().substring(device.length());
 		} else if (gLocParent.isPrefixOf(cLoc)) {
-			cnt = cLoc.segmentCount() - cLoc.matchingFirstSegments(gLocParent);
-			p = "";  //$NON-NLS-1$
+			int cnt = cLoc.segmentCount() - cLoc.matchingFirstSegments(gLocParent);
+			StringBuilder p = new StringBuilder("");  //$NON-NLS-1$
 			while (cnt-- > 0) {
-				p += "../";  //$NON-NLS-1$
+				p.append("../");  //$NON-NLS-1$
 			}
-			p += gLoc.segment(gLoc.segmentCount() - 1);
-			gitdirPath = p;
+			p.append(gLoc.segment(gLoc.segmentCount() - 1));
+			gitdirPath = p.toString();
 		} else {
 			gitdirPath = gLoc.toPortableString();
 		}
@@ -178,10 +176,14 @@ public class RepositoryMapping {
 	 *
 	 * @param rsrc
 	 * @return the path relative to the Git repository, including base name.
+	 *         <code>null</code> if the path cannot be determined.
 	 */
 	public String getRepoRelativePath(final IResource rsrc) {
 		final int pfxLen = workdirPrefix.length();
-		final String p = rsrc.getLocation().toString();
+		IPath location = rsrc.getLocation();
+		if (location == null)
+			return null;
+		final String p = location.toString();
 		final int pLen = p.length();
 		if (pLen > pfxLen)
 			return p.substring(pfxLen);

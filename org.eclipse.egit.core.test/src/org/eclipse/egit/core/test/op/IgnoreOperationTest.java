@@ -24,6 +24,7 @@ import org.eclipse.egit.core.op.IgnoreOperation;
 import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,6 +43,14 @@ public class IgnoreOperationTest extends GitTestCase {
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();
+		// delete gitignore file in workspace folder
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		File rootFile = root.getRawLocation().toFile();
+		File ignoreFile = new File(rootFile, Constants.GITIGNORE_FILENAME);
+		if (ignoreFile.exists()) {
+			FileUtils.delete(ignoreFile, FileUtils.RETRY);
+			assert !ignoreFile.exists();
+		}
 		super.tearDown();
 	}
 
@@ -110,7 +119,7 @@ public class IgnoreOperationTest extends GitTestCase {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		File rootFile = root.getRawLocation().toFile();
 		File ignoreFile = new File(rootFile, Constants.GITIGNORE_FILENAME);
-		String content = testUtils.slurpAndClose(ignoreFile.toURL()
+		String content = testUtils.slurpAndClose(ignoreFile.toURI().toURL()
 				.openStream());
 		assertEquals("/" + project.getProject().getName() + "\n", content);
 		assertTrue(operation.isGitignoreOutsideWSChanged());

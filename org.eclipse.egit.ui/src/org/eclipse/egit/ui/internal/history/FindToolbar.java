@@ -58,13 +58,13 @@ import org.eclipse.swt.widgets.Widget;
  * @see GitHistoryPage
  */
 public class FindToolbar extends Composite {
-	private static final int PREFS_FINDIN_COMMITID = 1;
+	private static final int PREFS_FINDIN_COMMENTS = 1;
 
-	private static final int PREFS_FINDIN_COMMENTS = 2;
+	private static final int PREFS_FINDIN_AUTHOR = 2;
 
-	private static final int PREFS_FINDIN_AUTHOR = 4;
+	private static final int PREFS_FINDIN_COMMITID = 3;
 
-	private static final int PREFS_FINDIN_COMMITTER = 5;
+	private static final int PREFS_FINDIN_COMMITTER = 4;
 
 	private Color errorBackgroundColor;
 
@@ -128,7 +128,7 @@ public class FindToolbar extends Composite {
 		errorBackgroundColor = new Color(getDisplay(), new RGB(255, 150, 150));
 		nextIcon = UIIcons.ELCL16_NEXT.createImage();
 		previousIcon = UIIcons.ELCL16_PREVIOUS.createImage();
-		commitIdIcon = UIIcons.ELCL16_COMMIT.createImage();
+		commitIdIcon = UIIcons.ELCL16_ID.createImage();
 		commentsIcon = UIIcons.ELCL16_COMMENTS.createImage();
 		authorIcon = UIIcons.ELCL16_AUTHOR.createImage();
 		committerIcon = UIIcons.ELCL16_COMMITTER.createImage();
@@ -144,19 +144,20 @@ public class FindToolbar extends Composite {
 		findLabel.setText(UIText.HistoryPage_findbar_find);
 
 		patternField = new Text(this, SWT.SEARCH);
-		GridData findTextData = new GridData(SWT.FILL, SWT.FILL, true, false);
+		GridData findTextData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		findTextData.minimumWidth = 50;
 		patternField.setLayoutData(findTextData);
-		patternField.setText(""); //$NON-NLS-1$
 		patternField.setTextLimit(100);
 
-		nextButton = new Button(this, SWT.HORIZONTAL);
+		nextButton = new Button(this, SWT.PUSH);
 		nextButton.setImage(nextIcon);
 		nextButton.setText(UIText.HistoryPage_findbar_next);
+		nextButton.setToolTipText(UIText.FindToolbar_NextTooltip);
 
-		previousButton = new Button(this, SWT.HORIZONTAL);
+		previousButton = new Button(this, SWT.PUSH);
 		previousButton.setImage(previousIcon);
 		previousButton.setText(UIText.HistoryPage_findbar_previous);
+		previousButton.setToolTipText(UIText.FindToolbar_PreviousTooltip);
 
 		final ToolBar toolBar = new ToolBar(this, SWT.FLAT);
 		new ToolItem(toolBar, SWT.SEPARATOR);
@@ -166,14 +167,18 @@ public class FindToolbar extends Composite {
 		final MenuItem caseItem = new MenuItem(prefsMenu, SWT.CHECK);
 		caseItem.setText(UIText.HistoryPage_findbar_ignorecase);
 		new MenuItem(prefsMenu, SWT.SEPARATOR);
-		commitIdItem = new MenuItem(prefsMenu, SWT.RADIO);
-		commitIdItem.setText(UIText.HistoryPage_findbar_commit);
 		commentsItem = new MenuItem(prefsMenu, SWT.RADIO);
 		commentsItem.setText(UIText.HistoryPage_findbar_comments);
+		commentsItem.setImage(commentsIcon);
 		authorItem = new MenuItem(prefsMenu, SWT.RADIO);
 		authorItem.setText(UIText.HistoryPage_findbar_author);
+		authorItem.setImage(authorIcon);
+		commitIdItem = new MenuItem(prefsMenu, SWT.RADIO);
+		commitIdItem.setText(UIText.HistoryPage_findbar_commit);
+		commitIdItem.setImage(commitIdIcon);
 		committerItem = new MenuItem(prefsMenu, SWT.RADIO);
 		committerItem.setText(UIText.HistoryPage_findbar_committer);
+		committerItem.setImage(committerIcon);
 
 		prefsItem.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
@@ -185,17 +190,17 @@ public class FindToolbar extends Composite {
 					prefsMenu.setVisible(true);
 				} else {
 					switch (store.getInt(UIPreferences.FINDTOOLBAR_FIND_IN)) {
-					case PREFS_FINDIN_COMMITID:
+					case PREFS_FINDIN_COMMENTS:
 						commentsItem.notifyListeners(SWT.Selection, null);
 						break;
-					case PREFS_FINDIN_COMMENTS:
+					case PREFS_FINDIN_AUTHOR:
 						authorItem.notifyListeners(SWT.Selection, null);
 						break;
-					case PREFS_FINDIN_AUTHOR:
-						committerItem.notifyListeners(SWT.Selection, null);
+					case PREFS_FINDIN_COMMITID:
+						commitIdItem.notifyListeners(SWT.Selection, null);
 						break;
 					case PREFS_FINDIN_COMMITTER:
-						commitIdItem.notifyListeners(SWT.Selection, null);
+						committerItem.notifyListeners(SWT.Selection, null);
 						break;
 					}
 				}
@@ -324,27 +329,12 @@ public class FindToolbar extends Composite {
 
 		int selectedPrefsItem = store.getInt(UIPreferences.FINDTOOLBAR_FIND_IN);
 
-		commitIdItem.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				prefsItem.setImage(commitIdIcon);
-				prefsItem
-						.setToolTipText(UIText.HistoryPage_findbar_changeto_comments);
-				prefsItemChanged(PREFS_FINDIN_COMMITID, commitIdItem);
-			}
-		});
-		if (selectedPrefsItem == PREFS_FINDIN_COMMITID) {
-			commitIdItem.setSelection(true);
-			prefsItem.setImage(commitIdIcon);
-			prefsItem
-					.setToolTipText(UIText.HistoryPage_findbar_changeto_comments);
-		}
-
 		commentsItem.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				prefsItem.setImage(commentsIcon);
 				prefsItem
 						.setToolTipText(UIText.HistoryPage_findbar_changeto_author);
-				prefsItemChanged(PREFS_FINDIN_COMMENTS, commentsItem);
+				prefsItemChanged(PREFS_FINDIN_AUTHOR, commentsItem);
 			}
 		});
 		if (selectedPrefsItem == PREFS_FINDIN_COMMENTS) {
@@ -358,13 +348,28 @@ public class FindToolbar extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				prefsItem.setImage(authorIcon);
 				prefsItem
-						.setToolTipText(UIText.HistoryPage_findbar_changeto_committer);
-				prefsItemChanged(PREFS_FINDIN_AUTHOR, authorItem);
+						.setToolTipText(UIText.HistoryPage_findbar_changeto_commit);
+				prefsItemChanged(PREFS_FINDIN_COMMITID, authorItem);
 			}
 		});
 		if (selectedPrefsItem == PREFS_FINDIN_AUTHOR) {
 			authorItem.setSelection(true);
 			prefsItem.setImage(authorIcon);
+			prefsItem
+					.setToolTipText(UIText.HistoryPage_findbar_changeto_commit);
+		}
+
+		commitIdItem.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				prefsItem.setImage(commitIdIcon);
+				prefsItem
+						.setToolTipText(UIText.HistoryPage_findbar_changeto_committer);
+				prefsItemChanged(PREFS_FINDIN_COMMITTER, commitIdItem);
+			}
+		});
+		if (selectedPrefsItem == PREFS_FINDIN_COMMITID) {
+			commitIdItem.setSelection(true);
+			prefsItem.setImage(commitIdIcon);
 			prefsItem
 					.setToolTipText(UIText.HistoryPage_findbar_changeto_committer);
 		}
@@ -373,15 +378,15 @@ public class FindToolbar extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				prefsItem.setImage(committerIcon);
 				prefsItem
-						.setToolTipText(UIText.HistoryPage_findbar_changeto_commit);
-				prefsItemChanged(PREFS_FINDIN_COMMITTER, committerItem);
+						.setToolTipText(UIText.HistoryPage_findbar_changeto_comments);
+				prefsItemChanged(PREFS_FINDIN_COMMENTS, committerItem);
 			}
 		});
 		if (selectedPrefsItem == PREFS_FINDIN_COMMITTER) {
 			committerItem.setSelection(true);
 			prefsItem.setImage(committerIcon);
 			prefsItem
-					.setToolTipText(UIText.HistoryPage_findbar_changeto_commit);
+					.setToolTipText(UIText.HistoryPage_findbar_changeto_comments);
 		}
 	}
 

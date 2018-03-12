@@ -10,10 +10,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.osgi.service.localization.BundleLocalization;
 import org.osgi.framework.BundleContext;
@@ -24,11 +28,11 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class TestUtil {
 
-	public static String TESTAUTHOR = "Test Author <test.author@test.com>";
+	public final static String TESTAUTHOR = "Test Author <test.author@test.com>";
 
-	public static String TESTCOMMITTER = "Test Committer <test.committer@test.com>";
+	public final static String TESTCOMMITTER = "Test Committer <test.committer@test.com>";
 
-	private static final char AMPERSAND = '&';
+	private final static char AMPERSAND = '&';
 
 	private ResourceBundle myBundle;
 
@@ -82,18 +86,53 @@ public class TestUtil {
 				myBundle = location.getLocalization(Activator.getDefault()
 						.getBundle(), Locale.getDefault().toString());
 		}
+		if (myBundle != null) {
+			String raw = myBundle.getString(key);
 
-		String raw = myBundle.getString(key);
+			if (keepAmpersands || raw.indexOf(AMPERSAND) < 0)
+				return raw;
 
-		if (keepAmpersands || raw.indexOf(AMPERSAND) < 0)
-			return raw;
-
-		StringBuilder sb = new StringBuilder(raw.length());
-		for (int i = 0; i < raw.length(); i++) {
-			char c = raw.charAt(i);
-			if (c != AMPERSAND)
-				sb.append(c);
+			StringBuilder sb = new StringBuilder(raw.length());
+			for (int i = 0; i < raw.length(); i++) {
+				char c = raw.charAt(i);
+				if (c != AMPERSAND)
+					sb.append(c);
+			}
+			return sb.toString();
 		}
-		return sb.toString();
+		return null;
 	}
+
+	/**
+	 * Utility for waiting until the execution of jobs of a given
+	 * family has finished.
+	 * @param family
+	 * @throws InterruptedException
+	 */
+	public static void joinJobs(Object family) throws InterruptedException  {
+		Job.getJobManager().join(family, null);
+	}
+
+	/**
+	 * Appends content to given file.
+	 *
+	 * @param file
+	 * @param content
+	 * @param append
+	 *            if true, then bytes will be written to the end of the file
+	 *            rather than the beginning
+	 * @throws IOException
+	 */
+	public static void appendFileContent(File file, String content, boolean append)
+			throws IOException {
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter(file, append);
+			fw.append(content);
+		} finally {
+			if (fw != null)
+				fw.close();
+		}
+	}
+
 }

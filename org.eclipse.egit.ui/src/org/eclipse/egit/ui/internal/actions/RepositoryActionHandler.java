@@ -2,6 +2,7 @@
  * Copyright (C) 2007, Dave Watson <dwatson@mimvista.com>
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2006, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,18 +27,24 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.handlers.IHandlerService;
@@ -47,11 +55,25 @@ import org.eclipse.ui.ide.ResourceUtil;
  */
 abstract class RepositoryActionHandler extends AbstractHandler {
 
+	private IStructuredSelection mySelection;
+
+	/**
+	 * Set the selection when used by {@link RepositoryAction} as
+	 * {@link IWorkbenchWindowActionDelegate}
+	 *
+	 * @param selection
+	 *            the new selection
+	 */
+	public void setSelection(ISelection selection) {
+		mySelection = convertSelection(null, selection);
+	}
+
 	/**
 	 * @param selection
 	 * @return the projects hosting the selected resources
 	 */
-	private IProject[] getProjectsForSelectedResources(IStructuredSelection selection) {
+	private IProject[] getProjectsForSelectedResources(
+			IStructuredSelection selection) {
 		Set<IProject> ret = new HashSet<IProject>();
 		for (IResource resource : (IResource[]) getSelectedAdaptables(
 				selection, IResource.class))
@@ -70,6 +92,10 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return getProjectsForSelectedResources(selection);
 	}
 
+	protected IProject[] getProjectsForSelectedResources() {
+		IStructuredSelection selection = getSelection();
+		return getProjectsForSelectedResources(selection);
+	}
 
 	/**
 	 * @param projects
@@ -114,7 +140,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return getProjectsInRepositoryOfSelectedResources(selection);
 	}
 
-
 	/**
 	 * List the projects with selected resources, if all projects are connected
 	 * to a Git repository.
@@ -140,7 +165,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		}
 		return ret.toArray(new IProject[ret.size()]);
 	}
-
 
 	/**
 	 * Figure out which repository to use. All selected resources must map to
@@ -180,10 +204,11 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 *            selected
 	 * @param selection
 	 * @param shell
-	 * 			must be provided if warn = true
+	 *            must be provided if warn = true
 	 * @return repository for current project, or null
 	 */
-	private Repository getRepository(boolean warn, IStructuredSelection selection, Shell shell) {
+	private Repository getRepository(boolean warn,
+			IStructuredSelection selection, Shell shell) {
 		RepositoryMapping mapping = null;
 		for (IProject project : getSelectedProjects(selection)) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
@@ -211,9 +236,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		final Repository repository = mapping.getRepository();
 		return repository;
 	}
-
-
-
 
 	/**
 	 * Figure out which repositories to use. All selected resources must map to
@@ -252,14 +274,14 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		Object selection = HandlerUtil.getActiveMenuSelection(event);
 		if (selection == null)
 			selection = HandlerUtil.getCurrentSelectionChecked(event);
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
 		if (selection instanceof TextSelection) {
 			IResource resource = ResourceUtil.getResource(HandlerUtil
 					.getVariable(event, ISources.ACTIVE_EDITOR_INPUT_NAME));
 			if (resource != null)
 				return new StructuredSelection(resource);
 		}
+		if (selection instanceof IStructuredSelection)
+			return (IStructuredSelection) selection;
 		return StructuredSelection.EMPTY;
 	}
 
@@ -267,26 +289,53 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * @return the current selection
 	 */
 	protected IStructuredSelection getSelection() {
-		IWorkbenchWindow activeWorkbenchWindow = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
-		if (activeWorkbenchWindow == null) // During Eclipse shutdown there is
-			// no active window
+		// if the selection was set explicitly, use it
+		if (mySelection != null)
+			return mySelection;
+		return convertSelection(getEvaluationContext(), null);
+	}
+
+	private IStructuredSelection convertSelection(IEvaluationContext aContext,
+			Object aSelection) {
+		IEvaluationContext ctx;
+		if (aContext == null && aSelection == null)
 			return StructuredSelection.EMPTY;
-		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
-				.getService(IHandlerService.class);
-		IEvaluationContext ctx = hsr.getCurrentState();
-		Object selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-		if (selection == null)
-			selection = ctx.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
+		else
+			ctx = aContext;
+		Object selection;
+		if (aSelection == null && ctx != null) {
+			selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
+			if (selection == null)
+				selection = ctx
+						.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
+		} else if (aSelection != null)
+			selection = aSelection;
+		else
+			return StructuredSelection.EMPTY;
 		if (selection instanceof TextSelection) {
+			if (ctx == null)
+				ctx = getEvaluationContext();
 			IResource resource = ResourceUtil.getResource(ctx
 					.getVariable(ISources.ACTIVE_EDITOR_INPUT_NAME));
 			if (resource != null)
 				return new StructuredSelection(resource);
 		}
+		if (selection instanceof IStructuredSelection)
+			return (IStructuredSelection) selection;
 		return StructuredSelection.EMPTY;
+	}
+
+	private IEvaluationContext getEvaluationContext() {
+		IEvaluationContext ctx;
+		IWorkbenchWindow activeWorkbenchWindow = PlatformUI.getWorkbench()
+				.getActiveWorkbenchWindow();
+		// no active window during Eclipse shutdown
+		if (activeWorkbenchWindow == null)
+			return null;
+		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
+				.getService(IHandlerService.class);
+		ctx = hsr.getCurrentState();
+		return ctx;
 	}
 
 	/**
@@ -384,7 +433,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return result.toArray(new IResource[result.size()]);
 	}
 
-
 	/**
 	 * @param event
 	 * @return the shell
@@ -414,4 +462,38 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return HandlerUtil.getActivePartChecked(event);
 	}
 
+	/**
+	 * Checks if merge is possible:
+	 * <ul>
+	 * <li>HEAD must point to a branch</li>
+	 * <li>Repository State must be SAFE</li>
+	 * </ul>
+	 *
+	 * @param repository
+	 * @param event
+	 * @return a boolean indicating if merge is possible
+	 * @throws ExecutionException
+	 */
+	protected boolean canMerge(final Repository repository, ExecutionEvent event)
+			throws ExecutionException {
+		String message = null;
+		try {
+			Ref head = repository.getRef(Constants.HEAD);
+			if (head == null || !head.isSymbolic())
+				message = UIText.MergeAction_HeadIsNoBranch;
+			else if (!repository.getRepositoryState().equals(
+					RepositoryState.SAFE))
+				message = NLS.bind(UIText.MergeAction_WrongRepositoryState,
+						repository.getRepositoryState());
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+			message = e.getMessage();
+		}
+
+		if (message != null) {
+			MessageDialog.openError(getShell(event),
+					UIText.MergeAction_CannotMerge, message);
+		}
+		return (message == null);
+	}
 }

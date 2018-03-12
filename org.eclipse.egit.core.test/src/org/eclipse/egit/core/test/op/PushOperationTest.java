@@ -37,6 +37,7 @@ import org.eclipse.egit.core.test.DualRepositoryTestCase;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
@@ -101,8 +102,9 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		// let's clone repository1 to repository2
 		URIish uri = new URIish("file:///"
 				+ repository1.getRepository().getDirectory().toString());
+		Ref master = repository1.getRepository().getRef("refs/heads/master");
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir2,
-				"refs/heads/master", "origin");
+				master, "origin", 0);
 		clop.run(null);
 
 		repository2 = new TestRepository(new FileRepository(new File(workdir2,
@@ -229,10 +231,10 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		spec.addURIRefUpdates(remote, refUpdates);
 
 		PushOperation pop = new PushOperation(repository1.getRepository(),
-				spec, false, null);
+				spec, false, null, 0);
 		pop.run(null);
 
-		pop = new PushOperation(repository1.getRepository(), spec, false, null);
+		pop = new PushOperation(repository1.getRepository(), spec, false, null, 0);
 		try {
 			pop.run(null);
 			fail("Expected Exception not thrown");
@@ -262,7 +264,7 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		spec.addURIRefUpdates(remote, refUpdates);
 		// now we can construct the push operation
 		PushOperation pop = new PushOperation(repository1.getRepository(),
-				spec, false, null);
+				spec, false, null, 0);
 		return pop;
 	}
 

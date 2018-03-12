@@ -53,6 +53,9 @@ public class CoreText extends NLS {
 	public static String ConnectProviderOperation_ConnectingProject;
 
 	/** */
+	public static String DeleteBranchOperation_TaskName;
+
+	/** */
 	public static String DiscardChangesOperation_discardFailed;
 
 	/** */
@@ -87,6 +90,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String BranchOperation_checkoutProblem;
+
+	/** */
+	public static String BranchOperation_couldNotDelete;
 
 	/** */
 	public static String BranchOperation_mappingCommit;
@@ -155,6 +161,9 @@ public class CoreText extends NLS {
 	public static String RemoteRefUpdateCantBeReused;
 
 	/** */
+	public static String RenameBranchOperation_TaskName;
+
+	/** */
 	public static String ResetOperation_cantUpdate;
 
 	/** */
@@ -213,6 +222,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CloneOperation_writingIndex;
+
+	/** */
+	public static String CreateLocalBranchOperation_CreatingBranchMessage;
+
+	/** */
+	public static String CreateLocalBranchOperation_NoBranchMessage;
 
 	/** */
 	public static String IndexFileRevision_errorLookingUpPath;

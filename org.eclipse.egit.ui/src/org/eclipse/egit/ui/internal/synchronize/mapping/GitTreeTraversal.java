@@ -26,6 +26,7 @@ import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
@@ -37,18 +38,36 @@ class GitTreeTraversal extends ResourceTraversal {
 	}
 
 	public GitTreeTraversal(Repository repo, RevCommit commit) {
-		this(repo, commit.getParent(0).getTree().getId(), commit.getTree()
-				.getId(), new Path(repo.getWorkTree().toString()));
+		this(repo, commit, new Path(repo.getWorkTree().toString()));
 	}
 
 	private GitTreeTraversal(Repository repo, AnyObjectId baseId,
 			AnyObjectId actualId, IPath path) {
-		super(getResourcesImpl(repo, path, baseId, actualId),
+		super(getResourcesImpl(repo, baseId, actualId, path),
 				IResource.DEPTH_INFINITE, IResource.NONE);
 	}
 
-	private static IResource[] getResourcesImpl(Repository repo, IPath path,
-			AnyObjectId baseId, AnyObjectId remoteId) {
+	private GitTreeTraversal(Repository repo, RevCommit commit, IPath path) {
+		super(getResourcesImpl(repo, commit, path), IResource.DEPTH_INFINITE,
+				IResource.NONE);
+	}
+
+	private static IResource[] getResourcesImpl(Repository repo,
+			RevCommit commit, IPath path) {
+		AnyObjectId baseId;
+		RevCommit[] parents = commit.getParents();
+		if (parents.length > 0)
+			baseId = parents[0].getTree().getId();
+		else
+			baseId = zeroId();
+
+		AnyObjectId remoteId = commit.getTree().getId();
+
+		return getResourcesImpl(repo, baseId, remoteId, path);
+	}
+
+	private static IResource[] getResourcesImpl(Repository repo,
+			AnyObjectId baseId, AnyObjectId remoteId, IPath path) {
 		if (remoteId.equals(zeroId()))
 			return new IResource[0];
 
@@ -60,8 +79,10 @@ class GitTreeTraversal extends ResourceTraversal {
 		tw.setRecursive(false);
 		tw.setFilter(TreeFilter.ANY_DIFF);
 		try {
+			tw.addTree(new FileTreeIterator(repo));
 			if (!baseId.equals(zeroId()))
 				tw.addTree(baseId);
+
 			int actualNth = tw.addTree(remoteId);
 
 			while (tw.next()) {
