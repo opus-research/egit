@@ -381,6 +381,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		workingTree.expand().getNode(name).doubleClick();
 
 		SWTBotEditor editor = bot.editorByTitle(name);
+		editor.setFocus();
 
 		// the WidgetNotFoundException will be thrown when widget with given content cannot be not found
 		SWTBotStyledText left = editor.bot().styledText(content);
@@ -558,7 +559,8 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 			boolean includeLocal) throws InterruptedException {
 		showDialog(projectName, "Team", "Synchronize...");
 
-		bot.shell("Synchronize repository: " + repo + File.separator + ".git");
+		bot.shell("Synchronize repository: " + repo + File.separator + ".git")
+				.activate();
 
 		if (!includeLocal)
 			bot.checkBox(
@@ -597,6 +599,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	private void createEmptyRepository() throws Exception {
 		File gitDir = new File(new File(getTestDirectory(), EMPTY_REPOSITORY),
 				Constants.DOT_GIT);
+		gitDir.mkdir();
 		Repository myRepository = new FileRepository(gitDir);
 		myRepository.create();
 
@@ -640,7 +643,10 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		SWTBotTreeItem folderNode = waitForNodeWithText(projNode, FOLDER);
 		waitForNodeWithText(folderNode, fileName).doubleClick();
 
-		return bot.editorByTitle(fileName);
+		SWTBotEditor editor = bot.editorByTitle(fileName);
+		editor.toTextEditor().setFocus();
+
+		return editor;
 	}
 
 	private SWTBotTreeItem waitForNodeWithText(SWTBotTree tree, String name) {
@@ -670,7 +676,10 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		SWTBotTreeItem folderTree = waitForNodeWithText(projectTree, FOLDER);
 		waitForNodeWithText(folderTree, FILE1).doubleClick();
 
-		return bot.editorByTitle(FILE1);
+		SWTBotEditor editor = bot.editorByTitle(FILE1);
+		editor.toTextEditor().setFocus();
+
+		return editor;
 	}
 
 }
