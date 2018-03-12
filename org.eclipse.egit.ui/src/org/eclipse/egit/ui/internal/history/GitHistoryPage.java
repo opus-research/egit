@@ -4,6 +4,7 @@
  * Copyright (c) 2010, Stefan Lay <stefan.lay@sap.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010-2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2012, Daniel megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +27,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
@@ -595,12 +597,18 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	// react on changes to the relative date preference
 	private final IPropertyChangeListener listener = new IPropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent event) {
-			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(event
-					.getProperty()))
-				if (graph.setRelativeDate(((Boolean) event.getNewValue())
-						.booleanValue()))
+			final String prop = event.getProperty();
+			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(prop)) {
+				Object oldValue = event.getOldValue();
+				if (oldValue == null || !oldValue.equals(event.getNewValue())) {
+					graph.setRelativeDate(isShowingRelativeDates());
 					graph.getTableView().refresh();
+				}
 			}
+			if (UIPreferences.HISTORY_MAX_BRANCH_LENGTH.equals(prop)
+					|| UIPreferences.HISTORY_MAX_TAG_LENGTH.equals(prop))
+				graph.getTableView().refresh();
+		}
 	};
 
 	/**
@@ -642,13 +650,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		if (object instanceof RepositoryTreeNode)
 			return true;
 
-		if (object instanceof IAdaptable) {
-			IResource resource = (IResource) ((IAdaptable) object)
-					.getAdapter(IResource.class);
-			return resource == null ? false : typeOk(resource);
-		}
+		IResource resource = AdapterUtils.adapt(object, IResource.class);
+		if (resource != null && typeOk(resource))
+			return true;
 
-		return false;
+		return AdapterUtils.adapt(object, Repository.class) != null;
 	}
 
 	private static boolean typeOk(final IResource object) {
@@ -709,8 +715,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				graphDetailSplit);
 		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr);
 
-		graph.setRelativeDate(Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE));
+		graph.setRelativeDate(isShowingRelativeDates());
 		Activator.getDefault().getPreferenceStore()
 				.addPropertyChangeListener(listener);
 
@@ -827,15 +832,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				}
 
 				final PlotCommit<?> c = (PlotCommit<?>) sel.getFirstElement();
+				commentViewer.setInput(c);
 				final PlotWalk walk = new PlotWalk(input.getRepository());
 				try {
 					final RevCommit unfilteredCommit = walk.parseCommit(c);
 					for (RevCommit parent : unfilteredCommit.getParents())
 						walk.parseBody(parent);
-					commentViewer.setInput(unfilteredCommit);
 					fileViewer.setInput(unfilteredCommit);
 				} catch (IOException e) {
-					commentViewer.setInput(c);
 					fileViewer.setInput(c);
 				} finally {
 					walk.dispose();
@@ -1087,6 +1091,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			boolean showRef = false;
 			boolean showTag = false;
 			Repository repo = null;
+			RevCommit selection = null;
 			Ref ref = null;
 			if (o instanceof IResource) {
 				RepositoryMapping mapping = RepositoryMapping
@@ -1144,6 +1149,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 							new IResource[] { resource });
 				}
 			}
+			if (repo == null) {
+				repo = AdapterUtils.adapt(o, Repository.class);
+				if (repo != null)
+					input = new HistoryPageInput(repo);
+			}
+			selection = AdapterUtils.adapt(o, RevCommit.class);
+
 			if (input == null) {
 				this.name = ""; //$NON-NLS-1$
 				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
@@ -1188,6 +1200,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				showRef(ref, repo);
 			if (showTag)
 				showTag(ref, repo);
+			if (selection != null)
+				graph.selectCommitStored(selection);
 
 			return true;
 		} finally {
@@ -1864,5 +1878,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			}
 			job = null;
 		}
+	}
+
+	private boolean isShowingRelativeDates() {
+		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE);
 	}
 }

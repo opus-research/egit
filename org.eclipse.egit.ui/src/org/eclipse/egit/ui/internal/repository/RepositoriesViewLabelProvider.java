@@ -13,6 +13,7 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +24,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
+import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand;
@@ -287,11 +289,11 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 				string.append(
 						Repository.shortenRefName(head.getLeaf().getName()),
 						StyledString.DECORATIONS_STYLER);
-			else
+			else if (head.getObjectId() != null)
 				string.append(head.getObjectId().abbreviate(7).name(),
 						StyledString.DECORATIONS_STYLER);
 			string.append(']', StyledString.DECORATIONS_STYLER);
-			if (verboseBranchMode) {
+			if (verboseBranchMode && head.getObjectId() != null) {
 				RevWalk walk = new RevWalk(repository);
 				RevCommit commit;
 				try {
@@ -304,6 +306,27 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 				}
 			}
 		}
+		return string;
+	}
+
+	/**
+	 * Get styled text for commit node
+	 *
+	 * @param node
+	 * @return styled string
+	 */
+	protected StyledString getStyledTextForCommit(StashedCommitNode node) {
+		StyledString string = new StyledString();
+		RevCommit commit = node.getObject();
+		string.append(MessageFormat.format("{0}@'{'{1}'}'", //$NON-NLS-1$
+				Constants.STASH, Integer.valueOf(node.getIndex())));
+		string.append(' ');
+		string.append('[', StyledString.DECORATIONS_STYLER);
+		string.append(commit.abbreviate(7).name(),
+				StyledString.DECORATIONS_STYLER);
+		string.append(']', StyledString.DECORATIONS_STYLER);
+		string.append(' ');
+		string.append(commit.getShortMessage(), StyledString.QUALIFIER_STYLER);
 		return string;
 	}
 
@@ -343,15 +366,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 				StyledString dirString = new StyledString(
 						UIText.RepositoriesView_WorkingDir_treenode);
 				dirString.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-				if (node.getRepository().isBare()) {
-					dirString
-							.append(
-									UIText.RepositoriesViewLabelProvider_BareRepositoryMessage,
-									StyledString.QUALIFIER_STYLER);
-				} else {
-					dirString.append(node.getRepository().getWorkTree()
-							.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
-				}
+				dirString.append(node.getRepository().getWorkTree()
+						.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
 				return dirString;
 
 			case REF:
@@ -370,6 +386,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 					}
 				}
 				return styled;
+			case STASHED_COMMIT:
+				return getStyledTextForCommit((StashedCommitNode) node);
 			case PUSH:
 				// fall through
 			case FETCH:
@@ -395,6 +413,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 			case REMOTE:
 				// fall through
 			case SUBMODULES:
+				// fall through
+			case STASH:
 				// fall through
 			case ERROR: {
 				String label = getSimpleText(node);
@@ -437,6 +457,13 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 			return UIText.RepositoriesView_RemotesNodeText;
 		case SUBMODULES:
 			return UIText.RepositoriesViewLabelProvider_SubmodulesNodeText;
+		case STASH:
+			return UIText.RepositoriesViewLabelProvider_StashNodeText;
+		case STASHED_COMMIT:
+			return MessageFormat.format(
+					"{0}@'{'{1}'}'", //$NON-NLS-1$
+					Constants.STASH,
+					Integer.valueOf(((StashedCommitNode) node).getIndex()));
 		case REF:
 			// fall through
 		case TAG: {
@@ -465,13 +492,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 			return refName;
 		}
 		case WORKINGDIR:
-			if (node.getRepository().isBare())
-				return UIText.RepositoriesView_WorkingDir_treenode
-						+ " - " //$NON-NLS-1$
-						+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
-			else
-				return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
-						+ node.getRepository().getWorkTree().getAbsolutePath();
+			return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
+					+ node.getRepository().getWorkTree().getAbsolutePath();
 		case REMOTE:
 			// fall through
 		case PUSH:

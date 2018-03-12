@@ -52,6 +52,7 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.team.core.Team;
+import org.eclipse.team.internal.ui.Utils;
 import org.eclipse.team.ui.ISharedImages;
 import org.eclipse.team.ui.TeamImages;
 import org.eclipse.team.ui.TeamUI;
@@ -150,63 +151,107 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 *      org.eclipse.jface.viewers.IDecoration)
 	 */
 	public void decorate(Object element, IDecoration decoration) {
-
-		final IResource resource = getResource(element);
-		if (resource == null)
+		// Don't decorate if UI plugin is not running
+		if (Activator.getDefault() == null)
 			return;
 
 		// Don't decorate if the workbench is not running
 		if (!PlatformUI.isWorkbenchRunning())
 			return;
 
-		// Don't decorate if UI plugin is not running
-		final Activator activator = Activator.getDefault();
-		if (activator == null)
+		final IResource resource = getResource(element);
+		if (resource == null)
+			decorateResourceMapping(element, decoration);
+		else {
+			try {
+				decorateResource(resource, decoration);
+			} catch(CoreException e) {
+				handleException(resource, e);
+			}
+		}
+	}
+
+	/**
+	 * Decorates a single resource (i.e. a project).
+	 *
+	 * @param resource the resource to decorate
+	 * @param decoration the decoration
+	 * @throws CoreException
+	 */
+	private void decorateResource(IResource resource, IDecoration decoration) throws CoreException {
+		IndexDiffData indexDiffData = getIndexDiffDataOrNull(resource);
+
+		if(indexDiffData == null)
 			return;
 
-		// Don't decorate the workspace root
+		IDecoratableResource decoratableResource = null;
+		final DecorationHelper helper = new DecorationHelper(
+				Activator.getDefault().getPreferenceStore());
+		try {
+			decoratableResource = new DecoratableResourceAdapter(indexDiffData, resource);
+		} catch (IOException e) {
+			throw new CoreException(Activator.createErrorStatus(UIText.Decorator_exceptionMessage, e));
+		}
+		helper.decorate(decoration, decoratableResource);
+	}
+
+	static IndexDiffData getIndexDiffDataOrNull(IResource resource) {
 		if (resource.getType() == IResource.ROOT)
-			return;
+			return null;
 
 		// Don't decorate non-existing resources
 		if (!resource.exists() && !resource.isPhantom())
-			return;
+			return null;
 
 		// Make sure we're dealing with a project under Git revision control
 		final RepositoryMapping mapping = RepositoryMapping
 				.getMapping(resource);
 		if (mapping == null)
-			return;
+			return null;
 
 		// Don't decorate ignored resources (e.g. bin folder content)
 		if (resource.getType() != IResource.PROJECT
 				&& Team.isIgnoredHint(resource))
-			return;
+			return null;
 
 		// Cannot decorate linked resources
 		if (mapping.getRepoRelativePath(resource) == null)
-			return;
+			return null;
 
 		IndexDiffData indexDiffData = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
 				.getIndexDiffCacheEntry(mapping.getRepository()).getIndexDiff();
-		if (indexDiffData == null)
+
+		return indexDiffData;
+	}
+
+	/**
+	 * Decorates a resource mapping (i.e. a Working Set).
+	 *
+	 * @param element the element for which the decoration was initially called
+	 * @param decoration the decoration
+	 */
+	private void decorateResourceMapping(Object element, IDecoration decoration) {
+		@SuppressWarnings("restriction")
+		ResourceMapping mapping = Utils.getResourceMapping(element);
+
+		IDecoratableResource decoRes = new DecoratableResourceMapping(mapping);
+
+		/*
+		 *  don't render question marks on working sets. !isTracked() can have two reasons:
+		 *   1) nothing is tracked.
+		 *   2) no indexDiff for the contained projects ready yet.
+		 *  in both cases, don't do anything to not pollute the display of the sets.
+		 */
+		if(!decoRes.isTracked())
 			return;
 
-		IDecoratableResource decoratableResource = null;
 		final DecorationHelper helper = new DecorationHelper(
-				activator.getPreferenceStore());
-		try {
-			decoratableResource = new DecoratableResourceAdapter(indexDiffData, resource);
-		} catch (IOException e) {
-			handleException(
-					resource,
-					new CoreException(Activator.createErrorStatus(
-							UIText.Decorator_exceptionMessage, e)));
-			return;
-		}
-		helper.decorate(decoration, decoratableResource);
+				Activator.getDefault().getPreferenceStore());
+
+		helper.decorate(decoration, decoRes);
 	}
+
 
 	/**
 	 * Helper class for doing resource decoration, based on the given
@@ -224,6 +269,9 @@ public class GitLightweightDecorator extends LabelProvider implements
 		public static final String BINDING_BRANCH_NAME = "branch"; //$NON-NLS-1$
 
 		/** */
+		public static final String BINDING_BRANCH_STATUS = "branch_status"; //$NON-NLS-1$
+
+		/** */
 		public static final String BINDING_REPOSITORY_NAME = "repository"; //$NON-NLS-1$
 
 		/** */
@@ -239,7 +287,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		public static final String FOLDER_FORMAT_DEFAULT = "{dirty:>} {name}"; //$NON-NLS-1$
 
 		/** */
-		public static final String PROJECT_FORMAT_DEFAULT ="{dirty:>} {name} [{repository} {branch}]";  //$NON-NLS-1$
+		public static final String PROJECT_FORMAT_DEFAULT ="{dirty:>} {name} [{repository} {branch}{ branch_status}]";  //$NON-NLS-1$
 
 		private IPreferenceStore store;
 
@@ -352,6 +400,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 						.getString(UIPreferences.DECORATOR_FILETEXT_DECORATION);
 				break;
 			case IResource.FOLDER:
+			case DecoratableResourceMapping.RESOURCE_MAPPING:
 				format = store
 						.getString(UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
 				break;
@@ -365,6 +414,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 			bindings.put(BINDING_RESOURCE_NAME, resource.getName());
 			bindings.put(BINDING_REPOSITORY_NAME, resource.getRepositoryName());
 			bindings.put(BINDING_BRANCH_NAME, resource.getBranch());
+			bindings.put(BINDING_BRANCH_STATUS, resource.getBranchStatus());
 			bindings.put(BINDING_DIRTY_FLAG, resource.isDirty() ? ">" : null); //$NON-NLS-1$
 			bindings.put(BINDING_STAGED_FLAG,
 					resource.staged() != Staged.NOT_STAGED ? "*" : null); //$NON-NLS-1$
@@ -446,6 +496,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 					if ((start = format.indexOf('}', end)) > -1) {
 						String key = format.substring(end + 1, start);
 						String s;
+						boolean spaceBefore = false;
+						boolean spaceAfter = false;
 
 						// Allow users to override the binding
 						if (key.indexOf(':') > -1) {
@@ -454,7 +506,17 @@ public class GitLightweightDecorator extends LabelProvider implements
 							if (keyAndBinding.length > 1
 									&& bindings.get(key) != null)
 								bindings.put(key, keyAndBinding[1]);
+						} else {
+							if (key.charAt(0) == ' ') {
+								spaceBefore = true;
+								key = key.substring(1);
+							}
+							if (key.charAt(key.length() - 1) == ' ') {
+								spaceAfter = true;
+								key = key.substring(0, key.length() - 1);
+							}
 						}
+
 
 						// We use the BINDING_RESOURCE_NAME key to determine if
 						// we are doing the prefix or suffix. The name isn't
@@ -467,7 +529,11 @@ public class GitLightweightDecorator extends LabelProvider implements
 						}
 
 						if (s != null) {
+							if (spaceBefore)
+								output.append(' ');
 							output.append(s);
+							if (spaceAfter)
+								output.append(' ');
 						} else {
 							// Support removing prefix character if binding is
 							// null

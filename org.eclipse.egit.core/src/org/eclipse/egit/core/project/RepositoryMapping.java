@@ -202,8 +202,8 @@ public class RepositoryMapping {
 		final int pLen = p.length();
 		if (pLen > pfxLen)
 			return p.substring(pfxLen);
-		else if (p.length() == pfxLen - 1)
-			return "";  //$NON-NLS-1$
+		if (pLen == pfxLen - 1)
+			return ""; //$NON-NLS-1$
 		return null;
 	}
 
@@ -274,6 +274,8 @@ public class RepositoryMapping {
 				.getProjects();
 
 		for (IProject project : projects) {
+			if (isNonWorkspace(project))
+				continue;
 			RepositoryMapping mapping = getMapping(project);
 			if (mapping == null)
 				continue;
