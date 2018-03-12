@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bugs 477281, 478877
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -29,7 +28,6 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
-import org.eclipse.egit.ui.internal.FileUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
@@ -74,8 +72,7 @@ public class NewRepositoryWizard extends Wizard implements INewWizard {
 		try {
 			boolean isBare = myCreatePage.getBare();
 			File gitDir = Git.init()
-					.setDirectory(FileUtils
-							.canonical(new File(myCreatePage.getDirectory())))
+					.setDirectory(new File(myCreatePage.getDirectory()))
 					.setBare(isBare)
 					.call().getRepository().getDirectory();
 			this.repository = Activator.getDefault().getRepositoryCache()
