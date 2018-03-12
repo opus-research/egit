@@ -101,13 +101,8 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 		if (cachedData == null)
 			return null;
 
-		ObjectId objectId;
-		if (cachedData.getDiffEntry() != null)
-			objectId = getObjectId(cachedData.getDiffEntry());
-		else
-			return null;
-
 		IResourceVariant variant = null;
+		ObjectId objectId = getObjectId(cachedData.getDiffEntry());
 		if (!objectId.equals(zeroId())) {
 			if (resource.getType() == IResource.FILE)
 				variant = new GitRemoteFile(repo, getCommitId(gsd), objectId,

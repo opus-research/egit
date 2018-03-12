@@ -37,10 +37,13 @@ public final class ThreeWayDiffEntry {
 		MODIFY,
 
 		/** Delete an existing file from the project */
-		DELETE;
+		DELETE,
+
+		/** Resource is in sync */
+		IN_SYNC;
 	}
 
-	/**	Change direction */
+	/** Change direction */
 	public static enum Direction {
 		/**
 		 *
@@ -56,7 +59,7 @@ public final class ThreeWayDiffEntry {
 		CONFLICTING;
 	}
 
-	private ThreeWayDiffEntry() {
+	ThreeWayDiffEntry() {
 		// reduce the visibility of the default constructor
 	}
 
@@ -74,7 +77,7 @@ public final class ThreeWayDiffEntry {
 	 *             {@code walk} is recursive
 	 */
 	public static List<ThreeWayDiffEntry> scan(TreeWalk walk)
-		throws IOException {
+			throws IOException {
 		if (walk.getTreeCount() != 3)
 			throw new IllegalArgumentException(
 					"TreeWalk need to have exactly three trees"); //$NON-NLS-1$
@@ -104,7 +107,7 @@ public final class ThreeWayDiffEntry {
 			e.path = walk.getPathString();
 			boolean localIsMissing = walk.getFileMode(0) == FileMode.MISSING;
 			boolean baseIsMissing = walk.getFileMode(1) == FileMode.MISSING;
-			boolean remoteIsMissing = walk.getFileMode(2)  == FileMode.MISSING;
+			boolean remoteIsMissing = walk.getFileMode(2) == FileMode.MISSING;
 
 			if (localIsMissing || baseIsMissing || remoteIsMissing) {
 				if (!localIsMissing && baseIsMissing && remoteIsMissing) {
@@ -145,17 +148,17 @@ public final class ThreeWayDiffEntry {
 		return r;
 	}
 
-	private String path;
+	ChangeType changeType;
 
-	private ChangeType changeType;
+	AbbreviatedObjectId baseId;
+
+	AbbreviatedObjectId remoteId;
+
+	private String path;
 
 	private Direction direction;
 
 	private AbbreviatedObjectId localId;
-
-	private AbbreviatedObjectId baseId;
-
-	private AbbreviatedObjectId remoteId;
 
 	private boolean isTree = false;
 

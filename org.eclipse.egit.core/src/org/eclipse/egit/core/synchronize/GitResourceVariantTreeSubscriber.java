@@ -136,7 +136,10 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public void refresh(IResource[] resources, int depth,
 			IProgressMonitor monitor) throws TeamException {
-		init(monitor);
+		// refresh cache
+		GitSyncCache newCache = GitSyncCache.getAllData(gsds, monitor);
+		cache.merge(newCache);
+
 		super.refresh(resources, depth, monitor);
 	}
 

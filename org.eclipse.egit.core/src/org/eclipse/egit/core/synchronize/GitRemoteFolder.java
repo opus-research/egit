@@ -13,10 +13,11 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.variants.IResourceVariant;
 
@@ -76,14 +77,13 @@ class GitRemoteFolder extends GitRemoteResource {
 
 		List<IResourceVariant> result = new ArrayList<IResourceVariant>();
 
-		monitor.beginTask("Fetching members of " + getPath(), cachedData.membersCount()); //$NON-NLS-1$
+		monitor.beginTask(
+				NLS.bind(CoreText.GitRemoteFolder_fetchingMembers, getPath()),
+				cachedData.membersCount());
 		try {
 			for (GitSyncObjectCache member : members) {
 				ThreeWayDiffEntry diffEntry = member.getDiffEntry();
 				String memberPath = diffEntry.getPath();
-
-				if (DiffEntry.DEV_NULL.equals(memberPath))
-					continue;
 
 				GitRemoteResource obj;
 				ObjectId id = diffEntry.getRemoteId().toObjectId();
