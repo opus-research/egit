@@ -430,7 +430,7 @@ public class RepositorySearchDialog extends WizardPage {
 
 	private HashSet<String> getCheckedItems() {
 		HashSet<String> ret = new HashSet<String>();
-		for (Object item : fTreeViewer.getCheckedLeafElements())
+		for (Object item : fTreeViewer.getCheckedElements())
 			ret.add((String) item);
 		return ret;
 	}

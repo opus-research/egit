@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,18 +13,11 @@
 package org.eclipse.egit.ui.internal.repository;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.SafeRunner;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
-import org.eclipse.egit.ui.IBranchNameProvider;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -39,7 +32,6 @@ import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.util.SafeRunnable;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
@@ -71,8 +63,6 @@ import org.eclipse.swt.widgets.Text;
  * suggested initially.
  */
 class CreateBranchPage extends WizardPage {
-
-	private static final String BRANCH_NAME_PROVIDER_ID = "org.eclipse.egit.ui.branchNameProvider"; //$NON-NLS-1$
 
 	/**
 	 * Get proposed target branch name for given source branch name
@@ -411,47 +401,13 @@ class CreateBranchPage extends WizardPage {
 
 	private void suggestBranchName(String ref) {
 		if (nameText.getText().length() == 0 || nameIsSuggestion) {
-			String branchNameSuggestion = getBranchNameSuggestionFromProvider();
-			if (branchNameSuggestion == null)
-				branchNameSuggestion = getProposedTargetName(ref);
-
+			String branchNameSuggestion = getProposedTargetName(ref);
 			if (branchNameSuggestion != null) {
 				nameText.setText(branchNameSuggestion);
 				nameText.selectAll();
 				nameIsSuggestion = true;
 			}
 		}
-	}
-
-	private IBranchNameProvider getBranchNameProvider() {
-		IExtensionRegistry registry = Platform.getExtensionRegistry();
-		IConfigurationElement[] config = registry
-				.getConfigurationElementsFor(BRANCH_NAME_PROVIDER_ID);
-		if (config.length > 0) {
-			Object provider;
-			try {
-				provider = config[0].createExecutableExtension("class"); //$NON-NLS-1$
-				if (provider instanceof IBranchNameProvider)
-					return (IBranchNameProvider) provider;
-			} catch (Throwable e) {
-				Activator.logError(
-						UIText.CreateBranchPage_CreateBranchNameProviderFailed,
-						e);
-			}
-		}
-		return null;
-	}
-
-	private String getBranchNameSuggestionFromProvider() {
-		final AtomicReference<String> ref = new AtomicReference<String>();
-		final IBranchNameProvider branchNameProvider = getBranchNameProvider();
-		if (branchNameProvider != null)
-			SafeRunner.run(new SafeRunnable() {
-				public void run() throws Exception {
-					ref.set(branchNameProvider.getBranchNameSuggestion());
-				}
-			});
-		return ref.get();
 	}
 
 	private static class SourceSelectionDialog extends
