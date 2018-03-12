@@ -8,10 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.gitflow;
 
-import static org.eclipse.egit.gitflow.ui.internal.UIPreferences.FEATURE_FINISH_KEEP_BRANCH;
-import static org.eclipse.egit.gitflow.ui.internal.UIPreferences.FEATURE_FINISH_SQUASH;
-import static org.eclipse.jgit.lib.Constants.R_HEADS;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -19,10 +15,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.op.FeatureCheckoutOperation;
 import org.eclipse.egit.gitflow.op.FeatureStartOperation;
-import org.eclipse.egit.gitflow.ui.Activator;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.AbortedByHookException;
@@ -32,7 +26,6 @@ import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.NoMessageException;
 import org.eclipse.jgit.api.errors.UnmergedPathsException;
 import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -53,15 +46,6 @@ public abstract class AbstractGitflowHandlerTest extends LocalRepositoryTestCase
 	public void setup() throws Exception {
 		File repositoryFile = createProjectAndCommitToRepository();
 		repository = lookupRepository(repositoryFile);
-
-		resetPreferences();
-	}
-
-	private void resetPreferences() {
-		IPreferenceStore prefStore = Activator.getDefault()
-				.getPreferenceStore();
-		prefStore.setValue(FEATURE_FINISH_SQUASH, false);
-		prefStore.setValue(FEATURE_FINISH_KEEP_BRANCH, false);
 	}
 
 	protected RevCommit setContentAddAndCommit(String newContent) throws Exception, GitAPIException, NoHeadException,
@@ -85,9 +69,5 @@ public abstract class AbstractGitflowHandlerTest extends LocalRepositoryTestCase
 	protected void checkoutFeature(String featureName) throws CoreException {
 		new FeatureCheckoutOperation(new GitFlowRepository(repository),
 				featureName).execute(null);
-	}
-
-	protected Ref findBranch(String branchName) throws IOException {
-		return repository.getRef(R_HEADS + branchName);
 	}
 }
