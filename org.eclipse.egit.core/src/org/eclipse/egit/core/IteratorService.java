@@ -45,10 +45,7 @@ public class IteratorService {
 			// workspace is closed
 			return null;
 		}
-		File workTree = repository.getWorkTree();
-		if (!workTree.exists())
-			return null;
-		IContainer container = findContainer(root, workTree);
+		IContainer container = findContainer(root, repository.getWorkTree());
 		if (container != null)
 			return new ContainerTreeIterator(repository, container);
 		return new AdaptableFileTreeIterator(repository, root);
