@@ -386,8 +386,6 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 				BRANCH);
 		IDiff node = mergeContext.getDiffTree().getDiff(iFile1);
 		assertNotNull(node);
-		node = mergeContext.getDiffTree().getDiff(iFile2);
-		assertNotNull(node);
 
 		IResourceMappingMerger merger = createMerger();
 		IStatus mergeStatus = merger.merge(mergeContext,
