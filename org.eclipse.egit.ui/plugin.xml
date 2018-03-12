@@ -5553,24 +5553,4 @@
             page="org.eclipse.egit.ui.internal.importing.GitScmUrlImportWizardPage">
       </scmUrlImportPage>
    </extension>
-   <extension
-        point="org.eclipse.e4.ui.css.swt.theme">
-     <stylesheet
-           uri="css/e4-dark_egit_prefstyle.css">
-        <themeid
-              refid="org.eclipse.e4.ui.css.theme.e4_dark">
-        </themeid>
-     </stylesheet>
-  </extension>
-  <extension point="org.eclipse.core.contenttype.contentTypes">
-    <file-association
-        content-type="org.eclipse.core.runtime.text"
-        file-names=".gitignore"/>
-    <content-type
-        id="org.eclipse.egit.contenttype.gitignore"
-        base-type="org.eclipse.core.runtime.text"
-        file-names=".gitignore"
-        priority="normal"
-        name="%GitIgnoreContentTypeName"/>
-  </extension>
 </plugin>
