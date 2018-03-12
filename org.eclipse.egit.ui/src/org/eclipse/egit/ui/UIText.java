@@ -1612,15 +1612,6 @@ public class UIText extends NLS {
 	public static String GlobalConfigurationPreferencePage_userSettingTabTitle;
 
 	/** */
-	public static String GlobalConfigurationPreferencePage_repositorySettingTabTitle;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_repositorySettingRepositoryLabel;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
-
-	/** */
 	public static String ConfigureRemoteWizard_WizardTitle_Change;
 
 	/** */
@@ -2366,9 +2357,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_ErrorHeader;
-
-	/** */
-	public static String RepositoriesView_ExceptionLookingUpRepoMessage;
 
 	/** */
 	public static String RepositoriesView_NothingToPasteMessage;
