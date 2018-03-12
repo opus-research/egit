@@ -39,7 +39,7 @@ import org.eclipse.swt.widgets.Shell;
  * This implementation is actually workaround for lacking features in
  * TableViewer. It is based on (workaround) snippets&tricks found on Internet.
  */
-public abstract class ButtonLabelProvider extends CenteredImageLabelProvider {
+public abstract class CheckboxLabelProvider extends CenteredImageLabelProvider {
 
 	private static class CheckBoxImages {
 		private final Image checkedEnabled;
@@ -65,7 +65,7 @@ public abstract class ButtonLabelProvider extends CenteredImageLabelProvider {
 	private final LocalResourceManager resourceManager;
 
 	private static CheckBoxImages createCheckboxImage(
-			ResourceManager resourceManager, Control control, int style) {
+			ResourceManager resourceManager, Control control) {
 
 		String checkboxhack = System.getProperty("egit.swt.checkboxhack"); //$NON-NLS-1$
 		if (checkboxhack == null)
@@ -92,10 +92,10 @@ public abstract class ButtonLabelProvider extends CenteredImageLabelProvider {
 		layout.marginLeft = 0;
 		layout.marginBottom = 0;
 		composite.setLayout(layout);
-		createButton(composite, gray, true, true, style);
-		createButton(composite, gray, false, true, style);
-		createButton(composite, gray, true, false, style);
-		createButton(composite, gray, false, false, style);
+		createButton(composite, gray, true, true);
+		createButton(composite, gray, false, true);
+		createButton(composite, gray, true, false);
+		createButton(composite, gray, false, false);
 
 		Point cSize = composite.computeSize(SWT.DEFAULT, SWT.DEFAULT);
 		composite.setSize(cSize);
@@ -122,8 +122,8 @@ public abstract class ButtonLabelProvider extends CenteredImageLabelProvider {
 	}
 
 	private static void createButton(Composite parent, Color bgColor,
-			boolean checked, boolean enabled, int style) {
-		Button button = new Button(parent, style);
+			boolean checked, boolean enabled) {
+		Button button = new Button(parent, SWT.CHECK);
 		button.setSelection(checked);
 		button.setEnabled(enabled);
 		button.setBackground(bgColor);
@@ -146,12 +146,10 @@ public abstract class ButtonLabelProvider extends CenteredImageLabelProvider {
 	 *
 	 * @param control
 	 *            viewer where label provided is used.
-	 * @param style
-	 *            button style definition
 	 */
-	public ButtonLabelProvider(final Control control, int style) {
+	public CheckboxLabelProvider(final Control control) {
 		resourceManager = new LocalResourceManager(getResources());
-		checkBoxes = createCheckboxImage(resourceManager, control, style);
+		checkBoxes = createCheckboxImage(resourceManager, control);
 	}
 
 	@Override
