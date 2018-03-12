@@ -116,9 +116,6 @@ public class UntrackOperation implements IEGitOperation {
 
 	private void remove(final IResource path) throws CoreException {
 		final IProject proj = path.getProject();
-		if (proj == null) {
-			return;
-		}
 		final GitProjectData pd = GitProjectData.get(proj);
 		if (pd == null)
 			return;
