@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, Google Inc.
+ * Copyright (C) 2008, 2012 Google Inc. and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -179,7 +179,8 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 				hasInheritedResourceFilters, resources, entries);
 
 		for (IResource resource : resources)
-			entries.add(new ResourceEntry(resource, inheritableResourceFilter));
+			if (!resource.isLinked())
+				entries.add(new ResourceEntry(resource, inheritableResourceFilter));
 
 		return entries.toArray(new Entry[entries.size()]);
 	}
@@ -221,11 +222,17 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			}
 
 			Set<File> resourceEntries = new HashSet<File>();
-			for (IResource resource : memberResources) {
-				IPath location = resource.getLocation();
-				if (location != null)
-					resourceEntries.add(location.toFile());
-			}
+			for (IResource resource : memberResources)
+				// Make sure linked resources are ignored here.
+				// This is particularly important in the case of a linked
+				// resource which targets a normally filtered/hidden file
+				// within the same location. In such case, ignoring it here
+				// ensures the actual target gets included in the code below.
+				if (!resource.isLinked()) {
+					IPath location = resource.getLocation();
+					if (location != null)
+						resourceEntries.add(location.toFile());
+				}
 
 			IPath containerLocation = node.getLocation();
 			if (containerLocation != null) {
@@ -233,8 +240,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 				File[] children = folder.listFiles();
 				for (File child : children) {
 					if (resourceEntries.contains(child))
-						continue;
-
+						continue; // ok if linked resources are ignored earlier on
 					IPath childLocation = new Path(child.getAbsolutePath());
 					IWorkspaceRoot root = node.getWorkspace().getRoot();
 					IContainer container = root.getContainerForLocation(childLocation);
@@ -271,8 +277,9 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 			switch (f.getType()) {
 			case IResource.FILE:
-				if (FS.DETECTED.supportsExecute()
-						&& FS.DETECTED.canExecute(asFile()))
+				File file = asFile();
+				if (FS.DETECTED.supportsExecute() && file != null
+						&& FS.DETECTED.canExecute(file))
 					mode = FileMode.EXECUTABLE_FILE;
 				else
 					mode = FileMode.REGULAR_FILE;
@@ -308,9 +315,13 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		@Override
 		public long getLength() {
 			if (length < 0)
-				if (rsrc instanceof IFile)
-					length = asFile().length();
-				else
+				if (rsrc instanceof IFile) {
+					File file = asFile();
+					if (file != null)
+						length = file.length();
+					else
+						length = 0;
+				} else
 					length = 0;
 			return length;
 		}
@@ -342,18 +353,21 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			return rsrc;
 		}
 
+		/**
+		 * @return file of the resource or null
+		 */
 		private File asFile() {
-			return ((IFile) rsrc).getLocation().toFile();
+			return ContainerTreeIterator.asFile(rsrc);
 		}
 	}
 
-	private File asFile() {
-		final IPath location = node.getLocation();
+	private static File asFile(IResource resource) {
+		final IPath location = resource.getLocation();
 		return location != null ? location.toFile() : null;
 	}
 
 	protected byte[] idSubmodule(Entry e) {
-		File nodeFile = asFile();
+		File nodeFile = asFile(node);
 		if (nodeFile != null)
 			return idSubmodule(nodeFile, e);
 		return super.idSubmodule(e);

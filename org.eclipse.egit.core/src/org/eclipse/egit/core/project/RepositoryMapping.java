@@ -4,7 +4,8 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Shunichi Fuji <palglowr@gmail.com>
  * Copyright (C) 2008, Google Inc.
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2013, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -204,10 +205,8 @@ public class RepositoryMapping {
 	 * bother.
 	 *
 	 * @param rsrc
-	 * @return the path relative to the Git repository, including base name. An
-	 *         empty string (<code>""</code>) if passed resource corresponds to
-	 *         working directory (root). <code>null</code> if the path cannot be
-	 *         determined.
+	 * @return the path relative to the Git repository, including base name.
+	 *         <code>null</code> if the path cannot be determined.
 	 */
 	public String getRepoRelativePath(final IResource rsrc) {
 		IPath location = rsrc.getLocation();
@@ -223,10 +222,8 @@ public class RepositoryMapping {
 	 * bother.
 	 *
 	 * @param location
-	 * @return the path relative to the Git repository, including base name. An
-	 *         empty string (<code>""</code>) if passed location corresponds to
-	 *         working directory (root). <code>null</code> if the path cannot be
-	 *         determined.
+	 * @return the path relative to the Git repository, including base name.
+	 *         <code>null</code> if the path cannot be determined.
 	 */
 	public String getRepoRelativePath(IPath location) {
 		final int pfxLen = workdirPrefix.length();
@@ -240,15 +237,20 @@ public class RepositoryMapping {
 	}
 
 	/**
-	 * Get the repository mapping for a resource
+	 * Get the repository mapping for a resource. If the given resource is a
+	 * linked resource, the raw location of the resource will be used to
+	 * determine a repository mapping.
 	 *
 	 * @param resource
-	 * @return the RepositoryMapping for this resource,
-	 *         or null for non GitProvider.
+	 * @return the RepositoryMapping for this resource, or null for non
+	 *         GitProvider.
 	 */
 	public static RepositoryMapping getMapping(final IResource resource) {
 		if (isNonWorkspace(resource))
 			return null;
+
+		if (resource.isLinked(IResource.CHECK_ANCESTORS))
+			return getMapping(resource.getLocation());
 
 		IProject project = resource.getProject();
 		if (project == null)
