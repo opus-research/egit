@@ -1684,6 +1684,18 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_child;
 
 	/** */
+	public static String CommitMessageViewer_branches;
+
+	/** */
+	public static String CommitMessageViewer_tags;
+
+	/** */
+	public static String CommitMessageViewer_follows;
+
+	/** */
+	public static String CommitMessageViewer_precedes;
+
+	/** */
 	public static String CommitMessageViewer_commit;
 
 	/** */
@@ -2326,6 +2338,21 @@ public class UIText extends NLS {
 	public static String Disconnect_disconnect;
 
 	/** */
+	public static String GitCompareEditorInput_CompareResourcesTaskName;
+
+	/** */
+	public static String GitCompareEditorInput_EditorTitle;
+
+	/** */
+	public static String GitCompareEditorInput_EditorTitleMultipleResources;
+
+	/** */
+	public static String GitCompareEditorInput_EditorTitleSingleResource;
+
+	/** */
+	public static String GitCompareEditorInput_ResourcesInDifferentReposMessagge;
+
+	/** */
 	public static String GitCompareFileRevisionEditorInput_CompareInputTitle;
 
 	/** */
@@ -2690,6 +2717,9 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_Committer;
 
 	/** */
+	public static String CommitGraphTable_CompareWithEachOtherInTreeMenuLabel;
+
+	/** */
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
@@ -2712,6 +2742,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_deselectAll;
+
+	/** */
+	public static String GitLightweightDecorator_AsynchronousDecorationError;
+
+	/** */
+	public static String GitLightweightDecorator_ResourceError;
 
 	/** */
 	public static String GitTraceConfigurationDialog_ApplyButton;
@@ -3096,6 +3132,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SynchronizeWithAction_localRepoName;
+
+	/** */
+	public static String SynchronizeWithAction_tagsName;
 
 	/** */
 	public static String ValidationUtils_CanNotResolveRefMessage;
