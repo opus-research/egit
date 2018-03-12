@@ -60,26 +60,23 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			repository = mapping.getRepository();
 			if (repository == null)
 				return;
-			indexDiffData = Activator.getDefault().getIndexDiffCache()
-					.getIndexDiffCacheEntry(repository).getIndexDiff();
-			if (indexDiffData == null)
-				return;
-
 			repositoryName = DecoratableResourceHelper
 					.getRepositoryName(repository);
 			branch = DecoratableResourceHelper.getShortBranch(repository);
-			branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
 
-			switch (resource.getType()) {
-			case IResource.FILE:
-				extractResourceProperties();
-				break;
-			case IResource.PROJECT:
-				tracked = true;
-			case IResource.FOLDER:
-				extractContainerProperties();
-				break;
-			}
+			indexDiffData = Activator.getDefault().getIndexDiffCache()
+					.getIndexDiffCacheEntry(repository).getIndexDiff();
+			if (indexDiffData != null)
+				switch (resource.getType()) {
+				case IResource.FILE:
+					extractResourceProperties();
+					break;
+				case IResource.PROJECT:
+					tracked = true;
+				case IResource.FOLDER:
+					extractContainerProperties();
+					break;
+				}
 		} finally {
 			if (trace)
 				GitTraceLocation

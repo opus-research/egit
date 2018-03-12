@@ -354,9 +354,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 		public static final String BINDING_BRANCH_NAME = "branch"; //$NON-NLS-1$
 
 		/** */
-		public static final String BINDING_BRANCH_STATUS = "branch_status"; //$NON-NLS-1$
-
-		/** */
 		public static final String BINDING_REPOSITORY_NAME = "repository"; //$NON-NLS-1$
 
 		/** */
@@ -372,7 +369,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		public static final String FOLDER_FORMAT_DEFAULT = "{dirty:>} {name}"; //$NON-NLS-1$
 
 		/** */
-		public static final String PROJECT_FORMAT_DEFAULT ="{dirty:>} {name} [{repository} {branch_status}{branch}]";  //$NON-NLS-1$
+		public static final String PROJECT_FORMAT_DEFAULT ="{dirty:>} {name} [{repository} {branch}]";  //$NON-NLS-1$
 
 		private IPreferenceStore store;
 
@@ -498,7 +495,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 			bindings.put(BINDING_RESOURCE_NAME, resource.getName());
 			bindings.put(BINDING_REPOSITORY_NAME, resource.getRepositoryName());
 			bindings.put(BINDING_BRANCH_NAME, resource.getBranch());
-			bindings.put(BINDING_BRANCH_STATUS, resource.getBranchStatus());
 			bindings.put(BINDING_DIRTY_FLAG, resource.isDirty() ? ">" : null); //$NON-NLS-1$
 			bindings.put(BINDING_STAGED_FLAG,
 					resource.staged() != Staged.NOT_STAGED ? "*" : null); //$NON-NLS-1$
@@ -624,15 +620,13 @@ public class GitLightweightDecorator extends LabelProvider implements
 			}
 
 			String prefixString = prefix.toString().replaceAll("^\\s+", ""); //$NON-NLS-1$ //$NON-NLS-2$
-			if (prefixString != null) {
+			if (prefixString.length() > 0)
 				decoration.addPrefix(TextProcessor.process(prefixString,
 						"()[].")); //$NON-NLS-1$
-			}
 			String suffixString = suffix.toString().replaceAll("\\s+$", ""); //$NON-NLS-1$ //$NON-NLS-2$
-			if (suffixString != null) {
+			if (suffixString.length() > 0)
 				decoration.addSuffix(TextProcessor.process(suffixString,
 						"()[].")); //$NON-NLS-1$
-			}
 		}
 	}
 
