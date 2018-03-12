@@ -18,7 +18,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.Constants;
@@ -263,15 +262,4 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		}
 	}
 
-	private File asFile() {
-		final IPath location = node.getLocation();
-		return location != null ? location.toFile() : null;
-	}
-
-	protected byte[] idSubmodule(Entry e) {
-		File nodeFile = asFile();
-		if (nodeFile != null)
-			return idSubmodule(nodeFile, e);
-		return super.idSubmodule(e);
-	}
 }
