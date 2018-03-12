@@ -100,7 +100,7 @@ public class ResetCommand extends
 											node.getRepository(), targetBranch,
 											resetType);
 									JobUtil.scheduleUserJob(operation, jobname,
-											JobFamilies.RESET, true);
+											JobFamilies.RESET);
 								}
 							});
 				} catch (InvocationTargetException ite) {
