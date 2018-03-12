@@ -19,12 +19,12 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
-import org.eclipse.egit.ui.internal.LocalResourceTypedElement;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
 import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
 import org.eclipse.team.ui.mapping.SaveableComparison;
 
@@ -82,8 +82,8 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 		this.repo = repo;
 		this.gitPath = gitPath;
 		this.baseId = baseDataSource.getObjectId();
-		this.baseCommit = baseDataSource.getRevCommit();
 		this.remoteId = remoteDataSource.getObjectId();
+		this.baseCommit = baseDataSource.getRevCommit();
 		this.ancestorId = ancestroDataSource.getObjectId();
 		this.remoteCommit = remoteDataSource.getRevCommit();
 		this.ancestorCommit = ancestroDataSource.getRevCommit();
