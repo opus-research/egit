@@ -499,7 +499,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.applyTo(unstagedViewer.getControl());
 		unstagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		unstagedViewer.getTree().setLinesVisible(true);
 		unstagedViewer.setLabelProvider(createLabelProvider(unstagedViewer));
 		unstagedViewer.setContentProvider(createStagingContentProvider(true));
 		unstagedViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
@@ -763,7 +762,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.applyTo(stagedViewer.getControl());
 		stagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		stagedViewer.getTree().setLinesVisible(true);
 		stagedViewer.setLabelProvider(createLabelProvider(stagedViewer));
 		stagedViewer.setContentProvider(createStagingContentProvider(false));
 		stagedViewer.addDragSupport(
@@ -1350,7 +1348,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private TreeViewer createTree(Composite composite) {
 		Tree tree = toolkit.createTree(composite, SWT.FULL_SELECTION
 				| SWT.MULTI);
-		tree.setLinesVisible(true);
 		TreeViewer treeViewer = new TreeViewer(tree);
 		return treeViewer;
 	}
@@ -2068,7 +2065,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 			amendPreviousCommitAction.setChecked(isAmending);
 			amendPreviousCommitAction.run();
 		}
+	}
 
+	/**
+	 * @param message
+	 *            commit message to set for current repository
+	 */
+	public void setCommitMessage(String message) {
+		commitMessageText.setText(message);
 	}
 
 	/**
@@ -2228,8 +2232,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
 		if (repositoryChanged)
-			if (userEnteredCommmitMessage()
-					|| commitMessageComponent.isAmending())
+			if (userEnteredCommmitMessage())
 				saveCommitMessageComponentState();
 			else
 				deleteCommitMessageComponentState();
@@ -2322,11 +2325,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		String message = commitMessageComponent.getCommitMessage().replace(
 				UIText.StagingView_headCommitChanged, ""); //$NON-NLS-1$
 		if (message == null || message.trim().length() == 0)
-			return false;
-
-		if (commitMessageComponent.isAmending()
-				&& message.equals(commitMessageComponent
-						.getPreviousCommitMessage()))
 			return false;
 
 		String chIdLine = "Change-Id: I" + ObjectId.zeroId().name(); //$NON-NLS-1$
