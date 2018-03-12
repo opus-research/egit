@@ -28,4 +28,5 @@ public interface IRepositoryServerProvider {
 	 * @return List of server infos
 	 */
 	public Collection<RepositoryServerInfo> getRepositoryServerInfos();
+
 }

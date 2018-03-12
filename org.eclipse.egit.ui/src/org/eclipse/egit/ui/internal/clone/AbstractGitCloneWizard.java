@@ -263,9 +263,10 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 			GitRepositoryInfo gitRepositoryInfo, String remoteName) {
 		for (PushInfo pushInfo : gitRepositoryInfo.getPushInfos()) {
 			try {
-				URIish uri = pushInfo.pushUri != null ? new URIish(pushInfo.pushUri) : null;
+				URIish uri = pushInfo.getPushUri() != null ? new URIish(
+						pushInfo.getPushUri()) : null;
 				ConfigurePushAfterCloneTask task = new ConfigurePushAfterCloneTask(
-						remoteName, pushInfo.pushRefSpec, uri);
+						remoteName, pushInfo.getPushRefSpec(), uri);
 				op.addPostCloneTask(task);
 			} catch (URISyntaxException e) {
 				Activator.handleError(UIText.GitCloneWizard_failed, e, true);
@@ -275,7 +276,9 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 
 	private void configureRepositoryConfig(CloneOperation op, GitRepositoryInfo gitRepositoryInfo) {
 		for (RepositoryConfigProperty p : gitRepositoryInfo.getRepositoryConfigProperties()) {
-			SetRepositoryConfigPropertyTask task = new SetRepositoryConfigPropertyTask(p.section, p.subsection, p.name, p.value);
+			SetRepositoryConfigPropertyTask task = new SetRepositoryConfigPropertyTask(
+					p.getSection(), p.getSubsection(), p.getName(),
+					p.getValue());
 			op.addPostCloneTask(task);
 		}
 	}
