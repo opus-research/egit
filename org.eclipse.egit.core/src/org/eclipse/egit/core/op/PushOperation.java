@@ -112,8 +112,8 @@ public class PushOperation {
 	 *
 	 * @param receivePack
 	 *            content of git's receive-pack option.
+	 * @since 2.2
 	 */
-	// Do I need to set @since tag ?
 	public void setReceivePack(String receivePack) {
 		this.receivePack = receivePack;
 	}
