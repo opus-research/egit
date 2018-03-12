@@ -54,6 +54,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
+import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
@@ -139,6 +140,22 @@ public class CommitDialog extends Dialog {
 		}
 	}
 
+	private final class CommitItemFilter extends ViewerFilter {
+		@Override
+		public boolean select(Viewer viewer, Object parentElement,
+				Object element) {
+			boolean result = true;
+			if (!showUntracked){
+				if (element instanceof CommitItem) {
+					CommitItem item = (CommitItem)element;
+					if (item.status.equals(UIText.CommitDialog_StatusUntracked))
+						result = false;
+				}
+			}
+			return result;
+		}
+	}
+
 	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
 	// these activate the value help on author/committer fields; alphanumeric,
@@ -172,10 +189,9 @@ public class CommitDialog extends Dialog {
 	Text committerText;
 	Button amendingButton;
 	Button signedOffButton;
+	Button showUntrackedButton;
 
 	CheckboxTableViewer filesViewer;
-
-	private Button changeIdButton;
 
 	@Override
 	protected Control createDialogArea(Composite parent) {
@@ -293,27 +309,28 @@ public class CommitDialog extends Dialog {
 			}
 		});
 
-		changeIdButton = new Button(container, SWT.CHECK);
-		changeIdButton.setText(UIText.CommitDialog_AddChangeId);
-		changeIdButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
-		changeIdButton.addSelectionListener(new SelectionListener() {
+		showUntrackedButton = new Button(container, SWT.CHECK);
+		showUntrackedButton.setSelection(showUntracked);
+		showUntrackedButton.setText(UIText.CommitDialog_ShowUntrackedFiles);
+		showUntrackedButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
+		showUntrackedButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				createChangeId = changeIdButton.getSelection();
+				showUntracked = showUntrackedButton.getSelection();
+				filesViewer.refresh(true);
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
-				// empty
+				// Empty
 			}
 		});
+
 		commitText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				updateSignedOffButton();
-				updateChangeIdButton();
 			}
 		});
 		updateSignedOffButton();
-		updateChangeIdButton();
 
 		Table resourcesTable = new Table(container, SWT.H_SCROLL | SWT.V_SCROLL
 				| SWT.FULL_SELECTION | SWT.MULTI | SWT.CHECK | SWT.BORDER);
@@ -336,6 +353,7 @@ public class CommitDialog extends Dialog {
 		filesViewer = new CheckboxTableViewer(resourcesTable);
 		filesViewer.setContentProvider(new CommitContentProvider());
 		filesViewer.setLabelProvider(new CommitLabelProvider());
+		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items);
 		filesViewer.setAllChecked(true);
 		filesViewer.getTable().setMenu(getContextMenu());
@@ -350,17 +368,6 @@ public class CommitDialog extends Dialog {
 			curText += Text.DELIMITER;
 
 		signedOffButton.setSelection(curText.indexOf(getSignedOff() + Text.DELIMITER) != -1);
-	}
-
-	private void updateChangeIdButton() {
-		String curText = commitText.getText();
-		if (!curText.endsWith(Text.DELIMITER))
-			curText += Text.DELIMITER;
-
-		boolean hasId = curText.indexOf(Text.DELIMITER + "Change-Id: ") != -1; //$NON-NLS-1$
-		if (hasId)
-			changeIdButton.setSelection(true);
-		changeIdButton.setEnabled(!hasId);
 	}
 
 	private String getSignedOff() {
@@ -434,11 +441,22 @@ public class CommitDialog extends Dialog {
 						Repository repo = map.getRepository();
 						GitIndex index = null;
 						index = repo.getIndex();
-						Entry entry = index.getEntry(map.getRepoRelativePath(commitItem.file));
+						String repoRelativePath = map.getRepoRelativePath(commitItem.file);
+						Entry entry = index.getEntry(repoRelativePath);
 						if (entry != null && entry.isModified(map.getWorkDir())) {
 							entry.update(new File(map.getWorkDir(), entry.getName()));
 							if (!changedIndexes.contains(index))
 								changedIndexes.add(index);
+							commitItem.status = UIText.CommitDialog_StatusModified;
+						} else if (entry == null) {
+							final Tree headTree = repo.mapTree(Constants.HEAD);
+							TreeEntry  headEntry = (headTree == null ? null : headTree.findBlobMember(repoRelativePath));
+							if (headEntry == null){
+								entry = index.add(map.getWorkDir(), new File(map.getWorkDir(), repoRelativePath));
+								if (!changedIndexes.contains(index))
+									changedIndexes.add(index);
+								commitItem.status = UIText.CommitDialog_StatusAdded;
+							}
 						}
 					}
 					if (!changedIndexes.isEmpty()) {
@@ -475,7 +493,10 @@ public class CommitDialog extends Dialog {
 			Entry indexEntry = index.getEntry(repoPath);
 			if (headEntry == null) {
 				prefix = UIText.CommitDialog_StatusAdded;
-				if (indexEntry.isModified(repositoryMapping.getWorkDir()))
+				if (indexEntry == null) {
+					prefix = UIText.CommitDialog_StatusUntracked;
+				}
+				else if (indexEntry.isModified(repositoryMapping.getWorkDir()))
 					prefix = UIText.CommitDialog_StatusAddedIndexDiff;
 			} else if (indexEntry == null) {
 				prefix = UIText.CommitDialog_StatusRemoved;
@@ -493,7 +514,7 @@ public class CommitDialog extends Dialog {
 			}
 
 		} catch (Exception e) {
-			Activator.logError("Problem in finding file status", e);
+			Activator.logError(UIText.CommitDialog_problemFindingFileStatus, e);
 			prefix = e.getMessage();
 		}
 
@@ -522,7 +543,7 @@ public class CommitDialog extends Dialog {
 	private boolean signedOff = false;
 	private boolean amending = false;
 	private boolean amendAllowed = true;
-	private boolean createChangeId = false;
+	private boolean showUntracked = false;
 
 	private ArrayList<IFile> selectedFiles = new ArrayList<IFile>();
 	private String previousCommitMessage = ""; //$NON-NLS-1$
@@ -586,6 +607,9 @@ public class CommitDialog extends Dialog {
 
 			CommitItem commitItem = (CommitItem) selection.getFirstElement();
 			if (commitItem == null) {
+				return;
+			}
+			if (commitItem.status.equals(UIText.CommitDialog_StatusUntracked)) {
 				return;
 			}
 
@@ -817,6 +841,22 @@ public class CommitDialog extends Dialog {
 	}
 
 	/**
+	 * @return whether the untracked files should be shown
+	 */
+	public boolean isShowUntracked() {
+		return showUntracked;
+	}
+
+	/**
+	 * Pre-set whether the untracked files should be shown
+	 *
+	 * @param showUntracked
+	 */
+	public void setShowUntracked(boolean showUntracked) {
+		this.showUntracked = showUntracked;
+	}
+
+	/**
 	 * Set the message from the previous commit for amending.
 	 *
 	 * @param string
@@ -942,13 +982,6 @@ public class CommitDialog extends Dialog {
 		adapter
 				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 
-	}
-
-	/**
-	 * @return true if a Change-Id line for Gerrit should be created
-	 */
-	public boolean getCreateChangeId() {
-		return createChangeId;
 	}
 
 }
