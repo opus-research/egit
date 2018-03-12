@@ -477,8 +477,7 @@ public class GitSyncInfoTest extends GitTestCase {
 
 		stage(fileName, localBytes);
 		RevCommit firstCommit = commit();
-		byte[] remoteBytes = new byte[localBytes.length];
-		System.arraycopy(localBytes, 0, remoteBytes, 0, localBytes.length);
+		byte[] remoteBytes = Arrays.copyOf(localBytes, localBytes.length);
 		remoteBytes[8100] = 'b';
 		ObjectId objectId = stage(fileName, remoteBytes);
 		RevCommit secondCommit = commit();
