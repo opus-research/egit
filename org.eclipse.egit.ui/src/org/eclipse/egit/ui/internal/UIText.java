@@ -8,7 +8,6 @@
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
- * Copyright (C) 2013, Ben Hammen <hammenb@gmail.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -869,9 +868,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseResultDialog_ToggleShowButton;
-
-	/** */
-	public static String RebaseResultDialog_UncommittedChanges;
 
 	/** */
 	public static String RebaseResultDialog_UpToDate;
@@ -2530,30 +2526,6 @@ public class UIText extends NLS {
 	public static String PushResultTable_statusOkNewTag;
 
 	/** */
-	public static String PushTagsPage_ForceUpdateButton;
-
-	/** */
-	public static String PushTagsPage_PageMessage;
-
-	/** */
-	public static String PushTagsPage_PageName;
-
-	/** */
-	public static String PushTagsPage_PageTitle;
-
-	/** */
-	public static String PushTagsPage_RemoteLabel;
-
-	/** */
-	public static String PushTagsPage_TagsLabelNoneSelected;
-
-	/** */
-	public static String PushTagsPage_TagsLabelSelected;
-
-	/** */
-	public static String PushTagsWizard_WindowTitle;
-
-	/** */
 	public static String PushToGerritPage_BranchLabel;
 
 	/** */
@@ -3817,15 +3789,6 @@ public class UIText extends NLS {
 	public static String CreateTagDialog_clearButtonTooltip;
 
 	/** */
-	public static String CreateTagDialog_CreateTagAndStartPushButton;
-
-	/** */
-	public static String CreateTagDialog_CreateTagAndStartPushToolTip;
-
-	/** */
-	public static String CreateTagDialog_CreateTagButton;
-
-	/** */
 	public static String CreateTagDialog_CreateTagOnCommitTitle;
 
 	/** */
@@ -4871,10 +4834,7 @@ public class UIText extends NLS {
 	public static String StashCreateCommand_titleNoChanges;
 
 	/** */
-	public static String StashDropCommand_confirmSingle;
-
-	/** */
-	public static String StashDropCommand_confirmMultiple;
+	public static String StashDropCommand_confirmMessage;
 
 	/** */
 	public static String StashDropCommand_confirmTitle;
