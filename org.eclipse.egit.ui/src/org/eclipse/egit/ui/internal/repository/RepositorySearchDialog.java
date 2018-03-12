@@ -24,11 +24,12 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
+import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.components.CachedCheckboxTreeViewer;
-import org.eclipse.egit.ui.internal.components.FilteredCheckboxTree;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -219,7 +220,8 @@ public class RepositorySearchDialog extends WizardPage {
 				false).hint(300, SWT.DEFAULT).applyTo(dir);
 		dir.setToolTipText(UIText.RepositorySearchDialog_EnterDirectoryToolTip);
 
-		String defaultRepoPath = UIUtils.getDefaultRepositoryDir();
+		String defaultRepoPath = org.eclipse.egit.ui.Activator.getDefault()
+				.getPreferenceStore().getString(UIPreferences.DEFAULT_REPO_DIR);
 
 		String initialPath = prefs.get(PREF_PATH, defaultRepoPath);
 
@@ -430,7 +432,7 @@ public class RepositorySearchDialog extends WizardPage {
 
 	private HashSet<String> getCheckedItems() {
 		HashSet<String> ret = new HashSet<String>();
-		for (Object item : fTreeViewer.getCheckedLeafElements())
+		for (Object item : fTreeViewer.getCheckedElements())
 			ret.add((String) item);
 		return ret;
 	}

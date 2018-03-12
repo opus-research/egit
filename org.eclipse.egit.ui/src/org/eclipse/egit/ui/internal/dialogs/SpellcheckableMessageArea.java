@@ -1,5 +1,8 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Benjamin Muskalla <bmuskalla@eclipsesource.com> and others.
+ * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2011-2012, IBM Corporation
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +27,6 @@ import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -193,7 +195,7 @@ public class SpellcheckableMessageArea extends Composite {
 			}
 		}
 
-		protected String getPreferenceKey() {
+		private String getPreferenceKey() {
 			return preferenceKey;
 		}
 
@@ -217,10 +219,6 @@ public class SpellcheckableMessageArea extends Composite {
 
 		protected ITextViewer getTextViewer() {
 			return viewer;
-		}
-
-		protected IPreferenceStore getStore() {
-			return store;
 		}
 	}
 
@@ -270,7 +268,6 @@ public class SpellcheckableMessageArea extends Composite {
 		AnnotationModel annotationModel = new AnnotationModel();
 		sourceViewer = new SourceViewer(this, null, null, true, SWT.MULTI
 				| SWT.V_SCROLL | SWT.WRAP);
-		getTextWidget().setAlwaysShowScrollBars(false);
 		getTextWidget().setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
 
@@ -364,10 +361,10 @@ public class SpellcheckableMessageArea extends Composite {
 		sourceViewer.configure(configuration);
 		sourceViewer.setDocument(document, annotationModel);
 
-		StyleRange[] styleRanges = UIUtils
+		for (StyleRange styleRange : UIUtils
 				.getHyperlinkDetectorStyleRanges(sourceViewer,
-						configuration.getHyperlinkDetectors(sourceViewer));
-		sourceViewer.getTextWidget().setStyleRanges(styleRanges);
+						configuration.getHyperlinkDetectors(sourceViewer)))
+			sourceViewer.getTextWidget().setStyleRange(styleRange);
 
 		configureContextMenu();
 
@@ -514,38 +511,6 @@ public class SpellcheckableMessageArea extends Composite {
 			private IPainter whitespaceCharPainter;
 
 			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				String property = event.getProperty();
-				if (property.equals(getPreferenceKey())
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_CARRIAGE_RETURN
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LINE_FEED
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_WHITESPACE_CHARACTER_ALPHA_VALUE
-								.equals(property)) {
-					synchronizeWithPreference();
-				}
-			}
-
-			@Override
 			protected void toggleState(boolean checked) {
 				if (checked)
 					installPainter();
@@ -560,21 +525,7 @@ public class SpellcheckableMessageArea extends Composite {
 				Assert.isTrue(whitespaceCharPainter == null);
 				ITextViewer v = getTextViewer();
 				if (v instanceof ITextViewerExtension2) {
-					IPreferenceStore store = getStore();
-					whitespaceCharPainter = new WhitespaceCharacterPainter(
-							v,
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_CARRIAGE_RETURN),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LINE_FEED),
-							store.getInt(AbstractTextEditor.PREFERENCE_WHITESPACE_CHARACTER_ALPHA_VALUE));
+					whitespaceCharPainter = new WhitespaceCharacterPainter(v);
 					((ITextViewerExtension2) v).addPainter(whitespaceCharPainter);
 				}
 			}
@@ -731,12 +682,12 @@ public class SpellcheckableMessageArea extends Composite {
 				public void textChanged(TextEvent event) {
 					textWidget.setStyleRanges(
 							new StyleRange[0]);
-					StyleRange[] styleRanges = UIUtils
+					for (StyleRange styleRange : UIUtils
 							.getHyperlinkDetectorStyleRanges(
 									sourceViewer,
 									configuration
-											.getHyperlinkDetectors(sourceViewer));
-					textWidget.setStyleRanges(styleRanges);
+											.getHyperlinkDetectors(sourceViewer)))
+						textWidget.setStyleRange(styleRange);
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)
@@ -832,7 +783,8 @@ public class SpellcheckableMessageArea extends Composite {
 	 *         found.
 	 */
 	protected IHandlerService getHandlerService() {
-		return CommonUtils.getService(PlatformUI.getWorkbench(), IHandlerService.class);
+		return (IHandlerService) PlatformUI.getWorkbench().getService(
+				IHandlerService.class);
 	}
 
 	private SourceViewerDecorationSupport configureAnnotationPreferences() {

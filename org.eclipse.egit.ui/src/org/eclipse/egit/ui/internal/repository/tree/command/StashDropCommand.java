@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (C) 2012, 2013 GitHub Inc. and others.
+ *  Copyright (c) 2012 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -11,8 +11,6 @@
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.text.MessageFormat;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -40,76 +38,48 @@ public class StashDropCommand extends
 		RepositoriesViewCommandHandler<StashedCommitNode> {
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final List<StashedCommitNode> nodes = getSelectedNodes(event);
+		List<StashedCommitNode> nodes = getSelectedNodes(event);
 		if (nodes.isEmpty())
 			return null;
 
-		final Repository repo = nodes.get(0).getRepository();
+		StashedCommitNode node = nodes.get(0);
+		final Repository repo = node.getRepository();
 		if (repo == null)
 			return null;
+		final int index = node.getIndex();
+		if (index < 0)
+			return null;
+		final RevCommit commit = node.getObject();
+		if (commit == null)
+			return null;
 
-		// Confirm deletion of selected nodes
+		// Confirm deletion of selected tags
 		final AtomicBoolean confirmed = new AtomicBoolean();
 		final Shell shell = getActiveShell(event);
 		shell.getDisplay().syncExec(new Runnable() {
 
 			public void run() {
-				String message;
-				if (nodes.size() > 1)
-					message = MessageFormat.format(
-							UIText.StashDropCommand_confirmMultiple,
-							Integer.toString(nodes.size()));
-				else
-					message = MessageFormat.format(
-							UIText.StashDropCommand_confirmSingle,
-							Integer.toString(nodes.get(0).getIndex()));
-
 				confirmed.set(MessageDialog.openConfirm(shell,
-						UIText.StashDropCommand_confirmTitle, message));
+						UIText.StashDropCommand_confirmTitle, MessageFormat
+								.format(UIText.StashDropCommand_confirmMessage,
+										Integer.toString(index))));
 			}
 		});
 		if (!confirmed.get())
 			return null;
 
-		Job job = new Job(UIText.StashDropCommand_jobTitle) {
-
+		final StashDropOperation op = new StashDropOperation(repo, index);
+		Job job = new Job(MessageFormat.format(
+				UIText.StashDropCommand_jobTitle, commit.name())) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				monitor.beginTask(UIText.StashDropCommand_jobTitle,
-						nodes.size());
-
-				// Sort by highest to lowest stash commit index.
-				// This avoids shifting problems that cause the indices of the
-				// selected nodes not match the indices in the repository
-				Collections.sort(nodes, new Comparator<StashedCommitNode>() {
-
-					public int compare(StashedCommitNode n1,
-							StashedCommitNode n2) {
-						return n1.getIndex() < n2.getIndex() ? 1 : -1;
-					}
-				});
-
-				for (StashedCommitNode node : nodes) {
-					final int index = node.getIndex();
-					if (index < 0)
-						return null;
-					final RevCommit commit = node.getObject();
-					if (commit == null)
-						return null;
-					final String stashName = node.getObject().getName();
-					final StashDropOperation op = new StashDropOperation(repo,
-							node.getIndex());
-					monitor.subTask(stashName);
-					try {
-						op.execute(monitor);
-					} catch (CoreException e) {
-						Activator.logError(MessageFormat.format(
-								UIText.StashDropCommand_dropFailed,
-								node.getObject().name()), e);
-					}
-					monitor.worked(1);
+				try {
+					op.execute(monitor);
+				} catch (CoreException e) {
+					Activator.logError(MessageFormat.format(
+							UIText.StashDropCommand_dropFailed, commit.name()),
+							e);
 				}
-				monitor.done();
 				return Status.OK_STATUS;
 			}
 
@@ -121,8 +91,7 @@ public class StashDropCommand extends
 			}
 		};
 		job.setUser(true);
-		job.setRule((new StashDropOperation(repo, nodes.get(0).getIndex()))
-				.getSchedulingRule());
+		job.setRule(op.getSchedulingRule());
 		job.schedule();
 		return null;
 	}

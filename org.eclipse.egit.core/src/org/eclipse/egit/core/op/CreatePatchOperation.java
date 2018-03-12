@@ -51,7 +51,6 @@ import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.MissingObjectException;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
@@ -175,14 +174,14 @@ public class CreatePatchOperation implements IEGitOperation {
 					@Override
 					public synchronized void write(byte[] b, int off, int len) {
 						super.write(b, off, len);
-						try {
-							if (currentEncoding == null)
-								sb.append(toString("UTF-8")); //$NON-NLS-1$
-							else
-								sb.append(toString(currentEncoding));
-						} catch (UnsupportedEncodingException e) {
+						if (currentEncoding == null)
 							sb.append(toString());
-						}
+						else
+							try {
+								sb.append(toString(currentEncoding));
+							} catch (UnsupportedEncodingException e) {
+								sb.append(toString());
+							}
 						reset();
 					}
 				}) {
@@ -219,13 +218,11 @@ public class CreatePatchOperation implements IEGitOperation {
 				if (parents.length > 1)
 					throw new IllegalStateException(
 							CoreText.CreatePatchOperation_cannotCreatePatchForMergeCommit);
+				if (parents.length == 0)
+					throw new IllegalStateException(
+							CoreText.CreatePatchOperation_cannotCreatePatchForFirstCommit);
 
-				ObjectId parentId;
-				if (parents.length > 0)
-					parentId = parents[0].getId();
-				else
-					parentId = null;
-				List<DiffEntry> diffs = diffFmt.scan(parentId, commit.getId());
+				List<DiffEntry> diffs = diffFmt.scan(parents[0].getId(),commit.getId());
 				for (DiffEntry ent : diffs) {
 					String path;
 					if (ChangeType.DELETE.equals(ent.getChangeType()))
@@ -339,12 +336,7 @@ public class CreatePatchOperation implements IEGitOperation {
 	 * @param diffFmt
 	 */
 	public void updateWorkspacePatchPrefixes(StringBuilder sb, DiffFormatter diffFmt) {
-		RawText rt;
-		try {
-			rt = new RawText(sb.toString().getBytes("UTF-8")); //$NON-NLS-1$
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
-		}
+		RawText rt = new RawText(sb.toString().getBytes());
 
 		final String oldPrefix = diffFmt.getOldPrefix();
 		final String newPrefix = diffFmt.getNewPrefix();

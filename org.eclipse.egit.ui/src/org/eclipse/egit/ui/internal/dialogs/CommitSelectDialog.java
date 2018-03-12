@@ -10,6 +10,8 @@
 package org.eclipse.egit.ui.internal.dialogs;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.eclipse.egit.ui.internal.UIText;
@@ -32,8 +34,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 
 /**
- * Allows to select a single commit from a list of {@link RevCommit}s. The
- * commits are shown in the order in which they are passed.
+ * Allows to select a single commit from a list of {@link RevCommit}s
  */
 public class CommitSelectDialog extends TitleAreaDialog {
 	private final List<RevCommit> commits = new ArrayList<RevCommit>();
@@ -47,7 +48,14 @@ public class CommitSelectDialog extends TitleAreaDialog {
 	public CommitSelectDialog(Shell parent, List<RevCommit> commits) {
 		super(parent);
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
+		// sort by date ascending
 		this.commits.addAll(commits);
+		Collections.sort(this.commits, new Comparator<RevCommit>() {
+			public int compare(RevCommit o1, RevCommit o2) {
+				return o1.getAuthorIdent().getWhen()
+						.compareTo(o2.getAuthorIdent().getWhen());
+			}
+		});
 		setHelpAvailable(false);
 	}
 
@@ -84,6 +92,7 @@ public class CommitSelectDialog extends TitleAreaDialog {
 		c3.setText(UIText.CommitSelectDialog_DateColumn);
 		tv.setInput(commits);
 		table.setHeaderVisible(true);
+		table.setLinesVisible(true);
 		tv.addSelectionChangedListener(new ISelectionChangedListener() {
 			public void selectionChanged(SelectionChangedEvent event) {
 				if (!event.getSelection().isEmpty())

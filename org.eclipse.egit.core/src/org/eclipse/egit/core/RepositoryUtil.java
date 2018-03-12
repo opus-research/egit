@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,7 +12,6 @@ package org.eclipse.egit.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -31,8 +30,10 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.CheckoutEntry;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
@@ -45,6 +46,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
@@ -269,29 +271,29 @@ public class RepositoryUtil {
 	/**
 	 * Return a cached UI "name" for a Repository
 	 * <p>
-	 * This uses the name of the working directory. In case of a bare
-	 * repository, the repository directory name is used.
+	 * This uses the name of the parent of the repository's directory.
 	 *
 	 * @param repository
 	 * @return the name
 	 */
 	public String getRepositoryName(final Repository repository) {
-		File dir;
-		// Use working directory name for non-bare repositories
-		if (!repository.isBare())
-			dir = repository.getWorkTree();
-		else
-			dir = repository.getDirectory();
-
-		if (dir == null)
+		File gitDir = repository.getDirectory();
+		if (gitDir == null)
 			return ""; //$NON-NLS-1$
 
+		// Use parent file for non-bare repositories
+		if (!repository.isBare()) {
+			gitDir = gitDir.getParentFile();
+			if (gitDir == null)
+				return ""; //$NON-NLS-1$
+		}
+
 		synchronized (repositoryNameCache) {
-			final String path = dir.getPath().toString();
+			final String path = gitDir.getPath().toString();
 			String name = repositoryNameCache.get(path);
 			if (name != null)
 				return name;
-			name = dir.getName();
+			name = gitDir.getName();
 			repositoryNameCache.put(path, name);
 			return name;
 		}
@@ -349,9 +351,7 @@ public class RepositoryUtil {
 		synchronized (prefs) {
 
 			if (!FileKey.isGitRepository(repositoryDir, FS.DETECTED))
-				throw new IllegalArgumentException(MessageFormat.format(
-						CoreText.RepositoryUtil_DirectoryIsNotGitDirectory,
-						repositoryDir));
+				throw new IllegalArgumentException();
 
 			String dirString = getPath(repositoryDir);
 
@@ -493,14 +493,10 @@ public class RepositoryUtil {
 		if (mapping == null)
 			return true; // Linked resources may not be mapped
 		Repository repository = mapping.getRepository();
-		WorkingTreeIterator treeIterator = IteratorService
-				.createInitialIterator(repository);
-		if (treeIterator == null)
-			return true;
 		String repoRelativePath = mapping.getRepoRelativePath(path);
 		TreeWalk walk = new TreeWalk(repository);
 		try {
-			walk.addTree(treeIterator);
+			walk.addTree(new FileTreeIterator(repository));
 			walk.setFilter(PathFilter.create(repoRelativePath));
 			while (walk.next()) {
 				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
@@ -518,20 +514,30 @@ public class RepositoryUtil {
 	}
 
 	/**
-	 * Checks if given repository is in the 'detached HEAD' state.
+	 * Get the fast-forward setting for current branch on the given repository.
 	 *
 	 * @param repository
 	 *            the repository to check
-	 * @return <code>true</code> if the repository is in the 'detached HEAD'
-	 *         state, <code>false</code> if it's not or an error occurred
-	 * @since 3.2
+	 * @return the fast-forward mode for the current branch
+	 * @since 3.0
 	 */
-	public static boolean isDetachedHead(Repository repository) {
+	public FastForwardMode getFastForwardMode(Repository repository) {
+		FastForwardMode ffmode = FastForwardMode.valueOf(repository.getConfig()
+				.getEnum(ConfigConstants.CONFIG_KEY_MERGE, null,
+						ConfigConstants.CONFIG_KEY_FF,
+						FastForwardMode.Merge.TRUE));
+		ffmode = repository.getConfig().getEnum(
+				ConfigConstants.CONFIG_BRANCH_SECTION,
+				getCurrentBranch(repository),
+				ConfigConstants.CONFIG_KEY_MERGEOPTIONS, ffmode);
+		return ffmode;
+	}
+
+	private String getCurrentBranch(Repository repository) {
 		try {
-			return ObjectId.isId(repository.getFullBranch());
+			return repository.getBranch();
 		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
+			return null;
 		}
-		return false;
 	}
 }

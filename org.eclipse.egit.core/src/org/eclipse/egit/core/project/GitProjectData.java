@@ -51,7 +51,6 @@ import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
-import org.eclipse.team.core.TeamException;
 
 /**
  * This class keeps information about how a project is mapped to
@@ -487,14 +486,16 @@ public class GitProjectData {
 		}
 
 		if (c == null) {
-			logAndUnmapGoneMappedResource(m);
+			logGoneMappedResource(m);
+			m.clear();
 			return;
 		}
 		m.setContainer(c);
 
-		git = m.getGitDirAbsolutePath().toFile();
+		git = c.getLocation().append(m.getGitDirPath()).toFile();
 		if (!git.isDirectory() || !new File(git, "config").isFile()) { //$NON-NLS-1$
-			logAndUnmapGoneMappedResource(m);
+			logGoneMappedResource(m);
+			m.clear();
 			return;
 		}
 
@@ -502,7 +503,8 @@ public class GitProjectData {
 			m.setRepository(Activator.getDefault().getRepositoryCache()
 					.lookupRepository(git));
 		} catch (IOException ioe) {
-			logAndUnmapGoneMappedResource(m);
+			logGoneMappedResource(m);
+			m.clear();
 			return;
 		}
 
@@ -525,13 +527,10 @@ public class GitProjectData {
 		}
 	}
 
-	private void logAndUnmapGoneMappedResource(final RepositoryMapping m) {
+	private void logGoneMappedResource(final RepositoryMapping m) {
 		Activator.logError(MessageFormat.format(
 				CoreText.GitProjectData_mappedResourceGone, m.toString()),
 				new FileNotFoundException(m.getContainerPath().toString()));
-		m.clear();
-		UnmapJob unmapJob = new UnmapJob(getProject());
-		unmapJob.schedule();
 	}
 
 	private void protect(IResource resource) {
@@ -548,28 +547,6 @@ public class GitProjectData {
 						e);
 			}
 			c = c.getParent();
-		}
-	}
-
-	private static class UnmapJob extends Job {
-
-		private final IProject project;
-
-		private UnmapJob(IProject project) {
-			super(MessageFormat.format(CoreText.GitProjectData_UnmapJobName,
-					project.getName()));
-			this.project = project;
-		}
-
-		@Override
-		protected IStatus run(IProgressMonitor monitor) {
-			try {
-				RepositoryProvider.unmap(project);
-				return Status.OK_STATUS;
-			} catch (TeamException e) {
-				return new Status(IStatus.ERROR, Activator.getPluginId(),
-						CoreText.GitProjectData_UnmappingGoneResourceFailed, e);
-			}
 		}
 	}
 }

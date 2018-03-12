@@ -1,5 +1,8 @@
 /*******************************************************************************
- * Copyright (C) 2006, 2013 Shawn O. Pearce <spearce@spearce.org> and others.
+ * Copyright (C) 2007, Dave Watson <dwatson@mimvista.com>
+ * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
+ * Copyright (C) 2006, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,10 +20,8 @@ import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPart;
@@ -87,8 +88,10 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	 */
 	protected ExecutionEvent createExecutionEvent() {
 		IServiceLocator locator = getServiceLocator();
-		ICommandService srv = CommonUtils.getService(locator, ICommandService.class);
-		IHandlerService hsrv = CommonUtils.getService(locator, IHandlerService.class);
+		ICommandService srv = (ICommandService) locator
+				.getService(ICommandService.class);
+		IHandlerService hsrv = (IHandlerService) locator
+				.getService(IHandlerService.class);
 		Command command = srv.getCommand(commandId);
 
 		ExecutionEvent event = hsrv.createExecutionEvent(command, null);
@@ -98,10 +101,7 @@ public abstract class RepositoryAction extends AbstractHandler implements
 		return event;
 	}
 
-	/**
-	 * @return the service locator to use in the action
-	 */
-	protected IServiceLocator getServiceLocator() {
+	private IServiceLocator getServiceLocator() {
 		if (serviceLocator == null)
 			serviceLocator = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		return serviceLocator;
@@ -109,26 +109,17 @@ public abstract class RepositoryAction extends AbstractHandler implements
 
 	public final void selectionChanged(IAction action, ISelection selection) {
 		mySelection = selection;
-		// Compare selection of handler, as it converts it to a suitable
-		// selection. E.g. an ITextSelection is converted to a selection of the
-		// file. We are only interested in the selection change if a different
-		// file was selected, not if the offset of the text selection changed.
-		IStructuredSelection selectionBefore = handler.getSelection();
 		handler.setSelection(mySelection);
-		if (action != null) {
-			IStructuredSelection selectionAfter = handler.getSelection();
-			boolean equalSelection = (selectionBefore == null) ? selectionAfter == null
-					: selectionBefore.equals(selectionAfter);
-			if (!equalSelection)
-				action.setEnabled(isEnabled());
-		}
+		if (action != null)
+			action.setEnabled(isEnabled());
 	}
 
 	public final Object execute(ExecutionEvent event) throws ExecutionException {
 		if (!shouldRunAction())
 			return null;
 
-		ICommandService srv = CommonUtils.getService(getServiceLocator(), ICommandService.class);
+		ICommandService srv = (ICommandService) getServiceLocator()
+				.getService(ICommandService.class);
 		Command command = srv.getCommand(commandId);
 		try {
 			return command.executeWithChecks(event);

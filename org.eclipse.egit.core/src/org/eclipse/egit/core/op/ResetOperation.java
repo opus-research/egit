@@ -12,7 +12,6 @@
 package org.eclipse.egit.core.op;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -21,9 +20,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
@@ -58,7 +55,7 @@ public class ResetOperation implements IEGitOperation {
 
 	public ISchedulingRule getSchedulingRule() {
 		if (type == ResetType.HARD)
-			return RuleUtil.getRule(repository);
+			return ResourcesPlugin.getWorkspace().getRoot();
 		else
 			return null;
 	}
@@ -76,8 +73,7 @@ public class ResetOperation implements IEGitOperation {
 				}
 			};
 			// lock workspace to protect working tree changes
-			ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-					IWorkspace.AVOID_UPDATE, monitor);
+			ResourcesPlugin.getWorkspace().run(action, monitor);
 		} else {
 			reset(monitor);
 		}
@@ -88,10 +84,8 @@ public class ResetOperation implements IEGitOperation {
 				type.toString().toLowerCase(), refName), 2);
 
 		IProject[] validProjects = null;
-		if (type == ResetType.HARD) {
+		if (type == ResetType.HARD)
 			validProjects = ProjectUtil.getValidOpenProjects(repository);
-			ResourceUtil.saveLocalHistory(repository);
-		}
 
 		ResetCommand reset = Git.wrap(repository).reset();
 		reset.setMode(type);

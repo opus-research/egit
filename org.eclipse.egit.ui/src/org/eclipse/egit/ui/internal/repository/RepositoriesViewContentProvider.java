@@ -35,7 +35,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
@@ -68,14 +67,10 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevObject;
-import org.eclipse.jgit.revwalk.RevTag;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -102,7 +97,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 	 * Constructs this instance
 	 */
 	public RepositoriesViewContentProvider() {
-		ICommandService srv = CommonUtils.getService(PlatformUI.getWorkbench(), ICommandService.class);
+		ICommandService srv = (ICommandService) PlatformUI.getWorkbench()
+				.getService(ICommandService.class);
 		commandState = srv.getCommand(
 				ToggleBranchHierarchyCommand.ID)
 				.getState(ToggleBranchHierarchyCommand.TOGGLE_STATE);
@@ -264,7 +260,17 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case TAGS: {
-			return getTagsChildren(node, repo);
+			List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
+
+			try {
+				for (Entry<String, Ref> refEntry : getRefs(repo, Constants.R_TAGS).entrySet()) {
+					refs.add(new TagNode(node, repo, refEntry.getValue()));
+				}
+			} catch (IOException e) {
+				return handleException(e, node);
+			}
+
+			return refs.toArray();
 		}
 
 		case ADDITIONALREFS: {
@@ -357,9 +363,6 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			File parent = ((File) node.getObject());
 
 			File[] childFiles = parent.listFiles();
-			if (childFiles == null)
-				return children.toArray();
-
 			Arrays.sort(childFiles, new Comparator<File>() {
 				public int compare(File o1, File o2) {
 					if (o1.isDirectory()) {
@@ -480,45 +483,6 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 		return null;
 
-	}
-
-	private Object[] getTagsChildren(RepositoryTreeNode parentNode,
-			Repository repo) {
-		List<RepositoryTreeNode<Ref>> nodes = new ArrayList<RepositoryTreeNode<Ref>>();
-
-		RevWalk walk = new RevWalk(repo);
-		walk.setRetainBody(true);
-		try {
-			Map<String, Ref> tagRefs = getRefs(repo, Constants.R_TAGS);
-			for (Ref tagRef : tagRefs.values()) {
-				ObjectId objectId = tagRef.getLeaf().getObjectId();
-				RevObject revObject = walk.parseAny(objectId);
-				RevObject peeledObject = walk.peel(revObject);
-				TagNode tagNode = createTagNode(parentNode, repo, tagRef,
-						revObject, peeledObject);
-				nodes.add(tagNode);
-			}
-		} catch (IOException e) {
-			return handleException(e, parentNode);
-		} finally {
-			walk.release();
-		}
-
-		return nodes.toArray();
-	}
-
-	private TagNode createTagNode(RepositoryTreeNode parentNode,
-			Repository repo, Ref ref, RevObject revObject,
-			RevObject peeledObject) {
-		boolean annotated = (revObject instanceof RevTag);
-		if (peeledObject instanceof RevCommit) {
-			RevCommit commit = (RevCommit) peeledObject;
-			String id = commit.getId().name();
-			String message = commit.getShortMessage();
-			return new TagNode(parentNode, repo, ref, annotated, id, message);
-		} else {
-			return new TagNode(parentNode, repo, ref, annotated, "", ""); //$NON-NLS-1$ //$NON-NLS-2$
-		}
 	}
 
 	private Object[] handleException(Exception e, RepositoryTreeNode parentNode) {

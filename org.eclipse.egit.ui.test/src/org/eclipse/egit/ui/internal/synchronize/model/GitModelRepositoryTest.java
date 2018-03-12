@@ -13,7 +13,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jgit.lib.Repository;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class GitModelRepositoryTest extends GitModelTestCase {
@@ -58,8 +58,7 @@ public class GitModelRepositoryTest extends GitModelTestCase {
 		assertTrue(actual);
 	}
 
-	@Before
-	public void setupEnvironment() throws Exception {
+	@BeforeClass public static void setupEnvironment() throws Exception {
 		leftRepoFile = createProjectAndCommitToRepository();
 		rightRepoFile = createChildRepository(leftRepoFile);
 

@@ -49,8 +49,7 @@ public class ResetActionHandler extends RepositoryActionHandler {
 			String jobname = NLS.bind(UIText.ResetAction_reset, refName);
 			final ResetOperation operation = new ResetOperation(repository,
 					refName, type);
-			JobUtil.scheduleUserWorkspaceJob(operation, jobname,
-					JobFamilies.RESET);
+			JobUtil.scheduleUserJob(operation, jobname, JobFamilies.RESET);
 		}
 		return null;
 	}

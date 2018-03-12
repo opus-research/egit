@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2013 SAP AG and others.
+ * Copyright (c) 2012 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.internal.push;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,11 +26,12 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
-import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.jface.bindings.keys.KeyStroke;
+import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
@@ -39,7 +39,6 @@ import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -58,7 +57,6 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.IWorkbenchCommandConstants;
 
 /**
  * Push the current HEAD to Gerrit
@@ -126,7 +124,7 @@ class PushToGerritPage extends WizardPage {
 
 		// we visualize the prefix here
 		prefixCombo = new Combo(main, SWT.READ_ONLY | SWT.DROP_DOWN);
-		prefixCombo.add(GerritUtil.REFS_FOR);
+		prefixCombo.add("refs/for/"); //$NON-NLS-1$
 		prefixCombo.add("refs/drafts/"); //$NON-NLS-1$
 		prefixCombo.select(0);
 
@@ -214,8 +212,10 @@ class PushToGerritPage extends WizardPage {
 		}
 	}
 
-	void doPush() {
+	void doPush(IProgressMonitor monitor) {
 		try {
+			int timeout = Activator.getDefault().getPreferenceStore()
+					.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 			URIish uri = new URIish(uriCombo.getText());
 			Ref currentHead = repository.getRef(Constants.HEAD);
 			RemoteRefUpdate update = new RemoteRefUpdate(repository,
@@ -225,45 +225,36 @@ class PushToGerritPage extends WizardPage {
 			PushOperationSpecification spec = new PushOperationSpecification();
 
 			spec.addURIRefUpdates(uri, Arrays.asList(update));
-			final PushOperationUI op = new PushOperationUI(repository, spec,
+			PushOperationUI op = new PushOperationUI(repository, spec, timeout,
 					false);
 			op.setCredentialsProvider(new EGitCredentialsProvider());
-			final PushOperationResult[] result = new PushOperationResult[1];
-			getContainer().run(true, true, new IRunnableWithProgress() {
-				public void run(IProgressMonitor monitor)
-						throws InvocationTargetException, InterruptedException {
-					try {
-						result[0] = op.execute(monitor);
-					} catch (CoreException e) {
-						throw new InvocationTargetException(e);
-					}
-				}
-			});
+			PushOperationResult result = op.execute(monitor);
 			PushResultDialog dlg = new PushResultDialog(getShell(), repository,
-					result[0], op.getDestinationString());
+					result, op.getDestinationString());
 			dlg.showConfigureButton(false);
 			dlg.open();
 			storeLastUsedUri(uriCombo.getText());
 			storeLastUsedBranch(branchText.getText());
+		} catch (CoreException e) {
+			Activator.handleError(e.getMessage(), e, true);
 		} catch (URISyntaxException e) {
 			Activator.handleError(e.getMessage(), e, true);
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
-		} catch (InvocationTargetException e) {
-			Throwable cause = e.getCause();
-			Activator.handleError(cause.getMessage(), cause, true);
-		} catch (InterruptedException e) {
-			// cancellation
 		}
 	}
 
 	private void addRefContentProposalToText(final Text textField) {
-		KeyStroke stroke = UIUtils
-				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke != null)
+		KeyStroke stroke;
+		try {
+			stroke = KeyStroke.getInstance("CTRL+SPACE"); //$NON-NLS-1$
 			UIUtils.addBulbDecorator(textField, NLS.bind(
 					UIText.PushToGerritPage_ContentProposalHoverText,
 					stroke.format()));
+		} catch (ParseException e1) {
+			Activator.handleError(e1.getMessage(), e1, false);
+			stroke = null;
+		}
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			public IContentProposal[] getProposals(String contents, int position) {

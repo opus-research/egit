@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2014 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,16 +14,21 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
+import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
+import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.jface.action.ContributionItem;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.CheckoutEntry;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.ReflogEntry;
@@ -34,7 +39,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.menus.IWorkbenchContribution;
 import org.eclipse.ui.services.IServiceLocator;
 
@@ -44,9 +49,9 @@ import org.eclipse.ui.services.IServiceLocator;
 public class SwitchToMenu extends ContributionItem implements
 		IWorkbenchContribution {
 	/** the maximum number of branches to show in the sub-menu */
-	static final int MAX_NUM_MENU_ENTRIES = 20;
+	private static final int MAX_NUM_MENU_ENTRIES = 20;
 
-	private IHandlerService handlerService;
+	private ISelectionService srv;
 
 	private final Image branchImage;
 
@@ -74,11 +79,32 @@ public class SwitchToMenu extends ContributionItem implements
 
 	@Override
 	public void fill(Menu menu, int index) {
-		if (handlerService == null)
+		if (srv == null)
 			return;
+		ISelection sel = srv.getSelection();
+		if (!(sel instanceof IStructuredSelection))
+			return;
+		Object selected = ((IStructuredSelection) sel).getFirstElement();
+		if (selected instanceof IAdaptable) {
+			Object adapter = ((IAdaptable) selected).getAdapter(IProject.class);
+			if (adapter != null)
+				selected = adapter;
+		}
 
-		Repository repository = SelectionUtils
-				.getRepository(handlerService.getCurrentState());
+		Repository repository = null;
+		if (selected instanceof RepositoryNode)
+			repository = ((RepositoryNode) selected).getRepository();
+		else if (selected instanceof BranchesNode)
+			repository = ((BranchesNode) selected).getRepository();
+		else if (selected instanceof LocalNode)
+			repository = ((LocalNode) selected).getRepository();
+		else if ((selected instanceof IProject)) {
+			RepositoryMapping mapping = RepositoryMapping
+					.getMapping((IProject) selected);
+			if (mapping != null)
+				repository = mapping.getRepository();
+		}
+
 		if (repository != null)
 			createDynamicMenu(menu, repository);
 	}
@@ -90,28 +116,15 @@ public class SwitchToMenu extends ContributionItem implements
 		newBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				String sourceRef = repository.getConfig().getString(
-						ConfigConstants.CONFIG_WORKFLOW_SECTION, null,
-						ConfigConstants.CONFIG_KEY_DEFBRANCHSTARTPOINT);
-				try {
-					Ref ref = repository.getRef(sourceRef);
-					if (ref != null)
-						BranchOperationUI.createWithRef(repository,
-								ref.getName()).start();
-					else
-						BranchOperationUI.create(repository).start();
-				} catch (IOException e1) {
-					BranchOperationUI.create(repository).start();
-				}
+				BranchOperationUI.create(repository).start();
 			}
 		});
-		createSeparator(menu);
+		new MenuItem(menu, SWT.SEPARATOR);
 		try {
 			String currentBranch = repository.getFullBranch();
 			Map<String, Ref> localBranches = repository.getRefDatabase().getRefs(
 					Constants.R_HEADS);
-			TreeMap<String, Ref> sortedRefs = new TreeMap<String, Ref>(
-					CommonUtils.STRING_ASCENDING_COMPARATOR);
+			TreeMap<String, Ref> sortedRefs = new TreeMap<String, Ref>();
 
 			// Add the MAX_NUM_MENU_ENTRIES most recently used branches first
 			List<ReflogEntry> reflogEntries = repository.getReflogReader(
@@ -146,7 +159,7 @@ public class SwitchToMenu extends ContributionItem implements
 				// nice but only if we have both recently used branches and other
 				// local branches
 				if (itemCount > 0 && localBranches.size() > 0)
-					createSeparator(menu);
+					new MenuItem(menu, SWT.SEPARATOR);
 
 				// Now add more other branches if we have only a few branch switches
 				// Sort the remaining local branches
@@ -163,7 +176,7 @@ public class SwitchToMenu extends ContributionItem implements
 				}
 			}
 			if (itemCount > 0)
-				createSeparator(menu);
+				new MenuItem(menu, SWT.SEPARATOR);
 			MenuItem others = new MenuItem(menu, SWT.PUSH);
 			others.setText(UIText.SwitchToMenu_OtherMenuLabel);
 			others.addSelectionListener(new SelectionAdapter() {
@@ -175,10 +188,6 @@ public class SwitchToMenu extends ContributionItem implements
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
 		}
-	}
-
-	private static MenuItem createSeparator(Menu menu) {
-		return new MenuItem(menu, SWT.SEPARATOR);
 	}
 
 	private void createMenuItem(Menu menu, final Repository repository,
@@ -206,7 +215,8 @@ public class SwitchToMenu extends ContributionItem implements
 	}
 
 	public void initialize(IServiceLocator serviceLocator) {
-		handlerService = CommonUtils.getService(serviceLocator, IHandlerService.class);
+		srv = (ISelectionService) serviceLocator
+				.getService(ISelectionService.class);
 	}
 
 	@Override

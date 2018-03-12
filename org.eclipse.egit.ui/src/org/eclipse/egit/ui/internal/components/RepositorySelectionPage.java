@@ -25,10 +25,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.IRemoteSelectionListener;
-import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.SelectionType;
 import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
 import org.eclipse.jface.dialogs.Dialog;
@@ -75,6 +72,8 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 	private final static String USED_URIS_PREF = "RepositorySelectionPage.UsedUris"; //$NON-NLS-1$
 
+	private static final int REMOTE_CONFIG_TEXT_MAX_LENGTH = 80;
+
 	private final List<RemoteConfig> configuredRemotes;
 
 	private final boolean sourceSelection;
@@ -111,7 +110,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 	private Button remoteButton;
 
-	private RemoteSelectionCombo remoteCombo;
+	private Combo remoteCombo;
 
 	private Composite uriPanel;
 
@@ -345,6 +344,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		this.presetUri = preset;
 
 		this.configuredRemotes = getUsableConfigs(configuredRemotes);
+		this.remoteConfig = selectDefaultRemoteConfig();
 
 		selection = RepositorySelection.INVALID_SELECTION;
 
@@ -409,8 +409,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 		if (configuredRemotes != null)
 			createRemotePanel(panel);
-		else
-			createRemoteNamePanel(panel);
 
 		createUriPanel(panel);
 
@@ -446,23 +444,22 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		gd.horizontalAlignment = SWT.FILL;
 		remotePanel.setLayoutData(gd);
 
-		SelectionType selectionType = sourceSelection ? SelectionType.FETCH : SelectionType.PUSH;
-		remoteCombo = new RemoteSelectionCombo(remotePanel, SWT.NULL, selectionType);
-		remoteConfig = remoteCombo.setItems(configuredRemotes);
-		remoteCombo.addRemoteSelectionListener(new IRemoteSelectionListener() {
-			public void remoteSelected(RemoteConfig rc) {
-				remoteConfig = rc;
+		remoteCombo = new Combo(remotePanel, SWT.READ_ONLY | SWT.DROP_DOWN);
+		final String items[] = new String[configuredRemotes.size()];
+		int i = 0;
+		for (final RemoteConfig rc : configuredRemotes)
+			items[i++] = getTextForRemoteConfig(rc);
+		final int defaultIndex = configuredRemotes.indexOf(remoteConfig);
+		remoteCombo.setItems(items);
+		remoteCombo.select(defaultIndex);
+		remoteCombo.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				final int idx = remoteCombo.getSelectionIndex();
+				remoteConfig = configuredRemotes.get(idx);
 				checkPage();
 			}
 		});
-	}
-
-	/**
-	 *
-	 * @param panel
-	 */
-	protected void createRemoteNamePanel(Composite panel) {
-		// Only used by subclass
 	}
 
 	private void createUriPanel(final Composite parent) {
@@ -602,9 +599,8 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			}
 		});
 
+		newLabel(g, UIText.RepositorySelectionPage_storeInSecureStore);
 		storeCheckbox = new Button(g, SWT.CHECK);
-		storeCheckbox
-				.setText(UIText.RepositorySelectionPage_storeInSecureStore);
 		storeCheckbox.setSelection(storeInSecureStore);
 		storeCheckbox.addSelectionListener(new SelectionListener() {
 			public void widgetSelected(SelectionEvent e) {
@@ -637,7 +633,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					setURI(uri.setScheme(nullString(scheme.getItem(idx))));
 					scheme.setToolTipText(Protocol.values()[idx].getTooltip());
 				}
-				updateGroups();
+				updateAuthGroup();
 			}
 		});
 
@@ -736,10 +732,46 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		return null;
 	}
 
-	/**
-	 * Check the user input and set messages in case of invalid input.
-	 */
-	protected void checkPage() {
+	private RemoteConfig selectDefaultRemoteConfig() {
+		if (configuredRemotes == null)
+			return null;
+		for (final RemoteConfig rc : configuredRemotes)
+			if (Constants.DEFAULT_REMOTE_NAME.equals(rc.getName()))
+				return rc;
+		return configuredRemotes.get(0);
+	}
+
+	private String getTextForRemoteConfig(final RemoteConfig rc) {
+		final StringBuilder sb = new StringBuilder(rc.getName());
+		sb.append(": "); //$NON-NLS-1$
+		boolean first = true;
+		List<URIish> uris;
+		if (sourceSelection)
+			uris = rc.getURIs();
+		else {
+			uris = rc.getPushURIs();
+			// if no push URIs are defined, use fetch URIs instead
+			if (uris.isEmpty())
+				uris = rc.getURIs();
+		}
+
+		for (final URIish u : uris) {
+			final String uString = u.toString();
+			if (first)
+				first = false;
+			else {
+				sb.append(", "); //$NON-NLS-1$
+				if (sb.length() + uString.length() > REMOTE_CONFIG_TEXT_MAX_LENGTH) {
+					sb.append("..."); //$NON-NLS-1$
+					break;
+				}
+			}
+			sb.append(uString);
+		}
+		return sb.toString();
+	}
+
+	private void checkPage() {
 		if (isURISelected()) {
 			assert uri != null;
 			if (uriText.getText().length() == 0) {
@@ -816,24 +848,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					}
 				}
 
-				if (Protocol.HTTP.handles(finalURI)
-						|| Protocol.HTTPS.handles(finalURI)) {
-					UserPasswordCredentials credentials = SecureStoreUtils
-							.getCredentials(finalURI);
-					if (credentials != null) {
-						String u = credentials.getUser();
-						String p = credentials.getPassword();
-						String uriUser = finalURI.getUser();
-						if (uriUser == null) {
-							if (setSafeUser(u) && setSafePassword(p))
-								setStoreInSecureStore(true);
-						} else if (uriUser.length() != 0 && uriUser.equals(u)) {
-							if (setSafePassword(p))
-								setStoreInSecureStore(true);
-						}
-					}
-				}
-
 				selectionComplete(finalURI, null);
 				return;
 			} catch (URISyntaxException e) {
@@ -851,31 +865,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			selectionComplete(null, remoteConfig);
 			return;
 		}
-	}
-
-	private boolean setSafePassword(String p) {
-		if ((password == null || password.length() == 0) && p != null
-				&& p.length() != 0) {
-			password = p;
-			passText.setText(p);
-			return true;
-		}
-		return false;
-	}
-
-	private boolean setSafeUser(String u) {
-		if ((user == null || user.length() == 0) && u != null
-				&& u.length() != 0) {
-			user = u;
-			userText.setText(u);
-			return true;
-		}
-		return false;
-	}
-
-	private void setStoreInSecureStore(boolean store) {
-		storeInSecureStore = store;
-		storeCheckbox.setSelection(store);
 	}
 
 	private String unamp(String s) {
@@ -905,27 +894,17 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	private void updateRemoteAndURIPanels() {
 		UIUtils.setEnabledRecursively(uriPanel, isURISelected());
 		if (uriPanel.getEnabled())
-			updateGroups();
+			updateAuthGroup();
 		if (configuredRemotes != null)
 			UIUtils.setEnabledRecursively(remotePanel, !isURISelected());
 	}
 
-	private void updateGroups() {
+	private void updateAuthGroup() {
 		Protocol p = getProtocol();
 		if (p != null) {
 			hostText.setEnabled(p.hasHost());
-			if (!p.hasHost())
-				hostText.setText(EMPTY_STRING);
 			portText.setEnabled(p.hasPort());
-			if (!p.hasPort())
-				portText.setText(EMPTY_STRING);
-
 			UIUtils.setEnabledRecursively(authGroup, p.canAuthenticate());
-			if (!p.canAuthenticate()) {
-				userText.setText(EMPTY_STRING);
-				passText.setText(EMPTY_STRING);
-				storeCheckbox.setSelection(false);
-			}
 		}
 	}
 
@@ -1004,7 +983,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 				scheme.notifyListeners(SWT.Selection, new Event());
 			}
 
-			updateGroups();
+			updateAuthGroup();
 			uri = u;
 		} catch (URISyntaxException err) {
 			// leave uriText as it is, but clean up underlying uri and
