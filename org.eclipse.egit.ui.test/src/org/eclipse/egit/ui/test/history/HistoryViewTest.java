@@ -36,7 +36,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
-import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
@@ -244,18 +243,15 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	private SWTBotTable getHistoryViewTable(String... path) throws Exception {
 		SWTBotTree projectExplorerTree = bot
 				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
-		TestUtil testUtil = new TestUtil();
 		SWTBotTreeItem explorerItem;
-		SWTBotTreeItem projectItem = getProjectItem(projectExplorerTree, path[0]);
 		if (path.length == 1)
-			explorerItem = projectItem;
+			explorerItem = getProjectItem(projectExplorerTree, path[0]);
 		else if (path.length == 2)
-			explorerItem = testUtil.getChildNode(projectItem.expand(), path[1]);
-		else {
-			SWTBotTreeItem childItem = testUtil.getChildNode(
-					projectItem.expand(), path[1]);
-			explorerItem = testUtil.getChildNode(childItem.expand(), path[2]);
-		}
+			explorerItem = getProjectItem(projectExplorerTree, path[0])
+					.expand().getNode(path[1]);
+		else
+			explorerItem = getProjectItem(projectExplorerTree, path[0])
+					.expand().getNode(path[1]).expand().getNode(path[2]);
 		explorerItem.select();
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Show In",
 				"History");
@@ -268,9 +264,8 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 				// empty
 			}
 		});
-		String genericHistoryViewId = "org.eclipse.team.ui.GenericHistoryView";
-		TestUtil.waitUntilViewWithGivenIdShows(genericHistoryViewId);
-		return bot.viewById(genericHistoryViewId).bot().table();
+		return bot.viewById("org.eclipse.team.ui.GenericHistoryView").bot()
+				.table();
 	}
 
 	@Test
@@ -344,35 +339,6 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		toggleShowAllBranchesButton(true);
 		assertEquals("Wrong number of commits", commits,
 				getHistoryViewTable(PROJ1).rowCount());
-	}
-
-	@Test
-	public void testRevertFailure() throws Exception {
-		touchAndSubmit(null);
-		setTestFileContent("dirty in working directory"
-				+ System.currentTimeMillis());
-		final SWTBotTable table = getHistoryViewTable(PROJ1);
-		assertTrue(table.rowCount() > 0);
-		table.getTableItem(0).select();
-		final RevCommit[] commit = new RevCommit[1];
-
-		Display.getDefault().syncExec(new Runnable() {
-
-			public void run() {
-				TableItem tableItem = table.widget.getSelection()[0];
-				ensureTableItemLoaded(tableItem);
-				commit[0] = (RevCommit) tableItem.getData();
-			}
-		});
-		assertEquals(1, commit[0].getParentCount());
-
-		ContextMenuHelper.clickContextMenu(table,
-				UIText.GitHistoryPage_revertMenuItem);
-		SWTBot dialog = bot.shell(UIText.RevertFailureDialog_Title).bot();
-		assertEquals(1, dialog.tree().rowCount());
-		assertEquals(1, dialog.tree().getAllItems()[0].rowCount());
-		assertTrue(dialog.tree().getAllItems()[0].getItems()[0].getText()
-				.startsWith(FILE1));
 	}
 
 	private RevCommit[] checkoutLine(final SWTBotTable table, int line)

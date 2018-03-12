@@ -2,7 +2,6 @@
  * Copyright (C) 2006, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2011, IBM Corporation
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,17 +10,19 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.util.GitDateFormatter;
-import org.eclipse.jgit.util.GitDateFormatter.Format;
+import org.eclipse.jgit.util.RelativeDateFormatter;
 import org.eclipse.swt.graphics.Image;
 
 class GraphLabelProvider extends BaseLabelProvider implements
 		ITableLabelProvider {
-	private GitDateFormatter dateFormatter;
+	private final DateFormat absoluteFormatter;
 
 	private RevCommit lastCommit;
 
@@ -29,9 +30,10 @@ class GraphLabelProvider extends BaseLabelProvider implements
 
 	private PersonIdent lastCommitter;
 
-	private Format format = Format.LOCALE;
+	private boolean relativeDate;
 
 	GraphLabelProvider() {
+		absoluteFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
 	}
 
 	public String getColumnText(final Object element, final int columnIndex) {
@@ -48,7 +50,10 @@ class GraphLabelProvider extends BaseLabelProvider implements
 					return author.getName()
 							+ " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
 				case 2:
-					return getDateFormatter().formatDate(author);
+					if (relativeDate)
+						return RelativeDateFormatter.format(author.getWhen());
+					else
+						return absoluteFormatter.format(author.getWhen());
 				}
 			}
 		}
@@ -61,12 +66,6 @@ class GraphLabelProvider extends BaseLabelProvider implements
 		}
 
 		return ""; //$NON-NLS-1$
-	}
-
-	private GitDateFormatter getDateFormatter() {
-		if (dateFormatter == null)
-			dateFormatter = new GitDateFormatter(format);
-		return dateFormatter;
 	}
 
 	private PersonIdent authorOf(final RevCommit c) {
@@ -93,12 +92,12 @@ class GraphLabelProvider extends BaseLabelProvider implements
 
 	/**
 	 * @param relative {@code true} if the date column should show relative dates
+	 * @return {@code true} if the value was changed in this call
 	 */
-	public void setRelativeDate(boolean relative) {
-		dateFormatter = null;
-		if (relative)
-			format = Format.RELATIVE;
-		else
-			format = Format.LOCALE;
+	public boolean setRelativeDate(boolean relative) {
+		if (relative == relativeDate)
+			return false;
+		relativeDate = relative;
+		return true;
 	}
 }
