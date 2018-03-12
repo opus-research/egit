@@ -42,7 +42,8 @@ import org.eclipse.team.ui.mapping.SaveableComparison;
 /**
  * Git commit object representation in Git ChangeSet
  */
-public class GitModelCommit extends GitModelObject implements ISynchronizationCompareInput {
+public class GitModelCommit extends GitModelObject implements
+		ISynchronizationCompareInput {
 
 	private final RevCommit baseCommit;
 
@@ -162,12 +163,35 @@ public class GitModelCommit extends GitModelObject implements ISynchronizationCo
 
 	@Override
 	public boolean equals(Object obj) {
-		return remoteCommit.equals(obj);
+		if (obj instanceof GitModelCommit) {
+			GitModelCommit objCommit = (GitModelCommit) obj;
+
+			boolean equalsBaseCommit;
+			RevCommit objBaseCommit = objCommit.getBaseCommit();
+			if (objBaseCommit != null)
+				equalsBaseCommit = objBaseCommit.equals(baseCommit);
+			else
+				equalsBaseCommit = baseCommit == null;
+
+			// it is impossible to have different common ancestor commit if
+			// remote and base commit are equal, therefore we don't compare
+			// common ancestor's
+
+			return equalsBaseCommit
+					&& objCommit.getRemoteCommit().equals(remoteCommit)
+					&& objCommit.getLocation().equals(getLocation());
+		}
+
+		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return remoteCommit.hashCode();
+		int result = getLocation().hashCode() ^ remoteCommit.hashCode();
+		if (baseCommit != null)
+			result ^= baseCommit.hashCode();
+
+		return result;
 	}
 
 	public Image getImage() {
@@ -333,8 +357,7 @@ public class GitModelCommit extends GitModelObject implements ISynchronizationCo
 	}
 
 	public String getFullPath() {
-		// TODO Auto-generated method stub
-		return null;
+		return getLocation().toPortableString();
 	}
 
 	public boolean isCompareInputFor(Object object) {
