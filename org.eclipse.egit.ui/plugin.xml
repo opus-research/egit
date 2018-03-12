@@ -3987,9 +3987,7 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ImportProjectsCommand"
             id="org.eclipse.egit.ui.RepositoriesViewImportProjects"
-            name="%ImportProjectsCommand"
-            description="%ImportProjectsCommand_description"
-            >
+            name="%ImportProjectsCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
