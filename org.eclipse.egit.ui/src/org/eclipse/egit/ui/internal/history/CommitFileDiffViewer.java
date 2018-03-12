@@ -144,7 +144,6 @@ public class CommitFileDiffViewer extends TableViewer {
 
 		// this is the text to be displayed if there is no input
 		noInputText = new StyledText(main, SWT.NONE);
-		noInputText.setEditable(false);
 		// use the same font as in message viewer
 		noInputText.setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageFont));
@@ -203,8 +202,9 @@ public class CommitFileDiffViewer extends TableViewer {
 				if (s.isEmpty() || !(s instanceof IStructuredSelection))
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
-				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();)
+				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();) {
 					openFileInEditor(it.next());
+				}
 			}
 		};
 
@@ -369,10 +369,12 @@ public class CommitFileDiffViewer extends TableViewer {
 
 			@Override
 			public void run() {
-				if (af == ActionFactory.SELECT_ALL)
+				if (af == ActionFactory.SELECT_ALL) {
 					doSelectAll();
-				if (af == ActionFactory.COPY)
+				}
+				if (af == ActionFactory.COPY) {
 					doCopy();
+				}
 			}
 		};
 		action.setEnabled(true);
