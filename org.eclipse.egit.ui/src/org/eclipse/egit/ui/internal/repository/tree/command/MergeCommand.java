@@ -48,10 +48,10 @@ import org.eclipse.ui.PlatformUI;
 public class MergeCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
+		BasicConfigurationDialog.show();
 		RepositoryTreeNode node = getSelectedNodes(event).get(0);
-		final Repository repository = node.getRepository();
 
-		BasicConfigurationDialog.show(repository);
+		final Repository repository = node.getRepository();
 
 		if (!canMerge(repository))
 			return null;
