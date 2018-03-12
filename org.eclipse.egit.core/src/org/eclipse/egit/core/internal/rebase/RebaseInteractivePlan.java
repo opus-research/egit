@@ -158,6 +158,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 	 * will create a new {@link RebaseInteractivePlan} instance.
 	 */
 	public void dispose() {
+		reparsePlan();
 		notifyPlanWasUpdatedFromRepository();
 		planRegistry.remove(this.repository.getDirectory());
 		planList.clear();
