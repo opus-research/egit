@@ -31,8 +31,12 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.api.errors.NoHeadException;
+import org.eclipse.jgit.api.errors.NoMessageException;
+import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
 import org.eclipse.jgit.errors.UnmergedPathException;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -216,7 +220,7 @@ public class CommitOperation implements IEGitOperation {
 		if (fileAdded) {
 			try {
 				addCommand.call();
-			} catch (Exception e) {
+			} catch (NoFilepatternException e) {
 				throw new CoreException(Activator.error(e.getMessage(), e));
 			}
 		}
@@ -249,9 +253,20 @@ public class CommitOperation implements IEGitOperation {
 				for(String path:commitFileList)
 					commitCommand.setOnly(path);
 			commit = commitCommand.call();
-		} catch (Exception e) {
+		} catch (NoHeadException e) {
+			throw new TeamException(e.getLocalizedMessage(), e);
+		} catch (NoMessageException e) {
+			throw new TeamException(e.getLocalizedMessage(), e);
+		} catch (UnmergedPathException e) {
+			throw new TeamException(e.getLocalizedMessage(), e);
+		} catch (ConcurrentRefUpdateException e) {
 			throw new TeamException(
 					CoreText.MergeOperation_InternalError, e);
+		} catch (JGitInternalException e) {
+			throw new TeamException(
+					CoreText.MergeOperation_InternalError, e);
+		} catch (WrongRepositoryStateException e) {
+			throw new TeamException(e.getLocalizedMessage(), e);
 		}
 	}
 
@@ -301,11 +316,17 @@ public class CommitOperation implements IEGitOperation {
 							new PersonIdent(committerIdent, commitDate,
 									timeZone)).setMessage(message)
 					.setInsertChangeId(createChangeId).call();
-		} catch (GitAPIException e) {
+		} catch (NoHeadException e) {
 			throw new TeamException(e.getLocalizedMessage(), e);
+		} catch (NoMessageException e) {
+			throw new TeamException(e.getLocalizedMessage(), e);
+		} catch (UnmergedPathException e) {
+			throw new TeamException(e.getLocalizedMessage(), e);
+		} catch (ConcurrentRefUpdateException e) {
+			throw new TeamException(CoreText.MergeOperation_InternalError, e);
 		} catch (JGitInternalException e) {
 			throw new TeamException(CoreText.MergeOperation_InternalError, e);
-		} catch (UnmergedPathException e) {
+		} catch (WrongRepositoryStateException e) {
 			throw new TeamException(e.getLocalizedMessage(), e);
 		}
 	}

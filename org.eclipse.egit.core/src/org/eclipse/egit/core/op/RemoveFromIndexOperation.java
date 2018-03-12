@@ -12,6 +12,7 @@ package org.eclipse.egit.core.op;
 import static org.eclipse.egit.core.project.RepositoryMapping.findRepositoryMapping;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -73,7 +74,7 @@ public class RemoveFromIndexOperation implements IEGitOperation {
 		try {
 			resetCommand.call();
 			monitor.worked(1);
-		} catch (Exception e) {
+		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		} finally {
 			monitor.done();
