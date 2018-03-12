@@ -115,11 +115,6 @@ public class JobFamilies {
 	public static final Object CHERRY_PICK = new Object();
 
 	/**
-	 * Squash commits job
-	 */
-	public static final Object SQUASH = new Object();
-
-	/**
 	 * Revert commit job
 	 */
 	public static final Object REVERT_COMMIT = new Object();
