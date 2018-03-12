@@ -1403,7 +1403,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showHead(Repository repo) {
-		try (RevWalk rw = new RevWalk(repo)) {
+		RevWalk rw = new RevWalk(repo);
+		try {
 			ObjectId head = repo.resolve(Constants.HEAD);
 			if (head == null)
 				return;
@@ -1415,7 +1416,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showRef(Ref ref, Repository repo) {
-		try (RevWalk rw = new RevWalk(repo)) {
+		RevWalk rw = new RevWalk(repo);
+		try {
 			RevCommit c = rw.parseCommit(ref.getLeaf().getObjectId());
 			graph.selectCommit(c);
 		} catch (IOException e) {
@@ -1424,7 +1426,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showTag(Ref ref, Repository repo) {
-		try (RevWalk rw = new RevWalk(repo)) {
+		RevWalk rw = new RevWalk(repo);
+		try {
 			RevCommit c = null;
 			RevObject any = rw.parseAny(ref.getLeaf().getObjectId());
 			if (any instanceof RevCommit)
