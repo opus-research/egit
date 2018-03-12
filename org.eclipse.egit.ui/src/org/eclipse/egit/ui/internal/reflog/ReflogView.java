@@ -81,7 +81,6 @@ import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.contexts.IContextService;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.forms.IFormColors;
@@ -151,7 +150,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		final TreeColumnLayout layout = new TreeColumnLayout();
 
 		FilteredTree filteredTree = new FilteredTree(tableComposite, SWT.NONE
-				| SWT.BORDER | SWT.FULL_SELECTION, new PatternFilter(), true) {
+				| SWT.BORDER, new PatternFilter(), true) {
 			@Override
 			protected void createControl(Composite composite, int treeStyle) {
 				super.createControl(composite, treeStyle);
@@ -350,15 +349,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 	@Override
 	public void setFocus() {
 		refLogTableTreeViewer.getControl().setFocus();
-		activateContextService();
-	}
-
-	private void activateContextService() {
-		IContextService contextService = (IContextService) getSite()
-				.getService(IContextService.class);
-		if (contextService != null)
-			contextService.activateContext(VIEW_ID);
-
 	}
 
 	@Override
