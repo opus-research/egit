@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.egit.gitflow.op;
 
-import static org.eclipse.egit.gitflow.GitFlowDefaults.*;
+import static org.eclipse.egit.gitflow.GitFlowDefaults.DEVELOP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -23,7 +23,7 @@ import org.junit.Test;
 
 public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 	@Test
-	public void testHotfixFinishFastForward() throws Exception {
+	public void testHotfixFinish() throws Exception {
 		testRepository
 				.createInitialCommit("testHotfixFinish\n\nfirst commit\n");
 
@@ -49,6 +49,7 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 		assertEquals(findBranch(repository, branchName), null);
 
 		RevCommit developHead = gfRepo.findHead(DEVELOP);
+		//TODO: as soon as we start using NO_FF for all finish operations, this must be not equals.
 		assertEquals(branchCommit, developHead);
 
 		RevCommit masterHead = gfRepo.findHead(MY_MASTER);
@@ -72,8 +73,6 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 
 		testRepository.appendContentAndCommit(project.getProject(), file,
 				"Hello Release", "Release Commit");
-		testRepository.appendContentAndCommit(project.getProject(), file,
-				"Hello Merge Commit", "Release Commit 2");
 
 		new ReleaseFinishOperation(gfRepo).execute(null);
 
@@ -94,8 +93,9 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 				gfRepo);
 		hotfixFinishOperation.execute(null);
 
-		// tag not created?
-		assertNotEquals(hotfixCommit, gfRepo.findCommitForTag(MY_HOTFIX));
+		// tag is created because of 473646
+		// TODO: check if the reference implementation cleans up in this case
+		assertEquals(hotfixCommit, gfRepo.findCommitForTag(MY_HOTFIX));
 
 		// branch not removed?
 		assertNotEquals(findBranch(repository, branchName), null);
@@ -108,7 +108,7 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 
 		// merged on master
 		RevCommit masterHead = gfRepo.findHead(MY_MASTER);
-		assertEquals(String.format("Merge branch '%s'", branchName), masterHead.getFullMessage());
+		assertEquals(hotfixCommit, masterHead);
 
 		assertEquals(gfRepo.getConfig().getDevelopFull(), repository.getFullBranch());
 	}

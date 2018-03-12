@@ -33,7 +33,7 @@ import org.junit.Test;
 
 public class ReleaseFinishOperationTest extends AbstractGitFlowOperationTest {
 	@Test
-	public void testReleaseFinishFastForward() throws Exception {
+	public void testReleaseFinish() throws Exception {
 		testRepository
 				.createInitialCommit("testReleaseFinish\n\nfirst commit\n");
 
@@ -51,8 +51,7 @@ public class ReleaseFinishOperationTest extends AbstractGitFlowOperationTest {
 		new ReleaseStartOperation(gfRepo, MY_RELEASE).execute(null);
 		RevCommit branchCommit = testRepository
 				.createInitialCommit("testReleaseFinish\n\nbranch commit\n");
-		ReleaseFinishOperation releaseFinishOperation = new ReleaseFinishOperation(gfRepo);
-		releaseFinishOperation.execute(null);
+		new ReleaseFinishOperation(gfRepo).execute(null);
 		assertEquals(gfRepo.getConfig().getDevelopFull(), repository.getFullBranch());
 
 		String branchName = gfRepo.getConfig().getReleaseBranchName(MY_RELEASE);
@@ -62,41 +61,14 @@ public class ReleaseFinishOperationTest extends AbstractGitFlowOperationTest {
 		// branch removed?
 		assertEquals(findBranch(repository, branchName), null);
 
-		RevCommit developHead = gfRepo.findHead();
+		RevCommit developHead = gfRepo.findHead(DEVELOP);
+		//TODO: as soon as we start using NO_FF for all finish operations, this must be not equals.
 		assertEquals(branchCommit, developHead);
 
 		RevCommit masterHead = gfRepo.findHead(MY_MASTER);
 		assertEquals(branchCommit, masterHead);
 	}
 
-	@Test
-	public void testReleaseFinish() throws Exception {
-		testRepository
-				.createInitialCommit("testReleaseFinish\n\nfirst commit\n");
-
-		Repository repository = testRepository.getRepository();
-		new InitOperation(repository, DEVELOP, MASTER, FEATURE_PREFIX,
-				RELEASE_PREFIX, HOTFIX_PREFIX, MY_VERSION_TAG).execute(null);
-		GitFlowRepository gfRepo = new GitFlowRepository(repository);
-
-		new ReleaseStartOperation(gfRepo, MY_RELEASE).execute(null);
-		addFileAndCommit("foo.txt", "testReleaseFinish\n\nbranch commit 1\n");
-		addFileAndCommit("bar.txt", "testReleaseFinish\n\nbranch commit 2\n");
-		ReleaseFinishOperation releaseFinishOperation = new ReleaseFinishOperation(gfRepo);
-		releaseFinishOperation.execute(null);
-		assertEquals(gfRepo.getConfig().getDevelopFull(),
-				repository.getFullBranch());
-
-		String branchName = gfRepo.getConfig().getReleaseBranchName(MY_RELEASE);
-		// tag created?
-		RevCommit taggedCommit = gfRepo.findCommitForTag(MY_VERSION_TAG
-				+ MY_RELEASE);
-		assertEquals(formatMergeCommitMessage(branchName),
-				taggedCommit.getFullMessage());
-
-		// branch removed?
-		assertEquals(findBranch(repository, branchName), null);
-	}
 	@Test
 	public void testReleaseFinishFail() throws Exception {
 		testRepository
