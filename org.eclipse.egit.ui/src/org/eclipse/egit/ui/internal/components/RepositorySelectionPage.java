@@ -57,6 +57,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Wizard page that allows the user entering the location of a remote repository
@@ -117,6 +118,8 @@ public class RepositorySelectionPage extends WizardPage {
 	private String password;
 
 	private boolean storeInSecureStore = true;
+
+	private String helpContext = null;
 
 	/**
 	 * Transport protocol abstraction
@@ -548,7 +551,9 @@ public class RepositorySelectionPage extends WizardPage {
 		userText.setLayoutData(createFieldGridData());
 		userText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
-				setURI(uri.setUser(nullString(userText.getText())));
+				Protocol protocol = getProtocol();
+				if (protocol != Protocol.HTTP && protocol != Protocol.HTTPS)
+					setURI(uri.setUser(nullString(userText.getText())));
 				user = userText.getText();
 			}
 		});
@@ -864,13 +869,19 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void updateAuthGroup() {
-		int idx = scheme.getSelectionIndex();
-		if (idx >= 0) {
-			Protocol p = Protocol.values()[idx];
+		Protocol p = getProtocol();
+		if (p != null) {
 			hostText.setEnabled(p.hasHost());
 			portText.setEnabled(p.hasPort());
 			setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
+	}
+
+	private Protocol getProtocol() {
+		int idx = scheme.getSelectionIndex();
+		if (idx >= 0)
+			return Protocol.values()[idx];
+		return null;
 	}
 
 	@Override
@@ -902,6 +913,21 @@ public class RepositorySelectionPage extends WizardPage {
 	 */
 	public boolean getStoreInSecureStore() {
 		return this.storeInSecureStore;
+	}
+
+	/**
+	 * Set the ID for context sensitive help
+	 *
+	 * @param id
+	 *            help context
+	 */
+	public void setHelpContext(String id) {
+		helpContext = id;
+	}
+
+	@Override
+	public void performHelp() {
+		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
 	}
 
 	private void setEnabledRecursively(final Control control,
