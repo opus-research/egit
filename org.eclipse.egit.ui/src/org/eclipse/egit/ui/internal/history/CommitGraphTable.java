@@ -57,19 +57,13 @@ import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MenuDetectListener;
-import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.MouseMoveListener;
-import org.eclipse.swt.events.MouseTrackAdapter;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
@@ -124,11 +118,9 @@ class CommitGraphTable {
 
 	IAction copy;
 
-	private Shell hoverShell;
-
 	MenuListener menuListener;
 
-	CommitGraphTable(Composite parent) {
+	CommitGraphTable(Composite parent){
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 
@@ -169,59 +161,6 @@ class CommitGraphTable {
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
 			public void selectionChanged(SelectionChangedEvent event) {
 				copy.setEnabled(canDoCopy());
-			}
-		});
-
-		table.getTable().addMouseTrackListener(new MouseTrackAdapter() {
-			@Override
-			public void mouseHover(MouseEvent e) {
-				synchronized (this) {
-					if (hoverShell != null) {
-						hoverShell.setVisible(false);
-						hoverShell.dispose();
-						hoverShell = null;
-					}
-
-					TableItem item = table.getTable().getItem(
-							new Point(e.x, e.y));
-					if (item == null)
-						return;
-					SWTCommit commit = (SWTCommit) item.getData();
-					if (commit == null || commit.getRefCount() == 0)
-						return;
-
-					int relativeX = e.x - item.getBounds().x;
-					for (int i = 0; i < commit.getRefCount(); i++) {
-						Point textSpan = renderer.getRefHSpan(commit
-								.getRef(i));
-						if ((relativeX >= textSpan.x && relativeX <= textSpan.y)) {
-							hoverShell = new Shell(getTableView().getTable()
-									.getShell(), SWT.ON_TOP | SWT.NO_FOCUS
-									| SWT.TOOL);
-							hoverShell.setLayout(new FillLayout());
-							Point tableLocation = getTableView().getTable()
-									.toControl(0, 0);
-							hoverShell.setLocation(-tableLocation.x + e.x,
-									-tableLocation.y + e.y);
-							Label label = new Label(hoverShell, SWT.NONE);
-							label.setText(commit.getRef(i).getName());
-							hoverShell.pack();
-							hoverShell.setVisible(true);
-						}
-					}
-				}
-			}
-		});
-
-		table.getTable().addMouseMoveListener(new MouseMoveListener() {
-			public void mouseMove(MouseEvent e) {
-				synchronized (this) {
-					if (hoverShell == null)
-						return;
-					hoverShell.setVisible(false);
-					hoverShell.dispose();
-					hoverShell = null;
-				}
 			}
 		});
 	}
@@ -338,9 +277,7 @@ class CommitGraphTable {
 
 	void setInput(final RevFlag hFlag, final SWTCommitList list,
 			final SWTCommit[] asArray, HistoryPageInput input) {
-		this.input = input;
-		if (menuListener != null)
-			menuListener.setInput(input);
+		setHistoryPageInput(input);
 		final SWTCommitList oldList = allCommits;
 		highlight = hFlag;
 		allCommits = list;
@@ -353,6 +290,12 @@ class CommitGraphTable {
 		} else {
 			table.getTable().deselectAll();
 		}
+	}
+
+	void setHistoryPageInput(HistoryPageInput input) {
+		this.input = input;
+		if (menuListener != null)
+			menuListener.setInput(input);
 	}
 
 	private void initCommitsMap() {
