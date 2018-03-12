@@ -229,6 +229,18 @@ public class UIText extends NLS {
 	public static String GitDocument_errorRefreshQuickdiff;
 
 	/** */
+	public static String GitHistoryPage_AllChangesInFolderHint;
+
+	/** */
+	public static String GitHistoryPage_AllChangesInProjectHint;
+
+	/** */
+	public static String GitHistoryPage_AllChangesInRepoHint;
+
+	/** */
+	public static String GitHistoryPage_AllChangesOfResourceHint;
+
+	/** */
 	public static String GitDocument_errorResolveQuickdiff;
 
 	/** */
@@ -271,6 +283,12 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FileNotInCommit;
 
 	/** */
+	public static String GitHistoryPage_FileType;
+
+	/** */
+	public static String GitHistoryPage_FolderType;
+
+	/** */
 	public static String GitHistoryPage_fileNotFound;
 
 	/** */
@@ -286,7 +304,13 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_From;
 
 	/** */
+	public static String GitHistoryPage_MultiResourcesType;
+
+	/** */
 	public static String GitHistoryPage_OpenMenuLabel;
+
+	/** */
+	public static String GitHistoryPage_ProjectType;
 
 	/** */
 	public static String GitHistoryPage_QuickdiffMenuLabel;
@@ -2212,27 +2236,6 @@ public class UIText extends NLS {
 	public static String MergeAction_WrongRepositoryState;
 
 	/** */
-	public static String MergeResultDialog_couldNotFindCommit;
-
-	/** */
-	public static String MergeResultDialog_description;
-
-	/** */
-	public static String MergeResultDialog_id;
-
-	/** */
-	public static String MergeResultDialog_mergeInput;
-
-	/** */
-	public static String MergeResultDialog_mergeResult;
-
-	/** */
-	public static String MergeResultDialog_newHead;
-
-	/** */
-	public static String MergeResultDialog_result;
-
-	/** */
 	public static String MergeTargetSelectionDialog_ButtonMerge;
 
 	/** */
@@ -2414,10 +2417,16 @@ public class UIText extends NLS {
 	public static String NewRepositoryWizard_WizardTitle;
 
 	/** */
-	public static String RemoteSelectionCombo_remoteName;
+	public static String RemoteSelectionCombo_sourceName;
 
 	/** */
-	public static String RemoteSelectionCombo_remoteRef;
+	public static String RemoteSelectionCombo_sourceRef;
+
+	/** */
+	public static String RemoteSelectionCombo_destinationName;
+
+	/** */
+	public static String RemoteSelectionCombo_destinationRef;
 
 	/** */
 	public static String RemoveCommand_DeleteConfirmMultiMessage;
@@ -2447,7 +2456,7 @@ public class UIText extends NLS {
 	public static String SelectSynchronizeResourceDialog_dstRef;
 
 	/** */
-	public static String SelectSynchronizeResourceDialog_includeUncommitedChnages;
+	public static String SelectSynchronizeResourceDialog_includeUncommitedChanges;
 
 	/** */
 	public static String SelectUriWiazrd_Title;
