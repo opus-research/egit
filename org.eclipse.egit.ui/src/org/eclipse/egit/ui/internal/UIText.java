@@ -5222,9 +5222,6 @@ public class UIText extends NLS {
 	public static String GitModelSynchronize_fetchGitDataJobName;
 
 	/** */
-	public static String GitModelSynchronize_fetchInterrupted;
-
-	/** */
 	public static String FetchChangeFromGerritCommand_noRepositorySelectedTitle;
 
 	/** */
