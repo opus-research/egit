@@ -58,20 +58,11 @@ public class GitAdapterFactory implements IAdapterFactory {
 				&& adapterType == IResource.class) {
 			GitModelObject obj = (GitModelObject) adaptableObject;
 
-			if (obj instanceof GitModelBlob) {
-				IResource res = root.getFileForLocation(obj.getLocation());
-				if (res == null)
-					res = root.getFile(obj.getLocation());
-
-				return res;
-			}
+			if (obj instanceof GitModelBlob)
+				return root.getFileForLocation(obj.getLocation());
 
 			if (obj instanceof GitModelTree) {
-				IResource res = root.getContainerForLocation(obj.getLocation());
-				if (res == null)
-					res = root.getFolder(obj.getLocation());
-
-				return res;
+				return root.getContainerForLocation(obj.getLocation());
 			}
 		}
 
