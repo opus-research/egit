@@ -42,7 +42,8 @@ abstract class IndexDiffUpdateJob extends Job {
 	public IndexDiffUpdateJob(String name, long delay) {
 		super(name);
 		defaultDelay = delay;
-		cleanup();
+		files = new HashSet<String>();
+		resources = new HashSet<IResource>();
 	}
 
 	/**
@@ -66,10 +67,10 @@ abstract class IndexDiffUpdateJob extends Job {
 		synchronized (lock) {
 			filesToUpdate = files;
 			resourcesToUpdate = resources;
-			cleanup();
-			if (monitor.isCanceled() || filesToUpdate.isEmpty()) {
+			files = new HashSet<String>();
+			resources = new HashSet<IResource>();
+			if (monitor.isCanceled() || filesToUpdate.isEmpty())
 				return Status.CANCEL_STATUS;
-			}
 		}
 		return updateIndexDiff(filesToUpdate, resourcesToUpdate, monitor);
 	}
@@ -82,35 +83,14 @@ abstract class IndexDiffUpdateJob extends Job {
 	 * @param resourcesToUpdate
 	 *            non null resources to update
 	 */
-	public void addChanges(Collection<String> filesToUpdate,
+	void addChanges(Collection<String> filesToUpdate,
 			Collection<IResource> resourcesToUpdate) {
 		synchronized (lock) {
 			files.addAll(filesToUpdate);
 			resources.addAll(resourcesToUpdate);
 		}
-		if (!filesToUpdate.isEmpty()) {
+		if (!filesToUpdate.isEmpty())
 			schedule(defaultDelay);
-		}
-	}
-
-	@Override
-	protected void canceling() {
-		// always run cleanup on cancel
-		cleanup();
-	}
-
-	void cleanupAndCancel() {
-		// we must always run cleanup here because framework may not call
-		// canceling() if the job was not started yet
-		cleanup();
-		cancel();
-	}
-
-	private void cleanup() {
-		synchronized (lock) {
-			files = new HashSet<String>();
-			resources = new HashSet<IResource>();
-		}
 	}
 
 }
