@@ -61,7 +61,6 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
@@ -304,13 +303,13 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		case REPO: {
 
 			List<RepositoryTreeNode<? extends Object>> nodeList = new ArrayList<RepositoryTreeNode<? extends Object>>();
+
 			nodeList.add(new BranchesNode(node, repo));
 			nodeList.add(new TagsNode(node, repo));
 			nodeList.add(new AdditionalRefsNode(node, repo));
-			if (!repo.isBare())
-				nodeList.add(new WorkingDirNode(node, repo));
+			nodeList.add(new WorkingDirNode(node, repo));
 			nodeList.add(new RemotesNode(node, repo));
-			if (!repo.isBare() && hasConfiguredSubmodules(repo))
+			if (!repo.isBare())
 				nodeList.add(new SubmodulesNode(node, repo));
 
 			return nodeList.toArray();
@@ -545,21 +544,4 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		return filtered;
 	}
 
-	/**
-	 * Does the repository have any submodule configurations?
-	 * <p>
-	 * This method checks for a '.gitmodules' file at the root of the working
-	 * directory or any 'submodule' sections in the repository's config file
-	 *
-	 * @param repository
-	 * @return true if submodules, false otherwise
-	 */
-	private boolean hasConfiguredSubmodules(final Repository repository) {
-		if (new File(repository.getWorkTree(), Constants.DOT_GIT_MODULES)
-				.isFile())
-			return true;
-		return !repository.getConfig()
-				.getSubsections(ConfigConstants.CONFIG_SUBMODULE_SECTION)
-				.isEmpty();
-	}
 }
