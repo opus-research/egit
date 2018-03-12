@@ -52,6 +52,7 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
@@ -256,6 +257,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		BooleanPrefAction showTagSequenceAction;
 
+		BooleanPrefAction showBranchSequenceAction;
+
 		BooleanPrefAction wrapCommentAction;
 
 		BooleanPrefAction fillCommentAction;
@@ -308,6 +311,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			createShowEmailAddressesAction();
 			createShowNotesAction();
 			createShowTagSequenceAction();
+			createShowBranchSequenceAction();
 			createWrapCommentAction();
 			createFillCommentAction();
 			createFollowRenamesAction();
@@ -517,6 +521,20 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			};
 			showTagSequenceAction.apply(showTagSequenceAction.isChecked());
 			actionsToDispose.add(showTagSequenceAction);
+		}
+
+		private void createShowBranchSequenceAction() {
+			showBranchSequenceAction = new BooleanPrefAction(
+					UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE,
+					UIText.ResourceHistory_ShowBranchSequence) {
+				@Override
+				void apply(boolean value) {
+					// nothing, just set the Preference
+				}
+			};
+			showBranchSequenceAction
+					.apply(showBranchSequenceAction.isChecked());
+			actionsToDispose.add(showBranchSequenceAction);
 		}
 
 		private void createWrapCommentAction() {
@@ -1110,6 +1128,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		IMenuManager showInMessageManager = new MenuManager(
 				UIText.GitHistoryPage_InRevisionCommentSubMenuLabel);
 		showSubMenuMgr.add(showInMessageManager);
+		showInMessageManager.add(actions.showBranchSequenceAction);
 		showInMessageManager.add(actions.showTagSequenceAction);
 		showInMessageManager.add(actions.wrapCommentAction);
 		showInMessageManager.add(actions.fillCommentAction);
@@ -1346,9 +1365,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(resource);
-					repo = mapping.getRepository();
-					input = new HistoryPageInput(repo,
-							new IResource[] { resource });
+					if (mapping != null) {
+						repo = mapping.getRepository();
+						input = new HistoryPageInput(repo,
+								new IResource[] { resource });
+					}
 				}
 			}
 			if (repo == null) {
@@ -1403,8 +1424,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showHead(Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
+		try (RevWalk rw = new RevWalk(repo)) {
 			ObjectId head = repo.resolve(Constants.HEAD);
 			if (head == null)
 				return;
@@ -1416,8 +1436,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showRef(Ref ref, Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
+		try (RevWalk rw = new RevWalk(repo)) {
 			RevCommit c = rw.parseCommit(ref.getLeaf().getObjectId());
 			graph.selectCommit(c);
 		} catch (IOException e) {
@@ -1426,8 +1445,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showTag(Ref ref, Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
+		try (RevWalk rw = new RevWalk(repo)) {
 			RevCommit c = null;
 			RevObject any = rw.parseAny(ref.getLeaf().getObjectId());
 			if (any instanceof RevCommit)
@@ -1715,7 +1733,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				setupFileViewer(walk, db, paths);
 				setupCommentViewer(db);
 
-				loadHistory(INITIAL_ITEM, walk);
+				loadInitialHistory(walk);
 			} else
 				// needed for context menu and double click
 				graph.setHistoryPageInput(input);
@@ -2090,8 +2108,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	@Override
 	public void loadItem(int item) {
-		if (job == null || job.loadMoreItemsThreshold() < item)
-			loadHistory(item, null);
+		if (job != null && job.loadMoreItemsThreshold() < item) {
+			loadHistory(item);
+		}
 	}
 
 	@Override
@@ -2107,21 +2126,37 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	/**
-	 * Load history items incrementally
-	 * @param itemToLoad hint for index of item that should be loaded
-	 * @param walk the revwalk, used only if itemToLoad ==  INITIAL_ITEM
+	 * Load initial history items
+	 *
+	 * @param walk
+	 *            the revwalk, non null
 	 */
-	private void loadHistory(final int itemToLoad, RevWalk walk) {
-		if (itemToLoad == INITIAL_ITEM) {
-			job = new GenerateHistoryJob(this, graph.getControl(), walk,
-					resources);
-			job.setRule(this);
+	private void loadInitialHistory(@NonNull RevWalk walk) {
+		job = new GenerateHistoryJob(this, graph.getControl(), walk, resources);
+		job.setRule(this);
+		job.setLoadHint(INITIAL_ITEM);
+		if (trace)
+			GitTraceLocation.getTrace().trace(
+					GitTraceLocation.HISTORYVIEW.getLocation(),
+					"Scheduling initial GenerateHistoryJob"); //$NON-NLS-1$
+		schedule(job);
+	}
+
+	/**
+	 * Load history items incrementally
+	 *
+	 * @param itemToLoad
+	 *            hint for index of item that should be loaded
+	 */
+	private void loadHistory(final int itemToLoad) {
+		if (job == null) {
+			return;
 		}
 		job.setLoadHint(itemToLoad);
 		if (trace)
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.HISTORYVIEW.getLocation(),
-					"Scheduling GenerateHistoryJob"); //$NON-NLS-1$
+					"Scheduling incremental GenerateHistoryJob"); //$NON-NLS-1$
 		schedule(job);
 	}
 
