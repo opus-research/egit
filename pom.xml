@@ -66,7 +66,7 @@
     <tycho-version>0.14.1</tycho-version>
     <mockito-version>1.8.4</mockito-version>
     <junit-version>4.8.1</junit-version>
-    <jgit-site>file:/${basedir}/../../jgit/org.eclipse.jgit.packaging/org.eclipse.jgit.repository/target/repository</jgit-site>
+    <jgit-site>file:/${basedir}/../../jgit/org.eclipse.jgit.packaging/org.eclipse.jgit.repository/target/site</jgit-site>
     <signer-input-directory>/home/data/httpd/download-staging.priv/egit</signer-input-directory>
     <download-publish-path>/home/data/httpd/download.eclipse.org/egit/updates-nightly</download-publish-path>
     <target-platform>egit-4.2</target-platform>
@@ -126,11 +126,6 @@
         <target-platform>egit-4.2</target-platform>
         <platform-version>[3.8,3.9)</platform-version>
       </properties>
-      <modules>
-        <module>org.eclipse.egit.import</module>
-        <module>org.eclipse.egit.import-feature</module>
-        <module>org.eclipse.egit-updatesite</module>
-      </modules>
     </profile>
     <profile>
       <id>platform-juno-staging</id>
@@ -144,11 +139,6 @@
         <target-platform>egit-4.2-staging</target-platform>
         <platform-version>[3.8,3.9)</platform-version>
       </properties>
-      <modules>
-        <module>org.eclipse.egit.import</module>
-        <module>org.eclipse.egit.import-feature</module>
-        <module>org.eclipse.egit-updatesite</module>
-      </modules>
     </profile>
     <profile>
       <id>static-checks</id>
@@ -181,7 +171,6 @@
 
     <module>org.eclipse.egit.doc</module>
     <module>org.eclipse.egit-feature</module>
-
     <module>org.eclipse.egit.repository</module>
 
     <module>org.eclipse.egit.core.test</module>
