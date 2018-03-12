@@ -113,13 +113,13 @@ public class GitModelSynchronize {
 			final ResourceMapping[] mappings = allMappings
 					.toArray(new ResourceMapping[allMappings.size()]);
 			final GitSynchronizeData data = new GitSynchronizeData(repository,
-					srcRev, dstRev, true, includedResources);
+					srcRev, dstRev, true);
 			launch(new GitSynchronizeDataSet(data), mappings);
 		} else {
 			final ResourceMapping[] mappings = allMappings
 					.toArray(new ResourceMapping[allMappings.size()]);
 			final GitSynchronizeData data = new GitSynchronizeData(repository,
-					srcRev, dstRev, includeLocal, includedResources);
+					srcRev, dstRev, includeLocal);
 			launch(new GitSynchronizeDataSet(data), mappings);
 		}
 	}
