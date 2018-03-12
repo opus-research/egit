@@ -22,8 +22,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
@@ -32,7 +30,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -70,14 +67,13 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		repoFile = createProjectAndCommitToRepository();
 		perspective = bot.activePerspective();
 		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
-		IProject prj = ResourcesPlugin.getWorkspace().getRoot()
-				.getProject(PROJ1);
+		IProject prj = ResourcesPlugin.getWorkspace().getRoot().getProject(
+				PROJ1);
 		IFolder folder2 = prj.getFolder(SECONDFOLDER);
 		folder2.create(false, true, null);
 		IFile addedFile = folder2.getFile(ADDEDFILE);
-		addedFile.create(
-				new ByteArrayInputStream("More content".getBytes(prj
-						.getDefaultCharset())), false, null);
+		addedFile.create(new ByteArrayInputStream("More content".getBytes(prj
+				.getDefaultCharset())), false, null);
 		addAndCommit(addedFile, ADDEDMESSAGE);
 		// TODO count the commits
 		commitCount = 3;
@@ -99,18 +95,17 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 				getHistoryViewTable(PROJ1, FOLDER).rowCount());
 		assertEquals("Wrong number of commits", commitCount - 1,
 				getHistoryViewTable(PROJ1, FOLDER, FILE1).rowCount());
-		assertEquals("Wrong number of commits", 1,
-				getHistoryViewTable(PROJ1, FOLDER, FILE2).rowCount());
-		assertEquals("Wrong number of commits", 1,
-				getHistoryViewTable(PROJ1, SECONDFOLDER).rowCount());
-		assertEquals("Wrong number of commits", 1,
-				getHistoryViewTable(PROJ1, SECONDFOLDER, ADDEDFILE).rowCount());
+		assertEquals("Wrong number of commits", 1, getHistoryViewTable(PROJ1,
+				FOLDER, FILE2).rowCount());
+		assertEquals("Wrong number of commits", 1, getHistoryViewTable(PROJ1,
+				SECONDFOLDER).rowCount());
+		assertEquals("Wrong number of commits", 1, getHistoryViewTable(PROJ1,
+				SECONDFOLDER, ADDEDFILE).rowCount());
 		assertEquals("Wrong number of commits", 1, getHistoryViewTable(PROJ2)
 				.rowCount());
 
-		assertEquals("Wrong commit message", ADDEDMESSAGE,
-				getHistoryViewTable(PROJ1, SECONDFOLDER, ADDEDFILE)
-						.getTableItem(0).getText(0));
+		assertEquals("Wrong commit message", ADDEDMESSAGE, getHistoryViewTable(
+				PROJ1, SECONDFOLDER, ADDEDFILE).getTableItem(0).getText(0));
 		assertEquals("Wrong commit message", "Initial commit",
 				getHistoryViewTable(PROJ1, FOLDER, FILE2).getTableItem(0)
 						.getText(0));
@@ -167,8 +162,8 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 				getHistoryViewTable(PROJ1, FOLDER, FILE2).rowCount());
 		assertEquals("Wrong number of commits", commitCount,
 				getHistoryViewTable(PROJ1, SECONDFOLDER).rowCount());
-		assertEquals("Wrong number of commits", 1,
-				getHistoryViewTable(PROJ1, SECONDFOLDER, ADDEDFILE).rowCount());
+		assertEquals("Wrong number of commits", 1, getHistoryViewTable(PROJ1,
+				SECONDFOLDER, ADDEDFILE).rowCount());
 		assertEquals("Wrong number of commits", commitCount,
 				getHistoryViewTable(PROJ2).rowCount());
 	}
@@ -176,9 +171,8 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	/**
 	 * @param filter
 	 *            0: none, 1: repository, 2: project, 3: folder
-	 * @throws Exception
 	 */
-	private void initFilter(int filter) throws Exception {
+	private void initFilter(int filter) {
 		getHistoryViewTable(PROJ1);
 		SWTBotView view = bot
 				.viewById("org.eclipse.team.ui.GenericHistoryView");
@@ -231,19 +225,18 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		waitInUI();
 		int countAfter = getHistoryViewTable(PROJ1).rowCount();
 		assertEquals("Wrong number of entries", countBefore + 1, countAfter);
-		assertEquals("Wrong comit message", commitMessage,
-				getHistoryViewTable(PROJ1).getTableItem(0).getText(0));
+		assertEquals("Wrong comit message", commitMessage, getHistoryViewTable(
+				PROJ1).getTableItem(0).getText(0));
 	}
 
 	/**
 	 * @param path
 	 *            must be length 2 or three (folder or file)
 	 * @return the bale
-	 * @throws Exception
 	 */
-	private SWTBotTable getHistoryViewTable(String... path) throws Exception {
-		SWTBotTree projectExplorerTree = bot
-				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
+	private SWTBotTable getHistoryViewTable(String... path) {
+		SWTBotTree projectExplorerTree = bot.viewById(
+				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		SWTBotTreeItem explorerItem;
 		if (path.length == 1)
 			explorerItem = getProjectItem(projectExplorerTree, path[0]);
@@ -256,15 +249,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		explorerItem.select();
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Show In",
 				"History");
-		// join GenerateHistoryJob
-		Job.getJobManager().join(JobFamilies.GENERATE_HISTORY, null);
-		// join UI update triggered by GenerateHistoryJob
-		projectExplorerTree.widget.getDisplay().syncExec(new Runnable() {
-
-			public void run() {
-				// empty
-			}
-		});
+		// explorerItem.select();
 		return bot.viewById("org.eclipse.team.ui.GenericHistoryView").bot()
 				.table();
 	}
@@ -299,19 +284,18 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		Display.getDefault().syncExec(new Runnable() {
 
 			public void run() {
-				TableItem tableItem = table.widget.getSelection()[0];
-				ensureTableItemLoaded(tableItem);
-				commit[0] = (RevCommit) tableItem.getData();
+				commit[0] = (RevCommit) table.widget.getSelection()[0]
+						.getData();
 			}
 		});
 
 		ContextMenuHelper.clickContextMenu(table,
 				UIText.GitHistoryPage_CreateTagMenuLabel);
 		SWTBotShell dialog = bot.shell(UIText.CreateTagDialog_NewTag);
-		dialog.bot().textWithLabel(UIText.CreateTagDialog_tagName)
-				.setText("NewTag");
-		dialog.bot().textWithLabel(UIText.CreateTagDialog_tagMessage)
-				.setText("New Tag message");
+		dialog.bot().textWithLabel(UIText.CreateTagDialog_tagName).setText(
+				"NewTag");
+		dialog.bot().textWithLabel(UIText.CreateTagDialog_tagMessage).setText(
+				"New Tag message");
 		dialog.bot().button(IDialogConstants.OK_LABEL).click();
 		waitInUI();
 		assertNotNull(repo.resolve(Constants.R_TAGS + "NewTag"));
@@ -330,9 +314,8 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		Display.getDefault().syncExec(new Runnable() {
 
 			public void run() {
-				TableItem tableItem = table.widget.getSelection()[0];
-				ensureTableItemLoaded(tableItem);
-				commit[0] = (RevCommit) tableItem.getData();
+				commit[0] = (RevCommit) table.widget.getSelection()[0]
+						.getData();
 			}
 		});
 
@@ -341,15 +324,5 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		waitInUI();
 		assertEquals(commit[0].getId().name(), repo.getBranch());
-	}
-
-	/**
-	 * Workaround to ensure that the TableItem of a SWT table with style
-	 * SWT_VIRTUAL is loaded.
-	 * 
-	 * @param item
-	 */
-	private static void ensureTableItemLoaded(TableItem item) {
-		item.setText(item.getText()); // TODO: is there a better solution?
 	}
 }
