@@ -1104,22 +1104,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
-		enableAuthorText(enabled);
+		authorText.setEnabled(enabled);
 		refreshAction.setEnabled(enabled);
 		amendPreviousCommitAction.setEnabled(enabled);
 		signedOffByAction.setEnabled(enabled);
 		addChangeIdAction.setEnabled(enabled);
 		commitButton.setEnabled(enabled);
 		commitAndPushButton.setEnabled(enabled);
-	}
-
-	private void enableAuthorText(boolean enabled) {
-		if (currentRepository != null
-				&& currentRepository.getRepositoryState().equals(
-				RepositoryState.CHERRY_PICKING_RESOLVED))
-			authorText.setEnabled(false);
-		else
-			authorText.setEnabled(enabled);
 	}
 
 	private void updateToolbar() {
