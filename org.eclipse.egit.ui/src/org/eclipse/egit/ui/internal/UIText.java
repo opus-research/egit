@@ -1042,9 +1042,6 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
-	public static String CancelAfterSaveDialog_Title;
-
-	/** */
 	public static String CleanRepositoryPage_cleanDirs;
 
 	/** */
@@ -4833,9 +4830,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_CommitToolTip;
-
-	/** */
-	public static String StagingView_cancelCommitAfterSaving;
 
 	/** */
 	public static String StagingView_checkoutFailed;

@@ -2350,8 +2350,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
 
-		if (!UIUtils.saveAllEditors(currentRepository,
-				UIText.StagingView_cancelCommitAfterSaving))
+		if (!UIUtils.saveAllEditors(currentRepository))
 			return;
 
 		String commitMessage = commitMessageComponent.getCommitMessage();
