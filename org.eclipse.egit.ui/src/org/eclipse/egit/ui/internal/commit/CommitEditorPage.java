@@ -321,7 +321,7 @@ public class CommitEditorPage extends FormPage {
 			message = replaceSignedOffByLine(message, committer);
 
 		SpellcheckableMessageArea textContent = new SpellcheckableMessageArea(
-				messageArea, message, true, toolkit.getBorderStyle()) {
+				messageArea, message, toolkit.getBorderStyle()) {
 
 			@Override
 			protected IAdaptable getDefaultTarget() {
@@ -343,6 +343,7 @@ public class CommitEditorPage extends FormPage {
 					FormToolkit.TEXT_BORDER);
 		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 80).grab(true, true)
 				.applyTo(textContent);
+		textContent.getTextWidget().setEditable(false);
 
 		updateSectionClient(messageSection, messageArea, toolkit);
 	}
