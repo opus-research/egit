@@ -1245,7 +1245,7 @@ public class StagingView extends ViewPart {
 		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
-		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
+		amendPreviousCommitAction.setEnabled(amendAllowed(helper));
 	}
 
 	private void loadExistingState(CommitHelper helper,
@@ -1262,7 +1262,7 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(oldState.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
-		boolean amendAllowed = helper.amendAllowed();
+		boolean amendAllowed = amendAllowed(helper);
 		commitMessageComponent.setAmendAllowed(amendAllowed);
 		if (!amendAllowed) {
 			commitMessageComponent.setAmending(false);
@@ -1291,12 +1291,17 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(helper.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
-		commitMessageComponent.setAmendAllowed(helper.amendAllowed());
+		commitMessageComponent.setAmendAllowed(amendAllowed(helper));
 		commitMessageComponent.setAmending(false);
 		commitMessageComponent.setSignedOff(false);
 		commitMessageComponent.setCreateChangeId(false);
 		commitMessageComponent.updateUI();
 		commitMessageComponent.enableListers(true);
+	}
+
+	private boolean amendAllowed(CommitHelper commitHelper) {
+		return !commitHelper.isMergedResolved()
+				&& !commitHelper.isCherryPickResolved();
 	}
 
 	private boolean userEnteredCommmitMessage() {

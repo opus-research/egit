@@ -211,6 +211,9 @@ public class UIText extends NLS {
 	public static String EGitCredentialsProvider_errorReadingCredentials;
 
 	/** */
+	public static String EGitCredentialsProvider_FailedToClearCredentials;
+
+	/** */
 	public static String EgitUiUtils_CouldNotOpenEditorMessage;
 
 	/** */
@@ -3345,6 +3348,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_SelectOneCommitMessage;
+
+	/** */
+	public static String CommitFileDiffViewer_ShowAnnotationsMenuLabel;
 
 	/** */
 	public static String CommitGraphTable_CommitId;
