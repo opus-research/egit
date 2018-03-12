@@ -470,9 +470,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	/** Last HEAD */
 	private AnyObjectId currentHeadId;
 
-	/** Repository of the last input*/
-	private Repository currentRepo;
-
 	/**
 	 * Highlight flag that can be applied to commits to make them stand out.
 	 * <p>
@@ -937,6 +934,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
 				return false;
 			}
+			Repository db = input.getRepository();
+			if (resolveHead(db, true) == null) {
+				this.name = ""; //$NON-NLS-1$
+				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
+				return false;
+			}
 
 			final IResource[] inResources = input.getItems();
 			final File[] inFiles = input.getFileList();
@@ -957,7 +960,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			actions.showAllResourceVersionsAction.setEnabled(filtersActive);
 
 			try {
-				initAndStartRevWalk(false);
+				initAndStartRevWalk(true);
 			} catch (IllegalStateException e) {
 				Activator.handleError(e.getMessage(), e, true);
 				return false;
@@ -1188,36 +1191,28 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 			cancelRefreshJob();
 			Repository db = input.getRepository();
-			AnyObjectId headId = resolveHead(db);
+			AnyObjectId headId = resolveHead(db, false);
 
 			List<String> paths = buildFilterPaths(input.getItems(), input
 					.getFileList(), db);
 
-			boolean pathChange = pathChange(pathFilters, paths);
-			boolean headChange = !headId.equals(currentHeadId);
-			boolean repoChange = false;
-			if (!db.equals(currentRepo))
-			{
-				repoChange = true;
-				currentRepo = db;
-			}
-			if (forceNewWalk || pathChange
-					|| currentWalk == null || headChange || repoChange) {
+			if (forceNewWalk || pathChange(pathFilters, paths)
+					|| currentWalk == null || !headId.equals(currentHeadId)) {
 				// TODO Do not dispose SWTWalk just because HEAD changed
 				// In theory we should be able to update the graph and
 				// not dispose of the SWTWalk, even if HEAD was reset to
 				// HEAD^1 and the old HEAD commit should not be visible.
 				//
 				createNewWalk(db, headId);
-				setWalkStartPoints(db, headId);
+			} else {
+				currentWalk.reset();
+			}
+			setWalkStartPoints(db, headId);
 
-				setupFileViewer(db, paths);
-				setupCommentViewer(db);
+			setupFileViewer(db, paths);
+			setupCommentViewer(db);
 
-				scheduleNewGenerateHistoryJob();
-			} else
-				// needed for context menu and double click
-				graph.setHistoryPageInput(input);
+			scheduleNewGenerateHistoryJob();
 		} finally {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
@@ -1226,7 +1221,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		}
 	}
 
-	private AnyObjectId resolveHead(Repository db) {
+	private AnyObjectId resolveHead(Repository db, boolean acceptNull) {
 		AnyObjectId headId;
 		try {
 			headId = db.resolve(Constants.HEAD);
@@ -1234,9 +1229,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorParsingHead, Activator
 							.getDefault().getRepositoryUtil()
-							.getRepositoryName(db)));
+							.getRepositoryName(db)), e);
 		}
-		if (headId == null)
+		if (headId == null && !acceptNull)
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorParsingHead, Activator
 							.getDefault().getRepositoryUtil()
