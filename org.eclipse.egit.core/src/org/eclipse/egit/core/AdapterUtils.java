@@ -13,7 +13,7 @@ package org.eclipse.egit.core;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.internal.Utils;
-import org.eclipse.jgit.annotations.Nullable;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * Utilities for working with objects that implement {@link IAdaptable}
