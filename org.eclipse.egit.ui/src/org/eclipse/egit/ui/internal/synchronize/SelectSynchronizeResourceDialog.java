@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -110,25 +109,21 @@ public class SelectSynchronizeResourceDialog extends TitleAreaDialog {
 		new Label(composite, SWT.WRAP)
 				.setText(UIText.SelectSynchronizeResourceDialog_srcRef);
 
-		srcRefCombo = new RemoteSelectionCombo(composite, syncRepos,
-				UIText.RemoteSelectionCombo_sourceName,
-				UIText.RemoteSelectionCombo_sourceRef);
-		srcRefCombo.setDefaultValue(UIText.SynchronizeWithAction_localRepoName, HEAD);
+		srcRefCombo = new RemoteSelectionCombo(composite, syncRepos);
+		srcRefCombo.setDefautlValue(UIText.SynchronizeWithAction_localRepoName, HEAD);
 		srcRefCombo.setLayoutData(data);
 		srcRefCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
 				false).create());
 
 		shouldIncludeLocalButton = new Button(composite, SWT.CHECK | SWT.WRAP);
 		shouldIncludeLocalButton
-				.setText(UIText.SelectSynchronizeResourceDialog_includeUncommitedChanges);
+				.setText(UIText.SelectSynchronizeResourceDialog_includeUncommitedChnages);
 
 		new Label(composite, SWT.WRAP)
 				.setText(UIText.SelectSynchronizeResourceDialog_dstRef);
 
-		dstRefCombo = new RemoteSelectionCombo(composite, syncRepos,
-				UIText.RemoteSelectionCombo_destinationName,
-				UIText.RemoteSelectionCombo_destinationRef);
-		dstRefCombo.setDefaultValue(getDefaultRemoteName(), MASTER);
+		dstRefCombo = new RemoteSelectionCombo(composite, syncRepos);
+		dstRefCombo.setDefautlValue(getDefaultRemoteName(), MASTER);
 		dstRefCombo.setLayoutData(data);
 		dstRefCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
 				false).create());
@@ -142,15 +137,18 @@ public class SelectSynchronizeResourceDialog extends TitleAreaDialog {
 	}
 
 	private String getDefaultRemoteName() {
+		String defaultName = ""; //$NON-NLS-1$
 		boolean onlyOneRemote = syncRepos.size() == 2;
-		if (onlyOneRemote)
-			return syncRepos.get(1).getName();
-		else {
-			for (SyncRepoEntity repo : syncRepos)
-				if (repo.getName().equals(DEFAULT_REMOTE_NAME))
-					return DEFAULT_REMOTE_NAME;
+		if(onlyOneRemote) {
+			defaultName = syncRepos.get(1).getName();
+		} else {
+			for (SyncRepoEntity repo : syncRepos) {
+				if(repo.getName().equals(DEFAULT_REMOTE_NAME)) {
+					defaultName = DEFAULT_REMOTE_NAME;
+				}
+			}
 		}
-		return ""; //$NON-NLS-1$
+		return defaultName;
 	}
 
 	@Override

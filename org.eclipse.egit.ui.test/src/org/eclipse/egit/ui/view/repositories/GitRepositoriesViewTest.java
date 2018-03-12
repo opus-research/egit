@@ -214,9 +214,13 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("ImportProjectsCommand"));
 		SWTBotShell shell = bot.shell(wizardTitle);
-		bot.radio(UIText.GitSelectWizardPage_ImportExistingButton).click();
+		// we can't find the check box, so let's use the keyboard activator
+		// to select the import as existing project button
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_ImportExistingButton);
 		// auto share
-		bot.radio(UIText.GitSelectWizardPage_AutoShareButton).click();
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_AutoShareButton);
 		TableCollection selected = shell.bot().tree().selection();
 		String wizardNode = selected.get(0, 0);
 		// wizard directory should be working dir
@@ -270,9 +274,11 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// try import existing project first
-		bot.radio(UIText.GitSelectWizardPage_ImportExistingButton).click();
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_ImportExistingButton);
 		// auto share
-		bot.radio(UIText.GitSelectWizardPage_AutoShareButton).click();
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_AutoShareButton);
 		TableCollection selected = shell.bot().tree().selection();
 		String wizardNode = selected.get(0, 0);
 		// wizard directory should be PROJ2
@@ -282,7 +288,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertTrue(shell.bot().tree().getAllItems().length == 0);
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// import as general
-		shell.bot().radio(UIText.GitSelectWizardPage_ImportAsGeneralButton).click();
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_ImportAsGeneralButton);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
 				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
@@ -322,9 +329,11 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// try import existing project first
-		bot.radio(UIText.GitSelectWizardPage_ImportExistingButton).click();
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_ImportExistingButton);
 		// auto share
-		bot.radio(UIText.GitSelectWizardPage_AutoShareButton).click();
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_AutoShareButton);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		waitInUI();
 		shell.bot().tree().getAllItems()[0].check();
@@ -379,9 +388,11 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// import as general
-		bot.radio(UIText.GitSelectWizardPage_ImportAsGeneralButton).click();
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_ImportAsGeneralButton);
 		// share manual
-		bot.radio(UIText.GitSelectWizardPage_InteractiveShareButton).click();
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_InteractiveShareButton);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
 				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
@@ -413,9 +424,11 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// import as general
-		bot.radio(UIText.GitSelectWizardPage_ImportAsGeneralButton).click();
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_ImportAsGeneralButton);
 		// share manual
-		bot.radio(UIText.GitSelectWizardPage_InteractiveShareButton).click();
+		activateItemByKeyboard(shell,
+				UIText.GitSelectWizardPage_InteractiveShareButton);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
 				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
