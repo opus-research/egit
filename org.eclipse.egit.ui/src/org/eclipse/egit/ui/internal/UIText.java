@@ -3519,6 +3519,9 @@ public class UIText extends NLS {
 	public static String MergeTargetSelectionDialog_MergeTypeCommitButton;
 
 	/** */
+	public static String MergeTargetSelectionDialog_MergeTypeNoCommitButton;
+
+	/** */
 	public static String MergeTargetSelectionDialog_MergeTypeSquashButton;
 
 	/** */
@@ -4652,18 +4655,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_DeleteItemMenuLabel;
-
-	/** */
-	public static String StagingView_Presentation;
-
-	/** */
-	public static String StagingView_Flat;
-
-	/** */
-	public static String StagingView_Tree;
-
-	/** */
-	public static String StagingView_Compressed;
 
 	/** */
 	public static String StagingView_Find;
