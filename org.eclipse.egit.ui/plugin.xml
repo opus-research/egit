@@ -853,6 +853,9 @@
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
                         </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+                        </instanceof>
                      </or>
                   </iterate>
                </and>
@@ -1011,28 +1014,6 @@
                               </test>
                            </not>
                         </and>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewReset"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                        </instanceof>
                      </or>
                   </iterate>
                </and>
@@ -1436,13 +1417,6 @@
                class="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand">
          </defaultHandler>
       </command>
-      <command
-            id="org.eclipse.egit.ui.RepositoriesViewReset"
-            name="Reset...">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.ResetCommand">
-         </defaultHandler>
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.commandImages">
@@ -1481,10 +1455,6 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
             icon="icons/obj16/merge.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewReset"
-            icon="icons/obj16/reset.gif">
       </image>
    </extension>
    <extension
