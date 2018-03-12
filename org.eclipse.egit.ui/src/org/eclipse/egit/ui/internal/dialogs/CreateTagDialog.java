@@ -39,7 +39,6 @@ import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -76,7 +75,6 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
  * Dialog for creating and editing tags.
- *
  */
 public class CreateTagDialog extends TitleAreaDialog {
 
@@ -208,11 +206,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 		this.repo = repo;
 	}
 
-	@Override
-	public String getMessage() {
-		return UIText.CreateTagDialog_Message;
-	}
-
 	/**
 	 * @return {@link ObjectId} of commit with new or edited tag should be
 	 *         associated with
@@ -302,7 +295,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 		initializeDialogUnits(parent);
 
 		setTitle(getTitle());
-		setMessage(getMessage());
+		setMessage(UIText.CreateTagDialog_Message);
 
 		Composite composite = (Composite) super.createDialogArea(parent);
 
@@ -595,7 +588,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 	}
 
 	/**
-	 * @return the annotated tags
+	 * @return the tags
 	 */
 	private List<RevTag> getRevTags() {
 		Collection<Ref> revTags = repo.getTags().values();
@@ -604,8 +597,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 		for (Ref ref : revTags) {
 			try {
 				tags.add(walk.parseTag(repo.resolve(ref.getName())));
-			} catch (IncorrectObjectTypeException e) {
-				// repo.getTags() returns also lightweight tags
 			} catch (IOException e) {
 				Activator.logError(UIText.TagAction_unableToResolveHeadObjectId, e);
 				setErrorMessage(UIText.TagAction_unableToResolveHeadObjectId);
