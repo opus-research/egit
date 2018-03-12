@@ -7,7 +7,6 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Robin Stocker (independent)
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
@@ -154,7 +153,7 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 			try {
 				for (RevCommit parent : commit.getParents())
 					revWalk.parseBody(parent);
-				diffs = FileDiff.compute(treewalk, commit, TreeFilter.ALL);
+				diffs = FileDiff.compute(treewalk, commit);
 			} catch (IOException e) {
 				diffs = new FileDiff[0];
 			} finally {
