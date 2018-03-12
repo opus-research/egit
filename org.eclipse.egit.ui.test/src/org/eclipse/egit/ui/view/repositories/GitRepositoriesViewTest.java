@@ -203,7 +203,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		item.select();
 		ContextMenuHelper.clickContextMenuSync(tree,
 				myUtil.getPluginLocalizedValue("ShowIn"),
-				"Properties");
+				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
 		SWTBotView propertieView = bot.viewById("org.eclipse.ui.views.PropertySheet");
 		assertTrue(propertieView.isActive());
 	}
