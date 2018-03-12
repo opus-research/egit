@@ -240,9 +240,6 @@ public class UIIcons {
 	/** Stash icon */
 	public final static ImageDescriptor STASH;
 
-	/** History view icon */
-	public final static ImageDescriptor HISTORY;
-
 	/** Search commit icon */
 	public final static ImageDescriptor SEARCH_COMMIT;
 
@@ -269,9 +266,6 @@ public class UIIcons {
 
 	/** Reword for current rebase step */
 	public final static ImageDescriptor CURRENT_STEP;
-
-	/** Reword for todo rebase step */
-	public final static ImageDescriptor TODO_STEP;
 
 	/** base URL */
 	public final static URL base;
@@ -356,7 +350,6 @@ public class UIIcons {
 		SUBMODULES = map("obj16/submodules.gif"); //$NON-NLS-1$
 		CLEAN = map("obj16/clean_obj.gif"); //$NON-NLS-1$
 		STASH = map("obj16/stash.png"); //$NON-NLS-1$
-		HISTORY = map("obj16/history.gif"); //$NON-NLS-1$
 		SEARCH_COMMIT = map("obj16/search-commit.gif"); //$NON-NLS-1$
 		HIERARCHY = map("elcl16/hierarchicalLayout.gif"); //$NON-NLS-1$
 		FLAT = map("elcl16/flatLayout.gif"); //$NON-NLS-1$
@@ -366,7 +359,6 @@ public class UIIcons {
 		REWORD = map("obj16/reword.gif"); //$NON-NLS-1$
 		DONE_STEP = map("obj16/done_step.gif"); //$NON-NLS-1$
 		CURRENT_STEP = map("obj16/current_step.gif"); //$NON-NLS-1$
-		TODO_STEP = map("obj16/todo_step.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {
