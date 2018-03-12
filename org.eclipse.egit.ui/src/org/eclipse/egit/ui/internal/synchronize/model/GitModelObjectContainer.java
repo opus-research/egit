@@ -203,39 +203,30 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	 * @param tw instance of {@link TreeWalk} that should be used
 	 * @param ancestorCommit TODO
 	 * @param ancestorNth
-	 * @param remoteNth
 	 * @param baseNth
+	 * @param actualNth
 	 * @return {@link GitModelObject} instance of given parameters
 	 * @throws IOException
 	 */
 	protected GitModelObject getModelObject(TreeWalk tw, RevCommit ancestorCommit,
-			int ancestorNth, int remoteNth, int baseNth) throws IOException {
+			int ancestorNth, int baseNth, int actualNth) throws IOException {
 		IPath path = new Path(getLocation() + "/" +tw.getPathString()); //$NON-NLS-1$
-
-		ObjectId objRemoteId;
-		if (remoteNth > -1)
-			objRemoteId = tw.getObjectId(remoteNth);
-		else
-			objRemoteId = ObjectId.zeroId();
 
 		ObjectId objBaseId;
 		if (baseNth > -1)
 			objBaseId = tw.getObjectId(baseNth);
 		else
-			objBaseId = zeroId();
+			objBaseId = ObjectId.zeroId();
 
+		ObjectId objRemoteId = tw.getObjectId(actualNth);
 		ObjectId objAncestorId;
 		if (ancestorNth > -1)
 			objAncestorId = tw.getObjectId(ancestorNth);
 		else
 			objAncestorId = ObjectId.zeroId();
-
-		int objectType = Constants.OBJ_BAD;
-
-		if (baseNth > -1)
-			objectType = tw.getFileMode(baseNth).getObjectType();
+		int objectType = tw.getFileMode(actualNth).getObjectType();
 		if (objectType == Constants.OBJ_BAD)
-			objectType = tw.getFileMode(remoteNth).getObjectType();
+			objectType = tw.getFileMode(baseNth).getObjectType();
 		if (objectType == Constants.OBJ_BAD && ancestorNth > -1)
 			objectType = tw.getFileMode(ancestorNth).getObjectType();
 
