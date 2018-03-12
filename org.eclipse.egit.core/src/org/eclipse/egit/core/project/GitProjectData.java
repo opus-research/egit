@@ -102,12 +102,14 @@ public class GitProjectData {
 
 	/**
 	 * Start listening for resource changes.
+	 *
+	 * @param includeChange true to listen to content changes
 	 */
-	public static void attachToWorkspace() {
+	public static void attachToWorkspace(final boolean includeChange) {
 		trace("attachToWorkspace - addResourceChangeListener");  //$NON-NLS-1$
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				rcl,
-				IResourceChangeEvent.POST_CHANGE
+				(includeChange ? IResourceChangeEvent.POST_CHANGE : 0)
 						| IResourceChangeEvent.PRE_CLOSE
 						| IResourceChangeEvent.PRE_DELETE);
 	}
