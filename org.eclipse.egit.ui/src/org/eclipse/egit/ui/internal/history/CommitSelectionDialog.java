@@ -16,14 +16,10 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -77,10 +73,7 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(1, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
-		final ResourceManager resources = new LocalResourceManager(
-				JFaceResources.getResources());
-		UIUtils.hookDisposal(main, resources);
-		table = new CommitGraphTable(main, null, resources);
+		table = new CommitGraphTable(main, null);
 		table.getTableView().addSelectionChangedListener(
 				new ISelectionChangedListener() {
 					public void selectionChanged(SelectionChangedEvent event) {
@@ -102,7 +95,7 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		// allow for some room here
 		GridDataFactory.fillDefaults().grab(true, true).minSize(SWT.DEFAULT,
 				400).applyTo(table.getControl());
-		allCommits = new SWTCommitList(table.getControl(), resources);
+		allCommits = new SWTCommitList(table.getControl());
 		return main;
 	}
 

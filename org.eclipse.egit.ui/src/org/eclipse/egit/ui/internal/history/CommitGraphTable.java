@@ -43,7 +43,6 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.text.AbstractHoverInformationControlManager;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.DefaultInformationControl;
@@ -158,8 +157,7 @@ class CommitGraphTable {
 
 	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
 
-	CommitGraphTable(Composite parent, final TableLoader loader,
-			final ResourceManager resources) {
+	CommitGraphTable(Composite parent, final TableLoader loader) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 		tableLoader = loader;
@@ -203,7 +201,7 @@ class CommitGraphTable {
 
 		table.setLabelProvider(graphLabelProvider);
 		table.setContentProvider(new GraphContentProvider());
-		renderer = new SWTPlotRenderer(rawTable.getDisplay(), resources);
+		renderer = new SWTPlotRenderer(rawTable.getDisplay());
 
 		clipboard = new Clipboard(rawTable.getDisplay());
 		rawTable.addDisposeListener(new DisposeListener() {
@@ -236,6 +234,8 @@ class CommitGraphTable {
 			public void widgetDisposed(DisposeEvent e) {
 				if (allCommits != null)
 					allCommits.dispose();
+				if (renderer != null)
+					renderer.dispose();
 				hoverManager.dispose();
 			}
 		});
@@ -246,9 +246,8 @@ class CommitGraphTable {
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
-			final MenuManager menuMgr, final TableLoader loader,
-			final ResourceManager resources) {
-		this(parent, loader, resources);
+			final MenuManager menuMgr, final TableLoader loader) {
+		this(parent, loader);
 
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
