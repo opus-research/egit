@@ -581,10 +581,7 @@ public class GitProjectData {
 				return Status.OK_STATUS;
 			} catch (TeamException e) {
 				return new Status(IStatus.ERROR, Activator.getPluginId(),
-						MessageFormat.format(
-								CoreText.GitProjectData_UnmappingGoneResourceFailed,
-								project.getName()),
-						e);
+						CoreText.GitProjectData_UnmappingGoneResourceFailed, e);
 			}
 		}
 	}
