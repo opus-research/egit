@@ -64,7 +64,7 @@ public class GitModelBlob extends GitModelCommit {
 	public GitModelBlob(GitModelObject parent, RevCommit commit,
 			ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, String name)
 			throws IOException {
-		super(parent, commit, -1);
+		super(parent, commit);
 		this.name = name;
 		this.baseId = baseId;
 		this.remoteId = remoteId;
@@ -122,13 +122,18 @@ public class GitModelBlob extends GitModelCommit {
 	}
 
 	@Override
-	protected ObjectId getBaseObjectId() {
-		return baseId;
+	protected String getAncestorSha1() {
+		return ancestorId.getName();
 	}
 
 	@Override
-	protected ObjectId getRemoteObjectId() {
-		return remoteId;
+	protected String getBaseSha1() {
+		return baseId.getName();
+	}
+
+	@Override
+	protected String getRemoteSha1() {
+		return remoteId.getName();
 	}
 
 	private boolean objectExist(RevCommit commit, ObjectId id) {
