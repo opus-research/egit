@@ -369,8 +369,13 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		return message.toString();
 	}
 
-	private String newLine() {
-		return System.getProperty("line.separator"); //$NON-NLS-1$
+	private String newLine(){
+		if(System.getProperty("os.name").indexOf("Windows") != -1){ //$NON-NLS-1$ //$NON-NLS-2$
+			return "\r\n"; //$NON-NLS-1$
+		}
+		else {
+			return "\n"; //$NON-NLS-1$
+		}
 	}
 
 }
