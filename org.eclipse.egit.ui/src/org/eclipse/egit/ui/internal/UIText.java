@@ -2843,10 +2843,19 @@ public class UIText extends NLS {
 	public static String WindowCachePreferencePage_streamFileThreshold;
 
 	/** */
+	public static String BasicConfigurationDialog_ConfigLocationInfo;
+
+	/** */
 	public static String BasicConfigurationDialog_DialogMessage;
 
 	/** */
 	public static String BasicConfigurationDialog_DialogTitle;
+
+	/** */
+	public static String BasicConfigurationDialog_DontShowAgain;
+
+	/** */
+	public static String BasicConfigurationDialog_OpenPreferencePage;
 
 	/** */
 	public static String BasicConfigurationDialog_UserEmailLabel;
@@ -4987,15 +4996,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StashDropCommand_jobTitle;
-
-	/** */
-	public static String StashesMenu_StashListError;
-
-	/** */
-	public static String StashesMenu_NoStashedChangesText;
-
-	/** */
-	public static String StashesMenu_StashItemText;
 
 	/** */
 	public static String SubmoduleAddCommand_AddError;
