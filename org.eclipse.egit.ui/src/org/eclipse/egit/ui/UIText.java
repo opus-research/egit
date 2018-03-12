@@ -154,9 +154,6 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_BuildingListMessage;
 
 	/** */
-	public static String GenerateHistoryJob_CancelMessage;
-
-	/** */
 	public static String GenerateHistoryJob_errorComputingHistory;
 
 	/** */
