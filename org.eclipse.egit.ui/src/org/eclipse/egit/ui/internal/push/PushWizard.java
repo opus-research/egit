@@ -192,7 +192,7 @@ public class PushWizard extends Wizard {
 				}
 
 				spec = new PushOperationSpecification();
-				for (final URIish uri : repoPage.getSelection().getPushURIs())
+				for (final URIish uri : repoPage.getSelection().getAllURIs())
 					spec.addURIRefUpdates(uri, ConfirmationPage
 							.copyUpdates(updates));
 			}
@@ -213,7 +213,7 @@ public class PushWizard extends Wizard {
 		if (repoSelection.isConfigSelected())
 			destination = repoSelection.getConfigName();
 		else
-			destination = repoSelection.getURI(true).toString();
+			destination = repoSelection.getURI().toString();
 		return destination;
 	}
 

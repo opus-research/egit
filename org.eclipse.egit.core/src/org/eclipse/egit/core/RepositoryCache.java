@@ -78,12 +78,4 @@ public class RepositoryCache {
 		}
 	}
 
-	/**
-	 * TESTING ONLY!
-	 * Unit tests can use this method to get a clean beginning state
-	 */
-	public void clear() {
-		repositoryCache.clear();
-	}
-
 }
