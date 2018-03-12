@@ -108,7 +108,6 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
@@ -697,7 +696,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		preferencesLink.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				String preferencePageId = "org.eclipse.egit.ui.GitPreferences"; //$NON-NLS-1$
+				String preferencePageId = "org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"; //$NON-NLS-1$
 				PreferenceDialog dialog = PreferencesUtil
 						.createPreferenceDialogOn(getSite().getShell(), preferencePageId,
 								new String[] { preferencePageId }, null);
@@ -889,11 +888,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	private void setupViewMenu() {
 		IMenuManager viewMenuMgr = getSite().getActionBars().getMenuManager();
-		if (getSite().getActionBars().getGlobalActionHandler(
-				ActionFactory.REFRESH.getId()) == null) {
-			viewMenuMgr.add(actions.refreshAction);
-			viewMenuMgr.add(new Separator());
-		}
+		viewMenuMgr.add(actions.refreshAction);
+
+		viewMenuMgr.add(new Separator());
 		IMenuManager showSubMenuMgr = new MenuManager(
 				UIText.GitHistoryPage_ShowSubMenuLabel);
 		viewMenuMgr.add(showSubMenuMgr);
@@ -1439,8 +1436,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					else
 						setWarningText(null);
 					setErrorMessage(null);
-				} else
-					list.dispose();
+				}
 			}
 		});
 		if (trace)
@@ -1760,8 +1756,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	private void scheduleNewGenerateHistoryJob() {
-		final SWTCommitList list = new SWTCommitList(graph.getControl()
-				.getDisplay());
+		final SWTCommitList list = new SWTCommitList(graph.getControl());
 		list.source(currentWalk);
 		final GenerateHistoryJob rj = new GenerateHistoryJob(this, list);
 		rj.addJobChangeListener(new JobChangeAdapter() {
