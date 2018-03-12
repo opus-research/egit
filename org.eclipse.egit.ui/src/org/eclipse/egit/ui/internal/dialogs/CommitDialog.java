@@ -168,7 +168,7 @@ public class CommitDialog extends Dialog {
 				IDialogConstants.CANCEL_LABEL, false);
 	}
 
-	SpellcheckableMessageArea commitText;
+	CommitMessageArea commitText;
 	Text authorText;
 	Text committerText;
 	Button amendingButton;
@@ -197,7 +197,7 @@ public class CommitDialog extends Dialog {
 		label.setText(UIText.CommitDialog_CommitMessage);
 		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
 
-		commitText = new SpellcheckableMessageArea(container, commitMessage);
+		commitText = new CommitMessageArea(container, commitMessage);
 		Point size = commitText.getTextWidget().getSize();
 		int minHeight = commitText.getTextWidget().getLineHeight() * 3;
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
@@ -418,8 +418,7 @@ public class CommitDialog extends Dialog {
 			// pre-emptively check any preselected files
 			for (IFile selectedFile : preselectedFiles) {
 				for (CommitItem item : items) {
-					if (item.file.equals(selectedFile) &&
-							!item.status.equals(UIText.CommitDialog_StatusUntracked)) {
+					if (item.file.equals(selectedFile)) {
 						filesViewer.setChecked(item, true);
 						break;
 					}
