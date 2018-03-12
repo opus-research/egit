@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2012 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    François Rey - gracefully ignore linked resources
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
@@ -174,8 +173,6 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		IResource[] selectedResources = getSelectedResources();
-		return super.isEnabled() && selectedResources.length == 1 &&
-				!selectedResources[0].isLinked(IResource.CHECK_ANCESTORS);
+		return super.isEnabled() && getSelectedResources().length == 1;
 	}
 }
