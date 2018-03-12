@@ -15,6 +15,7 @@
 package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +30,7 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -36,11 +38,14 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.ChangeIdUtil;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.events.ModifyEvent;
@@ -64,6 +69,37 @@ import org.eclipse.ui.PlatformUI;
  * of the toggle selections.
  */
 public class CommitMessageComponent {
+
+	/**
+	 * Status provider for whether a commit operation should be enabled or not
+	 */
+	public static class CommitStatus implements IMessageProvider {
+
+		private static final CommitStatus OK = new CommitStatus();
+
+		private final String message;
+
+		private final int type;
+
+		private CommitStatus() {
+			message = null;
+			type = NONE;
+		}
+
+		private CommitStatus(String message, int type) {
+			this.message = message;
+			this.type = type;
+		}
+
+		public String getMessage() {
+			return message;
+		}
+
+		public int getMessageType() {
+			return type;
+		}
+	}
+
 
 	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
@@ -100,7 +136,13 @@ public class CommitMessageComponent {
 
 	private boolean amending = false;
 
+	private boolean commitAllowed = true;
+
+	private String cannotCommitMessage = null;
+
 	private boolean amendAllowed = false;
+
+	private boolean amendingCommitInRemoteBranch = false;
 
 	private boolean createChangeId = false;
 
@@ -248,6 +290,25 @@ public class CommitMessageComponent {
 		this.amending = amending;
 	}
 
+
+	/**
+	 * Set whether commit is allowed at the moment.
+	 *
+	 * @param commitAllowed
+	 */
+	public void setCommitAllowed(boolean commitAllowed) {
+		this.commitAllowed = commitAllowed;
+	}
+
+	/**
+	 * Set the message to be shown about why the commit is not allowed.
+	 *
+	 * @param cannotCommitMessage
+	 */
+	public void setCannotCommitMessage(String cannotCommitMessage) {
+		this.cannotCommitMessage = cannotCommitMessage;
+	}
+
 	/**
 	 * Set whether the previous commit may be amended
 	 *
@@ -325,27 +386,42 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Get an informational message about the state of the commit message
-	 * component input. This method checks the current state of the widgets and
-	 * must always be called from the UI-thread.
+	 * Get the status of whether the commit operation should be enabled or
+	 * disabled.
+	 * <p>
+	 * This method checks the current state of the widgets and must always be
+	 * called from the UI-thread.
+	 * <p>
+	 * The returned status includes a message and type denoting why committing
+	 * cannot be completed.
 	 *
-	 * @return information message or null if none
+	 * @return non-null commit status
 	 */
-	public String getMessage() {
-		if (commitText.getText().trim().length() == 0)
-			return UIText.CommitDialog_Message;
+	public CommitStatus getStatus() {
+		if (!commitAllowed)
+			return new CommitStatus(cannotCommitMessage, IMessageProvider.ERROR);
 
 		String authorValue = authorText.getText();
 		if (authorValue.length() == 0
 				|| RawParseUtils.parsePersonIdent(authorValue) == null)
-			return UIText.CommitMessageComponent_MessageInvalidAuthor;
+			return new CommitStatus(
+					UIText.CommitMessageComponent_MessageInvalidAuthor,
+					IMessageProvider.ERROR);
 
 		String committerValue = committerText.getText();
 		if (committerValue.length() == 0
-				|| RawParseUtils.parsePersonIdent(committerValue) == null)
-			return UIText.CommitMessageComponent_MessageInvalidCommitter;
+				|| RawParseUtils.parsePersonIdent(committerValue) == null) {
+			return new CommitStatus(
+					UIText.CommitMessageComponent_MessageInvalidCommitter,
+					IMessageProvider.ERROR);
+		}
 
-		return null;
+		if (amending && amendingCommitInRemoteBranch)
+			return new CommitStatus(
+					UIText.CommitMessageComponent_AmendingCommitInRemoteBranch,
+					IMessageProvider.WARNING);
+
+		return CommitStatus.OK;
 	}
 
 	/**
@@ -479,8 +555,23 @@ public class CommitMessageComponent {
 
 	private void getHeadCommitInfo() {
 		CommitInfo headCommitInfo = CommitHelper.getHeadCommitInfo(repository);
+		RevCommit previousCommit = headCommitInfo.getCommit();
+
+		amendingCommitInRemoteBranch = isContainedInAnyRemoteBranch(previousCommit);
 		previousCommitMessage = headCommitInfo.getCommitMessage();
 		previousAuthor = headCommitInfo.getAuthor();
+	}
+
+	private boolean isContainedInAnyRemoteBranch(RevCommit commit) {
+		try {
+			Collection<Ref> refs = repository.getRefDatabase().getRefs(
+					Constants.R_REMOTES).values();
+			return RevUtils.isContainedInAnyRef(repository, commit, refs);
+		} catch (IOException e) {
+			// The result only affects a warning, so pretend there was no
+			// problem.
+			return false;
+		}
 	}
 
 	private String getSafeString(String string) {
@@ -555,7 +646,7 @@ public class CommitMessageComponent {
 			int endOfChangeId = findNextEOL(changeIdOffset,
 					previousCommitMessage);
 			if (endOfChangeId < 0)
-				endOfChangeId = previousCommitMessage.length() - 1;
+				endOfChangeId = previousCommitMessage.length();
 			int sha1Offset = changeIdOffset + Text.DELIMITER.length() + "Change-Id: I".length(); //$NON-NLS-1$
 			try {
 				originalChangeId = ObjectId.fromString(previousCommitMessage
@@ -600,9 +691,13 @@ public class CommitMessageComponent {
 			String text = commitText.getText();
 			int changeIdOffset = findOffsetOfChangeIdLine(text);
 			if (changeIdOffset > 0) {
+				String cleanedText;
 				int endOfChangeId = findNextEOL(changeIdOffset, text);
-				String cleanedText = text.substring(0, changeIdOffset)
-						+ text.substring(endOfChangeId);
+				if (endOfChangeId == -1)
+					cleanedText = text.substring(0, changeIdOffset);
+				else
+					cleanedText = text.substring(0, changeIdOffset)
+							+ text.substring(endOfChangeId);
 				commitText.setText(cleanedText);
 			}
 		}
@@ -745,5 +840,4 @@ public class CommitMessageComponent {
 	public ObjectId getHeadCommit() {
 		return headCommitId;
 	}
-
 }

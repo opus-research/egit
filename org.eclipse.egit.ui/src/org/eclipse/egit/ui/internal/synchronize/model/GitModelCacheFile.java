@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,30 +8,31 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import java.io.IOException;
-
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCacheCompareInput;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Representation of staged file in Git Change Set model
  */
 public class GitModelCacheFile extends GitModelBlob {
 
-	GitModelCacheFile(GitModelObjectContainer parent, RevCommit commit,
-			ObjectId repoId, ObjectId cacheId, IPath location) throws IOException {
-		super(parent, commit, null, repoId, cacheId, repoId, location);
+	GitModelCacheFile(GitModelObjectContainer parent, Repository repo,
+			Change change, IPath path) {
+		super(parent, repo, change, path);
 	}
 
 	@Override
 	protected GitCompareInput getCompareInput(ComparisonDataSource baseData,
 			ComparisonDataSource remoteData, ComparisonDataSource ancestorData) {
-		return new GitCacheCompareInput(getRepository(), ancestorData,
-				baseData, remoteData, gitPath);
+		String gitPath = Repository.stripWorkDir(repo.getWorkTree(), path.toFile());
+
+		return new GitCacheCompareInput(repo, (IFile) getResource(),
+				ancestorData, baseData, remoteData, gitPath);
 	}
 
 	@Override
@@ -47,26 +48,12 @@ public class GitModelCacheFile extends GitModelBlob {
 
 		GitModelCacheFile objBlob = (GitModelCacheFile) obj;
 
-		return objBlob.baseId.equals(baseId)
-				&& objBlob.remoteId.equals(remoteId)
-				&& objBlob.getLocation().equals(getLocation());
+		return hashCode() == objBlob.hashCode();
 	}
 
 	@Override
 	public int hashCode() {
-		return baseId.hashCode() ^ remoteId.hashCode()
-				^ getLocation().hashCode();
-	}
-
-	@Override
-	public String toString() {
-		return "ModelCacheFile[repoId=" + baseId + ". cacheId=" + remoteId + ", location=" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				+ getLocation() + "]"; //$NON-NLS-1$
-	}
-
-	@Override
-	protected ObjectId getParentRevCommit() {
-		return baseCommit;
+		return super.hashCode() + 31;
 	}
 
 }

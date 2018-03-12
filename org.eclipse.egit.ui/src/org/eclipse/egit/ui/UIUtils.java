@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.commands.NotEnabledException;
+import org.eclipse.core.commands.NotHandledException;
+import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
 import org.eclipse.jface.bindings.keys.KeyStroke;
@@ -28,6 +32,7 @@ import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Ref;
@@ -45,12 +50,14 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Resource;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.IHandlerService;
 
 /**
  * Some utilities for UI code
@@ -443,6 +450,25 @@ public class UIUtils {
 	}
 
 	/**
+	 * Dispose of the resource manager when the widget is disposed
+	 *
+	 * @param widget
+	 * @param resources
+	 */
+	public static void hookDisposal(Widget widget,
+			final ResourceManager resources) {
+		if (widget == null || resources == null)
+			return;
+
+		widget.addDisposeListener(new DisposeListener() {
+
+			public void widgetDisposed(DisposeEvent e) {
+				resources.dispose();
+			}
+		});
+	}
+
+	/**
 	 * Get editor image for path
 	 *
 	 * @param path
@@ -553,5 +579,37 @@ public class UIUtils {
 	 */
 	public static boolean isUsable(final Control control) {
 		return control != null && !control.isDisposed();
+	}
+
+	/**
+	 * Run command with specified id
+	 *
+	 * @param service
+	 * @param id
+	 */
+	public static void executeCommand(IHandlerService service, String id) {
+		executeCommand(service, id, null);
+	}
+
+	/**
+	 * Run command with specified id
+	 *
+	 * @param service
+	 * @param id
+	 * @param event
+	 */
+	public static void executeCommand(IHandlerService service, String id,
+			Event event) {
+		try {
+			service.executeCommand(id, event);
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, false);
+		} catch (NotDefinedException e) {
+			Activator.handleError(e.getMessage(), e, false);
+		} catch (NotEnabledException e) {
+			Activator.handleError(e.getMessage(), e, false);
+		} catch (NotHandledException e) {
+			Activator.handleError(e.getMessage(), e, false);
+		}
 	}
 }

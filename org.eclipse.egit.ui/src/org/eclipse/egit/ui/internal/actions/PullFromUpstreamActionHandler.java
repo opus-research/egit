@@ -12,7 +12,7 @@ package org.eclipse.egit.ui.internal.actions;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -30,7 +30,7 @@ public class PullFromUpstreamActionHandler extends RepositoryActionHandler {
 		Repository[] repos = getRepositories(event);
 		if (repos.length == 0)
 			return null;
-		Set<Repository> repositories = new HashSet<Repository>(
+		Set<Repository> repositories = new LinkedHashSet<Repository>(
 				Arrays.asList(repos));
 		new PullOperationUI(repositories).start();
 		return null;
@@ -41,7 +41,7 @@ public class PullFromUpstreamActionHandler extends RepositoryActionHandler {
 		// we don't do the full canMerge check here, but
 		// ensure that a branch is checked out
 		Repository[] repos = getRepositories();
-		for (Repository repo : repos) {
+		for (Repository repo : repos)
 			try {
 				String fullBranch = repo.getFullBranch();
 				if (fullBranch == null
@@ -52,7 +52,6 @@ public class PullFromUpstreamActionHandler extends RepositoryActionHandler {
 				Activator.handleError(e.getMessage(), e, false);
 				return false;
 			}
-		}
-		return true;
+		return repos.length > 0;
 	}
 }

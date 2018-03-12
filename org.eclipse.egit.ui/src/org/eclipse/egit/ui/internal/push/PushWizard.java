@@ -168,8 +168,8 @@ public class PushWizard extends Wizard {
 			resultToCompare = confirmPage.getConfirmedResult();
 		else
 			resultToCompare = null;
-		final Job job = new PushJob(operation, resultToCompare,
-				getDestinationString());
+		final Job job = new PushJob(localDb, operation, resultToCompare,
+				getDestinationString(repoPage.getSelection()));
 
 		job.setUser(true);
 		job.schedule();
@@ -183,7 +183,7 @@ public class PushWizard extends Wizard {
 		final IWizardPage currentPage = getContainer().getCurrentPage();
 		if (currentPage == repoPage || currentPage == null)
 			return UIText.PushWizard_windowTitleDefault;
-		final String destination = getDestinationString();
+		final String destination = getDestinationString(repoPage.getSelection());
 		return NLS.bind(UIText.PushWizard_windowTitleWithDestination,
 				destination);
 	}
@@ -212,22 +212,11 @@ public class PushWizard extends Wizard {
 				// obtain the push ref specs from the configuration
 				// use our own list here, as the config returns a non-modifiable
 				// list
-				final Collection<RefSpec> fetchSpecs = new ArrayList<RefSpec>();
-				fetchSpecs.addAll(config.getPushRefSpecs());
-				if (fetchSpecs.isEmpty())
-					// add the default if there are no specs in the
-					// configuration
-					fetchSpecs.add(PushOperationUI.DEFAULT_PUSH_REF_SPEC);
+				final Collection<RefSpec> pushSpecs = new ArrayList<RefSpec>();
+				pushSpecs.addAll(config.getPushRefSpecs());
 				final Collection<RemoteRefUpdate> updates = Transport
-						.findRemoteRefUpdatesFor(localDb, fetchSpecs,
-								fetchSpecs);
-				if (updates.isEmpty()) {
-					ErrorDialog.openError(getShell(),
-							UIText.PushWizard_missingRefsTitle, null,
-							new Status(IStatus.ERROR, Activator.getPluginId(),
-									UIText.PushWizard_missingRefsMessage));
-					return null;
-				}
+						.findRemoteRefUpdatesFor(localDb, pushSpecs,
+								pushSpecs);
 				spec = new PushOperationSpecification();
 				for (final URIish uri : repoPage.getSelection().getPushURIs())
 					spec.addURIRefUpdates(uri, ConfirmationPage
@@ -273,8 +262,7 @@ public class PushWizard extends Wizard {
 		}
 	}
 
-	private String getDestinationString() {
-		final RepositorySelection repoSelection = repoPage.getSelection();
+	static String getDestinationString(RepositorySelection repoSelection) {
 		final String destination;
 		if (repoSelection.isConfigSelected())
 			destination = repoSelection.getConfigName();
@@ -283,14 +271,16 @@ public class PushWizard extends Wizard {
 		return destination;
 	}
 
-	private class PushJob extends Job {
+	static class PushJob extends Job {
 		private final PushOperation operation;
 
 		private final PushOperationResult resultToCompare;
 
 		private final String destinationString;
 
-		public PushJob(final PushOperation operation,
+		private Repository localDb;
+
+		public PushJob(final Repository localDb, final PushOperation operation,
 				final PushOperationResult resultToCompare,
 				final String destinationString) {
 			super(NLS.bind(UIText.PushWizard_jobName, getURIsString(operation
@@ -298,6 +288,7 @@ public class PushWizard extends Wizard {
 			this.operation = operation;
 			this.resultToCompare = resultToCompare;
 			this.destinationString = destinationString;
+			this.localDb = localDb;
 		}
 
 		@Override

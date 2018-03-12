@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2010, 2011 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
+import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -236,8 +237,11 @@ public class GitCompareEditorInput extends CompareEditorInput {
 				suffixFilters.add(PathFilter.create(filterPath));
 			TreeFilter otf = OrTreeFilter.create(suffixFilters);
 			tw.setFilter(otf);
-		} else if (filterPathStrings.size() > 0)
-			tw.setFilter(PathFilter.create(filterPathStrings.get(0)));
+		} else if (filterPathStrings.size() > 0) {
+			String path = filterPathStrings.get(0);
+			if (path.length() != 0)
+				tw.setFilter(PathFilter.create(path));
+		}
 
 		tw.setRecursive(true);
 
@@ -273,58 +277,65 @@ public class GitCompareEditorInput extends CompareEditorInput {
 								.isEntryIgnored())
 					continue;
 
+
 				if (compareVersionIterator != null
 						&& baseVersionIterator != null) {
-					// content exists on both sides
 					boolean equalContent = compareVersionIterator
 							.getEntryObjectId().equals(
 									baseVersionIterator.getEntryObjectId());
 					if (equalContent)
 						continue;
-					monitor.setTaskName(baseVersionIterator
-							.getEntryPathString());
-					GitFileRevision baseRev = GitFileRevision.inCommit(
-							repository, baseCommit, baseVersionIterator
-									.getEntryPathString(), tw
-									.getObjectId(baseTreeIndex));
-					GitFileRevision compareRev;
+				}
+
+				String encoding = null;
+
+				GitFileRevision compareRev = null;
+				if (compareVersionIterator != null) {
+					String entryPath = compareVersionIterator.getEntryPathString();
+					encoding = CompareCoreUtils.getResourceEncoding(repository, entryPath);
 					if (!useIndex)
 						compareRev = GitFileRevision.inCommit(repository,
-								compareCommit, compareVersionIterator
-										.getEntryPathString(), tw
-										.getObjectId(compareTreeIndex));
+								compareCommit, entryPath,
+								tw.getObjectId(compareTreeIndex));
 					else
 						compareRev = GitFileRevision.inIndex(repository,
-								compareVersionIterator.getEntryPathString());
+								entryPath);
+				}
 
+				GitFileRevision baseRev = null;
+				if (baseVersionIterator != null) {
+					String entryPath = baseVersionIterator.getEntryPathString();
+					if (encoding == null) {
+						encoding = CompareCoreUtils.getResourceEncoding(repository, entryPath);
+					}
+					baseRev = GitFileRevision.inCommit(repository, baseCommit,
+							entryPath, tw.getObjectId(baseTreeIndex));
+				}
+
+				if (compareVersionIterator != null
+						&& baseVersionIterator != null) {
+					monitor.setTaskName(baseVersionIterator
+							.getEntryPathString());
+					// content exists on both sides
 					add(result, baseVersionIterator.getEntryPathString(),
-							new DiffNode(new FileRevisionTypedElement(baseRev),
-									new FileRevisionTypedElement(compareRev)));
-
+							new DiffNode(new FileRevisionTypedElement(compareRev, encoding),
+									new FileRevisionTypedElement(baseRev, encoding)));
 				} else if (baseVersionIterator != null
 						&& compareVersionIterator == null) {
 					monitor.setTaskName(baseVersionIterator
 							.getEntryPathString());
 					// only on base side
-					GitFileRevision baseRev = GitFileRevision.inCommit(
-							repository, baseCommit, baseVersionIterator
-									.getEntryPathString(), tw
-									.getObjectId(baseTreeIndex));
 					add(result, baseVersionIterator.getEntryPathString(),
-							new DiffNode(Differencer.DELETION, null, null,
-									new FileRevisionTypedElement(baseRev)));
+							new DiffNode(Differencer.DELETION | Differencer.RIGHT, null, null,
+									new FileRevisionTypedElement(baseRev, encoding)));
 				} else if (compareVersionIterator != null
 						&& baseVersionIterator == null) {
 					monitor.setTaskName(compareVersionIterator
 							.getEntryPathString());
 					// only on compare side
-					GitFileRevision compareRev = GitFileRevision.inCommit(
-							repository, compareCommit, compareVersionIterator
-									.getEntryPathString(), tw
-									.getObjectId(compareTreeIndex));
 					add(result, compareVersionIterator.getEntryPathString(),
-							new DiffNode(Differencer.ADDITION, null, null,
-									new FileRevisionTypedElement(compareRev)));
+							new DiffNode(Differencer.ADDITION | Differencer.RIGHT, null,
+									new FileRevisionTypedElement(compareRev, encoding), null));
 				}
 
 				if (monitor.isCanceled())

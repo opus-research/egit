@@ -39,6 +39,7 @@ import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.securestorage.EGitSecureStore;
 import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.eclipse.team.core.RepositoryProvider;
@@ -51,6 +52,7 @@ import org.osgi.framework.BundleContext;
  */
 public class Activator extends Plugin implements DebugOptionsListener {
 	private static Activator plugin;
+	private static String pluginId;
 	private RepositoryCache repositoryCache;
 	private IndexDiffCache indexDiffCache;
 	private RepositoryUtil repositoryUtil;
@@ -68,7 +70,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	 * @return the name of this plugin
 	 */
 	public static String getPluginId() {
-		return getDefault().getBundle().getSymbolicName();
+		return pluginId;
 	}
 
 	/**
@@ -107,10 +109,11 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 		super.start(context);
 
+		pluginId = context.getBundle().getSymbolicName();
+
 		// we want to be notified about debug options changes
 		Dictionary<String, String> props = new Hashtable<String, String>(4);
-		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle()
-				.getSymbolicName());
+		props.put(DebugOptions.LISTENER_SYMBOLICNAME, pluginId);
 		context.registerService(DebugOptionsListener.class.getName(), this,
 				props);
 
@@ -122,6 +125,11 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			logError(CoreText.Activator_ReconfigureWindowCacheError, e);
 		}
 		GitProjectData.attachToWorkspace(true);
+
+		IEclipsePreferences node = new InstanceScope().getNode(Activator.getPluginId());
+		String gitPrefix = node.get(GitCorePreferences.core_gitPrefix, null);
+		if (gitPrefix != null)
+			FS.DETECTED.setGitPrefix(new File(gitPrefix));
 
 		repositoryUtil = new RepositoryUtil();
 

@@ -38,17 +38,30 @@ public class ResourceUtil {
 		for (IResource resource : resources) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
 					.getMapping(resource);
-			if (repositoryMapping != null) {
-				Repository repository = repositoryMapping.getRepository();
-				Collection<String> resourcesList = result.get(repository);
-				if (resourcesList == null) {
-					resourcesList = new ArrayList<String>();
-					result.put(repository, resourcesList);
-				}
-				resourcesList.add(repositoryMapping
-						.getRepoRelativePath(resource));
+			if (repositoryMapping == null)
+				continue;
+			Repository repository = repositoryMapping.getRepository();
+			Collection<String> resourcesList = result.get(repository);
+			if (resourcesList == null) {
+				resourcesList = new ArrayList<String>();
+				result.put(repository, resourcesList);
 			}
+			String path = repositoryMapping.getRepoRelativePath(resource);
+			if (path != null && path.length() > 0)
+				resourcesList.add(path);
 		}
 		return result;
 	}
+
+	/**
+	 * Determine if given resource is imported into workspace or not
+	 *
+	 * @param resource
+	 * @return {@code true} when given resource is not imported into workspace,
+	 *         {@code false} otherwise
+	 */
+	public static boolean isNonWorkspace(IResource resource) {
+		return resource.getLocation() == null;
+	}
+
 }
