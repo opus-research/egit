@@ -14,19 +14,16 @@ package org.eclipse.egit.ui.internal.rebase;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.RebaseOperation;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -57,14 +54,11 @@ public class RebaseHelper {
 				try {
 					rebase.execute(monitor);
 				} catch (final CoreException e) {
-					if (!repository.getRepositoryState().equals(
-							RepositoryState.SAFE)) {
-						try {
-							new RebaseOperation(repository, Operation.ABORT)
-									.execute(monitor);
-						} catch (CoreException e1) {
-							return createMultiStatus(e, e1);
-						}
+					try {
+						new RebaseOperation(repository, Operation.ABORT)
+								.execute(monitor);
+					} catch (CoreException e1) {
+						return e1.getStatus();
 					}
 					return e.getStatus();
 				}
@@ -99,13 +93,4 @@ public class RebaseHelper {
 		});
 		job.schedule();
 	}
-
-	private static IStatus createMultiStatus(CoreException originalException,
-			CoreException e) {
-		IStatus childStatus = Activator.createErrorStatus(
-				originalException.getMessage(), originalException);
-		return new MultiStatus(Activator.getPluginId(), IStatus.ERROR,
-				new IStatus[] { childStatus }, e.getMessage(), e);
-	}
-
 }

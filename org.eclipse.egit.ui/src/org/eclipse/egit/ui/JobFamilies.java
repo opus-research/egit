@@ -61,5 +61,5 @@ public class JobFamilies {
 	/**
 	 * Format job
 	 */
-	public final static Object FORMAT_COMMIT_INFO = new Object();
+	public static Object FORMAT_COMMIT_INFO;
 }
