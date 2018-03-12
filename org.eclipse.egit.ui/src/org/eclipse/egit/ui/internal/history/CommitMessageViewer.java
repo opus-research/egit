@@ -29,7 +29,6 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
-import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.history.FormatJob.FormatResult;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -47,11 +46,11 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.TextUtilities;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
-import org.eclipse.jface.text.hyperlink.IHyperlinkDetectorExtension2;
 import org.eclipse.jface.text.rules.FastPartitioner;
 import org.eclipse.jface.text.rules.IPartitionTokenScanner;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.rules.Token;
+import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.events.ListenerHandle;
@@ -73,7 +72,7 @@ import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
-class CommitMessageViewer extends HyperlinkSourceViewer {
+class CommitMessageViewer extends SourceViewer {
 
 	static final String HEADER_CONTENT_TYPE = "__egit_commit_msg_header"; //$NON-NLS-1$
 
@@ -538,8 +537,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 
 	}
 
-	static class KnownHyperlinksDetector
-			implements IHyperlinkDetector, IHyperlinkDetectorExtension2 {
+	static class KnownHyperlinksDetector implements IHyperlinkDetector {
 
 		@Override
 		public IHyperlink[] detectHyperlinks(ITextViewer textViewer,
@@ -560,11 +558,6 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 				}
 			}
 			return null;
-		}
-
-		@Override
-		public int getStateMask() {
-			return -1;
 		}
 
 	}
