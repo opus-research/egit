@@ -53,7 +53,7 @@ public class ProjectsPreferencePage extends FieldEditorPreferencePage implements
 		});
 		addField(new BooleanFieldEditor(
 				GitCorePreferences.core_autoIgnoreDerivedResources,
-				UIText.ProjectsPreferencePage_AutoIgnoreDerivedResources,
+				UIText.IgnorePreferencePage_autoIgnoreDerivedResources,
 				getFieldEditorParent()));
 	}
 }
