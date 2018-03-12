@@ -98,8 +98,7 @@ public class LocationPage extends WizardPage {
 
 	private IContainer wsSelectedContainer;
 
-	private static class LocationPageContentProvider extends
-			BaseWorkbenchContentProvider {
+	private class LocationPageContentProvider extends BaseWorkbenchContentProvider {
 		//Never show closed projects
 		boolean showClosedProjects = false;
 
