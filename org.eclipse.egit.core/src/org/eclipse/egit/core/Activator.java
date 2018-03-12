@@ -49,8 +49,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.securestorage.EGitSecureStore;
 import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.transport.HttpTransport;
-import org.eclipse.jgit.transport.http.apache.HttpClientConnectionFactory;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.osgi.service.debug.DebugOptionsListener;
@@ -164,7 +162,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		context.registerService(DebugOptionsListener.class.getName(), this,
 				props);
 
-		HttpTransport.setConnectionFactory(new HttpClientConnectionFactory());
 		repositoryCache = new RepositoryCache();
 		indexDiffCache = new IndexDiffCache();
 		try {
