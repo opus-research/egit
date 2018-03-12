@@ -47,7 +47,7 @@ import org.eclipse.jgit.util.FS;
 public class RepositorySelectionPage extends BaseWizardPage {
 	private static final int REMOTE_CONFIG_TEXT_MAX_LENGTH = 80;
 
-	private static final String DEFAULT_REMOTE_NAME = "origin"; //$NON-NLS-1$
+	private static final String DEFAULT_REMOTE_NAME = "origin";
 
 	private static final int S_GIT = 0;
 
@@ -66,13 +66,13 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	private static final String[] DEFAULT_SCHEMES;
 	static {
 		DEFAULT_SCHEMES = new String[7];
-		DEFAULT_SCHEMES[S_GIT] = "git"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_SSH] = "git+ssh"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_SFTP] = "sftp"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_HTTP] = "http"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_HTTPS] = "https"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_FTP] = "ftp"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_FILE] = "file"; //$NON-NLS-1$
+		DEFAULT_SCHEMES[S_GIT] = "git";
+		DEFAULT_SCHEMES[S_SSH] = "git+ssh";
+		DEFAULT_SCHEMES[S_SFTP] = "sftp";
+		DEFAULT_SCHEMES[S_HTTP] = "http";
+		DEFAULT_SCHEMES[S_HTTPS] = "https";
+		DEFAULT_SCHEMES[S_FTP] = "ftp";
+		DEFAULT_SCHEMES[S_FILE] = "file";
 	}
 
 	private static void setEnabledRecursively(final Control control,
@@ -210,7 +210,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		remoteButton = new Button(parent, SWT.RADIO);
 		remoteButton
 				.setText(UIText.RepositorySelectionPage_configuredRemoteChoice
-						+ ":"); //$NON-NLS-1$
+						+ ":");
 		remoteButton.setSelection(true);
 
 		remotePanel = new Composite(parent, SWT.NULL);
@@ -241,7 +241,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	private void createUriPanel(final Composite parent) {
 		if (configuredRemotes != null) {
 			uriButton = new Button(parent, SWT.RADIO);
-			uriButton.setText(UIText.RepositorySelectionPage_uriChoice + ":"); //$NON-NLS-1$
+			uriButton.setText(UIText.RepositorySelectionPage_uriChoice + ":");
 			uriButton.addSelectionListener(new SelectionAdapter() {
 				public void widgetSelected(SelectionEvent e) {
 					// occurs either on selection or unselection event
@@ -267,7 +267,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		final Group g = createGroup(parent,
 				UIText.RepositorySelectionPage_groupLocation);
 
-		newLabel(g, UIText.RepositorySelectionPage_promptURI + ":"); //$NON-NLS-1$
+		newLabel(g, UIText.RepositorySelectionPage_promptURI + ":");
 		uriText = new Text(g, SWT.BORDER);
 		uriText.setLayoutData(createFieldGridData());
 		uriText.addModifyListener(new ModifyListener() {
@@ -286,7 +286,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 					if (u.getPort() > 0)
 						portText.setText(Integer.toString(u.getPort()));
 					else
-						portText.setText(""); //$NON-NLS-1$
+						portText.setText("");
 
 					if (isFile(u))
 						scheme.select(S_FILE);
@@ -307,11 +307,11 @@ public class RepositorySelectionPage extends BaseWizardPage {
 					// leave uriText as it is, but clean up underlying uri and
 					// decomposed fields
 					uri = new URIish();
-					hostText.setText(""); //$NON-NLS-1$
-					pathText.setText(""); //$NON-NLS-1$
-					userText.setText(""); //$NON-NLS-1$
-					passText.setText(""); //$NON-NLS-1$
-					portText.setText(""); //$NON-NLS-1$
+					hostText.setText("");
+					pathText.setText("");
+					userText.setText("");
+					passText.setText("");
+					portText.setText("");
 					scheme.select(0);
 				} finally {
 					eventDepth--;
@@ -320,7 +320,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			}
 		});
 
-		newLabel(g, UIText.RepositorySelectionPage_promptHost + ":"); //$NON-NLS-1$
+		newLabel(g, UIText.RepositorySelectionPage_promptHost + ":");
 		hostText = new Text(g, SWT.BORDER);
 		hostText.setLayoutData(createFieldGridData());
 		hostText.addModifyListener(new ModifyListener() {
@@ -329,7 +329,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			}
 		});
 
-		newLabel(g, UIText.RepositorySelectionPage_promptPath + ":"); //$NON-NLS-1$
+		newLabel(g, UIText.RepositorySelectionPage_promptPath + ":");
 		pathText = new Text(g, SWT.BORDER);
 		pathText.setLayoutData(createFieldGridData());
 		pathText.addModifyListener(new ModifyListener() {
@@ -343,7 +343,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		final Group g = createGroup(parent,
 				UIText.RepositorySelectionPage_groupAuthentication);
 
-		newLabel(g, UIText.RepositorySelectionPage_promptUser + ":"); //$NON-NLS-1$
+		newLabel(g, UIText.RepositorySelectionPage_promptUser + ":");
 		userText = new Text(g, SWT.BORDER);
 		userText.setLayoutData(createFieldGridData());
 		userText.addModifyListener(new ModifyListener() {
@@ -352,7 +352,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			}
 		});
 
-		newLabel(g, UIText.RepositorySelectionPage_promptPassword + ":"); //$NON-NLS-1$
+		newLabel(g, UIText.RepositorySelectionPage_promptPassword + ":");
 		passText = new Text(g, SWT.BORDER | SWT.PASSWORD);
 		passText.setLayoutData(createFieldGridData());
 		return g;
@@ -362,7 +362,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		final Group g = createGroup(parent,
 				UIText.RepositorySelectionPage_groupConnection);
 
-		newLabel(g, UIText.RepositorySelectionPage_promptScheme + ":"); //$NON-NLS-1$
+		newLabel(g, UIText.RepositorySelectionPage_promptScheme + ":");
 		scheme = new Combo(g, SWT.DROP_DOWN | SWT.READ_ONLY);
 		scheme.setItems(DEFAULT_SCHEMES);
 		scheme.addSelectionListener(new SelectionAdapter() {
@@ -376,10 +376,10 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			}
 		});
 
-		newLabel(g, UIText.RepositorySelectionPage_promptPort + ":"); //$NON-NLS-1$
+		newLabel(g, UIText.RepositorySelectionPage_promptPort + ":");
 		portText = new Text(g, SWT.BORDER);
 		portText.addVerifyListener(new VerifyListener() {
-			final Pattern p = Pattern.compile("^(?:[1-9][0-9]*)?$"); //$NON-NLS-1$
+			final Pattern p = Pattern.compile("^(?:[1-9][0-9]*)?$");
 
 			public void verifyText(final VerifyEvent e) {
 				final String v = portText.getText();
@@ -426,17 +426,17 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	}
 
 	private static boolean isGIT(final URIish uri) {
-		return "git".equals(uri.getScheme()); //$NON-NLS-1$
+		return "git".equals(uri.getScheme());
 	}
 
 	private static boolean isFile(final URIish uri) {
-		if ("file".equals(uri.getScheme()) || uri.getScheme() == null) //$NON-NLS-1$
+		if ("file".equals(uri.getScheme()) || uri.getScheme() == null)
 			return true;
 		if (uri.getHost() != null || uri.getPort() > 0 || uri.getUser() != null
 				|| uri.getPass() != null || uri.getPath() == null)
 			return false;
 		if (uri.getScheme() == null)
-			return FS.resolve(new File("."), uri.getPath()).isDirectory(); //$NON-NLS-1$
+			return FS.resolve(new File("."), uri.getPath()).isDirectory();
 		return false;
 	}
 
@@ -444,11 +444,11 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		if (!uri.isRemote())
 			return false;
 		final String scheme = uri.getScheme();
-		if ("ssh".equals(scheme)) //$NON-NLS-1$
+		if ("ssh".equals(scheme))
 			return true;
-		if ("ssh+git".equals(scheme)) //$NON-NLS-1$
+		if ("ssh+git".equals(scheme))
 			return true;
-		if ("git+ssh".equals(scheme)) //$NON-NLS-1$
+		if ("git+ssh".equals(scheme))
 			return true;
 		if (scheme == null && uri.getHost() != null && uri.getPath() != null)
 			return true;
@@ -463,7 +463,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	}
 
 	private static void safeSet(final Text text, final String value) {
-		text.setText(value != null ? value : ""); //$NON-NLS-1$
+		text.setText(value != null ? value : "");
 	}
 
 	private boolean isURISelected() {
@@ -502,16 +502,16 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 	private static String getTextForRemoteConfig(final RemoteConfig rc) {
 		final StringBuilder sb = new StringBuilder(rc.getName());
-		sb.append(": "); //$NON-NLS-1$
+		sb.append(": ");
 		boolean first = true;
 		for (final URIish u : rc.getURIs()) {
 			final String uString = u.toString();
 			if (first)
 				first = false;
 			else {
-				sb.append(", "); //$NON-NLS-1$
+				sb.append(", ");
 				if (sb.length() + uString.length() > REMOTE_CONFIG_TEXT_MAX_LENGTH) {
-					sb.append("..."); //$NON-NLS-1$
+					sb.append("...");
 					break;
 				}
 			}
@@ -557,7 +557,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 						return;
 					}
 
-					final File d = FS.resolve(new File("."), uri.getPath()); //$NON-NLS-1$
+					final File d = FS.resolve(new File("."), uri.getPath());
 					if (!d.exists()) {
 						selectionIncomplete(NLS.bind(
 								UIText.RepositorySelectionPage_fileNotFound, d
@@ -610,7 +610,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	}
 
 	private String unamp(String s) {
-		return s.replace("&",""); //$NON-NLS-1$ //$NON-NLS-2$
+		return s.replace("&","");
 	}
 
 	private void selectionIncomplete(final String errorMessage) {

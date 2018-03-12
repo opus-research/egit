@@ -22,7 +22,7 @@ class FileDiffLabelProvider extends BaseLabelProvider implements
 		case 1:
 			return c.path;
 		}
-		return ""; //$NON-NLS-1$
+		return "";
 	}
 
 	public Image getColumnImage(final Object element, final int columnIndex) {
