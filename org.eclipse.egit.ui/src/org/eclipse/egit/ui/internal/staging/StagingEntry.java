@@ -276,25 +276,20 @@ public class StagingEntry extends PlatformObject
 	}
 
 	@Override
-	public StagingState getStagingState() {
+	public Staged staged() {
 		switch (state) {
 		case ADDED:
-			return StagingState.ADDED;
+			return Staged.ADDED;
 		case CHANGED:
-			return StagingState.MODIFIED;
+			return Staged.MODIFIED;
 		case REMOVED:
-			return StagingState.REMOVED;
+			return Staged.REMOVED;
 		case MISSING:
 		case MISSING_AND_CHANGED:
-			return StagingState.REMOVED;
+			return Staged.REMOVED;
 		default:
-			return StagingState.NOT_STAGED;
+			return Staged.NOT_STAGED;
 		}
-	}
-
-	@Override
-	public boolean isStaged() {
-		return getStagingState() != StagingState.NOT_STAGED;
 	}
 
 	@Override
