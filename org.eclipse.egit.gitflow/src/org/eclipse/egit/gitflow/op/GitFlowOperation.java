@@ -246,35 +246,18 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	}
 
 	/**
-	 * since 4.2
-	 *
-	 * @param monitor
-	 * @param timeout
-	 * @return result of fetching from remote
-	 * @throws URISyntaxException
-	 * @throws InvocationTargetException
-	 */
-	protected FetchResult fetch(IProgressMonitor monitor, int timeout)
-			throws URISyntaxException, InvocationTargetException {
-		RemoteConfig config = repository.getConfig().getDefaultRemoteConfig();
-		FetchOperation fetchOperation = new FetchOperation(
-				repository.getRepository(), config, timeout, false);
-		fetchOperation.run(monitor);
-		return fetchOperation.getOperationResult();
-	}
-
-	/**
 	 * @param monitor
 	 * @return resulting of fetching from remote
 	 * @throws URISyntaxException
 	 * @throws InvocationTargetException
-	 * @deprecated Use {@link GitFlowOperation#fetch(IProgressMonitor, int)}
-	 *             instead.
 	 */
-	@Deprecated
 	protected FetchResult fetch(IProgressMonitor monitor)
 			throws URISyntaxException, InvocationTargetException {
-		return fetch(monitor, 0);
+		RemoteConfig config = repository.getConfig().getDefaultRemoteConfig();
+		FetchOperation fetchOperation = new FetchOperation(
+				repository.getRepository(), config, 0, false);
+		fetchOperation.run(monitor);
+		return fetchOperation.getOperationResult();
 	}
 
 	/**

@@ -92,7 +92,7 @@ public class FeatureTrackHandler extends AbstractHandler {
 
 		Ref ref = dialog.getSelectedNode();
 		FeatureTrackOperation featureTrackOperation = new FeatureTrackOperation(
-				gfRepo, ref, timeout);
+				gfRepo, ref);
 		JobUtil.scheduleUserWorkspaceJob(featureTrackOperation,
 				UIText.FeatureTrackHandler_trackingFeature, GITFLOW_FAMILY);
 
