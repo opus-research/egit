@@ -29,9 +29,6 @@ public class UIText extends NLS {
 	public static String AbortRebaseCommand_JobName;
 
 	/** */
-	public static String AbstractHistoryCommanndHandler_CouldNotGetRepositoryMessage;
-
-	/** */
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
@@ -2111,18 +2108,6 @@ public class UIText extends NLS {
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
 
 	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;
-
-	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryTitle;
-
-	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryWindowTitle;
-
-	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox;
-
-	/** */
 	public static String IgnoreActionHandler_addToGitignore;
 
 	/** */
@@ -2754,10 +2739,13 @@ public class UIText extends NLS {
 	public static String RemoteSelectionCombo_destinationRef;
 
 	/** */
-	public static String RemoveCommand_ConfirmDeleteBareRepositoryMessage;
+	public static String RemoveCommand_DeleteConfirmMultiMessage;
 
 	/** */
-	public static String RemoveCommand_ConfirmDeleteBareRepositoryTitle;
+	public static String RemoveCommand_DeleteConfirmSingleMessage;
+
+	/** */
+	public static String RemoveCommand_DeleteConfirmTitle;
 
 	/** */
 	public static String RenameBranchCommand_WrongNameMessage;

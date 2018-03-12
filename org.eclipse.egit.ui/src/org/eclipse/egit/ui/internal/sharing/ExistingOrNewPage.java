@@ -238,7 +238,6 @@ class ExistingOrNewPage extends WizardPage {
 
 		tree.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				tree.select((TreeItem)e.item);
 				updateCreateOptions();
 			}
 		});
@@ -247,9 +246,9 @@ class ExistingOrNewPage extends WizardPage {
 		setControl(g);
 	}
 
-	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem, boolean isAlternative) {
+	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem2, boolean isAlternative) {
 		if (m.getGitDir() == null)
-			treeItem.setText(2, UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
+			treeItem2.setText(2, UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
 		else {
 			IPath container = m.getContainerPath();
 			if (!container.isEmpty())
@@ -262,9 +261,9 @@ class ExistingOrNewPage extends WizardPage {
 					path = Path.fromPortableString("."); //$NON-NLS-1$
 				else
 					path = withoutLastSegment;
-				treeItem.setText(0, path.toString());
+				treeItem2.setText(0, path.toString());
 			}
-			treeItem.setText(2, relativePath.toOSString());
+			treeItem2.setText(2, relativePath.toString());
 			try {
 				IProject project = m.getContainer().getProject();
 				FileRepository repo = new FileRepository(m.getGitDirAbsolutePath().toFile());
@@ -282,7 +281,7 @@ class ExistingOrNewPage extends WizardPage {
 						TreeWalk projectInRepo = TreeWalk.forPath(repo, repoRelativePath, headTree);
 						if (projectInRepo != null) {
 							// the .project file is tracked by this repo
-							treeItem.setChecked(true);
+							treeItem2.setChecked(true);
 						}
 						revWalk.dispose();
 					}
