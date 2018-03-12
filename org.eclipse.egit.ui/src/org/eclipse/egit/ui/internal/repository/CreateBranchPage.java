@@ -200,7 +200,6 @@ class CreateBranchPage extends WizardPage {
 			// as name for the local branch
 			nameText.setText(myBaseRef
 					.substring(myBaseRef.lastIndexOf('/') + 1));
-			nameText.selectAll();
 			checkPage();
 		} else {
 			// in any case, we will have to enter the name
