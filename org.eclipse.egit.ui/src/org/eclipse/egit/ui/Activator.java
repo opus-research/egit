@@ -282,12 +282,6 @@ public class Activator extends AbstractUIPlugin {
 
 		// FIXME, need to be more intelligent about this to avoid too much work
 		private static final long REPO_SCAN_INTERVAL = 10000L;
-		// volatile in order to ensure thread synchronization
-		private volatile boolean doReschedule = true;
-
-		void setReschedule(boolean reschedule){
-			doReschedule = reschedule;
-		}
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
@@ -329,8 +323,7 @@ public class Activator extends AbstractUIPlugin {
 					GitTraceLocation.getTrace().trace(
 							GitTraceLocation.UI.getLocation(),
 							"Rescheduling " + getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
-				if (doReschedule)
-					schedule(REPO_SCAN_INTERVAL);
+				schedule(REPO_SCAN_INTERVAL);
 			} catch (Exception e) {
 				// TODO is this the right location?
 				if (GitTraceLocation.UI.isActive())
@@ -350,7 +343,6 @@ public class Activator extends AbstractUIPlugin {
 
 	private void setupRepoChangeScanner() {
 		rcs = new RCS();
-		rcs.setSystem(true);
 		rcs.schedule(RCS.REPO_SCAN_INTERVAL);
 	}
 
@@ -377,14 +369,10 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	public void stop(final BundleContext context) throws Exception {
-
 		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(),
 					"Trying to cancel " + rcs.getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
-
-		rcs.setReschedule(false);
-
 		rcs.cancel();
 		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
@@ -398,7 +386,6 @@ public class Activator extends AbstractUIPlugin {
 		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(), "Jobs terminated"); //$NON-NLS-1$
-
 		super.stop(context);
 		plugin = null;
 	}
