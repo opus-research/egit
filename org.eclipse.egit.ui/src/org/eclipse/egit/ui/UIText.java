@@ -138,9 +138,6 @@ public class UIText extends NLS {
 	public static String GitProjectPropertyPage_ValueUnbornBranch;
 
 	/** */
-	public static String RepositorySelectionPage_BrowseLocalFile;
-
-	/** */
 	public static String RepositorySelectionPage_sourceSelectionTitle;
 
 	/** */
