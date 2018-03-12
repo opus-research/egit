@@ -91,9 +91,6 @@ public class UIText extends NLS {
 	public static String FeatureTrackHandler_trackingFeature;
 
 	/**	 */
-	public static String Handlers_noGitflowRepositoryFound;
-
-	/**	 */
 	public static String HotfixFinishHandler_Conflicts;
 
 	/**	 */
