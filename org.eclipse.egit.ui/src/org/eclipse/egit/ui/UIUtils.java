@@ -10,13 +10,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
-import java.lang.ref.SoftReference;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -89,8 +86,6 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
-import org.eclipse.ui.IEditorDescriptor;
-import org.eclipse.ui.IEditorRegistry;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.ISources;
@@ -108,12 +103,6 @@ import org.eclipse.ui.services.IServiceLocator;
  * Some utilities for UI code
  */
 public class UIUtils {
-
-	/** Default image descriptor for files */
-	public static final ImageDescriptor DEFAULT_FILE_IMG = PlatformUI
-			.getWorkbench().getSharedImages()
-			.getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
-
 	/**
 	 * these activate the content assist; alphanumeric, space plus some expected
 	 * special chars
@@ -553,9 +542,6 @@ public class UIUtils {
 		});
 	}
 
-	/** Key is file extension, value is the reference to the image descriptor */
-	private static Map<String, SoftReference<ImageDescriptor>> extensionToDescriptor = new HashMap<>();
-
 	/**
 	 * Get editor image for path
 	 *
@@ -563,38 +549,14 @@ public class UIUtils {
 	 * @return image descriptor
 	 */
 	public static ImageDescriptor getEditorImage(final String path) {
-		if (path == null || path.length() <= 0) {
-			return DEFAULT_FILE_IMG;
+		if (path != null && path.length() > 0) {
+			final String name = new Path(path).lastSegment();
+			if (name != null)
+				return PlatformUI.getWorkbench().getEditorRegistry()
+						.getImageDescriptor(name);
 		}
-		final String fileName = new Path(path).lastSegment();
-		if (fileName == null) {
-			return DEFAULT_FILE_IMG;
-		}
-		IEditorRegistry registry = PlatformUI.getWorkbench()
-				.getEditorRegistry();
-		IEditorDescriptor defaultEditor = registry.getDefaultEditor(fileName);
-		if (defaultEditor != null) {
-			return defaultEditor.getImageDescriptor();
-		}
-		// now we know there is no Eclipse editor for the file, and Eclipse will
-		// check Program.findProgram() and this will be slow, see bug 464891
-		int extensionIndex = fileName.lastIndexOf('.');
-		if (extensionIndex < 0) {
-			// Program.findProgram() uses extensions only
-			return DEFAULT_FILE_IMG;
-		}
-		String key = fileName.substring(extensionIndex);
-		SoftReference<ImageDescriptor> cached = extensionToDescriptor.get(key);
-		if (cached != null) {
-			ImageDescriptor descriptor = cached.get();
-			if (descriptor != null) {
-				return descriptor;
-			}
-		}
-		// In worst case this calls Program.findProgram() and blocks UI
-		ImageDescriptor descriptor = registry.getImageDescriptor(fileName);
-		extensionToDescriptor.put(key, new SoftReference<>(descriptor));
-		return descriptor;
+		return PlatformUI.getWorkbench().getSharedImages()
+				.getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
 	}
 
 	/**
