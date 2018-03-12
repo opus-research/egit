@@ -9,12 +9,14 @@
 package org.eclipse.egit.ui.internal.staging;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.DecorationResult;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
 import org.eclipse.egit.ui.internal.staging.StagingView.Presentation;
@@ -26,6 +28,7 @@ import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
@@ -95,12 +98,21 @@ public class StagingViewLabelProvider extends LabelProvider {
 			image = (Image) resourceManager.get(UIUtils.DEFAULT_FILE_IMG);
 		}
 		if (diff.isSymlink()) {
-			IPath diffLocation = diff.getLocation();
-			if (diffLocation != null) {
-				File diffFile = diffLocation.toFile();
-				if (diffFile.isDirectory()) {
-					image = FOLDER;
+			try {
+				IPath diffLocation = diff.getLocation();
+				if (diffLocation != null) {
+					File diffFile = diffLocation.toFile();
+					if (diffFile.exists()) {
+						String targetPath = FS.DETECTED.readSymLink(diffFile);
+						if (targetPath != null
+								&& new File(diffFile, targetPath).isDirectory()) {
+							image = FOLDER;
+						}
+					}
 				}
+			} catch (IOException e) {
+				Activator
+						.error(UIText.StagingViewLabelProvider_SymlinkError, e);
 			}
 			image = addSymlinkDecorationToImage(image);
 		}

@@ -37,7 +37,6 @@ import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
@@ -164,9 +163,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (!repoRoot.exists())
 			FileUtils.mkdir(repoRoot, true);
 		// make sure the default directory for Repos is not the user home
-		IEclipsePreferences p = InstanceScope.INSTANCE
-				.getNode(Activator.getPluginId());
-		p.put(GitCorePreferences.core_defaultRepositoryDir, repoRoot.getPath());
+		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
+				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 	}
 
 	@After
@@ -271,11 +269,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		textFile2.create(new ByteArrayInputStream("Some more content"
 				.getBytes(firstProject.getDefaultCharset())), false, null);
 
-		try {
-			new ConnectProviderOperation(firstProject, gitDir).execute(null);
-		} catch (Exception e) {
-			Activator.logError("Failed to connect project to repository", e);
-		}
+		new ConnectProviderOperation(firstProject, gitDir).execute(null);
 		assertConnected(firstProject);
 
 		IProject secondProject = ResourcesPlugin.getWorkspace().getRoot()
@@ -312,11 +306,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// gitignore.create(new ByteArrayInputStream("/.project\n"
 		// .getBytes(firstProject.getDefaultCharset())), false, null);
 
-		try {
-			new ConnectProviderOperation(secondProject, gitDir).execute(null);
-		} catch (Exception e) {
-			Activator.logError("Failed to connect project to repository", e);
-		}
+		new ConnectProviderOperation(secondProject, gitDir).execute(null);
 		assertConnected(secondProject);
 
 		IFile dotProject = firstProject.getFile(".project");
@@ -350,10 +340,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				GitProvider.ID);
 		if (provider == null) {
 			TestUtil.waitForJobs(5000, 10000);
-			assertTrue("Project not shared with git: " + project,
-					ResourceUtil.isSharedWithGit(project));
-			TestUtil.waitForJobs(1000, 10000);
-			provider = RepositoryProvider.getProvider(project);
+			provider = RepositoryProvider.getProvider(project, GitProvider.ID);
 		}
 		assertTrue("Project is not accessible: " + project,
 				project.isAccessible());
@@ -504,13 +491,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 							.getProject(file.getName());
 					prj.create(desc, null);
 					prj.open(null);
-					try {
-						new ConnectProviderOperation(prj,
-								myRepository.getDirectory()).execute(null);
-					} catch (Exception e) {
-						Activator.logError(
-								"Failed to connect project to repository", e);
-					}
+
+					new ConnectProviderOperation(prj, myRepository
+							.getDirectory()).execute(null);
 					assertConnected(prj);
 				}
 			}

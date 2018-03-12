@@ -19,11 +19,6 @@ public class JobFamilies {
 	public final static Object GENERATE_HISTORY = new Object();
 
 	/**
-	 * History diff jobs
-	 */
-	public final static Object HISTORY_DIFF = new Object();
-
-	/**
 	 * Commit job
 	 */
 	public final static Object COMMIT = new Object();

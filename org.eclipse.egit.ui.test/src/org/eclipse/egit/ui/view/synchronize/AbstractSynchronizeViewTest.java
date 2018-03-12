@@ -222,11 +222,8 @@ public abstract class AbstractSynchronizeViewTest extends
 		textFile2.create(new ByteArrayInputStream("Some more content"
 				.getBytes(firstProject.getDefaultCharset())), false, null);
 		TestUtil.waitForJobs(50, 5000);
-		try {
-			new ConnectProviderOperation(firstProject, gitDir).execute(null);
-		} catch (Exception e) {
-			Activator.logError("Failed to connect project to repository", e);
-		}
+
+		new ConnectProviderOperation(firstProject, gitDir).execute(null);
 		assertConnected(firstProject);
 	}
 
