@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -34,10 +35,13 @@ import org.eclipse.jface.action.SubMenuManager;
 import org.eclipse.jface.commands.ActionHandler;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.ITextListener;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.MarginPainter;
 import org.eclipse.jface.text.Position;
+import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistant;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
@@ -189,8 +193,6 @@ public class SpellcheckableMessageArea extends Composite {
 		final SourceViewerDecorationSupport support = configureAnnotationPreferences();
 		final IHandlerActivation handlerActivation = installQuickFixActionHandler();
 
-		configureContextMenu();
-
 		Document document = new Document(initialText);
 
 		sourceViewer.configure(new TextSourceViewerConfiguration(EditorsUI
@@ -228,6 +230,8 @@ public class SpellcheckableMessageArea extends Composite {
 
 		});
 		sourceViewer.setDocument(document, annotationModel);
+
+		configureContextMenu();
 
 		getTextWidget().addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent disposeEvent) {
@@ -293,11 +297,23 @@ public class SpellcheckableMessageArea extends Composite {
 		selectAllAction.setText(UIText.SpellCheckingMessageArea_selectAll);
 		selectAllAction.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_SELECT_ALL);
 
+		final TextViewerAction undoAction = new TextViewerAction(sourceViewer,
+				ITextOperationTarget.UNDO);
+		undoAction.setText(UIText.SpellcheckableMessageArea_undo);
+		undoAction.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_UNDO);
+
+		final TextViewerAction redoAction = new TextViewerAction(sourceViewer,
+				ITextOperationTarget.REDO);
+		redoAction.setText(UIText.SpellcheckableMessageArea_redo);
+		redoAction.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_REDO);
+
 		MenuManager contextMenu = new MenuManager();
 		contextMenu.add(cutAction);
 		contextMenu.add(copyAction);
 		contextMenu.add(pasteAction);
 		contextMenu.add(selectAllAction);
+		contextMenu.add(undoAction);
+		contextMenu.add(redoAction);
 		contextMenu.add(new Separator());
 
 		if(isEditable(sourceViewer)) {
@@ -319,6 +335,8 @@ public class SpellcheckableMessageArea extends Composite {
 			private IHandlerActivation copyHandlerActivation;
 			private IHandlerActivation pasteHandlerActivation;
 			private IHandlerActivation selectAllHandlerActivation;
+			private IHandlerActivation undoHandlerActivation;
+			private IHandlerActivation redoHandlerActivation;
 
 			public void focusGained(FocusEvent e) {
 				cutAction.update();
@@ -328,11 +346,16 @@ public class SpellcheckableMessageArea extends Composite {
 	            this.copyHandlerActivation = service.activateHandler(IWorkbenchCommandConstants.EDIT_COPY, new ActionHandler(copyAction), new ActiveShellExpression(getParent().getShell()));
 	            this.pasteHandlerActivation = service.activateHandler(IWorkbenchCommandConstants.EDIT_PASTE, new ActionHandler(pasteAction), new ActiveShellExpression(getParent().getShell()));
 	            this.selectAllHandlerActivation = service.activateHandler(IWorkbenchCommandConstants.EDIT_SELECT_ALL, new ActionHandler(selectAllAction), new ActiveShellExpression(getParent().getShell()));
+				undoHandlerActivation = service.activateHandler(
+						IWorkbenchCommandConstants.EDIT_UNDO,
+						new ActionHandler(undoAction),
+						new ActiveShellExpression(getParent().getShell()));
+				redoHandlerActivation = service.activateHandler(
+						IWorkbenchCommandConstants.EDIT_REDO,
+						new ActionHandler(redoAction),
+						new ActiveShellExpression(getParent().getShell()));
 			}
 
-			/* (non-Javadoc)
-			 * @see org.eclipse.swt.events.FocusAdapter#focusLost(org.eclipse.swt.events.FocusEvent)
-			 */
 			public void focusLost(FocusEvent e) {
 				IHandlerService service = (IHandlerService) PlatformUI.getWorkbench().getService(IHandlerService.class);
 
@@ -351,6 +374,12 @@ public class SpellcheckableMessageArea extends Composite {
 				if (selectAllHandlerActivation != null) {
 					service.deactivateHandler(selectAllHandlerActivation);
 				}
+
+				if (undoHandlerActivation != null)
+					service.deactivateHandler(undoHandlerActivation);
+
+				if (redoHandlerActivation != null)
+					service.deactivateHandler(redoHandlerActivation);
 			}
 
 		});
@@ -363,6 +392,14 @@ public class SpellcheckableMessageArea extends Composite {
 					}
 
         });
+
+		sourceViewer.addTextListener(new ITextListener() {
+
+			public void textChanged(TextEvent event) {
+				undoAction.update();
+				redoAction.update();
+			}
+		});
 	}
 
 	private void addProposals(final SubMenuManager quickFixMenu) {
@@ -529,8 +566,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 */
 	public String getCommitMessage() {
 		String text = getText();
-		text = text.replaceAll(getTextWidget().getLineDelimiter(), "\n"); //$NON-NLS-1$
-		return text;
+		return Utils.normalizeLineEndings(text);
 	}
 
 	/**
@@ -574,6 +610,13 @@ public class SpellcheckableMessageArea extends Composite {
 	 */
 	public String getText() {
 		return getTextWidget().getText();
+	}
+
+	/**
+	 * @return document
+	 */
+	public IDocument getDocument() {
+		return sourceViewer.getDocument();
 	}
 
 	/**
