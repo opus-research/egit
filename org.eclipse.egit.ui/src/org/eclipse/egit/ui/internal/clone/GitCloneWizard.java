@@ -29,7 +29,6 @@ import org.eclipse.egit.core.op.ConfigurePushAfterCloneTask;
 import org.eclipse.egit.core.op.SetChangeIdTask;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -51,6 +50,11 @@ import org.eclipse.osgi.util.NLS;
  */
 public class GitCloneWizard extends Wizard {
 
+	/**
+	 * Job family of the Clone Repository job.
+	 */
+	public static final Object CLONE_JOB_FAMILY = new Object();
+
 	private static final String HELP_CONTEXT = "org.eclipse.egit.ui.GitCloneWizard"; //$NON-NLS-1$
 
 	private RepositorySelectionPage cloneSource;
@@ -71,21 +75,10 @@ public class GitCloneWizard extends Wizard {
 	 * The default constructor
 	 */
 	public GitCloneWizard() {
-		this(null);
-	}
-
-	/**
-	 * Construct Clone Wizard
-	 *
-	 * @param presetURI
-	 *            the clone URI to prepopulate the URI field of the clone wizard
-	 *            with.
-	 */
-	public GitCloneWizard(String presetURI) {
 		setWindowTitle(UIText.GitCloneWizard_title);
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
-		cloneSource = new RepositorySelectionPage(true, presetURI);
+		cloneSource = new RepositorySelectionPage(true, null);
 		cloneSource.setHelpContext(HELP_CONTEXT);
 		validSource = new SourceBranchPage() {
 
@@ -282,9 +275,7 @@ public class GitCloneWizard extends Wizard {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.CLONE))
-					return true;
-				return super.belongsTo(family);
+				return CLONE_JOB_FAMILY.equals(family);
 			}
 		};
 		job.setUser(true);
