@@ -8,10 +8,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.view.synchronize;
 
-import static org.eclipse.egit.ui.internal.UIText.CommitAction_commit;
-import static org.eclipse.egit.ui.internal.UIText.CommitDialog_Commit;
-import static org.eclipse.egit.ui.internal.UIText.CommitDialog_CommitChanges;
-import static org.eclipse.egit.ui.internal.UIText.CommitDialog_SelectAll;
+import static org.eclipse.egit.ui.UIText.CommitAction_commit;
+import static org.eclipse.egit.ui.UIText.CommitDialog_Commit;
+import static org.eclipse.egit.ui.UIText.CommitDialog_CommitChanges;
+import static org.eclipse.egit.ui.UIText.CommitDialog_SelectAll;
 import static org.eclipse.egit.ui.test.ContextMenuHelper.clickContextMenu;
 import static org.eclipse.egit.ui.test.TestUtil.waitUntilTreeHasNodeContainsText;
 import static org.eclipse.jface.dialogs.MessageDialogWithToggle.NEVER;
@@ -25,7 +25,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -35,6 +34,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -44,12 +44,11 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
-import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.StringUtils;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
@@ -94,14 +93,6 @@ public abstract class AbstractSynchronizeViewTest extends
 	public void closeSynchronizeView() {
 		SWTBotView syncView = bot.viewByTitle("Synchronize");
 		syncView.close();
-	}
-
-	@After
-	public void deleteEmptyProject() throws Exception {
-		IProject prj = ResourcesPlugin.getWorkspace().getRoot()
-				.getProject(EMPTY_PROJECT);
-		if (prj.exists())
-			prj.delete(false, false, null);
 	}
 
 	@Before
@@ -173,12 +164,13 @@ public abstract class AbstractSynchronizeViewTest extends
 	}
 
 	protected void launchSynchronization(String srcRef, String dstRef,
-			boolean includeLocal) throws IOException {
+			boolean includeLocal) throws InterruptedException, IOException {
 		launchSynchronization(PROJ1, srcRef, dstRef, includeLocal);
 	}
 
 	protected void launchSynchronization(String projectName, String srcRef,
-			String dstRef, boolean includeLocal) throws IOException {
+			String dstRef, boolean includeLocal) throws InterruptedException,
+			IOException {
 		IProject project = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName);
 		Repository repo = RepositoryMapping.getMapping(project).getRepository();
@@ -186,11 +178,11 @@ public abstract class AbstractSynchronizeViewTest extends
 		GitSynchronizeData data = new GitSynchronizeData(repo, srcRef, dstRef,
 				includeLocal);
 
-		JobJoiner jobJoiner = JobJoiner.startListening(
-				ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, 60,
-				TimeUnit.SECONDS);
 		GitModelSynchronize.launch(data, new IResource[] { project });
-		jobJoiner.join();
+
+		Job.getJobManager().join(JobFamilies.SYNCHRONIZE_READ_DATA, null);
+		Job.getJobManager().join(
+				ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, null);
 	}
 
 	protected void setEnabledModelProvider(String modelProviderId) {

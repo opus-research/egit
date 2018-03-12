@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
- * Copyright (C) 2013, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,16 +26,10 @@ public class CoreText extends NLS {
 	private static final String BUNDLE_NAME = "org.eclipse.egit.core.coretext"; //$NON-NLS-1$
 
 	/** */
-	public static String Activator_autoIgnoreDerivedResources;
-
-	/** */
 	public static String Activator_AutoShareJobName;
 
 	/** */
 	public static String Activator_AutoSharingFailed;
-
-	/** */
-	public static String Activator_ignoreResourceFailed;
 
 	/** */
 	public static String Activator_ReconfigureWindowCacheError;
@@ -117,6 +110,9 @@ public class CoreText extends NLS {
 	public static String DiscardChangesOperation_refreshFailed;
 
 	/** */
+	public static String DiscardChangesOperation_repoNotFound;
+
+	/** */
 	public static String DeleteResourcesOperation_deletingResources;
 
 	/** */
@@ -150,9 +146,6 @@ public class CoreText extends NLS {
 	public static String GitFileHistory_gitNotAttached;
 
 	/** */
-	public static String GitFileHistory_invalidCommit;
-
-	/** */
 	public static String GitFileHistory_invalidHeadRevision;
 
 	/** */
@@ -166,9 +159,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitProjectData_failedToCacheRepoMapping;
-
-	/** */
-	public static String GitProjectData_FailedToMarkTeamPrivate;
 
 	/** */
 	public static String GitProjectData_missing;
@@ -288,9 +278,6 @@ public class CoreText extends NLS {
 	public static String IndexDiffCacheEntry_reindexing;
 
 	/** */
-	public static String IndexDiffCacheEntry_reindexingIncrementally;
-
-	/** */
 	public static String IndexFileRevision_errorLookingUpPath;
 
 	/** */
@@ -370,9 +357,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitResourceVariantTree_fetchingVariant;
-
-	/** */
-	public static String GitResourceVariantTreeSubscriber_CouldNotFindSourceVariant;
 
 	/** */
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;

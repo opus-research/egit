@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,9 +25,9 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.internal.synchronize.GitSynchronizeWizard;
 import org.eclipse.jface.action.ContributionItem;
@@ -89,7 +89,7 @@ public class SynchronizeWithMenu extends ContributionItem implements
 		if (srv == null)
 			return;
 		final IResource selectedResource = getSelection();
-		if (selectedResource == null || selectedResource.isLinked(IResource.CHECK_ANCESTORS))
+		if (selectedResource == null)
 			return;
 
 		RepositoryMapping mapping = RepositoryMapping

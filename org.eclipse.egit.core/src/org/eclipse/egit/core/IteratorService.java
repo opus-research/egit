@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,7 +11,6 @@ package org.eclipse.egit.core;
 import java.io.File;
 
 import org.eclipse.core.resources.IContainer;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -52,8 +51,7 @@ public class IteratorService {
 
 	/**
 	 * The method searches a container resource related to the given file. The
-	 * container must reside in a project that is shared with Git. Linked folders
-	 * are ignored.
+	 * container must reside in a project that is shared with Git
 	 *
 	 * @param root
 	 *            the workspace root
@@ -68,9 +66,7 @@ public class IteratorService {
 		final IContainer[] containers = root.findContainersForLocationURI(file
 				.toURI());
 		for (IContainer container : containers)
-			if (container.isAccessible()
-					&& !container.isLinked(IResource.CHECK_ANCESTORS)
-					&& isProjectSharedWithGit(container))
+			if (container.isAccessible() && isProjectSharedWithGit(container))
 				return container;
 		return null;
 	}

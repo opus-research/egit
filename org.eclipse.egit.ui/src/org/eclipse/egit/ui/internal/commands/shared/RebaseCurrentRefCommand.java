@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,7 +19,7 @@ import java.io.IOException;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.rebase.RebaseHelper;
@@ -93,9 +93,8 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 			if (selection instanceof ISelection) {
 				Repository repo = getRepository((ISelection) selection, getActiveEditorInput(ctx));
 				if (repo != null) {
-					boolean enabled = isEnabledForState(repo,
-							repo.getRepositoryState());
-					setBaseEnabled(enabled);
+					boolean isSafe = repo.getRepositoryState() == RepositoryState.SAFE;
+					setBaseEnabled(isSafe && hasHead(repo));
 				} else
 					setBaseEnabled(false);
 				return;
@@ -104,17 +103,7 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 		setBaseEnabled(true);
 	}
 
-	/**
-	 * @param repo
-	 * @param state
-	 * @return whether this command is enabled for the repository state
-	 */
-	public static boolean isEnabledForState(Repository repo,
-			RepositoryState state) {
-		return state == RepositoryState.SAFE && hasHead(repo);
-	}
-
-	private static boolean hasHead(Repository repo) {
+	private boolean hasHead(Repository repo) {
 		try {
 			Ref headRef = repo.getRef(Constants.HEAD);
 			return headRef != null && headRef.getObjectId() != null;

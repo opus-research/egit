@@ -112,11 +112,6 @@ public class IndexDiffCache {
 		for (IndexDiffCacheEntry entry : entries.values())
 			entry.dispose();
 		Job.getJobManager().cancel(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
-		try {
-			Job.getJobManager().join(JobFamilies.INDEX_DIFF_CACHE_UPDATE, null);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
 	}
 
 }
