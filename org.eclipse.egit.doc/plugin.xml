@@ -5,7 +5,7 @@
    <extension
          point="org.eclipse.help.toc">
       <toc
-            file="target/userguide/EGit User Guide-toc.xml"
+            file="userguide/EGit User Guide-toc.xml"
             primary="true">
       </toc>
    </extension>
