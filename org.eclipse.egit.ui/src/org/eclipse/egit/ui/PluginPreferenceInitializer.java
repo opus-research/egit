@@ -99,11 +99,14 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE, true);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY, false);
 
+		store.setDefault(UIPreferences.REFESH_INDEX_INTERVAL, 5 * 60);
 		store.setDefault(UIPreferences.REFESH_ON_INDEX_CHANGE, true);
 		store.setDefault(UIPreferences.REFESH_ONLY_WHEN_ACTIVE, true);
 
 		store.setDefault(UIPreferences.SHOW_REBASE_CONFIRM, true);
 		store.setDefault(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, true);
+		store.setDefault(UIPreferences.SHOW_FETCH_POPUP_SUCCESS, true);
+		store.setDefault(UIPreferences.SHOW_PUSH_POPUP_SUCCESS, true);
 		store.setDefault(UIPreferences.SHOW_HOME_DIR_WARNING, true);
 		store.setDefault(UIPreferences.SHOW_DETACHED_HEAD_WARNING, true);
 		store.setDefault(UIPreferences.SHOW_CHECKOUT_CONFIRMATION, true);

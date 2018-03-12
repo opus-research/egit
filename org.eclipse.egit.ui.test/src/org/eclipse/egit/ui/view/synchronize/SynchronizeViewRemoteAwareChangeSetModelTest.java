@@ -21,11 +21,13 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.Constants;
@@ -36,6 +38,8 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.ui.synchronize.ISynchronizeView;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class SynchronizeViewRemoteAwareChangeSetModelTest
@@ -44,6 +48,23 @@ public class SynchronizeViewRemoteAwareChangeSetModelTest
 	private IFile mockLogicalFile;
 
 	private static final String MOCK_LOGICAL_PROJECT = "MockLogical";
+
+	@Before
+	public void setUpPreferences() {
+		Activator.getDefault().getPreferenceStore()
+				.setValue(UIPreferences.USE_LOGICAL_MODEL, true);
+	}
+
+	@Before
+	public void setUpEnabledModelProvider() {
+		setEnabledModelProvider(ModelProvider.RESOURCE_MODEL_PROVIDER_ID);
+	}
+
+	@After
+	public void tearDownPreferences() {
+		Activator.getDefault().getPreferenceStore()
+				.setToDefault(UIPreferences.USE_LOGICAL_MODEL);
+	}
 
 	/**
 	 * Make sure that files that are not part of the logical model because of
@@ -176,7 +197,7 @@ public class SynchronizeViewRemoteAwareChangeSetModelTest
 				new ByteArrayInputStream(
 						"Content 3".getBytes(project.getDefaultCharset())),
 				false, null);
-		commitables = new IFile[] { mockLogicalFile, file2, file3 };
+		commitables = new IFile[] { mockLogicalFile, file1, file2, file3 };
 		untracked = new ArrayList<>();
 		untracked.add(file3);
 		op = new CommitOperation(commitables, untracked, TestUtil.TESTAUTHOR,

@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2010, 2013 Robin Stocker <robin@nibor.org> and others.
  * Copyright (C) 2015 SAP SE (Christian Georgi <christian.georgi@sap.com>)
- * Copyright (C) 2016 Thomas Wolf <thomas.wolf@paranor.ch>
+ * Copyright (C) 2016, 2017 Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,15 +10,17 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.PluginPreferenceInitializer;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditor;
-import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -33,9 +35,10 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 /** Preferences for committing with commit dialog/staging view. */
-public class CommittingPreferencePage extends FieldEditorPreferencePage
+public class CommittingPreferencePage extends DoublePreferencesPreferencePage
 		implements IWorkbenchPreferencePage {
 
 	private BooleanFieldEditor useStagingView;
@@ -71,6 +74,12 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 	}
 
 	@Override
+	protected IPreferenceStore doGetSecondaryPreferenceStore() {
+		return new ScopedPreferenceStore(InstanceScope.INSTANCE,
+				org.eclipse.egit.core.Activator.getPluginId());
+	}
+
+	@Override
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
 
@@ -88,11 +97,7 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 		autoStage = new BooleanFieldEditor(UIPreferences.AUTO_STAGE_ON_COMMIT,
 				UIText.CommittingPreferencePage_AutoStageOnCommit,
 				generalGroup);
-		// LayoutConstants.getIndent() is not available on Eclipse 3.8.
-		// IDialogConstants.INDENT is deprecated. C.f.
-		// https://bugs.eclipse.org/341604 and https://bugs.eclipse.org/400320
-		// So we hard-code it.
-		GridDataFactory.fillDefaults().indent(20, 0)
+		GridDataFactory.fillDefaults().indent(UIUtils.getControlIndent(), 0)
 				.applyTo(autoStage.getDescriptionControl(generalGroup));
 		addField(autoStage);
 		autoStage.setEnabled(getPreferenceStore()
@@ -106,6 +111,29 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 		includeUntracked.getDescriptionControl(generalGroup).setToolTipText(
 				UIText.CommittingPreferencePage_includeUntrackedFilesTooltip);
 		addField(includeUntracked);
+
+		BooleanFieldEditor autoStageDeletion = new BooleanFieldEditor(
+				GitCorePreferences.core_autoStageDeletion,
+				UIText.CommittingPreferencePage_autoStageDeletion,
+				generalGroup) {
+
+			@Override
+			public IPreferenceStore getPreferenceStore() {
+				return getSecondaryPreferenceStore();
+			}
+		};
+		addField(autoStageDeletion);
+
+		BooleanFieldEditor autoStageMoves = new BooleanFieldEditor(
+				GitCorePreferences.core_autoStageMoves,
+				UIText.CommittingPreferencePage_autoStageMoves, generalGroup) {
+
+			@Override
+			public IPreferenceStore getPreferenceStore() {
+				return getSecondaryPreferenceStore();
+			}
+		};
+		addField(autoStageMoves);
 
 		IntegerFieldEditor historySize = new IntegerFieldEditor(
 				UIPreferences.COMMIT_DIALOG_HISTORY_SIZE,
@@ -262,9 +290,9 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 
 	@Override
 	public boolean performOk() {
-		doGetPreferenceStore().setValue(UIPreferences.WARN_BEFORE_COMMITTING,
+		getPreferenceStore().setValue(UIPreferences.WARN_BEFORE_COMMITTING,
 				warnCheckbox.getSelection());
-		doGetPreferenceStore().setValue(UIPreferences.BLOCK_COMMIT,
+		getPreferenceStore().setValue(UIPreferences.BLOCK_COMMIT,
 				blockCheckbox.getSelection());
 		return super.performOk();
 	}
