@@ -13,9 +13,9 @@ package org.eclipse.egit.ui.internal.repository.tree;
 import org.eclipse.jgit.lib.Repository;
 
 /**
- * Represents the "Local" node
+ * Represents the "Remote Branches" node
  */
-public class LocalNode extends RepositoryTreeNode<Repository> {
+public class RemoteBranchesNode extends RepositoryTreeNode<Repository> {
 
 	/**
 	 * Constructs the node.
@@ -25,8 +25,8 @@ public class LocalNode extends RepositoryTreeNode<Repository> {
 	 * @param repository
 	 *            the {@link Repository}
 	 */
-	public LocalNode(RepositoryTreeNode parent, Repository repository) {
-		super(parent, RepositoryTreeNodeType.LOCAL, repository,
+	public RemoteBranchesNode(RepositoryTreeNode parent, Repository repository) {
+		super(parent, RepositoryTreeNodeType.REMOTEBRANCHES, repository,
 				repository);
 	}
 
