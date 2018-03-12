@@ -14,7 +14,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -39,23 +38,9 @@ public class ResourceUtil {
 	public static IResource getResourceForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IFile file = root.getFileForLocation(location);
-		if (file != null && file.exists())
+		if (file != null)
 			return file;
-		IContainer container = root.getContainerForLocation(location);
-		if (container != null && container.exists())
-			return container;
-		return null;
-	}
-
-	/**
-	 * Return the corresponding file if it exists.
-	 *
-	 * @param location
-	 * @return the file, or null
-	 */
-	public static IFile getFileForLocation(IPath location) {
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		return root.getFileForLocation(location);
+		return root.getContainerForLocation(location);
 	}
 
 	/**
@@ -80,9 +65,6 @@ public class ResourceUtil {
 	 * The method splits the given resources by their repository. For each
 	 * occurring repository a list is built containing the repository relative
 	 * paths of the related resources.
-	 * <p>
-	 * When one of the passed resources corresponds to the working directory,
-	 * <code>""</code> will be returned as part of the collection.
 	 *
 	 * @param resources
 	 * @return a map containing a list of repository relative paths for each
@@ -103,12 +85,9 @@ public class ResourceUtil {
 	}
 
 	/**
-	 * The method splits the given paths by their repository. For each occurring
-	 * repository a list is built containing the repository relative paths of
-	 * the related resources.
-	 * <p>
-	 * When one of the passed paths corresponds to the working directory,
-	 * <code>""</code> will be returned as part of the collection.
+	 * The method splits the given paths by their repository. For each
+	 * occurring repository a list is built containing the repository relative
+	 * paths of the related resources.
 	 *
 	 * @param paths
 	 * @return a map containing a list of repository relative paths for each
@@ -140,7 +119,7 @@ public class ResourceUtil {
 
 	private static void addPathToMap(RepositoryMapping repositoryMapping,
 			String path, Map<Repository, Collection<String>> result) {
-		if (path != null) {
+		if (path != null && path.length() > 0) {
 			Repository repository = repositoryMapping.getRepository();
 			Collection<String> resourcesList = result.get(repository);
 			if (resourcesList == null) {

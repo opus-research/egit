@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2012, SAP AG and others.
+ * Copyright (c) 2010, SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,7 +9,6 @@
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
  *    Jens Baumgart (SAP AG)
- *    Robin Stocker (independent)
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -287,19 +286,12 @@ public class CommitOperation implements IEGitOperation {
 		}
 	}
 
-	private void setAuthorAndCommitter(CommitCommand commitCommand) throws TeamException {
+	private void setAuthorAndCommitter(CommitCommand commitCommand) {
 		final Date commitDate = new Date();
 		final TimeZone timeZone = TimeZone.getDefault();
 
 		final PersonIdent enteredAuthor = RawParseUtils.parsePersonIdent(author);
 		final PersonIdent enteredCommitter = RawParseUtils.parsePersonIdent(committer);
-		if (enteredAuthor == null)
-			throw new TeamException(NLS.bind(
-					CoreText.CommitOperation_errorParsingPersonIdent, author));
-		if (enteredCommitter == null)
-			throw new TeamException(
-					NLS.bind(CoreText.CommitOperation_errorParsingPersonIdent,
-							committer));
 
 		PersonIdent authorIdent = new PersonIdent(enteredAuthor, commitDate, timeZone);
 		final PersonIdent committerIdent = new PersonIdent(enteredCommitter, commitDate, timeZone);
