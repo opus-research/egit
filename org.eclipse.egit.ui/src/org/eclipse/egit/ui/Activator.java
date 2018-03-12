@@ -135,7 +135,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			if (msg != null && !msg.isEmpty()) {
 				break;
 			}
-			Throwable cause = throwable.getCause();
+			Throwable cause = exc.getCause();
 			if (cause == null) {
 				break;
 			}
