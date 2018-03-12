@@ -60,10 +60,6 @@ public class PushOperationUI {
 
 	private final String remoteName;
 
-	private PushOperationResult expectedResult;
-
-	private boolean showConfigureButton = true;
-
 	/**
 	 * @param repository
 	 * @param remoteName
@@ -125,26 +121,6 @@ public class PushOperationUI {
 	 */
 	public void setCredentialsProvider(CredentialsProvider credentialsProvider) {
 		this.credentialsProvider = credentialsProvider;
-	}
-
-	/**
-	 * Set the expected result. If this is set, the result dialog in {@link #start()} will only be
-	 * shown when the result is different from the expected result.
-	 *
-	 * @param expectedResult
-	 */
-	public void setExpectedResult(PushOperationResult expectedResult) {
-		this.expectedResult = expectedResult;
-	}
-
-	/**
-	 * Set whether the "Configure..." button should be shown in the result
-	 * dialog of {@link #start()}.
-	 *
-	 * @param showConfigureButton
-	 */
-	public void setShowConfigureButton(boolean showConfigureButton) {
-		this.showConfigureButton = showConfigureButton;
 	}
 
 	/**
@@ -243,15 +219,12 @@ public class PushOperationUI {
 		job.addJobChangeListener(new JobChangeAdapter() {
 			@Override
 			public void done(IJobChangeEvent event) {
-				PushOperationResult result = op.getOperationResult();
-				if (expectedResult == null || !expectedResult.equals(result)) {
-					if (event.getResult().isOK())
-						PushResultDialog.show(repository, result,
-								destinationString, showConfigureButton);
-					else
-						Activator.handleError(event.getResult().getMessage(),
-								event.getResult().getException(), true);
-				}
+				if (event.getResult().isOK())
+					PushResultDialog.show(repository, op.getOperationResult(),
+							destinationString);
+				else
+					Activator.handleError(event.getResult().getMessage(), event
+							.getResult().getException(), true);
 			}
 		});
 	}
