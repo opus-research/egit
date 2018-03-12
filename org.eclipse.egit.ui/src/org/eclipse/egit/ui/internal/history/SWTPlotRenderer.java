@@ -19,22 +19,22 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revplot.AbstractPlotRenderer;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.themes.ColorUtil;
 
 class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
+	private final Color sys_blue;
 
 	private final Color sys_black;
 
 	private final Color sys_gray;
+
+	private final Color sys_darkblue;
 
 	private final Color sys_yellow;
 
@@ -42,15 +42,9 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private final Color sys_white;
 
-	private final Color commitDotFill;
-
-	private final Color commitDotOutline;
-
 	private final Map<String, Point> labelCoordinates = new HashMap<String, Point>();
 
 	private int textHeight;
-
-	private boolean enableAntialias = true;
 
 	GC g;
 
@@ -62,35 +56,19 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	Color cellBG;
 
-	private Ref headRef;
-
 	SWTPlotRenderer(final Display d) {
+		sys_blue = d.getSystemColor(SWT.COLOR_BLUE);
 		sys_black = d.getSystemColor(SWT.COLOR_BLACK);
 		sys_gray = d.getSystemColor(SWT.COLOR_GRAY);
+		sys_darkblue = d.getSystemColor(SWT.COLOR_DARK_BLUE);
 		sys_yellow = d.getSystemColor(SWT.COLOR_YELLOW);
 		sys_green = d.getSystemColor(SWT.COLOR_GREEN);
 		sys_white = d.getSystemColor(SWT.COLOR_WHITE);
-		commitDotFill = new Color(d, new RGB(220, 220, 220));
-		commitDotOutline = new Color(d, new RGB(110, 110, 110));
-	}
-
-	void dispose() {
-		commitDotFill.dispose();
-		commitDotOutline.dispose();
 	}
 
 	@SuppressWarnings("unchecked")
-	void paint(final Event event, Ref actHeadRef) {
+	void paint(final Event event) {
 		g = event.gc;
-
-		if (this.enableAntialias)
-			try {
-				g.setAntialias(SWT.ON);
-			} catch (SWTException e) {
-				this.enableAntialias = false;
-			}
-
-		this.headRef = actHeadRef;
 		cellX = event.x;
 		cellY = event.y;
 		cellFG = g.getForeground();
@@ -109,27 +87,25 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		g.drawLine(cellX + x1, cellY + y1, cellX + x2, cellY + y2);
 	}
 
-	protected void drawDot(final Color outline, final Color fill, final int x,
-			final int y, final int w, final int h) {
-		int dotX = cellX + x + 2;
-		int dotY = cellY + y + 1;
-		int dotW = w - 2;
-		int dotH = h - 2;
-		g.setBackground(fill);
-		g.fillOval(dotX, dotY, dotW, dotH);
-		g.setForeground(outline);
-		g.setLineWidth(2);
-		g.drawOval(dotX, dotY, dotW, dotH);
-	}
-
 	protected void drawCommitDot(final int x, final int y, final int w,
 			final int h) {
-		drawDot(commitDotOutline, commitDotFill, x, y, w, h);
+		g.setBackground(sys_blue);
+		g.fillOval(cellX + x, cellY + y, w, h);
+		g.setForeground(sys_darkblue);
+		g.setLineWidth(2);
+		g.drawOval(cellX + x + 1, cellY + y + 1, w - 2, h - 2);
+		g.setForeground(sys_black);
+		g.setLineWidth(1);
+		g.drawOval(cellX + x, cellY + y, w, h);
 	}
 
 	protected void drawBoundaryDot(final int x, final int y, final int w,
 			final int h) {
-		drawDot(sys_gray, sys_white, x, y, w, h);
+		g.setForeground(sys_gray);
+		g.setBackground(cellBG);
+		g.setLineWidth(1);
+		g.fillOval(cellX + x, cellY + y, w, h);
+		g.drawOval(cellX + x, cellY + y, w, h);
 	}
 
 	protected void drawText(final String msg, final int x, final int y) {
@@ -170,13 +146,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		}
 
 		if (txt.length() > 12)
-			txt = txt.substring(0,11) + "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
-
-		// highlight checked out branch
-		Font oldFont = g.getFont();
-		boolean isHead = isHead(name);
-		if (isHead)
-			g.setFont(CommitGraphTable.highlightFont());
+			txt = txt.substring(0,11) + "\u2026"; // ellipsis "…" (in UTF-8) //$NON-NLS-1$
 
 		Point textsz = g.stringExtent(txt);
 		int arc = textsz.y/2;
@@ -185,15 +155,10 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		// Draw backgrounds
 		g.fillRoundRectangle(cellX + x + 1, cellY + texty -1, textsz.x + 3, textsz.y + 1, arc, arc);
 		g.setForeground(sys_black);
-
-		// Draw text
 		g.drawString(txt,cellX + x + 2, cellY + texty, true);
-
-		if (isHead)
-			g.setFont(oldFont);
 		g.setLineWidth(2);
 
-		// Add a two color shaded border, blend with whatever background there already is
+		// And a two color shaded border, blend with whatever background there already is
 		g.setAlpha(128);
 		g.setForeground(sys_gray);
 		g.drawRoundRectangle(cellX + x, cellY + texty -2, textsz.x + 5, textsz.y + 3, arc, arc);
@@ -206,17 +171,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 			peeledColor.dispose();
 		labelCoordinates.put(name, new Point(x, x + textsz.x));
 		return 8 + textsz.x;
-	}
-
-	private boolean isHead(String name) {
-		boolean isHead = false;
-		if (headRef != null) {
-			String headRefName = headRef.getLeaf().getName();
-			if (name.equals(headRefName)) {
-				isHead = true;
-			}
-		}
-		return isHead;
 	}
 
 	protected Color laneColor(final SWTLane myLane) {

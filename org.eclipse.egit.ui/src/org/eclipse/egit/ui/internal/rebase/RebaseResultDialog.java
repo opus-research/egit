@@ -95,8 +95,8 @@ public class RebaseResultDialog extends MessageDialog {
 	public static void show(final RebaseResult result,
 			final Repository repository) {
 		boolean shouldShow = result.getStatus() == Status.STOPPED
-				|| Activator.getDefault().getPreferenceStore().getBoolean(
-						UIPreferences.SHOW_REBASE_CONFIRM);
+				|| !Activator.getDefault().getPreferenceStore().getBoolean(
+						UIPreferences.REBASE_HIDE_CONFIRM);
 		if (!shouldShow) {
 			Activator.getDefault().getLog().log(
 					new org.eclipse.core.runtime.Status(IStatus.INFO, Activator
@@ -122,8 +122,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_Aborted;
 		case STOPPED:
 			return UIText.RebaseResultDialog_Stopped;
-		case FAILED:
-			return UIText.RebaseResultDialog_Failed;
 		case UP_TO_DATE:
 			return UIText.RebaseResultDialog_UpToDate;
 		case FAST_FORWARD:
@@ -141,9 +139,7 @@ public class RebaseResultDialog extends MessageDialog {
 	private RebaseResultDialog(Shell shell, Repository repository,
 			RebaseResult result) {
 		super(shell, UIText.RebaseResultDialog_DialogTitle, INFO,
-				getTitle(result.getStatus()),
-				result.getStatus() == Status.FAILED ? MessageDialog.ERROR
-						: MessageDialog.INFORMATION,
+				getTitle(result.getStatus()), MessageDialog.INFORMATION,
 				new String[] { IDialogConstants.OK_LABEL }, 0);
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repo = repository;
@@ -196,7 +192,7 @@ public class RebaseResultDialog extends MessageDialog {
 			}
 			if (conflictPaths.size() > 0) {
 				message = NLS.bind(UIText.RebaseResultDialog_Conflicting,
-						Integer.valueOf(conflictPaths.size()));
+						conflictPaths.size());
 				messageLabel.setText(message);
 			}
 		} catch (IOException e) {
@@ -245,12 +241,10 @@ public class RebaseResultDialog extends MessageDialog {
 		startMergeButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				if (startMergeButton.getSelection()) {
-					nextSteps
-							.getTextWidget()
-							.setText(
-									UIText.RebaseResultDialog_NextStepsAfterResolveConflicts);
-				}
+				nextSteps
+						.getTextWidget()
+						.setText(
+								UIText.RebaseResultDialog_NextStepsAfterResolveConflicts);
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -264,8 +258,7 @@ public class RebaseResultDialog extends MessageDialog {
 		skipCommitButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				if (skipCommitButton.getSelection())
-					nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
+				nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -280,8 +273,7 @@ public class RebaseResultDialog extends MessageDialog {
 		abortRebaseButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				if (abortRebaseButton.getSelection())
-					nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
+				nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -295,9 +287,8 @@ public class RebaseResultDialog extends MessageDialog {
 		doNothingButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				if (doNothingButton.getSelection())
-					nextSteps.getTextWidget().setText(
-							UIText.RebaseResultDialog_NextStepsDoNothing);
+				nextSteps.getTextWidget().setText(
+						UIText.RebaseResultDialog_NextStepsDoNothing);
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -319,8 +310,8 @@ public class RebaseResultDialog extends MessageDialog {
 		// store the preference to hide these dialogs
 		if (toggleButton != null)
 			Activator.getDefault().getPreferenceStore().setValue(
-					UIPreferences.SHOW_REBASE_CONFIRM,
-					!toggleButton.getSelection());
+					UIPreferences.REBASE_HIDE_CONFIRM,
+					toggleButton.getSelection());
 		if (buttonId == IDialogConstants.OK_ID) {
 			if (result.getStatus() != Status.STOPPED) {
 				super.buttonPressed(buttonId);
@@ -408,8 +399,8 @@ public class RebaseResultDialog extends MessageDialog {
 	}
 
 	private void createToggleButton(Composite parent) {
-		boolean toggleState = !Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.SHOW_REBASE_CONFIRM);
+		boolean toggleState = Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.REBASE_HIDE_CONFIRM);
 		toggleButton = new Button(parent, SWT.CHECK | SWT.LEFT);
 		toggleButton.setText(UIText.RebaseResultDialog_ToggleShowButton);
 		toggleButton.setSelection(toggleState);

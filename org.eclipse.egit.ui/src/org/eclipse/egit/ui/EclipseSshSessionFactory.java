@@ -10,17 +10,17 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
-import org.eclipse.jgit.transport.JschConfigSessionFactory;
-import org.eclipse.jgit.transport.OpenSshConfig;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jsch.core.IJSchService;
 import org.eclipse.jsch.ui.UserInfoPrompter;
+import org.eclipse.jgit.transport.OpenSshConfig;
+import org.eclipse.jgit.transport.SshConfigSessionFactory;
+import org.eclipse.jgit.util.FS;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
-class EclipseSshSessionFactory extends JschConfigSessionFactory {
+class EclipseSshSessionFactory extends SshConfigSessionFactory {
 	private final IJSchService provider;
 
 	EclipseSshSessionFactory(final IJSchService p) {

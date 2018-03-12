@@ -14,6 +14,7 @@
 package org.eclipse.egit.ui.internal.components;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,6 @@ import java.util.regex.Pattern;
 
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
@@ -32,7 +32,6 @@ import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.Transport;
-import org.eclipse.jgit.transport.TransportProtocol;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
@@ -51,6 +50,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -329,7 +329,7 @@ public class RepositorySelectionPage extends WizardPage {
 					if (index > 0)
 						text = text.substring(0, index);
 					URIish u = new URIish(text);
-					if (canHandleProtocol(u)) {
+					if (Transport.canHandleProtocol(u, FS.DETECTED)) {
 						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
 								|| text.endsWith(Constants.DOT_GIT))
 							preset = text;
@@ -408,14 +408,6 @@ public class RepositorySelectionPage extends WizardPage {
 		setControl(panel);
 
 		checkPage();
-	}
-
-	private boolean canHandleProtocol(URIish u) {
-		for (TransportProtocol proto : Transport.getTransportProtocols())
-			if (proto.canHandle(u))
-				return true;
-
-		return false;
 	}
 
 	private void createRemotePanel(final Composite parent) {
@@ -504,37 +496,27 @@ public class RepositorySelectionPage extends WizardPage {
 		browseButton.addSelectionListener(new SelectionAdapter() {
 
 			@Override
-			public void widgetSelected(SelectionEvent evt) {
+			public void widgetSelected(SelectionEvent e) {
 				DirectoryDialog dialog = new DirectoryDialog(getShell());
-				// if a file was selected before, let's try to open
+				// if a file-uri was selected before, let's try to open
 				// the directory dialog on the same directory
 				if (!uriText.getText().equals(EMPTY_STRING)) {
 					try {
-						// first we try if this is a simple file name
-						File testFile = new File(uriText.getText());
-						if (testFile.exists())
-							dialog.setFilterPath(testFile.getPath());
-						else {
-							// this could still be a file URIish
-							URIish testUri = new URIish(uriText.getText());
-							if (testUri.getScheme().equals(
-									Protocol.FILE.defaultScheme)) {
-								testFile = new File(uri.getPath());
-								if (testFile.exists())
-									dialog.setFilterPath(testFile.getPath());
-							}
+						URI testUri = URI.create(uriText.getText().replace(
+								'\\', '/'));
+						if (testUri.getScheme().equals("file")) { //$NON-NLS-1$
+							String path = testUri.getPath();
+							if (path.length() > 1 && path.startsWith("/")) //$NON-NLS-1$
+								path = path.substring(1);
+
+							dialog.setFilterPath(path);
 						}
-					} catch (IllegalArgumentException e) {
-						// ignore here, we just' don't set the directory in the
-						// browser
-					} catch (URISyntaxException e) {
+					} catch (IllegalArgumentException e1) {
 						// ignore here, we just' don't set the directory in the
 						// browser
 					}
+
 				}
-				// if nothing else, we start the search from the default folder for repositories
-				if (EMPTY_STRING.equals(dialog.getFilterPath()))
-					dialog.setFilterPath(Activator.getDefault().getPreferenceStore().getString(UIPreferences.DEFAULT_REPO_DIR));
 				String result = dialog.open();
 				if (result != null)
 					uriText.setText("file:///" + result); //$NON-NLS-1$
@@ -884,11 +866,11 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void updateRemoteAndURIPanels() {
-		UIUtils.setEnabledRecursively(uriPanel, isURISelected());
+		setEnabledRecursively(uriPanel, isURISelected());
 		if (uriPanel.getEnabled())
 			updateAuthGroup();
 		if (configuredRemotes != null)
-			UIUtils.setEnabledRecursively(remotePanel, !isURISelected());
+			setEnabledRecursively(remotePanel, !isURISelected());
 	}
 
 	private void updateAuthGroup() {
@@ -896,7 +878,7 @@ public class RepositorySelectionPage extends WizardPage {
 		if (p != null) {
 			hostText.setEnabled(p.hasHost());
 			portText.setEnabled(p.hasPort());
-			UIUtils.setEnabledRecursively(authGroup, p.canAuthenticate());
+			setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
 	}
 
@@ -951,6 +933,14 @@ public class RepositorySelectionPage extends WizardPage {
 	@Override
 	public void performHelp() {
 		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
+	}
+
+	private void setEnabledRecursively(final Control control,
+			final boolean enable) {
+		control.setEnabled(enable);
+		if (control instanceof Composite)
+			for (final Control child : ((Composite) control).getChildren())
+				setEnabledRecursively(child, enable);
 	}
 
 	private void updateFields(final String text) {

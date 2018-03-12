@@ -13,8 +13,6 @@ package org.eclipse.egit.ui.internal.preferences;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -239,19 +237,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 					continue;
 				}
 			}
-			sortRepositoriesByName();
 		}
-	}
-
-	private void sortRepositoriesByName() {
-		Collections.sort(repositories, new Comparator<Repository>() {
-
-			public int compare(Repository repo1, Repository repo2) {
-				String repo1Name = repo1.getDirectory().getParentFile().getName();
-				String repo2Name = repo2.getDirectory().getParentFile().getName();
-				return repo1Name.compareTo(repo2Name);
-			}
-		});
 	}
 
 	private String[] getRepositoryComboItems() {

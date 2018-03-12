@@ -7,8 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Dariusz Luksza (dariusz@luksza.org - set action disabled when HEAD cannot
- *    										be resolved
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -45,7 +43,7 @@ public class CreateBranchCommand extends
 						.parseCommit(ref.getLeaf().getObjectId());
 				WizardDialog dlg = new WizardDialog(
 						getShell(event),
-						new CreateBranchWizard(node.getRepository(), baseCommit.name()));
+						new CreateBranchWizard(node.getRepository(), baseCommit));
 				dlg.setHelpAvailable(false);
 				dlg.open();
 			} catch (IOException e) {
@@ -53,9 +51,9 @@ public class CreateBranchCommand extends
 			}
 			return null;
 		}
-		String base = null;
+		final Ref baseBranch;
 		if (node.getObject() instanceof Ref)
-			base = ((Ref) node.getObject()).getName();
+			baseBranch = (Ref) node.getObject();
 		else {
 			// we are on another node, so we have no Ref as context
 			// -> try to determine the currently checked out branch
@@ -87,17 +85,10 @@ public class CreateBranchCommand extends
 			} catch (IOException e) {
 				branch = null;
 			}
-			if (branch != null)
-				base = branch.getName();
+			baseBranch = branch;
 		}
 		new WizardDialog(getShell(event), new CreateBranchWizard(node
-				.getRepository(), base)).open();
+				.getRepository(), baseBranch)).open();
 		return null;
 	}
-
-	@Override
-	public void setEnabled(Object evaluationContext) {
-		enableWhenRepositoryHaveHead(evaluationContext);
-	}
-
 }
