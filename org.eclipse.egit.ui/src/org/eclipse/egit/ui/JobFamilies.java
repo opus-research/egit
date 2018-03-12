@@ -54,6 +54,11 @@ public class JobFamilies {
 	public static final Object RESET = new Object();
 
 	/**
+	 * Rebase job
+	 */
+	public static final Object REBASE = new Object();
+
+	/**
 	 * Pull job
 	 */
 	public final static Object PULL = new Object();
@@ -67,5 +72,25 @@ public class JobFamilies {
 	 * Fill tag list
 	 */
 	public final static Object FILL_TAG_LIST = new Object();
+
+	/**
+	 * AssumeUnchanged/NoAssumeUnchanged
+	 */
+	public final static Object ASSUME_NOASSUME_UNCHANGED = new Object();
+
+	/**
+	 * Untrack
+	 */
+	public final static Object UNTRACK = new Object();
+
+	/**
+	 * Disconnect
+	 */
+	public final static Object DISCONNECT = new Object();
+
+	/**
+	 * Staging View refresh
+	 */
+	public static final Object STAGING_VIEW_REFRESH = new Object();
 
 }
