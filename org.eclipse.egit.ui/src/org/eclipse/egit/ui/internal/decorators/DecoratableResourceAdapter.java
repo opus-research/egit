@@ -48,7 +48,9 @@ import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
-class DecoratableResourceAdapter extends DecoratableResource {
+class DecoratableResourceAdapter implements IDecoratableResource {
+
+	private final IResource resource;
 
 	private final RepositoryMapping mapping;
 
@@ -58,13 +60,35 @@ class DecoratableResourceAdapter extends DecoratableResource {
 
 	private final IPreferenceStore store;
 
+	private final String branch;
+
+	private final String repositoryName;
+
+	private boolean tracked = false;
+
+	private boolean ignored = false;
+
+	private boolean dirty = false;
+
+	private boolean conflicts = false;
+
+	private boolean assumeValid = false;
+
+	private Staged staged = Staged.NOT_STAGED;
+
 	private final boolean trace;
+
+	static final int T_HEAD = 0;
+
+	static final int T_INDEX = 1;
+
+	static final int T_WORKSPACE = 2;
 
 	@SuppressWarnings("fallthrough")
 	public DecoratableResourceAdapter(IResource resourceToWrap)
 			throws IOException {
-		super(resourceToWrap);
 		trace = GitTraceLocation.DECORATION.isActive();
+		resource = resourceToWrap;
 		long start = 0;
 		if (trace) {
 			GitTraceLocation.getTrace().trace(
@@ -131,8 +155,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 
 	private void extractResourceProperties(TreeWalk treeWalk) throws IOException {
 		final ContainerTreeIterator workspaceIterator = treeWalk.getTree(
-				DecoratableResourceHelper.T_WORKSPACE,
-				ContainerTreeIterator.class);
+				T_WORKSPACE, ContainerTreeIterator.class);
 		final ResourceEntry resourceEntry = workspaceIterator != null ? workspaceIterator
 				.getResourceEntry() : null;
 
@@ -144,9 +167,8 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			return;
 		}
 
-		final int mHead = treeWalk.getRawMode(DecoratableResourceHelper.T_HEAD);
-		final int mIndex = treeWalk
-				.getRawMode(DecoratableResourceHelper.T_INDEX);
+		final int mHead = treeWalk.getRawMode(T_HEAD);
+		final int mIndex = treeWalk.getRawMode(T_INDEX);
 
 		if (mHead == FileMode.MISSING.getBits()
 				&& mIndex == FileMode.MISSING.getBits())
@@ -160,15 +182,14 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			staged = Staged.REMOVED;
 		} else if (mHead != mIndex
 				|| (mIndex != FileMode.TREE.getBits() && !treeWalk.idEqual(
-						DecoratableResourceHelper.T_HEAD,
-						DecoratableResourceHelper.T_INDEX))) {
+						T_HEAD, T_INDEX))) {
 			staged = Staged.MODIFIED;
 		} else {
 			staged = Staged.NOT_STAGED;
 		}
 
-		final DirCacheIterator indexIterator = treeWalk.getTree(
-				DecoratableResourceHelper.T_INDEX, DirCacheIterator.class);
+		final DirCacheIterator indexIterator = treeWalk.getTree(T_INDEX,
+				DirCacheIterator.class);
 		final DirCacheEntry indexEntry = indexIterator != null ? indexIterator
 				.getDirCacheEntry() : null;
 
@@ -210,8 +231,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 						GitTraceLocation.DECORATION.getLocation(),
 						treeWalk.getPathString());
 			final WorkingTreeIterator workingTreeIterator = treeWalk.getTree(
-					DecoratableResourceHelper.T_WORKSPACE,
-					WorkingTreeIterator.class);
+					T_WORKSPACE, WorkingTreeIterator.class);
 			if (workingTreeIterator != null) {
 				if (workingTreeIterator instanceof ContainerTreeIterator) {
 					final ContainerTreeIterator workspaceIterator =
@@ -225,10 +245,8 @@ class DecoratableResourceAdapter extends DecoratableResource {
 					}
 					if (resource.getFullPath().isPrefixOf(
 							resourceEntry.getResource().getFullPath())
-							&& treeWalk
-									.getFileMode(DecoratableResourceHelper.T_HEAD) == FileMode.MISSING
-							&& treeWalk
-									.getFileMode(DecoratableResourceHelper.T_INDEX) == FileMode.MISSING) {
+							&& treeWalk.getFileMode(T_HEAD) == FileMode.MISSING
+							&& treeWalk.getFileMode(T_INDEX) == FileMode.MISSING) {
 						// we reached the folder to decorate (or are beyond)
 						// we can cut if the current entry does not
 						// exist in head and index
@@ -254,10 +272,8 @@ class DecoratableResourceAdapter extends DecoratableResource {
 
 					}
 					if (resPath.isPrefixOf(wdPath)
-							&& treeWalk
-									.getFileMode(DecoratableResourceHelper.T_HEAD) == FileMode.MISSING
-							&& treeWalk
-									.getFileMode(DecoratableResourceHelper.T_INDEX) == FileMode.MISSING) {
+							&& treeWalk.getFileMode(T_HEAD) == FileMode.MISSING
+							&& treeWalk.getFileMode(T_INDEX) == FileMode.MISSING) {
 						// we reached the folder to decorate (or are beyond)
 						// we can cut if the current entry does not
 						// exist in head and index
@@ -270,8 +286,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 				}
 			}
 
-			if (FileMode.TREE.equals(treeWalk
-					.getRawMode(DecoratableResourceHelper.T_WORKSPACE)))
+			if (FileMode.TREE.equals(treeWalk.getRawMode(T_WORKSPACE)))
 				return shouldRecurse(treeWalk);
 
 			// Backup current state so far
@@ -295,8 +310,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 
 		private boolean shouldRecurse(TreeWalk treeWalk) throws IOException {
 			final WorkingTreeIterator workspaceIterator = treeWalk.getTree(
-					DecoratableResourceHelper.T_WORKSPACE,
-					WorkingTreeIterator.class);
+					T_WORKSPACE, WorkingTreeIterator.class);
 
 			if (workspaceIterator instanceof AdaptableFileTreeIterator)
 				return true;
@@ -405,10 +419,50 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			treeWalk.addTree(new EmptyTreeIterator());
 
 		// Index
-		treeWalk.addTree(new DirCacheIterator(repository.getDirCache()));
+		treeWalk.addTree(new DirCacheIterator(repository.readDirCache()));
 
 		// Working directory
 		treeWalk.addTree(IteratorService.createInitialIterator(repository));
 		return treeWalk;
+	}
+
+	public String getName() {
+		return resource.getName();
+	}
+
+	public int getType() {
+		return resource.getType();
+	}
+
+	public String getRepositoryName() {
+		return repositoryName;
+	}
+
+	public String getBranch() {
+		return branch;
+	}
+
+	public boolean isTracked() {
+		return tracked;
+	}
+
+	public boolean isIgnored() {
+		return ignored;
+	}
+
+	public boolean isDirty() {
+		return dirty;
+	}
+
+	public Staged staged() {
+		return staged;
+	}
+
+	public boolean hasConflicts() {
+		return conflicts;
+	}
+
+	public boolean isAssumeValid() {
+		return assumeValid;
 	}
 }
