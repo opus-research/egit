@@ -12,6 +12,7 @@ package org.eclipse.egit.core.op;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 
@@ -20,10 +21,9 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
@@ -47,7 +47,7 @@ import org.eclipse.team.core.Team;
  * </p>
  */
 public class TrackOperation implements IEGitOperation {
-	private final IResource[] rsrcList;
+	private final Collection rsrcList;
 
 	/**
 	 * Create a new operation to track additional files/folders.
@@ -56,17 +56,9 @@ public class TrackOperation implements IEGitOperation {
 	 *            collection of {@link IResource}s which should be added to the
 	 *            relevant Git repositories.
 	 */
-	public TrackOperation(IResource[] rsrcs) {
+	public TrackOperation(final Collection rsrcs) {
 		rsrcList = rsrcs;
 	}
-
-	/**
-	 * @return the rule needed to execute this operation
-	 */
-	public ISchedulingRule getSchedulingRule() {
-		return new MultiRule(rsrcList);
-	}
-
 
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
@@ -77,14 +69,17 @@ public class TrackOperation implements IEGitOperation {
 		}
 
 		final IdentityHashMap<RepositoryMapping, Boolean> tomerge = new IdentityHashMap<RepositoryMapping, Boolean>();
-		m.beginTask(CoreText.AddOperation_adding, rsrcList.length * 200);
+		m.beginTask(CoreText.AddOperation_adding, rsrcList.size() * 200);
 		try {
-			for (IResource toAdd : rsrcList) {
+			for (Object obj : rsrcList) {
+				obj = ((IAdaptable)obj).getAdapter(IResource.class);
+				if (obj instanceof IResource) {
+					final IResource toAdd = (IResource)obj;
 					final RepositoryMapping rm = RepositoryMapping.getMapping(toAdd);
 					final GitIndex index = rm.getRepository().getIndex();
 
-					if (toAdd instanceof IFile) {
-						String repoPath = rm.getRepoRelativePath(toAdd);
+					if (obj instanceof IFile) {
+						String repoPath = rm.getRepoRelativePath((IResource) obj);
 						Entry entry = index.getEntry(repoPath);
 						if (entry != null) {
 							if (!entry.isAssumedValid()) {
@@ -135,6 +130,7 @@ public class TrackOperation implements IEGitOperation {
 						entry.setAssumeValid(false);
 
 					}
+				}
 				m.worked(200);
 			}
 			for (RepositoryMapping rm : tomerge.keySet()) {
