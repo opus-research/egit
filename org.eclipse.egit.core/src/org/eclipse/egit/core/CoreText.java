@@ -285,9 +285,6 @@ public class CoreText extends NLS {
 	public static String IndexDiffCacheEntry_reindexing;
 
 	/** */
-	public static String IndexDiffCacheEntry_reindexingIncrementally;
-
-	/** */
 	public static String IndexFileRevision_errorLookingUpPath;
 
 	/** */
@@ -367,9 +364,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitResourceVariantTree_fetchingVariant;
-
-	/** */
-	public static String GitResourceVariantTreeSubscriber_CouldNotFindSourceVariant;
 
 	/** */
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
