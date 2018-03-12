@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2014, Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,31 +29,27 @@ public class ResetHandler extends AbstractHistoryCommandHandler {
 		final RevCommit commit = (RevCommit) getSelection(getPage())
 				.getFirstElement();
 
-		String resetMode = event.getParameter(HistoryViewCommands.RESET_MODE);
-		performReset(event, repo, commit, resetMode);
-		return null;
-	}
+		String type = event.getParameter(HistoryViewCommands.RESET_MODE);
+		final ResetType resetType;
 
-	/**
-	 * @param event
-	 * @param repo
-	 * @param commit
-	 * @param resetMode
-	 * @throws ExecutionException
-	 */
-	public static void performReset(ExecutionEvent event,
-			final Repository repo, final RevCommit commit, String resetMode)
-			throws ExecutionException {
-		final ResetType resetType = ResetType.valueOf(resetMode);
+		if (type.equals("Hard")) { //$NON-NLS-1$
+			resetType = ResetType.HARD;
+		} else if (type.equals("Mixed")) { //$NON-NLS-1$
+			resetType = ResetType.MIXED;
+		} else if (type.equals("Soft")) { //$NON-NLS-1$
+			resetType = ResetType.SOFT;
+		} else {
+			throw new ExecutionException("Could not determine the reset type"); //$NON-NLS-1$ TODO
+		}
 
-		final String jobName;
+		String jobName = "Reset"; //$NON-NLS-1$
 		switch (resetType) {
 		case HARD:
-			if (!MessageDialog.openQuestion(
-					HandlerUtil.getActiveShellChecked(event),
+			if (!MessageDialog.openQuestion(HandlerUtil
+					.getActiveShellChecked(event),
 					UIText.ResetTargetSelectionDialog_ResetQuestion,
 					UIText.ResetTargetSelectionDialog_ResetConfirmQuestion))
-				return;
+				return null;
 
 			jobName = UIText.HardResetToRevisionAction_hardReset;
 			break;
@@ -63,12 +59,10 @@ public class ResetHandler extends AbstractHistoryCommandHandler {
 		case MIXED:
 			jobName = UIText.MixedResetToRevisionAction_mixedReset;
 			break;
-		default:
-			return; // other types are currently not used
 		}
 
-		ResetOperation operation = new ResetOperation(repo, commit.getName(),
-				resetType);
+		ResetOperation operation = new ResetOperation(repo, commit.getName(), resetType);
 		JobUtil.scheduleUserWorkspaceJob(operation, jobName, JobFamilies.RESET);
+		return null;
 	}
 }
