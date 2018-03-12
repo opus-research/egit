@@ -191,9 +191,7 @@ public class GitProjectData {
 
 	/**
 	 * @param p
-	 * @return {@link GitProjectData} for the specified project, or null if the
-	 *         Git provider is not associated with the project or an exception
-	 *         occurred
+	 * @return {@link GitProjectData} for the specified project
 	 */
 	public synchronized static GitProjectData get(final IProject p) {
 		try {
