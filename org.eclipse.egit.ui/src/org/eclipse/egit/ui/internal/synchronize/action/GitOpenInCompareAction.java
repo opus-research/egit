@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org> amd others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,7 +11,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.action;
 
-import static org.eclipse.egit.core.Helpers.isNonWorksapce;
+import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
 import static org.eclipse.ui.PlatformUI.getWorkbench;
 
 import java.io.IOException;
@@ -81,7 +81,7 @@ public class GitOpenInCompareAction extends Action {
 		ITypedElement right;
 		if (obj instanceof GitModelWorkingFile) {
 			IFile file = (IFile) obj.getResource();
-			if (isNonWorksapce(file))
+			if (isNonWorkspace(file))
 				left = new LocalNonWorkspaceTypedElement(file.getFullPath().toString());
 			else
 				left= SaveableCompareEditorInput.createFileElement(file);
