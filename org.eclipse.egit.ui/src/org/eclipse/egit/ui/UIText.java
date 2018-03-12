@@ -472,6 +472,27 @@ public class UIText extends NLS {
 	public static String RepositorySelectionPage_ShowPreviousURIs_HoverText;
 
 	/** */
+	public static String RepositorySelectionPage_tip_file;
+
+	/** */
+	public static String RepositorySelectionPage_tip_ftp;
+
+	/** */
+	public static String RepositorySelectionPage_tip_git;
+
+	/** */
+	public static String RepositorySelectionPage_tip_http;
+
+	/** */
+	public static String RepositorySelectionPage_tip_https;
+
+	/** */
+	public static String RepositorySelectionPage_tip_sftp;
+
+	/** */
+	public static String RepositorySelectionPage_tip_ssh;
+
+	/** */
 	public static String RepositorySelectionPage_uriChoice;
 
 	/** */
@@ -809,33 +830,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ResetQuickdiffBaselineHeadParentAction_0;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetButton;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetConfirmQuestion;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetQuestion;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTitle;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeGroup;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeHardButton;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeMixedButton;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeSoftButton;
-
-	/** */
-	public static String ResetTargetSelectionDialog_SelectBranchForResetMessage;
 
 	/** */
 	public static String ResourceHistory_toggleCommentWrap;
@@ -1420,10 +1414,34 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_TitleCheckout;
 
 	/** */
+	public static String BranchSelectionDialog_TitleReset;
+
+	/** */
+	public static String BranchSelectionDialog_OkReset;
+
+	/** */
 	public static String BranchSelectionDialog_ErrorCouldNotCreateNewRef;
 
 	/** */
 	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
+
+	/** */
+	public static String BranchSelectionDialog_ResetType;
+
+	/** */
+	public static String BranchSelectionDialog_ResetTypeSoft;
+
+	/** */
+	public static String BranchSelectionDialog_ResetTypeMixed;
+
+	/** */
+	public static String BranchSelectionDialog_ResetTypeHard;
+
+	/** */
+	public static String BranchSelectionDialog_ReallyResetTitle;
+
+	/** */
+	public static String BranchSelectionDialog_ReallyResetMessage;
 
 	/** */
 	public static String BranchSelectionDialog_QuestionNewBranchTitle;
