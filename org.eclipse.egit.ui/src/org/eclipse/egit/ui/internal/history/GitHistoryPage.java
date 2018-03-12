@@ -70,6 +70,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
@@ -254,18 +255,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		private final ShowFilter filter;
 
 		ShowFilterAction(ShowFilter filter, ImageDescriptor icon,
-				String menuLabel, String toolTipText) {
+				String toolTipText) {
 			super(null, IAction.AS_CHECK_BOX);
 			this.filter = filter;
 			setImageDescriptor(icon);
-			setText(menuLabel);
+			setText(toolTipText);
 			setToolTipText(toolTipText);
 		}
 
 		@Override
 		public void run() {
 			String oldName = getName();
-			String oldDescription = getDescription();
 			if (!isChecked()) {
 				if (showAllFilter == filter) {
 					showAllFilter = ShowFilter.SHOWALLRESOURCE;
@@ -287,11 +287,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			}
 			GitHistoryPage.this.firePropertyChange(GitHistoryPage.this, P_NAME,
 					oldName, getName());
-			// even though this is currently ending nowhere, we still
-			// create the event
-			GitHistoryPage.this.firePropertyChange(GitHistoryPage.this,
-					P_DESCRIPTION, oldDescription, GitHistoryPage.this
-							.getDescription());
 			Activator.getDefault().getPreferenceStore().setValue(
 					PREF_SHOWALLFILTER, showAllFilter.toString());
 		}
@@ -322,23 +317,19 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 		showAllRepoVersionsAction = new ShowFilterAction(
 				ShowFilter.SHOWALLREPO, UIIcons.FILTERREPO,
-				UIText.GitHistoryPage_AllInRepoMenuLabel,
-				UIText.GitHistoryPage_AllInRepoTooltip);
+				UIText.HistoryPage_ShowAllVersionsForRepo);
 
 		showAllProjectVersionsAction = new ShowFilterAction(
 				ShowFilter.SHOWALLPROJECT, UIIcons.FILTERPROJECT,
-				UIText.GitHistoryPage_AllInProjectMenuLabel,
-				UIText.GitHistoryPage_AllInProjectTooltip);
+				UIText.HistoryPage_ShowAllVersionsForProject);
 
 		showAllFolderVersionsAction = new ShowFilterAction(
 				ShowFilter.SHOWALLFOLDER, UIIcons.FILTERFOLDER,
-				UIText.GitHistoryPage_AllInParentMenuLabel,
-				UIText.GitHistoryPage_AllInParentTooltip);
+				UIText.HistoryPage_ShowAllVersionsForFolder);
 
 		showAllResourceVersionsAction = new ShowFilterAction(
 				ShowFilter.SHOWALLRESOURCE, UIIcons.FILTERRESOURCE,
-				UIText.GitHistoryPage_AllOfResourceMenuLabel,
-				UIText.GitHistoryPage_AllOfResourceTooltip);
+				UIText.GitHistoryPage_ShowAllVersionsForResource);
 
 		showAllRepoVersionsAction
 				.setChecked(showAllFilter == showAllRepoVersionsAction.filter);
@@ -362,14 +353,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		viewMenuMgr.add(showAllProjectVersionsAction);
 		viewMenuMgr.add(showAllFolderVersionsAction);
 		viewMenuMgr.add(showAllResourceVersionsAction);
-		viewMenuMgr.add(new Separator());
 	}
 
-	private void createCompareModeAndShowAllAction() {
+	private void createCompareModeAction() {
 		final IToolBarManager barManager = getSite().getActionBars()
 				.getToolBarManager();
-		final IMenuManager menuManager = getSite().getActionBars()
-				.getMenuManager();
 		compareModeAction = new Action(UIText.GitHistoryPage_compareMode,
 				IAction.AS_CHECK_BOX) {
 			public void run() {
@@ -380,15 +368,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		};
 		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
 		compareModeAction.setChecked(compareMode);
-		compareModeAction.setText(UIText.GitHistoryPage_CompareModeMenuLabel);
 		compareModeAction.setToolTipText(UIText.GitHistoryPage_compareMode);
 		fileViewer.setCompareMode(compareMode);
 		barManager.add(new Separator());
 		barManager.add(compareModeAction);
-		menuManager.add(compareModeAction);
+	}
 
-		showAllBranchesAction = new Action(
-				UIText.GitHistoryPage_showAllBranches, IAction.AS_CHECK_BOX) {
+	private void createShowAllBranchesAction() {
+		final IToolBarManager barManager = getSite().getActionBars()
+				.getToolBarManager();
+		showAllBranchesAction = new Action(UIText.GitHistoryPage_showAllBranches,
+				IAction.AS_CHECK_BOX) {
 			public void run() {
 				showAllBranches = !showAllBranches;
 				setChecked(showAllBranches);
@@ -397,14 +387,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		};
 		showAllBranchesAction.setImageDescriptor(UIIcons.BRANCH);
 		showAllBranchesAction.setChecked(showAllBranches);
-		showAllBranchesAction
-				.setText(UIText.GitHistoryPage_ShowAllBranchesMenuLabel);
-		showAllBranchesAction
-				.setToolTipText(UIText.GitHistoryPage_showAllBranches);
+		showAllBranchesAction.setToolTipText(UIText.GitHistoryPage_showAllBranches);
 		barManager.add(showAllBranchesAction);
-		menuManager.add(showAllBranchesAction);
-		menuManager.add(new Separator());
 	}
+
 
 	/**
 	 * @param compareMode
@@ -487,7 +473,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		attachCommitSelectionChanged();
 		createLocalToolbarActions();
 		createResourceFilterActions();
-		createCompareModeAndShowAllAction();
+		createCompareModeAction();
+		createShowAllBranchesAction();
 		createStandardActions();
 
 		getSite().registerContextMenu(POPUP_ID, popupMgr, graph.getTableView());
@@ -1219,67 +1206,31 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	public String getName() {
-		// we always visualize the current input in the form
-		// <type>: <path> [<respository name>]
-		// in order to give the user an understanding which context
-		// menus they can expect with the current input
-		// we show the filter hint only upon getDescription()
-		// as it wrongly pollutes the navigation history
-		final String pattern = "{0}: {1} [{2}]"; //$NON-NLS-1$
-		final String repositoryName = Activator.getDefault()
-				.getRepositoryUtil().getRepositoryName(db);
 		final ResourceList in = (ResourceList) super.getInput();
-		if (currentWalk == null || in == null || in.getItems().length == 0)
+		if (currentWalk == null || in == null)
+			return ""; //$NON-NLS-1$
+		final IResource[] items = in.getItems();
+		if (items.length == 0)
 			return ""; //$NON-NLS-1$
 
-		if (in.getItems().length == 1) {
-			IResource resource = in.getItems()[0];
-			final String type;
-			switch (resource.getType()) {
-			case IResource.FILE:
-				type = "File"; //$NON-NLS-1$ TODO
-				break;
-			case IResource.PROJECT:
-				type = "Project"; //$NON-NLS-1$ TODO
-				break;
-			default:
-				type = "Folder"; //$NON-NLS-1$ TODO
-				break;
-			}
-			return NLS.bind(pattern, new Object[] { type,
-					resource.getFullPath().makeRelative(), repositoryName });
-		} else {
-			// can this happen at all? the generic history view can't
-			// handle multiple selection
-			StringBuilder b = new StringBuilder();
-			for (final String p : pathFilters) {
-				b.append(p);
-				b.append(' ');
-			}
-			return NLS.bind(pattern, new Object[] {
-					"Multiple Resources", b.toString(), repositoryName }); //$NON-NLS-1$ TODO
+		final StringBuilder b = new StringBuilder();
+		b.append(db.getDirectory().getParentFile().getName());
+		if (currentWalk.getRevFilter() != RevFilter.ALL) {
+			b.append(": "); //$NON-NLS-1$
+			b.append(currentWalk.getRevFilter());
 		}
+		if (currentWalk.getTreeFilter() != TreeFilter.ALL) {
+			b.append(":"); //$NON-NLS-1$
+			for (final String p : pathFilters) {
+				b.append(' ');
+				b.append(p);
+			}
+		}
+		return b.toString();
 	}
 
 	public String getDescription() {
-		// this doesn't seem to be rendered anywhere, but still...
-		String pattern = "{0} - {1}"; //$NON-NLS-1$
-		String filterHint = null;
-		switch (showAllFilter) {
-		case SHOWALLREPO:
-			filterHint = UIText.GitHistoryPage_AllChangesInRepoHint;
-			break;
-		case SHOWALLPROJECT:
-			filterHint = UIText.GitHistoryPage_AllChangesInProjectHint;
-			break;
-		case SHOWALLFOLDER:
-			filterHint = UIText.GitHistoryPage_AllChangesInFolderHint;
-			break;
-		case SHOWALLRESOURCE:
-			filterHint = UIText.GitHistoryPage_AllChangesOfResourceHint;
-			break;
-		}
-		return NLS.bind(pattern, getName(), filterHint);
+		return getName();
 	}
 
 	private abstract class BooleanPrefAction extends Action implements
