@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.actions;
+package org.eclipse.egit.ui.internal.history.command;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
@@ -51,12 +52,12 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
- * Action for checking out a commit
+ * Check out of a commit.
  */
-public class CheckoutCommitActionHandler extends RepositoryActionHandler {
-
+public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
 	private final class BranchMessageDialog extends MessageDialog {
 		private final List<RefNode> nodes;
 
@@ -112,7 +113,6 @@ public class CheckoutCommitActionHandler extends RepositoryActionHandler {
 		public RefNode getSelectedNode() {
 			return selected;
 		}
-
 	}
 
 	private final class BranchLabelProvider extends LabelProvider {
@@ -129,9 +129,8 @@ public class CheckoutCommitActionHandler extends RepositoryActionHandler {
 	}
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-
 		PlotCommit commit = (PlotCommit) getSelection(event).getFirstElement();
-		Repository repo = getRepository(false, event);
+		Repository repo = getRepository(event);
 		List<Ref> availableBranches = new ArrayList<Ref>();
 
 		final BranchOperation op;
@@ -158,8 +157,8 @@ public class CheckoutCommitActionHandler extends RepositoryActionHandler {
 			for (Ref ref : availableBranches) {
 				nodes.add(new RefNode(repoNode, repo, ref));
 			}
-			BranchMessageDialog dlg = new BranchMessageDialog(getShell(event),
-					nodes);
+			BranchMessageDialog dlg = new BranchMessageDialog(HandlerUtil
+					.getActiveShellChecked(event), nodes);
 			if (dlg.open() == Window.OK) {
 				op = new BranchOperation(repo, dlg.getSelectedNode()
 						.getObject().getName());
@@ -205,13 +204,10 @@ public class CheckoutCommitActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		try {
-			IStructuredSelection sel = getSelection(null);
-			return sel.size() == 1
-					&& sel.getFirstElement() instanceof RevCommit;
-		} catch (ExecutionException e) {
-			Activator.handleError(e.getMessage(), e, false);
+		GitHistoryPage page = getPage();
+		if (page == null)
 			return false;
-		}
+		IStructuredSelection sel = getSelection(page);
+		return sel.size() == 1 && sel.getFirstElement() instanceof RevCommit;
 	}
 }

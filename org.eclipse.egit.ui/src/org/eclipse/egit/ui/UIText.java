@@ -22,10 +22,7 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_filterText;
 
 	/** */
-	public static String AbstractHitoryViewCommandHandler_CanNotGetCommitMessage;
-
-	/** */
-	public static String AbstractHitoryViewCommandHandler_NoRepositoryMessage;
+	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
 	public static String Activator_refreshFailed;
@@ -154,9 +151,6 @@ public class UIText extends NLS {
 	public static String SelectResetTypePage_PageTitle;
 
 	/** */
-	public static String SetQuickdiffBaselineAction_setQuickdiffBaseline;
-
-	/** */
 	public static String SharingWizard_windowTitle;
 
 	/** */
@@ -238,12 +232,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_compareMode;
 
 	/** */
-	public static String GitHistoryPage_CompareVersions;
-
-	/** */
-	public static String GitHistoryPage_CompareWithWorking;
-
-	/** */
 	public static String GitHistoryPage_errorLookingUpPath;
 
 	/** */
@@ -251,9 +239,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_errorReadingHeadCommit;
-
-	/** */
-	public static String GitHistoryPage_CreatePatch;
 
 	/** */
 	public static String GitHistoryPage_Date;
@@ -271,13 +256,13 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_notContainedInCommits;
 
 	/** */
-	public static String GitHistoryPage_open;
-
-	/** */
 	public static String GitHistoryPage_openFailed;
 
 	/** */
 	public static String GitHistoryPage_From;
+
+	/** */
+	public static String GitHistoryPage_ShowAllVersionsForResource;
 
 	/** */
 	public static String GitHistoryPage_Subject;
@@ -838,9 +823,6 @@ public class UIText extends NLS {
 	public static String QuickDiff_failedLoading;
 
 	/** */
-	public static String QuickdiffBaselineOperation_baseline;
-
-	/** */
 	public static String ResetAction_errorResettingHead;
 
 	/** */
@@ -856,10 +838,7 @@ public class UIText extends NLS {
 	public static String ResetCommand_WizardTitle;
 
 	/** */
-	public static String ResetQuickdiffBaselineAction_resetQuickdiffBaseline;
-
-	/** */
-	public static String ResetQuickdiffBaselineHeadParentAction_0;
+	public static String ResetQuickdiffBaselineHandler_NoTargetMessage;
 
 	/** */
 	public static String ResetTargetSelectionDialog_ResetButton;
@@ -1264,9 +1243,6 @@ public class UIText extends NLS {
 	public static String ConfirmationPage_title;
 
 	/** */
-	public static String CreateBranchHandler_CreatePromptMessage;
-
-	/** */
 	public static String CreateBranchPage_BranchAlreadyExistsMessage;
 
 	/** */
@@ -1300,7 +1276,19 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_SourceBranchTooltip;
 
 	/** */
+	public static String CreateBranchPage_SourceCommitLabel;
+
+	/** */
+	public static String CreateBranchPage_SourceCommitTooltip;
+
+	/** */
 	public static String CreateBranchPage_Title;
+
+	/** */
+	public static String CreateBranchWizard_CreationFailed;
+
+	/** */
+	public static String CreateBranchWizard_NewBranchTitle;
 
 	/** */
 	public static String PushResultTable_columnStatusRepo;
@@ -2240,6 +2228,9 @@ public class UIText extends NLS {
 	public static String CommitAction_messagepart6;
 
 	/** */
+	public static String CommitFileDiffViewer_notContainedInCommit;
+
+	/** */
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
@@ -2268,18 +2259,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LocalFileRevision_currentVersionTag;
-
-	/** */
-	public static String RefreshPreferencePage_title;
-
-	/** */
-	public static String RefreshPreferencesPage_RefreshOnlyWhenActive;
-
-	/** */
-	public static String RefreshPreferencesPage_RefreshWhenHeadChange;
-
-	/** */
-	public static String RefreshPreferencesPage_RefreshWhenIndexChange;
 
 	/** */
 	public static String RemoteSelectionCombo_remoteName;
