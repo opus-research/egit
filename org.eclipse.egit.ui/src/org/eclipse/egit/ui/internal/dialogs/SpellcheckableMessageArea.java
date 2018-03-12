@@ -14,11 +14,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.IAdaptable;
@@ -64,15 +65,14 @@ import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.util.IntList;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.BidiSegmentEvent;
-import org.eclipse.swt.custom.BidiSegmentListener;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -100,6 +100,9 @@ import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
 public class SpellcheckableMessageArea extends Composite {
 
 	static final int MAX_LINE_WIDTH = 72;
+
+	// Symbol or Punctuation, Dash or Punctuation, Other
+	private static final Pattern STARTS_WITH_SYMBOL = Pattern.compile("[\\p{S}\\p{Pd}\\p{Po}].*"); //$NON-NLS-1$
 
 	private static class TextViewerAction extends Action implements IUpdate {
 
@@ -209,7 +212,7 @@ public class SpellcheckableMessageArea extends Composite {
 
 	private final SourceViewer sourceViewer;
 
-	private BidiSegmentListener hardWrapSegmentListener;
+	private ModifyListener hardWrapModifyListener;
 
 	/**
 	 * @param parent
@@ -258,18 +261,6 @@ public class SpellcheckableMessageArea extends Composite {
 		createMarginPainter();
 
 		configureHardWrap();
-		final IPropertyChangeListener propertyChangeListener = new IPropertyChangeListener() {
-			public void propertyChange(PropertyChangeEvent event) {
-				if (UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE.equals(event.getProperty())) {
-					getDisplay().asyncExec(new Runnable() {
-						public void run() {
-							configureHardWrap();
-						}
-					});
-				}
-			}
-		};
-		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(propertyChangeListener);
 
 		final SourceViewerDecorationSupport support = configureAnnotationPreferences();
 		if (isEditable(sourceViewer)) {
@@ -325,7 +316,6 @@ public class SpellcheckableMessageArea extends Composite {
 		getTextWidget().addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				support.uninstall();
-				Activator.getDefault().getPreferenceStore().removePropertyChangeListener(propertyChangeListener);
 			}
 		});
 	}
@@ -336,27 +326,38 @@ public class SpellcheckableMessageArea extends Composite {
 
 	private void configureHardWrap() {
 		if (shouldHardWrap()) {
-			if (hardWrapSegmentListener == null) {
-				StyledText textWidget = getTextWidget();
-				hardWrapSegmentListener = new BidiSegmentListener() {
-					public void lineGetSegments(BidiSegmentEvent e) {
-						int[] segments = calculateWrapOffsets(e.lineText, MAX_LINE_WIDTH);
-						if (segments != null) {
-							char[] segmentsChars = new char[segments.length];
-							Arrays.fill(segmentsChars, '\n');
-							e.segments = segments;
-							e.segmentsChars = segmentsChars;
+			if (hardWrapModifyListener == null) {
+				final StyledText textWidget = getTextWidget();
+
+				hardWrapModifyListener = new ModifyListener() {
+
+					private boolean active = true;
+
+					public void modifyText(ModifyEvent e) {
+						if (!active)
+							return;
+						String lineDelimiter = textWidget.getLineDelimiter();
+						List<WrapEdit> wrapEdits = calculateWrapEdits(
+								textWidget.getText(), MAX_LINE_WIDTH,
+								lineDelimiter);
+						// Prevent infinite loop because replaceTextRange causes a ModifyEvent
+						active = false;
+						textWidget.setRedraw(false);
+						try {
+							for (WrapEdit wrapEdit : wrapEdits)
+								textWidget.replaceTextRange(wrapEdit.getStart(), wrapEdit.getLength(),
+										wrapEdit.getReplacement());
+						} finally {
+							textWidget.setRedraw(true);
+							active = true;
 						}
 					}
 				};
-				textWidget.addBidiSegmentListener(hardWrapSegmentListener);
-				textWidget.setText(textWidget.getText());
+				textWidget.addModifyListener(hardWrapModifyListener);
 			}
-		} else if (hardWrapSegmentListener != null) {
-			StyledText textWidget = getTextWidget();
-			textWidget.removeBidiSegmentListener(hardWrapSegmentListener);
-			textWidget.setText(textWidget.getText());
-			hardWrapSegmentListener = null;
+		} else if (hardWrapModifyListener != null) {
+			getTextWidget().removeModifyListener(hardWrapModifyListener);
+			hardWrapModifyListener = null;
 		}
 	}
 
@@ -738,43 +739,20 @@ public class SpellcheckableMessageArea extends Composite {
 	}
 
 	/**
-	 * Returns the commit message, converting platform-specific line endings to '\n'
-	 * and hard-wrapping lines if necessary.
+	 * Return the commit message, converting platform-specific line endings.
 	 *
 	 * @return commit message
 	 */
 	public String getCommitMessage() {
-		return getCommitMessage(getText());
+		String text = getText();
+		return Utils.normalizeLineEndings(text);
 	}
 
 	/**
-	 * Returns the commit message, converting platform-specific line endings to '\n'
-	 * and hard-wrapping lines if necessary.
-	 *
-	 * @param rawText the raw commit message
-	 * @return the formatted commit message
+	 * Reconfigure this widget if a preference has changed.
 	 */
-	public static String getCommitMessage(String rawText) {
-		String text = Utils.normalizeLineEndings(rawText);
-		if (shouldHardWrap()) {
-			int[] wrapOffsets = calculateWrapOffsets(text, MAX_LINE_WIDTH);
-			if (wrapOffsets != null) {
-				StringBuilder builder = new StringBuilder(text.length() + wrapOffsets.length);
-				int prev = 0;
-				for (int i= 0; i < wrapOffsets.length; i++) {
-					int cur = wrapOffsets[i];
-					builder.append(text.substring(prev, cur));
-					for (int j = cur; j > prev && builder.charAt(builder.length() - 1) == ' '; j--) {
-						builder.deleteCharAt(builder.length() - 1);
-					}
-					builder.append('\n');
-					prev = cur;
-				}
-				builder.append(text.substring(prev, text.length()));
-				text = builder.toString();
-			}
-		}
-		return text;
+	public void reconfigure() {
+		configureHardWrap();
 	}
 
 	/**
@@ -836,55 +814,124 @@ public class SpellcheckableMessageArea extends Composite {
 	}
 
 	/**
-	 * Calculates wrap offsets for the given line, so that resulting lines are
-	 * no longer than <code>maxLineLength</code> if possible.
+	 * Calculate a list of {@link WrapEdit} which can be applied to the text to
+	 * get a new text that is wrapped at word boundaries. Existing line breaks
+	 * are left alone (text is not reflowed).
 	 *
-	 * @param line
-	 *            the line to wrap
+	 * @param text
+	 *            the text to calculate the wrap edits for
 	 * @param maxLineLength
 	 *            the maximum line length
-	 * @return an array of offsets where hard-wraps should be inserted, or
-	 *         <code>null</code> if the line does not need to be wrapped
+	 * @param lineDelimiter
+	 *            line delimiter used in text and for wrapping
+	 * @return a list of {@link WrapEdit} objects which specify how the text
+	 *         should be edited to obtain the wrapped text. Offsets of later
+	 *         edits are already adjusted for the fact that wrapping a line may
+	 *         shift the text backwards. So the list can just be iterated and
+	 *         each edit applied in order.
 	 */
-	public static int[] calculateWrapOffsets(final String line, final int maxLineLength) {
-		if (line.length() == 0)
-			return null;
+	public static List<WrapEdit> calculateWrapEdits(final String text, final int maxLineLength, final String lineDelimiter) {
+		List<WrapEdit> wrapEdits = new LinkedList<WrapEdit>();
 
-		IntList wrapOffsets = new IntList();
-		int wordStart = 0;
-		int lineStart = 0;
-		boolean wasSpace = true;
-		for (int i = 0; i < line.length(); i++) {
-			char ch = line.charAt(i);
-			if (ch == ' ') {
-				wasSpace = true;
-			} else if (ch == '\r' || ch == '\n') {
-				lineStart = i + 1;
-				wordStart = i + 1;
-				wasSpace = false;
-			} else {
-				if (wasSpace) {
-					wasSpace = false;
-					wordStart = i;
-				}
-				if (i >= lineStart + maxLineLength) {
-					if (wordStart != lineStart) { // don't break before a single long word
-						wrapOffsets.add(wordStart);
-						lineStart = wordStart;
+		final int lineDelimiterLength = lineDelimiter.length();
+		final int spaceLength = 1;
+
+		int offset = 0;
+		boolean lastChunkWasWrapped = false;
+		int lastChunkWrappedOffset = 0;
+
+		String[] chunks = text.split(lineDelimiter, -1);
+		for (int chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+			String chunk = chunks[chunkIndex];
+
+			String[] words = chunk.split(" ", -1); //$NON-NLS-1$
+			int lineLength = 0;
+
+			for (int wordIndex = 0; wordIndex < words.length; wordIndex++) {
+				String word = words[wordIndex];
+				int wordLength = word.length();
+				boolean adjustForSpace = wordIndex != 0;
+
+				if (wordIndex == 0 && lastChunkWasWrapped) {
+					if (wordLength != 0 && !STARTS_WITH_SYMBOL.matcher(word).matches()) {
+						wrapEdits.add(new WrapEdit(offset - lineDelimiterLength, lineDelimiterLength, " ")); //$NON-NLS-1$
+						/* adjust for join edit above */
+						offset -= lineDelimiterLength;
+						adjustForSpace = true;
+						lineLength = offset - lastChunkWrappedOffset;
 					}
+					lastChunkWasWrapped = false;
 				}
+
+				int newLineLength = lineLength + spaceLength + wordLength;
+				if (newLineLength > maxLineLength) {
+					/* don't break before a single long word */
+					if (lineLength != 0) {
+						wrapEdits.add(new WrapEdit(offset, spaceLength, lineDelimiter));
+						/* adjust for the shifting of text after the edit is applied */
+						offset += lineDelimiterLength;
+						adjustForSpace = false;
+						lastChunkWasWrapped = true;
+						lastChunkWrappedOffset = offset;
+					}
+					lineLength = 0;
+				}
+
+				if (adjustForSpace) {
+					offset += spaceLength;
+					lineLength += spaceLength;
+				}
+
+				offset += wordLength;
+				lineLength += wordLength;
 			}
+
+			offset += lineDelimiterLength;
 		}
 
-		int size = wrapOffsets.size();
-		if (size == 0) {
-			return null;
-		} else {
-			int[] result = new int[size];
-			for (int i= 0; i < size; i++) {
-				result[i] = wrapOffsets.get(i);
-			}
-			return result;
+		return wrapEdits;
+	}
+
+	/**
+	 * Edit for replacing a text range with another text to wrap or join lines.
+	 */
+	public static class WrapEdit {
+		private final int start;
+		private final int length;
+		private final String replacement;
+
+		/**
+		 * @param start see {@link #getStart()}
+		 * @param length see {@link #getLength()}
+		 * @param replacement see {@link #getReplacement()}
+		 */
+		public WrapEdit(int start, int length, String replacement) {
+			this.start = start;
+			this.length = length;
+			this.replacement = replacement;
+		}
+
+		/**
+		 * @return character offset of where the edit should be applied on the
+		 *         text
+		 */
+		public int getStart() {
+			return start;
+		}
+
+		/**
+		 * @return number of characters which should be replaced by the
+		 *         replacement text
+		 */
+		public int getLength() {
+			return length;
+		}
+
+		/**
+		 * @return the text which replaces the edit range
+		 */
+		public String getReplacement() {
+			return replacement;
 		}
 	}
 }
