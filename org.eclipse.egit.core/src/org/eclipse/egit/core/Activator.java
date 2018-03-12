@@ -99,8 +99,42 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	 * @param thr The exception through which we noticed the error
 	 */
 	public static void logError(final String message, final Throwable thr) {
+		getDefault().getLog().log(error(message, thr));
+	}
+
+	/**
+	 * Log an info message for this plug-in
+	 *
+	 * @param message
+	 */
+	public static void logInfo(final String message) {
 		getDefault().getLog().log(
-				new Status(IStatus.ERROR, getPluginId(), 0, message, thr));
+				new Status(IStatus.INFO, getPluginId(), 0, message, null));
+	}
+
+	/**
+	 * Utility to create a warning status for this plug-in.
+	 *
+	 * @param message
+	 *            User comprehensible message
+	 * @param thr
+	 *            cause
+	 * @return an initialized warning status
+	 */
+	public static IStatus warning(final String message, final Throwable thr) {
+		return new Status(IStatus.WARNING, getPluginId(), 0, message, thr);
+	}
+
+	/**
+	 * Utility method to log warnings for this plug-in.
+	 *
+	 * @param message
+	 *            User comprehensible message
+	 * @param thr
+	 *            The exception through which we noticed the warning
+	 */
+	public static void logWarning(final String message, final Throwable thr) {
+		getDefault().getLog().log(warning(message, thr));
 	}
 
 	/**
@@ -158,12 +192,14 @@ public class Activator extends Plugin implements DebugOptionsListener {
 					if (resource instanceof IProject) {
 						IProject project = (IProject) resource;
 						if (project.isAccessible()) {
-							if (RepositoryProvider.getProvider(project) instanceof GitProvider) {
+							if (RepositoryProvider.getProvider(project,
+									GitProvider.ID) != null) {
 								IResource dotGit = project
 										.findMember(Constants.DOT_GIT);
-								if (dotGit != null
-										&& dotGit.getType() == IResource.FOLDER)
+								if (dotGit != null && dotGit
+										.getType() == IResource.FOLDER) {
 									GitProjectData.reconfigureWindowCache();
+								}
 							}
 						} else {
 							// bug 419706: project is closed - use java.io API

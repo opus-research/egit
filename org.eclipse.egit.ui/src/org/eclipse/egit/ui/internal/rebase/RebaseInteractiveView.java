@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 SAP AG and others.
+ * Copyright (c) 2013, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,7 +18,11 @@ import java.util.List;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan;
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.ElementAction;
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.ElementType;
@@ -30,6 +34,7 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.commands.shared.AbortRebaseCommand;
 import org.eclipse.egit.ui.internal.commands.shared.AbstractRebaseCommandHandler;
 import org.eclipse.egit.ui.internal.commands.shared.ContinueRebaseCommand;
@@ -39,11 +44,14 @@ import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
+import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.util.LocalSelectionTransfer;
@@ -79,11 +87,13 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
+import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -147,6 +157,8 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	private RebasePlanIndexer planIndexer;
 
+	private IPreferenceChangeListener prefListener;
+
 	/**
 	 * View for handling interactive rebase
 	 */
@@ -176,11 +188,13 @@ public class RebaseInteractiveView extends ViewPart implements
 		else if (o instanceof Repository)
 			repo = (Repository) o;
 		else if (o instanceof IAdaptable) {
-			IResource resource = (IResource) ((IAdaptable) o)
-					.getAdapter(IResource.class);
+			IResource resource = CommonUtils.getAdapter(((IAdaptable) o), IResource.class);
 			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource);
+				if (mapping == null)
+					return;
+
 				repo = mapping.getRepository();
 			}
 		}
@@ -214,6 +228,10 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		if (planIndexer != null)
 			planIndexer.dispose();
+
+		InstanceScope.INSTANCE.getNode(
+				org.eclipse.egit.core.Activator.getPluginId())
+				.removePreferenceChangeListener(prefListener);
 	}
 
 	@Override
@@ -222,6 +240,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		final FormToolkit toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 
+			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				toolkit.dispose();
 			}
@@ -242,6 +261,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		createLocalDragandDrop();
 		planTreeViewer.addDoubleClickListener(new IDoubleClickListener() {
 
+			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				PlanElement element = (PlanElement) ((IStructuredSelection) event
 						.getSelection()).getFirstElement();
@@ -257,9 +277,8 @@ public class RebaseInteractiveView extends ViewPart implements
 			private RepositoryCommit loadCommit(
 					AbbreviatedObjectId abbreviatedObjectId) {
 				if (abbreviatedObjectId != null) {
-					RevWalk walk = new RevWalk(
-							RebaseInteractiveView.this.currentRepository);
-					try {
+					try (RevWalk walk = new RevWalk(
+							RebaseInteractiveView.this.currentRepository)) {
 						Collection<ObjectId> resolved = walk.getObjectReader()
 								.resolve(abbreviatedObjectId);
 						if (resolved.size() == 1) {
@@ -271,13 +290,59 @@ public class RebaseInteractiveView extends ViewPart implements
 						}
 					} catch (IOException e) {
 						return null;
-					} finally {
-						walk.release();
 					}
 				}
 				return null;
 			}
 		});
+
+		prefListener = new IPreferenceChangeListener() {
+			@Override
+			public void preferenceChange(PreferenceChangeEvent event) {
+				if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey()))
+					return;
+
+				final Repository repo = currentRepository;
+				if (repo == null)
+					return;
+
+				if (Activator.getDefault().getRepositoryUtil().contains(repo))
+					return;
+
+				// Unselect repository as it has been removed
+				Display.getDefault().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						currentRepository = null;
+						showRepository(null);
+					}
+				});
+			}
+		};
+
+		InstanceScope.INSTANCE.getNode(
+				org.eclipse.egit.core.Activator.getPluginId())
+				.addPreferenceChangeListener(prefListener);
+
+		IActionBars actionBars = getViewSite().getActionBars();
+		IToolBarManager toolbar = actionBars.getToolBarManager();
+
+		listenOnRepositoryViewSelection = RebaseInteractivePreferences
+				.isReactOnSelection();
+
+		// link with selection
+		Action linkSelectionAction = new BooleanPrefAction(
+				(IPersistentPreferenceStore) Activator.getDefault()
+						.getPreferenceStore(),
+				UIPreferences.REBASE_INTERACTIVE_SYNC_SELECTION,
+				UIText.InteractiveRebaseView_LinkSelection) {
+			@Override
+			public void apply(boolean value) {
+				listenOnRepositoryViewSelection = value;
+			}
+		};
+		linkSelectionAction.setImageDescriptor(UIIcons.ELCL16_SYNCED);
+		toolbar.add(linkSelectionAction);
 	}
 
 	private void createCommandToolBar(Form theForm, FormToolkit toolkit) {
@@ -406,6 +471,7 @@ public class RebaseInteractiveView extends ViewPart implements
 	private void setupRepositoryViewSelectionChangeListener() {
 		selectionChangedListener = new ISelectionListener() {
 
+			@Override
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
 				if (!listenOnRepositoryViewSelection
@@ -424,8 +490,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		};
 
 		ISelectionService srv = CommonUtils.getService(getSite(), ISelectionService.class);
-		srv.addPostSelectionListener(RepositoriesView.VIEW_ID,
-				selectionChangedListener);
+		srv.addPostSelectionListener(selectionChangedListener);
 	}
 
 	private class RebaseCommandItemSelectionListener extends SelectionAdapter {
@@ -451,6 +516,7 @@ public class RebaseInteractiveView extends ViewPart implements
 	private class PlanViewerSelectionChangedListener implements
 			ISelectionChangedListener {
 
+		@Override
 		public void selectionChanged(SelectionChangedEvent event) {
 			if (event == null)
 				return;
@@ -588,8 +654,8 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		boolean orderReversed = RebaseInteractivePreferences.isOrderReversed();
-		int direction = (orderReversed ? SWT.DOWN : SWT.UP);
+		int direction = (RebaseInteractivePreferences.isOrderReversed() ? SWT.DOWN
+				: SWT.UP);
 
 		Tree planTree = planTreeViewer.getTree();
 		planTree.setSortColumn(stepColumn.getColumn());
@@ -606,7 +672,12 @@ public class RebaseInteractiveView extends ViewPart implements
 					case EDIT:
 						return UIIcons.getImage(resources, UIIcons.EDITCONFIG);
 					case FIXUP:
-						return UIIcons.getImage(resources, UIIcons.FIXUP);
+						if (RebaseInteractivePreferences.isOrderReversed())
+							return UIIcons.getImage(resources,
+									UIIcons.FIXUP_DOWN);
+						else
+							return UIIcons.getImage(resources,
+									UIIcons.FIXUP_UP);
 					case PICK:
 						return UIIcons.getImage(resources, UIIcons.CHERRY_PICK);
 					case REWORD:
@@ -614,7 +685,12 @@ public class RebaseInteractiveView extends ViewPart implements
 					case SKIP:
 						return UIIcons.getImage(resources, UIIcons.REBASE_SKIP);
 					case SQUASH:
-						return UIIcons.getImage(resources, UIIcons.SQUASH);
+						if (RebaseInteractivePreferences.isOrderReversed())
+							return UIIcons.getImage(resources,
+									UIIcons.SQUASH_DOWN);
+						else
+							return UIIcons.getImage(resources,
+									UIIcons.SQUASH_UP);
 					default:
 						// fall through
 					}
@@ -742,10 +818,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	private void showRepository(final Repository repository) {
 		if (form.isDisposed())
 			return;
-		if (repository == null) {
-			form.setText(UIText.RebaseInteractiveView_NoSelection);
-			return;
-		}
 
 		if (currentPlan != null)
 			currentPlan.removeRebaseInteractivePlanChangeListener(this);
@@ -753,24 +825,39 @@ public class RebaseInteractiveView extends ViewPart implements
 		if (planIndexer != null)
 			planIndexer.dispose();
 
-		currentPlan = RebaseInteractivePlan.getPlan(repository);
-		planIndexer = new RebasePlanIndexer(currentPlan);
-		currentPlan.addRebaseInteractivePlanChangeListener(this);
-		form.setText(getRepositoryName(repository));
+		if (isValidRepo(repository)) {
+			currentPlan = RebaseInteractivePlan.getPlan(repository);
+			planIndexer = new RebasePlanIndexer(currentPlan);
+			currentPlan.addRebaseInteractivePlanChangeListener(this);
+			form.setText(getRepositoryName(repository));
+		} else {
+			currentPlan = null;
+			planIndexer = null;
+			form.setText(UIText.RebaseInteractiveView_NoSelection);
+		}
 		refresh();
+	}
+
+	private boolean isValidRepo(final Repository repository) {
+		return repository != null && !repository.isBare()
+				&& repository.getWorkTree().exists();
 	}
 
 	void refresh() {
 		if (!isReady())
 			return;
 		asyncExec(new Runnable() {
+			@Override
 			public void run() {
-				planTreeViewer.getTree().setRedraw(false);
+				Tree t = planTreeViewer.getTree();
+				if (t.isDisposed())
+					return;
+				t.setRedraw(false);
 				try {
 					planTreeViewer.setInput(currentPlan);
 					refreshUI();
 				} finally {
-					planTreeViewer.getTree().setRedraw(true);
+					t.setRedraw(true);
 				}
 			}
 		});
@@ -826,8 +913,11 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		if (RebaseInteractivePreferences.isOrderReversed()) {
 			Tree tree = planTreeViewer.getTree();
-			TreeItem bottomItem = tree.getItem(tree.getItemCount() - 1);
-			tree.showItem(bottomItem);
+			int itemCount = tree.getItemCount();
+			if (itemCount > 0) {
+				TreeItem bottomItem = tree.getItem(itemCount - 1);
+				tree.showItem(bottomItem);
+			}
 		}
 	}
 
@@ -836,6 +926,7 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		MenuManager manager = new MenuManager();
 		manager.addMenuListener(new IMenuListener() {
+			@Override
 			public void menuAboutToShow(IMenuManager menuManager) {
 				boolean selectionNotEmpty = !planViewer.getSelection()
 						.isEmpty();
@@ -871,11 +962,11 @@ public class RebaseInteractiveView extends ViewPart implements
 				planViewer, actionToolBarProvider));
 		contextMenuItems.add(new PlanContextMenuAction(
 				UIText.RebaseInteractiveStepActionToolBarProvider_SquashText,
-				UIIcons.SQUASH, RebaseInteractivePlan.ElementAction.SQUASH,
+				UIIcons.SQUASH_UP, RebaseInteractivePlan.ElementAction.SQUASH,
 				planViewer, actionToolBarProvider));
 		contextMenuItems.add(new PlanContextMenuAction(
 				UIText.RebaseInteractiveStepActionToolBarProvider_FixupText,
-				UIIcons.FIXUP, RebaseInteractivePlan.ElementAction.FIXUP,
+				UIIcons.FIXUP_UP, RebaseInteractivePlan.ElementAction.FIXUP,
 				planViewer, actionToolBarProvider));
 		contextMenuItems.add(new PlanContextMenuAction(
 				UIText.RebaseInteractiveStepActionToolBarProvider_RewordText,
@@ -901,16 +992,19 @@ public class RebaseInteractiveView extends ViewPart implements
 		return dndEnabled;
 	}
 
+	@Override
 	public void planWasUpdatedFromRepository(final RebaseInteractivePlan plan) {
 		refresh();
 	}
 
+	@Override
 	public void planElementTypeChanged(
 			RebaseInteractivePlan rebaseInteractivePlan, PlanElement element,
 			ElementAction oldType, ElementAction newType) {
 		planTreeViewer.refresh(element, true);
 	}
 
+	@Override
 	public void planElementsOrderChanged(
 			RebaseInteractivePlan rebaseInteractivePlan, PlanElement element,
 			int oldIndex, int newIndex) {

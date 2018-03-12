@@ -39,6 +39,7 @@ import org.eclipse.swt.widgets.Shell;
  */
 public class DeleteTagOnCommitHandler extends AbstractHistoryCommandHandler {
 
+	@Override
 	public Object execute(ExecutionEvent event)
 			throws ExecutionException {
 		final Repository repository = getRepository(event);
@@ -107,8 +108,9 @@ public class DeleteTagOnCommitHandler extends AbstractHistoryCommandHandler {
 			final Repository repository, final List<Ref> tagsToDelete)
 			throws InvocationTargetException,
 			InterruptedException {
-		new ProgressMonitorDialog(shell).run(false, false,
+		new ProgressMonitorDialog(shell).run(true, false,
 				new IRunnableWithProgress() {
+					@Override
 					public void run(IProgressMonitor monitor)
 							throws InvocationTargetException,
 							InterruptedException {

@@ -27,11 +27,18 @@ import org.eclipse.egit.core.op.StashDropOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.commit.CommitEditorInput;
 import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorReference;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Command to drop one or all stashed commits
@@ -39,6 +46,7 @@ import org.eclipse.swt.widgets.Shell;
 public class StashDropCommand extends
 		RepositoriesViewCommandHandler<StashedCommitNode> {
 
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final List<StashedCommitNode> nodes = getSelectedNodes(event);
 		if (nodes.isEmpty())
@@ -53,6 +61,7 @@ public class StashDropCommand extends
 		final Shell shell = getActiveShell(event);
 		shell.getDisplay().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				String message;
 				if (nodes.size() > 1)
@@ -83,6 +92,7 @@ public class StashDropCommand extends
 				// selected nodes not match the indices in the repository
 				Collections.sort(nodes, new Comparator<StashedCommitNode>() {
 
+					@Override
 					public int compare(StashedCommitNode n1,
 							StashedCommitNode n2) {
 						return n1.getIndex() < n2.getIndex() ? 1 : -1;
@@ -107,10 +117,42 @@ public class StashDropCommand extends
 								UIText.StashDropCommand_dropFailed,
 								node.getObject().name()), e);
 					}
+					tryToCloseEditor(node);
 					monitor.worked(1);
 				}
 				monitor.done();
 				return Status.OK_STATUS;
+			}
+
+			private void tryToCloseEditor(final StashedCommitNode node) {
+				Display.getDefault().asyncExec(new Runnable() {
+
+					@Override
+					public void run() {
+						IWorkbenchPage activePage = PlatformUI.getWorkbench()
+								.getActiveWorkbenchWindow().getActivePage();
+						IEditorReference[] editorReferences = activePage
+								.getEditorReferences();
+						for (IEditorReference editorReference : editorReferences) {
+							IEditorInput editorInput = null;
+							try {
+								editorInput = editorReference.getEditorInput();
+							} catch (PartInitException e) {
+								Activator.handleError(e.getMessage(), e, true);
+							}
+							if (editorInput instanceof CommitEditorInput) {
+								CommitEditorInput comEditorInput = (CommitEditorInput) editorInput;
+								if (comEditorInput.getCommit().getRevCommit()
+										.equals(node.getObject())) {
+									activePage.closeEditor(
+											editorReference.getEditor(false),
+											false);
+								}
+							}
+						}
+					}
+				});
+
 			}
 
 			@Override

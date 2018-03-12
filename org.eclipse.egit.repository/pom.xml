@@ -18,7 +18,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>3.6.0-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.repository</artifactId>
@@ -41,7 +41,7 @@
                    <goal>run</goal>
                  </goals>
                  <configuration>
-                   <tasks>
+                   <target>
                      <delete includeemptydirs="false">
                        <fileset
                          dir="${download-publish-path}">
@@ -54,7 +54,7 @@
                          <include name="**" />
                        </fileset>
                      </copy>
-                   </tasks>
+                   </target>
                  </configuration>
                </execution>
              </executions>
@@ -64,4 +64,33 @@
     </profile>
   </profiles>
 
+  <pluginRepositories>
+    <pluginRepository>
+      <id>jboss-public-repository-group</id>
+      <name>JBoss Public Repository Group</name>
+      <url>http://repository.jboss.org/nexus/content/groups/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.jboss.tools.tycho-plugins</groupId>
+        <artifactId>repository-utils</artifactId>
+        <executions>
+          <execution>
+            <id>generate-facade</id>
+            <phase>package</phase>
+            <goals>
+              <goal>generate-repository-facade</goal>
+            </goals>
+            <configuration>
+              <associateSites>
+                <site>http://download.eclipse.org/e4/snapshots/org.eclipse.e4.ui</site>
+              </associateSites>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

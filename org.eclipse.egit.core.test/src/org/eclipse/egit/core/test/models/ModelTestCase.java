@@ -30,6 +30,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.GitSubscriberMergeContext;
@@ -44,11 +45,15 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.mapping.IMergeContext;
 import org.eclipse.team.core.mapping.IResourceMappingMerger;
-import org.eclipse.team.core.mapping.ResourceMappingMerger;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.junit.Before;
 
-public class ModelTestCase extends GitTestCase {
+/**
+ * Provides shared utility methods for unit tests working on logical models. The
+ * model provider used for tests, {@link SampleModelProvider}, links all
+ * "*.sample" files from a common directory into a single logical model.
+ */
+public abstract class ModelTestCase extends GitTestCase {
 	protected static final String SAMPLE_FILE_EXTENSION = SampleModelProvider.SAMPLE_FILE_EXTENSION;
 
 	@Before
@@ -62,13 +67,11 @@ public class ModelTestCase extends GitTestCase {
 	}
 
 	protected RevCommit setContentsAndCommit(TestRepository testRepository,
-			String repoRelativePath, IFile targetFile, String newContents,
-			String commitMessage) throws Exception {
+			IFile targetFile, String newContents, String commitMessage)
+			throws Exception {
 		targetFile.setContents(
 				new ByteArrayInputStream(newContents.getBytes()),
 				IResource.FORCE, new NullProgressMonitor());
-		new Git(testRepository.getRepository()).add()
-				.addFilepattern(repoRelativePath).call();
 		testRepository.addToIndex(targetFile);
 		return testRepository.commit(commitMessage);
 	}
@@ -102,8 +105,7 @@ public class ModelTestCase extends GitTestCase {
 				.getModelProviderDescriptor(
 						SampleModelProvider.SAMPLE_PROVIDER_ID)
 				.getModelProvider();
-		return (ResourceMappingMerger) Platform.getAdapterManager().getAdapter(
-				provider, IResourceMappingMerger.class);
+		return Utils.getAdapter(provider, IResourceMappingMerger.class);
 	}
 
 	protected IMergeContext prepareContext(Repository repository,

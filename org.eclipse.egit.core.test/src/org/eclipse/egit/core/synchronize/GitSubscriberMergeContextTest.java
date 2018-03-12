@@ -63,8 +63,10 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 		repo = RepositoryMapping.getMapping(iProject).getRepository();
 
 		// make initial commit
-		new Git(repo).commit().setAuthor("JUnit", "junit@jgit.org")
-				.setMessage("Initial commit").call();
+		try (Git git = new Git(repo)) {
+			git.commit().setAuthor("JUnit", "junit@jgit.org")
+					.setMessage("Initial commit").call();
+		}
 	}
 
 	@After
@@ -132,21 +134,20 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 		testRepo.createAndCheckoutBranch(MASTER, BRANCH);
 
 		final String branchChanges = "branch changes\n";
-		setContentsAndCommit(testRepo, repoRelativePath, workspaceFile,
-				branchChanges + initialContent, "branch commit");
+		setContentsAndCommit(testRepo, workspaceFile, branchChanges
+				+ initialContent, "branch commit");
 
 		testRepo.checkoutBranch(MASTER);
 
 		final String masterChanges = "some changes\n";
-		setContentsAndCommit(testRepo, repoRelativePath, workspaceFile,
-				initialContent + masterChanges, "master commit");
+		setContentsAndCommit(testRepo, workspaceFile, initialContent
+				+ masterChanges, "master commit");
 		iProject.refreshLocal(IResource.DEPTH_INFINITE,
 				new NullProgressMonitor());
 		// end setup
 
 		IMergeContext mergeContext = prepareContext(repo, workspaceFile,
-				MASTER,
-				BRANCH);
+				MASTER, BRANCH);
 		IDiff node = mergeContext.getDiffTree().getDiff(workspaceFile);
 		assertNotNull(node);
 
@@ -186,18 +187,18 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 		testRepo.createAndCheckoutBranch(MASTER, BRANCH);
 
 		final String branchChanges = "branch changes\n";
-		setContentsAndCommit(testRepo, repoRelativePath1, iFile1, branchChanges
-				+ initialContent1, "branch commit");
-		setContentsAndCommit(testRepo, repoRelativePath2, iFile2, branchChanges
-				+ initialContent2, "branch commit");
+		setContentsAndCommit(testRepo, iFile1, branchChanges + initialContent1,
+				"branch commit");
+		setContentsAndCommit(testRepo, iFile2, branchChanges + initialContent2,
+				"branch commit");
 
 		testRepo.checkoutBranch(MASTER);
 
 		final String masterChanges = "some changes\n";
-		setContentsAndCommit(testRepo, repoRelativePath1, iFile1,
-				initialContent1 + masterChanges, "master commit");
-		setContentsAndCommit(testRepo, repoRelativePath2, iFile2,
-				initialContent2 + masterChanges, "master commit");
+		setContentsAndCommit(testRepo, iFile1, initialContent1 + masterChanges,
+				"master commit");
+		setContentsAndCommit(testRepo, iFile2, initialContent2 + masterChanges,
+				"master commit");
 		iProject.refreshLocal(IResource.DEPTH_INFINITE,
 				new NullProgressMonitor());
 		// end setup
@@ -243,14 +244,14 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 		testRepo.createAndCheckoutBranch(MASTER, BRANCH);
 
 		final String branchChanges = "branch changes\n";
-		setContentsAndCommit(testRepo, repoRelativePath, workspaceFile,
-				initialContent + branchChanges, "branch commit");
+		setContentsAndCommit(testRepo, workspaceFile, initialContent
+				+ branchChanges, "branch commit");
 
 		testRepo.checkoutBranch(MASTER);
 
 		final String masterChanges = "some changes\n";
-		setContentsAndCommit(testRepo, repoRelativePath, workspaceFile,
-				initialContent + masterChanges, "master commit");
+		setContentsAndCommit(testRepo, workspaceFile, initialContent
+				+ masterChanges, "master commit");
 		iProject.refreshLocal(IResource.DEPTH_INFINITE,
 				new NullProgressMonitor());
 		// end setup
@@ -288,26 +289,22 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 
 		IFile iFile1 = testRepo.getIFile(iProject, file1);
 		IFile iFile2 = testRepo.getIFile(iProject, file2);
-		String repoRelativePath1 = testRepo.getRepoRelativePath(iFile1
-				.getLocation().toPortableString());
-		String repoRelativePath2 = testRepo.getRepoRelativePath(iFile2
-				.getLocation().toPortableString());
 
 		testRepo.createAndCheckoutBranch(MASTER, BRANCH);
 
 		final String branchChanges = "branch changes\n";
-		setContentsAndCommit(testRepo, repoRelativePath1, iFile1,
-				initialContent1 + branchChanges, "branch commit");
-		setContentsAndCommit(testRepo, repoRelativePath2, iFile2,
-				initialContent2 + branchChanges, "branch commit");
+		setContentsAndCommit(testRepo, iFile1, initialContent1 + branchChanges,
+				"branch commit");
+		setContentsAndCommit(testRepo, iFile2, initialContent2 + branchChanges,
+				"branch commit");
 
 		testRepo.checkoutBranch(MASTER);
 
 		final String masterChanges = "some changes\n";
-		setContentsAndCommit(testRepo, repoRelativePath1, iFile1,
-				initialContent1 + masterChanges, "master commit");
-		setContentsAndCommit(testRepo, repoRelativePath2, iFile2,
-				initialContent2 + masterChanges, "master commit");
+		setContentsAndCommit(testRepo, iFile1, initialContent1 + masterChanges,
+				"master commit");
+		setContentsAndCommit(testRepo, iFile2, initialContent2 + masterChanges,
+				"master commit");
 		iProject.refreshLocal(IResource.DEPTH_INFINITE,
 				new NullProgressMonitor());
 		// end setup
@@ -369,8 +366,8 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 		testRepo.createAndCheckoutBranch(MASTER, BRANCH);
 
 		final String branchChanges = "branch changes\n";
-		setContentsAndCommit(testRepo, repoRelativePath1, iFile1, branchChanges
-				+ initialContent1, "branch commit");
+		setContentsAndCommit(testRepo, iFile1, branchChanges + initialContent1,
+				"branch commit");
 		iFile2.delete(true, new NullProgressMonitor());
 		testRepo.addAndCommit(iProject, file2, "branch commit - deleted file2."
 				+ SAMPLE_FILE_EXTENSION);
@@ -378,8 +375,8 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 		testRepo.checkoutBranch(MASTER);
 
 		final String masterChanges = "some changes\n";
-		setContentsAndCommit(testRepo, repoRelativePath1, iFile1,
-				initialContent1 + masterChanges, "master commit");
+		setContentsAndCommit(testRepo, iFile1, initialContent1 + masterChanges,
+				"master commit");
 		iProject.refreshLocal(IResource.DEPTH_INFINITE,
 				new NullProgressMonitor());
 		// end setup

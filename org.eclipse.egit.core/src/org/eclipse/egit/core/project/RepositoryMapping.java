@@ -27,8 +27,12 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
+import org.eclipse.egit.core.RepositoryCache;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.team.core.RepositoryProvider;
 
 /**
@@ -54,6 +58,9 @@ public class RepositoryMapping {
 	private String workdirPrefix;
 
 	private IContainer container;
+
+	private final RepositoryCache repositoryCache = org.eclipse.egit.core.Activator
+			.getDefault().getRepositoryCache();
 
 	/**
 	 * Construct a {@link RepositoryMapping} for a previously connected project.
@@ -143,14 +150,53 @@ public class RepositoryMapping {
 		return db;
 	}
 
+	/**
+	 * @param res
+	 *            a resource
+	 * @return the submodule repository if the resource is contained in a git
+	 *         submodule otherwise return {@code null}. The returned repository
+	 *         instance will always be taken from the {@link RepositoryCache}
+	 *         and the caller should not call close() on it.
+	 *
+	 *         TODO add support for multiple nesting levels of submodules
+	 */
+	public synchronized Repository getSubmoduleRepository(IResource res) {
+		IPath projectRelativePath = res.getProjectRelativePath();
+		if (projectRelativePath == null)
+			return null;
+
+		String projectRelativePathStr = res.getProjectRelativePath().toString();
+		try {
+			if (SubmoduleWalk.containsGitModulesFile(db)) {
+				SubmoduleWalk sw = SubmoduleWalk.forIndex(db);
+				while (sw.next()) {
+					if (projectRelativePathStr.startsWith(sw.getPath())) {
+						Repository subRepo = sw.getRepository();
+						if (subRepo == null)
+							return null;
+
+						Repository cachedRepo = null;
+						try {
+							cachedRepo = repositoryCache
+									.lookupRepository(subRepo.getDirectory());
+						} finally {
+							subRepo.close();
+						}
+						return cachedRepo;
+					}
+				}
+			}
+		} catch (IOException e) {
+			Activator.logWarning(
+					CoreText.RepositoryMapping_ExceptionSubmoduleWalk, e);
+		}
+		return db;
+	}
+
 	synchronized void setRepository(final Repository r) {
 		db = r;
 
-		try {
-			workdirPrefix = getWorkTree().getCanonicalPath();
-		} catch (IOException err) {
-			workdirPrefix = getWorkTree().getAbsolutePath();
-		}
+		workdirPrefix = getWorkTree().getAbsolutePath();
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/"))  //$NON-NLS-1$
 			workdirPrefix += "/";  //$NON-NLS-1$
@@ -251,32 +297,45 @@ public class RepositoryMapping {
 	 *         GitProvider.
 	 */
 	public static RepositoryMapping getMapping(final IResource resource) {
-		if (isNonWorkspace(resource))
+		if (isNonWorkspace(resource)) {
 			return null;
-
-		if (resource.isLinked(IResource.CHECK_ANCESTORS))
+		}
+		if (resource.isLinked(IResource.CHECK_ANCESTORS)) {
 			return getMapping(resource.getLocation());
+		}
+		return getMapping(resource.getProject());
+	}
 
-		IProject project = resource.getProject();
-		if (project == null)
+	/**
+	 * Get the repository mapping for a project.
+	 *
+	 * @param project
+	 * @return the RepositoryMapping for this project, or null for non
+	 *         GitProvider.
+	 */
+	public static RepositoryMapping getMapping(final IProject project) {
+		if (project == null || isNonWorkspace(project)) {
 			return null;
-
-		final RepositoryProvider rp = RepositoryProvider.getProvider(project);
-		if (!(rp instanceof GitProvider))
+		}
+		final RepositoryProvider rp = RepositoryProvider.getProvider(project,
+				GitProvider.ID);
+		if (rp == null) {
 			return null;
+		}
 
-		if (((GitProvider)rp).getData() == null)
+		GitProjectData data = ((GitProvider) rp).getData();
+		if (data == null) {
 			return null;
+		}
 
-		return ((GitProvider)rp).getData().getRepositoryMapping(resource);
+		return data.getRepositoryMapping(project);
 	}
 
 	/**
 	 * Get the repository mapping for a path if it exists.
 	 *
 	 * @param path
-	 * @return the RepositoryMapping for this path,
-	 *         or null for non GitProvider.
+	 * @return the RepositoryMapping for this path, or null for non GitProvider.
 	 */
 	public static RepositoryMapping getMapping(IPath path) {
 		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
