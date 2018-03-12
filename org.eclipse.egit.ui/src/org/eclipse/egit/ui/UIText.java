@@ -25,6 +25,9 @@ public class UIText extends NLS {
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
+	public static String AbstractHistoryCommanndHandler_NoUniqueRepository;
+
+	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
@@ -280,6 +283,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_CreateTagMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_DifferentRepositoriesMessage;
+
+	/** */
 	public static String GitHistoryPage_errorLookingUpPath;
 
 	/** */
@@ -314,6 +320,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_MultiResourcesType;
+
+	/** */
+	public static String GitHistoryPage_OpenInTextEditorLabel;
+
+	/** */
+	public static String GitHistoryPage_NoInputMessage;
 
 	/** */
 	public static String GitHistoryPage_OpenMenuLabel;
@@ -352,22 +364,10 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
 
 	/** */
-	public static String GitPreferenceRoot_CloningRepoGroupHeader;
-
-	/** */
 	public static String GitPreferenceRoot_DefaultRepoFolderLabel;
 
 	/** */
 	public static String GitPreferenceRoot_DefaultRepoFolderTooltip;
-
-	/** */
-	public static String GitPreferenceRoot_HistoryGroupHeader;
-
-	/** */
-	public static String GitPreferenceRoot_RemoteConnectionsGroupHeader;
-
-	/** */
-	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -1897,10 +1897,10 @@ public class UIText extends NLS {
 	public static String RepositoriesViewLabelProvider_BareRepositoryMessage;
 
 	/** */
-	public static String RepositoriesViewLabelProvider_LocalBranchesNodetext;
+	public static String RepositoriesViewLabelProvider_LocalNodetext;
 
 	/** */
-	public static String RepositoriesViewLabelProvider_RemoteBrancheNodetext;
+	public static String RepositoriesViewLabelProvider_RemoteTrackingNodetext;
 
 	/** */
 	public static String RepositoriesViewLabelProvider_SymbolicRefNodeText;
