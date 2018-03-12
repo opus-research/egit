@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
@@ -174,7 +173,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			try {
 				if(text != null) {
 					text = text.trim();
-					if(Transport.canHandleProtocol(new URIish(text), FS.DETECTED))
+					if(Transport.canHandleProtocol(new URIish(text)))
 						preset = text;
 				}
 			} catch (URISyntaxException e) {
@@ -246,7 +245,6 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			updateFields(presetUri);
 
 		updateRemoteAndURIPanels();
-		Dialog.applyDialogFont(panel);
 		setControl(panel);
 
 		checkPage();
@@ -480,7 +478,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 				|| uri.getPass() != null || uri.getPath() == null)
 			return false;
 		if (uri.getScheme() == null)
-			return FS.DETECTED.resolve(new File("."), uri.getPath()).isDirectory(); //$NON-NLS-1$
+			return FS.resolve(new File("."), uri.getPath()).isDirectory(); //$NON-NLS-1$
 		return false;
 	}
 
@@ -625,7 +623,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 						return;
 					}
 
-					final File d = FS.DETECTED.resolve(new File("."), uri.getPath()); //$NON-NLS-1$
+					final File d = FS.resolve(new File("."), uri.getPath()); //$NON-NLS-1$
 					if (!d.exists()) {
 						selectionIncomplete(NLS.bind(
 								UIText.RepositorySelectionPage_fileNotFound, d
