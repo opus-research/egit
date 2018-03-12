@@ -4528,9 +4528,6 @@ public class UIText extends NLS {
 	public static String StagingView_StageItemMenuLabel;
 
 	/** */
-	public static String StagingView_IgnoreItemMenuLabel;
-
-	/** */
 	public static String StagingView_DeleteItemMenuLabel;
 
 	/** */
