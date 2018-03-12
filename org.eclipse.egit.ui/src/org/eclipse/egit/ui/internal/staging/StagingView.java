@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -39,11 +39,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.egit.core.RepositoryUtil;
+import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -65,7 +62,6 @@ import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
@@ -106,7 +102,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
@@ -121,6 +116,8 @@ import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.MenuDetectEvent;
+import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -226,28 +223,6 @@ public class StagingView extends ViewPart {
 		}
 	};
 
-	private final IPreferenceChangeListener prefListener = new IPreferenceChangeListener() {
-
-		public void preferenceChange(PreferenceChangeEvent event) {
-			if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey()))
-				return;
-
-			final Repository repo = currentRepository;
-			if (repo == null)
-				return;
-
-			if (Activator.getDefault().getRepositoryUtil().contains(repo))
-				return;
-
-			asyncExec(new Runnable() {
-				public void run() {
-					reload(null);
-				}
-			});
-		}
-
-	};
-
 	private Action signedOffByAction;
 
 	private Action addChangeIdAction;
@@ -263,8 +238,6 @@ public class StagingView extends ViewPart {
 	private Action refreshAction;
 
 	private SashForm stagingSashForm;
-
-	private Job reloadJob;
 
 	@Override
 	public void createPartControl(Composite parent) {
@@ -458,10 +431,6 @@ public class StagingView extends ViewPart {
 		else
 			preferenceStore.setDefault(UIPreferences.STAGING_VIEW_SYNC_SELECTION, true);
 
-		new InstanceScope().getNode(
-				org.eclipse.egit.core.Activator.getPluginId())
-				.addPreferenceChangeListener(prefListener);
-
 		resourceChangeListener = new IResourceChangeListener() {
 			public void resourceChanged(IResourceChangeEvent event) {
 				final Collection<String> resourcesToUpdate = new HashSet<String>();
@@ -507,8 +476,7 @@ public class StagingView extends ViewPart {
 				if (!resourcesToUpdate.isEmpty()) {
 					final IndexDiff indexDiff;
 					try {
-						WorkingTreeIterator iterator = new FileTreeIterator(
-								currentRepository);
+						WorkingTreeIterator iterator = IteratorService.createInitialIterator(currentRepository);
 						indexDiff = new IndexDiff(currentRepository, Constants.HEAD, iterator);
 						indexDiff.setFilter(PathFilterGroup.createFromStrings(resourcesToUpdate));
 						indexDiff.diff();
@@ -582,12 +550,6 @@ public class StagingView extends ViewPart {
 	}
 
 	private void enableCommitWidgets(boolean enabled) {
-		if (!enabled) {
-			commitMessageText.setText(""); //$NON-NLS-1$
-			committerText.setText(""); //$NON-NLS-1$
-			authorText.setText(""); //$NON-NLS-1$
-		}
-
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		authorText.setEnabled(enabled);
@@ -768,12 +730,12 @@ public class StagingView extends ViewPart {
 
 	private void createPopupMenu(final TableViewer tableViewer) {
 		final MenuManager menuMgr = new MenuManager();
-		menuMgr.setRemoveAllWhenShown(true);
 		Control control = tableViewer.getControl();
 		control.setMenu(menuMgr.createContextMenu(control));
-		menuMgr.addMenuListener(new IMenuListener() {
+		control.addMenuDetectListener(new MenuDetectListener() {
+			public void menuDetected(MenuDetectEvent e) {
+				menuMgr.removeAll();
 
-			public void menuAboutToShow(IMenuManager manager) {
 				IStructuredSelection selection = (IStructuredSelection) tableViewer.getSelection();
 				if (selection.isEmpty())
 					return;
@@ -861,16 +823,17 @@ public class StagingView extends ViewPart {
 			StructuredSelection ssel = (StructuredSelection) selection;
 			if (ssel.size() != 1)
 				return;
-			Object firstElement = ssel.getFirstElement();
-			if (firstElement instanceof IResource)
-				showResource((IResource) firstElement);
-			else if (firstElement instanceof RepositoryTreeNode) {
-				RepositoryTreeNode repoNode = (RepositoryTreeNode) firstElement;
-				reload(repoNode.getRepository());
-			} else if (firstElement instanceof IAdaptable) {
-				IResource adapted = (IResource) ((IAdaptable) firstElement).getAdapter(IResource.class);
+			if (ssel.getFirstElement() instanceof IResource)
+				showResource((IResource) ssel.getFirstElement());
+			if (ssel.getFirstElement() instanceof IAdaptable) {
+				IResource adapted = (IResource) ((IAdaptable) ssel
+						.getFirstElement()).getAdapter(IResource.class);
 				if (adapted != null)
 					showResource(adapted);
+			} else if (ssel.getFirstElement() instanceof RepositoryTreeNode) {
+				RepositoryTreeNode repoNode = (RepositoryTreeNode) ssel
+						.getFirstElement();
+				reload(repoNode.getRepository());
 			}
 		}
 	}
@@ -1034,24 +997,6 @@ public class StagingView extends ViewPart {
 	}
 
 	private void reload(final Repository repository) {
-		if (repository == null) {
-			if (currentRepository == null)
-				return;
-			saveCommitMessageComponentState();
-			currentRepository = null;
-			StagingViewUpdate update = new StagingViewUpdate(null, null, null);
-			unstagedTableViewer.setInput(update);
-			stagedTableViewer.setInput(update);
-			enableCommitWidgets(false);
-			updateSectionText();
-			form.setText(UIText.StagingView_NoSelectionTitle);
-			return;
-		}
-
-		// Ignore bare repositories that are selected
-		if (repository.isBare())
-			return;
-
 		final boolean repositoryChanged = currentRepository != repository;
 
 		final AtomicReference<IndexDiff> results = new AtomicReference<IndexDiff>();
@@ -1059,15 +1004,11 @@ public class StagingView extends ViewPart {
 		final String jobTitle = MessageFormat.format(UIText.StagingView_IndexDiffReload,
 				StagingView.getRepositoryName(repository));
 
-		if (reloadJob != null)
-			reloadJob.cancel();
-		reloadJob = new Job(jobTitle) {
+		Job job = new Job(jobTitle) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				IndexDiff indexDiff = doReload(repository, monitor, jobTitle);
 				results.set(indexDiff);
-				if (monitor.isCanceled())
-					return Status.CANCEL_STATUS;
 				return Status.OK_STATUS;
 			}
 
@@ -1080,17 +1021,16 @@ public class StagingView extends ViewPart {
 
 		};
 
-		reloadJob.setUser(false);
-		reloadJob.setRule(ResourcesPlugin.getWorkspace().getRoot());
+		job.setUser(false);
+		job.setRule(ResourcesPlugin.getWorkspace().getRoot());
 
-		reloadJob.addJobChangeListener(new JobChangeAdapter() {
+		job.addJobChangeListener(new JobChangeAdapter() {
 			public void done(final IJobChangeEvent event) {
-				if (!event.getResult().isOK())
-					return;
 				asyncExec(new Runnable() {
 					public void run() {
 						if (form.isDisposed())
 							return;
+
 						final IndexDiff indexDiff = results.get();
 						final StagingViewUpdate update = new StagingViewUpdate(currentRepository, indexDiff, null);
 						unstagedTableViewer.setInput(update);
@@ -1107,7 +1047,7 @@ public class StagingView extends ViewPart {
 			}
 		});
 
-		schedule(reloadJob);
+		schedule(job);
 	}
 
 	private void schedule(final Job j) {
@@ -1132,7 +1072,8 @@ public class StagingView extends ViewPart {
 
 		final IndexDiff indexDiff;
 		try {
-			WorkingTreeIterator iterator = new FileTreeIterator(repository);
+			WorkingTreeIterator iterator = IteratorService
+					.createInitialIterator(repository);
 			indexDiff = new IndexDiff(repository, Constants.HEAD, iterator);
 			indexDiff.diff(jgitMonitor, 0, 0, jobTitle);
 		} catch (IOException e) {
@@ -1253,10 +1194,9 @@ public class StagingView extends ViewPart {
 	}
 
 	private void saveCommitMessageComponentState() {
-		final Repository repo = commitMessageComponent.getRepository();
-		if (repo != null)
-			CommitMessageComponentStateManager.persistState(repo,
-					commitMessageComponent.getState());
+		CommitMessageComponentStateManager.persistState(
+				commitMessageComponent.getRepository(),
+				commitMessageComponent.getState());
 	}
 
 	private void deleteCommitMessageComponentState() {
@@ -1322,15 +1262,8 @@ public class StagingView extends ViewPart {
 				ISelectionService.class);
 		srv.removePostSelectionListener(selectionChangedListener);
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
-		new InstanceScope().getNode(
-				org.eclipse.egit.core.Activator.getPluginId())
-				.removePreferenceChangeListener(prefListener);
 
 		removeListeners();
-		if (reloadJob != null) {
-			reloadJob.cancel();
-			reloadJob = null;
-		}
 	}
 
 	private void asyncExec(Runnable runnable) {

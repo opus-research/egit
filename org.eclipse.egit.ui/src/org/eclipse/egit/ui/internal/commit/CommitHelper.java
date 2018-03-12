@@ -139,7 +139,7 @@ public class CommitHelper {
 				}
 			}
 		} catch (FileNotFoundException e) {
-			return NLS.bind(UIText.CommitHelper_couldNotFindMergeMsg, Constants.MERGE_MSG);
+			throw new IllegalStateException(e);
 		}
 	}
 

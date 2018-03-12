@@ -17,11 +17,9 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.commit.command.CheckoutHandler;
 import org.eclipse.egit.ui.internal.commit.command.CreateBranchHandler;
 import org.eclipse.egit.ui.internal.commit.command.CreateTagHandler;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
-import org.eclipse.jface.action.ContributionManager;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.resource.JFaceResources;
@@ -49,7 +47,6 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
-import org.eclipse.ui.menus.IMenuService;
 import org.eclipse.ui.progress.UIJob;
 
 /**
@@ -62,8 +59,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 * ID - editor id
 	 */
 	public static final String ID = "org.eclipse.egit.ui.commitEditor"; //$NON-NLS-1$
-
-	private static final String TOOLBAR_HEADER_ID = ID + ".header.toolbar"; //$NON-NLS-1$
 
 	/**
 	 * Open commit in editor
@@ -138,15 +133,14 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	protected void createHeaderContents(IManagedForm headerForm) {
 		RepositoryCommit commit = getCommit();
 		ScrolledForm form = headerForm.getForm();
-		new HeaderText(form.getForm(), MessageFormat.format(
-				UIText.CommitEditor_TitleHeader, commit.getRevCommit().name()));
+		form.setText(MessageFormat.format(UIText.CommitEditor_TitleHeader,
+				commit.getRevCommit().name()));
 		form.setToolTipText(commit.getRevCommit().name());
 		getToolkit().decorateFormHeading(form.getForm());
 
 		IToolBarManager toolbar = form.getToolBarManager();
 
-		ControlContribution repositoryLabelControl = new ControlContribution(
-				"repositoryLabel") { //$NON-NLS-1$
+		ControlContribution repositoryLabelControl = new ControlContribution("repositoryLabel") { //$NON-NLS-1$
 			@Override
 			protected Control createControl(Composite parent) {
 				FormToolkit toolkit = getHeaderForm().getToolkit();
@@ -159,8 +153,7 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 				ImageHyperlink link = new ImageHyperlink(composite, SWT.NONE);
 				link.setText(label);
 				link.setFont(JFaceResources.getBannerFont());
-				link.setForeground(toolkit.getColors().getColor(
-						IFormColors.TITLE));
+				link.setForeground(toolkit.getColors().getColor(IFormColors.TITLE));
 				link.setToolTipText(UIText.CommitEditor_showGitRepo);
 				link.addHyperlinkListener(new HyperlinkAdapter() {
 					@Override
@@ -168,13 +161,11 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 						RepositoriesView view;
 						try {
 							view = (RepositoriesView) PlatformUI.getWorkbench()
-									.getActiveWorkbenchWindow().getActivePage()
-									.showView(RepositoriesView.VIEW_ID);
+									.getActiveWorkbenchWindow().getActivePage().showView(
+											RepositoriesView.VIEW_ID);
 							view.showRepository(getCommit().getRepository());
 						} catch (PartInitException e) {
-							Activator.handleError(
-									UIText.CommitEditor_couldNotShowRepository,
-									e, false);
+							Activator.handleError(UIText.CommitEditor_couldNotShowRepository, e, false);
 						}
 					}
 				});
@@ -185,21 +176,7 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		toolbar.add(repositoryLabelControl);
 		toolbar.add(createCommandContributionItem(CreateTagHandler.ID));
 		toolbar.add(createCommandContributionItem(CreateBranchHandler.ID));
-		toolbar.add(createCommandContributionItem(CheckoutHandler.ID));
-		addContributions(toolbar);
 		toolbar.update(true);
-	}
-
-	private void addContributions(IToolBarManager toolBarManager) {
-		IMenuService menuService = (IMenuService) getSite().getService(
-				IMenuService.class);
-		if (menuService != null
-				&& toolBarManager instanceof ContributionManager) {
-			ContributionManager contributionManager = (ContributionManager) toolBarManager;
-			String toolbarUri = "toolbar:" + TOOLBAR_HEADER_ID; //$NON-NLS-1$
-			menuService.populateContributionManager(contributionManager,
-					toolbarUri);
-		}
 	}
 
 	private RepositoryCommit getCommit() {

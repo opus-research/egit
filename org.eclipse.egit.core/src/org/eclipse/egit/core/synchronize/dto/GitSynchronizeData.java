@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2011 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -135,12 +135,8 @@ public class GitSynchronizeData {
 	 */
 	public void updateRevs() throws IOException {
 		ObjectWalk ow = new ObjectWalk(repo);
-		try {
-			srcRevCommit = getCommit(srcRev, ow);
-			dstRevCommit = getCommit(dstRev, ow);
-		} finally {
-			ow.release();
-		}
+		srcRevCommit = getCommit(srcRev, ow);
+		dstRevCommit = getCommit(dstRev, ow);
 
 		if (this.dstRevCommit != null || this.srcRevCommit != null)
 			this.ancestorRevCommit = getCommonAncestor(repo, this.srcRevCommit,
@@ -238,11 +234,8 @@ public class GitSynchronizeData {
 		this.includedPaths = includedPaths;
 		Set<String> paths = new HashSet<String>();
 		RepositoryMapping rm = RepositoryMapping.findRepositoryMapping(repo);
-		for (IContainer container : includedPaths) {
-			String repoRelativePath = rm.getRepoRelativePath(container);
-			if (repoRelativePath.length() > 0)
-				paths.add(repoRelativePath);
-		}
+		for (IContainer container : includedPaths)
+			paths.add(rm.getRepoRelativePath(container));
 
 		if (!paths.isEmpty())
 			pathFilter = PathFilterGroup.createFromStrings(paths);

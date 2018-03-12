@@ -87,7 +87,7 @@ public class MergeOperation implements IEGitOperation {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
 			public void run(IProgressMonitor mymonitor) throws CoreException {
-				IProject[] validProjects = ProjectUtil.getValidOpenProjects(repository);
+				IProject[] validProjects = ProjectUtil.getValidProjects(repository);
 				mymonitor.beginTask(NLS.bind(CoreText.MergeOperation_ProgressMerge, refName), 3);
 				Git git = new Git(repository);
 				mymonitor.worked(1);

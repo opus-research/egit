@@ -23,6 +23,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.rebase.RebaseHelper;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -48,6 +49,7 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 		if (currentSelection instanceof IStructuredSelection) {
 			IStructuredSelection selection = (IStructuredSelection) currentSelection;
 			Object selected = selection.getFirstElement();
+
 			ref = getRef(selected);
 		} else
 			ref = null;
@@ -55,13 +57,6 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 		final Repository repository = getRepository(event);
 
 		BasicConfigurationDialog.show(repository);
-
-		try {
-			if (ref != null && ref.getName().equals(repository.getFullBranch()))
-				ref = null;
-		} catch (IOException ignored) {
-			// Ignored
-		}
 
 		if (ref == null) {
 			RebaseTargetSelectionDialog rebaseTargetSelectionDialog = new RebaseTargetSelectionDialog(
@@ -90,13 +85,15 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
 			Object selection = ctx
 					.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-			if (selection instanceof ISelection) {
-				Repository repo = getRepository((ISelection) selection);
-				if (repo != null) {
+			if (selection instanceof IStructuredSelection) {
+				IStructuredSelection sel = (IStructuredSelection) selection;
+				if (sel.getFirstElement() instanceof RepositoryTreeNode) {
+					Repository repo = ((RepositoryTreeNode) ((IStructuredSelection) selection)
+							.getFirstElement()).getRepository();
 					boolean isSafe = repo.getRepositoryState() == RepositoryState.SAFE;
+
 					setBaseEnabled(isSafe && hasHead(repo));
-				} else
-					setBaseEnabled(false);
+				}
 				return;
 			}
 		}
