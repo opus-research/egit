@@ -272,10 +272,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 		try {
 			switch (node.getType()) {
 			case REPO:
-				if (node.getParent() != null
-						&& node.getParent().getType() == RepositoryTreeNodeType.SUBMODULES)
-					return getStyledTextForSubmodule(node);
-				return getStyledTextFor((Repository) node.getObject());
+				Repository repository = (Repository) node.getObject();
+				return getStyledTextFor(repository);
 			case ADDITIONALREF:
 				Ref ref = (Ref) node.getObject();
 				// shorten the name
@@ -350,8 +348,6 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 				// fall through
 			case REMOTE:
 				// fall through
-			case SUBMODULES:
-				// fall through
 			case ERROR: {
 				String label = getSimpleText(node);
 				if (label != null)
@@ -391,8 +387,6 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 			return UIText.RepositoriesViewLabelProvider_SymbolicRefNodeText;
 		case REMOTES:
 			return UIText.RepositoriesView_RemotesNodeText;
-		case SUBMODULES:
-			return UIText.RepositoriesViewLabelProvider_SubmodulesNodeText;
 		case REF:
 			// fall through
 		case TAG: {
