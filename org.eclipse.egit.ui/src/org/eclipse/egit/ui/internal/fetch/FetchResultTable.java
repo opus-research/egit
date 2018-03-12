@@ -156,7 +156,7 @@ class FetchResultTable {
 		 * @param ref
 		 * @return shortened ref name
 		 */
-		protected String shortenRef(final String ref) {
+		protected String shortenRef(String ref) {
 			return NoteMap.shortenRefName(Repository.shortenRefName(ref));
 		}
 
