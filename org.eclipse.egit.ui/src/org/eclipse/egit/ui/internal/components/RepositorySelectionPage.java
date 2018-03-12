@@ -57,15 +57,12 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Wizard page that allows the user entering the location of a remote repository
  * by specifying URL manually or selecting a preconfigured remote repository.
  */
 public class RepositorySelectionPage extends WizardPage {
-
-	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
 	private final static String USED_URIS_PREF = "RepositorySelectionPage.UsedUris"; //$NON-NLS-1$
 
@@ -115,13 +112,11 @@ public class RepositorySelectionPage extends WizardPage {
 
 	private IPreviousValueProposalHandler uriProposalHandler;
 
-	private String user = EMPTY_STRING;
+	private String user;
 
-	private String password = EMPTY_STRING;
+	private String password;
 
 	private boolean storeInSecureStore = true;
-
-	private String helpContext = null;
 
 	/**
 	 * Transport protocol abstraction
@@ -317,7 +312,7 @@ public class RepositorySelectionPage extends WizardPage {
 		this.uri = new URIish();
 		this.sourceSelection = sourceSelection;
 
-		String preset = presetUri;
+		String preset = null;
 		if (presetUri == null) {
 			Clipboard clippy = new Clipboard(Display.getCurrent());
 			String text = (String) clippy.getContents(TextTransfer
@@ -500,7 +495,7 @@ public class RepositorySelectionPage extends WizardPage {
 				DirectoryDialog dialog = new DirectoryDialog(getShell());
 				// if a file-uri was selected before, let's try to open
 				// the directory dialog on the same directory
-				if (!uriText.getText().equals(EMPTY_STRING)) {
+				if (!uriText.getText().equals("")) { //$NON-NLS-1$
 					try {
 						URI testUri = URI.create(uriText.getText().replace(
 								'\\', '/'));
@@ -553,9 +548,7 @@ public class RepositorySelectionPage extends WizardPage {
 		userText.setLayoutData(createFieldGridData());
 		userText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
-				Protocol protocol = getProtocol();
-				if (protocol != Protocol.HTTP && protocol != Protocol.HTTPS)
-					setURI(uri.setUser(nullString(userText.getText())));
+				setURI(uri.setUser(nullString(userText.getText())));
 				user = userText.getText();
 			}
 		});
@@ -600,7 +593,7 @@ public class RepositorySelectionPage extends WizardPage {
 				final int idx = scheme.getSelectionIndex();
 				if (idx < 0) {
 					setURI(uri.setScheme(null));
-					scheme.setToolTipText(EMPTY_STRING);
+					scheme.setToolTipText(""); //$NON-NLS-1$
 				} else {
 					setURI(uri.setScheme(nullString(scheme.getItem(idx))));
 					scheme.setToolTipText(Protocol.values()[idx].getTooltip());
@@ -666,7 +659,7 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void safeSet(final Text text, final String value) {
-		text.setText(value != null ? value : EMPTY_STRING);
+		text.setText(value != null ? value : ""); //$NON-NLS-1$
 	}
 
 	private boolean isURISelected() {
@@ -751,13 +744,10 @@ public class RepositorySelectionPage extends WizardPage {
 			if (uriText.getText().length() == 0) {
 				selectionIncomplete(null);
 				return;
-			} else if (uriText.getText().endsWith(" ")) { //$NON-NLS-1$
-				selectionIncomplete(UIText.RepositorySelectionPage_UriMustNotHaveTrailingSpacesMessage);
-				return;
 			}
 
 			try {
-				final URIish finalURI = new URIish(uriText.getText().trim());
+				final URIish finalURI = new URIish(uriText.getText());
 				String proto = finalURI.getScheme();
 				if (proto == null && scheme.getSelectionIndex() >= 0)
 					proto = scheme.getItem(scheme.getSelectionIndex());
@@ -842,7 +832,7 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private String unamp(String s) {
-		return s.replace("&", EMPTY_STRING); //$NON-NLS-1$
+		return s.replace("&", ""); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private void selectionIncomplete(final String errorMessage) {
@@ -874,19 +864,13 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void updateAuthGroup() {
-		Protocol p = getProtocol();
-		if (p != null) {
+		int idx = scheme.getSelectionIndex();
+		if (idx >= 0) {
+			Protocol p = Protocol.values()[idx];
 			hostText.setEnabled(p.hasHost());
 			portText.setEnabled(p.hasPort());
 			setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
-	}
-
-	private Protocol getProtocol() {
-		int idx = scheme.getSelectionIndex();
-		if (idx >= 0)
-			return Protocol.values()[idx];
-		return null;
 	}
 
 	@Override
@@ -920,21 +904,6 @@ public class RepositorySelectionPage extends WizardPage {
 		return this.storeInSecureStore;
 	}
 
-	/**
-	 * Set the ID for context sensitive help
-	 *
-	 * @param id
-	 *            help context
-	 */
-	public void setHelpContext(String id) {
-		helpContext = id;
-	}
-
-	@Override
-	public void performHelp() {
-		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
-	}
-
 	private void setEnabledRecursively(final Control control,
 			final boolean enable) {
 		control.setEnabled(enable);
@@ -958,7 +927,7 @@ public class RepositorySelectionPage extends WizardPage {
 			if (u.getPort() > 0)
 				portText.setText(Integer.toString(u.getPort()));
 			else
-				portText.setText(EMPTY_STRING);
+				portText.setText(""); //$NON-NLS-1$
 
 			if (u.getScheme() != null) {
 				scheme.select(scheme.indexOf(u.getScheme()));
@@ -971,11 +940,11 @@ public class RepositorySelectionPage extends WizardPage {
 			// leave uriText as it is, but clean up underlying uri and
 			// decomposed fields
 			uri = new URIish();
-			hostText.setText(EMPTY_STRING);
-			pathText.setText(EMPTY_STRING);
-			userText.setText(EMPTY_STRING);
-			passText.setText(EMPTY_STRING);
-			portText.setText(EMPTY_STRING);
+			hostText.setText(""); //$NON-NLS-1$
+			pathText.setText(""); //$NON-NLS-1$
+			userText.setText(""); //$NON-NLS-1$
+			passText.setText(""); //$NON-NLS-1$
+			portText.setText(""); //$NON-NLS-1$
 			scheme.select(-1);
 		} finally {
 			eventDepth--;

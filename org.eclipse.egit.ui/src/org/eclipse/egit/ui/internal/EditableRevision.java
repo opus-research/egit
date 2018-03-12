@@ -11,6 +11,7 @@ package org.eclipse.egit.ui.internal;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Arrays;
 
 import org.eclipse.compare.IContentChangeListener;
 import org.eclipse.compare.IContentChangeNotifier;
@@ -139,9 +140,7 @@ public class EditableRevision extends FileRevisionTypedElement implements
 	 * @return the modified content
 	 */
 	public byte[] getModifiedContent() {
-		byte[] result = new byte[modifiedContent.length];
-		System.arraycopy(modifiedContent, 0, result, 0, modifiedContent.length);
-		return result;
+		return Arrays.copyOf(modifiedContent, modifiedContent.length);
 	}
 
 	public Object getAdapter(Class adapter) {
@@ -203,13 +202,4 @@ public class EditableRevision extends FileRevisionTypedElement implements
 		fChangeNotifier.fireContentChanged();
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		return super.equals(obj);
-	}
-
-	@Override
-	public int hashCode() {
-		return super.hashCode();
-	}
 }

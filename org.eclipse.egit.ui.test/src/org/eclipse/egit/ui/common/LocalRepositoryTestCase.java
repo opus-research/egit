@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.StringTokenizer;
 
 import org.eclipse.core.filesystem.EFS;
@@ -29,15 +28,15 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
-import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.push.PushOperationUI;
+import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -48,10 +47,8 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.IO;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
@@ -134,18 +131,13 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		File userHome = FS.DETECTED.userHome();
 		testDirectory = new File(userHome, "LocalRepositoriesTests");
 		if (testDirectory.exists())
-			FileUtils.delete(testDirectory, FileUtils.RECURSIVE
-					| FileUtils.RETRY);
+			deleteRecursive(testDirectory);
 		testDirectory.mkdir();
 		// we don't want to clone into <user_home> but into our test directory
 		File repoRoot = new File(testDirectory, "RepositoryRoot");
 		repoRoot.mkdir();
-		// make sure the default directory for Repos is not the user home
-		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
-		// suppress the configuration dialog
-		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, false);
+		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore().setValue(
+				UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 	}
 
 	@AfterClass
@@ -155,7 +147,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// cleanup
 		deleteAllProjects();
 		shutDownRepositories();
-		FileUtils.delete(testDirectory, FileUtils.RECURSIVE | FileUtils.RETRY);
+		deleteRecursive(testDirectory);
 		Activator.getDefault().getRepositoryCache().clear();
 	}
 
@@ -166,16 +158,37 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		cache.clear();
 	}
 
-	protected static void deleteAllProjects() throws Exception {
+	protected static void deleteRecursive(File dirOrFile) throws IOException {
+		if (dirOrFile.isDirectory()) {
+			for (File file : dirOrFile.listFiles()) {
+				deleteRecursive(file);
+			}
+		}
+		boolean deleted = false;
+		for(int i=0; i<10; i++) {
+			deleted = dirOrFile.delete();
+			if (deleted)
+				break;
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// ignore
+			}
+		}
+		if (!deleted) {
+			throw new IOException("could not delete " + dirOrFile.getPath());
+		}
+	}
+
+	protected static void deleteAllProjects() throws CoreException {
 		for (IProject prj : ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects())
 			if (prj.getName().equals(PROJ1))
 				prj.delete(false, false, null);
 			else if (prj.getName().equals(PROJ2)) {
 				// delete the .project on disk
-				FileUtils.delete(EFS.getStore(
-						prj.getFile(".project").getLocationURI()).toLocalFile(
-						EFS.NONE, null), FileUtils.RETRY);
+				EFS.getStore(prj.getFile(".project").getLocationURI())
+						.toLocalFile(EFS.NONE, null).delete();
 				prj.delete(false, false, null);
 			}
 
@@ -300,9 +313,10 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		myRepository.getConfig().save();
 		// and push
-		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
-		PushOperationUI pa = new PushOperationUI(myRepository, config, 0, false);
-		pa.execute(null);
+		PushConfiguredRemoteAction pa = new PushConfiguredRemoteAction(
+				myRepository, "push");
+
+		pa.run(null, false);
 
 		try {
 			// delete the stable branch again
@@ -325,9 +339,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		Repository myRepository = lookupRepository(repositoryDir);
 		URIish uri = new URIish("file:///" + myRepository.getDirectory());
 		File workdir = new File(testDirectory, CHILDREPO);
-		Ref master = myRepository.getRef("refs/heads/master");
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir,
-				master, "origin", 0);
+				"refs/heads/master", "origin", 0);
 		clop.run(null);
 		return new File(workdir, Constants.DOT_GIT);
 	}
@@ -511,12 +524,4 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		display.post(evt);
 	}
 
-	protected static Collection<Ref> getRemoteRefs(URIish uri) throws Exception {
-		final Repository db = new FileRepository(new File("/tmp")); //$NON-NLS-1$
-		int timeout = 20;
-		ListRemoteOperation listRemoteOp = new ListRemoteOperation(db, uri,
-				timeout);
-		listRemoteOp.run(null);
-		return listRemoteOp.getRemoteRefs();
-	}
 }

@@ -10,25 +10,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.osgi.service.localization.BundleLocalization;
-import org.eclipse.swtbot.swt.finder.SWTBot;
-import org.eclipse.swtbot.swt.finder.waits.ICondition;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
@@ -120,95 +109,4 @@ public class TestUtil {
 	public static void joinJobs(Object family) throws InterruptedException  {
 		Job.getJobManager().join(family, null);
 	}
-
-	/**
-	 * Appends content to given file.
-	 *
-	 * @param file
-	 * @param content
-	 * @param append
-	 *            if true, then bytes will be written to the end of the file
-	 *            rather than the beginning
-	 * @throws IOException
-	 */
-	public static void appendFileContent(File file, String content, boolean append)
-			throws IOException {
-		FileWriter fw = null;
-		try {
-			fw = new FileWriter(file, append);
-			fw.append(content);
-		} finally {
-			if (fw != null)
-				fw.close();
-		}
-	}
-
-	/**
-	 * Waits until the given tree has a node whose label starts with text
-	 * @param bot
-	 * @param tree
-	 * @param text
-	 * @param timeout
-	 * @throws TimeoutException
-	 */
-	public static void waitUntilTreeHasNodeWithText(SWTBot bot, final SWTBotTree tree,
-			final String text, long timeout) throws TimeoutException {
-		bot.waitUntil(new ICondition() {
-
-			public boolean test() throws Exception {
-				for (SWTBotTreeItem item : tree.getAllItems())
-					if (item.getText().startsWith(text))
-						return true;
-				return false;
-			}
-
-			public void init(SWTBot bot2) {
-				// empty
-			}
-
-			public String getFailureMessage() {
-				return null;
-			}
-		}, timeout);
-	}
-
-	/**
-	 * Waits until the given table has an item with the given text
-	 * @param bot
-	 * @param table
-	 * @param text
-	 * @param timeout
-	 * @throws TimeoutException
-	 */
-	public static void waitUntilTableHasRowWithText(SWTBot bot, final SWTBotTable table,
-			final String text, long timeout) throws TimeoutException {
-		bot.waitUntil(new ICondition() {
-
-			public boolean test() throws Exception {
-				if (table.indexOf(text)<0)
-					return false;
-				return true;
-			}
-
-			public void init(SWTBot bot2) {
-				// empty
-			}
-
-			public String getFailureMessage() {
-				return null;
-			}
-		}, timeout);
-	}
-
-	/**
-	 * Disables usage of proxy servers
-	 */
-	public static void disableProxy() {
-		BundleContext context = Activator.getDefault().getBundle().getBundleContext();
-		ServiceReference serviceReference = context.getServiceReference(IProxyService.class.getName());
-		IProxyService proxyService = (IProxyService) context.getService(serviceReference);
-		proxyService.setSystemProxiesEnabled(false);
-		proxyService.setProxiesEnabled(false);
-	}
-
 }

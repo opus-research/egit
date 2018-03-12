@@ -33,17 +33,10 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -180,7 +173,7 @@ class ExistingOrNewPage extends WizardPage {
 				try {
 					Repository repository = new FileRepository(gitDir);
 					repository.create();
-					for (IProject project : getProjects(false).keySet()) {
+					for (IProject project : getProjects().keySet()) {
 						// If we don't refresh the project directories right
 						// now we won't later know that a .git directory
 						// exists within it and we won't mark the .git
@@ -240,7 +233,6 @@ class ExistingOrNewPage extends WizardPage {
 
 		tree.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				tree.select((TreeItem)e.item);
 				updateCreateOptions();
 			}
 		});
@@ -249,50 +241,17 @@ class ExistingOrNewPage extends WizardPage {
 		setControl(g);
 	}
 
-	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem, boolean isAlternative) {
+	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem2, boolean isAlternative) {
 		if (m.getGitDir() == null)
-			treeItem.setText(2, UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
+			treeItem2.setText(2, UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
 		else {
 			IPath container = m.getContainerPath();
 			if (!container.isEmpty())
-				container = Path.fromOSString("."); //$NON-NLS-1$
+				container = container.addTrailingSeparator();
 			IPath relativePath = container.append(m.getGitDir());
-			if (isAlternative) {
-				IPath withoutLastSegment = relativePath.removeLastSegments(1);
-				IPath path;
-				if (withoutLastSegment.isEmpty())
-					path = Path.fromPortableString("."); //$NON-NLS-1$
-				else
-					path = withoutLastSegment;
-				treeItem.setText(0, path.toString());
-			}
-			treeItem.setText(2, relativePath.toOSString());
-			try {
-				IProject project = m.getContainer().getProject();
-				FileRepository repo = new FileRepository(m.getGitDirAbsolutePath().toFile());
-				File workTree = repo.getWorkTree();
-				IPath workTreePath = Path.fromOSString(workTree.getAbsolutePath());
-				if (workTreePath.isPrefixOf(project.getLocation())) {
-					IPath makeRelativeTo = project.getLocation().makeRelativeTo(workTreePath);
-					String repoRelativePath = makeRelativeTo.append("/.project").toPortableString(); //$NON-NLS-1$
-					ObjectId headCommitId = repo.resolve(Constants.HEAD);
-					if (headCommitId != null) {
-						// Not an empty repo
-						RevWalk revWalk = new RevWalk(repo);
-						RevCommit headCommit = revWalk.parseCommit(headCommitId);
-						RevTree headTree = headCommit.getTree();
-						TreeWalk projectInRepo = TreeWalk.forPath(repo, repoRelativePath, headTree);
-						if (projectInRepo != null) {
-							// the .project file is tracked by this repo
-							treeItem.setChecked(true);
-						}
-						revWalk.dispose();
-					}
-				}
-				repo.close();
-			} catch (IOException e1) {
-				Activator.logError("Failed to detect which repository to use", e1); //$NON-NLS-1$
-			}
+			if (isAlternative)
+				treeItem2.setText(0, relativePath.removeLastSegments(1).addTrailingSeparator().toString());
+			treeItem2.setText(2, relativePath.toString());
 		}
 	}
 
@@ -343,25 +302,13 @@ class ExistingOrNewPage extends WizardPage {
 	}
 
 	/**
-	 * @param checked
-	 *            pass true to get the checked elements, false to get the
-	 *            selected elements
-	 * @return map between project and repository root directory (converted to
-	 *         an absolute path) for all projects selected by user
+	 * @return map between project and repository root directory (converted to an
+	 *         absolute path) for all projects selected by user
 	 */
-	public Map<IProject, File> getProjects(boolean checked) {
-		final Object[] elements;
-		if (checked)
-			elements = viewer.getCheckedElements();
-		else {
-			ISelection selection = viewer.getSelection();
-			if (selection instanceof IStructuredSelection)
-				elements = ((IStructuredSelection) selection).toArray();
-			else
-				elements = new Object[0];
-		}
-		Map<IProject, File> ret = new HashMap<IProject, File>(elements.length);
-		for (Object ti : elements) {
+	public Map<IProject, File> getProjects() {
+		final Object[] checkedElements = viewer.getCheckedElements();
+		Map<IProject, File> ret = new HashMap<IProject, File>(checkedElements.length);
+		for (Object ti : viewer.getCheckedElements()) {
 			final IProject project = ((ProjectAndRepo)ti).getProject();
 			String path = ((ProjectAndRepo)ti).getRepo();
 			final IPath selectedRepo = Path.fromOSString(path);

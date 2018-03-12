@@ -24,10 +24,11 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
@@ -55,6 +56,11 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	protected final RevCommit remoteCommit;
 
 	/**
+	 * Ancestor commit connected with this container
+	 */
+	protected final RevCommit ancestorCommit;
+
+	/**
 	 *
 	 * @param parent instance of parent object
 	 * @param commit commit connected with this container
@@ -66,6 +72,7 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 		super(parent);
 		kind = direction;
 		baseCommit = commit;
+		ancestorCommit = calculateAncestor(baseCommit);
 
 		RevCommit[] parents = baseCommit.getParents();
 		if (parents != null && parents.length > 0)
@@ -78,6 +85,15 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	public Image getImage() {
 		// currently itsn't used
 		return null;
+	}
+
+	/**
+	 * Returns common ancestor for this commit and all it parent's commits.
+	 *
+	 * @return common ancestor commit
+	 */
+	public RevCommit getAncestorCommit() {
+		return ancestorCommit;
 	}
 
 	/**
@@ -129,7 +145,9 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	}
 
 	@Override
-	public abstract IPath getLocation();
+	public IPath getLocation() {
+		return getParent().getLocation();
+	}
 
 	public ITypedElement getAncestor() {
 		return null;
@@ -193,16 +211,15 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	/**
 	 *
 	 * @param tw instance of {@link TreeWalk} that should be used
-	 * @param ancestorCommit TODO
 	 * @param ancestorNth
 	 * @param baseNth
 	 * @param actualNth
 	 * @return {@link GitModelObject} instance of given parameters
 	 * @throws IOException
 	 */
-	protected GitModelObject getModelObject(TreeWalk tw, RevCommit ancestorCommit,
-			int ancestorNth, int baseNth, int actualNth) throws IOException {
-		IPath path = new Path(getLocation() + "/" +tw.getPathString()); //$NON-NLS-1$
+	protected GitModelObject getModelObject(TreeWalk tw, int ancestorNth,
+			int baseNth, int actualNth) throws IOException {
+		String objName = tw.getNameString();
 
 		ObjectId objBaseId;
 		if (baseNth > -1)
@@ -211,19 +228,15 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 			objBaseId = ObjectId.zeroId();
 
 		ObjectId objRemoteId = tw.getObjectId(actualNth);
-		ObjectId objAncestorId;
-		if (ancestorNth > -1)
-			objAncestorId = tw.getObjectId(ancestorNth);
-		else
-			objAncestorId = ObjectId.zeroId();
+		ObjectId objAncestorId = tw.getObjectId(ancestorNth);
 		int objectType = tw.getFileMode(actualNth).getObjectType();
 
 		if (objectType == Constants.OBJ_BLOB)
-			return new GitModelBlob(this, getBaseCommit(), ancestorCommit,
-					objAncestorId, objBaseId, objRemoteId, path);
+			return new GitModelBlob(this, getBaseCommit(), objAncestorId,
+					objBaseId, objRemoteId, objName);
 		else if (objectType == Constants.OBJ_TREE)
-			return new GitModelTree(this, getBaseCommit(), ancestorCommit,
-					objAncestorId, objBaseId, objRemoteId, path);
+			return new GitModelTree(this, getBaseCommit(), objAncestorId,
+					objBaseId, objRemoteId, objName);
 
 		return null;
 	}
@@ -236,6 +249,21 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 			kind = kind | DELETION;
 		else
 			kind = kind | CHANGE;
+	}
+
+	private RevCommit calculateAncestor(RevCommit actual) throws IOException {
+		RevWalk rw = new RevWalk(getRepository());
+		rw.setRevFilter(RevFilter.MERGE_BASE);
+
+		for (RevCommit parent : actual.getParents()) {
+			RevCommit parentCommit = rw.parseCommit(parent.getId());
+			rw.markStart(parentCommit);
+		}
+
+		rw.markStart(rw.parseCommit(actual.getId()));
+
+		RevCommit result = rw.next();
+		return result != null ? result : rw.parseCommit(ObjectId.zeroId());
 	}
 
 }
