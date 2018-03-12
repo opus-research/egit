@@ -4753,7 +4753,7 @@
             locationURI="popup:org.eclipse.ui.popup.any?after=additions">
          <menu
                id="compareWithMenu"
-               label="%CompareWithMenu.label">
+               label="Compare With">
             <separator
                   name="compareWithGroup">
             </separator>
@@ -4772,7 +4772,7 @@
             locationURI="popup:org.eclipse.ui.popup.any?after=additions">
          <menu
                id="replaceWithMenu"
-               label="%ReplaceWithMenu.label">
+               label="Replace With">
             <separator
                   name="replaceWithGroup">
             </separator>
