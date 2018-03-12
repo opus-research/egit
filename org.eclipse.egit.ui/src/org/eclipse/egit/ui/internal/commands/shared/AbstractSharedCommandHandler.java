@@ -34,6 +34,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 
+
 	/**
 	 * @param event
 	 *            the {@link ExecutionEvent}
