@@ -23,7 +23,6 @@ import org.eclipse.egit.gitflow.GitFlowConfig;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.egit.gitflow.internal.CoreText;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jgit.errors.AmbiguousObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
@@ -122,10 +121,8 @@ public final class ReleaseStartOperation extends AbstractReleaseOperation {
 		}
 	}
 
-	@Nullable
 	private static String findHead(GitFlowRepository repository) {
 		GitFlowConfig config = repository.getConfig();
-		RevCommit head = repository.findHead(config.getDevelop());
-		return head == null ? null : head.getName();
+		return repository.findHead(config.getDevelop()).getName();
 	}
 }
