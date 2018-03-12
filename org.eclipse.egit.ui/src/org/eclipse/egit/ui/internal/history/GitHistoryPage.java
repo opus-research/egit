@@ -1456,9 +1456,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				currentWalk.markStart(currentWalk.parseCommit(headId));
 		} catch (IOException e) {
 			throw new IllegalStateException(NLS.bind(
-					UIText.GitHistoryPage_errorSettingStartPoints, Activator
-							.getDefault().getRepositoryUtil()
-							.getRepositoryName(db)), e);
+					UIText.GitHistoryPage_errorReadingHeadCommit, headId, db
+							.getDirectory().getAbsolutePath()), e);
 		}
 	}
 
@@ -1558,9 +1557,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			Ref ref = refEntry.getValue();
 			if (ref.isSymbolic())
 				continue;
-			Object refTarget = currentWalk.parseAny(ref.getObjectId());
-			if (refTarget instanceof RevCommit)
-				currentWalk.markStart((RevCommit) refTarget);
+			currentWalk.markStart(currentWalk.parseCommit(ref.getObjectId()));
 		}
 	}
 
