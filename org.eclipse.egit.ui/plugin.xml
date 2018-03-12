@@ -956,9 +956,6 @@
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
                         </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                        </instanceof>
                      </or>
                   </iterate>
                </and>
@@ -1001,9 +998,6 @@
                         </instanceof>
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
                         </instanceof>
                      </or>
                   </iterate>
@@ -1965,14 +1959,9 @@
                   <iterate
                         ifEmpty="false"
                         operator="and">
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                        </instanceof>
-                     </or>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
+                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -1991,14 +1980,9 @@
                   <iterate
                         ifEmpty="false"
                         operator="and">
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                        </instanceof>
-                     </or>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
+                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
