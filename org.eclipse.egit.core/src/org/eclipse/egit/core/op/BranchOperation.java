@@ -14,18 +14,12 @@ package org.eclipse.egit.core.op;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
@@ -37,20 +31,12 @@ import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.CheckoutResult.Status;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.treewalk.AbstractTreeIterator;
-import org.eclipse.jgit.treewalk.FileTreeIterator;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.PathSuffixFilter;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 
@@ -105,25 +91,10 @@ public class BranchOperation extends BaseOperation {
 			public void run(IProgressMonitor pm) throws CoreException {
 				preExecute(pm);
 
-				IProject[] missing = getMissingProjects(target, ProjectUtil
-						.getValidOpenProjects(repository));
-
+				IProject[] validProjects = ProjectUtil
+						.getValidOpenProjects(repository);
 				pm.beginTask(NLS.bind(
-						CoreText.BranchOperation_performingBranch, target),
-						missing.length > 0 ? 3 : 2);
-
-				if (missing.length > 0) {
-					SubProgressMonitor closeMonitor = new SubProgressMonitor(
-							pm, 1);
-					closeMonitor.beginTask("", missing.length); //$NON-NLS-1$
-					for (IProject project : missing) {
-						closeMonitor.subTask(MessageFormat.format(
-								CoreText.BranchOperation_closingMissingProject,
-								project.getName()));
-						project.close(closeMonitor);
-					}
-					closeMonitor.done();
-				}
+						CoreText.BranchOperation_performingBranch, target), 1);
 
 				CheckoutCommand co = new Git(repository).checkout();
 				co.setName(target);
@@ -142,14 +113,7 @@ public class BranchOperation extends BaseOperation {
 				if (result.getStatus() == Status.NONDELETED)
 					retryDelete(result.getUndeletedList());
 				pm.worked(1);
-
-				List<String> pathsToHandle = new ArrayList<String>();
-				pathsToHandle.addAll(co.getResult().getModifiedList());
-				pathsToHandle.addAll(co.getResult().getRemovedList());
-				pathsToHandle.addAll(co.getResult().getConflictList());
-				IProject[] refreshProjects = ProjectUtil
-						.getProjectsContaining(repository, pathsToHandle);
-				ProjectUtil.refreshValidProjects(refreshProjects, delete,
+				ProjectUtil.refreshValidProjects(validProjects, delete,
 						new SubProgressMonitor(pm, 1));
 				pm.worked(1);
 
@@ -191,76 +155,5 @@ public class BranchOperation extends BaseOperation {
 					// ignore here
 				}
 		}
-	}
-
-	/**
-	 * Compute the current projects that will be missing after the given branch
-	 * is checked out
-	 *
-	 * @param branch
-	 * @param currentProjects
-	 * @return non-null but possibly empty array of missing projects
-	 */
-	private IProject[] getMissingProjects(String branch,
-			IProject[] currentProjects) {
-		if (delete || currentProjects.length == 0)
-			return new IProject[0];
-
-		ObjectId targetTreeId;
-		ObjectId currentTreeId;
-		try {
-			targetTreeId = repository.resolve(branch + "^{tree}"); //$NON-NLS-1$
-			currentTreeId = repository.resolve(Constants.HEAD + "^{tree}"); //$NON-NLS-1$
-		} catch (IOException e) {
-			return new IProject[0];
-		}
-		if (targetTreeId == null || currentTreeId == null)
-			return new IProject[0];
-
-		Map<File, IProject> locations = new HashMap<File, IProject>();
-		for (IProject project : currentProjects) {
-			IPath location = project.getLocation();
-			if (location == null)
-				continue;
-			location = location
-					.append(IProjectDescription.DESCRIPTION_FILE_NAME);
-			locations.put(location.toFile(), project);
-		}
-
-		List<IProject> toBeClosed = new ArrayList<IProject>();
-		File root = repository.getWorkTree();
-		TreeWalk walk = new TreeWalk(repository);
-		try {
-			walk.addTree(targetTreeId);
-			walk.addTree(currentTreeId);
-			walk.addTree(new FileTreeIterator(repository));
-			walk.setRecursive(true);
-			walk.setFilter(AndTreeFilter.create(PathSuffixFilter
-					.create(IProjectDescription.DESCRIPTION_FILE_NAME),
-					TreeFilter.ANY_DIFF));
-			while (walk.next()) {
-				AbstractTreeIterator targetIter = walk.getTree(0,
-						AbstractTreeIterator.class);
-				if (targetIter != null)
-					continue;
-
-				AbstractTreeIterator currentIter = walk.getTree(1,
-						AbstractTreeIterator.class);
-				AbstractTreeIterator workingIter = walk.getTree(2,
-						AbstractTreeIterator.class);
-				if (currentIter == null || workingIter == null)
-					continue;
-
-				IProject project = locations.get(new File(root, walk
-						.getPathString()));
-				if (project != null)
-					toBeClosed.add(project);
-			}
-		} catch (IOException e) {
-			return new IProject[0];
-		} finally {
-			walk.release();
-		}
-		return toBeClosed.toArray(new IProject[toBeClosed.size()]);
 	}
 }

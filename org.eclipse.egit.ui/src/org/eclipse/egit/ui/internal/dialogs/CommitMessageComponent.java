@@ -6,8 +6,6 @@
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,7 +15,6 @@
 package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,7 +29,6 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -40,14 +36,11 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
-import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.ChangeIdUtil;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.events.ModifyEvent;
@@ -72,37 +65,6 @@ import org.eclipse.ui.PlatformUI;
  */
 public class CommitMessageComponent {
 
-	/**
-	 * Status provider for whether a commit operation should be enabled or not
-	 */
-	public static class CommitStatus implements IMessageProvider {
-
-		private static final CommitStatus OK = new CommitStatus();
-
-		private final String message;
-
-		private final int type;
-
-		private CommitStatus() {
-			message = null;
-			type = NONE;
-		}
-
-		private CommitStatus(String message, int type) {
-			this.message = message;
-			this.type = type;
-		}
-
-		public String getMessage() {
-			return message;
-		}
-
-		public int getMessageType() {
-			return type;
-		}
-	}
-
-
 	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
 	/**
@@ -126,8 +88,6 @@ public class CommitMessageComponent {
 
 	private String commitMessage = null;
 
-	private String commitMessageBeforeAmending = EMPTY_STRING;
-
 	private String previousCommitMessage = EMPTY_STRING;
 
 	private String author = null;
@@ -140,13 +100,7 @@ public class CommitMessageComponent {
 
 	private boolean amending = false;
 
-	private boolean commitAllowed = true;
-
-	private String cannotCommitMessage = null;
-
 	private boolean amendAllowed = false;
-
-	private boolean amendingCommitInRemoteBranch = false;
 
 	private boolean createChangeId = false;
 
@@ -185,8 +139,7 @@ public class CommitMessageComponent {
 	public void resetState() {
 		originalChangeId = null;
 		commitMessage = null;
-		commitMessageBeforeAmending = EMPTY_STRING;
-		previousCommitMessage = EMPTY_STRING;
+		previousCommitMessage =EMPTY_STRING;
 		author = null;
 		previousAuthor = null;
 		committer = null;
@@ -200,10 +153,7 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Returns the commit message, converting platform-specific line endings to
-	 * '\n' and hard-wrapping lines if necessary.
-	 *
-	 * @return the message
+	 * @return The message the user entered
 	 */
 	public String getCommitMessage() {
 		commitMessage = commitText.getCommitMessage();
@@ -298,25 +248,6 @@ public class CommitMessageComponent {
 		this.amending = amending;
 	}
 
-
-	/**
-	 * Set whether commit is allowed at the moment.
-	 *
-	 * @param commitAllowed
-	 */
-	public void setCommitAllowed(boolean commitAllowed) {
-		this.commitAllowed = commitAllowed;
-	}
-
-	/**
-	 * Set the message to be shown about why the commit is not allowed.
-	 *
-	 * @param cannotCommitMessage
-	 */
-	public void setCannotCommitMessage(String cannotCommitMessage) {
-		this.cannotCommitMessage = cannotCommitMessage;
-	}
-
 	/**
 	 * Set whether the previous commit may be amended
 	 *
@@ -324,7 +255,6 @@ public class CommitMessageComponent {
 	 */
 	public void setAmendAllowed(boolean amendAllowed) {
 		this.amendAllowed = amendAllowed;
-		commitMessageBeforeAmending = EMPTY_STRING;
 	}
 
 	/**
@@ -335,12 +265,9 @@ public class CommitMessageComponent {
 		if (!selection) {
 			originalChangeId = null;
 			authorText.setText(author);
-			commitText.setText(commitMessageBeforeAmending);
-			commitMessageBeforeAmending = EMPTY_STRING;
 		} else {
 			getHeadCommitInfo();
 			saveOriginalChangeId();
-			commitMessageBeforeAmending = commitText.getText();
 			commitText.setText(previousCommitMessage);
 			if (previousAuthor != null)
 				authorText.setText(previousAuthor);
@@ -359,7 +286,7 @@ public class CommitMessageComponent {
 	 *
 	 */
 	public void updateStateFromUI() {
-		commitMessage = commitText.getText();
+		commitMessage = commitText.getCommitMessage();
 		author = authorText.getText().trim();
 		committer = committerText.getText().trim();
 	}
@@ -398,42 +325,27 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Get the status of whether the commit operation should be enabled or
-	 * disabled.
-	 * <p>
-	 * This method checks the current state of the widgets and must always be
-	 * called from the UI-thread.
-	 * <p>
-	 * The returned status includes a message and type denoting why committing
-	 * cannot be completed.
+	 * Get an informational message about the state of the commit message
+	 * component input. This method checks the current state of the widgets and
+	 * must always be called from the UI-thread.
 	 *
-	 * @return non-null commit status
+	 * @return information message or null if none
 	 */
-	public CommitStatus getStatus() {
-		if (!commitAllowed)
-			return new CommitStatus(cannotCommitMessage, IMessageProvider.ERROR);
+	public String getMessage() {
+		if (commitText.getText().trim().length() == 0)
+			return UIText.CommitDialog_Message;
 
 		String authorValue = authorText.getText();
 		if (authorValue.length() == 0
 				|| RawParseUtils.parsePersonIdent(authorValue) == null)
-			return new CommitStatus(
-					UIText.CommitMessageComponent_MessageInvalidAuthor,
-					IMessageProvider.ERROR);
+			return UIText.CommitMessageComponent_MessageInvalidAuthor;
 
 		String committerValue = committerText.getText();
 		if (committerValue.length() == 0
-				|| RawParseUtils.parsePersonIdent(committerValue) == null) {
-			return new CommitStatus(
-					UIText.CommitMessageComponent_MessageInvalidCommitter,
-					IMessageProvider.ERROR);
-		}
+				|| RawParseUtils.parsePersonIdent(committerValue) == null)
+			return UIText.CommitMessageComponent_MessageInvalidCommitter;
 
-		if (amending && amendingCommitInRemoteBranch)
-			return new CommitStatus(
-					UIText.CommitMessageComponent_AmendingCommitInRemoteBranch,
-					IMessageProvider.WARNING);
-
-		return CommitStatus.OK;
+		return null;
 	}
 
 	/**
@@ -567,23 +479,8 @@ public class CommitMessageComponent {
 
 	private void getHeadCommitInfo() {
 		CommitInfo headCommitInfo = CommitHelper.getHeadCommitInfo(repository);
-		RevCommit previousCommit = headCommitInfo.getCommit();
-
-		amendingCommitInRemoteBranch = isContainedInAnyRemoteBranch(previousCommit);
 		previousCommitMessage = headCommitInfo.getCommitMessage();
 		previousAuthor = headCommitInfo.getAuthor();
-	}
-
-	private boolean isContainedInAnyRemoteBranch(RevCommit commit) {
-		try {
-			Collection<Ref> refs = repository.getRefDatabase().getRefs(
-					Constants.R_REMOTES).values();
-			return RevUtils.isContainedInAnyRef(repository, commit, refs);
-		} catch (IOException e) {
-			// The result only affects a warning, so pretend there was no
-			// problem.
-			return false;
-		}
 	}
 
 	private String getSafeString(String string) {
@@ -852,4 +749,5 @@ public class CommitMessageComponent {
 	public ObjectId getHeadCommit() {
 		return headCommitId;
 	}
+
 }

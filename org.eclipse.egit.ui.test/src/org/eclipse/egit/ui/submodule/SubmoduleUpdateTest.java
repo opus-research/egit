@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2012 GitHub Inc and others.
+ *  Copyright (c) 2012 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -44,7 +44,7 @@ public class SubmoduleUpdateTest extends GitRepositoriesViewTestBase {
 
 	private static final String UPDATE_SUBMODULE_CONTEXT_MENU_LABEL = "SubmoduleUpdateCommand.label";
 
-	private File repositoryFile;
+	private static File repositoryFile;
 
 	@Before
 	public void before() throws Exception {
@@ -88,7 +88,7 @@ public class SubmoduleUpdateTest extends GitRepositoriesViewTestBase {
 				.expandNode(
 						UIText.RepositoriesViewLabelProvider_SubmodulesNodeText)
 				.select();
-		ContextMenuHelper.clickContextMenuSync(tree, myUtil
+		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue(UPDATE_SUBMODULE_CONTEXT_MENU_LABEL));
 		TestUtil.joinJobs(JobFamilies.SUBMODULE_UPDATE);
 		refreshAndWait();

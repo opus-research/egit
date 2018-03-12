@@ -21,6 +21,7 @@ import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -41,8 +42,10 @@ import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectIdSubclassMap;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -50,7 +53,6 @@ import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.revwalk.RevWalkUtils;
 import org.eclipse.jgit.util.io.SafeBufferedOutputStream;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -169,8 +171,7 @@ public class CommitInfoBuilder {
 		}
 
 		for (int i = 0; i < commit.getParentCount(); i++) {
-			final SWTCommit p = (SWTCommit)commit.getParent(i);
-			p.parseBody();
+			final RevCommit p = commit.getParent(i);
 			d.append(UIText.CommitMessageViewer_parent);
 			d.append(": "); //$NON-NLS-1$
 			addLink(d, styles, p);
@@ -181,8 +182,7 @@ public class CommitInfoBuilder {
 		}
 
 		for (int i = 0; i < commit.getChildCount(); i++) {
-			final SWTCommit p = (SWTCommit)commit.getChild(i);
-			p.parseBody();
+			final RevCommit p = commit.getChild(i);
 			d.append(UIText.CommitMessageViewer_child);
 			d.append(": "); //$NON-NLS-1$
 			addLink(d, styles, p);
@@ -192,15 +192,15 @@ public class CommitInfoBuilder {
 			d.append(LF);
 		}
 
-		try {
-			List<Ref> branches = getBranches(commit, allRefs, db);
-			if (!branches.isEmpty()) {
-				d.append(UIText.CommitMessageViewer_branches);
-				d.append(": "); //$NON-NLS-1$
-				int count = 0;
-				for (Iterator<Ref> i = branches.iterator(); i.hasNext();) {
-					Ref head = i.next();
-					RevCommit p;
+		List<Ref> branches = getBranches(allRefs);
+		if (!branches.isEmpty()) {
+			d.append(UIText.CommitMessageViewer_branches);
+			d.append(": "); //$NON-NLS-1$
+			int count = 0;
+			for (Iterator<Ref> i = branches.iterator(); i.hasNext();) {
+				Ref head = i.next();
+				RevCommit p;
+				try {
 					p = new RevWalk(db).parseCommit(head.getObjectId());
 					addLink(d, formatHeadRef(head), styles, p);
 					if (i.hasNext()) {
@@ -211,11 +211,16 @@ public class CommitInfoBuilder {
 							break;
 						}
 					}
+				} catch (MissingObjectException e) {
+					Activator.logError(e.getMessage(), e);
+				} catch (IncorrectObjectTypeException e) {
+					Activator.logError(e.getMessage(), e);
+				} catch (IOException e) {
+					Activator.logError(e.getMessage(), e);
 				}
-				d.append(LF);
+
 			}
-		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
+			d.append(LF);
 		}
 
 		String tagsString = getTagsString();
@@ -307,26 +312,56 @@ public class CommitInfoBuilder {
 		addLink(d, to.getId().name(), styles, to);
 	}
 
-	/**
-	 * @param commit
-	 * @param allRefs
-	 * @param db
+	/*
 	 * @return List of heads from those current commit is reachable
-	 * @throws MissingObjectException
-	 * @throws IncorrectObjectTypeException
-	 * @throws IOException
 	 */
-	private static List<Ref> getBranches(RevCommit commit,
-			Collection<Ref> allRefs, Repository db)
-			throws MissingObjectException, IncorrectObjectTypeException,
-			IOException {
+	private List<Ref> getBranches(Collection<Ref> allRefs) {
 		RevWalk revWalk = new RevWalk(db);
+		List<Ref> result = new ArrayList<Ref>();
+
 		try {
-			revWalk.setRetainBody(false);
-			return RevWalkUtils.findBranchesReachableFrom(commit, revWalk, allRefs);
-		} finally {
+			// searches from branches can be cut off early if any parent of the
+			// search-for commit is found. This is quite likely, so optimize for this.
+			revWalk.markStart(Arrays.asList(commit.getParents()));
+			ObjectIdSubclassMap<ObjectId> cutOff = new ObjectIdSubclassMap<ObjectId>();
+
+			final int SKEW = 24*3600; // one day clock skew
+
+			for (Ref ref : allRefs) {
+				RevCommit headCommit = revWalk.parseCommit(ref.getObjectId());
+
+				// if commit is in the ref branch, then the tip of ref should be
+				// newer than the commit we are looking for. Allow for a large
+				// clock skew.
+				if (headCommit.getCommitTime() + SKEW < commit.getCommitTime())
+					continue;
+
+				List<ObjectId> maybeCutOff = new ArrayList<ObjectId>(cutOff.size()); // guess rough size
+				revWalk.resetRetain();
+				revWalk.markStart(headCommit);
+				RevCommit current;
+				Ref found = null;
+				while ((current = revWalk.next()) != null) {
+					if (AnyObjectId.equals(current, commit)) {
+						found = ref;
+						break;
+					}
+					if (cutOff.contains(current))
+						break;
+					maybeCutOff.add(current.toObjectId());
+				}
+				if (found != null)
+					result.add(ref);
+				else
+					for (ObjectId id : maybeCutOff)
+						cutOff.addIfAbsent(id);
+
+			}
 			revWalk.dispose();
+		} catch (IOException e) {
+			// skip exception
 		}
+		return result;
 	}
 
 	private String formatHeadRef(Ref ref) {
@@ -533,7 +568,7 @@ public class CommitInfoBuilder {
 		if (monitor.isCanceled())
 			throw new OperationCanceledException();
 		RevWalk revWalk = new RevWalk(db);
-		revWalk.setRetainBody(false);
+
 		Map<String, Ref> tagsMap = db.getTags();
 		Ref tagRef = null;
 

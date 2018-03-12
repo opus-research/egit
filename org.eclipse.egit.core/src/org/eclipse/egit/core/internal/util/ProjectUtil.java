@@ -3,7 +3,6 @@
  * Copyright (C) 2007, Martin Oberhuber (martin.oberhuber@windriver.com)
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,19 +14,14 @@ package org.eclipse.egit.core.internal.util;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -79,8 +73,9 @@ public class ProjectUtil {
 			if (projectFile.exists()) {
 				final File file = p.getLocation().toFile();
 				if (file.getAbsolutePath().startsWith(
-						parentFile.getAbsolutePath()))
+						parentFile.getAbsolutePath())) {
 					result.add(p);
+				}
 			}
 		}
 		return result.toArray(new IProject[result.size()]);
@@ -164,12 +159,8 @@ public class ProjectUtil {
 	 * @param monitor
 	 * @throws CoreException
 	 */
-	static void closeMissingProject(IProject p, File projectFile,
+	private static void closeMissingProject(IProject p, File projectFile,
 			IProgressMonitor monitor) throws CoreException {
-		// Don't close/delete if already closed
-		if (p.exists() && !p.isOpen())
-			return;
-
 		// Create temporary .project file so it can be closed
 		boolean closeFailed = false;
 		File projectRoot = projectFile.getParentFile();
@@ -245,96 +236,23 @@ public class ProjectUtil {
 		List<IProject> result = new ArrayList<IProject>();
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
-		for (IProject project : projects)
+		for (IProject project : projects) {
 			if (project.isAccessible()) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(project);
 				if (mapping != null && mapping.getRepository() == repository)
 					result.add(project);
 			}
-		return result.toArray(new IProject[result.size()]);
-	}
-
-	/**
-	 * The method returns all projects containing at least one of the given
-	 * paths.
-	 *
-	 * @param repository
-	 *            the repository who's working tree is used as base for lookup
-	 * @param fileList
-	 *            the list of files/directories to lookup
-	 * @return valid projects containing one of the paths
-	 * @throws CoreException
-	 */
-	public static IProject[] getProjectsContaining(Repository repository,
-			Collection<String> fileList) throws CoreException {
-		Set<IProject> result = new LinkedHashSet<IProject>();
-		File workTree = repository.getWorkTree();
-
-		for (String member : fileList) {
-			File file = new File(workTree, member);
-
-			IContainer container = findContainer(file);
-			if (container instanceof IProject)
-				result.add((IProject) container);
 		}
-
 		return result.toArray(new IProject[result.size()]);
-	}
-
-	/**
-	 * Looks up the IContainer containing the given file, if available. This is
-	 * done by path comparison, which is very cheap compared to
-	 * IWorkspaceRoot.findContainersForLocationURI()
-	 *
-	 * @param file
-	 *            the path to lookup a container for
-	 * @return the IContainer (either IProject or IWorkspaceRoot) or
-	 *         <code>null</code> if not found.
-	 */
-	public static IContainer findContainer(File file) {
-		String absFile = file.getAbsolutePath();
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IProject[] allProjects = root.getProjects();
-
-		// Sorting makes us look into nested projects first
-		Arrays.sort(allProjects, new Comparator<IProject>() {
-			public int compare(IProject o1, IProject o2) {
-				return -o1.getLocation().toFile()
-						.compareTo(o2.getLocation().toFile());
-			}
-
-		});
-
-		for (IProject prj : allProjects)
-			if (checkContainerMatch(prj, absFile))
-				return prj;
-
-		if (checkContainerMatch(root, absFile))
-			return root;
-
-		return null;
-	}
-
-	private static boolean checkContainerMatch(IContainer container,
-			String absFile) {
-		String absPrj = container.getLocation().toFile().getAbsolutePath();
-		if (absPrj.equals(absFile))
-			return true;
-		if (absPrj.length() < absFile.length()) {
-			char sepChar = absFile.charAt(absPrj.length());
-			if (sepChar == File.separatorChar && absFile.startsWith(absPrj))
-				return true;
-		}
-		return false;
 	}
 
 	/**
 	 * Find directories containing .project files recursively starting at given
 	 * directory
 	 *
-	 * @param files the collection to add the found projects to
-	 * @param directory where to search for project files
+	 * @param files
+	 * @param directory
 	 * @param visistedDirs
 	 * @param monitor
 	 * @return true if projects files found, false otherwise
@@ -380,9 +298,12 @@ public class ProjectUtil {
 			File file = contents[i];
 			if (file.isFile() && file.getName().equals(dotProject)) {
 				files.add(file);
+				// don't search sub-directories since we can't have nested
+				// projects
+				return true;
 			}
 		}
-		// recurse into sub-directories (even when project was found above, for nested projects)
+		// no project description found, so recurse into sub-directories
 		for (int i = 0; i < contents.length; i++) {
 			// Skip non-directories
 			if (!contents[i].isDirectory())
@@ -392,9 +313,10 @@ public class ProjectUtil {
 				continue;
 			try {
 				String canonicalPath = contents[i].getCanonicalPath();
-				if (!directoriesVisited.add(canonicalPath))
+				if (!directoriesVisited.add(canonicalPath)) {
 					// already been here --> do not recurse
 					continue;
+				}
 			} catch (IOException exception) {
 				Activator.logError(exception.getLocalizedMessage(), exception);
 

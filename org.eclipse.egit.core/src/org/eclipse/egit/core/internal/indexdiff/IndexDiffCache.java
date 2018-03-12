@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,9 +13,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
 
@@ -48,8 +46,6 @@ public class IndexDiffCache {
 			entry = entries.get(repository);
 			if (entry != null)
 				return entry;
-			if (repository.isBare())
-				return null;
 			entry = new IndexDiffCacheEntry(repository);
 			entries.put(repository, entry);
 		}
@@ -103,15 +99,6 @@ public class IndexDiffCache {
 						"Exception occured in an IndexDiffChangedListener", e); //$NON-NLS-1$
 			}
 		}
-	}
-
-	/**
-	 * Used by {@link Activator}
-	 */
-	public void dispose() {
-		for (IndexDiffCacheEntry entry : entries.values())
-			entry.dispose();
-		Job.getJobManager().cancel(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 	}
 
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,9 +19,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
-import org.eclipse.core.commands.State;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -38,9 +36,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
-import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand;
 import org.eclipse.egit.ui.test.Eclipse;
-import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
@@ -51,8 +47,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
 import org.junit.After;
 
 /**
@@ -77,7 +71,7 @@ public abstract class GitRepositoriesViewTestBase extends
 	 * remove all configured repositories from the view
 	 */
 	protected static void clearView() {
-		InstanceScope.INSTANCE.getNode(Activator.getPluginId()).remove(
+		new InstanceScope().getNode(Activator.getPluginId()).remove(
 				RepositoryUtil.PREFS_DIRECTORIES);
 	}
 
@@ -214,15 +208,6 @@ public abstract class GitRepositoriesViewTestBase extends
 		updateRef.update();
 	}
 
-	protected static void setVerboseBranchMode(boolean state) {
-		ICommandService srv = (ICommandService) PlatformUI.getWorkbench()
-				.getService(ICommandService.class);
-		State verboseBranchModeState = srv.getCommand(
-				ToggleBranchCommitCommand.ID).getState(
-				ToggleBranchCommitCommand.TOGGLE_STATE);
-		verboseBranchModeState.setValue(Boolean.valueOf(state));
-	}
-
 	@After
 	public void afterBase() {
 		new Eclipse().reset();
@@ -233,7 +218,6 @@ public abstract class GitRepositoriesViewTestBase extends
 			viewbot = myRepoViewUtil.openRepositoriesView(bot);
 		} else
 			viewbot.setFocus();
-		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
 		return viewbot;
 	}
 
@@ -259,9 +243,8 @@ public abstract class GitRepositoriesViewTestBase extends
 	protected void refreshAndWait() throws Exception {
 		RepositoriesView view = (RepositoriesView) getOrOpenView()
 				.getReference().getPart(false);
-		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.REPO_VIEW_REFRESH, 60, TimeUnit.SECONDS);
 		view.refresh();
-		jobJoiner.join();
+		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
 	}
 
 	@SuppressWarnings("boxing")

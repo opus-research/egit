@@ -13,6 +13,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -65,7 +66,7 @@ public class TagOperationTest extends DualRepositoryTestCase {
 						repository1
 								.track(EFS.getStore(resource.getLocationURI())
 										.toLocalFile(0, null));
-					} catch (Exception e) {
+					} catch (IOException e) {
 						throw new CoreException(Activator.error(e.getMessage(),
 								e));
 					}

@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,14 +12,12 @@ package org.eclipse.egit.core.test;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
@@ -30,7 +27,6 @@ import org.eclipse.egit.core.op.DisconnectProviderOperation;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.api.errors.NoHeadException;
@@ -47,7 +43,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.FileUtils;
 
@@ -115,12 +110,15 @@ public class TestRepository {
 	 *            commit message
 	 * @return commit object
 	 * @throws IOException
+	 * @throws NoHeadException
+	 * @throws NoMessageException
+	 * @throws ConcurrentRefUpdateException
 	 * @throws JGitInternalException
-	 * @throws GitAPIException
-	 * @throws NoFilepatternException
+	 * @throws WrongRepositoryStateException
 	 */
 	public RevCommit createInitialCommit(String message) throws IOException,
-			JGitInternalException, NoFilepatternException, GitAPIException {
+			NoHeadException, NoMessageException, ConcurrentRefUpdateException,
+			JGitInternalException, WrongRepositoryStateException {
 		String repoPath = repository.getWorkTree().getAbsolutePath();
 		File file = new File(repoPath, "dummy");
 		if (!file.exists())
@@ -217,13 +215,12 @@ public class TestRepository {
 	 * @throws UnmergedPathException
 	 * @throws ConcurrentRefUpdateException
 	 * @throws JGitInternalException
-	 * @throws GitAPIException
 	 * @throws WrongRepositoryStateException
 	 */
 	public RevCommit commit(String message) throws NoHeadException,
 			NoMessageException, UnmergedPathException,
 			ConcurrentRefUpdateException, JGitInternalException,
-			WrongRepositoryStateException, GitAPIException {
+			WrongRepositoryStateException {
 		Git git = new Git(repository);
 		CommitCommand commitCommand = git.commit();
 		commitCommand.setAuthor("J. Git", "j.git@egit.org");
@@ -237,26 +234,13 @@ public class TestRepository {
 	 *
 	 * @param file
 	 * @throws IOException
-	 * @throws GitAPIException
-	 * @throws NoFilepatternException
 	 */
-	public void track(File file) throws IOException, NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(new Path(file.getPath())
-				.toString());
-		new Git(repository).add().addFilepattern(repoPath).call();
-	}
-	/**
-	 * Removes file from version control
-	 *
-	 * @param file
-	 * @throws IOException
-	 */
-	public void untrack(File file) throws IOException {
+	public void track(File file) throws IOException {
 		String repoPath = getRepoRelativePath(new Path(file.getPath())
 				.toString());
 		try {
-			new Git(repository).rm().addFilepattern(repoPath).call();
-		} catch (GitAPIException e) {
+			new Git(repository).add().addFilepattern(repoPath).call();
+		} catch (NoFilepatternException e) {
 			throw new IOException(e.getMessage());
 		}
 	}
@@ -325,17 +309,19 @@ public class TestRepository {
 
 
 	/**
-	 * Adds the given resource to the index
+	 * Adds the given file to the index
 	 *
-	 * @param resource
+	 * @param file
 	 * @throws CoreException
 	 * @throws IOException
-	 * @throws GitAPIException
-	 * @throws NoFilepatternException
 	 */
-	public void addToIndex(IResource resource) throws CoreException, IOException, NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(resource.getLocation().toOSString());
-		new Git(repository).add().addFilepattern(repoPath).call();
+	public void addToIndex(IFile file) throws CoreException, IOException {
+		String repoPath = getRepoRelativePath(file.getLocation().toOSString());
+		try {
+			new Git(repository).add().addFilepattern(repoPath).call();
+		} catch (NoFilepatternException e) {
+			throw new IOException(e.getMessage());
+		}
 	}
 
 	/**
@@ -419,18 +405,18 @@ public class TestRepository {
 		}
 	}
 
-	public boolean inIndex(String absolutePath) throws IOException {
-		return getDirCacheEntry(absolutePath) != null;
+	public boolean inIndex(String path) throws IOException {
+		return getDirCacheEntry(path) != null;
 	}
 
-	public boolean removedFromIndex(String absolutePath) throws IOException {
-		DirCacheEntry dc = getDirCacheEntry(absolutePath);
+	public boolean removedFromIndex(String path) throws IOException {
+		DirCacheEntry dc = getDirCacheEntry(path);
 		if (dc == null)
 			return true;
 
 		Ref ref = repository.getRef(Constants.HEAD);
 		RevCommit c = new RevWalk(repository).parseCommit(ref.getObjectId());
-		TreeWalk tw = TreeWalk.forPath(repository, getRepoRelativePath(absolutePath), c.getTree());
+		TreeWalk tw = TreeWalk.forPath(repository, path, c.getTree());
 
 		return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
 	}
@@ -472,10 +458,8 @@ public class TestRepository {
 	}
 
 	public void dispose() {
-		if (repository != null) {
-			repository.close();
-			repository = null;
-		}
+		repository.close();
+		repository = null;
 	}
 
 	/**
@@ -502,10 +486,6 @@ public class TestRepository {
 		DisconnectProviderOperation disconnect = new DisconnectProviderOperation(
 				projects);
 		disconnect.execute(null);
-	}
-
-	public URIish getUri() throws URISyntaxException {
-		return new URIish("file:///" + repository.getDirectory().toString());
 	}
 
 	private DirCacheEntry getDirCacheEntry(String path) throws IOException {
