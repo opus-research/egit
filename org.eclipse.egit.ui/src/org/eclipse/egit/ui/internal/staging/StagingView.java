@@ -32,7 +32,6 @@ import org.eclipse.core.commands.operations.IUndoContext;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -76,6 +75,7 @@ import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitJob;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
+import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
@@ -1059,6 +1059,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 			@Override
 			public void updateChangeIdToggleSelection(boolean selection) {
 				addChangeIdAction.setChecked(selection);
+				commitAndPushButton
+						.setImage(selection ? getImage(UIIcons.GERRIT) : null);
 			}
 
 			@Override
@@ -2433,12 +2435,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 				if (monitor.isCanceled()) {
 					return Status.CANCEL_STATUS;
 				}
-				Repository newRep = getRepositoryOrNestedSubmoduleRepository(resource);
-				if (newRep != null && newRep != currentRepository) {
-					if (monitor.isCanceled()) {
-						return Status.CANCEL_STATUS;
+				RepositoryMapping mapping = RepositoryMapping
+						.getMapping(resource);
+				if (mapping != null) {
+					Repository newRep = mapping.getRepository();
+					if (newRep != null && newRep != currentRepository) {
+						if (monitor.isCanceled()) {
+							return Status.CANCEL_STATUS;
+						}
+						reload(newRep);
 					}
-					reload(newRep);
 				}
 				return Status.OK_STATUS;
 			}
@@ -2455,20 +2461,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		};
 		job.setSystem(true);
 		schedule(job, false);
-	}
-
-	private static Repository getRepositoryOrNestedSubmoduleRepository(
-			IResource resource) {
-		IProject project = resource.getProject();
-		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-		if (mapping == null) {
-			return null;
-		}
-		Repository repo = mapping.getSubmoduleRepository(resource);
-		if (repo == null) {
-			repo = mapping.getRepository();
-		}
-		return repo;
 	}
 
 	private void stage(IStructuredSelection selection) {
@@ -3206,10 +3198,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 		if (amendPreviousCommitAction.isChecked())
 			commitOperation.setAmending(true);
-		commitOperation.setComputeChangeId(addChangeIdAction.isChecked());
+		final boolean gerritMode = addChangeIdAction.isChecked();
+		commitOperation.setComputeChangeId(gerritMode);
+
+		PushMode pushMode = null;
+		if (pushUpstream) {
+			pushMode = gerritMode ? PushMode.GERRIT : PushMode.UPSTREAM;
+		}
 		final Job commitJob = new CommitJob(currentRepository, commitOperation)
-			.setOpenCommitEditor(openNewCommitsAction.isChecked())
-			.setPushUpstream(pushUpstream);
+				.setOpenCommitEditor(openNewCommitsAction.isChecked())
+				.setPushUpstream(pushMode);
 
 		// don't allow to do anything as long as commit is in progress
 		enableAllWidgets(false);
