@@ -169,20 +169,18 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			allRemotes = new ArrayList<RemoteConfig>();
 		}
 
-		// RemoteConfig defaultConfig = null;
+		RemoteConfig defaultConfig = null;
 		RemoteConfig configuredConfig = null;
 		for (RemoteConfig config : allRemotes) {
-			// if (config.getName().equals(Constants.DEFAULT_REMOTE_NAME))
-			// defaultConfig = config;
+			if (config.getName().equals(Constants.DEFAULT_REMOTE_NAME))
+				defaultConfig = config;
 			if (remoteName != null && config.getName().equals(remoteName))
 				configuredConfig = config;
 		}
 
-		return configuredConfig;
-		// TODO: Check why the default config case was here.
-		// RemoteConfig configToUse = configuredConfig != null ?
-		// configuredConfig : defaultConfig;
-		// return configToUse;
+		RemoteConfig configToUse = configuredConfig != null ? configuredConfig
+				: defaultConfig;
+		return configToUse;
 	}
 
 	/**

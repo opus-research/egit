@@ -18,7 +18,7 @@ import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.ObjectId;
@@ -27,7 +27,7 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 
 /** An {@link IFileRevision} for the version in the Git index. */
-class IndexFileRevision extends GitFileRevision {
+public class IndexFileRevision extends GitFileRevision {
 
 	// This is to maintain compatibility with the old behavior
 	private static final int FIRST_AVAILABLE = -1;
