@@ -16,7 +16,6 @@ import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
@@ -148,7 +147,7 @@ public class FilteredBranchesWidget {
 
 	@SuppressWarnings("unchecked") // conversion to conform to List<Ref>
 	List<Ref> getSelection() {
-		return ((IStructuredSelection) branchesViewer.getSelection()).toList();
+		return branchesViewer.getStructuredSelection().toList();
 	}
 
 	TreeViewer getBranchesList() {
