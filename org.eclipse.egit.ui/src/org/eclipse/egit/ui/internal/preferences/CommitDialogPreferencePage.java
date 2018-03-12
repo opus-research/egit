@@ -15,7 +15,6 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -74,18 +73,6 @@ public class CommitDialogPreferencePage extends FieldEditorPreferencePage
 						UIText.CommitDialogPreferencePage_signedOffByTooltip);
 		addField(signedOffBy);
 		updateMargins(footersGroup);
-
-		IntegerFieldEditor historySize = new IntegerFieldEditor(
-				UIPreferences.COMMIT_DIALOG_HISTORY_SIZE,
-				UIText.CommitDialogPreferencePage_commitMessageHistory, main);
-		addField(historySize);
-
-		BooleanFieldEditor includeUntracked = new BooleanFieldEditor(
-				UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED,
-				UIText.CommitDialogPreferencePage_includeUntrackedFiles, main);
-		includeUntracked.getDescriptionControl(main).setToolTipText(
-				UIText.CommitDialogPreferencePage_includeUntrackedFilesTooltip);
-		addField(includeUntracked);
 	}
 
 	private void updateMargins(Group group) {

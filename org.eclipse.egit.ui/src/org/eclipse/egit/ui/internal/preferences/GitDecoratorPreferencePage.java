@@ -67,10 +67,14 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Scale;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
@@ -290,6 +294,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private Button recomputeAncestorDecorations;
 
+		private Scale containerRecurseLimit;
+
 		public GeneralTab(TabFolder parent) {
 			Composite composite = SWTUtils.createHVFillComposite(parent,
 					SWTUtils.MARGINS_DEFAULT, 1);
@@ -301,7 +307,14 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			recomputeAncestorDecorations
 					.setToolTipText(UIText.DecoratorPreferencesPage_recomputeAncestorDecorationsTooltip);
 
+			SWTUtils.createLabel(composite,
+					UIText.DecoratorPreferencesPage_computeRecursiveLimit);
+			containerRecurseLimit = createLabeledScaleControl(composite);
+			containerRecurseLimit
+					.setToolTipText(UIText.DecoratorPreferencesPage_computeRecursiveLimitTooltip);
+
 			recomputeAncestorDecorations.addSelectionListener(this);
+			containerRecurseLimit.addSelectionListener(this);
 
 			final TabItem tabItem = new TabItem(parent, SWT.NONE);
 			tabItem.setText(UIText.DecoratorPreferencesPage_generalTabFolder);
@@ -311,17 +324,23 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		public void initializeValues(IPreferenceStore store) {
 			recomputeAncestorDecorations.setSelection(store
 					.getBoolean(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS));
+			containerRecurseLimit.setSelection(store
+					.getInt(UIPreferences.DECORATOR_RECURSIVE_LIMIT));
 		}
 
 		public void performDefaults(IPreferenceStore store) {
 			recomputeAncestorDecorations
 					.setSelection(store
 							.getDefaultBoolean(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS));
+			containerRecurseLimit.setSelection(store
+					.getDefaultInt(UIPreferences.DECORATOR_RECURSIVE_LIMIT));
 		}
 
 		public void performOk(IPreferenceStore store) {
 			store.setValue(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS,
 					recomputeAncestorDecorations.getSelection());
+			store.setValue(UIPreferences.DECORATOR_RECURSIVE_LIMIT,
+					containerRecurseLimit.getSelection());
 		}
 
 		public void widgetSelected(SelectionEvent e) {
@@ -333,6 +352,51 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			// Not interesting for us
 		}
 
+		private Scale createLabeledScaleControl(Composite parent) {
+
+			final int[] values = new int[] { 0, 1, 2, 3, 5, 10, 15, 20, 50,
+					100, Integer.MAX_VALUE };
+
+			Composite composite = SWTUtils.createHVFillComposite(parent,
+					SWTUtils.MARGINS_DEFAULT);
+
+			Composite labels = SWTUtils.createHVFillComposite(composite,
+					SWTUtils.MARGINS_NONE, values.length);
+			GridLayout labelsLayout = (GridLayout) labels.getLayout();
+			labelsLayout.makeColumnsEqualWidth = true;
+			labelsLayout.horizontalSpacing = 0;
+			labels.setLayoutData(SWTUtils.createGridData(-1, -1, SWT.FILL,
+					SWT.FILL, false, false));
+
+			for (int i = 0; i < values.length; ++i) {
+				Label label = SWTUtils.createLabel(labels, "" + values[i]); //$NON-NLS-1$
+				if (i == 0) {
+					label.setAlignment(SWT.LEFT);
+					label.setText("Off"); //$NON-NLS-1$
+				} else if (i == values.length - 1) {
+					label.setAlignment(SWT.RIGHT);
+					label.setText("Inf."); //$NON-NLS-1$
+				} else {
+					label.setAlignment(SWT.CENTER);
+				}
+			}
+
+			final Scale scale = new Scale(composite, SWT.HORIZONTAL);
+			scale.setLayoutData(SWTUtils.createHFillGridData());
+			scale.setMaximum(values.length - 1);
+			scale.setMinimum(0);
+			scale.setIncrement(1);
+			scale.setPageIncrement(1);
+
+			scale.addListener(SWT.Selection, new Listener() {
+				public void handleEvent(Event event) {
+					// Workaround for GTK treating the slider as stepless
+					scale.setSelection(scale.getSelection());
+				}
+			});
+
+			return scale;
+		}
 	}
 
 	/**

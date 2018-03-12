@@ -11,12 +11,10 @@
  *******************************************************************************/
 package org.eclipse.egit.internal.mylyn.ui.commit;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.runtime.IAdapterFactory;
@@ -48,7 +46,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 
 	@SuppressWarnings({ "rawtypes" })
 	public Class[] getAdapterList() {
-		return Arrays.copyOf(ADAPTER_TYPES, ADAPTER_TYPES.length);
+		return ADAPTER_TYPES;
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -90,9 +88,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 					message = revCommit.getFullMessage();
 					timestamp = (long)revCommit.getCommitTime() * 1000;
 				}
-			} catch (IOException e) {
-				continue;
-			} catch (RuntimeException e) {
+			} catch (Exception e) {
 				continue;
 			}
 

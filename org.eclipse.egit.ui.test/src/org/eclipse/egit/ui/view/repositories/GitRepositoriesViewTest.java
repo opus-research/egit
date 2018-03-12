@@ -86,7 +86,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTreeItem item = myRepoViewUtil.getRootItem(tree, repositoryFile)
 				.expand();
 		SWTBotTreeItem[] children = item.getItems();
-		assertEquals("Wrong number of children", 6, children.length);
+		assertEquals("Wrong number of children", 5, children.length);
 	}
 
 	/**
@@ -195,9 +195,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		SWTBotTreeItem item = myRepoViewUtil.getRootItem(tree, repositoryFile);
 		item.select();
-		ContextMenuHelper.clickContextMenu(tree,
-				myUtil.getPluginLocalizedValue("ShowIn"),
-				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
+		ContextMenuHelper.clickContextMenu(tree, myUtil
+				.getPluginLocalizedValue("OpenPropertiesCommand"));
 		SWTBotView propertieView = bot.viewById("org.eclipse.ui.views.PropertySheet");
 		assertTrue(propertieView.isActive());
 	}
