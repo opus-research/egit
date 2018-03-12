@@ -60,11 +60,11 @@ public class RebaseCurrentHandler extends AbstractHistoryCommandHandler {
 				jobname, UIText.RebaseCurrentRefCommand_RebaseCanceledMessage) {
 			@Override
 			protected RebaseOperation createRebaseOperation(
-					ExecutionEvent event2) throws ExecutionException {
-				return new RebaseOperation(repository, ref);
+					Repository repository2) throws ExecutionException {
+				return new RebaseOperation(repository2, ref);
 			}
 		};
-		rebaseCurrentRef.execute(event);
+		rebaseCurrentRef.execute(repository);
 		return null;
 	}
 

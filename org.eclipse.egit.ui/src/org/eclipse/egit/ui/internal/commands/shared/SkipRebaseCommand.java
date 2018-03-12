@@ -10,10 +10,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commands.shared;
 
-import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Implements "Skip Rebase"
@@ -28,7 +28,7 @@ public class SkipRebaseCommand extends AbstractRebaseCommandHandler {
 	}
 
 	@Override
-	public RebaseOperation createRebaseOperation(ExecutionEvent event) {
-		return new RebaseOperation(getRepository(event), Operation.SKIP);
+	public RebaseOperation createRebaseOperation(Repository repository) {
+		return new RebaseOperation(repository, Operation.SKIP);
 	}
 }
