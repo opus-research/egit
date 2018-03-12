@@ -1,16 +1,19 @@
 /*******************************************************************************
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- *
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Mathias Kinzler (SAP AG) - initial implementation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
@@ -37,7 +40,7 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.PlatformUI;
 
 /**
- * Push to a {@link RemoteConfig}
+ * Push operation: pushing from local repository to one or many remote ones.
  */
 public class PushConfiguredRemoteAction extends JobChangeAdapter implements
 		IEGitOperation {
@@ -177,7 +180,7 @@ public class PushConfiguredRemoteAction extends JobChangeAdapter implements
 	}
 
 	/**
-	 * Run asynchronously
+	 *
 	 */
 	public void start() {
 		String jobName = NLS.bind(
@@ -201,6 +204,6 @@ public class PushConfiguredRemoteAction extends JobChangeAdapter implements
 	}
 
 	public ISchedulingRule getSchedulingRule() {
-		return null;
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 }

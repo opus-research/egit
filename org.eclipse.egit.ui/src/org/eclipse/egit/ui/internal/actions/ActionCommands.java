@@ -32,6 +32,9 @@ public class ActionCommands {
 	/** "Compare with index" action command id */
 	public static final String COMPARE_WITH_INDEX_ACTION = "org.eclipse.egit.ui.team.CompareWithIndex"; //$NON-NLS-1$
 
+	/** "Compare with Ref" action command id */
+	public static final String COMPARE_WITH_REF_ACTION = "org.eclipse.egit.ui.team.CompareWithRef"; //$NON-NLS-1$
+
 	/** "Compare with revision" action command id */
 	public static final String COMPARE_WITH_REVISION_ACTION = "org.eclipse.egit.ui.team.CompareWithRevision"; //$NON-NLS-1$
 
@@ -49,12 +52,6 @@ public class ActionCommands {
 
 	/** "Push" action command id */
 	public static final String PUSH_ACTION = "org.eclipse.egit.ui.team.Push"; //$NON-NLS-1$
-
-	/** "Simple Push" action command id */
-	public static final String SIMPLE_PUSH_ACTION = "org.eclipse.egit.ui.team.SimplePush"; //$NON-NLS-1$
-
-	/** "Simple Fetch" action command id */
-	public static final String SIMPLE_FETCH_ACTION = "org.eclipse.egit.ui.team.SimpleFetch"; //$NON-NLS-1$
 
 	/** "Reset" action command id */
 	public static final String RESET_ACTION = "org.eclipse.egit.ui.team.Reset"; //$NON-NLS-1$
