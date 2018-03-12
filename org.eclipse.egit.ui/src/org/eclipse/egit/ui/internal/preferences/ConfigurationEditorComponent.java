@@ -650,7 +650,7 @@ public class ConfigurationEditorComponent {
 									index++));
 					}
 				}
-				children = allChildren.toArray();
+				return allChildren.toArray();
 			}
 			return children;
 		}
