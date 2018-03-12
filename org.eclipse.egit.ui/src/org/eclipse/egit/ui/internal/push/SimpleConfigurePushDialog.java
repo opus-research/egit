@@ -115,6 +115,25 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 	}
 
 	/**
+	 * @param shell
+	 * @param repository
+	 * @param remoteName
+	 *            the remote to use
+	 * @return the dialog to open, or null
+	 */
+	public static Dialog getDialog(Shell shell, Repository repository,
+			String remoteName) {
+		RemoteConfig configToUse;
+		try {
+			configToUse = new RemoteConfig(repository.getConfig(), remoteName);
+		} catch (URISyntaxException e) {
+			Activator.handleError(e.getMessage(), e, true);
+			return null;
+		}
+		return new SimpleConfigurePushDialog(shell, repository, configToUse);
+	}
+
+	/**
 	 * @param repository
 	 * @return the configured remote for the current branch if any, or null
 	 */
@@ -163,7 +182,6 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			RemoteConfig config) {
 		super(shell);
 		setHelpAvailable(false);
-		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repository = repository;
 		this.config = config;
 	}
@@ -279,8 +297,8 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		urisLabel.setText(UIText.SimpleConfigurePushDialog_PushUrisLabel);
 		GridDataFactory.fillDefaults().span(3, 1).applyTo(urisLabel);
 		uriViewer = new TableViewer(pushUriDetails, SWT.BORDER | SWT.MULTI);
-		GridDataFactory.fillDefaults().grab(true, true).span(3, 1).minSize(
-				SWT.DEFAULT, 30).applyTo(uriViewer.getTable());
+		GridDataFactory.fillDefaults().grab(true, true).span(3, 1).applyTo(
+				uriViewer.getTable());
 		uriViewer.setContentProvider(ArrayContentProvider.getInstance());
 		Button addUri = new Button(pushUriDetails, SWT.PUSH);
 		addUri.setText(UIText.SimpleConfigurePushDialog_AddPushUriButton);
@@ -364,8 +382,8 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 
 		specViewer = new TableViewer(refSpecGroup, SWT.BORDER | SWT.MULTI);
 		specViewer.setContentProvider(ArrayContentProvider.getInstance());
-		GridDataFactory.fillDefaults().span(5, 1).grab(true, true).minSize(
-				SWT.DEFAULT, 30).applyTo(specViewer.getTable());
+		GridDataFactory.fillDefaults().span(5, 1).grab(true, true).applyTo(
+				specViewer.getTable());
 		specViewer.getTable().addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
