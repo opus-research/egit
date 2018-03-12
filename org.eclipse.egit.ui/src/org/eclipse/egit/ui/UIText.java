@@ -40,6 +40,9 @@ public class UIText extends NLS {
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
+	public static String AbstractReflogCommandHandler_NoInput;
+
+	/** */
 	public static String Activator_DefaultRepoFolderIsFile;
 
 	/** */
@@ -874,9 +877,6 @@ public class UIText extends NLS {
 	public static String CompareTargetSelectionDialog_CompareTitle;
 
 	/** */
-	public static String CompareTargetSelectionDialog_CompareTitleEmptyPath;
-
-	/** */
 	public static String CompareTargetSelectionDialog_WindowTitle;
 
 	/** */
@@ -1180,13 +1180,10 @@ public class UIText extends NLS {
 	public static String ReflogView_ErrorOnOpenCommit;
 
 	/** */
-	public static String ReflogView_FromColumnHeader;
-
-	/** */
 	public static String ReflogView_MessageColumnHeader;
 
 	/** */
-	public static String ReflogView_ToColumnHeader;
+	public static String ReflogView_CommitColumnHeader;
 
 	/** */
 	public static String RefSelectionDialog_Messsage;
