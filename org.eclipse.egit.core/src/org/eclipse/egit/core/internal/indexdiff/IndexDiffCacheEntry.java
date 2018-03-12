@@ -16,8 +16,11 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -32,6 +35,7 @@ import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.events.IndexChangedListener;
 import org.eclipse.jgit.events.RefsChangedEvent;
@@ -42,6 +46,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.Team;
 
 /**
  * This class caches the {@link IndexDiff} for a given repository. The cache
@@ -50,6 +55,8 @@ import org.eclipse.osgi.util.NLS;
  *
  */
 public class IndexDiffCacheEntry {
+
+	private static final String GITIGNORE_NAME = ".gitignore"; //$NON-NLS-1$
 
 	private static final int RESOURCE_LIST_UPDATE_LIMIT = 1000;
 
@@ -67,6 +74,15 @@ public class IndexDiffCacheEntry {
 	private IResourceChangeListener resourceChangeListener;
 
 	/**
+	 * Bit-mask describing interesting changes for IResourceChangeListener
+	 * events
+	 */
+	private static int INTERESTING_CHANGES = IResourceDelta.CONTENT
+			| IResourceDelta.MOVED_FROM | IResourceDelta.MOVED_TO
+			| IResourceDelta.OPEN | IResourceDelta.REPLACED
+			| IResourceDelta.TYPE;
+
+	/**
 	 * @param repository
 	 */
 	public IndexDiffCacheEntry(Repository repository) {
@@ -74,16 +90,16 @@ public class IndexDiffCacheEntry {
 		repository.getListenerList().addIndexChangedListener(
 				new IndexChangedListener() {
 					public void onIndexChanged(IndexChangedEvent event) {
-						scheduleReloadJob("IndexChanged"); //$NON-NLS-1$
+						scheduleReloadJob();
 					}
 				});
 		repository.getListenerList().addRefsChangedListener(
 				new RefsChangedListener() {
 					public void onRefsChanged(RefsChangedEvent event) {
-						scheduleReloadJob("RefsChanged"); //$NON-NLS-1$
+						scheduleReloadJob();
 					}
 				});
-		scheduleReloadJob("IndexDiffCacheEntry construction"); //$NON-NLS-1$
+		scheduleReloadJob();
 		createResourceChangeListener();
 	}
 
@@ -112,7 +128,7 @@ public class IndexDiffCacheEntry {
 	 * Trigger a new index diff calculation manually
 	 */
 	public void refresh() {
-		scheduleReloadJob("Refresh called"); //$NON-NLS-1$
+		scheduleReloadJob();
 	}
 
 	/**
@@ -125,7 +141,7 @@ public class IndexDiffCacheEntry {
 		return indexDiffData;
 	}
 
-	private void scheduleReloadJob(final String trigger) {
+	private void scheduleReloadJob() {
 		if (reloadJob != null)
 			reloadJob.cancel();
 		if (!checkRepository())
@@ -145,8 +161,9 @@ public class IndexDiffCacheEntry {
 					indexDiffData = new IndexDiffData(result);
 					if (GitTraceLocation.INDEXDIFFCACHE.isActive()) {
 						long time = System.currentTimeMillis() - startTime;
-						StringBuilder message = new StringBuilder(
-								getTraceMessage(time));
+						StringBuilder message = new StringBuilder(NLS.bind(
+								"Updated IndexDiffData in {0} ms\n", //$NON-NLS-1$
+								new Long(time)));
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
 								message.append(indexDiffData.toString())
@@ -160,18 +177,11 @@ public class IndexDiffCacheEntry {
 								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
 								"Calculating IndexDiff failed", e); //$NON-NLS-1$
 					}
-					scheduleReloadJob("Recalculation due to Exception in reload job"); //$NON-NLS-1$
+					scheduleReloadJob();
 					return Status.OK_STATUS;
 				} finally {
 					lock.unlock();
 				}
-			}
-
-			private String getTraceMessage(long time) {
-				return NLS
-						.bind("\nUpdated IndexDiffData in {0} ms\nReason: {1}\nRepository: {2}\n", //$NON-NLS-1$
-						new Object[] { Long.valueOf(time), trigger,
-								repository.getWorkTree().getName() });
 			}
 
 			@Override
@@ -234,8 +244,8 @@ public class IndexDiffCacheEntry {
 						StringBuilder message = new StringBuilder(
 								NLS.bind(
 										"Updated IndexDiffData based on resource list (length = {0}) in {1} ms\n", //$NON-NLS-1$
-										Integer.valueOf(fileResourcesToUpdate
-												.size()), Long.valueOf(time)));
+										new Integer(fileResourcesToUpdate
+												.size()), new Long(time)));
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
 								message.append(indexDiffData.toString())
@@ -249,7 +259,7 @@ public class IndexDiffCacheEntry {
 								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
 								"Calculating IndexDiff failed", e); //$NON-NLS-1$
 					}
-					scheduleReloadJob("Recalculation due to Exception in update job"); //$NON-NLS-1$
+					scheduleReloadJob();
 					return Status.OK_STATUS;
 				} finally {
 					lock.unlock();
@@ -322,26 +332,67 @@ public class IndexDiffCacheEntry {
 	private void createResourceChangeListener() {
 		resourceChangeListener = new IResourceChangeListener() {
 			public void resourceChanged(IResourceChangeEvent event) {
-				GitResourceDeltaVisitor visitor = new GitResourceDeltaVisitor(repository);
+				final Collection<String> filesToUpdate = new HashSet<String>();
+				final Collection<IFile> fileResourcesToUpdate = new HashSet<IFile>();
+				final boolean[] gitIgnoreChanged = new boolean[1];
+				gitIgnoreChanged[0] = false;
+
 				try {
-					event.getDelta().accept(visitor);
+					event.getDelta().accept(new IResourceDeltaVisitor() {
+						public boolean visit(IResourceDelta delta)
+								throws CoreException {
+							final IResource resource = delta.getResource();
+							// Don't include ignored resources
+							if (Team.isIgnoredHint(resource))
+								return false;
+
+							// If the file has changed but not in a way that we
+							// care about (e.g. marker changes to files) then
+							// ignore
+							if (delta.getKind() == IResourceDelta.CHANGED
+									&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
+								return true;
+
+							// skip any non-FILE resources
+							if (resource.getType() != IResource.FILE)
+								return true;
+
+							// If the resource is not part of a project under
+							// Git revision control
+							final RepositoryMapping mapping = RepositoryMapping
+									.getMapping(resource);
+							if (mapping == null
+									|| mapping.getRepository() != repository)
+								// Ignore the change
+								return true;
+
+							if (resource.getName().equals(GITIGNORE_NAME)) {
+								gitIgnoreChanged[0] = true;
+								return false;
+							}
+
+							String repoRelativePath = mapping
+									.getRepoRelativePath(resource);
+							filesToUpdate.add(repoRelativePath);
+							fileResourcesToUpdate.add((IFile) resource);
+
+							return true;
+						}
+					});
 				} catch (CoreException e) {
 					Activator.logError(e.getMessage(), e);
 					return;
 				}
 
-				Collection<String> filesToUpdate = visitor.getFilesToUpdate();
-				if (visitor.getGitIgnoreChanged())
-					scheduleReloadJob("A .gitignore changed"); //$NON-NLS-1$
-				else if (indexDiffData == null)
-					scheduleReloadJob("Resource changed, no diff available"); //$NON-NLS-1$
+				if (gitIgnoreChanged[0] || indexDiffData == null)
+					scheduleReloadJob();
 				else if (!filesToUpdate.isEmpty())
 					if (filesToUpdate.size() < RESOURCE_LIST_UPDATE_LIMIT)
-						scheduleUpdateJob(filesToUpdate, visitor.getFileResourcesToUpdate());
+						scheduleUpdateJob(filesToUpdate, fileResourcesToUpdate);
 					else
 						// Calculate new IndexDiff if too many resources changed
 						// This happens e.g. when a project is opened
-						scheduleReloadJob("Too many resources changed"); //$NON-NLS-1$
+						scheduleReloadJob();
 			}
 
 		};
