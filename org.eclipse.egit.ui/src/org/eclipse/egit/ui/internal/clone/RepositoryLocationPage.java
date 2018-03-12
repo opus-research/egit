@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
- *    Sascha Scholz (SAP) - improvements
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.clone;
 
@@ -22,8 +21,6 @@ import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneS
 import org.eclipse.egit.ui.internal.provisional.wizards.RepositoryServerInfo;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
@@ -80,15 +77,6 @@ public class RepositoryLocationPage extends WizardPage {
 
 			public void selectionChanged(SelectionChangedEvent event) {
 				checkPage();
-			}
-		});
-
-		tv.addDoubleClickListener(new IDoubleClickListener() {
-
-			public void doubleClick(DoubleClickEvent event) {
-				checkPage();
-				if (isPageComplete())
-					getContainer().showPage(getNextPage());
 			}
 		});
 
