@@ -33,9 +33,6 @@ public class CoreText extends NLS {
 	public static String AssumeUnchangedOperation_writingIndex;
 
 	/** */
-	public static String CherryPickOperation_cherryPicking;
-
-	/** */
 	public static String CommitFileRevision_errorLookingUpPath;
 
 	/** */
@@ -252,9 +249,6 @@ public class CoreText extends NLS {
 	public static String RemoveFromIndexOperation_failed;
 
 	/** */
-	public static String RevertCommitOperation_reverting;
-
-	/** */
 	public static String BranchOperation_performingBranch;
 
 	/** */
@@ -325,6 +319,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitProjectData_repositoryChangedTaskName;
+
+	/** */
+	public static String GitResourceVariantTreeSubscriber_fetchTaskName;
+
+	/** */
+	public static String GitSyncObjectCache_noData;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);

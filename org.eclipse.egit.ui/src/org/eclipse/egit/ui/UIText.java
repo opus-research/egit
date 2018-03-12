@@ -823,9 +823,6 @@ public class UIText extends NLS {
 	public static String CherryPickHandler_IndexDirty;
 
 	/** */
-	public static String CherryPickHandler_JobName;
-
-	/** */
 	public static String CherryPickHandler_unknown;
 
 	/** */
@@ -3434,9 +3431,6 @@ public class UIText extends NLS {
 	public static String RevertHandler_AlreadyRevertedMessae;
 
 	/** */
-	public static String RevertHandler_JobName;
-
-	/** */
 	public static String RevertHandler_NoRevertTitle;
 
 	/** */
@@ -3969,6 +3963,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
+
+	/** */
+	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
