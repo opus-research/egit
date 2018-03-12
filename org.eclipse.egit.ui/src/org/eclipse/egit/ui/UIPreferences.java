@@ -42,6 +42,8 @@ public class UIPreferences {
 	/** */
 	public final static String RESOURCEHISTORY_SHOW_ALL_BRANCHES = "resourcehistory_show_all_branches"; //$NON-NLS-1$
 	/** */
+	public static final String RESOURCEHISTORY_FOLLOW_RENAMES = "resourcehistory_follow_renames"; //$NON-NLS-1$
+	/** */
 	public final static String RESOURCEHISTORY_COMPARE_MODE = "resourcehistory_compare_mode"; //$NON-NLS-1$
 	/** */
 	public final static String FINDTOOLBAR_IGNORE_CASE = "findtoolbar_ignore_case"; //$NON-NLS-1$
@@ -157,7 +159,8 @@ public class UIPreferences {
 	public static final String BLAME_IGNORE_WHITESPACE = "Blame_IgnoreWhitespace"; //$NON-NLS-1$
 	/** */
 	public static final String CLONE_WIZARD_STORE_SECURESTORE = "CloneWizard_StoreInSecureStore"; //$NON-NLS-1$
-
+	/** */
+	public static final String CLONE_WIZARD_IMPORT_PROJECTS = "CloneWizard_ImportProjects"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array

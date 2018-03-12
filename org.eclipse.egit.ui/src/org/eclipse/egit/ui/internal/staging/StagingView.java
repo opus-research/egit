@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
+ * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,6 +15,7 @@ import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,8 +40,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.egit.core.IteratorService;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -62,6 +66,7 @@ import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
@@ -78,6 +83,7 @@ import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelP
 import org.eclipse.jface.viewers.IBaseLabelProvider;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
@@ -102,6 +108,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
@@ -113,11 +120,10 @@ import org.eclipse.swt.dnd.DragSourceAdapter;
 import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.dnd.DropTargetAdapter;
 import org.eclipse.swt.dnd.DropTargetEvent;
+import org.eclipse.swt.dnd.FileTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.MenuDetectEvent;
-import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -200,6 +206,55 @@ public class StagingView extends ViewPart {
 		}
 	}
 
+	static class StagingDragListener extends DragSourceAdapter {
+
+		private ISelectionProvider provider;
+
+		public StagingDragListener(ISelectionProvider provider) {
+			this.provider = provider;
+		}
+
+		public void dragStart(DragSourceEvent event) {
+			event.doit = !provider.getSelection().isEmpty();
+		}
+
+		public void dragFinished(DragSourceEvent event) {
+			if (LocalSelectionTransfer.getTransfer().isSupportedType(
+					event.dataType))
+				LocalSelectionTransfer.getTransfer().setSelection(null);
+		}
+
+		public void dragSetData(DragSourceEvent event) {
+			IStructuredSelection selection = (IStructuredSelection) provider
+					.getSelection();
+			if (selection.isEmpty())
+				return;
+
+			if (LocalSelectionTransfer.getTransfer().isSupportedType(
+					event.dataType)) {
+				LocalSelectionTransfer.getTransfer().setSelection(selection);
+				return;
+			}
+
+			if (FileTransfer.getInstance().isSupportedType(event.dataType)) {
+				List<String> files = new ArrayList<String>();
+				for (Object selected : selection.toList())
+					if (selected instanceof StagingEntry) {
+						StagingEntry entry = (StagingEntry) selected;
+						File file = new File(
+								entry.getRepository().getWorkTree(),
+								entry.getPath());
+						if (file.exists())
+							files.add(file.getAbsolutePath());
+					}
+				if (!files.isEmpty()) {
+					event.data = files.toArray(new String[files.size()]);
+					return;
+				}
+			}
+		}
+	}
+
 	/**
 	 * Bit-mask describing interesting changes for IResourceChangeListener
 	 * events
@@ -221,6 +276,24 @@ public class StagingView extends ViewPart {
 		public void onIndexChanged(IndexChangedEvent event) {
 			reload(event.getRepository());
 		}
+	};
+
+	private final IPreferenceChangeListener prefListener = new IPreferenceChangeListener() {
+
+		public void preferenceChange(PreferenceChangeEvent event) {
+			if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey()))
+				return;
+
+			final Repository repo = currentRepository;
+			if (repo == null)
+				return;
+
+			if (Activator.getDefault().getRepositoryUtil().contains(repo))
+				return;
+
+			reload(null);
+		}
+
 	};
 
 	private Action signedOffByAction;
@@ -294,15 +367,11 @@ public class StagingView extends ViewPart {
 		unstagedTableViewer.setLabelProvider(createLabelProvider());
 		unstagedTableViewer.setContentProvider(new StagingViewContentProvider(
 				true));
-		unstagedTableViewer.addDragSupport(DND.DROP_MOVE,
-				new Transfer[] { LocalSelectionTransfer.getTransfer() },
-				new DragSourceAdapter() {
-					public void dragStart(DragSourceEvent event) {
-						IStructuredSelection selection = (IStructuredSelection) unstagedTableViewer
-								.getSelection();
-						event.doit = !selection.isEmpty();
-					}
-				});
+		unstagedTableViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
+				| DND.DROP_LINK,
+				new Transfer[] { LocalSelectionTransfer.getTransfer(),
+						FileTransfer.getInstance() }, new StagingDragListener(
+						unstagedTableViewer));
 		unstagedTableViewer.addDropSupport(DND.DROP_MOVE,
 				new Transfer[] { LocalSelectionTransfer.getTransfer() },
 				new DropTargetAdapter() {
@@ -381,15 +450,11 @@ public class StagingView extends ViewPart {
 		stagedTableViewer.setLabelProvider(createLabelProvider());
 		stagedTableViewer.setContentProvider(new StagingViewContentProvider(
 				false));
-		stagedTableViewer.addDragSupport(DND.DROP_MOVE,
-				new Transfer[] { LocalSelectionTransfer.getTransfer() },
-				new DragSourceAdapter() {
-					public void dragStart(DragSourceEvent event) {
-						IStructuredSelection selection = (IStructuredSelection) stagedTableViewer
-								.getSelection();
-						event.doit = !selection.isEmpty();
-					}
-				});
+		stagedTableViewer.addDragSupport(
+				DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
+				new Transfer[] { LocalSelectionTransfer.getTransfer(),
+						FileTransfer.getInstance() }, new StagingDragListener(
+						stagedTableViewer));
 		stagedTableViewer.addDropSupport(DND.DROP_MOVE,
 				new Transfer[] { LocalSelectionTransfer.getTransfer() },
 				new DropTargetAdapter() {
@@ -432,6 +497,10 @@ public class StagingView extends ViewPart {
 					UIPreferences.STAGING_VIEW_SYNC_SELECTION);
 		else
 			preferenceStore.setDefault(UIPreferences.STAGING_VIEW_SYNC_SELECTION, true);
+
+		new InstanceScope().getNode(
+				org.eclipse.egit.core.Activator.getPluginId())
+				.addPreferenceChangeListener(prefListener);
 
 		resourceChangeListener = new IResourceChangeListener() {
 			public void resourceChanged(IResourceChangeEvent event) {
@@ -478,7 +547,8 @@ public class StagingView extends ViewPart {
 				if (!resourcesToUpdate.isEmpty()) {
 					final IndexDiff indexDiff;
 					try {
-						WorkingTreeIterator iterator = IteratorService.createInitialIterator(currentRepository);
+						WorkingTreeIterator iterator = new FileTreeIterator(
+								currentRepository);
 						indexDiff = new IndexDiff(currentRepository, Constants.HEAD, iterator);
 						indexDiff.setFilter(PathFilterGroup.createFromStrings(resourcesToUpdate));
 						indexDiff.diff();
@@ -552,6 +622,12 @@ public class StagingView extends ViewPart {
 	}
 
 	private void enableCommitWidgets(boolean enabled) {
+		if (!enabled) {
+			commitMessageText.setText(""); //$NON-NLS-1$
+			committerText.setText(""); //$NON-NLS-1$
+			authorText.setText(""); //$NON-NLS-1$
+		}
+
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		authorText.setEnabled(enabled);
@@ -732,12 +808,12 @@ public class StagingView extends ViewPart {
 
 	private void createPopupMenu(final TableViewer tableViewer) {
 		final MenuManager menuMgr = new MenuManager();
+		menuMgr.setRemoveAllWhenShown(true);
 		Control control = tableViewer.getControl();
 		control.setMenu(menuMgr.createContextMenu(control));
-		control.addMenuDetectListener(new MenuDetectListener() {
-			public void menuDetected(MenuDetectEvent e) {
-				menuMgr.removeAll();
+		menuMgr.addMenuListener(new IMenuListener() {
 
+			public void menuAboutToShow(IMenuManager manager) {
 				IStructuredSelection selection = (IStructuredSelection) tableViewer.getSelection();
 				if (selection.isEmpty())
 					return;
@@ -772,7 +848,12 @@ public class StagingView extends ViewPart {
 				case UNTRACKED:
 				default:
 					menuMgr.add(createItem(ActionCommands.DISCARD_CHANGES_ACTION, tableViewer));	// replace with index
-					menuMgr.add(createItem(ActionCommands.ADD_TO_INDEX, tableViewer));
+					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
+						@Override
+						public void run() {
+							stage((IStructuredSelection) tableViewer.getSelection());
+						}
+					});
 				}
 			}
 		});
@@ -825,17 +906,16 @@ public class StagingView extends ViewPart {
 			StructuredSelection ssel = (StructuredSelection) selection;
 			if (ssel.size() != 1)
 				return;
-			if (ssel.getFirstElement() instanceof IResource)
-				showResource((IResource) ssel.getFirstElement());
-			if (ssel.getFirstElement() instanceof IAdaptable) {
-				IResource adapted = (IResource) ((IAdaptable) ssel
-						.getFirstElement()).getAdapter(IResource.class);
+			Object firstElement = ssel.getFirstElement();
+			if (firstElement instanceof IResource)
+				showResource((IResource) firstElement);
+			else if (firstElement instanceof RepositoryTreeNode) {
+				RepositoryTreeNode repoNode = (RepositoryTreeNode) firstElement;
+				reload(repoNode.getRepository());
+			} else if (firstElement instanceof IAdaptable) {
+				IResource adapted = (IResource) ((IAdaptable) firstElement).getAdapter(IResource.class);
 				if (adapted != null)
 					showResource(adapted);
-			} else if (ssel.getFirstElement() instanceof RepositoryTreeNode) {
-				RepositoryTreeNode repoNode = (RepositoryTreeNode) ssel
-						.getFirstElement();
-				reload(repoNode.getRepository());
 			}
 		}
 	}
@@ -998,7 +1078,47 @@ public class StagingView extends ViewPart {
 		}
 	}
 
+	private boolean isValidRepo(final Repository repository) {
+		return repository != null
+				&& !repository.isBare()
+				&& repository.getWorkTree().exists()
+				&& org.eclipse.egit.core.Activator.getDefault()
+						.getRepositoryUtil().contains(repository);
+	}
+
+	/**
+	 * Clear the view's state.
+	 * <p>
+	 * This method must be called from the UI-thread
+	 */
+	private void clearRepository() {
+		saveCommitMessageComponentState();
+		currentRepository = null;
+		removeListeners();
+		StagingViewUpdate update = new StagingViewUpdate(null, null, null);
+		unstagedTableViewer.setInput(update);
+		stagedTableViewer.setInput(update);
+		enableCommitWidgets(false);
+		updateSectionText();
+		form.setText(UIText.StagingView_NoSelectionTitle);
+	}
+
 	private void reload(final Repository repository) {
+		if (form.isDisposed())
+			return;
+		if (repository == null) {
+			asyncExec(new Runnable() {
+
+				public void run() {
+					clearRepository();
+				}
+			});
+			return;
+		}
+
+		if (!isValidRepo(repository))
+			return;
+
 		final boolean repositoryChanged = currentRepository != repository;
 
 		final AtomicReference<IndexDiff> results = new AtomicReference<IndexDiff>();
@@ -1079,8 +1199,7 @@ public class StagingView extends ViewPart {
 
 		final IndexDiff indexDiff;
 		try {
-			WorkingTreeIterator iterator = IteratorService
-					.createInitialIterator(repository);
+			WorkingTreeIterator iterator = new FileTreeIterator(repository);
 			indexDiff = new IndexDiff(repository, Constants.HEAD, iterator);
 			indexDiff.diff(jgitMonitor, 0, 0, jobTitle);
 		} catch (IOException e) {
@@ -1126,7 +1245,7 @@ public class StagingView extends ViewPart {
 		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
-		amendPreviousCommitAction.setEnabled(amendAllowed(helper));
+		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
 	}
 
 	private void loadExistingState(CommitHelper helper,
@@ -1143,7 +1262,7 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(oldState.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
-		boolean amendAllowed = amendAllowed(helper);
+		boolean amendAllowed = helper.amendAllowed();
 		commitMessageComponent.setAmendAllowed(amendAllowed);
 		if (!amendAllowed) {
 			commitMessageComponent.setAmending(false);
@@ -1172,17 +1291,12 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(helper.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
-		commitMessageComponent.setAmendAllowed(amendAllowed(helper));
+		commitMessageComponent.setAmendAllowed(helper.amendAllowed());
 		commitMessageComponent.setAmending(false);
 		commitMessageComponent.setSignedOff(false);
 		commitMessageComponent.setCreateChangeId(false);
 		commitMessageComponent.updateUI();
 		commitMessageComponent.enableListers(true);
-	}
-
-	private boolean amendAllowed(CommitHelper commitHelper) {
-		return !commitHelper.isMergedResolved()
-				&& !commitHelper.isCherryPickResolved();
 	}
 
 	private boolean userEnteredCommmitMessage() {
@@ -1201,9 +1315,10 @@ public class StagingView extends ViewPart {
 	}
 
 	private void saveCommitMessageComponentState() {
-		CommitMessageComponentStateManager.persistState(
-				commitMessageComponent.getRepository(),
-				commitMessageComponent.getState());
+		final Repository repo = commitMessageComponent.getRepository();
+		if (repo != null)
+			CommitMessageComponentStateManager.persistState(repo,
+					commitMessageComponent.getState());
 	}
 
 	private void deleteCommitMessageComponentState() {
@@ -1269,6 +1384,9 @@ public class StagingView extends ViewPart {
 				ISelectionService.class);
 		srv.removePostSelectionListener(selectionChangedListener);
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
+		new InstanceScope().getNode(
+				org.eclipse.egit.core.Activator.getPluginId())
+				.removePreferenceChangeListener(prefListener);
 
 		removeListeners();
 		if (reloadJob != null) {

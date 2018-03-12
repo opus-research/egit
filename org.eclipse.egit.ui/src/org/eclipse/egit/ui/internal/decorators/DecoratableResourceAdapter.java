@@ -60,25 +60,23 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			repository = mapping.getRepository();
 			if (repository == null)
 				return;
-			indexDiffData = Activator.getDefault().getIndexDiffCache()
-					.getIndexDiffCacheEntry(repository).getIndexDiff();
-			if (indexDiffData == null)
-				return;
-
 			repositoryName = DecoratableResourceHelper
 					.getRepositoryName(repository);
 			branch = DecoratableResourceHelper.getShortBranch(repository);
 
-			switch (resource.getType()) {
-			case IResource.FILE:
-				extractResourceProperties();
-				break;
-			case IResource.PROJECT:
-				tracked = true;
-			case IResource.FOLDER:
-				extractContainerProperties();
-				break;
-			}
+			indexDiffData = Activator.getDefault().getIndexDiffCache()
+					.getIndexDiffCacheEntry(repository).getIndexDiff();
+			if (indexDiffData != null)
+				switch (resource.getType()) {
+				case IResource.FILE:
+					extractResourceProperties();
+					break;
+				case IResource.PROJECT:
+					tracked = true;
+				case IResource.FOLDER:
+					extractContainerProperties();
+					break;
+				}
 		} finally {
 			if (trace)
 				GitTraceLocation
@@ -93,8 +91,10 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		String repoRelativePath = makeRepoRelative(resource);
 
 		// ignored
+		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
+		ignored = containsPrefixPath(ignoredFiles, repoRelativePath);
 		Set<String> untracked = indexDiffData.getUntracked();
-		tracked = !untracked.contains(repoRelativePath);
+		tracked = !untracked.contains(repoRelativePath) && !ignored;
 
 		Set<String> added = indexDiffData.getAdded();
 		Set<String> removed = indexDiffData.getRemoved();
@@ -120,8 +120,14 @@ class DecoratableResourceAdapter extends DecoratableResource {
 	private void extractContainerProperties() {
 		String repoRelativePath = makeRepoRelative(resource) + "/"; //$NON-NLS-1$
 
-		// only file can be not tracked.
-		tracked = true;
+		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
+		Set<String> untrackedFolders = indexDiffData.getUntrackedFolders();
+		ignored = containsPrefixPath(ignoredFiles, repoRelativePath);
+
+		if (ignored)
+			tracked = false;
+		else
+			tracked = !containsPrefixPath(untrackedFolders, repoRelativePath);
 
 		// containers are marked as staged whenever file was added, removed or
 		// changed
@@ -158,4 +164,12 @@ class DecoratableResourceAdapter extends DecoratableResource {
 				return true;
 		return false;
 	}
+
+	private boolean containsPrefixPath(Set<String> collection, String path) {
+		for (String entry : collection)
+			if (path.startsWith(entry))
+				return true;
+		return false;
+	}
+
 }
