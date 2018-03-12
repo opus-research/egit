@@ -20,7 +20,7 @@ import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObjectContainer;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
-import org.eclipse.egit.ui.internal.synchronize.model.HasProjects;
+import org.eclipse.egit.ui.internal.synchronize.model.GitModelWithProjects;
 
 /**
  * Maps Git's objects onto proper {@link ResourceMapping} instants. It allows
@@ -79,15 +79,13 @@ public abstract class GitObjectMapping extends ResourceMapping {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		if (!object.isContainer()) {
 			IFile file = root.getFileForLocation(object.getLocation());
-
 			return new IProject[] {file.getProject()};
 		} else {
 			if (object instanceof GitModelTree) {
 				IContainer container = root.getContainerForLocation(object.getLocation());
-
 				return new IProject[] {container.getProject()};
-			} else if (object instanceof HasProjects)
-				return ((HasProjects) object).getProjects();
+			} else if (object instanceof GitModelWithProjects)
+				return ((GitModelWithProjects) object).getProjects();
 			else
 				return null;
 		}

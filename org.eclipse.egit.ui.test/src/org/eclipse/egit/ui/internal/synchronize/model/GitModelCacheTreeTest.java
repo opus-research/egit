@@ -24,7 +24,7 @@ public class GitModelCacheTreeTest extends GitModelTestCase {
 
 	@Test public void shouldReturnEqualForSameInstance() throws Exception {
 		// given
-		GitModelCacheTree left = crateCacheTree(getTreeLocation());
+		GitModelCacheTree left = createCacheTree(getTreeLocation());
 
 		// when
 		boolean actual = left.equals(left);
@@ -35,8 +35,8 @@ public class GitModelCacheTreeTest extends GitModelTestCase {
 
 	@Test public void shouldReturnEqualForSameData() throws Exception {
 		// given
-		GitModelCacheTree left = crateCacheTree(getTreeLocation());
-		GitModelCacheTree right = crateCacheTree(getTreeLocation());
+		GitModelCacheTree left = createCacheTree(getTreeLocation());
+		GitModelCacheTree right = createCacheTree(getTreeLocation());
 
 		// when
 		boolean actual = left.equals(right);
@@ -48,8 +48,8 @@ public class GitModelCacheTreeTest extends GitModelTestCase {
 	@Test public void shouldReturnNotEqualForDifferetnLocation()
 			throws Exception {
 		// given
-		GitModelCacheTree left = crateCacheTree(getTreeLocation());
-		GitModelCacheTree right = crateCacheTree(getTree1Location());
+		GitModelCacheTree left = createCacheTree(getTreeLocation());
+		GitModelCacheTree right = createCacheTree(getTree1Location());
 
 		// when
 		boolean actual = left.equals(right);
@@ -61,7 +61,7 @@ public class GitModelCacheTreeTest extends GitModelTestCase {
 	@Test public void shouldReturnNotEqualWhenComparingCacheTreeAndTree()
 			throws Exception {
 		// given
-		GitModelCacheTree left = crateCacheTree(getTreeLocation());
+		GitModelCacheTree left = createCacheTree(getTreeLocation());
 		GitModelTree right = mock(GitModelTree.class);
 
 		// when
@@ -78,7 +78,7 @@ public class GitModelCacheTreeTest extends GitModelTestCase {
 				.addConfiguredRepository(leftRepoFile);
 	}
 
-	private GitModelCacheTree crateCacheTree(IPath location)
+	private GitModelCacheTree createCacheTree(IPath location)
 			throws Exception {
 		return new GitModelCacheTree(createModelCommit(),
 				lookupRepository(leftRepoFile), location, new FileModelFactory() {

@@ -155,7 +155,7 @@ public class GitOpenInCompareAction extends Action {
 	private IFile getFileForBlob(GitModelBlob blob) {
 		IPath blobLocation = blob.getLocation();
 
-		return getWorkspace().getRoot().getFile(blobLocation);
+		return getWorkspace().getRoot().getFileForLocation(blobLocation);
 	}
 
 }

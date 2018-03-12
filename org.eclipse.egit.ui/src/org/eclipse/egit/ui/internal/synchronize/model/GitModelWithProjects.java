@@ -11,9 +11,9 @@ package org.eclipse.egit.ui.internal.synchronize.model;
 import org.eclipse.core.resources.IProject;
 
 /**
- * Indicates does contains list of projects
+ * Indicates does does git model element contains projects
  */
-public interface HasProjects {
+public interface GitModelWithProjects {
 
 	/**
 	 * @return list of projects

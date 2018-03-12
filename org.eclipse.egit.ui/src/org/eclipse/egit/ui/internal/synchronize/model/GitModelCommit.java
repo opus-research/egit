@@ -26,7 +26,7 @@ import org.eclipse.jgit.lib.Repository;
  * Git commit object representation in Git ChangeSet
  */
 public class GitModelCommit extends GitModelObjectContainer implements
-		HasProjects {
+		GitModelWithProjects {
 
 	private final Commit commit;
 
@@ -98,14 +98,6 @@ public class GitModelCommit extends GitModelObjectContainer implements
 	 */
 	public Commit getCachedCommitObj() {
 		return commit;
-	}
-
-	@Override
-	public void dispose() {
-		for (GitModelObject value : cachedTreeMap.values())
-			value.dispose();
-
-		cachedTreeMap.clear();
 	}
 
 	@Override
