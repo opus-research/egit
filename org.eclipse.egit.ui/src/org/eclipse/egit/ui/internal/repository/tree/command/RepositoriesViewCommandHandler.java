@@ -14,8 +14,6 @@
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -24,15 +22,12 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -207,21 +202,4 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 		return selection;
 	}
 
-	protected Collection<IPath> getSelectedFileAndFolderPaths(ExecutionEvent event) throws ExecutionException {
-		Collection<IPath> paths = new ArrayList<IPath>();
-		for (Object selectedNode : getSelectedNodes(event)) {
-			RepositoryTreeNode node = (RepositoryTreeNode) selectedNode;
-			Repository repository = node.getRepository();
-			IPath path;
-			if (node.getType().equals(RepositoryTreeNodeType.FOLDER))
-				path = new Path(((FolderNode) node).getObject()
-						.getAbsolutePath());
-			else if (node.getType().equals(RepositoryTreeNodeType.FILE))
-				path = new Path(((FileNode) node).getObject().getAbsolutePath());
-			else
-				path = new Path(repository.getWorkTree().getAbsolutePath());
-			paths.add(path);
-		}
-		return paths;
-	}
 }
