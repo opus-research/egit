@@ -12,10 +12,8 @@
 package org.eclipse.egit.ui.common;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 
 public class ExistingOrNewPage {
 
@@ -30,63 +28,33 @@ public class ExistingOrNewPage {
 		assertEquals(finish, bot.button("Finish").isEnabled());
 	}
 
-	public void assertContents(boolean selected, String project, String path, String repository,
+	public void assertContents(String project, String path, String repository,
 			String newRepoPath) {
-		assertContents(new Row[] { new Row(selected, project, path, repository) },
+		assertContents(new Row[] { new Row(project, path, repository) },
 				newRepoPath);
 	}
 
 	public void assertContents(Row[] rows, String newRepoPath) {
-		assertContents(rows);
-		assertEquals(newRepoPath, bot.text().getText());
-	}
-
-	@SuppressWarnings("boxing")
-	private void assertContents(Row[] rows) {
 		assertEquals(rows.length, bot.tree().rowCount());
 		for (int i = 0; i < rows.length; i++) {
-			assertEquals(rows[i].isSelected(), bot.tree().getAllItems()[i].isChecked());
 			assertEquals(rows[i].getProject(), bot.tree().cell(i, 0));
 			assertEquals(rows[i].getPath(), bot.tree().cell(i, 1));
 			assertEquals(rows[i].getRepository(), bot.tree().cell(i, 2));
-			SWTBotTreeItem subteeItems = bot.tree().getAllItems()[i];
-			Row[] subrows = rows[i].getSubrows();
-			if (subrows != null) {
-				assertEquals("Row " + i + " is a tree:", subrows.length, subteeItems.getItems().length);
-				assertNotNull("Rows " + i + " is not a tree", subteeItems.getItems());
-				for (int j = 0; j < subrows.length; ++j) {
-					Row r = subrows[j];
-					assertEquals(r.isSelected(), subteeItems.getItems()[j].isChecked());
-					assertEquals(r.getProject(), subteeItems.cell(j, 0));
-					assertEquals(r.getPath(), subteeItems.cell(j, 1));
-					assertEquals(r.getRepository(), subteeItems.cell(j, 2));
-				}
-			} else
-				assertEquals("Row " + i + " is a tree:", 0, subteeItems.getItems().length);
 		}
+		assertEquals(newRepoPath, bot.text().getText());
 	}
 
 	public static class Row {
-		private final boolean selected;
-
 		private String project;
 
 		private String path;
 
 		private String repository;
 
-		private final Row[] subrows;
-
-		public Row(boolean selected, String project, String path, String repository) {
-			this(selected, project, path, repository, null);
-		}
-
-		public Row(boolean selected, String project, String path, String repository, Row[] subrows) {
-			this.selected = selected;
+		public Row(String project, String path, String repository) {
 			this.project = project;
 			this.path = path;
 			this.repository = repository;
-			this.subrows = subrows;
 		}
 
 		public String getProject() {
@@ -101,13 +69,6 @@ public class ExistingOrNewPage {
 			return repository;
 		}
 
-		public Row[] getSubrows() {
-			return subrows;
-		}
-
-		public boolean isSelected() {
-			return selected;
-		}
 	}
 
 }
