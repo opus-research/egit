@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -72,7 +71,6 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -92,7 +90,7 @@ public class TestUtil {
 
 	private final static char AMPERSAND = '&';
 
-	private Map<Bundle, ResourceBundle> bundle2ResourceBundle = new HashMap<>();
+	private ResourceBundle myBundle;
 
 	/**
 	 * Allows access to the localized values of the EGit UI Plug-in
@@ -128,28 +126,10 @@ public class TestUtil {
 	 */
 	public synchronized String getPluginLocalizedValue(String key,
 			boolean keepAmpersands) throws MissingResourceException {
-		return getPluginLocalizedValue(key, keepAmpersands, Activator.getDefault().getBundle());
-	}
-
-	/**
-	 * Allows access to the localized values of the given Bundle
-	 * <p>
-	 *
-	 * @param key
-	 *            see {@link #getPluginLocalizedValue(String)}
-	 * @param keepAmpersands
-	 *            if <code>true</code>, ampersands will be kept
-	 * @param bundle
-	 *            the Bundle that contains the localization
-	 * @return see {@link #getPluginLocalizedValue(String)}
-	 * @throws MissingResourceException
-	 *             see {@link #getPluginLocalizedValue(String)}
-	 */
-	public synchronized String getPluginLocalizedValue(String key,
-			boolean keepAmpersands, Bundle bundle) throws MissingResourceException {
-		ResourceBundle myBundle = bundle2ResourceBundle.get(bundle);
 		if (myBundle == null) {
-			BundleContext context = bundle.getBundleContext();
+
+			BundleContext context = Activator.getDefault().getBundle()
+					.getBundleContext();
 
 			ServiceTracker<BundleLocalization, BundleLocalization> localizationTracker =
 					new ServiceTracker<BundleLocalization, BundleLocalization>(
@@ -157,11 +137,9 @@ public class TestUtil {
 			localizationTracker.open();
 
 			BundleLocalization location = localizationTracker.getService();
-			if (location != null) {
-				myBundle = location.getLocalization(bundle, Locale.getDefault().toString());
-				bundle2ResourceBundle.put(bundle, myBundle);
-			}
-
+			if (location != null)
+				myBundle = location.getLocalization(Activator.getDefault()
+						.getBundle(), Locale.getDefault().toString());
 		}
 		if (myBundle != null) {
 			String raw = myBundle.getString(key);
