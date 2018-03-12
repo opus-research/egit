@@ -23,10 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
@@ -81,7 +78,6 @@ import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
-import org.eclipse.jface.window.Window;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -1329,16 +1325,6 @@ public class CommitDialog extends TitleAreaDialog {
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
 
-		if (!getSeverityItems().isEmpty() && getPreferenceStore()
-				.getBoolean(UIPreferences.CHECK_BEFORE_COMMITTING)) {
-			CommitWarningDialog dialog = new CommitWarningDialog(PlatformUI
-					.getWorkbench().getActiveWorkbenchWindow().getShell(),
-					getSeverityItems());
-			if (dialog.open() == Window.CANCEL) {
-				return;
-			}
-		}
-
 		Object[] checkedElements = filesViewer.getCheckedElements();
 		selectedFiles.clear();
 		for (Object obj : checkedElements)
@@ -1355,23 +1341,6 @@ public class CommitDialog extends TitleAreaDialog {
 		settings.put(SHOW_UNTRACKED_PREF, showUntracked);
 		CommitMessageHistory.saveCommitHistory(getCommitMessage());
 		super.okPressed();
-	}
-
-	@SuppressWarnings("boxing")
-	private Map<Integer, List<CommitItem>> getSeverityItems() {
-		Map<Integer, List<CommitItem>> result = new HashMap<>();
-		for (final CommitItem item : items) {
-			if (item.getProblemSeverity() >= IMarker.SEVERITY_WARNING) {
-				if (result.get(item.getProblemSeverity()) == null) {
-					List<CommitItem> itemsList = new ArrayList<>();
-					itemsList.add(item);
-					result.put(item.getProblemSeverity(), itemsList);
-				} else {
-					result.get(item.getProblemSeverity()).add(item);
-				}
-			}
-		}
-		return result;
 	}
 
 	@Override
