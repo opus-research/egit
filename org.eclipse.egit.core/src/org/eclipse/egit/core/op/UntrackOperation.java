@@ -19,6 +19,7 @@ import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
@@ -45,7 +46,7 @@ import org.eclipse.osgi.util.NLS;
  * </p>
  */
 public class UntrackOperation implements IEGitOperation {
-	private final Collection<? extends IResource> rsrcList;
+	private final Collection<IResource> rsrcList;
 
 	private final IdentityHashMap<Repository, DirCacheEditor> edits;
 
@@ -58,7 +59,7 @@ public class UntrackOperation implements IEGitOperation {
 	 *            collection of {@link IResource}s which should be removed from
 	 *            the relevant Git repositories.
 	 */
-	public UntrackOperation(final Collection<? extends IResource> rsrcs) {
+	public UntrackOperation(final Collection<IResource> rsrcs) {
 		rsrcList = rsrcs;
 		edits = new IdentityHashMap<Repository, DirCacheEditor>();
 		mappings = new IdentityHashMap<RepositoryMapping, Object>();
@@ -76,8 +77,10 @@ public class UntrackOperation implements IEGitOperation {
 
 		m.beginTask(CoreText.AddOperation_adding, rsrcList.size() * 200);
 		try {
-			for (IResource obj : rsrcList) {
-				remove(obj);
+			for (Object obj : rsrcList) {
+				obj = ((IAdaptable) obj).getAdapter(IResource.class);
+				if (obj instanceof IResource)
+					remove((IResource) obj);
 				m.worked(200);
 			}
 
