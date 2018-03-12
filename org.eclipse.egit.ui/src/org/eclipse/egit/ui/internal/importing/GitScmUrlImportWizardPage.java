@@ -13,7 +13,6 @@ package org.eclipse.egit.ui.internal.importing;
 import java.net.URI;
 
 import org.eclipse.egit.core.internal.GitURI;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -90,23 +89,17 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 				ScmUrlImportDescription description = (ScmUrlImportDescription) element;
 				String project = description.getProject();
 				URI scmUrl = description.getUri();
-				try {
-					String version = getTag(scmUrl);
-					String host = getServer(scmUrl);
-					styledString.append(project);
-					if (version != null) {
-						styledString.append(' ');
-						styledString.append(version,
-								StyledString.DECORATIONS_STYLER);
-					}
+				String version = getTag(scmUrl);
+				String host = getServer(scmUrl);
+				styledString.append(project);
+				if (version != null) {
 					styledString.append(' ');
-					styledString.append('[', StyledString.DECORATIONS_STYLER);
-					styledString.append(host, StyledString.DECORATIONS_STYLER);
-					styledString.append(']', StyledString.DECORATIONS_STYLER);
-				} catch (IllegalArgumentException e) {
-					styledString.append(e.getMessage());
-					Activator.logError(e.getMessage(), e);
+					styledString.append(version, StyledString.DECORATIONS_STYLER);
 				}
+				styledString.append(' ');
+				styledString.append('[', StyledString.DECORATIONS_STYLER);
+				styledString.append(host, StyledString.DECORATIONS_STYLER);
+				styledString.append(']', StyledString.DECORATIONS_STYLER);
 				return styledString;
 			}
 			styledString.append(element.toString());
