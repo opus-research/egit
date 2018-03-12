@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.rebase;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan;
@@ -262,15 +261,13 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			boolean singleTypeSelected = true;
 			if (structured.size() > 1) {
 				// multi selection
-				for (Iterator iterator = structured.iterator(); iterator
-						.hasNext();) {
-					Object selectedObj = iterator.next();
+				for (Object selectedObj : structured.toList()) {
 					if (!(selectedObj instanceof PlanElement))
 						continue;
-					PlanElement entry = lastSelectedEntry = (PlanElement) selectedObj;
+					PlanElement entry = (PlanElement) selectedObj;
+					lastSelectedEntry = entry;
 					if (type != entry.getPlanElementAction()) {
 						singleTypeSelected = false;
-						break;
 					}
 				}
 			}
