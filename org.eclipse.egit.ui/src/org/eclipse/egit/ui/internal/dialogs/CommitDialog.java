@@ -67,6 +67,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.swt.SWT;
@@ -292,6 +293,8 @@ public class CommitDialog extends TitleAreaDialog {
 	CheckboxTableViewer filesViewer;
 
 	Section filesSection;
+
+	ObjectId originalChangeId;
 
 	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
@@ -637,8 +640,10 @@ public class CommitDialog extends TitleAreaDialog {
 		if (amending)
 			amendingItem.setEnabled(false); // if already set, don't allow any
 											// changes
-		else if (!amendAllowed)
+		else if (!amendAllowed) {
 			amendingItem.setEnabled(false);
+			originalChangeId = null;
+		}
 		amendingItem.setToolTipText(UIText.CommitDialog_AmendPreviousCommit);
 		Image amendImage = UIIcons.AMEND_COMMIT.createImage();
 		UIUtils.hookDisposal(amendingItem, amendImage);
