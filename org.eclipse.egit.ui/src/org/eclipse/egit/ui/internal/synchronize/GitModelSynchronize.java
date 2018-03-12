@@ -28,6 +28,7 @@ import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.team.core.RepositoryProvider;
@@ -158,6 +159,13 @@ public class GitModelSynchronize {
 				subscriber.init(monitor);
 
 				return Status.OK_STATUS;
+			}
+			@Override
+			public boolean belongsTo(Object family) {
+				if (JobFamilies.SYNCHRONIZE_READ_DATA.equals(family))
+					return true;
+
+				return super.belongsTo(family);
 			}
 		};
 

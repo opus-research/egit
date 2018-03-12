@@ -189,10 +189,13 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	protected SyncInfo getSyncInfo(IResource local, IResourceVariant base,
 			IResourceVariant remote) throws TeamException {
+		GitSynchronizeData gsd = gsds.getData(local.getProject());
 
-		Repository repo = gsds.getData(local.getProject()).getRepository();
-		SyncInfo info = new GitSyncInfo(local, base, remote,
-				getResourceComparator(), cache.get(repo), repo);
+		SyncInfo info;
+		if (gsd.shouldIncludeLocal())
+			info = new SyncInfo(local, base, remote, getResourceComparator());
+		else
+			info = new GitSyncInfo(local, base, remote, getResourceComparator(), gsd);
 
 		info.init();
 		return info;
