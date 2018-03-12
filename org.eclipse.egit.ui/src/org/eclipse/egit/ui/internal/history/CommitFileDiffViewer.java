@@ -34,10 +34,10 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
+import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.blame.BlameOperation;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
@@ -565,7 +565,7 @@ public class CommitFileDiffViewer extends TableViewer {
 			try {
 				if (file != null) {
 					IResource[] resources = new IResource[] { file, };
-					CompareUtils.compare(resources, getRepository(), np, op,
+					CompareUtils.compare(resources, getRepository(),
 							newCommit.getName(), oldCommit.getName(), false,
 							page);
 				} else {

@@ -53,7 +53,7 @@ public class PushUpstreamOrBranchActionHandler extends RepositoryActionHandler {
 			Ref head = getHeadIfSymbolic(repository);
 			if (head != null) {
 				PushBranchWizard pushBranchWizard = new PushBranchWizard(
-						repository, head);
+						repository, head.getTarget());
 
 				WizardDialog dlg = new WizardDialog(shell,
 						pushBranchWizard);
