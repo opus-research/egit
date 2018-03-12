@@ -1174,6 +1174,9 @@ public class UIText extends NLS {
 	public static String SourceBranchPage_errorBranchRequired;
 
 	/** */
+	public static String SourceBranchPage_transportError;
+
+	/** */
 	public static String SourceBranchPage_cannotListBranches;
 
 	/** */
@@ -2060,9 +2063,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitMessageComponent_MessageInvalidCommitter;
-
-	/** */
-	public static String CommitMessageComponent_AmendingCommitInRemoteBranch;
 
 	/** */
 	public static String CommitMessageViewer_author;
@@ -2996,9 +2996,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
-
-	/** */
-	public static String DialogsPreferencePage_ShowCloneFailedDialog;
 
 	/** */
 	public static String DiffEditorPage_TaskGeneratingDiff;
@@ -4497,18 +4494,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitOpenInCompareAction_cannotRetrieveCommitWithId;
-
-	/** */
-	public static String EclipseSshSessionFactory_noIdentities;
-
-	/** */
-	public static String CloneFailureDialog_tile;
-
-	/** */
-	public static String CloneFailureDialog_dontShowAgain;
-
-	/** */
-	public static String CloneFailureDialog_checkList;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
