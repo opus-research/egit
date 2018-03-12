@@ -16,6 +16,7 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.WorkbenchStyledLabelProvider;
+import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -23,9 +24,11 @@ import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.IElementComparer;
+import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.StyledString;
@@ -40,15 +43,12 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
-import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 
 /**
@@ -182,7 +182,7 @@ class PushResultTable {
 				.applyTo(messageGroup);
 
 		final Text text = new Text(messageGroup, SWT.MULTI | SWT.READ_ONLY
-				| SWT.BORDER);
+				| SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
 		GridDataFactory.fillDefaults().grab(true, true)
 				.hint(SWT.DEFAULT, TEXT_PREFERRED_HEIGHT).applyTo(text);
 		treeViewer.addSelectionChangedListener(new ISelectionChangedListener() {
@@ -202,37 +202,24 @@ class PushResultTable {
 					text.setText(getResult((RefUpdateElement) selected));
 			}
 		});
+
+		treeViewer.addOpenListener(new IOpenListener() {
+
+			public void open(OpenEvent event) {
+				ISelection selection = event.getSelection();
+				if (selection instanceof IStructuredSelection)
+					for (Object element : ((IStructuredSelection) selection)
+							.toArray())
+						if (element instanceof RepositoryCommit)
+							CommitEditor.openQuiet((RepositoryCommit) element);
+			}
+		});
 	}
 
 	private void addToolbar(Composite parent) {
 		ToolBar toolbar = new ToolBar(parent, SWT.VERTICAL);
 		GridDataFactory.fillDefaults().grab(false, true).applyTo(toolbar);
-
-		ToolItem collapseItem = new ToolItem(toolbar, SWT.PUSH);
-		Image collapseImage = UIIcons.COLLAPSEALL.createImage();
-		UIUtils.hookDisposal(collapseItem, collapseImage);
-		collapseItem.setImage(collapseImage);
-		collapseItem.setToolTipText(UIText.FetchResultTable_collapseAll);
-		collapseItem.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				treeViewer.collapseAll();
-			}
-
-		});
-
-		ToolItem expandItem = new ToolItem(toolbar, SWT.PUSH);
-		Image expandImage = UIIcons.EXPAND_ALL.createImage();
-		UIUtils.hookDisposal(expandItem, expandImage);
-		expandItem.setImage(expandImage);
-		expandItem.setToolTipText(UIText.FetchResultTable_expandAll);
-		expandItem.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				treeViewer.expandAll();
-			}
-
-		});
+		UIUtils.addExpansionItems(toolbar, treeViewer);
 	}
 
 	private String getResult(RefUpdateElement element) {

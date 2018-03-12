@@ -15,6 +15,7 @@ import static org.eclipse.egit.ui.UIText.GitActionContributor_ExpandAll;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.ADD_TO_INDEX;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.COMMIT_ACTION;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.IGNORE_ACTION;
+import static org.eclipse.egit.ui.internal.actions.ActionCommands.MERGE_TOOL_ACTION;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.PUSH_ACTION;
 import static org.eclipse.egit.ui.internal.synchronize.model.SupportedContextActionsHelper.canPush;
 import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.NAVIGATE_GROUP;
@@ -44,6 +45,7 @@ import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.ide.ResourceUtil;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 
@@ -57,12 +59,13 @@ class GitActionContributor extends SynchronizePageActionGroup {
 		IStructuredSelection selection = (IStructuredSelection) getContext()
 				.getSelection();
 		Object element = selection.getFirstElement();
-
-		if (element instanceof IResource) {
+		IResource resource = ResourceUtil.getResource(element);
+		if (resource != null) {
 			// add standard git action for 'workspace' models
 			menu.appendToGroup(GIT_ACTIONS, createItem(COMMIT_ACTION));
 			menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
 			menu.appendToGroup(GIT_ACTIONS, createItem(IGNORE_ACTION));
+			menu.appendToGroup(GIT_ACTIONS, createItem(MERGE_TOOL_ACTION));
 		} else if (element instanceof GitModelObject && selection.size() == 1)
 			createMenuForGitModelObject(menu, (GitModelObject) element);
 
@@ -82,6 +85,9 @@ class GitActionContributor extends SynchronizePageActionGroup {
 			GitModelObject object) {
 		if (SupportedContextActionsHelper.canCommit(object))
 			menu.appendToGroup(GIT_ACTIONS, createItem(COMMIT_ACTION));
+
+		if (SupportedContextActionsHelper.canUseMergeTool(object))
+			menu.appendToGroup(GIT_ACTIONS, createItem(MERGE_TOOL_ACTION));
 
 		if (SupportedContextActionsHelper.canStage(object)) {
 			menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
