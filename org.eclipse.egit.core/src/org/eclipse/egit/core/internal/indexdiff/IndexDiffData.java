@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2014 Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.IndexDiff;
 
 /**
@@ -44,8 +43,6 @@ public class IndexDiffData {
 
 	private final Set<String> ignored;
 
-	private final Set<String> symlinks;
-
 	private final Collection<IResource> changedResources;
 
 	/**
@@ -69,8 +66,6 @@ public class IndexDiffData {
 				.getConflicting()));
 		ignored = Collections.unmodifiableSet(new HashSet<String>(indexDiff
 				.getIgnoredNotInIndex()));
-		symlinks = Collections.unmodifiableSet(new HashSet<String>(indexDiff
-				.getPathsWithIndexMode(FileMode.SYMLINK)));
 		changedResources = null;
 	}
 
@@ -104,8 +99,9 @@ public class IndexDiffData {
 		Set<String> missing2 = new HashSet<String>(baseDiff.getMissing());
 		Set<String> modified2 = new HashSet<String>(baseDiff.getModified());
 		Set<String> untracked2 = new HashSet<String>(baseDiff.getUntracked());
+		Set<String> untrackedFolders2 = new HashSet<String>(baseDiff.getUntrackedFolders());
 		Set<String> conflicts2 = new HashSet<String>(baseDiff.getConflicting());
-		Set<String> symlinks2 = new HashSet<String>(baseDiff.getSymlinks());
+		Set<String> ignored2 = new HashSet<String>(baseDiff.getIgnoredNotInIndex());
 
 		mergeList(added2, changedFiles, diffForChangedFiles.getAdded());
 		mergeList(changed2, changedFiles, diffForChangedFiles.getChanged());
@@ -113,14 +109,10 @@ public class IndexDiffData {
 		mergeList(missing2, changedFiles, diffForChangedFiles.getMissing());
 		mergeList(modified2, changedFiles, diffForChangedFiles.getModified());
 		mergeList(untracked2, changedFiles, diffForChangedFiles.getUntracked());
-		mergeList(symlinks2, changedFiles,
-				diffForChangedFiles.getPathsWithIndexMode(FileMode.SYMLINK));
-		Set<String> untrackedFolders2 = mergeUntrackedFolders(
-				baseDiff.getUntrackedFolders(), changedFiles,
-				getUntrackedFolders(diffForChangedFiles));
+		mergeList(untrackedFolders2, changedFiles, getUntrackedFolders(diffForChangedFiles));
 		mergeList(conflicts2, changedFiles,
 				diffForChangedFiles.getConflicting());
-		Set<String> ignored2 = mergeIgnored(baseDiff.getIgnoredNotInIndex(), changedFiles,
+		mergeList(ignored2, changedFiles,
 				diffForChangedFiles.getIgnoredNotInIndex());
 
 		added = Collections.unmodifiableSet(added2);
@@ -132,7 +124,6 @@ public class IndexDiffData {
 		untrackedFolders = Collections.unmodifiableSet(untrackedFolders2);
 		conflicts = Collections.unmodifiableSet(conflicts2);
 		ignored = Collections.unmodifiableSet(ignored2);
-		symlinks = Collections.unmodifiableSet(symlinks2);
 	}
 
 	private void mergeList(Set<String> baseList,
@@ -146,46 +137,6 @@ public class IndexDiffData {
 					baseList.add(file);
 			}
 		}
-	}
-
-	private static Set<String> mergeUntrackedFolders(Set<String> oldUntrackedFolders,
-			Collection<String> changedFiles, Set<String> newUntrackedFolders) {
-		Set<String> merged = new HashSet<String>();
-		for (String oldUntrackedFolder : oldUntrackedFolders) {
-			boolean changeInUntrackedFolder = isAnyFileContainedInFolder(
-					oldUntrackedFolder, changedFiles);
-			if (!changeInUntrackedFolder)
-				merged.add(oldUntrackedFolder);
-		}
-		merged.addAll(newUntrackedFolders);
-		return merged;
-	}
-
-	private static boolean isAnyFileContainedInFolder(String folder,
-			Collection<String> files) {
-		for (String file : files)
-			if (file.startsWith(folder))
-				return true;
-		return false;
-	}
-
-	private static Set<String> mergeIgnored(Set<String> oldIgnoredPaths,
-			Collection<String> changedPaths, Set<String> newIgnoredPaths) {
-		Set<String> merged = new HashSet<String>();
-		for (String oldIgnoredPath : oldIgnoredPaths) {
-			boolean changed = isAnyPrefixOf(oldIgnoredPath, changedPaths);
-			if (!changed)
-				merged.add(oldIgnoredPath);
-		}
-		merged.addAll(newIgnoredPaths);
-		return merged;
-	}
-
-	private static boolean isAnyPrefixOf(String pathToCheck, Collection<String> possiblePrefixes) {
-		for (String possiblePrefix : possiblePrefixes)
-			if (pathToCheck.startsWith(possiblePrefix) || possiblePrefix.equals(pathToCheck + '/'))
-				return true;
-		return false;
 	}
 
 	/**
@@ -254,13 +205,6 @@ public class IndexDiffData {
 	}
 
 	/**
-	 * @return list of files that are symlinks
-	 */
-	public Set<String> getSymlinks() {
-		return symlinks;
-	}
-
-	/**
 	 * @return the changed files
 	 */
 	public Collection<IResource> getChangedResources() {
@@ -279,7 +223,6 @@ public class IndexDiffData {
 		dumpList(builder, "untrackedFolders", untrackedFolders); //$NON-NLS-1$
 		dumpList(builder, "conflicts", conflicts); //$NON-NLS-1$
 		dumpList(builder, "ignored", ignored); //$NON-NLS-1$
-		dumpList(builder, "symlinks", symlinks); //$NON-NLS-1$
 		dumpResourceList(builder,
 				"changedResources", changedResources); //$NON-NLS-1$
 		return builder.toString();

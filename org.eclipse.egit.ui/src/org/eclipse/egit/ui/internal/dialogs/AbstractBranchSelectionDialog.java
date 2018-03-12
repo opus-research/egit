@@ -6,7 +6,6 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, Markus Keller <markus_keller@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,10 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
-import org.eclipse.egit.ui.internal.repository.RepositoriesViewStyledCellLabelProvider;
-import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
+import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
@@ -35,10 +32,8 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -48,7 +43,6 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -68,51 +62,6 @@ import org.eclipse.ui.dialogs.PatternFilter;
  * {@link #createCustomArea(Composite)}.
  */
 public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
-
-	/**
-	 * Get the target merge ref name for the currently checkout branch
-	 *
-	 * @param repo
-	 * @return ref node
-	 */
-	protected static String getMergeTarget(Repository repo) {
-		String branch;
-		try {
-			branch = repo.getBranch();
-		} catch (IOException e) {
-			return null;
-		}
-		if (branch == null)
-			return null;
-
-		String merge = repo.getConfig().getString(
-				ConfigConstants.CONFIG_BRANCH_SECTION, branch,
-				ConfigConstants.CONFIG_KEY_MERGE);
-		if (merge == null)
-			return null;
-
-		String remote = repo.getConfig().getString(
-				ConfigConstants.CONFIG_BRANCH_SECTION, branch,
-				ConfigConstants.CONFIG_KEY_REMOTE);
-		if (remote == null)
-			return null;
-
-		if (".".equals(remote)) //$NON-NLS-1$
-			return merge;
-		else
-			return Constants.R_REMOTES + remote + "/" //$NON-NLS-1$
-					+ Repository.shortenRefName(merge);
-	}
-
-	/**
-	 * Get the target merge ref name for the currently checkout branch
-	 *
-	 * @param repo
-	 * @return ref node
-	 */
-	protected static int getSelectSetting(Repository repo) {
-		return getMergeTarget(repo) != null ? SELECT_CURRENT_REF : 0;
-	}
 
 	/** The {@link Repository} used in the constructor */
 	protected final Repository repo;
@@ -259,7 +208,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		layout.verticalSpacing = convertVerticalDLUsToPixels(IDialogConstants.VERTICAL_SPACING);
 		layout.horizontalSpacing = convertHorizontalDLUsToPixels(IDialogConstants.HORIZONTAL_SPACING);
 		composite.setLayout(layout);
-		composite.setLayoutData(GridDataFactory.fillDefaults().grab(true, true).create());
+		composite.setLayoutData(GridDataFactory.fillDefaults().create());
 
 		int selectionModel = -1;
 		if ((settings & ALLOW_MULTISELECTION) != 0)
@@ -269,10 +218,8 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		FilteredTree tree = new FilteredTree(composite, selectionModel | SWT.BORDER,
 				new PatternFilter(), true);
 		branchTree = tree.getViewer();
-		branchTree
-				.setLabelProvider(new RepositoriesViewStyledCellLabelProvider());
+		branchTree.setLabelProvider(new RepositoriesViewLabelProvider());
 		branchTree.setContentProvider(new RepositoriesViewContentProvider());
-		ColumnViewerToolTipSupport.enableFor(branchTree);
 
 		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300).applyTo(
 				tree);
@@ -297,7 +244,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 						&& type != RepositoryTreeNodeType.ADDITIONALREF)
 					branchTree.setExpandedState(node,
 							!branchTree.getExpandedState(node));
-				else if (isOkButtonEnabled())
+				else if (getButton(Window.OK).isEnabled())
 					buttonPressed(OK);
 			}
 		});
@@ -328,7 +275,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		// complete after the dialog is first shown. If automatic selections
 		// happen after this (making the user inputs complete), the button will
 		// be enabled.
-		setOkButtonEnabled(false);
+		getButton(Window.OK).setEnabled(false);
 
 		List<RepositoryTreeNode> roots = new ArrayList<RepositoryTreeNode>();
 		if ((settings & SHOW_LOCAL_BRANCHES) != 0)
@@ -364,30 +311,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	}
 
 	/**
-	 * Enables the OK button. No-op in case Dialog#createButtonsForButtonBar has
-	 * been overridden and the button has not been created.
-	 * 
-	 * @param enabled
-	 * 
-	 * @see org.eclipse.jface.dialogs.Dialog#createButtonsForButtonBar(Composite)
-	 */
-	protected void setOkButtonEnabled(boolean enabled) {
-		if (getButton(Window.OK) != null)
-			getButton(Window.OK).setEnabled(enabled);
-	}
-
-	/**
-	 * Returns <code>true</code> if the OK button has been created and is
-	 * enabled.
-	 * 
-	 * @return the OK button's enabled state or <code>false</code> if the button
-	 *         has not been created.
-	 */
-	protected boolean isOkButtonEnabled() {
-		return getButton(Window.OK) != null && getButton(Window.OK).isEnabled();
-	}
-
-	/**
 	 * Set the selection to a {@link Ref} if possible
 	 *
 	 * @param refName
@@ -403,37 +326,22 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		RepositoryTreeNode node;
 		try {
 			if (refName.startsWith(Constants.R_HEADS)) {
-				Ref ref = repo.getRef(refName);
-				if (ref == null)
-					return false;
-				node = new RefNode(localBranches, repo, ref);
-			} else if (refName.startsWith(Constants.R_REMOTES)) {
-				Ref ref = repo.getRef(refName);
-				if (ref == null)
-					return false;
-				node = new RefNode(remoteBranches, repo, ref);
-			} else if (Constants.HEAD.equals(refName)) {
-				Ref ref = repo.getRef(refName);
-				if (ref == null)
-					return false;
-				node = new AdditionalRefNode(references, repo, ref);
+				Ref ref = this.repo.getRef(refName);
+				node = new RefNode(localBranches, this.repo, ref);
 			} else {
 				String mappedRef = Activator.getDefault().getRepositoryUtil()
-						.mapCommitToRef(repo, refName, false);
+						.mapCommitToRef(this.repo, refName, false);
 				if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_REMOTES)) {
-					Ref ref = repo.getRef(mappedRef);
-					if (ref == null)
-						return false;
-					node = new RefNode(remoteBranches, repo, ref);
+					Ref ref = this.repo.getRef(mappedRef);
+					node = new RefNode(remoteBranches, this.repo, ref);
 				} else if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_TAGS)) {
-					Ref ref = repo.getRef(mappedRef);
-					if (ref == null)
-						return false;
-					node = new TagNode(tags, repo, ref);
-				} else
+					Ref ref = this.repo.getRef(mappedRef);
+					node = new TagNode(tags, this.repo, ref);
+				} else {
 					return false;
+				}
 			}
 		} catch (IOException e) {
 			return false;
@@ -484,8 +392,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 			return null;
 		RepositoryTreeNode node = (RepositoryTreeNode) sel.getFirstElement();
 		if (node.getType() == RepositoryTreeNodeType.REF
-				|| node.getType() == RepositoryTreeNodeType.TAG)
+				|| node.getType() == RepositoryTreeNodeType.TAG) {
 			return ((Ref) node.getObject());
+		}
 		return null;
 	}
 
@@ -501,24 +410,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	@Override
 	protected int getShellStyle() {
 		return super.getShellStyle() | SWT.RESIZE;
-	}
-
-	/**
-	 * Get short name of current branch
-	 *
-	 * @return branch name
-	 */
-	protected String getCurrentBranch() {
-		try {
-			return repo.getBranch();
-		} catch (IOException e) {
-			return null;
-		}
-	}
-
-	@Override
-	protected IDialogSettings getDialogBoundsSettings() {
-		return UIUtils.getDialogBoundSettings(getClass());
 	}
 
 }

@@ -2,7 +2,6 @@
  * Copyright (C) 2007,2010 Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +27,6 @@ import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -36,11 +34,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.internal.ConfigurationChecker;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -111,24 +106,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 */
 	public static void handleError(String message, Throwable throwable,
 			boolean show) {
-		handleIssue(IStatus.ERROR, message, throwable, show);
-	}
-
-	/**
-	 * Handle an issue. The issue is logged. If <code>show</code> is
-	 * <code>true</code> the issue is shown to the user.
-	 *
-	 * @param severity
-	 *            status severity, use constants defined in {@link IStatus}
-	 * @param message
-	 *            a localized message
-	 * @param throwable
-	 * @param show
-	 * @since 2.2
-	 */
-	public static void handleIssue(int severity, String message, Throwable throwable,
-			boolean show) {
-		IStatus status = new Status(severity, getPluginId(), message,
+		IStatus status = new Status(IStatus.ERROR, getPluginId(), message,
 				throwable);
 		int style = StatusManager.LOG;
 		if (show)
@@ -228,7 +206,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		setupRepoIndexRefresh();
 		setupFocusHandling();
 		setupCredentialsProvider();
-		ConfigurationChecker.checkConfiguration();
 	}
 
 	private void setupCredentialsProvider() {
@@ -236,8 +213,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 	static boolean isActive() {
-		if (!PlatformUI.isWorkbenchRunning())
-			return false;
 		final AtomicBoolean ret = new AtomicBoolean();
 		final Display display = PlatformUI.getWorkbench().getDisplay();
 		if (display.isDisposed())
@@ -271,17 +246,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				refreshJob.triggerRefresh();
 			}
 		};
-		Job job = new Job(UIText.Activator_setupFocusListener) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				if (PlatformUI.isWorkbenchRunning())
-					PlatformUI.getWorkbench().addWindowListener(focusListener);
-				else
-					schedule(1000L);
-				return Status.OK_STATUS;
-			}
-		};
-		job.schedule();
+		PlatformUI.getWorkbench().addWindowListener(focusListener);
 	}
 
 	public void optionsChanged(DebugOptions options) {
@@ -340,8 +305,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * Refresh projects in repositories that we suspect may have resource
 	 * changes.
 	 */
-	static class ResourceRefreshJob extends WorkspaceJob implements
-			IndexChangedListener {
+	static class ResourceRefreshJob extends Job implements IndexChangedListener {
 
 		ResourceRefreshJob() {
 			super(UIText.Activator_refreshJobName);
@@ -351,7 +315,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		private Set<Repository> repositoriesChanged = new HashSet<Repository>();
 
 		@Override
-		public IStatus runInWorkspace(IProgressMonitor monitor) {
+		protected IStatus run(IProgressMonitor monitor) {
 			IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
 			monitor.beginTask(UIText.Activator_refreshingProjects, projects.length);
 
@@ -367,8 +331,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				ISchedulingRule rule = p.getWorkspace().getRuleFactory().refreshRule(p);
 				try {
 					getJobManager().beginRule(rule, monitor);
-					if(p.exists()) // handle missing projects after branch switch
-						p.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
+					p.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
 				} catch (CoreException e) {
 					handleError(UIText.Activator_refreshFailed, e, false);
 					return new Status(IStatus.ERROR, getPluginId(), e.getMessage());
@@ -452,14 +415,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
-			// The core plugin might have been stopped before we could cancel
-			// this job.
-			RepositoryCache repositoryCache = org.eclipse.egit.core.Activator
-					.getDefault().getRepositoryCache();
-			if (repositoryCache == null)
-				return Status.OK_STATUS;
-
-			Repository[] repos = repositoryCache.getAllRepositories();
+			Repository[] repos = org.eclipse.egit.core.Activator.getDefault()
+					.getRepositoryCache().getAllRepositories();
 			if (repos.length == 0)
 				return Status.OK_STATUS;
 
@@ -518,7 +475,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		rcs.schedule(RepositoryChangeScanner.REPO_SCAN_INTERVAL);
 	}
 
-	@SuppressWarnings("unchecked")
 	private void setupSSH(final BundleContext context) {
 		final ServiceReference ssh;
 
@@ -548,8 +504,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		}
 
 		if (focusListener != null) {
-			if (PlatformUI.isWorkbenchRunning())
-				PlatformUI.getWorkbench().removeWindowListener(focusListener);
+			PlatformUI.getWorkbench().removeWindowListener(focusListener);
 			focusListener = null;
 		}
 

@@ -36,7 +36,7 @@
 		<p>You are probably familiar with the git command line interface (CLI) that can be used from the shell or in scripts. JGit comes with its own small CLI, which, although not as feature-full as the git CLI, is a good way to showcase what JGIt can do. Furthermore, the programs serve as an excellent source of inspiration for how to accomplish different tasks. </p>
 		<h3 id="Building_the_JGit_CLI">Building the JGit CLI</h3>
 		<p>Assuming that you have the EGit git repository cloned and ready, build the jgit binary by running the jgit maven build (see 
-			<a href="../../EGit/Contributor_Guide/Obtaining-Sources.html#JGit" title="EGit/Contributor_Guide#JGit">the Contributor Guide</a>):
+			<a href="http://wiki.eclipse.org/EGit/Contributor_Guide#JGit" title="EGit/Contributor_Guide#JGit" target="egit_external">the Contributor Guide</a>):
 		</p>
 		<pre>~/src/jgit$ mvn clean install
 </pre>
@@ -53,10 +53,10 @@ jgit version 0.10.0-SNAPSHOT
 		<h3 id="Running_the_JGit_CLI">Running the JGit CLI</h3>
 		<h4 id="Overview">Overview</h4>
 		<p>When given the 
-			<b>-h</b> flag, commands provide a helpful message listing what flags they support.
+			<i>'-h</i>' flag, commands provide a helpful message listing what flags they support.
 		</p>
 		<pre>prompt$ ./jgit version -h
-jgit version <a href="--help">(-h)</a>
+jgit version [--help (-h)]
 </pre>
 		<pre> --help (-h) : display this help text
 </pre>
@@ -64,7 +64,7 @@ jgit version <a href="--help">(-h)</a>
 			<b>jgit</b> with no arguments lists the most commonly used commands.
 		</p>
 		<pre>prompt$ ./jgit
-jgit --git-dir GIT_DIR --help (-h) --show-stack-trace command <a href="ARG">...</a>
+jgit --git-dir GIT_DIR --help (-h) --show-stack-trace command [ARG ...]
 </pre>
 		<pre>The most commonly used commands are:
  branch   List, create, or delete branches
@@ -91,7 +91,7 @@ jgit --git-dir GIT_DIR --help (-h) --show-stack-trace command <a href="ARG">...<
 		<p>Before inspecting the most recent commits, you probably want to know which branches the repository contains and what branch is currently checked out. Using the branch commands -v flag, you get a small summary of branches, their revision, and the first line of the revision's commit message.</p>
 		<pre>prompt$ ./jgit branch -v
   master       4d4adfb Git Project import: don't hide but gray out existing projects
-* traceHistory 6b9fe04 <a href="historyView">historyView</a> Add trace instrumentation
+* traceHistory 6b9fe04 [historyView] Add trace instrumentation
 </pre>
 		<p>The log command, like 
 			<a href="http://www.kernel.org/pub/software/scm/git/docs/git-log.html" target="egit_external">git-log(1)</a>, shows the commit log. For example,

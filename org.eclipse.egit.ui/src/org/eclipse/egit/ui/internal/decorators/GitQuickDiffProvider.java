@@ -16,9 +16,8 @@ import java.util.WeakHashMap;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.team.core.RepositoryProvider;
@@ -68,26 +67,23 @@ public class GitQuickDiffProvider implements IQuickDiffReferenceProvider {
 					"(GitQuickDiffProvider) file: " + resource); //$NON-NLS-1$
 		if (resource == null)
 			return null;
-
-		// Document must only be created once
-		if (document == null)
-			document = createDocument(resource);
-		return document;
-	}
-
-	private static GitDocument createDocument(IResource resource) {
-		try {
-			return GitDocument.create(resource);
-		} catch (IOException e) {
-			Activator.error(UIText.QuickDiff_failedLoading, e);
+		RepositoryProvider provider = RepositoryProvider.getProvider(resource
+				.getProject());
+		if (provider != null) {
+			try {
+				document = GitDocument.create(resource);
+			} catch (IOException e) {
+				Activator.error(UIText.QuickDiff_failedLoading, e);
+			}
+			return document;
+		} else {
 			return null;
 		}
 	}
 
 	public boolean isEnabled() {
-		return resource != null
-				&& RepositoryProvider.getProvider(resource.getProject(),
-						GitProvider.ID) != null;
+		return resource == null ? false : RepositoryProvider
+				.getProvider(resource.getProject()) != null;
 	}
 
 	public void setActiveEditor(ITextEditor editor) {

@@ -12,16 +12,12 @@
 package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.widgets.Button;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 
@@ -31,18 +27,13 @@ import org.eclipse.swt.widgets.Shell;
  */
 public class RebaseTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
-	private boolean interactive = false;
-
-	private boolean preserveMerges = false;
-
 	/**
 	 * @param parentShell
 	 * @param repo
 	 */
 	public RebaseTargetSelectionDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo, getMergeTarget(repo), SHOW_LOCAL_BRANCHES
-				| SHOW_REMOTE_BRANCHES | EXPAND_REMOTE_BRANCHES_NODE
-				| getSelectSetting(repo));
+		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
+				| EXPAND_REMOTE_BRANCHES_NODE);
 	}
 
 	@Override
@@ -54,35 +45,18 @@ public class RebaseTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 	@Override
 	protected String getMessageText() {
-		String branch = getCurrentBranch();
-		if (branch != null)
-			return MessageFormat.format(
-					UIText.RebaseTargetSelectionDialog_DialogMessageWithBranch,
-					branch);
-		else
-			return UIText.RebaseTargetSelectionDialog_DialogMessage;
+		return UIText.RebaseTargetSelectionDialog_DialogMessage;
 	}
 
 	@Override
 	protected String getTitle() {
-		String branch = getCurrentBranch();
-		if (branch != null)
-			return MessageFormat.format(
-					UIText.RebaseTargetSelectionDialog_DialogTitleWithBranch,
-					branch);
-		else
-			return UIText.RebaseTargetSelectionDialog_DialogTitle;
+		return UIText.RebaseTargetSelectionDialog_DialogTitle;
 	}
 
 	@Override
 	protected String getWindowTitle() {
-		String branch = getCurrentBranch();
-		if (branch != null)
-			return MessageFormat.format(
-					UIText.RebaseTargetSelectionDialog_RebaseTitleWithBranch,
-					branch);
-		else
-			return UIText.RebaseTargetSelectionDialog_RebaseTitle;
+		return NLS.bind(UIText.RebaseTargetSelectionDialog_RebaseTitle, repo
+				.getDirectory().toString());
 	}
 
 	@Override
@@ -104,41 +78,5 @@ public class RebaseTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 		getButton(Window.OK).setEnabled(
 				!currentSelected && (branchSelected || tagSelected));
-	}
-
-	@Override
-	protected void createCustomArea(Composite parent) {
-		final Button interactivebutton = new Button(parent, SWT.CHECK);
-		interactivebutton
-				.setText(UIText.RebaseTargetSelectionDialog_InteractiveButton);
-		interactivebutton.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				interactive = interactivebutton.getSelection();
-			}
-		});
-		final Button preserveMergesButton = new Button(parent, SWT.CHECK);
-		preserveMergesButton
-				.setText(UIText.RebaseTargetSelectionDialog_PreserveMergesButton);
-		preserveMergesButton.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				preserveMerges = preserveMergesButton.getSelection();
-			}
-		});
-	}
-
-	/**
-	 * @return whether the rebase should be interactive
-	 */
-	public boolean isInteractive() {
-		return interactive;
-	}
-
-	/**
-	 * @return whether merges should be preserved during rebase
-	 */
-	public boolean isPreserveMerges() {
-		return preserveMerges;
 	}
 }

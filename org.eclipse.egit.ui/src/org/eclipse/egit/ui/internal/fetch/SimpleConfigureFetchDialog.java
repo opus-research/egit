@@ -19,7 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.push.RefSpecDialog;
 import org.eclipse.egit.ui.internal.push.RefSpecWizard;
 import org.eclipse.egit.ui.internal.repository.SelectUriWizard;
@@ -29,7 +29,6 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -57,6 +56,7 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -67,6 +67,9 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.forms.events.ExpansionAdapter;
+import org.eclipse.ui.forms.events.ExpansionEvent;
+import org.eclipse.ui.forms.widgets.ExpandableComposite;
 
 /**
  * A simplified wizard for configuring fetch
@@ -145,16 +148,15 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 			Activator.handleError(e.getMessage(), e, true);
 			return null;
 		}
-		if (branch == null)
-			return null;
 
 		String remoteName;
-		if (ObjectId.isId(branch))
+		if (ObjectId.isId(branch)) {
 			remoteName = Constants.DEFAULT_REMOTE_NAME;
-		else
+		} else {
 			remoteName = repository.getConfig().getString(
 					ConfigConstants.CONFIG_BRANCH_SECTION, branch,
 					ConfigConstants.CONFIG_REMOTE_SECTION);
+		}
 
 		// check if we find the configured and default Remotes
 		List<RemoteConfig> allRemotes;
@@ -195,21 +197,6 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 		this.repository = repository;
 		this.config = config;
 		this.showBranchInfo = showBranchInfo;
-
-		// Add default fetch ref spec if this is a new remote config
-		if (config.getFetchRefSpecs().isEmpty()
-				&& !repository.getConfig()
-						.getSubsections(ConfigConstants.CONFIG_REMOTE_SECTION)
-						.contains(config.getName())) {
-			StringBuilder defaultRefSpec = new StringBuilder();
-			defaultRefSpec.append('+');
-			defaultRefSpec.append(Constants.R_HEADS);
-			defaultRefSpec.append('*').append(':');
-			defaultRefSpec.append(Constants.R_REMOTES);
-			defaultRefSpec.append(config.getName());
-			defaultRefSpec.append(RefSpec.WILDCARD_SUFFIX);
-			config.addFetchRefSpec(new RefSpec(defaultRefSpec.toString()));
-		}
 	}
 
 	@Override
@@ -220,14 +207,22 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 		main.setLayout(new GridLayout(1, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
 
-		if (showBranchInfo) {
-			Composite branchArea = new Composite(main, SWT.NONE);
-			GridLayoutFactory.swtDefaults().numColumns(2).equalWidth(false)
-					.applyTo(branchArea);
-			GridDataFactory.fillDefaults().grab(true, false)
-					.applyTo(branchArea);
+		Composite repositoryGroup = new Composite(main, SWT.SHADOW_ETCHED_IN);
+		repositoryGroup.setLayout(new GridLayout(2, false));
+		GridDataFactory.fillDefaults().grab(true, false).applyTo(
+				repositoryGroup);
+		Label repositoryLabel = new Label(repositoryGroup, SWT.NONE);
+		repositoryLabel
+				.setText(UIText.SimpleConfigureFetchDialog_RepositoryLabel);
+		Text repositoryText = new Text(repositoryGroup, SWT.BORDER
+				| SWT.READ_ONLY);
+		GridDataFactory.fillDefaults().grab(true, false)
+				.applyTo(repositoryText);
+		repositoryText.setText(Activator.getDefault().getRepositoryUtil()
+				.getRepositoryName(repository));
 
-			Label branchLabel = new Label(branchArea, SWT.NONE);
+		if (showBranchInfo) {
+			Label branchLabel = new Label(repositoryGroup, SWT.NONE);
 			branchLabel.setText(UIText.SimpleConfigureFetchDialog_BranchLabel);
 			String branch;
 			try {
@@ -235,19 +230,27 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 			} catch (IOException e2) {
 				branch = null;
 			}
-			if (branch == null || ObjectId.isId(branch))
+			if (branch == null || ObjectId.isId(branch)) {
 				branch = UIText.SimpleConfigureFetchDialog_DetachedHeadMessage;
-			Text branchText = new Text(branchArea, SWT.BORDER | SWT.READ_ONLY);
+			}
+			Text branchText = new Text(repositoryGroup, SWT.BORDER
+					| SWT.READ_ONLY);
 			GridDataFactory.fillDefaults().grab(true, false)
 					.applyTo(branchText);
 			branchText.setText(branch);
 		}
 
-		addDefaultOriginWarningIfNeeded(main);
+		Group remoteGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		remoteGroup.setLayout(new GridLayout(1, false));
+		GridDataFactory.fillDefaults().grab(true, true).applyTo(remoteGroup);
+		remoteGroup.setText(NLS.bind(
+				UIText.SimpleConfigureFetchDialog_RemoteGroupHeader, config
+						.getName()));
 
-		final Composite sameUriDetails = new Composite(main, SWT.NONE);
-		GridLayoutFactory.fillDefaults().numColumns(4).equalWidth(false)
-				.applyTo(sameUriDetails);
+		addDefaultOriginWarningIfNeeded(remoteGroup);
+
+		final Composite sameUriDetails = new Composite(remoteGroup, SWT.NONE);
+		sameUriDetails.setLayout(new GridLayout(4, false));
 		GridDataFactory.fillDefaults().grab(true, false)
 				.applyTo(sameUriDetails);
 		Label commonUriLabel = new Label(sameUriDetails, SWT.NONE);
@@ -268,7 +271,9 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 				if (new WizardDialog(getShell(), wiz).open() == Window.OK) {
 					if (commonUriText.getText().length() > 0)
 						try {
-							config.removeURI(new URIish(commonUriText.getText()));
+							config
+									.removeURI(new URIish(commonUriText
+											.getText()));
 						} catch (URISyntaxException ex) {
 							Activator.handleError(ex.getMessage(), ex, true);
 						}
@@ -297,50 +302,72 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 			}
 		});
 
-		final Group refSpecGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		final Group refSpecGroup = new Group(remoteGroup, SWT.SHADOW_ETCHED_IN);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(refSpecGroup);
 		refSpecGroup.setText(UIText.SimpleConfigureFetchDialog_RefMappingGroup);
-		refSpecGroup.setLayout(new GridLayout(2, false));
+		refSpecGroup.setLayout(new GridLayout(5, false));
+
+		ExpandableComposite advanced = new ExpandableComposite(refSpecGroup,
+				ExpandableComposite.TREE_NODE
+						| ExpandableComposite.CLIENT_INDENT);
+		if (advancedMode)
+			advanced.setExpanded(true);
+		advanced
+				.setText(UIText.SimpleConfigureFetchDialog_AdvancedCompositeButton);
+		GridDataFactory.fillDefaults().align(SWT.BEGINNING, SWT.FILL)
+				.span(5, 1).grab(true, false).applyTo(advanced);
+		advanced.addExpansionListener(new ExpansionAdapter() {
+			@Override
+			public void expansionStateChanged(ExpansionEvent e) {
+				Activator.getDefault().getPreferenceStore().setValue(
+						ADVANCED_MODE_PREFERENCE, e.getState());
+				GridData data = (GridData) changeRefSpec.getLayoutData();
+				data.exclude = !e.getState();
+				changeRefSpec.setVisible(!data.exclude);
+				refSpecGroup.layout(true);
+			}
+		});
+
+		Label refSpecLabel = new Label(refSpecGroup, SWT.NONE);
+		refSpecLabel.setText(UIText.SimpleConfigureFetchDialog_RefSpecLabel);
+		GridDataFactory.fillDefaults().span(5, 1).applyTo(refSpecLabel);
 
 		specViewer = new TableViewer(refSpecGroup, SWT.BORDER | SWT.MULTI);
 		specViewer.setContentProvider(ArrayContentProvider.getInstance());
-		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 150)
-				.minSize(SWT.DEFAULT, 30).grab(true, true)
-				.applyTo(specViewer.getTable());
+		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 150).minSize(
+				SWT.DEFAULT, 30).span(5, 1).grab(true, true).applyTo(
+				specViewer.getTable());
 
 		specViewer.getTable().addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
-				if (e.stateMask == SWT.MOD1 && e.keyCode == 'v')
+				if (e.stateMask == SWT.MOD1 && e.keyCode == 'v') {
 					doPaste();
+				}
 			}
 		});
 
-		Composite buttonArea = new Composite(refSpecGroup, SWT.NONE);
-		GridLayoutFactory.fillDefaults().applyTo(buttonArea);
-		GridDataFactory.fillDefaults().grab(false, true).applyTo(buttonArea);
-
-		addRefSpec = new Button(buttonArea, SWT.PUSH);
+		addRefSpec = new Button(refSpecGroup, SWT.PUSH);
 		addRefSpec.setText(UIText.SimpleConfigureFetchDialog_AddRefSpecButton);
-		GridDataFactory.fillDefaults().applyTo(addRefSpec);
 		addRefSpec.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				SimpleFetchRefSpecWizard wiz = new SimpleFetchRefSpecWizard(
 						repository, config);
 				WizardDialog dlg = new WizardDialog(getShell(), wiz);
-				if (dlg.open() == Window.OK)
+				if (dlg.open() == Window.OK) {
 					config.addFetchRefSpec(wiz.getSpec());
+				}
 				updateControls();
 			}
 		});
 
-		changeRefSpec = new Button(buttonArea, SWT.PUSH);
+		changeRefSpec = new Button(refSpecGroup, SWT.PUSH);
 		changeRefSpec
 				.setText(UIText.SimpleConfigureFetchDialog_ChangeRefSpecButton);
 		changeRefSpec.setEnabled(false);
-		GridDataFactory.fillDefaults().exclude(!advancedMode)
-				.applyTo(changeRefSpec);
+		GridDataFactory.fillDefaults().exclude(!advancedMode).applyTo(
+				changeRefSpec);
 		changeRefSpec.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -355,24 +382,24 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 				updateControls();
 			}
 		});
-		final Button deleteRefSpec = new Button(buttonArea, SWT.PUSH);
+		final Button deleteRefSpec = new Button(refSpecGroup, SWT.PUSH);
 		deleteRefSpec
 				.setText(UIText.SimpleConfigureFetchDialog_DeleteRefSpecButton);
-		GridDataFactory.fillDefaults().applyTo(deleteRefSpec);
 		deleteRefSpec.setEnabled(false);
 		deleteRefSpec.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				for (Object spec : ((IStructuredSelection) specViewer
-						.getSelection()).toArray())
+						.getSelection()).toArray()) {
 					config.removeFetchRefSpec((RefSpec) spec);
+
+				}
 				updateControls();
 			}
 		});
 
-		final Button copySpec = new Button(buttonArea, SWT.PUSH);
+		final Button copySpec = new Button(refSpecGroup, SWT.PUSH);
 		copySpec.setText(UIText.SimpleConfigureFetchDialog_CopyRefSpecButton);
-		GridDataFactory.fillDefaults().applyTo(copySpec);
 		copySpec.setEnabled(false);
 		copySpec.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -389,9 +416,8 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 			}
 		});
 
-		final Button pasteSpec = new Button(buttonArea, SWT.PUSH);
+		final Button pasteSpec = new Button(refSpecGroup, SWT.PUSH);
 		pasteSpec.setText(UIText.SimpleConfigureFetchDialog_PateRefSpecButton);
-		GridDataFactory.fillDefaults().applyTo(pasteSpec);
 		pasteSpec.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -399,8 +425,10 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 			}
 		});
 
-		addRefSpecAdvanced = new Button(buttonArea, SWT.PUSH);
-		GridDataFactory.fillDefaults().applyTo(addRefSpecAdvanced);
+		addRefSpecAdvanced = new Button(advanced, SWT.PUSH);
+		advanced.setClient(addRefSpecAdvanced);
+		GridDataFactory.fillDefaults().align(SWT.BEGINNING, SWT.FILL).applyTo(
+				addRefSpecAdvanced);
 
 		addRefSpecAdvanced
 				.setText(UIText.SimpleConfigureFetchDialog_EditAdvancedButton);
@@ -451,8 +479,11 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 	@Override
 	public void create() {
 		super.create();
+		String repoName = Activator.getDefault().getRepositoryUtil()
+				.getRepositoryName(repository);
+
 		setTitle(NLS.bind(UIText.SimpleConfigureFetchDialog_DialogTitle,
-				config.getName()));
+				repoName, config.getName()));
 		setMessage(UIText.SimpleConfigureFetchDialog_DialogMessage);
 
 		updateControls();
@@ -464,8 +495,9 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 		if (!config.getURIs().isEmpty()) {
 			commonUriText.setText(config.getURIs().get(0).toPrivateString());
 			anyUri = true;
-		} else
+		} else {
 			commonUriText.setText(""); //$NON-NLS-1$
+		}
 
 		specViewer.setInput(config.getFetchRefSpecs());
 		specViewer.getTable().setEnabled(true);
@@ -570,12 +602,13 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 		try {
 			String content = (String) clipboard.getContents(TextTransfer
 					.getInstance());
-			if (content == null)
+			if (content == null) {
 				MessageDialog
 						.openConfirm(
 								getShell(),
 								UIText.SimpleConfigureFetchDialog_NothingToPasteMessage,
 								UIText.SimpleConfigureFetchDialog_EmptyClipboardMessage);
+			}
 			try {
 				RefSpec spec = new RefSpec(content);
 				Ref source;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2013 Shawn O. Pearce <spearce@spearce.org> and others.
+ * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,41 +8,76 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.text.MessageFormat;
-
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
-import org.eclipse.swt.graphics.Color;
+import org.eclipse.jface.viewers.BaseLabelProvider;
+import org.eclipse.jface.viewers.DecorationOverlayIcon;
+import org.eclipse.jface.viewers.IDecoration;
+import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Label provider for {@link FileDiff} objects
  */
-public class FileDiffLabelProvider extends ColumnLabelProvider {
+public class FileDiffLabelProvider extends BaseLabelProvider implements
+		ITableLabelProvider {
 
-	private final ResourceManager resourceManager = new LocalResourceManager(
+	private Image DEFAULT = PlatformUI.getWorkbench().getSharedImages()
+			.getImage(ISharedImages.IMG_OBJ_FILE);
+
+	private ResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
-	private final Color dimmedForegroundColor;
 
-	/**
-	 * @param dimmedForegroundRgb the color used for as foreground color for "unhighlighted" entries
-	 */
-	public FileDiffLabelProvider(RGB dimmedForegroundRgb) {
-		dimmedForegroundColor = resourceManager.createColor(dimmedForegroundRgb);
+	public String getColumnText(final Object element, final int columnIndex) {
+		if (columnIndex == 0) {
+			final FileDiff c = (FileDiff) element;
+			return c.getPath();
+		}
+		return null;
 	}
 
-	public String getText(final Object element) {
-		return ((FileDiff) element).getLabel(element);
+	private Image getEditorImage(FileDiff diff) {
+		Image image = DEFAULT;
+		String name = new Path(diff.getPath()).lastSegment();
+		if (name != null) {
+			ImageDescriptor descriptor = PlatformUI.getWorkbench()
+					.getEditorRegistry().getImageDescriptor(name);
+			image = (Image) this.resourceManager.get(descriptor);
+		}
+		return image;
 	}
 
-	public Image getImage(final Object element) {
-		final FileDiff c = (FileDiff) element;
-		return (Image) resourceManager.get(c.getImageDescriptor(c));
+	private Image getDecoratedImage(Image base, ImageDescriptor decorator) {
+		DecorationOverlayIcon decorated = new DecorationOverlayIcon(base,
+				decorator, IDecoration.BOTTOM_RIGHT);
+		return (Image) this.resourceManager.get(decorated);
+	}
+
+	public Image getColumnImage(final Object element, final int columnIndex) {
+		if (columnIndex == 0) {
+			final FileDiff c = (FileDiff) element;
+			switch (c.getChange()) {
+			case ADD:
+				return getDecoratedImage(getEditorImage(c),
+						UIIcons.OVR_STAGED_ADD);
+			case DELETE:
+				return getDecoratedImage(getEditorImage(c),
+						UIIcons.OVR_STAGED_REMOVE);
+			case COPY:
+				// fall through
+			case RENAME:
+				// fall through
+			case MODIFY:
+				return getEditorImage(c);
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -51,22 +86,4 @@ public class FileDiffLabelProvider extends ColumnLabelProvider {
 		super.dispose();
 	}
 
-	public Color getForeground(Object element) {
-		final FileDiff c = (FileDiff) element;
-		if (!c.isMarked(FileDiffContentProvider.INTERESTING_MARK_TREE_FILTER_INDEX))
-			return dimmedForegroundColor;
-		else
-			return null;
-	}
-
-	@Override
-	public String getToolTipText(final Object element) {
-		final FileDiff c = (FileDiff) element;
-		if (c.getChange() == ChangeType.RENAME) {
-			return MessageFormat.format(
-					UIText.FileDiffLabelProvider_RenamedFromToolTip,
-					c.getOldPath());
-		}
-		return null;
-	}
 }

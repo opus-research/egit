@@ -12,12 +12,11 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import java.util.Set;
 
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jgit.lib.ConfigConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -62,11 +61,7 @@ public class NewRemoteDialog extends TitleAreaDialog {
 		super.create();
 		setTitle(UIText.NewRemoteDialog_DialogTitle);
 		setMessage(UIText.NewRemoteDialog_ConfigurationMessage);
-		if (existingRemotes.isEmpty()) {
-			nameText.setText(Constants.DEFAULT_REMOTE_NAME);
-			nameText.selectAll();
-		}
-		checkPage();
+		getButton(OK).setEnabled(false);
 	}
 
 	@Override
@@ -107,31 +102,22 @@ public class NewRemoteDialog extends TitleAreaDialog {
 	private void checkPage() {
 		boolean errorFound = false;
 		setErrorMessage(null);
-		String t = getTrimmedRemoteName();
-		if (t.length() > 0
-				&& !Repository.isValidRefName(Constants.R_REMOTES + t)) {
-			setErrorMessage(NLS.bind(UIText.NewRemoteDialog_InvalidRemoteName,
-					t));
-			errorFound = true;
-		} else if (existingRemotes.contains(t)) {
+		if (existingRemotes.contains(nameText.getText())) {
 			setErrorMessage(NLS.bind(
-					UIText.NewRemoteDialog_RemoteAlreadyExistsMessage, t));
+					UIText.NewRemoteDialog_RemoteAlreadyExistsMessage, nameText
+							.getText()));
 			errorFound = true;
 		}
-		getButton(OK).setEnabled(!errorFound && t.length() > 0);
+		getButton(OK).setEnabled(!errorFound);
 	}
 
 	@Override
 	protected void buttonPressed(int buttonId) {
 		if (buttonId == OK) {
-			name = getTrimmedRemoteName();
+			name = nameText.getText();
 			pushMode = forPush.getSelection();
 		}
 		super.buttonPressed(buttonId);
-	}
-
-	private String getTrimmedRemoteName() {
-		return nameText.getText().trim();
 	}
 
 	/**

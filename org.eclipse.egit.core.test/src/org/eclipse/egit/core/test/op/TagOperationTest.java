@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Chris Aniszczyk <caniszczyk@gmail.com> and others.
+ * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,10 +13,16 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.IOException;
 
+import org.eclipse.core.filesystem.EFS;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.core.test.DualRepositoryTestCase;
 import org.eclipse.egit.core.test.TestRepository;
@@ -51,7 +57,24 @@ public class TagOperationTest extends DualRepositoryTestCase {
 		testUtils.addFileToProject(project, "folder1/file1.txt", "Hello world");
 
 		repository1.connect(project);
-		repository1.trackAllFiles(project);
+
+		project.accept(new IResourceVisitor() {
+
+			public boolean visit(IResource resource) throws CoreException {
+				if (resource instanceof IFile) {
+					try {
+						repository1
+								.track(EFS.getStore(resource.getLocationURI())
+										.toLocalFile(0, null));
+					} catch (IOException e) {
+						throw new CoreException(Activator.error(e.getMessage(),
+								e));
+					}
+				}
+				return true;
+			}
+		});
+
 		repository1.commit("Initial commit");
 	}
 
@@ -59,8 +82,9 @@ public class TagOperationTest extends DualRepositoryTestCase {
 	public void tearDown() throws Exception {
 		project.close(null);
 		project.delete(false, false, null);
-		project = null;
-		// repositories and tempDirs are deleted in superclass
+		repository1.dispose();
+		repository1 = null;
+		testUtils.deleteTempDirs();
 	}
 
 	@Test
@@ -95,21 +119,17 @@ public class TagOperationTest extends DualRepositoryTestCase {
 		}
 		Ref tagRef = repository1.getRepository().getTags().get("TheNewTag");
 		RevWalk walk = new RevWalk(repository1.getRepository());
-		try {
-			RevTag tag = walk.parseTag(repository1.getRepository().resolve(
-					tagRef.getName()));
+		RevTag tag = walk.parseTag(
+				repository1.getRepository().resolve(tagRef.getName()));
 
-			newTag.setMessage("Another message");
-			assertFalse("Messages should differ",
-					tag.getFullMessage().equals(newTag.getMessage()));
-			top.execute(null);
-			tag = walk.parseTag(repository1.getRepository().resolve(
-					tagRef.getName()));
-			assertTrue("Messages be same",
-					tag.getFullMessage().equals(newTag.getMessage()));
-		} finally {
-			walk.dispose();
-		}
+		newTag.setMessage("Another message");
+		assertFalse("Messages should differ", tag.getFullMessage().equals(
+				newTag.getMessage()));
+		top.execute(null);
+		tag = walk.parseTag(
+				repository1.getRepository().resolve(tagRef.getName()));
+		assertTrue("Messages be same", tag.getFullMessage().equals(
+				newTag.getMessage()));
 	}
 
 }

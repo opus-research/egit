@@ -29,14 +29,12 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
-import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -178,16 +176,14 @@ public class GitCompareEditorInput extends CompareEditorInput {
 			if (resources.length == 0) {
 				Object[] titleParameters = new Object[] {
 						Activator.getDefault().getRepositoryUtil()
-								.getRepositoryName(repository),
-						CompareUtils.truncatedRevision(compareVersion),
-						CompareUtils.truncatedRevision(baseVersion) };
+								.getRepositoryName(repository), compareVersion,
+						baseVersion };
 				setTitle(NLS.bind(UIText.GitCompareEditorInput_EditorTitle,
 						titleParameters));
 			} else if (resources.length == 1) {
 				Object[] titleParameters = new Object[] {
 						resources[0].getFullPath().makeRelative().toString(),
-						CompareUtils.truncatedRevision(compareVersion),
-						CompareUtils.truncatedRevision(baseVersion) };
+						compareVersion, baseVersion };
 				setTitle(NLS.bind(
 						UIText.GitCompareEditorInput_EditorTitleSingleResource,
 						titleParameters));
@@ -195,8 +191,7 @@ public class GitCompareEditorInput extends CompareEditorInput {
 				setTitle(NLS
 						.bind(
 								UIText.GitCompareEditorInput_EditorTitleMultipleResources,
-								CompareUtils.truncatedRevision(compareVersion),
-								CompareUtils.truncatedRevision(baseVersion)));
+								compareVersion, baseVersion));
 
 			// build the nodes
 			try {
@@ -281,65 +276,58 @@ public class GitCompareEditorInput extends CompareEditorInput {
 								.isEntryIgnored())
 					continue;
 
-
 				if (compareVersionIterator != null
 						&& baseVersionIterator != null) {
+					// content exists on both sides
 					boolean equalContent = compareVersionIterator
 							.getEntryObjectId().equals(
 									baseVersionIterator.getEntryObjectId());
 					if (equalContent)
 						continue;
-				}
-
-				String encoding = null;
-
-				GitFileRevision compareRev = null;
-				if (compareVersionIterator != null) {
-					String entryPath = compareVersionIterator.getEntryPathString();
-					encoding = CompareCoreUtils.getResourceEncoding(repository, entryPath);
-					if (!useIndex)
-						compareRev = GitFileRevision.inCommit(repository,
-								compareCommit, entryPath,
-								tw.getObjectId(compareTreeIndex));
-					else
-						compareRev = GitFileRevision.inIndex(repository,
-								entryPath);
-				}
-
-				GitFileRevision baseRev = null;
-				if (baseVersionIterator != null) {
-					String entryPath = baseVersionIterator.getEntryPathString();
-					if (encoding == null) {
-						encoding = CompareCoreUtils.getResourceEncoding(repository, entryPath);
-					}
-					baseRev = GitFileRevision.inCommit(repository, baseCommit,
-							entryPath, tw.getObjectId(baseTreeIndex));
-				}
-
-				if (compareVersionIterator != null
-						&& baseVersionIterator != null) {
 					monitor.setTaskName(baseVersionIterator
 							.getEntryPathString());
-					// content exists on both sides
+					GitFileRevision baseRev = GitFileRevision.inCommit(
+							repository, baseCommit, baseVersionIterator
+									.getEntryPathString(), tw
+									.getObjectId(baseTreeIndex));
+					GitFileRevision compareRev;
+					if (!useIndex)
+						compareRev = GitFileRevision.inCommit(repository,
+								compareCommit, compareVersionIterator
+										.getEntryPathString(), tw
+										.getObjectId(compareTreeIndex));
+					else
+						compareRev = GitFileRevision.inIndex(repository,
+								compareVersionIterator.getEntryPathString());
+
 					add(result, baseVersionIterator.getEntryPathString(),
-							new DiffNode(new FileRevisionTypedElement(compareRev, encoding),
-									new FileRevisionTypedElement(baseRev, encoding)));
+							new DiffNode(new FileRevisionTypedElement(baseRev),
+									new FileRevisionTypedElement(compareRev)));
+
 				} else if (baseVersionIterator != null
 						&& compareVersionIterator == null) {
 					monitor.setTaskName(baseVersionIterator
 							.getEntryPathString());
 					// only on base side
+					GitFileRevision baseRev = GitFileRevision.inCommit(
+							repository, baseCommit, baseVersionIterator
+									.getEntryPathString(), tw
+									.getObjectId(baseTreeIndex));
 					add(result, baseVersionIterator.getEntryPathString(),
-							new DiffNode(Differencer.DELETION | Differencer.RIGHT, null, null,
-									new FileRevisionTypedElement(baseRev, encoding)));
+							new DiffNode(Differencer.DELETION, null, null,
+									new FileRevisionTypedElement(baseRev)));
 				} else if (compareVersionIterator != null
 						&& baseVersionIterator == null) {
 					monitor.setTaskName(compareVersionIterator
 							.getEntryPathString());
 					// only on compare side
+					GitFileRevision compareRev = GitFileRevision.inCommit(
+							repository, compareCommit, compareVersionIterator
+									.getEntryPathString(), tw
+									.getObjectId(compareTreeIndex));
 					add(result, compareVersionIterator.getEntryPathString(),
-							new DiffNode(Differencer.ADDITION | Differencer.RIGHT, null,
-									new FileRevisionTypedElement(compareRev, encoding), null));
+							new DiffNode(Differencer.ADDITION, null, null,
+									new FileRevisionTypedElement(compareRev)));
 				}
 
 				if (monitor.isCanceled())
@@ -389,7 +377,7 @@ public class GitCompareEditorInput extends CompareEditorInput {
 		if (repository == null) {
 			if (other.repository != null)
 				return false;
-		} else if (other.repository == null || !repository.getDirectory().equals(
+		} else if (!repository.getDirectory().equals(
 				other.repository.getDirectory()))
 			return false;
 		if (!Arrays.equals(resources, other.resources))

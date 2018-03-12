@@ -80,7 +80,7 @@ RevTag tag = git.tag().setName("tag").call();
 		</ul>
 		<p>Here's a quick example of how get some log messages.</p>
 		<pre>Git git = new Git(db);
-Iterable&lt;RevCommit&gt; log = git.log().call();
+LogCommand log = git.log().call();
 </pre>
 		<h3 id="MergeCommand_.28git-merge.29">MergeCommand (git-merge)</h3>
 		<p>TODO</p>
@@ -99,7 +99,7 @@ Iterable&lt;RevCommit&gt; log = git.log().call();
 </pre>
 		<p>This would then provide git-clone, git-init and git-checkout tasks.</p>
 		<h3 id="git-clone">git-clone</h3>
-		<pre>   &lt;git-clone uri="<a href="http://egit.eclipse.org/jgit.git" target="egit_external">http://egit.eclipse.org/jgit.git</a>" /&gt;
+		<pre>   &lt;git-clone uri="http://egit.eclipse.org/jgit.git" /&gt;
 </pre>
 		<p>The following attributes are required:</p>
 		<ul>

@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG
- * and other copyright owners as documented in the project's IP log.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,49 +12,139 @@
 
 package org.eclipse.egit.ui.internal.history.command;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.text.MessageFormat;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.MultiStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.op.CherryPickOperation;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.UIText;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.api.CherryPickResult;
+import org.eclipse.jgit.api.CherryPickResult.CherryPickStatus;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.merge.ResolveMerger.MergeFailureReason;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 
 /**
- * Executes a cherry pick on the currently selected commit
+ * Executes the CherryPick
  */
 public class CherryPickHandler extends AbstractHistoryCommandHandler {
 
-	@Override
-	public boolean isEnabled() {
-		final Repository repository = getRepository(getPage());
-		if (repository == null)
-			return false;
-		return repository.getRepositoryState().equals(RepositoryState.SAFE);
+	public Object execute(ExecutionEvent event) throws ExecutionException {
+		RevCommit commit = (RevCommit) getSelection(getPage())
+				.getFirstElement();
+		Repository repo = getRepository(event);
+		final Shell parent = getPart(event).getSite().getShell();
+		final CherryPickOperation op = new CherryPickOperation(repo, commit);
+
+		Job job = new Job(MessageFormat.format(
+				UIText.CherryPickHandler_JobName, commit.name())) {
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				try {
+					op.execute(monitor);
+					CherryPickResult cherryPickResult = op.getResult();
+					RevCommit newHead = cherryPickResult.getNewHead();
+					if (newHead != null
+							&& cherryPickResult.getCherryPickedRefs().isEmpty())
+						showNotPerformedDialog(parent);
+					if (newHead == null) {
+						CherryPickStatus status = cherryPickResult.getStatus();
+						switch (status) {
+						case CONFLICTING:
+							showConflictDialog(parent);
+							break;
+						case FAILED:
+							showFailure(cherryPickResult);
+							break;
+						case OK:
+							break;
+						}
+					}
+				} catch (CoreException e) {
+					Activator.logError(
+							UIText.CherryPickOperation_InternalError, e);
+				}
+				return Status.OK_STATUS;
+			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				if (JobFamilies.CHERRY_PICK.equals(family))
+					return true;
+				return super.belongsTo(family);
+			}
+		};
+		job.setUser(true);
+		job.setRule(op.getSchedulingRule());
+		job.schedule();
+		return null;
 	}
 
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		List<RevCommit> commits = getSelectedCommits(event);
-		Repository repo = getRepository(event);
-		if (repo == null)
-			return null;
+	private void showNotPerformedDialog(final Shell shell) {
+		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-		List<RepositoryCommit> repositoryCommits = new ArrayList<RepositoryCommit>();
-		for (RevCommit commit : commits)
-			repositoryCommits.add(new RepositoryCommit(repo, commit));
+			public void run() {
+				MessageDialog.openWarning(shell,
+						UIText.CherryPickHandler_NoCherryPickPerformedTitle,
+						UIText.CherryPickHandler_NoCherryPickPerformedMessage);
+			}
+		});
+	}
 
-		final IStructuredSelection selected = new StructuredSelection(
-				repositoryCommits);
-		CommonUtils
-				.runCommand(
-						org.eclipse.egit.ui.internal.commit.command.CherryPickHandler.ID,
-						selected);
+	private void showConflictDialog(final Shell shell) {
+		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-		return null;
+			public void run() {
+				MessageDialog.openWarning(shell,
+						UIText.CherryPickHandler_CherryPickConflictsTitle,
+						UIText.CherryPickHandler_CherryPickConflictsMessage);
+			}
+		});
+	}
+
+	private void showFailure(CherryPickResult result) {
+		IStatus details = getErrorList(result.getFailingPaths());
+		Activator.showErrorStatus(
+				UIText.CherryPickHandler_CherryPickFailedMessage, details);
+	}
+
+	private IStatus getErrorList(Map<String, MergeFailureReason> failingPaths) {
+		MultiStatus result = new MultiStatus(Activator.getPluginId(),
+				IStatus.ERROR,
+				UIText.CherryPickHandler_CherryPickFailedMessage, null);
+		for (Entry<String, MergeFailureReason> entry : failingPaths.entrySet()) {
+			String path = entry.getKey();
+			String reason = getReason(entry.getValue());
+			String errorMessage = NLS.bind(
+					UIText.CherryPickHandler_ErrorMsgTemplate, path, reason);
+			result.add(Activator.createErrorStatus(errorMessage));
+		}
+		return result;
+	}
+
+	private String getReason(MergeFailureReason mergeFailureReason) {
+		switch (mergeFailureReason) {
+		case COULD_NOT_DELETE:
+			return UIText.CherryPickHandler_CouldNotDeleteFile;
+		case DIRTY_INDEX:
+			return UIText.CherryPickHandler_IndexDirty;
+		case DIRTY_WORKTREE:
+			return UIText.CherryPickHandler_WorktreeDirty;
+		}
+		return UIText.CherryPickHandler_unknown;
 	}
 }

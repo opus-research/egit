@@ -12,9 +12,6 @@ package org.eclipse.egit.ui.internal.repository.tree;
 
 import java.text.Collator;
 
-import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.jface.viewers.Viewer;
-
 /**
  * Sorter for the Git Repositories View.
  */
@@ -41,24 +38,9 @@ public class RepositoriesViewSorter extends
 	public int category(Object element) {
 		if (element instanceof RepositoryTreeNode) {
 			RepositoryTreeNode<? extends Object> node = (RepositoryTreeNode<? extends Object>) element;
-			if (node.getType() == RepositoryTreeNodeType.BRANCHHIERARCHY)
-				return RepositoryTreeNodeType.REF.ordinal();
 			return node.getType().ordinal();
 		}
 		return super.category(element);
 	}
 
-	@Override
-	public int compare(Viewer viewer, Object e1, Object e2) {
-		if (e1 instanceof StashedCommitNode && e2 instanceof StashedCommitNode) {
-			// ok for positive indexes < ~2 billion
-			return ((StashedCommitNode)e1).getIndex() - ((StashedCommitNode)e1).getIndex();
-		} else if (e1 instanceof TagNode && e2 instanceof TagNode) {
-			String name1 = ((TagNode) e1).getObject().getName();
-			String name2 = ((TagNode) e2).getObject().getName();
-			return CommonUtils.STRING_ASCENDING_COMPARATOR
-					.compare(name1, name2);
-		} else
-			return super.compare(viewer, e1, e2);
-	}
 }

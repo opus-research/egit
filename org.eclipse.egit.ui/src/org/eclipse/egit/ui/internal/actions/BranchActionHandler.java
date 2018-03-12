@@ -32,7 +32,6 @@ public class BranchActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		Repository repo = getRepository();
-		return repo != null && containsHead(repo);
+		return getRepository() != null && containsHead();
 	}
 }

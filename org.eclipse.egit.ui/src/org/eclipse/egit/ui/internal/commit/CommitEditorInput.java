@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2014 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -14,8 +14,8 @@ import java.text.MessageFormat;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.PlatformObject;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -121,7 +121,7 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	 */
 	public String getToolTipText() {
 		return MessageFormat.format(UIText.CommitEditorInput_ToolTip, commit
-				.getRevCommit().getShortMessage(), commit.getRepositoryName());
+				.getRevCommit().name(), commit.getRepositoryName());
 	}
 
 	/**

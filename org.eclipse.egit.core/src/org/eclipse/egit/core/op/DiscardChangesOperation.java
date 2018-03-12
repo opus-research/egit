@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2010, Roland Grunberg <rgrunber@redhat.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceRuleFactory;
 import org.eclipse.core.resources.IWorkspace;
@@ -32,10 +32,10 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.job.RuleUtil;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -73,8 +73,7 @@ public class DiscardChangesOperation implements IEGitOperation {
 		this.files = new IResource[files.length];
 		System.arraycopy(files, 0, this.files, 0, files.length);
 		this.revision = revision;
-		schedulingRule = MultiRule.combine(calcRefreshRule(files),
-				RuleUtil.getRuleForRepositories(files));
+		schedulingRule = calcRefreshRule(files);
 	}
 
 	/*
@@ -119,6 +118,14 @@ public class DiscardChangesOperation implements IEGitOperation {
 	private void discardChanges(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(CoreText.DiscardChangesOperation_discardingChanges, 2);
 		boolean errorOccurred = false;
+		for (IResource res : files) {
+			Repository repo = getRepository(res);
+			if (repo == null) {
+				IStatus status = Activator.error(
+						CoreText.DiscardChangesOperation_repoNotFound, null);
+				throw new CoreException(status);
+			}
+		}
 		try {
 			discardChanges();
 		} catch (GitAPIException e) {
@@ -143,20 +150,26 @@ public class DiscardChangesOperation implements IEGitOperation {
 		}
 	}
 
+	private static Repository getRepository(IResource resource) {
+		IProject project = resource.getProject();
+		RepositoryMapping repositoryMapping = RepositoryMapping
+				.getMapping(project);
+		if (repositoryMapping != null)
+			return repositoryMapping.getRepository();
+		else
+			return null;
+	}
+
 	private void discardChanges() throws GitAPIException {
 		Map<Repository, Collection<String>> pathsByRepository = ResourceUtil
 				.splitResourcesByRepository(files);
 		for (Entry<Repository, Collection<String>> entry : pathsByRepository.entrySet()) {
 			Repository repository = entry.getKey();
-			ResourceUtil.saveLocalHistory(repository);
 			Collection<String> paths = entry.getValue();
 			CheckoutCommand checkoutCommand = new Git(repository).checkout();
 			checkoutCommand.setStartPoint(this.revision);
-			if (paths.isEmpty() || paths.contains("")) //$NON-NLS-1$
-				checkoutCommand.setAllPaths(true);
-			else
-				for (String path : paths)
-					checkoutCommand.addPath(path);
+			for (String path : paths)
+				checkoutCommand.addPath(path);
 			checkoutCommand.call();
 		}
 	}

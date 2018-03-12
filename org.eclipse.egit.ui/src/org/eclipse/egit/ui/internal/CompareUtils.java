@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,75 +9,43 @@
  * Contributors:
  *    Dariusz Luksza - add getFileCachedRevisionTypedElement(String, Repository)
  *    Stefan Lay (SAP AG) - initial implementation
- *    Yann Simon <yann.simon.fr@gmail.com> - implementation of getHeadTypedElement
- *    Robin Stocker <robin@nibor.org>
- *    Laurent Goubet <laurent.goubet@obeo.fr>
- *    Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
-import org.eclipse.compare.IContentChangeListener;
-import org.eclipse.compare.IContentChangeNotifier;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.mapping.ResourceMapping;
-import org.eclipse.core.resources.mapping.ResourceMappingContext;
-import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
-import org.eclipse.egit.ui.internal.revision.EditableRevision;
-import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput.EmptyTypedElement;
-import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
-import org.eclipse.egit.ui.internal.synchronize.compare.LocalNonWorkspaceTypedElement;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.CoreConfig.AutoCRLF;
-import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectInserter;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.WorkingTreeOptions;
-import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
-import org.eclipse.jgit.util.IO;
-import org.eclipse.jgit.util.io.EolCanonicalizingInputStream;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
@@ -135,7 +103,7 @@ public class CompareUtils {
 			ObjectId blobId) {
 		ITypedElement right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
 				NLS.bind(UIText.GitHistoryPage_FileNotInCommit,
-						getName(gitPath), truncatedRevision(commit.name())));
+						getName(gitPath), commit));
 
 		try {
 			IFileRevision nextFile = getFileRevision(gitPath, commit, db,
@@ -185,41 +153,7 @@ public class CompareUtils {
 		return null;
 	}
 
-
 	/**
-	 * Creates a {@link ITypedElement} for the commit which is the common
-	 * ancestor of the provided commits. Returns null if no such commit exists
-	 * or if {@code gitPath} is not contained in the common ancestor
-	 *
-	 * @param gitPath
-	 *            path within the ancestor commit's tree of the file.
-	 * @param commit1
-	 * @param commit2
-	 * @param db
-	 *            the repository this commit was loaded out of.
-	 * @return an instance of {@link ITypedElement} which can be used in
-	 *         {@link CompareEditorInput}
-	 */
-	public static ITypedElement getFileRevisionTypedElementForCommonAncestor(
-			final String gitPath, ObjectId commit1, ObjectId commit2,
-			Repository db) {
-		ITypedElement ancestor = null;
-		RevCommit commonAncestor = null;
-		try {
-			commonAncestor = RevUtils.getCommonAncestor(db, commit1, commit2);
-		} catch (IOException e) {
-			Activator.logError(NLS.bind(UIText.CompareUtils_errorCommonAncestor,
-					commit1.getName(), commit2.getName()), e);
-		}
-		if (commonAncestor != null) {
-			ITypedElement ancestorCandidate = CompareUtils
-					.getFileRevisionTypedElement(gitPath, commonAncestor, db);
-			if (!(ancestorCandidate instanceof EmptyTypedElement))
-				ancestor = ancestorCandidate;
-		}
-		return ancestor;
-	}
-/**
 	 * @param element
 	 * @param adapterType
 	 * @return the adapted element, or null
@@ -233,8 +167,8 @@ public class CompareUtils {
 	 * @return a truncated revision identifier if it is long
 	 */
 	public static String truncatedRevision(String ci) {
-		if (ObjectId.isId(ci))
-			return ci.substring(0, 7);
+		if (ci.length() > 10)
+			return ci.substring(0, 7) + "..."; //$NON-NLS-1$
 		else
 			return ci;
 	}
@@ -266,35 +200,6 @@ public class CompareUtils {
 				return adapted;
 		}
 		return null;
-	}
-
-	/**
-	 * Compares two files between the given commits, taking possible renames
-	 * into account.
-	 *
-	 * @param commit1
-	 *            the "left" commit for the comparison editor
-	 * @param commit2
-	 *            the "right" commit for the comparison editor
-	 * @param commit1Path
-	 *            path to the file within commit1's tree
-	 * @param commit2Path
-	 *            path to the file within commit2's tree
-	 * @param repository
-	 *            the repository this commit was loaded out of
-	 * @param workBenchPage
-	 *            the page to open the compare editor in
-	 */
-	public static void openInCompare(RevCommit commit1, RevCommit commit2,
-			String commit1Path, String commit2Path, Repository repository,
-			IWorkbenchPage workBenchPage) {
-		final ITypedElement base = CompareUtils.getFileRevisionTypedElement(
-				commit1Path, commit1, repository);
-		final ITypedElement next = CompareUtils.getFileRevisionTypedElement(
-				commit2Path, commit2, repository);
-		CompareEditorInput in = new GitCompareFileRevisionEditorInput(base,
-				next, null);
-		CompareUtils.openInCompare(workBenchPage, in);
 	}
 
 	/**
@@ -360,7 +265,7 @@ public class CompareUtils {
 	 */
 	public static class ReuseCompareEditorAction extends Action implements
 			IPreferenceChangeListener, IWorkbenchAction {
-		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN);
+		IEclipsePreferences node = new InstanceScope().getNode(TEAM_UI_PLUGIN);
 
 		/**
 		 * Default constructor
@@ -387,15 +292,46 @@ public class CompareUtils {
 	}
 
 	private static boolean isReuseOpenEditor() {
-		boolean defaultReuse = DefaultScope.INSTANCE.getNode(TEAM_UI_PLUGIN)
+		boolean defaultReuse = new DefaultScope().getNode(TEAM_UI_PLUGIN)
 				.getBoolean(REUSE_COMPARE_EDITOR_PREFID, false);
-		return InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN).getBoolean(
+		return new InstanceScope().getNode(TEAM_UI_PLUGIN).getBoolean(
 				REUSE_COMPARE_EDITOR_PREFID, defaultReuse);
 	}
 
 	private static void setReuseOpenEditor(boolean value) {
-		InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN).putBoolean(
+		new InstanceScope().getNode(TEAM_UI_PLUGIN).putBoolean(
 				REUSE_COMPARE_EDITOR_PREFID, value);
+	}
+
+	/**
+	 * Creates {@link ITypedElement} of file that was cached
+	 *
+	 * @param gitPath
+	 * @param db
+	 * @return {@link ITypedElement} instance for given cached file or
+	 *         {@code null} if file isn't cached
+	 */
+	public static ITypedElement getFileCachedRevisionTypedElement(String gitPath,
+			Repository db) {
+		try {
+			DirCache dc = db.lockDirCache();
+			DirCacheEntry entry = dc.getEntry(gitPath);
+			dc.unlock();
+
+			// check if file is staged
+			if (entry != null) {
+				GitFileRevision nextFile = GitFileRevision.inIndex(db, gitPath);
+				String encoding = CompareCoreUtils.getResourceEncoding(db, gitPath);
+				return new FileRevisionTypedElement(nextFile, encoding);
+			}
+		} catch (IOException e) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					gitPath), e);
+		}
+
+		return new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS
+				.bind(UIText.CompareWithIndexAction_FileNotInIndex,
+						gitPath.substring(gitPath.lastIndexOf("/") + 1))); //$NON-NLS-1$
 	}
 
 	/**
@@ -407,12 +343,13 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkspace(Repository repository,
 			IFile file) {
+		RevCommit headCommit = getHeadCommit(repository);
+		if (headCommit == null)
+			return;
 		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
 				file);
-		ITypedElement base = getHeadTypedElement(repository, path);
-		if (base == null)
-			return;
-
+		ITypedElement base = CompareUtils.getFileRevisionTypedElement(path,
+				headCommit, repository);
 		IFileRevision nextFile = new WorkspaceFileRevision(file);
 		String encoding = null;
 		try {
@@ -427,368 +364,6 @@ public class CompareUtils {
 	}
 
 	/**
-	 * Opens a compare editor comparing the working directory version of the
-	 * given IFile with the version of that file corresponding to
-	 * {@code refName}.
-	 *
-	 * @param repository
-	 *            The repository to load file revisions from.
-	 * @param file
-	 *            File to compare revisions for.
-	 * @param refName
-	 *            Reference to compare with the workspace version of
-	 *            {@code file}. Can be either a commit ID, a reference or a
-	 *            branch name.
-	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this
-	 *            page if any is available. Otherwise open a new one.
-	 * @throws IOException
-	 *             If HEAD or {@code refName} can't be resolved in the given
-	 *             repository.
-	 */
-	private static void compareWorkspaceWithRef(Repository repository,
-			IFile file, String refName, IWorkbenchPage page) throws IOException {
-		final RepositoryMapping mapping = RepositoryMapping.getMapping(file);
-		final String gitPath = mapping.getRepoRelativePath(file);
-		final ITypedElement base = SaveableCompareEditorInput
-				.createFileElement(file);
-
-		CompareEditorInput in = prepareCompareInput(repository, gitPath, base,
-				refName);
-
-		if (page != null)
-			openInCompare(page, in);
-		else
-			CompareUI.openCompareEditor(in);
-	}
-
-	/**
-	 * Opens a compare editor comparing the working directory version of the
-	 * file at the given location with the version corresponding to
-	 * {@code refName} of the same file.
-	 *
-	 * @param repository
-	 *            The repository to load file revisions from.
-	 * @param location
-	 *            Location of the file to compare revisions for.
-	 * @param refName
-	 *            Reference to compare with the workspace version of
-	 *            {@code file}. Can be either a commit ID, a reference or a
-	 *            branch name.
-	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this
-	 *            page if any is available. Otherwise open a new one.
-	 * @throws IOException
-	 *             If HEAD or {@code refName} can't be resolved in the given
-	 *             repository.
-	 */
-	private static void compareLocalWithRef(Repository repository,
-			IPath location, String refName, IWorkbenchPage page)
-			throws IOException {
-		final String gitPath = getRepoRelativePath(location, repository);
-		final ITypedElement base = new LocalNonWorkspaceTypedElement(location);
-
-		CompareEditorInput in = prepareCompareInput(repository, gitPath, base,
-				refName);
-
-		if (page != null)
-			openInCompare(page, in);
-		else
-			CompareUI.openCompareEditor(in);
-	}
-
-	/*
-	 * Creates a compare input that can be used to compare a given local file
-	 * with another reference. The given "base" element should always reflect a
-	 * local file, either in the workspace (IFile) or on the file system
-	 * (java.io.File) since we'll use "HEAD" to find a common ancestor of this
-	 * base and the reference we compare it with.
-	 */
-	private static CompareEditorInput prepareCompareInput(
-			Repository repository, String gitPath, ITypedElement base,
-			String refName) throws IOException {
-		final ITypedElement destCommit;
-		ITypedElement commonAncestor = null;
-
-		if (GitFileRevision.INDEX.equals(refName))
-			destCommit = getIndexTypedElement(repository, gitPath);
-		else if (Constants.HEAD.equals(refName))
-			destCommit = getHeadTypedElement(repository, gitPath);
-		else {
-			final ObjectId destCommitId = repository.resolve(refName);
-			RevWalk rw = new RevWalk(repository);
-			RevCommit commit = rw.parseCommit(destCommitId);
-			rw.release();
-			destCommit = getFileRevisionTypedElement(gitPath, commit,
-					repository);
-
-			if (base != null && commit != null) {
-				final ObjectId headCommitId = repository
-						.resolve(Constants.HEAD);
-				commonAncestor = getFileRevisionTypedElementForCommonAncestor(
-						gitPath, headCommitId, destCommitId, repository);
-			}
-		}
-
-
-		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-				base, destCommit, commonAncestor, null);
-		in.getCompareConfiguration().setRightLabel(refName);
-		return in;
-	}
-
-	/**
-	 * This can be used to compare a given set of resources between two
-	 * revisions. If only one resource is to be compared, and that resource is
-	 * not part of a more important model (as defined in
-	 * {@link #canDirectlyOpenInCompare(IFile)}, we'll open a comparison editor
-	 * for that file alone. Otherwise, we'll launch a synchronization restrained
-	 * of the given resources set.
-	 * <p>
-	 * This can also be used to synchronize the whole repository if
-	 * <code>resources</code> is empty.
-	 * </p>
-	 * <p>
-	 * Note that this can be used to compare with the index by using
-	 * {@link GitFileRevision#INDEX} as either one of the two revs.
-	 * </p>
-	 *
-	 * @param resources
-	 *            The set of resources to compare. Can be empty (in which case
-	 *            we'll synchronize the whole repository).
-	 * @param repository
-	 *            The repository to load file revisions from.
-	 * @param leftRev
-	 *            Left revision of the comparison (usually the local or "new"
-	 *            revision). Won't be used if <code>includeLocal</code> is
-	 *            <code>true</code>.
-	 * @param rightRev
-	 *            Right revision of the comparison (usually the "old" revision).
-	 * @param includeLocal
-	 *            If <code>true</code>, this will use the local data as the
-	 *            "left" side of the comparison.
-	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this
-	 *            page if any is available. Otherwise open a new one.
-	 * @throws IOException
-	 */
-	public static void compare(IResource[] resources, Repository repository,
-			String leftRev, String rightRev, boolean includeLocal,
-			IWorkbenchPage page) throws IOException {
-		if (resources.length == 1 && resources[0] instanceof IFile
-				&& canDirectlyOpenInCompare((IFile) resources[0])) {
-			if (includeLocal)
-				compareWorkspaceWithRef(repository, (IFile) resources[0],
-						rightRev, page);
-			else {
-				final IFile file = (IFile) resources[0];
-				final RepositoryMapping mapping = RepositoryMapping
-						.getMapping(file);
-				final String gitPath = mapping.getRepoRelativePath(file);
-
-				compareBetween(repository, gitPath, leftRev, rightRev, page);
-			}
-		} else
-			GitModelSynchronize.synchronize(resources, repository, leftRev,
-					rightRev, includeLocal);
-	}
-
-	/**
-	 * This can be used to compare a given set of resources between two
-	 * revisions. If only one resource is to be compared, and that resource is
-	 * not part of a more important model (as defined in
-	 * {@link #canDirectlyOpenInCompare(IFile)}, we'll open a comparison editor
-	 * for that file alone, also taking leftPath and rightPath into account.
-	 * Otherwise, we'll launch a synchronization restrained of the given
-	 * resources set.
-	 * <p>
-	 * This can also be used to synchronize the whole repository if
-	 * <code>resources</code> is empty.
-	 * </p>
-	 * <p>
-	 * Note that this can be used to compare with the index by using
-	 * {@link GitFileRevision#INDEX} as either one of the two revs.
-	 * </p>
-	 *
-	 * @param resources
-	 *            The set of resources to compare. Can be empty (in which case
-	 *            we'll synchronize the whole repository).
-	 * @param repository
-	 *            The repository to load file revisions from.
-	 * @param leftPath
-	 *            The repository relative path to be used for the left revision,
-	 *            when comparing directly.
-	 * @param rightPath
-	 *            The repository relative path to be used for the right
-	 *            revision, when comparing directly.
-	 * @param leftRev
-	 *            Left revision of the comparison (usually the local or "new"
-	 *            revision). Won't be used if <code>includeLocal</code> is
-	 *            <code>true</code>.
-	 * @param rightRev
-	 *            Right revision of the comparison (usually the "old" revision).
-	 * @param includeLocal
-	 *            If <code>true</code>, this will use the local data as the
-	 *            "left" side of the comparison.
-	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this
-	 *            page if any is available. Otherwise open a new one.
-	 * @throws IOException
-	 */
-	public static void compare(IResource[] resources, Repository repository,
-			String leftPath, String rightPath, String leftRev, String rightRev,
-			boolean includeLocal, IWorkbenchPage page) throws IOException {
-		if (resources.length == 1 && resources[0] instanceof IFile
-				&& canDirectlyOpenInCompare((IFile) resources[0])) {
-			if (includeLocal)
-				compareWorkspaceWithRef(repository, (IFile) resources[0],
-						rightRev, page);
-			else {
-				compareBetween(repository, leftPath, rightPath, leftRev,
-						rightRev, page);
-			}
-		} else
-			GitModelSynchronize.synchronize(resources, repository, leftRev,
-					rightRev, includeLocal);
-	}
-
-	/**
-	 * This can be used to compare a given file between two revisions.
-	 *
-	 * @param location
-	 *            Location of the file to compare.
-	 * @param repository
-	 *            The repository to load file revisions from.
-	 * @param leftRev
-	 *            Left revision of the comparison (usually the local or "new"
-	 *            revision). Won't be used if <code>includeLocal</code> is
-	 *            <code>true</code>.
-	 * @param rightRev
-	 *            Right revision of the comparison (usually the "old" revision).
-	 * @param includeLocal
-	 *            If <code>true</code>, this will use the local data as the
-	 *            "left" side of the comparison.
-	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this
-	 *            page if any is available. Otherwise open a new one.
-	 * @throws IOException
-	 */
-	public static void compare(IPath location, Repository repository,
-			String leftRev, String rightRev, boolean includeLocal,
-			IWorkbenchPage page) throws IOException {
-		if (includeLocal)
-			compareLocalWithRef(repository, location, rightRev, page);
-		else {
-			String gitPath = getRepoRelativePath(location, repository);
-			compareBetween(repository, gitPath, leftRev, rightRev, page);
-		}
-	}
-
-	private static void compareBetween(Repository repository, String gitPath,
-			String leftRev, String rightRev, IWorkbenchPage page)
-			throws IOException {
-		compareBetween(repository, gitPath, gitPath, leftRev, rightRev, page);
-	}
-
-	/**
-	 * Compares two explicit files specified by leftGitPath and rightGitPath
-	 * between the two revisions leftRev and rightRev.
-	 *
-	 * @param repository
-	 *            The repository to load file revisions from.
-	 * @param leftGitPath
-	 *            The repository relative path to be used for the left revision.
-	 * @param rightGitPath
-	 *            The repository relative path to be used for the right
-	 *            revision.
-	 * @param leftRev
-	 *            Left revision of the comparison (usually the local or "new"
-	 *            revision). Won't be used if <code>includeLocal</code> is
-	 *            <code>true</code>.
-	 * @param rightRev
-	 *            Right revision of the comparison (usually the "old" revision).
-	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this
-	 *            page if any is available. Otherwise open a new one.
-	 * @throws IOException
-	 */
-	private static void compareBetween(Repository repository,
-			String leftGitPath, String rightGitPath, String leftRev,
-			String rightRev, IWorkbenchPage page) throws IOException {
-		final ITypedElement left = getTypedElementFor(repository, leftGitPath,
-				leftRev);
-		final ITypedElement right = getTypedElementFor(repository,
-				rightGitPath,
-				rightRev);
-
-		final ITypedElement commonAncestor;
-		if (left != null && right != null && !GitFileRevision.INDEX.equals(leftRev)
-				&& !GitFileRevision.INDEX.equals(rightRev))
-			commonAncestor = getTypedElementForCommonAncestor(repository,
-					rightGitPath, leftRev, rightRev);
-		else
-			commonAncestor = null;
-
-		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-				left, right, commonAncestor, null);
-		in.getCompareConfiguration().setLeftLabel(leftRev);
-		in.getCompareConfiguration().setRightLabel(rightRev);
-
-		if (page != null)
-			openInCompare(page, in);
-		else
-			CompareUI.openCompareEditor(in);
-	}
-
-	private static String getRepoRelativePath(IPath location,
-			Repository repository) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-		final String gitPath;
-		if (mapping != null)
-			gitPath = mapping.getRepoRelativePath(location);
-		else {
-			IPath repoRoot = new Path(repository.getWorkTree().getPath());
-			gitPath = location.makeRelativeTo(repoRoot).toString();
-		}
-		return gitPath;
-	}
-
-	private static ITypedElement getTypedElementFor(Repository repository, String gitPath, String rev) throws IOException {
-		final ITypedElement typedElement;
-		if (GitFileRevision.INDEX.equals(rev))
-			typedElement = getIndexTypedElement(repository, gitPath);
-		else if (Constants.HEAD.equals(rev))
-			typedElement = getHeadTypedElement(repository, gitPath);
-		else {
-			final ObjectId id = repository.resolve(rev);
-			final RevWalk rw = new RevWalk(repository);
-			final RevCommit revCommit = rw.parseCommit(id);
-			rw.release();
-			typedElement = getFileRevisionTypedElement(gitPath,
-					revCommit, repository);
-		}
-		return typedElement;
-	}
-
-	private static ITypedElement getTypedElementForCommonAncestor(
-			Repository repository, final String gitPath, String srcRev,
-			String dstRev) {
-		ITypedElement ancestor = null;
-		try {
-			final ObjectId srcID = repository.resolve(srcRev);
-			final ObjectId dstID = repository.resolve(dstRev);
-			if (srcID != null && dstID != null)
-				ancestor = getFileRevisionTypedElementForCommonAncestor(
-						gitPath, srcID, dstID, repository);
-		} catch (IOException e) {
-			Activator
-					.logError(NLS.bind(UIText.CompareUtils_errorCommonAncestor,
-							srcRev, dstRev), e);
-		}
-		return ancestor;
-	}
-
-	/**
 	 * Opens a compare editor. The working tree version of the given file is
 	 * compared with the version in the HEAD commit. Use this method if the
 	 * given file is outide the workspace.
@@ -798,9 +373,11 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkingTree(Repository repository,
 			String path) {
-		ITypedElement base = getHeadTypedElement(repository, path);
-		if (base == null)
+		RevCommit headCommit = getHeadCommit(repository);
+		if (headCommit == null)
 			return;
+		ITypedElement base = CompareUtils.getFileRevisionTypedElement(path,
+				headCommit, repository);
 		IFileRevision nextFile;
 		nextFile = new WorkingTreeFileRevision(new File(
 				repository.getWorkTree(), path));
@@ -811,245 +388,22 @@ public class CompareUtils {
 		CompareUI.openCompareDialog(input);
 	}
 
-	/**
-	 * Get a typed element for the file as contained in HEAD. Tries to return
-	 * the last commit that modified the file in order to have more useful
-	 * author information.
-	 * <p>
-	 * Returns an empty typed element if there is not yet a head (initial import
-	 * case).
-	 * <p>
-	 * If there is an error getting the HEAD commit, it is handled and null
-	 * returned.
-	 *
-	 * @param repository
-	 * @param repoRelativePath
-	 * @return typed element, or null if there was an error getting the HEAD
-	 *         commit
-	 */
-	public static ITypedElement getHeadTypedElement(Repository repository, String repoRelativePath) {
+	private static RevCommit getHeadCommit(Repository repository) {
+		RevCommit headCommit;
 		try {
-			Ref head = repository.getRef(Constants.HEAD);
-			if (head == null || head.getObjectId() == null)
-				// Initial import, not yet a HEAD commit
-				return new EmptyTypedElement(""); //$NON-NLS-1$
-
-			RevCommit latestFileCommit;
-			RevWalk rw = new RevWalk(repository);
-			try {
-				RevCommit headCommit = rw.parseCommit(head.getObjectId());
-				rw.markStart(headCommit);
-				rw.setTreeFilter(AndTreeFilter.create(
-						PathFilter.create(repoRelativePath),
-						TreeFilter.ANY_DIFF));
-				latestFileCommit = rw.next();
-				// Fall back to HEAD
-				if (latestFileCommit == null)
-					latestFileCommit = headCommit;
-			} finally {
-				rw.release();
+			ObjectId objectId = repository.resolve(Constants.HEAD);
+			if (objectId == null) {
+				Activator.handleError(
+						UIText.CompareUtils_errorGettingHeadCommit, null, true);
+				return null;
 			}
-
-			return CompareUtils.getFileRevisionTypedElement(repoRelativePath, latestFileCommit, repository);
+			headCommit = new RevWalk(repository).parseCommit(objectId);
 		} catch (IOException e) {
 			Activator.handleError(UIText.CompareUtils_errorGettingHeadCommit,
 					e, true);
 			return null;
 		}
+		return headCommit;
 	}
 
-	/**
-	 * Get a typed element for the file in the index.
-	 *
-	 * @param baseFile
-	 * @return typed element
-	 * @throws IOException
-	 */
-	public static ITypedElement getIndexTypedElement(final IFile baseFile)
-			throws IOException {
-		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
-		final Repository repository = mapping.getRepository();
-		final String gitPath = mapping.getRepoRelativePath(baseFile);
-		final String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
-		return getIndexTypedElement(repository, gitPath, encoding);
-	}
-
-	/**
-	 * Get a typed element for the repository and repository-relative path in the index.
-	 *
-	 * @param repository
-	 * @param repoRelativePath
-	 * @return typed element
-	 * @throws IOException
-	 */
-	public static ITypedElement getIndexTypedElement(
-			final Repository repository, final String repoRelativePath)
-			throws IOException {
-		String encoding = CompareCoreUtils.getResourceEncoding(repository, repoRelativePath);
-		return getIndexTypedElement(repository, repoRelativePath, encoding);
-	}
-
-	private static ITypedElement getIndexTypedElement(
-			final Repository repository, final String gitPath, String encoding) {
-		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
-		final EditableRevision next = new EditableRevision(nextFile, encoding);
-
-		IContentChangeListener listener = new IContentChangeListener() {
-			public void contentChanged(IContentChangeNotifier source) {
-				final byte[] newContent = next.getModifiedContent();
-				setIndexEntryContents(repository, gitPath, newContent);
-			}
-		};
-
-		next.addContentChangeListener(listener);
-		return next;
-	}
-
-	/**
-	 * Set contents on index entry of specified path. Line endings of contents
-	 * are canonicalized if configured.
-	 *
-	 * @param repository
-	 * @param gitPath
-	 * @param newContent
-	 *            content with working directory line endings
-	 */
-	private static void setIndexEntryContents(final Repository repository,
-			final String gitPath, final byte[] newContent) {
-		DirCache cache = null;
-		try {
-			cache = repository.lockDirCache();
-			DirCacheEditor editor = cache.editor();
-			if (newContent.length == 0) {
-				editor.add(new DirCacheEditor.DeletePath(gitPath));
-			} else {
-				int length;
-				byte[] content;
-				WorkingTreeOptions workingTreeOptions = repository.getConfig()
-						.get(WorkingTreeOptions.KEY);
-				AutoCRLF autoCRLF = workingTreeOptions.getAutoCRLF();
-				switch (autoCRLF) {
-				case FALSE:
-					content = newContent;
-					length = newContent.length;
-					break;
-				case INPUT:
-				case TRUE:
-					EolCanonicalizingInputStream in = new EolCanonicalizingInputStream(
-							new ByteArrayInputStream(newContent), true);
-					// Canonicalization should lead to same or shorter length
-					// (CRLF to LF), so we don't have to expand the byte[].
-					content = new byte[newContent.length];
-					length = IO.readFully(in, content, 0);
-					break;
-				default:
-					throw new IllegalArgumentException(
-							"Unknown autocrlf option " + autoCRLF); //$NON-NLS-1$
-				}
-
-				editor.add(new DirCacheEntryEditor(gitPath, repository,
-						content, length));
-			}
-			try {
-				editor.commit();
-			} catch (RuntimeException e) {
-				if (e.getCause() instanceof IOException)
-					throw (IOException) e.getCause();
-				else
-					throw e;
-			}
-
-		} catch (IOException e) {
-			Activator.handleError(
-					UIText.CompareWithIndexAction_errorOnAddToIndex, e, true);
-		} finally {
-			if (cache != null)
-				cache.unlock();
-		}
-	}
-
-	private static class DirCacheEntryEditor extends DirCacheEditor.PathEdit {
-
-		private final Repository repo;
-
-		private final byte[] content;
-		private final int contentLength;
-
-		public DirCacheEntryEditor(String path, Repository repo,
-				byte[] content, int contentLength) {
-			super(path);
-			this.repo = repo;
-			this.content = content;
-			this.contentLength = contentLength;
-		}
-
-		@Override
-		public void apply(DirCacheEntry ent) {
-			ObjectInserter inserter = repo.newObjectInserter();
-			if (ent.getFileMode() != FileMode.REGULAR_FILE)
-				ent.setFileMode(FileMode.REGULAR_FILE);
-
-			ent.setLength(contentLength);
-			ent.setLastModified(System.currentTimeMillis());
-			try {
-				ent.setObjectId(inserter.insert(Constants.OBJ_BLOB, content, 0,
-						contentLength));
-				inserter.flush();
-			} catch (IOException ex) {
-				throw new RuntimeException(ex);
-			}
-		}
-	}
-
-	/**
-	 * Indicates if it is OK to open the selected file directly in a compare
-	 * editor.
-	 * <p>
-	 * It is not OK to show the single file if the file is part of a
-	 * logical model element that spans multiple files.
-	 * </p>
-	 *
-	 * @param file
-	 *            file the user is trying to compare
-	 * @return <code>true</code> if the file can be opened directly in a compare
-	 *         editor, <code>false</code> if the synchronize view should be
-	 *         opened instead.
-	 */
-	public static boolean canDirectlyOpenInCompare(IFile file) {
-		/*
-		 * Note : it would be better to use a remote context here in order to
-		 * give the model provider a chance to resolve the remote logical model
-		 * instead of only relying on the local one. However, this might be a
-		 * long operation and would not really provide more context : we're
-		 * trying to determine if the local file can be compared alone, this can
-		 * be done by relying on the local model only.
-		 */
-		// Only builds the logical model if the preference holds true
-		if (Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.USE_LOGICAL_MODEL)) {
-
-			final ResourceMapping[] mappings = ResourceUtil
-					.getResourceMappings(file,
-							ResourceMappingContext.LOCAL_CONTEXT);
-
-			for (ResourceMapping mapping : mappings) {
-				try {
-					final ResourceTraversal[] traversals = mapping
-							.getTraversals(
-									ResourceMappingContext.LOCAL_CONTEXT, null);
-					for (ResourceTraversal traversal : traversals) {
-						final IResource[] resources = traversal.getResources();
-						for (IResource resource : resources) {
-							if (!resource.equals(file))
-								return false;
-						}
-					}
-				} catch (CoreException e) {
-					Activator.logError(e.getMessage(), e);
-				}
-			}
-
-		}
-		return true;
-	}
 }

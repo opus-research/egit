@@ -23,14 +23,12 @@ import java.util.Set;
 
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.SWTUtils;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.PreferencePage;
-import org.eclipse.jgit.events.ConfigChangedEvent;
-import org.eclipse.jgit.events.ConfigChangedListener;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
@@ -89,7 +87,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				SWTUtils.MARGINS_NONE);
 		TabFolder tabFolder = new TabFolder(composite, SWT.NONE);
 		tabFolder.setLayoutData(SWTUtils.createHVFillGridData());
-		userConfigEditor = new ConfigurationEditorComponent(tabFolder, userConfig, true, false) {
+		userConfigEditor = new ConfigurationEditorComponent(tabFolder, userConfig, true) {
 			@Override
 			protected void setErrorMessage(String message) {
 				GlobalConfigurationPreferencePage.this.setErrorMessage(message);
@@ -101,7 +99,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				updateApplyButton();
 			}
 		};
-		sysConfigEditor = new ConfigurationEditorComponent(tabFolder, sysConfig, true, true) {
+		sysConfigEditor = new ConfigurationEditorComponent(tabFolder, sysConfig, true) {
 			@Override
 			protected void setErrorMessage(String message) {
 				GlobalConfigurationPreferencePage.this.setErrorMessage(message);
@@ -112,14 +110,6 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				sysIsDirty = dirty;
 				updateApplyButton();
 			}
-			@Override
-			protected void setChangeSystemPrefix(String prefix) throws IOException {
-				FS.DETECTED.setGitPrefix(new File(prefix));
-				sysConfig = SystemReader.getInstance().openSystemConfig(null,
-						FS.DETECTED);
-				setConfig(sysConfig);
-			}
-
 		};
 		Control result = userConfigEditor.createContents();
 		Dialog.applyDialogFont(result);
@@ -301,17 +291,10 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 			File configFile = ((FileBasedConfig) repository.getConfig()).getFile();
 			repositoryConfig = new FileBasedConfig(configFile, repository
 					.getFS());
-			repositoryConfig.addChangeListener(new ConfigChangedListener() {
-
-				public void onConfigChanged(ConfigChangedEvent event) {
-					repository.getListenerList().dispatch(
-							new ConfigChangedEvent());
-				}
-			});
 		} else {
 			repositoryConfig = repository.getConfig();
 		}
-		ConfigurationEditorComponent editorComponent = new ConfigurationEditorComponent(repoConfigComposite, repositoryConfig, true, false) {
+		ConfigurationEditorComponent editorComponent = new ConfigurationEditorComponent(repoConfigComposite, repositoryConfig, true) {
 			@Override
 			protected void setErrorMessage(String message) {
 				GlobalConfigurationPreferencePage.this.setErrorMessage(message);
