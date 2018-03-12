@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2013 SAP AG and others.
+ * Copyright (c) 2011 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -90,14 +90,11 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 		boolean tagSelected = refName != null
 				&& refName.startsWith(Constants.R_TAGS);
 
-		boolean remoteTrackingBranchSelected = refName != null
-				&& refName.startsWith(Constants.R_REMOTES);
-
 		boolean branchSelected = refName != null
-				&& (refName.startsWith(Constants.R_HEADS) || remoteTrackingBranchSelected);
+				&& (refName.startsWith(Constants.R_HEADS) || refName
+						.startsWith(Constants.R_REMOTES));
 
 		// handle multiple selection
-		Button okButton = getButton(Window.OK);
 		if (((TreeSelection) branchTree.getSelection()).size() > 1) {
 			TreeSelection selection = (TreeSelection) branchTree
 					.getSelection();
@@ -108,7 +105,7 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 			renameButton.setEnabled(false);
 			newButton.setEnabled(false);
 		} else {
-			okButton.setEnabled(branchSelected || tagSelected);
+			getButton(Window.OK).setEnabled(branchSelected || tagSelected);
 
 			// we don't support rename on tags
 			renameButton.setEnabled(branchSelected && !tagSelected);
@@ -118,12 +115,8 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 			newButton.setEnabled(true);
 		}
 
-		if (remoteTrackingBranchSelected)
-			okButton.setText(UIText.CheckoutDialog_OkCheckoutWithQuestion);
-		else
-			okButton.setText(UIText.CheckoutDialog_OkCheckout);
-
-		okButton.setEnabled(refName != null && !refName.equals(currentBranch));
+		getButton(Window.OK).setEnabled(
+				refName != null && !refName.equals(currentBranch));
 	}
 
 	@Override
