@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler mathias.kinzler@sap.com>
+ * Copyright (C) 2015, Christian Georgi <christian.georgi@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -46,10 +47,12 @@ class PushResultDialog extends TitleAreaDialog {
 	 * @param showConfigureButton
 	 *            whether to show the "Configure..." button in the result dialog
 	 *            or not
+	 * @param modal
+	 *            true to have application modal style
 	 */
 	public static void show(final Repository repository,
 			final PushOperationResult result, final String sourceString,
-			final boolean showConfigureButton) {
+			final boolean showConfigureButton, final boolean modal) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
@@ -60,7 +63,7 @@ class PushResultDialog extends TitleAreaDialog {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
 								PushResultDialog dialog = new PushResultDialog(
-										shell, repository, result, sourceString);
+										shell, repository, result, sourceString, modal);
 								dialog.showConfigureButton(showConfigureButton);
 								dialog.open();
 							}
@@ -70,9 +73,14 @@ class PushResultDialog extends TitleAreaDialog {
 	}
 
 	PushResultDialog(final Shell parentShell, final Repository localDb,
-			final PushOperationResult result, final String destinationString) {
+			final PushOperationResult result, final String destinationString,
+			boolean modal) {
 		super(parentShell);
-		setShellStyle(getShellStyle() | SWT.RESIZE);
+		int shellStyle = getShellStyle() | SWT.RESIZE;
+		if (!modal) {
+			shellStyle &= ~SWT.APPLICATION_MODAL;
+		}
+		setShellStyle(shellStyle);
 		this.localDb = localDb;
 		this.result = result;
 		this.destinationString = destinationString;

@@ -85,7 +85,7 @@ public class GitOpenInCompareAction extends Action {
 		ITypedElement left;
 		ITypedElement right;
 		if (obj instanceof GitModelWorkingFile) {
-			IFile file = ResourceUtil.getFileForLocation(obj.getLocation());
+			IFile file = ResourceUtil.getFileForLocation(obj.getLocation(), false);
 			if (file == null)
 				left = new LocalNonWorkspaceTypedElement(obj.getLocation());
 			else
@@ -124,6 +124,9 @@ public class GitOpenInCompareAction extends Action {
 		try {
 			IPath location = blob.getLocation();
 			RepositoryMapping mapping = RepositoryMapping.getMapping(location);
+			if (mapping == null) {
+				return null;
+			}
 			Repository repo = mapping.getRepository();
 			String repoRelativePath = mapping.getRepoRelativePath(location);
 			return CompareUtils.getIndexTypedElement(repo, repoRelativePath);
@@ -134,6 +137,9 @@ public class GitOpenInCompareAction extends Action {
 
 	private ITypedElement getHeadFileElement(GitModelBlob blob) {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(blob.getLocation());
+		if (mapping == null) {
+			return null;
+		}
 		Repository repo = mapping.getRepository();
 		String gitPath = mapping.getRepoRelativePath(blob.getLocation());
 		return CompareUtils.getHeadTypedElement(repo, gitPath);

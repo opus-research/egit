@@ -43,6 +43,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 
 	private AtomicReference<IndexDiffData> indexDiffDataResult;
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -50,6 +51,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 		repository = testRepository.getRepository();
 	}
 
+	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();
@@ -186,7 +188,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 
 		// adding this file will trigger a refresh, so no manual refresh must be
 		// required.
-		project.createFile("sub/.gitignore", "ignored\n".getBytes());
+		project.createFile("sub/.gitignore", "ignored\n".getBytes("UTF-8"));
 
 		IndexDiffData data2 = waitForListenerCalled();
 		assertThat(data2.getIgnoredNotInIndex(),
@@ -259,6 +261,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 		indexDiffDataResult = new AtomicReference<IndexDiffData>(
 				null);
 		cacheEntry.addIndexDiffChangedListener(new IndexDiffChangedListener() {
+			@Override
 			public void indexDiffChanged(Repository repo,
 					IndexDiffData indexDiffData) {
 				listenerCalled.set(true);

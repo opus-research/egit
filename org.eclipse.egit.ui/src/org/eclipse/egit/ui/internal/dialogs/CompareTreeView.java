@@ -556,8 +556,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				for (IResource resource : resources) {
 					String relPath = repositoryMapping
 							.getRepoRelativePath(resource);
-					if (relPath.length() > 0)
+					if (relPath != null && relPath.length() > 0) {
 						orFilters.add(PathFilter.create(relPath));
+					}
 				}
 				if (checkIgnored) {
 					if (orFilters.size() > 1) {
@@ -635,7 +636,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				if (type != Type.FILE_BOTH_SIDES_SAME) {
 
 					file = ResourceUtil.getFileForLocation(repository,
-						repoRelativePath);
+						repoRelativePath, false);
 				}
 
 				if (baseVersionIterator != null) {
@@ -1096,7 +1097,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				PathNode pathNode = (PathNode) obj;
 				IResource resource = ResourceUtil
 						.getResourceForLocation(repoPath.append(pathNode
-								.getRepoRelativePath()));
+								.getRepoRelativePath()), false);
 				if (resource != null)
 					resources.add(resource);
 			}

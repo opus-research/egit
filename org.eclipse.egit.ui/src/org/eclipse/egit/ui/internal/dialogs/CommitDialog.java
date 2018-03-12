@@ -36,7 +36,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
@@ -118,7 +117,6 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
-import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -371,6 +369,8 @@ public class CommitDialog extends TitleAreaDialog {
 	Button commitButton;
 
 	Button commitAndPushButton;
+
+	Button ignoreErrors;
 
 	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
@@ -726,7 +726,13 @@ public class CommitDialog extends TitleAreaDialog {
 		UIUtils.hookDisposal(parent, titleImage);
 		setTitleImage(titleImage);
 		setTitle(UIText.CommitDialog_Title);
-		setMessage(UIText.CommitDialog_Message, IMessageProvider.INFORMATION);
+		if (ignoreErrors != null) {
+			setMessage(UIText.CommitDialog_MessageErrors,
+					IMessageProvider.WARNING);
+		} else {
+			setMessage(UIText.CommitDialog_Message,
+					IMessageProvider.INFORMATION);
+		}
 
 		filesViewer.addCheckStateListener(new ICheckStateListener() {
 
@@ -796,8 +802,28 @@ public class CommitDialog extends TitleAreaDialog {
 				.hint(600, 200).grab(true, true).create());
 
 		resourcesTree.addSelectionListener(new CommitItemSelectionListener());
-
 		resourcesTree.setHeaderVisible(true);
+
+		if (getPreferenceStore()
+				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
+				&& getPreferenceStore()
+						.getBoolean(UIPreferences.BLOCK_COMMIT)) {
+			ignoreErrors = new Button(resourcesTreeComposite, SWT.CHECK);
+			ignoreErrors.setText(UIText.CommitDialog_IgnoreErrors);
+
+			ignoreErrors.setSelection(false);
+			ignoreErrors.addSelectionListener(new SelectionAdapter() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					Button button = (Button) e.getSource();
+					boolean enable = button.getSelection();
+					updateMessage();
+					updateCommitButtons(enable);
+				}
+			});
+		}
+
 		TreeColumn statCol = new TreeColumn(resourcesTree, SWT.LEFT);
 		statCol.setText(UIText.CommitDialog_Status);
 		statCol.setWidth(150);
@@ -930,6 +956,11 @@ public class CommitDialog extends TitleAreaDialog {
 		statCol.pack();
 		resourceCol.pack();
 		return filesSection;
+	}
+
+	private void updateCommitButtons(boolean enable) {
+		commitAndPushButton.setEnabled(enable);
+		commitButton.setEnabled(enable);
 	}
 
 	private Composite createMessageAndPersonArea(Composite container) {
@@ -1125,24 +1156,46 @@ public class CommitDialog extends TitleAreaDialog {
 		String message = null;
 		int type = IMessageProvider.NONE;
 
-		String commitMsg = commitMessageComponent.getCommitMessage();
-		if (commitMsg == null || commitMsg.trim().length() == 0) {
-			message = UIText.CommitDialog_Message;
-			type = IMessageProvider.INFORMATION;
-		} else if (!isCommitWithoutFilesAllowed()) {
-			message = UIText.CommitDialog_MessageNoFilesSelected;
-			type = IMessageProvider.INFORMATION;
+		boolean ignoreErrorsValue = ignoreErrors == null ? true
+				: !ignoreErrors.getSelection();
+		@SuppressWarnings("boxing")
+		boolean hasErrorsOrWarnings = getPreferenceStore()
+				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
+						? (getProblemsSeverity() >= Integer
+								.valueOf(getPreferenceStore().getString(
+										UIPreferences.WARN_BEFORE_COMMITTING_LEVEL))
+								&& ignoreErrorsValue)
+						: false;
+		if (hasErrorsOrWarnings) {
+			message = UIText.CommitDialog_MessageErrors;
+			type = IMessageProvider.WARNING;
 		} else {
-			CommitStatus status = commitMessageComponent.getStatus();
-			message = status.getMessage();
-			type = status.getMessageType();
+			String commitMsg = commitMessageComponent.getCommitMessage();
+			if (commitMsg == null || commitMsg.trim().length() == 0) {
+				message = UIText.CommitDialog_Message;
+				type = IMessageProvider.INFORMATION;
+			} else if (!isCommitWithoutFilesAllowed()) {
+				message = UIText.CommitDialog_MessageNoFilesSelected;
+				type = IMessageProvider.INFORMATION;
+			} else {
+				CommitStatus status = commitMessageComponent.getStatus();
+				message = status.getMessage();
+				type = status.getMessageType();
+			}
 		}
-
 		setMessage(message, type);
-		boolean commitEnabled = type == IMessageProvider.WARNING
-				|| type == IMessageProvider.NONE;
-		commitButton.setEnabled(commitEnabled);
-		commitAndPushButton.setEnabled(commitEnabled);
+		@SuppressWarnings("boxing")
+		boolean commitBlocked = getPreferenceStore()
+				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
+				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT)
+						? (getProblemsSeverity() >= Integer
+								.valueOf(getPreferenceStore().getString(
+										UIPreferences.BLOCK_COMMIT_LEVEL))
+								&& ignoreErrorsValue)
+						: false;
+		boolean commitEnabled = (type == IMessageProvider.WARNING
+				|| type == IMessageProvider.NONE) && !commitBlocked;
+		updateCommitButtons(commitEnabled);
 	}
 
 	private boolean isCommitWithoutFilesAllowed() {
@@ -1305,7 +1358,7 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private static int getProblemSeverity(Repository repository, String path) {
-		IFile file = ResourceUtil.getFileForLocation(repository, path);
+		IFile file = ResourceUtil.getFileForLocation(repository, path, false);
 		if (file != null) {
 			try {
 				int severity = file.findMaxProblemSeverity(IMarker.PROBLEM, true, IResource.DEPTH_ONE);
@@ -1345,6 +1398,23 @@ public class CommitDialog extends TitleAreaDialog {
 		super.okPressed();
 	}
 
+	private int getProblemsSeverity() {
+		int result = IProblemDecoratable.SEVERITY_NONE;
+		Object[] checkedElements = filesViewer.getCheckedElements();
+		ArrayList<String> selectedFiles = new ArrayList<>();
+		for (Object obj : checkedElements)
+			selectedFiles.add(((CommitItem) obj).path);
+		for (final CommitItem item : items) {
+			if (item.getProblemSeverity() >= IMarker.SEVERITY_WARNING
+					&& selectedFiles.contains(item.path)) {
+				if (result < item.getProblemSeverity()) {
+					result = item.getProblemSeverity();
+				}
+			}
+		}
+		return result;
+	}
+
 	@Override
 	protected int getShellStyle() {
 		return super.getShellStyle() | SWT.RESIZE;
@@ -1352,8 +1422,7 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private void compare(CommitItem commitItem) {
 		IFile file = findFile(commitItem.path);
-		if (file == null || RepositoryProvider.getProvider(file.getProject(),
-				GitProvider.ID) == null) {
+		if (file == null || !ResourceUtil.isSharedWithGit(file.getProject())) {
 			CompareUtils.compareHeadWithWorkingTree(repository,
 					commitItem.path);
 		} else {
@@ -1362,7 +1431,7 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private IFile findFile(String path) {
-		return ResourceUtil.getFileForLocation(repository, path);
+		return ResourceUtil.getFileForLocation(repository, path, false);
 	}
 }
 

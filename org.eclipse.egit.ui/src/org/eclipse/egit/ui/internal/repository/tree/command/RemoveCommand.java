@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, 2013, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,7 +8,8 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Delete empty working directory
- *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
+ *    Laurent Goubet <laurent.goubet@obeo.fr> - Bug 404121
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 479964
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -155,7 +156,7 @@ public class RemoveCommand extends
 
 				if (removeProj) {
 					// confirmed deletion
-					deleteProjects(delete, projectsToDelete,
+					deleteProjects(deleteWorkDir, projectsToDelete,
 							monitor);
 				}
 				for (RepositoryNode node : selectedNodes) {
@@ -274,21 +275,24 @@ public class RemoveCommand extends
 	private boolean isTracked(File file, Repository repo) throws IOException {
 		ObjectId objectId = repo.resolve(Constants.HEAD);
 		RevTree tree;
-		if (objectId != null)
-			tree = new RevWalk(repo).parseTree(objectId);
-		else
-			tree = null;
+		try (RevWalk rw = new RevWalk(repo);
+				TreeWalk treeWalk = new TreeWalk(repo)) {
+			if (objectId != null)
+				tree = rw.parseTree(objectId);
+			else
+				tree = null;
 
-		TreeWalk treeWalk = new TreeWalk(repo);
-		treeWalk.setRecursive(true);
-		if (tree != null)
-			treeWalk.addTree(tree);
-		else
-			treeWalk.addTree(new EmptyTreeIterator());
-		treeWalk.addTree(new DirCacheIterator(repo.readDirCache()));
-		treeWalk.setFilter(PathFilterGroup.createFromStrings(Collections.singleton(
-				Repository.stripWorkDir(repo.getWorkTree(), file))));
-		return treeWalk.next();
+			treeWalk.setRecursive(true);
+			if (tree != null)
+				treeWalk.addTree(tree);
+			else
+				treeWalk.addTree(new EmptyTreeIterator());
+			treeWalk.addTree(new DirCacheIterator(repo.readDirCache()));
+			treeWalk.setFilter(PathFilterGroup
+					.createFromStrings(Collections.singleton(Repository
+							.stripWorkDir(repo.getWorkTree(), file))));
+			return treeWalk.next();
+		}
 
 	}
 
