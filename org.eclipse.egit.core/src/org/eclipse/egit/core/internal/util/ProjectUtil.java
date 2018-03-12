@@ -177,16 +177,13 @@ public class ProjectUtil {
 	public static boolean findProjectFiles(final Collection<File> files,
 			final File directory, final Set<String> visistedDirs,
 			final IProgressMonitor monitor) {
-		if (directory == null)
-			return false;
-
 		IProgressMonitor pm = monitor;
 		if (pm == null)
 			pm = new NullProgressMonitor();
 		else if (pm.isCanceled())
 			return false;
 
-		pm.subTask(NLS.bind(CoreText.ProjectUtil_taskCheckingDirectory,
+		monitor.subTask(NLS.bind(CoreText.ProjectUtil_taskCheckingDirectory,
 				directory.getPath()));
 
 		final File[] contents = directory.listFiles();
