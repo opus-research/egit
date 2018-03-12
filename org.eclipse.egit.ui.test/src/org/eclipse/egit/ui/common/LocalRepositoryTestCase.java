@@ -270,11 +270,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		textFile2.create(new ByteArrayInputStream("Some more content"
 				.getBytes(firstProject.getDefaultCharset())), false, null);
 
-		try {
-			new ConnectProviderOperation(firstProject, gitDir).execute(null);
-		} catch (Exception e) {
-			Activator.logError("Failed to connect project to repository", e);
-		}
+		new ConnectProviderOperation(firstProject, gitDir).execute(null);
 		assertConnected(firstProject);
 
 		IProject secondProject = ResourcesPlugin.getWorkspace().getRoot()
@@ -311,11 +307,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// gitignore.create(new ByteArrayInputStream("/.project\n"
 		// .getBytes(firstProject.getDefaultCharset())), false, null);
 
-		try {
-			new ConnectProviderOperation(secondProject, gitDir).execute(null);
-		} catch (Exception e) {
-			Activator.logError("Failed to connect project to repository", e);
-		}
+		new ConnectProviderOperation(secondProject, gitDir).execute(null);
 		assertConnected(secondProject);
 
 		IFile dotProject = firstProject.getFile(".project");
@@ -503,13 +495,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 							.getProject(file.getName());
 					prj.create(desc, null);
 					prj.open(null);
-					try {
-						new ConnectProviderOperation(prj,
-								myRepository.getDirectory()).execute(null);
-					} catch (Exception e) {
-						Activator.logError(
-								"Failed to connect project to repository", e);
-					}
+
+					new ConnectProviderOperation(prj, myRepository
+							.getDirectory()).execute(null);
 					assertConnected(prj);
 				}
 			}

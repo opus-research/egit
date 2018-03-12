@@ -77,9 +77,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 				.getIndexDiffCache();
 		IndexDiffCacheEntry indexDiffCacheEntry = indexDiffCache
 				.getIndexDiffCacheEntry(map.getRepository());
-		if (indexDiffCacheEntry == null) {
-			return false;
-		}
 		IndexDiffData indexDiff = indexDiffCacheEntry.getIndexDiff();
 		if (indexDiff != null) {
 			if (indexDiff.getUntracked().contains(repoRelativePath))

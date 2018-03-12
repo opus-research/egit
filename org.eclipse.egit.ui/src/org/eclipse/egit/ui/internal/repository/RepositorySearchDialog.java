@@ -18,6 +18,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
@@ -468,7 +470,11 @@ public class RepositorySearchDialog extends WizardPage {
 					findGitDirsRecursive(file, directories, monitor,
 							lookForNested);
 				} catch (Exception ex) {
-					throw new InvocationTargetException(ex);
+					Activator
+							.getDefault()
+							.getLog()
+							.log(new Status(IStatus.ERROR, Activator
+									.getPluginId(), ex.getMessage(), ex));
 				}
 				if (monitor.isCanceled()) {
 					throw new InterruptedException();
@@ -479,8 +485,7 @@ public class RepositorySearchDialog extends WizardPage {
 			getContainer().run(true, true, action);
 		} catch (InvocationTargetException e1) {
 			org.eclipse.egit.ui.Activator.handleError(
-					UIText.RepositorySearchDialog_errorOccurred, e1.getCause(),
-					true);
+					UIText.RepositorySearchDialog_errorOccurred, e1, true);
 		} catch (InterruptedException e1) {
 			// ignore
 		}
