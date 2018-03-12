@@ -150,7 +150,7 @@ public class GitSelectWizardPage extends WizardPage {
 			generalWizard.setSelection(true);
 			break;
 		case NEW_WIZARD:
-			newProjectWizard.setSelection(true);
+			newProjectWizard.setEnabled(true);
 			break;
 
 		}
