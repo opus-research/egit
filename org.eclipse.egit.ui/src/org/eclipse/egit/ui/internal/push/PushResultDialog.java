@@ -10,8 +10,8 @@
 package org.eclipse.egit.ui.internal.push;
 
 import org.eclipse.egit.core.op.PushOperationResult;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -43,9 +43,13 @@ class PushResultDialog extends TitleAreaDialog {
 	 * @param repository
 	 * @param result
 	 * @param sourceString
+	 * @param showConfigureButton
+	 *            whether to show the "Configure..." button in the result dialog
+	 *            or not
 	 */
 	public static void show(final Repository repository,
-			final PushOperationResult result, final String sourceString) {
+			final PushOperationResult result, final String sourceString,
+			final boolean showConfigureButton) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 			public void run() {
 				PlatformUI.getWorkbench().getDisplay().asyncExec(
@@ -53,8 +57,10 @@ class PushResultDialog extends TitleAreaDialog {
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
-								new PushResultDialog(shell, repository, result,
-										sourceString).open();
+								PushResultDialog dialog = new PushResultDialog(
+										shell, repository, result, sourceString);
+								dialog.showConfigureButton(showConfigureButton);
+								dialog.open();
 							}
 						});
 			}
@@ -101,7 +107,7 @@ class PushResultDialog extends TitleAreaDialog {
 	protected Control createDialogArea(final Composite parent) {
 		final Composite composite = (Composite) super.createDialogArea(parent);
 		String pushErrors = getPushErrors();
-		setTitle(NLS.bind(UIText.ResultDialog_label, destinationString));
+		setTitle(NLS.bind(UIText.PushResultDialog_label, destinationString));
 		if (pushErrors != null && pushErrors.length() > 0)
 			setErrorMessage(pushErrors);
 		final PushResultTable table = new PushResultTable(composite);
@@ -114,7 +120,7 @@ class PushResultDialog extends TitleAreaDialog {
 		tableControl.setLayoutData(tableLayout);
 
 		getShell().setText(
-				NLS.bind(UIText.ResultDialog_title, destinationString));
+				NLS.bind(UIText.PushResultDialog_title, destinationString));
 		applyDialogFont(composite);
 		return composite;
 	}

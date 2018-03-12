@@ -14,11 +14,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.wizard.Wizard;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -38,16 +38,16 @@ public class ConfigureGerritWizard extends Wizard {
 	private RemoteConfig remoteConfig;
 
 	/**
-	 * @param config the repository configuration
+	 * @param repository the repository
 	 * @param remoteName the name of the remote in the configuration
 	 *
 	 */
-	public ConfigureGerritWizard(StoredConfig config, String remoteName) {
+	public ConfigureGerritWizard(Repository repository, String remoteName) {
 		super();
 		setWindowTitle(UIText.ConfigureGerritWizard_title);
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
-		gerritConfiguration = new GerritConfigurationPage(false) {
+		gerritConfiguration = new GerritConfigurationPage(repository, remoteName) {
 			@Override
 			public void setVisible(boolean visible) {
 				if (visible)
@@ -56,7 +56,7 @@ public class ConfigureGerritWizard extends Wizard {
 			}
 
 		};
-		this.config = config;
+		this.config = repository.getConfig();
 		this.remoteName = remoteName;
 
 	}
@@ -102,8 +102,9 @@ public class ConfigureGerritWizard extends Wizard {
 			destination = pushRefSpecs.get(0).getDestination();
 			if (destination.startsWith(Constants.R_HEADS))
 				destination = destination.substring(Constants.R_HEADS.length());
-			else if (destination.startsWith("refs/for/")) //$NON-NLS-1$
-				destination = destination.substring("refs/for/".length()); //$NON-NLS-1$
+			else if (destination.startsWith(GerritUtil.REFS_FOR))
+				destination = destination.substring(GerritUtil.REFS_FOR
+						.length());
 		}
 		return destination;
 	}
@@ -148,7 +149,8 @@ public class ConfigureGerritWizard extends Wizard {
 		for (RefSpec refSpec : pushRefSpecs) {
 			remoteConfig.removePushRefSpec(refSpec);
 		}
-		remoteConfig.addPushRefSpec(new RefSpec( "HEAD:refs/for/" + gerritBranch)); //$NON-NLS-1$
+		remoteConfig.addPushRefSpec(new RefSpec(
+				"HEAD:" + GerritUtil.REFS_FOR + gerritBranch)); //$NON-NLS-1$
 	}
 
 	private void configureFetchNotes() {
@@ -162,8 +164,7 @@ public class ConfigureGerritWizard extends Wizard {
 	}
 
 	private void configureCreateChangeId() {
-		config.setBoolean(ConfigConstants.CONFIG_GERRIT_SECTION,
-				null, ConfigConstants.CONFIG_KEY_CREATECHANGEID, true);
+		GerritUtil.setCreateChangeId(config);
 	}
 
 }

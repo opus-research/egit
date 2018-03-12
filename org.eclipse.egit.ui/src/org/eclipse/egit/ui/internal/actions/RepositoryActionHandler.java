@@ -4,6 +4,9 @@
  * Copyright (C) 2006, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, 2013 François Rey <eclipse.org_@_francois_._rey_._name>
+ * Copyright (C) 2013 Laurent Goubet <laurent.goubet@obeo.fr>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,9 +19,10 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.commands.AbstractHandler;
@@ -31,20 +35,30 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.PlatformObject;
+import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jgit.diff.DiffConfig;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.revwalk.FollowFilter;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevSort;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
@@ -62,6 +76,7 @@ import org.eclipse.ui.ide.ResourceUtil;
  * A helper class for Team Actions on Git controlled projects
  */
 abstract class RepositoryActionHandler extends AbstractHandler {
+
 	private IEvaluationContext evaluationContext;
 
 	private IStructuredSelection mySelection;
@@ -78,6 +93,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	}
 
 	/**
+	 * Retrieve the list of projects that contains the given resources. All
+	 * resources must actually map to a project shared with egit, otherwise an
+	 * empty array is returned. In case of a linked resource, the project
+	 * returned is the one that contains the link target and is shared with
+	 * egit, if any, otherwise an empty array is also returned.
+	 *
 	 * @param selection
 	 * @return the projects hosting the selected resources
 	 */
@@ -85,8 +106,13 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			IStructuredSelection selection) {
 		Set<IProject> ret = new LinkedHashSet<IProject>();
 		for (IResource resource : (IResource[]) getSelectedAdaptables(
-				selection, IResource.class))
-			ret.add(resource.getProject());
+				selection, IResource.class)) {
+			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+			if (mapping != null && (mapping.getContainer() instanceof IProject))
+				ret.add((IProject) mapping.getContainer());
+			else
+				return new IProject[0];
+		}
 		ret.addAll(extractProjectsFromMappings(selection));
 
 		return ret.toArray(new IProject[ret.size()]);
@@ -97,14 +123,28 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		Set<IProject> ret = new LinkedHashSet<IProject>();
 		for (ResourceMapping mapping : (ResourceMapping[]) getSelectedAdaptables(
 				selection, ResourceMapping.class)) {
-			IProject[] projects = mapping.getProjects();
-			if (projects != null)
-				ret.addAll(Arrays.asList(projects));
+			IProject[] mappedProjects = mapping.getProjects();
+			if (mappedProjects != null && mappedProjects.length != 0) {
+				// Some mappings (WorkingSetResourceMapping) return the projects
+				// in unpredictable order. Sort them like the navigator to
+				// correspond to the order the user usually sees.
+				List<IProject> projects = new ArrayList<IProject>(
+						Arrays.asList(mappedProjects));
+				Collections
+						.sort(projects, CommonUtils.RESOURCE_NAME_COMPARATOR);
+				ret.addAll(projects);
+			}
 		}
 		return ret;
 	}
 
 	/**
+	 * Retrieve the list of projects that contains the selected resources. All
+	 * resources must actually map to a project shared with egit, otherwise an
+	 * empty array is returned. In case of a linked resource, the project
+	 * returned is the one that contains the link target and is shared with
+	 * egit, if any, otherwise an empty array is also returned.
+	 *
 	 * @param event
 	 * @return the projects hosting the selected resources
 	 * @throws ExecutionException
@@ -115,6 +155,15 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return getProjectsForSelectedResources(selection);
 	}
 
+	/**
+	 * Retrieve the list of projects that contains the selected resources. All
+	 * resources must actually map to a project shared with egit, otherwise an
+	 * empty array is returned. In case of a linked resource, the project
+	 * returned is the one that contains the link target and is shared with
+	 * egit, if any, otherwise an empty array is also returned.
+	 *
+	 * @return the projects hosting the selected resources
+	 */
 	protected IProject[] getProjectsForSelectedResources() {
 		IStructuredSelection selection = getSelection();
 		return getProjectsForSelectedResources(selection);
@@ -123,7 +172,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	/**
 	 * @param projects
 	 *            a list of projects
-	 * @return the repositories that projects map to iff all projects are mapped
+	 * @return the repositories that projects map to if all projects are mapped
 	 */
 	protected Repository[] getRepositoriesFor(final IProject[] projects) {
 		Set<Repository> ret = new LinkedHashSet<Repository>();
@@ -135,21 +184,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			ret.add(repositoryMapping.getRepository());
 		}
 		return ret.toArray(new Repository[ret.size()]);
-	}
-
-	/**
-	 * List the projects with selected resources, if all projects are connected
-	 * to a Git repository.
-	 *
-	 * @param event
-	 *
-	 * @return the tracked projects affected by the current resource selection
-	 * @throws ExecutionException
-	 */
-	protected IProject[] getProjectsInRepositoryOfSelectedResources(
-			ExecutionEvent event) throws ExecutionException {
-		IStructuredSelection selection = getSelection(event);
-		return getProjectsInRepositoryOfSelectedResources(selection);
 	}
 
 	/**
@@ -232,9 +266,9 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	private Repository getRepository(boolean warn,
 			IStructuredSelection selection, Shell shell) {
 		RepositoryMapping mapping = null;
-		for (IResource resource : getSelectedResources(selection)) {
+		for (IPath location : getSelectedLocations(selection)) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(resource);
+					.getMapping(location);
 			if (mapping == null)
 				mapping = repositoryMapping;
 			if (repositoryMapping == null)
@@ -297,7 +331,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			return getRepositoriesFor(selectedProjects);
 		IStructuredSelection selection = getSelection(event);
 		if (!selection.isEmpty()) {
-			Set<Repository> repos = new HashSet<Repository>();
+			Set<Repository> repos = new LinkedHashSet<Repository>();
 			for (Object o : selection.toArray())
 				if (o instanceof Repository)
 					repos.add((Repository) o);
@@ -324,7 +358,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			return getRepositoriesFor(selectedProjects);
 		IStructuredSelection selection = getSelection();
 		if (!selection.isEmpty()) {
-			Set<Repository> repos = new HashSet<Repository>();
+			Set<Repository> repos = new LinkedHashSet<Repository>();
 			for (Object o : selection.toArray())
 				if (o instanceof Repository)
 					repos.add((Repository) o);
@@ -389,7 +423,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		Object selection;
 		if (aSelection == null && ctx != null) {
 			selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-			if (selection == null)
+			if (!(selection instanceof ISelection))
 				selection = ctx
 						.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
 		} else if (aSelection != null)
@@ -441,7 +475,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			result = new ArrayList();
 			Iterator elements = ((IStructuredSelection) selection).iterator();
 			while (elements.hasNext()) {
-				Object adapter = getAdapter(elements.next(), c);
+				Object adapter = AdapterUtils.adapt(elements.next(), c);
 				if (c.isInstance(adapter))
 					result.add(adapter);
 			}
@@ -450,18 +484,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			return result
 					.toArray((Object[]) Array.newInstance(c, result.size()));
 		return (Object[]) Array.newInstance(c, 0);
-	}
-
-	private Object getAdapter(Object adaptable, Class c) {
-		if (c.isInstance(adaptable))
-			return adaptable;
-		if (adaptable instanceof IAdaptable) {
-			IAdaptable a = (IAdaptable) adaptable;
-			Object adapter = a.getAdapter(c);
-			if (c.isInstance(adapter))
-				return adapter;
-		}
-		return null;
 	}
 
 	/**
@@ -475,6 +497,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return getSelectedResources(selection);
 	}
 
+	protected IPath[] getSelectedLocations(ExecutionEvent event)
+			throws ExecutionException {
+		IStructuredSelection selection = getSelection(event);
+		return getSelectedLocations(selection);
+	}
+
 	/**
 	 * @return the resources in the selection
 	 */
@@ -484,23 +512,61 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	}
 
 	/**
+	 * @return the locations in the selection
+	 */
+	protected IPath[] getSelectedLocations() {
+		IStructuredSelection selection = getSelection();
+		return getSelectedLocations(selection);
+	}
+
+	/**
+	 * @return true if all selected items map to the same repository, false otherwise.
+	 */
+	protected boolean selectionMapsToSingleRepository() {
+		return getRepository() != null;
+	}
+
+	/**
 	 * @param selection
 	 * @return the resources in the selection
 	 */
 	private IResource[] getSelectedResources(IStructuredSelection selection) {
 		Set<IResource> result = new LinkedHashSet<IResource>();
 		for (Object o : selection.toList()) {
-			IResource resource = (IResource) getAdapter(o, IResource.class);
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
 			if (resource != null)
 				result.add(resource);
 			else
-				extractResourcesFromMapping(result, o);
+				result.addAll(extractResourcesFromMapping(o));
 		}
 		return result.toArray(new IResource[result.size()]);
 	}
 
-	private void extractResourcesFromMapping(Set<IResource> result, Object o) {
-		ResourceMapping mapping = (ResourceMapping) getAdapter(o,
+	private IPath[] getSelectedLocations(IStructuredSelection selection) {
+		Set<IPath> result = new LinkedHashSet<IPath>();
+		for (Object o : selection.toList()) {
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			if (resource != null) {
+				IPath location = resource.getLocation();
+				if (location != null)
+					result.add(location);
+			} else {
+				IPath location = AdapterUtils.adapt(o, IPath.class);
+				if (location != null)
+					result.add(location);
+				else
+					for (IResource r : extractResourcesFromMapping(o)) {
+						IPath l = r.getLocation();
+						if (l != null)
+							result.add(l);
+					}
+			}
+		}
+		return result.toArray(new IPath[result.size()]);
+	}
+
+	private List<IResource> extractResourcesFromMapping(Object o) {
+		ResourceMapping mapping = AdapterUtils.adapt(o,
 				ResourceMapping.class);
 		if (mapping != null) {
 			ResourceTraversal[] traversals;
@@ -508,12 +574,13 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				traversals = mapping.getTraversals(null, null);
 				for (ResourceTraversal traversal : traversals) {
 					IResource[] resources = traversal.getResources();
-					result.addAll(Arrays.asList(resources));
+					return Arrays.asList(resources);
 				}
 			} catch (CoreException e) {
 				Activator.logError(e.getMessage(), e);
 			}
 		}
+		return Collections.emptyList();
 	}
 
 	/**
@@ -605,5 +672,81 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		}
 
 		return false;
+	}
+
+	protected String getPreviousPath(Repository repository,
+			ObjectReader reader, RevCommit headCommit,
+			RevCommit previousCommit, String path) throws IOException {
+		DiffEntry diffEntry = CompareCoreUtils.getChangeDiffEntry(repository, path,
+				headCommit, previousCommit, reader);
+		if (diffEntry != null)
+			return diffEntry.getOldPath();
+		else
+			return path;
+	}
+
+	protected List<PreviousCommit> findPreviousCommits() throws IOException {
+		List<PreviousCommit> result = new ArrayList<PreviousCommit>();
+		Repository repository = getRepository();
+		IResource resource = getSelectedResources()[0];
+		String path = RepositoryMapping.getMapping(resource.getProject())
+				.getRepoRelativePath(resource);
+		RevWalk rw = new RevWalk(repository);
+		rw.sort(RevSort.COMMIT_TIME_DESC, true);
+		rw.sort(RevSort.BOUNDARY, true);
+		try {
+			if (path.length() > 0) {
+				DiffConfig diffConfig = repository.getConfig().get(
+						DiffConfig.KEY);
+				FollowFilter filter = FollowFilter.create(path, diffConfig);
+				rw.setTreeFilter(filter);
+			}
+
+			RevCommit headCommit = rw.parseCommit(repository.getRef(
+					Constants.HEAD).getObjectId());
+			rw.markStart(headCommit);
+			headCommit = rw.next();
+
+			if (headCommit == null)
+				return result;
+			List<RevCommit> directParents = Arrays.asList(headCommit
+					.getParents());
+
+			RevCommit previousCommit = rw.next();
+			while (previousCommit != null && result.size() < directParents.size()) {
+				if (directParents.contains(previousCommit)) {
+					String previousPath = getPreviousPath(repository,
+							rw.getObjectReader(), headCommit, previousCommit,
+							path);
+					result.add(new PreviousCommit(previousCommit, previousPath));
+				}
+				previousCommit = rw.next();
+			}
+		} finally {
+			rw.dispose();
+		}
+		return result;
+	}
+
+	// keep track of the path of an ancestor (for following renames)
+	protected static final class PreviousCommit {
+		final RevCommit commit;
+		final String path;
+		PreviousCommit(final RevCommit commit, final String path) {
+			this.commit = commit;
+			this.path = path;
+		}
+	}
+
+	/**
+	 * By default egit operates only on resources that map to a project shared
+	 * with egit. For linked resources the project that contains the link
+	 * target, if any, must be shared with egit.
+	 *
+	 * @return the projects hosting the selected resources
+	 */
+	@Override
+	public boolean isEnabled() {
+		return getProjectsForSelectedResources().length > 0;
 	}
 }

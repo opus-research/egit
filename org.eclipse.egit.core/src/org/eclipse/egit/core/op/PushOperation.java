@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,28 +10,27 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.PushResult;
-import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
-import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
+import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -48,6 +48,8 @@ public class PushOperation {
 	private final String remoteName;
 
 	private final int timeout;
+
+	private OutputStream out;
 
 	private PushOperationResult operationResult;
 
@@ -70,11 +72,7 @@ public class PushOperation {
 	public PushOperation(final Repository localDb,
 			final PushOperationSpecification specification,
 			final boolean dryRun, int timeout) {
-		this.localDb = localDb;
-		this.specification = specification;
-		this.dryRun = dryRun;
-		this.remoteName = null;
-		this.timeout = timeout;
+		this(localDb, null, specification, dryRun, timeout);
 	}
 
 	/**
@@ -87,8 +85,14 @@ public class PushOperation {
 	 */
 	public PushOperation(final Repository localDb, final String remoteName,
 			final boolean dryRun, int timeout) {
+		this(localDb, remoteName, null, dryRun, timeout);
+	}
+
+	private PushOperation(final Repository localDb, final String remoteName,
+			PushOperationSpecification specification, final boolean dryRun,
+			int timeout) {
 		this.localDb = localDb;
-		this.specification = null;
+		this.specification = specification;
 		this.dryRun = dryRun;
 		this.remoteName = remoteName;
 		this.timeout = timeout;
@@ -167,37 +171,26 @@ public class PushOperation {
 						SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
 
 				try {
-					List<RefSpec> specs = new ArrayList<RefSpec>(3);
-					for (RemoteRefUpdate update : specification
-							.getRefUpdates(uri)) {
-						RefSpec spec = new RefSpec();
-						spec = spec.setSourceDestination(update.getSrcRef(),
-								update.getRemoteName());
-						spec = spec.setForceUpdate(update.isForceUpdate());
-						specs.add(spec);
-					}
 					if (monitor.isCanceled()) {
 						operationResult.addOperationResult(uri,
 								CoreText.PushOperation_resultCancelled);
 						continue;
 					}
 
+					Collection<RemoteRefUpdate> refUpdates = specification.getRefUpdates(uri);
 					final EclipseGitProgressTransformer gitSubMonitor = new EclipseGitProgressTransformer(
 							subMonitor);
 
 					try {
-						Iterable<PushResult> results = git.push().setRemote(
-								uri.toPrivateString()).setRefSpecs(specs)
-								.setDryRun(dryRun).setTimeout(timeout)
-								.setProgressMonitor(gitSubMonitor)
-								.setCredentialsProvider(credentialsProvider)
-								.call();
-						for (PushResult result : results) {
-							operationResult.addOperationResult(result.getURI(),
-									result);
-							specification.addURIRefUpdates(result.getURI(),
-									result.getRemoteUpdates());
-						}
+						Transport transport = Transport.open(localDb, uri);
+						transport.setDryRun(dryRun);
+						transport.setTimeout(timeout);
+						if (credentialsProvider != null)
+							transport.setCredentialsProvider(credentialsProvider);
+						PushResult result = transport.push(gitSubMonitor, refUpdates, out);
+
+						operationResult.addOperationResult(result.getURI(), result);
+						specification.addURIRefUpdates(result.getURI(), result.getRemoteUpdates());
 					} catch (JGitInternalException e) {
 						String errorMessage = e.getCause() != null ? e
 								.getCause().getMessage() : e.getMessage();
@@ -205,7 +198,7 @@ public class PushOperation {
 										CoreText.PushOperation_InternalExceptionOccurredMessage,
 										errorMessage);
 						handleException(uri, e, userMessage);
-					} catch (InvalidRemoteException e) {
+					} catch (Exception e) {
 						handleException(uri, e, e.getMessage());
 					}
 
@@ -224,7 +217,8 @@ public class PushOperation {
 				Iterable<PushResult> results = git.push().setRemote(
 						remoteName).setDryRun(dryRun).setTimeout(timeout)
 						.setProgressMonitor(gitMonitor).setCredentialsProvider(
-								credentialsProvider).call();
+credentialsProvider)
+						.setOutputStream(out).call();
 				for (PushResult result : results) {
 					operationResult.addOperationResult(result.getURI(), result);
 				}
@@ -236,7 +230,7 @@ public class PushOperation {
 						errorMessage);
 				URIish uri = getPushURIForErrorHandling();
 				handleException(uri, e, userMessage);
-			} catch (InvalidRemoteException e) {
+			} catch (Exception e) {
 				URIish uri = getPushURIForErrorHandling();
 				handleException(uri, e, e.getMessage());
 			}
@@ -270,5 +264,16 @@ public class PushOperation {
 			Activator.logError("Reading RemoteConfig failed", e); //$NON-NLS-1$
 			return null;
 		}
+	}
+
+	/**
+	 * Sets the output stream this operation will write sideband messages to.
+	 *
+	 * @param out
+	 *            the outputstream to write to
+	 * @since 3.0
+	 */
+	public void setOutputStream(OutputStream out) {
+		this.out = out;
 	}
 }

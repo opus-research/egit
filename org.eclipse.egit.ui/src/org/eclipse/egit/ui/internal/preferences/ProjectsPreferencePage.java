@@ -12,7 +12,7 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -30,7 +30,7 @@ public class ProjectsPreferencePage extends FieldEditorPreferencePage implements
 	public ProjectsPreferencePage() {
 		super(GRID);
 		ScopedPreferenceStore store = new ScopedPreferenceStore(
-				new InstanceScope(), Activator.getPluginId());
+				InstanceScope.INSTANCE, Activator.getPluginId());
 		setPreferenceStore(store);
 	}
 
@@ -51,5 +51,9 @@ public class ProjectsPreferencePage extends FieldEditorPreferencePage implements
 						.getPreferenceStore();
 			}
 		});
+		addField(new BooleanFieldEditor(
+				GitCorePreferences.core_autoIgnoreDerivedResources,
+				UIText.ProjectsPreferencePage_AutoIgnoreDerivedResources,
+				getFieldEditorParent()));
 	}
 }

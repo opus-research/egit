@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2011, 2012 Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,11 +14,14 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -26,13 +29,14 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProjectSetCapability;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.team.core.ProjectSetSerializationContext;
 import org.eclipse.team.core.TeamException;
@@ -55,6 +59,7 @@ public class GitProjectSetCapabilityTest {
 
 	@After
 	public void tearDown() throws Exception {
+		ResourcesPlugin.getWorkspace().getRoot().delete(IResource.FORCE, null);
 		Activator.getDefault().getRepositoryCache().clear();
 		for (IProject project : createdProjects)
 			if (project.exists())
@@ -121,9 +126,7 @@ public class GitProjectSetCapabilityTest {
 		String cReference = "1.0," + cPath.toFile().toURI().toString() + ",stable,.";
 		String[] references = new String[] { aReference, baReference, bbReference, cReference };
 
-		capability.addToWorkspace(references,
-						new ProjectSetSerializationContext(),
-						new NullProgressMonitor());
+		addToWorkspace(references);
 
 		pathsToClean.add(root.getLocation().append("b").toFile());
 
@@ -169,9 +172,7 @@ public class GitProjectSetCapabilityTest {
 		String xbStableReference = "1.0," + xPath.toFile().toURI().toString() + ",stable,xb";
 		String[] references = new String[] { xaMasterReference, xbStableReference };
 
-		capability.addToWorkspace(references,
-						new ProjectSetSerializationContext(),
-						new NullProgressMonitor());
+		addToWorkspace(references);
 
 		pathsToClean.add(root.getLocation().append("x").toFile());
 		pathsToClean.add(root.getLocation().append("x_stable").toFile());
@@ -211,16 +212,12 @@ public class GitProjectSetCapabilityTest {
 		String xbReference = createProjectReference(xPath, "master", "xb");
 
 		// This should work because there is not yet a repo at the destination
-		capability.addToWorkspace(new String[] { xaReference },
-				new ProjectSetSerializationContext(),
-				new NullProgressMonitor());
+		addToWorkspace(new String[] { xaReference });
 
 		// This should work because the repo that is already there is for the
 		// same remote URL. It's assumed to be ok and will skip cloning and
 		// directly import the project.
-		capability.addToWorkspace(new String[] { xbReference },
-				new ProjectSetSerializationContext(),
-				new NullProgressMonitor());
+		addToWorkspace(new String[] { xbReference });
 
 		pathsToClean.add(root.getLocation().append("x").toFile());
 
@@ -235,6 +232,62 @@ public class GitProjectSetCapabilityTest {
 		} catch (TeamException e) {
 			// This is expected
 		}
+	}
+
+	@Test
+	public void testImportWhereRepoAlreadyExistsAtDifferentLocation() throws Exception {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IPath reposPath = root.getLocation().append("existingbutdifferent");
+		pathsToClean.add(reposPath.toFile());
+
+		IPath repoPath = reposPath.append("repo");
+		IProject project = createProject(repoPath, "project");
+		project.delete(false, true, null);
+		String url = createUrl(repoPath);
+		File repoDir = createRepository(repoPath, url, "master");
+
+		IPath otherRepoPath = reposPath.append("other");
+		File otherRepoDir = createRepository(otherRepoPath, "other-url", "master");
+
+		RepositoryUtil util = Activator.getDefault().getRepositoryUtil();
+		util.addConfiguredRepository(repoDir);
+		util.addConfiguredRepository(otherRepoDir);
+
+		String reference = createProjectReference(repoPath, "master", "project");
+
+		addToWorkspace(new String[] { reference });
+
+		IProject imported = root.getProject("project");
+		assertEquals("Expected imported project to be from already existing repository",
+				root.getLocation().append("existingbutdifferent/repo/project"), imported.getLocation());
+	}
+
+	@Test
+	public void testImportFromRepoWithUrlOnlyDifferingInUserName()
+			throws Exception {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IPath reposPath = root.getLocation().append("repos");
+		pathsToClean.add(reposPath.toFile());
+
+		IPath repoPath = reposPath.append("repo");
+		IProject project = createProject(repoPath, "project");
+		project.delete(false, true, null);
+		String url = createUrl(repoPath, "ssh", "userName");
+		File repoDir = createRepository(repoPath, url, "master");
+
+		RepositoryUtil util = Activator.getDefault().getRepositoryUtil();
+		util.addConfiguredRepository(repoDir);
+
+		String reference = createProjectReference(repoPath, "ssh", /* no user */
+				null, "master", "project");
+
+		addToWorkspace(new String[] { reference });
+
+		IProject imported = root.getProject("project");
+		assertEquals(
+				"Expected imported project to be from already existing repository. User name must be ignored in URL.",
+				root.getLocation().append("repos/repo/project"),
+				imported.getLocation());
 	}
 
 	private IProject createProject(String name) throws CoreException {
@@ -262,7 +315,7 @@ public class GitProjectSetCapabilityTest {
 
 	private File createRepository(IPath location, String url, String branch) throws Exception {
 		File gitDirectory = new File(location.toFile(), Constants.DOT_GIT);
-		Repository repo = new FileRepository(gitDirectory);
+		Repository repo = FileRepositoryBuilder.create(gitDirectory);
 		repo.getConfig().setString(ConfigConstants.CONFIG_REMOTE_SECTION, "origin", ConfigConstants.CONFIG_KEY_URL, url);
 		repo.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION, branch, ConfigConstants.CONFIG_KEY_REMOTE, "origin");
 		repo.create();
@@ -288,7 +341,27 @@ public class GitProjectSetCapabilityTest {
 		return "1.0," + createUrl(repoPath) + "," + branch + "," + projectPath;
 	}
 
+	private static String createProjectReference(IPath repoPath,
+			String protocol, String user, String branch, String projectPath)
+			throws Exception {
+		return "1.0," + createUrl(repoPath, protocol, user) + "," + branch
+				+ "," + projectPath;
+	}
+
 	private static String createUrl(IPath repoPath) {
 		return repoPath.toFile().toURI().toString();
+	}
+
+	private static String createUrl(IPath repoPath, String protocol, String user)
+			throws URISyntaxException {
+		URI uri = new URI(protocol, user, "localhost", 42, repoPath
+				.setDevice(null).makeAbsolute().toString(), null, null);
+		return uri.toString();
+	}
+
+	private void addToWorkspace(String[] references) throws TeamException {
+		capability.addToWorkspace(references,
+				new ProjectSetSerializationContext(),
+				new NullProgressMonitor());
 	}
 }

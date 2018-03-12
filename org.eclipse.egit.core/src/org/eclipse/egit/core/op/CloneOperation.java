@@ -22,8 +22,8 @@ import java.util.List;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
@@ -75,8 +75,9 @@ public class CloneOperation {
 	 *            working directory to clone to. The directory may or may not
 	 *            already exist.
 	 * @param refName
-	 *            full name of ref to be checked out after clone, e.g.
-	 *            refs/heads/master, or null for no checkout
+	 *            name of ref (usually tag or branch) to be checked out after
+	 *            clone, e.g. full <code>refs/heads/master</code> or short
+	 *            <code>v3.1.0</code>, or null for no checkout
 	 * @param remoteName
 	 *            name of created remote config as source remote (typically
 	 *            named "origin").
@@ -137,6 +138,8 @@ public class CloneOperation {
 			cloneRepository.setCredentialsProvider(credentialsProvider);
 			if (refName != null)
 				cloneRepository.setBranch(refName);
+			else
+				cloneRepository.setNoCheckout(true);
 			cloneRepository.setDirectory(workdir);
 			cloneRepository.setProgressMonitor(gitMonitor);
 			cloneRepository.setRemote(remoteName);

@@ -3,6 +3,8 @@
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
+ * Copyright (C) 2013, Tobias Pfeifer <to.pfeifer@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,8 +12,6 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 package org.eclipse.egit.ui;
-
-
 
 /**
  * Preferences used by the EGit UI plug-in.
@@ -21,6 +21,8 @@ package org.eclipse.egit.ui;
 public class UIPreferences {
 	/** */
 	public final static String RESOURCEHISTORY_SHOW_RELATIVE_DATE = "resourcehistory_show_relative_date"; //$NON-NLS-1$
+	/** */
+	public final static String RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES = "resourcehistory_show_email_addresses"; //$NON-NLS-1$
 	/** */
 	public final static String RESOURCEHISTORY_SHOW_NOTES = "resourcehistory_show_notes"; //$NON-NLS-1$
 	/** */
@@ -90,6 +92,12 @@ public class UIPreferences {
 	/** */
 	public final static String THEME_DiffHunkForegroundColor = "org.eclipse.egit.ui.DiffHunkForegroundColor"; //$NON-NLS-1$
 	/** */
+	public final static String THEME_DiffHeadlineBackgroundColor = "org.eclipse.egit.ui.DiffHeadlineBackgroundColor"; //$NON-NLS-1$
+	/** */
+	public final static String THEME_DiffHeadlineForegroundColor = "org.eclipse.egit.ui.DiffHeadlineForegroundColor"; //$NON-NLS-1$
+	/** */
+	public final static String THEME_DiffHeadlineFont = "org.eclipse.egit.ui.DiffHeadlineFont"; //$NON-NLS-1$
+	/** */
 	public final static String THEME_DiffAddBackgroundColor = "org.eclipse.egit.ui.DiffAddBackgroundColor"; //$NON-NLS-1$
 	/** */
 	public final static String THEME_DiffAddForegroundColor = "org.eclipse.egit.ui.DiffAddForegroundColor"; //$NON-NLS-1$
@@ -97,7 +105,12 @@ public class UIPreferences {
 	public final static String THEME_DiffRemoveBackgroundColor = "org.eclipse.egit.ui.DiffRemoveBackgroundColor"; //$NON-NLS-1$
 	/** */
 	public final static String THEME_DiffRemoveForegroundColor = "org.eclipse.egit.ui.DiffRemoveForegroundColor"; //$NON-NLS-1$
-
+	/** */
+	public final static String THEME_IgnoredResourceForegroundColor = "org.eclipse.egit.ui.IgnoredResourceForegroundColor"; //$NON-NLS-1$
+	/** */
+	public final static String THEME_IgnoredResourceBackgroundColor = "org.eclipse.egit.ui.IgnoredResourceBackgroundColor"; //$NON-NLS-1$
+	/** */
+	public final static String THEME_IgnoredResourceFont = "org.eclipse.egit.ui.IgnoredResourceFont"; //$NON-NLS-1$
 	/** */
 	public final static String DECORATOR_RECOMPUTE_ANCESTORS = "decorator_recompute_ancestors"; //$NON-NLS-1$
 	/** */
@@ -129,13 +142,23 @@ public class UIPreferences {
 	/** */
 	public final static String DATE_FORMAT = "date_format"; //$NON-NLS-1$
 	/** */
+	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";  //$NON-NLS-1$
+	/** */
+	public static final String DEFAULT_CHANGESET_FORMAT = "[{author}] ({date}) {short_message}"; //$NON-NLS-1$
+	/** */
 	public static final String REFESH_ON_INDEX_CHANGE = "refesh_on_index_change"; //$NON-NLS-1$
 	/** */
 	public static final String REFESH_ONLY_WHEN_ACTIVE = "refesh_only_when_active"; //$NON-NLS-1$
 	/** */
 	public static final String REMOTE_CONNECTION_TIMEOUT = "remote_connection_timeout"; //$NON-NLS-1$
-	/** */
+
+	/**
+	 * When reading this preference, use
+	 * {@link UIUtils#getDefaultRepositoryDir()} instead (for variable
+	 * substitution).
+	 */
 	public static final String DEFAULT_REPO_DIR = "default_repository_dir"; //$NON-NLS-1$
+
 	/** */
 	public static final String MERGE_MODE = "merge_mode"; //$NON-NLS-1$
 	/** */
@@ -145,7 +168,12 @@ public class UIPreferences {
 	/** */
 	public static final String SHOW_HOME_DIR_WARNING = "show_home_drive_warning"; //$NON-NLS-1$
 	/** */
+	public static final String SHOW_GIT_PREFIX_WARNING = "show_git_prefix_warning"; //$NON-NLS-1$
+	/** */
 	public static final String SHOW_DETACHED_HEAD_WARNING = "show_detached_head_warning"; //$NON-NLS-1$
+	/** */
+	public static final String SHOW_CHECKOUT_CONFIRMATION = "show_checkout_confirmation"; //$NON-NLS-1$
+
 	/** */
 	public static final String TREE_COMPARE_SHOW_EQUALS = "CompareTreeView_ShowEquals"; //$NON-NLS-1$
 	/** */
@@ -165,6 +193,8 @@ public class UIPreferences {
 	/** */
 	public static final String STAGING_VIEW_FILENAME_MODE = "StagingView_FileNameMode"; //$NON-NLS-1$
 	/** */
+	public static final String STAGING_VIEW_PRESENTATION = "StagingView_Presentation"; //$NON-NLS-1$
+	/** */
 	public static final String PAGE_COMMIT_PREFERENCES = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
 	/** */
 	public static final String BLAME_IGNORE_WHITESPACE = "Blame_IgnoreWhitespace"; //$NON-NLS-1$
@@ -172,6 +202,8 @@ public class UIPreferences {
 	public static final String CLONE_WIZARD_STORE_SECURESTORE = "CloneWizard_StoreInSecureStore"; //$NON-NLS-1$
 	/** */
 	public static final String CLONE_WIZARD_IMPORT_PROJECTS = "CloneWizard_ImportProjects"; //$NON-NLS-1$
+	/** */
+	public static final String CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG = "CloneWizard_ShowDetailedFailureDialog"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array
