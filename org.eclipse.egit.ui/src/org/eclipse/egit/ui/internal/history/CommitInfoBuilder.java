@@ -21,7 +21,6 @@ import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -42,10 +41,8 @@ import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
-import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectIdSubclassMap;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -53,7 +50,6 @@ import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.util.io.SafeBufferedOutputStream;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
@@ -306,48 +302,22 @@ public class CommitInfoBuilder {
 		List<Ref> result = new ArrayList<Ref>();
 
 		try {
-			// searches from branches can be cut off early if any parent of the
-			// search-for commit is found. This is quite likely, so optimize for this.
-			revWalk.markStart(Arrays.asList(commit.getParents()));
-			ObjectIdSubclassMap<ObjectId> cutOff = new ObjectIdSubclassMap<ObjectId>();
 			Map<String, Ref> refsMap = new HashMap<String, Ref>();
 			refsMap.putAll(db.getRefDatabase().getRefs(Constants.R_HEADS));
 			// add remote heads to search
 			refsMap.putAll(db.getRefDatabase().getRefs(Constants.R_REMOTES));
 
-			final int SKEW = 24*3600; // one day clock skew
-
 			for (Ref ref : refsMap.values()) {
 				RevCommit headCommit = revWalk.parseCommit(ref.getObjectId());
+				// the base RevCommit also must be allocated using same RevWalk
+				// instance,
+				// otherwise isMergedInto returns wrong result!
+				RevCommit base = revWalk.parseCommit(commit);
 
-				// if commit is in the ref branch, then the tip of ref should be
-				// newer than the commit we are looking for. Allow for a large
-				// clock skew.
-				if (headCommit.getCommitTime() + SKEW < commit.getCommitTime())
-					continue;
-
-				List<ObjectId> maybeCutOff = new ArrayList<ObjectId>(cutOff.size()); // guess rough size
-				revWalk.resetRetain();
-				revWalk.markStart(headCommit);
-				RevCommit current;
-				Ref found = null;
-				while ((current = revWalk.next()) != null) {
-					if (AnyObjectId.equals(current, commit)) {
-						found = ref;
-						break;
-					}
-					if (cutOff.contains(current))
-						break;
-					maybeCutOff.add(current.toObjectId());
-				}
-				if (found != null)
-					result.add(ref);
-				else
-					for (ObjectId id : maybeCutOff)
-						cutOff.addIfAbsent(id);
-
+				if (revWalk.isMergedInto(base, headCommit))
+					result.add(ref); // commit is reachable
+				// from this head
 			}
-			revWalk.dispose();
 		} catch (IOException e) {
 			// skip exception
 		}
@@ -412,7 +382,7 @@ public class CommitInfoBuilder {
 		try {
 			monitor.beginTask(UIText.CommitMessageViewer_BuildDiffListTaskName,
 					currentDiffs.size());
-			BufferedOutputStream bos = new SafeBufferedOutputStream(
+			BufferedOutputStream bos = new BufferedOutputStream(
 					new ByteArrayOutputStream() {
 						@Override
 						public synchronized void write(byte[] b, int off,
@@ -475,10 +445,8 @@ public class CommitInfoBuilder {
 		StringBuilder sb = new StringBuilder();
 		Map<String, Ref> tagsMap = db.getTags();
 		for (Entry<String, Ref> tagEntry : tagsMap.entrySet()) {
-			ObjectId target = tagEntry.getValue().getPeeledObjectId();
-			if (target == null)
-				target = tagEntry.getValue().getObjectId();
-			if (target != null && target.equals(commit)) {
+			ObjectId peeledId = tagEntry.getValue().getPeeledObjectId();
+			if (peeledId != null && peeledId.equals(commit)) {
 				if (sb.length() > 0)
 					sb.append(", "); //$NON-NLS-1$
 				sb.append(tagEntry.getKey());
