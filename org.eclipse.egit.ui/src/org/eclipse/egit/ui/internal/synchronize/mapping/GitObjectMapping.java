@@ -9,8 +9,6 @@
 package org.eclipse.egit.ui.internal.synchronize.mapping;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
@@ -18,7 +16,6 @@ import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObjectContainer;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
-import org.eclipse.egit.ui.internal.synchronize.model.HasProjects;
 
 /**
  * Maps Git's objects onto proper {@link ResourceMapping} instants. It allows
@@ -56,7 +53,7 @@ public abstract class GitObjectMapping extends ResourceMapping {
 	public boolean contains(ResourceMapping mapping) {
 		if (mapping.getModelProviderId().equals(getModelProviderId())) {
 			GitModelObject obj = (GitModelObject) mapping.getModelObject();
-			return obj.repositoryHashCode() == object.repositoryHashCode();
+			return obj.getRepository().equals(object.getRepository());
 		}
 
 		return false;
@@ -72,26 +69,9 @@ public abstract class GitObjectMapping extends ResourceMapping {
 		return GitChangeSetModelProvider.ID;
 	}
 
-	private IProject getProject(final IResource resource) {
-		return resource != null ? resource.getProject() : null;
-	}
-
 	@Override
 	public IProject[] getProjects() {
-		IProject[] projects = null;
-		if (!object.isContainer()) {
-			IProject project = getProject(ResourcesPlugin.getWorkspace()
-					.getRoot().getFileForLocation(object.getLocation()));
-			if (project != null)
-				projects = new IProject[] { project };
-		} else if (object instanceof GitModelTree) {
-			IProject project = getProject(ResourcesPlugin.getWorkspace()
-					.getRoot().getContainerForLocation(object.getLocation()));
-			if (project != null)
-				projects = new IProject[] { project };
-		} else if (object instanceof HasProjects)
-			projects = ((HasProjects) object).getProjects();
-
-		return projects != null ? projects : new IProject[0];
+		return object.getProjects();
 	}
+
 }

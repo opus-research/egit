@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -97,8 +98,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		for (ResourceMapping mapping : (ResourceMapping[]) getSelectedAdaptables(
 				selection, ResourceMapping.class)) {
 			IProject[] projects = mapping.getProjects();
-			if (projects != null)
-				ret.addAll(Arrays.asList(projects));
+			ret.addAll(Arrays.asList(projects));
 		}
 		return ret;
 	}
@@ -296,7 +296,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			return getRepositoriesFor(selectedProjects);
 		IStructuredSelection selection = getSelection(event);
 		if (!selection.isEmpty()) {
-			Set<Repository> repos = new LinkedHashSet<Repository>();
+			Set<Repository> repos = new HashSet<Repository>();
 			for (Object o : selection.toArray())
 				if (o instanceof Repository)
 					repos.add((Repository) o);
@@ -323,7 +323,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			return getRepositoriesFor(selectedProjects);
 		IStructuredSelection selection = getSelection();
 		if (!selection.isEmpty()) {
-			Set<Repository> repos = new LinkedHashSet<Repository>();
+			Set<Repository> repos = new HashSet<Repository>();
 			for (Object o : selection.toArray())
 				if (o instanceof Repository)
 					repos.add((Repository) o);

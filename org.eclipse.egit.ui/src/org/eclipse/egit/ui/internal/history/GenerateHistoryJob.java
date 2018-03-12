@@ -20,9 +20,7 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.Control;
 
 class GenerateHistoryJob extends Job {
 	private static final int BATCH_SIZE = 256;
@@ -40,21 +38,13 @@ class GenerateHistoryJob extends Job {
 
 	private boolean trace;
 
-	private final RevWalk walk;
-
-	GenerateHistoryJob(final GitHistoryPage ghp, Control control, RevWalk walk) {
+	GenerateHistoryJob(final GitHistoryPage ghp, final SWTCommitList list) {
 		super(NLS.bind(UIText.HistoryPage_refreshJob, Activator.getDefault()
 				.getRepositoryUtil().getRepositoryName(
 						ghp.getInputInternal().getRepository())));
 		page = ghp;
-		this.walk = walk;
-		allCommits = new SWTCommitList(control);
-		allCommits.source(walk);
+		allCommits = list;
 		trace = GitTraceLocation.HISTORYVIEW.isActive();
-	}
-
-	public RevWalk getWalk() {
-		return walk;
 	}
 
 	@Override
