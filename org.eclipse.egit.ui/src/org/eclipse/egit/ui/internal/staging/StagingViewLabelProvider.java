@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,24 +18,21 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.DecorationOverlayIcon;
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.IDecoration;
-import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
  * Label provider for {@link StagingEntry} objects
  */
-public class StagingViewLabelProvider extends LabelProvider {
-	private StagingView stagingView;
-
-	private boolean unstagedSection;
-
-	private WorkbenchLabelProvider workbenchLabelProvider = new WorkbenchLabelProvider();
+public class StagingViewLabelProvider extends BaseLabelProvider implements
+		ITableLabelProvider, IStyledLabelProvider {
 
 	private Image DEFAULT = PlatformUI.getWorkbench().getSharedImages()
 			.getImage(ISharedImages.IMG_OBJ_FILE);
@@ -52,16 +49,6 @@ public class StagingViewLabelProvider extends LabelProvider {
 	private boolean fileNameMode = false;
 
 	/**
-	 * @param stagingView
-	 * @param unstagedSection
-	 */
-	public StagingViewLabelProvider(StagingView stagingView, boolean unstagedSection) {
-		super();
-		this.stagingView = stagingView;
-		this.unstagedSection = unstagedSection;
-	}
-
-	/**
 	 * Set file name mode to be enabled or disabled. This mode displays the
 	 * names of the file first followed by the path to the folder that the file
 	 * is in.
@@ -72,6 +59,18 @@ public class StagingViewLabelProvider extends LabelProvider {
 	public StagingViewLabelProvider setFileNameMode(boolean enable) {
 		fileNameMode = enable;
 		return this;
+	}
+
+	public Image getColumnImage(Object element, int columnIndex) {
+		if (columnIndex == 0)
+			return getImage(element);
+		return null;
+	}
+
+	public String getColumnText(Object element, int columnIndex) {
+		if (columnIndex == 0)
+			return getStyledText(element).toString();
+		return ""; //$NON-NLS-1$
 	}
 
 	@Override
@@ -101,88 +100,45 @@ public class StagingViewLabelProvider extends LabelProvider {
 		return (Image) this.resourceManager.get(decorated);
 	}
 
-	public Image getImage(Object element) {
-
-		if (element instanceof StagingFolderEntry) {
-			StagingFolderEntry c = (StagingFolderEntry) element;
-			if (c.getContainer() == null) {
-				return PlatformUI.getWorkbench().getSharedImages()
-						.getImage(ISharedImages.IMG_OBJ_FOLDER);
-			}
-			return workbenchLabelProvider
-					.getImage(((StagingFolderEntry) element).getContainer());
-		}
-
-		StagingEntry c = (StagingEntry) element;
-		DecorationResult decoration = new DecorationResult();
-		decorationHelper.decorate(decoration, c);
-		return getDecoratedImage(getEditorImage(c), decoration.getOverlay());
-	}
-
-	@Override
-	public String getText(Object element) {
-
-		int presentation;
-		if (unstagedSection) {
-			presentation = stagingView.getUnstagedPresentation();
-		} else {
-			presentation = stagingView.getStagedPresentation();
-		}
-
-		if (element instanceof StagingFolderEntry) {
-			StagingFolderEntry stagingFolderEntry = (StagingFolderEntry) element;
-			if (presentation == StagingView.PRESENTATION_COMPRESSED_FOLDERS) {
-				if (stagingFolderEntry.getPath().toString().length() <= stagingView
-						.getCurrentRepository().getWorkTree().getPath()
-						.length() + 1) {
-					return ""; //$NON-NLS-1$
-				} else {
-					return stagingFolderEntry
-							.getPath()
-							.toString()
-							.substring(
-									stagingView.getCurrentRepository()
-											.getWorkTree().getPath().length() + 1);
-				}
-			} else {
-				return stagingFolderEntry.getFile().getName();
-			}
-		}
-
-		StagingEntry stagingEntry = (StagingEntry) element;
+	public StyledString getStyledText(Object element) {
+		final StagingEntry c = (StagingEntry) element;
 		final DecorationResult decoration = new DecorationResult();
-		decorationHelper.decorate(decoration, stagingEntry);
+		decorationHelper.decorate(decoration, c);
+
 		final StyledString styled = new StyledString();
 		final String prefix = decoration.getPrefix();
 		final String suffix = decoration.getSuffix();
 		if (prefix != null)
 			styled.append(prefix, StyledString.DECORATIONS_STYLER);
-		if (presentation == StagingView.PRESENTATION_FLAT) {
-			if (fileNameMode) {
-				IPath parsed = Path.fromOSString(stagingEntry.getPath());
-				if (parsed.segmentCount() > 1) {
-					styled.append(parsed.lastSegment());
-					if (suffix != null)
-						styled.append(suffix, StyledString.DECORATIONS_STYLER);
-					styled.append(' ');
-					styled.append('-', StyledString.QUALIFIER_STYLER);
-					styled.append(' ');
-					styled.append(parsed.removeLastSegments(1).toString(),
-							StyledString.QUALIFIER_STYLER);
-				} else {
-					styled.append(stagingEntry.getPath());
-					if (suffix != null)
-						styled.append(suffix, StyledString.DECORATIONS_STYLER);
-				}
+		if (fileNameMode) {
+			IPath parsed = Path.fromOSString(c.getPath());
+			if (parsed.segmentCount() > 1) {
+				styled.append(parsed.lastSegment());
+				if (suffix != null)
+					styled.append(suffix, StyledString.DECORATIONS_STYLER);
+				styled.append(' ');
+				styled.append('-', StyledString.QUALIFIER_STYLER);
+				styled.append(' ');
+				styled.append(parsed.removeLastSegments(1).toString(),
+						StyledString.QUALIFIER_STYLER);
 			} else {
-				styled.append(stagingEntry.getPath());
+				styled.append(c.getPath());
 				if (suffix != null)
 					styled.append(suffix, StyledString.DECORATIONS_STYLER);
 			}
 		} else {
-			styled.append(stagingEntry.getName());
+			styled.append(c.getPath());
+			if (suffix != null)
+				styled.append(suffix, StyledString.DECORATIONS_STYLER);
 		}
-		return styled.toString();
+
+		return styled;
 	}
 
+	public Image getImage(Object element) {
+		final StagingEntry c = (StagingEntry) element;
+		final DecorationResult decoration = new DecorationResult();
+		decorationHelper.decorate(decoration, c);
+		return getDecoratedImage(getEditorImage(c), decoration.getOverlay());
+	}
 }

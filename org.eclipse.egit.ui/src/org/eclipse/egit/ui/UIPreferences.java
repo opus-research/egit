@@ -147,8 +147,14 @@ public class UIPreferences {
 	public static final String REFESH_ONLY_WHEN_ACTIVE = "refesh_only_when_active"; //$NON-NLS-1$
 	/** */
 	public static final String REMOTE_CONNECTION_TIMEOUT = "remote_connection_timeout"; //$NON-NLS-1$
-	/** */
+
+	/**
+	 * When reading this preference, use
+	 * {@link UIUtils#getDefaultRepositoryDir()} instead (for variable
+	 * substitution).
+	 */
 	public static final String DEFAULT_REPO_DIR = "default_repository_dir"; //$NON-NLS-1$
+
 	/** */
 	public static final String MERGE_MODE = "merge_mode"; //$NON-NLS-1$
 	/** */
@@ -179,16 +185,6 @@ public class UIPreferences {
 	public static final String STAGING_VIEW_SYNC_SELECTION = "StagingView_SyncWithSelection"; //$NON-NLS-1$
 	/** */
 	public static final String STAGING_VIEW_FILENAME_MODE = "StagingView_FileNameMode"; //$NON-NLS-1$
-
-	/**
-	 * @since 3.1
-	 */
-	public static final String STAGING_VIEW_PRESENTATION_UNSTAGED = "StagingView_PresentationUnstaged"; //$NON-NLS-1$
-
-	/**
-	 * @since 3.1
-	 */
-	public static final String STAGING_VIEW_PRESENTATION_STAGED = "StagingView_PresentationStaged"; //$NON-NLS-1$
 	/** */
 	public static final String PAGE_COMMIT_PREFERENCES = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
 	/** */

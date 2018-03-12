@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
-import java.io.File;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -31,9 +30,6 @@ import org.eclipse.jgit.lib.Repository;
  * A staged/unstaged entry in the table
  */
 public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
-	private String name;
-	private StagingFolderEntry parent;
-
 	/**
 	 * State of the node
 	 */
@@ -171,28 +167,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		return absolutePath;
 	}
 
-	/**
-	 * @return file system file
-	 */
-	public File getSystemFile() {
-		return new File(getLocation().toOSString());
-	}
-
-	/**
-	 * @return parent StagingFolderEntry
-	 */
-	public StagingFolderEntry getParent() {
-		return parent;
-	}
-
-	/**
-	 * @param parent
-	 *            StagingFolderEntry
-	 */
-	public void setParent(StagingFolderEntry parent) {
-		this.parent = parent;
-	}
-
 	public int getProblemSeverity() {
 		IFile file = getFile();
 		if (file == null)
@@ -218,11 +192,8 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	public String getName() {
-		if (name == null) {
-			IPath parsed = Path.fromOSString(getPath());
-			name = parsed.lastSegment();
-		}
-		return name;
+		// Not used in StagingViewLabelProvider
+		return null;
 	}
 
 	public String getRepositoryName() {
