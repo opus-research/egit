@@ -8,10 +8,15 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.Map.Entry;
+
 import org.eclipse.egit.core.op.PushOperationResult;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
-import org.eclipse.ui.model.WorkbenchContentProvider;
+import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
+import org.eclipse.jgit.transport.URIish;
 
 /**
  * Content provided for push result table viewer.
@@ -23,16 +28,40 @@ import org.eclipse.ui.model.WorkbenchContentProvider;
  * @see PushOperationResult
  * @see RefUpdateElement
  */
-class RefUpdateContentProvider extends WorkbenchContentProvider implements
-		IStructuredContentProvider {
+class RefUpdateContentProvider implements IStructuredContentProvider {
+	public Object[] getElements(final Object inputElement) {
+		if (inputElement == null)
+			return new RefUpdateElement[0];
 
-	public Object[] getElements(final Object element) {
-		return element instanceof Object[] ? (Object[]) element : new Object[0];
+		final PushOperationResult result = (PushOperationResult) inputElement;
+
+		final SortedMap<String, String> dstToSrc = new TreeMap<String, String>();
+		for (final URIish uri : result.getURIs()) {
+			if (result.isSuccessfulConnection(uri)) {
+				for (final RemoteRefUpdate rru : result.getPushResult(uri)
+						.getRemoteUpdates())
+					dstToSrc.put(rru.getRemoteName(), rru.getSrcRef());
+				// Assuming that each repository received the same ref updates,
+				// we need only one to get these ref names.
+				break;
+			}
+		}
+
+		// Transforming PushOperationResult model to row-wise one.
+		final RefUpdateElement elements[] = new RefUpdateElement[dstToSrc
+				.size()];
+		int i = 0;
+		for (final Entry<String, String> entry : dstToSrc.entrySet())
+			elements[i++] = new RefUpdateElement(result, entry.getValue(),
+					entry.getKey());
+		return elements;
 	}
 
-	public Object[] getChildren(Object element) {
-		if (element instanceof RepositoryCommit)
-			return ((RepositoryCommit) element).getDiffs();
-		return super.getChildren(element);
+	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+		// nothing to do
+	}
+
+	public void dispose() {
+		// nothing to dispose
 	}
 }
