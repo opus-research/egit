@@ -92,12 +92,12 @@ public class RepositoryPropertySourceProvider implements
 		removeListener();
 
 		RepositoryTreeNode node = (RepositoryTreeNode) object;
-		listenerHandle = node.getRepository().getListenerList()
-				.addConfigChangedListener(new ConfigChangedListener() {
+		listenerHandle = node.getRepository().getConfig()
+				.addChangeListener(new ConfigChangedListener() {
 					public void onConfigChanged(ConfigChangedEvent event) {
 						// force a refresh of the page
 						lastObject = null;
-						myPage.getSite().getShell().getDisplay().syncExec(new Runnable() {
+						myPage.getSite().getShell().getDisplay().asyncExec(new Runnable() {
 
 							public void run() {
 								myPage.setPropertySourceProvider(RepositoryPropertySourceProvider.this);
