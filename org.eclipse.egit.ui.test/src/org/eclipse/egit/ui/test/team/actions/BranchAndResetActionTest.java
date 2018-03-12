@@ -29,7 +29,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.TagOperation;
@@ -298,8 +297,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 
 		bot.shell(UIText.ResetTargetSelectionDialog_ResetQuestion).bot()
 				.button(IDialogConstants.YES_LABEL).click();
-
-		Job.getJobManager().join(JobFamilies.RESET, null);
+		waitInUI();
 		String reset = getTestFileContent();
 		assertEquals("Wrong content after reset", stable, reset);
 	}

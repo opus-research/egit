@@ -251,11 +251,11 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("ConfigurePushCommand"));
-
+		
 		shellText = UIText.SimpleConfigurePushDialog_WindowTitle;
 		shell = bot.shell(shellText);
 		shell.bot().button(UIText.SimpleConfigurePushDialog_AddPushUriButton).click();
-
+		
 		// back to dialog
 		shell = bot.shell(shellText);
 		shell = bot.shell(UIText.SelectUriWiazrd_Title);
@@ -267,7 +267,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		// add push spec
 		shell = bot.shell(UIText.RefSpecDialog_WindowTitle);
 		// focus for update of other fields
-
+		
 		shell.bot().textWithLabel(UIText.RefSpecDialog_SourceBranchPushLabel).setText("HEAD");
 		shell.bot().textWithLabel(UIText.RefSpecDialog_DestinationPushLabel).setText("refs/for/master");
 		final Text text = shell.bot().textWithLabel(
@@ -280,10 +280,11 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 			}
 		});
 
+		
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
-
+		
 		// back to dialog
-		shell = bot.shell(shellText);
+		shell = bot.shell(shellText);		
 		shell.bot().button(UIText.SimpleConfigurePushDialog_SaveButton).click();
 		refreshAndWait();
 		// assert 2 children
