@@ -34,7 +34,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
@@ -157,7 +156,7 @@ public class IndexDiffCacheEntry {
 	 * @return new job ready to be scheduled, never null
 	 */
 	public Job createRefreshResourcesAndIndexDiffJob() {
-		final String repositoryName = Activator.getDefault().getRepositoryUtil()
+		String repositoryName = Activator.getDefault().getRepositoryUtil()
 				.getRepositoryName(repository);
 		String jobName = MessageFormat
 				.format(CoreText.IndexDiffCacheEntry_refreshingProjects,
@@ -166,49 +165,19 @@ public class IndexDiffCacheEntry {
 
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {
-				final long start = System.currentTimeMillis();
-				ISchedulingRule rule = RuleUtil.getRule(repository);
 				try {
-					Job.getJobManager().beginRule(rule, monitor);
-					try {
-						IProject[] validOpenProjects = ProjectUtil
-								.getValidOpenProjects(repository);
-						ProjectUtil.refreshResources(validOpenProjects,
-								monitor);
-					} catch (CoreException e) {
-						return Activator.error(e.getMessage(), e);
-					}
-					if (Activator.getDefault().isDebugging()) {
-						final long refresh = System.currentTimeMillis();
-						Activator.logInfo("Resources refresh took " //$NON-NLS-1$
-								+ (refresh - start) + " ms for " //$NON-NLS-1$
-								+ repositoryName);
-
-					}
-				} catch (OperationCanceledException e) {
-					return Status.CANCEL_STATUS;
-				} finally {
-					Job.getJobManager().endRule(rule);
+					IProject[] validOpenProjects = ProjectUtil
+							.getValidOpenProjects(repository);
+					ProjectUtil.refreshResources(validOpenProjects, monitor);
+				} catch (CoreException e) {
+					return Activator.error(e.getMessage(), e);
 				}
 				refresh();
-				Job next = reloadJob;
-				if (next != null) {
-					try {
-						next.join();
-					} catch (InterruptedException e) {
-						return Status.CANCEL_STATUS;
-					}
-				}
-				if (Activator.getDefault().isDebugging()) {
-					final long refresh = System.currentTimeMillis();
-					Activator.logInfo("Diff took " + (refresh - start) //$NON-NLS-1$
-							+ " ms for " + repositoryName); //$NON-NLS-1$
-
-				}
 				return Status.OK_STATUS;
 			}
 
 		};
+		job.setRule(RuleUtil.getRule(repository));
 		return job;
 	}
 
