@@ -32,10 +32,7 @@ public enum GitTraceLocation implements ITraceLocation {
 	/** QUICKDIFF */
 	QUICKDIFF("/debug/quickdiff"), //$NON-NLS-1$
 	/** Properties testers */
-	PROPERTIESTESTER("/debug/ui/propertiestesters"), //$NON-NLS-1$
-	/** Selection handling */
-	SELECTION("/debug/ui/selection"); //$NON-NLS-1$
-
+	PROPERTIESTESTER("/debug/ui/propertiestesters"); //$NON-NLS-1$
 	/**
 	 * Initialize the locations
 	 *
@@ -94,17 +91,14 @@ public enum GitTraceLocation implements ITraceLocation {
 	}
 
 	/**
-	 * The location to use as the option argument when tracing.
-	 */
-	public String getLocation() {
-		return this.location;
-	}
-
-	/**
 	 * @return the full path
 	 */
-	private String getFullPath() {
+	public String getFullPath() {
 		return this.fullPath;
+	}
+
+	public String getLocation() {
+		return this.location;
 	}
 
 	/**
