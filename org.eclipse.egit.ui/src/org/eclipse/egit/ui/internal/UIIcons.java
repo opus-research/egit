@@ -18,6 +18,8 @@ import java.net.URL;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.swt.graphics.Image;
 
 /**
  * Icons for the the Eclipse plugin. Mostly decorations.
@@ -259,6 +261,15 @@ public class UIIcons {
 	/** Reword icon */
 	public final static ImageDescriptor REWORD;
 
+	/** Icon for done rebase step */
+	public final static ImageDescriptor DONE_STEP;
+
+	/** Reword for current rebase step */
+	public final static ImageDescriptor CURRENT_STEP;
+
+	/** Reword for todo rebase step */
+	public final static ImageDescriptor TODO_STEP;
+
 	/** base URL */
 	public final static URL base;
 
@@ -349,6 +360,9 @@ public class UIIcons {
 		SQUASH = map("obj16/squash.gif"); //$NON-NLS-1$
 		FIXUP = map("obj16/fixup.gif"); //$NON-NLS-1$
 		REWORD = map("obj16/reword.gif"); //$NON-NLS-1$
+		DONE_STEP = map("obj16/done_step.gif"); //$NON-NLS-1$
+		CURRENT_STEP = map("obj16/current_step.gif"); //$NON-NLS-1$
+		TODO_STEP = map("obj16/todo_step.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {
@@ -369,5 +383,21 @@ public class UIIcons {
 			Activator.logError(UIText.UIIcons_errorDeterminingIconBase, mux);
 			return null;
 		}
+	}
+
+	/**
+	 * Get the image for the given descriptor from the resource manager which
+	 * handles disposal of the image when the resource manager itself is
+	 * disposed.
+	 *
+	 * @param resourceManager
+	 *            {code ResourceManager} managing the image resources
+	 * @param descriptor
+	 *            object describing an image
+	 * @return the image for the given descriptor
+	 */
+	public static Image getImage(ResourceManager resourceManager,
+			ImageDescriptor descriptor) {
+		return (Image) resourceManager.get(descriptor);
 	}
 }

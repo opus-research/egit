@@ -16,6 +16,7 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan;
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.ElementAction;
+import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.ElementType;
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.PlanElement;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -31,6 +32,8 @@ import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.util.LocalSelectionTransfer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ISelection;
@@ -49,6 +52,7 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -68,12 +72,6 @@ import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.part.ViewPart;
-
-//TODO: Preferences page
-//TODO: Use the toolbar
-//TODO: Update RebaseResultDialog to not show "conflicts" when rebase interactive stopped with "edit"
-//TODO: Tests
-//TODO: Link Selection to History View?
 
 /**
  * View visualizing git interactive rebase
@@ -110,20 +108,13 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	private boolean dndEnabled = false;
 
-	private Image abortImage;
-
-	private Image skipImage;
-
-	private Image continueImage;
-
-	private Image startImage;
-
-	private Image refreshImage;
-
 	private Form form;
 
+	private LocalResourceManager resources = new LocalResourceManager(
+			JFaceResources.getResources());
+
 	/**
-	 *
+	 * View for handling interactive rebase
 	 */
 	public RebaseInteractiveView() {
 		setPartName(UIText.InteractiveRebaseView_this_partName);
@@ -177,16 +168,8 @@ public class RebaseInteractiveView extends ViewPart implements
 	@Override
 	public void dispose() {
 		removeListeners();
-		disposeImages();
+		resources.dispose();
 		super.dispose();
-	}
-
-	private void disposeImages() {
-		startImage.dispose();
-		abortImage.dispose();
-		skipImage.dispose();
-		continueImage.dispose();
-		refreshImage.dispose();
 	}
 
 	private void removeListeners() {
@@ -239,43 +222,41 @@ public class RebaseInteractiveView extends ViewPart implements
 		toolkit.paintBordersFor(toolBar);
 
 		abortItem = new ToolItem(toolBar, SWT.NONE);
-		abortImage = UIIcons.REBASE_ABORT.createImage();
-		abortItem.setImage(abortImage);
+		abortItem.setImage(UIIcons.getImage(resources, UIIcons.REBASE_ABORT));
 		abortItem.addSelectionListener(new RebaseCommandItemSelectionListener(
 				new AbortRebaseCommand()));
 		abortItem.setText(UIText.InteractiveRebaseView_abortItem_text);
 		abortItem.setEnabled(false);
 
 		skipItem = new ToolItem(toolBar, SWT.NONE);
-		skipImage = UIIcons.REBASE_SKIP.createImage();
-		skipItem.setImage(skipImage);
+		skipItem.setImage(UIIcons.getImage(resources, UIIcons.REBASE_SKIP));
 		skipItem.addSelectionListener(new RebaseCommandItemSelectionListener(
 				new SkipRebaseCommand()));
 		skipItem.setText(UIText.InteractiveRebaseView_skipItem_text);
 		skipItem.setEnabled(false);
 
 		continueItem = new ToolItem(toolBar, SWT.NONE);
+		continueItem.setImage(UIIcons.getImage(resources,
+				UIIcons.REBASE_CONTINUE));
 		continueItem
 				.addSelectionListener(new RebaseCommandItemSelectionListener(
 						new ContinueRebaseCommand()));
 		continueItem.setEnabled(false);
-		continueImage = UIIcons.REBASE_CONTINUE.createImage();
-		continueItem.setImage(continueImage);
 		continueItem.setText(UIText.InteractiveRebaseView_continueItem_text);
 
 		startItem = new ToolItem(toolBar, SWT.NONE);
+		startItem.setImage(UIIcons.getImage(resources,
+				UIIcons.REBASE_PROCESS_STEPS));
 		startItem.addSelectionListener(new RebaseCommandItemSelectionListener(
 				new ProcessStepsRebaseCommand()));
 		startItem.setEnabled(false);
-		startImage = UIIcons.REBASE_PROCESS_STEPS.createImage();
-		startItem.setImage(startImage);
 		startItem.setText(UIText.InteractiveRebaseView_startItem_text);
 
 		new ToolItem(toolBar, SWT.SEPARATOR);
 
 		refreshItem = new ToolItem(toolBar, SWT.NONE);
-		refreshImage = UIIcons.ELCL16_REFRESH.createImage();
-		refreshItem.setImage(refreshImage);
+		refreshItem.setImage(UIIcons
+				.getImage(resources, UIIcons.ELCL16_REFRESH));
 		refreshItem.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -427,6 +408,25 @@ public class RebaseInteractiveView extends ViewPart implements
 		rebasePlanSection.setTextClient(actionToolBarProvider.getTheToolbar());
 	}
 
+	private static RebaseInteractivePlan.ElementType getType(Object element) {
+		if (element instanceof PlanElement) {
+			PlanElement planLine = (PlanElement) element;
+			return planLine.getElementType();
+		} else
+			return null;
+	}
+
+	private static class HighlightingColumnLabelProvider extends
+			ColumnLabelProvider {
+		@Override
+		public Font getFont(Object element) {
+			ElementType t = RebaseInteractiveView.getType(element);
+			if (t != null && t == ElementType.DONE_CURRENT)
+				return UIUtils.getBoldFont(JFaceResources.DIALOG_FONT);
+			return super.getFont(element);
+		}
+	}
+
 	// TODO: How to set column width to fit the treeViewer (maximize to not
 	// show empty space)
 	private void createColumns() {
@@ -442,21 +442,43 @@ public class RebaseInteractiveView extends ViewPart implements
 		infoColumn.getColumn().setResizable(true);
 		infoColumn.getColumn().setWidth(70);
 
-		infoColumn.setLabelProvider(new ColumnLabelProvider() {
+		infoColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
+
 			@Override
-			public String getText(Object element) {
-				if (element instanceof PlanElement) {
-					PlanElement planLine = (PlanElement) element;
-					switch (planLine.getElementType()) {
-					case DONE:
-						return UIText.RebaseInteractiveView_StatusDone;
-					case DONE_CURRENT:
-						return UIText.RebaseInteractiveView_StatusCurrent;
+			public Image getImage(Object element) {
+				ElementType t = getType(element);
+				if (t != null) {
+					switch (t) {
 					case TODO:
-						return UIText.RebaseInteractiveView_StatusTodo;
+						return UIIcons.getImage(resources, UIIcons.TODO_STEP);
+					case DONE_CURRENT:
+						return UIIcons
+								.getImage(resources, UIIcons.CURRENT_STEP);
+					case DONE:
+						return UIIcons.getImage(resources, UIIcons.DONE_STEP);
+					default:
+						// fall through
 					}
 				}
-				return super.getText(element);
+				return null;
+			}
+
+			@Override
+			public String getText(Object element) {
+				// ElementType t = getType(element);
+				// if (t != null) {
+				// switch (t) {
+				// case DONE:
+				// return UIText.RebaseInteractiveView_StatusDone;
+				// case DONE_CURRENT:
+				// return UIText.RebaseInteractiveView_StatusCurrent;
+				// case TODO:
+				// return UIText.RebaseInteractiveView_StatusTodo;
+				// default:
+				// // fall through
+				// }
+				// }
+				return ""; //$NON-NLS-1$
 			}
 		});
 
@@ -465,19 +487,46 @@ public class RebaseInteractiveView extends ViewPart implements
 		actionColumn.getColumn().setText(headings[1]);
 		actionColumn.getColumn().setMoveable(false);
 		actionColumn.getColumn().setResizable(true);
-		actionColumn.getColumn().setWidth(70);
+		actionColumn.getColumn().setWidth(90);
 
-		actionColumn.setLabelProvider(new ColumnLabelProvider() {
+		actionColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
+
+			@Override
+			public Image getImage(Object element) {
+				ElementAction a = getAction(element);
+				if (a != null) {
+					switch (a) {
+					case EDIT:
+						return UIIcons.getImage(resources, UIIcons.EDITCONFIG);
+					case FIXUP:
+						return UIIcons.getImage(resources, UIIcons.FIXUP);
+					case PICK:
+						return UIIcons.getImage(resources, UIIcons.CHERRY_PICK);
+					case REWORD:
+						return UIIcons.getImage(resources, UIIcons.REWORD);
+					case SKIP:
+						return UIIcons.getImage(resources, UIIcons.REBASE_SKIP);
+					case SQUASH:
+						return UIIcons.getImage(resources, UIIcons.SQUASH);
+					default:
+						// fall through
+					}
+				}
+				return super.getImage(element);
+			}
+
 			@Override
 			public String getText(Object element) {
+				ElementAction a = getAction(element);
+				return (a != null) ? a.name() : super.getText(element);
+			}
+
+			private ElementAction getAction(Object element) {
 				if (element instanceof PlanElement) {
 					PlanElement planLine = (PlanElement) element;
-					if (planLine.isSkip()) {
-						// return RebaseInteractivePlan.SKIP_TOKEN;
-					}
-					return planLine.getPlanElementAction().name();
-				}
-				return super.getText(element);
+					return planLine.getPlanElementAction();
+				} else
+					return null;
 			}
 		});
 
@@ -488,7 +537,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		commitIDColumn.getColumn().setResizable(true);
 		commitIDColumn.getColumn().setWidth(70);
 
-		commitIDColumn.setLabelProvider(new ColumnLabelProvider() {
+		commitIDColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
 				if (element instanceof PlanElement) {
@@ -507,7 +556,8 @@ public class RebaseInteractiveView extends ViewPart implements
 		commitMessageColumn.getColumn().setResizable(true);
 		commitMessageColumn.getColumn().setWidth(200);
 
-		commitMessageColumn.setLabelProvider(new ColumnLabelProvider() {
+		commitMessageColumn
+				.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
 				if (element instanceof PlanElement) {
@@ -612,7 +662,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		return dndEnabled;
 	}
 
-	public void planWasUpdatedFromRepository(RebaseInteractivePlan plan) {
+	public void planWasUpdatedFromRepository(final RebaseInteractivePlan plan) {
 		refresh();
 	}
 
