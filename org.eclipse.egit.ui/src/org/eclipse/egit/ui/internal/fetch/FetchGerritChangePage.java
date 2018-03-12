@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.op.TagOperation;
@@ -31,6 +30,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
@@ -96,12 +96,16 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Text branchText;
 
+	private String refName;
+
 	/**
 	 * @param repository
+	 * @param refName initial value for the ref field
 	 */
-	public FetchGerritChangePage(Repository repository) {
+	public FetchGerritChangePage(Repository repository, String refName) {
 		super(FetchGerritChangePage.class.getName());
 		this.repository = repository;
+		this.refName = refName;
 		setTitle(NLS
 				.bind(UIText.FetchGerritChangePage_PageTitle,
 						Activator.getDefault().getRepositoryUtil()
@@ -148,6 +152,8 @@ public class FetchGerritChangePage extends WizardPage {
 		});
 
 		branchTextlabel = new Label(checkoutGroup, SWT.NONE);
+		GridDataFactory.defaultsFor(branchTextlabel).exclude(false)
+				.applyTo(branchTextlabel);
 		branchTextlabel.setText(UIText.FetchGerritChangePage_BranchNameText);
 		branchText = new Text(checkoutGroup, SWT.SINGLE | SWT.BORDER);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(branchText);
@@ -241,6 +247,14 @@ public class FetchGerritChangePage extends WizardPage {
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
 		setControl(main);
+		setPageComplete(false);
+	}
+
+	@Override
+	public void setVisible(boolean visible) {
+		super.setVisible(visible);
+		if (visible && refName != null)
+			refText.setText(refName);
 	}
 
 	private void checkPage() {
@@ -423,10 +437,13 @@ public class FetchGerritChangePage extends WizardPage {
 								}
 								if (doCheckout || doCreateTag) {
 									monitor.setTaskName(UIText.FetchGerritChangePage_CheckingOutTaskName);
-									new BranchOperation(repository, commit)
-											.execute(monitor);
+									BranchOperationUI.checkout(repository, commit.name())
+											.run(monitor);
+
 									monitor.worked(1);
 								}
+							} catch (RuntimeException e) {
+								throw e;
 							} catch (Exception e) {
 								throw new InvocationTargetException(e);
 							} finally {
@@ -566,6 +583,14 @@ public class FetchGerritChangePage extends WizardPage {
 		public Integer getPatchSetNumber() {
 			return patchSetNumber;
 		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return refName;
+		}
 	}
 
 	private final static class ChangeContentProposal implements
@@ -593,6 +618,14 @@ public class FetchGerritChangePage extends WizardPage {
 		public String getLabel() {
 			return NLS
 					.bind("{0} - {1}", myChange.getChangeNumber(), myChange.getPatchSetNumber()); //$NON-NLS-1$
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return getContent();
 		}
 	}
 }

@@ -119,7 +119,7 @@ class CreateBranchPage extends WizardPage {
 	 * @param repo
 	 *            the repository
 	 * @param baseCommit
-	 *            the commit to base the new branch on, must not be null
+	 *            the commit to base the new branch on, may be null
 	 */
 	public CreateBranchPage(Repository repo, RevCommit baseCommit) {
 		super(CreateBranchPage.class.getName());
@@ -182,6 +182,8 @@ class CreateBranchPage extends WizardPage {
 			this.branchCombo.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
+					upstreamConfig = getDefaultUpstreamConfig(myRepository,
+							branchCombo.getText());
 					checkPage();
 				}
 			});
@@ -239,7 +241,8 @@ class CreateBranchPage extends WizardPage {
 		buttonConfigRebase.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				upstreamConfig = UpstreamConfig.REBASE;
+				if (buttonConfigRebase.getSelection())
+					upstreamConfig = UpstreamConfig.REBASE;
 			}
 		});
 		buttonConfigRebase
@@ -250,7 +253,8 @@ class CreateBranchPage extends WizardPage {
 		buttonConfigMerge.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				upstreamConfig = UpstreamConfig.MERGE;
+				if (buttonConfigMerge.getSelection())
+					upstreamConfig = UpstreamConfig.MERGE;
 			}
 		});
 		buttonConfigMerge
@@ -261,7 +265,8 @@ class CreateBranchPage extends WizardPage {
 		buttonConfigNone.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				upstreamConfig = UpstreamConfig.NONE;
+				if (buttonConfigNone.getSelection())
+					upstreamConfig = UpstreamConfig.NONE;
 			}
 		});
 		buttonConfigNone
@@ -325,8 +330,7 @@ class CreateBranchPage extends WizardPage {
 				buttonConfigMerge.setSelection(false);
 			buttonConfigRebase.setSelection(false);
 			buttonConfigNone.setSelection(false);
-			switch (getDefaultUpstreamConfig(myRepository, branchCombo
-					.getText())) {
+			switch (upstreamConfig) {
 			case MERGE:
 				buttonConfigMerge.setSelection(true);
 				break;
@@ -389,7 +393,7 @@ class CreateBranchPage extends WizardPage {
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
 					IProgressMonitor.UNKNOWN);
-			new BranchOperationUI(myRepository, Constants.R_HEADS + newRefName)
+			BranchOperationUI.checkout(myRepository, Constants.R_HEADS + newRefName)
 					.run(monitor);
 		}
 	}

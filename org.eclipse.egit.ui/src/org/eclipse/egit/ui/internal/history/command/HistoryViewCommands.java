@@ -75,5 +75,8 @@ public class HistoryViewCommands {
 	public static final String MERGE = "org.eclipse.egit.ui.history.Merge"; //$NON-NLS-1$
 
 	/** rebase on top of commit */
-	public static final String REBASECURRENT = "org.eclipse.egit.ui.history.RebaseCurrent"; //$NON-NLS-1$
+	public static final String REBASECURRENT = "org.eclipse.egit.ui.RebaseCurrent"; //$NON-NLS-1$
+
+	/** Open in Commit Viewer */
+	public static final String OPEN_IN_COMMIT_VIEWER = "org.eclipse.egit.ui.history.OpenInCommitViewerCommand"; //$NON-NLS-1$
 }
