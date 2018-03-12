@@ -1090,13 +1090,19 @@
                <count
                      value="1">
                </count>
-               <and>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                     </instanceof>
-                  </iterate>
-               </and>
+               <iterate>
+	               <or>
+		               <instanceof
+		                     value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+		               </instanceof>
+		               <instanceof
+		                     value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+		               </instanceof>
+		               <instanceof
+		                     value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+		               </instanceof>
+	               </or>
+               </iterate>
             </and>
          </activeWhen>
       </handler>
@@ -1327,24 +1333,6 @@
                   </iterate>
                </and>
 	         </or>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.team.Synchronize">
-         <class
-               class="org.eclipse.egit.ui.internal.actions.SynchronizeWithActionHandler">
-         </class>
-         <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <adapt
-                        type="org.eclipse.core.resources.IProject">
-                  </adapt>
-               </iterate>
-            </and>
          </activeWhen>
       </handler>
       <handler
@@ -1656,6 +1644,34 @@
                </and>
          </activeWhen>
       </handler>
+      <handler
+            commandId="org.eclipse.ui.edit.delete">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.StashDropCommand">
+         </class>
+         <activeWhen>
+             <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode">
+                        </instanceof>
+                        <not>
+                           <test
+                                 property="GitRepository.isBare">
+                           </test>
+                        </not>
+                        <test
+                              property="GitRepository.isSafe">
+                        </test>
+                     </and>
+                  </iterate>
+               </and>
+         </activeWhen>
+      </handler>
    </extension>
    <extension
          point="org.eclipse.ui.views">
@@ -1861,6 +1877,44 @@
             </visibleWhen>
          </command>
          <command
+               commandId="org.eclipse.egit.ui.team.Push"
+               icon="icons/obj16/push.gif"
+               label="%RepoViewPushBranch.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.team.Push"
+               icon="icons/obj16/push.gif"
+               label="%RepoViewPushTag.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
                commandId="org.eclipse.egit.ui.RepositoriesViewCreateBranch"
                icon="icons/obj16/new_branch_obj.gif"
                label="%RepoViewCreateBranch.label"
@@ -1891,24 +1945,6 @@
                commandId="org.eclipse.ui.edit.rename"
                icon="icons/obj16/editconfig.gif"
                label="%RepoViewRenameBranch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewConfigureBranch"
-               label="%ConfigurBranchCommand.label"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -2518,6 +2554,34 @@
                </and>
             </visibleWhen>
          </command>
+         <command
+               commandId="org.eclipse.ui.edit.delete"
+               label="%StashDropCommand.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode">
+                        </instanceof>
+                        <not>
+                           <test
+                                 property="GitRepository.isBare">
+                           </test>
+                        </not>
+                        <test
+                              property="GitRepository.isSafe">
+                        </test>
+                     </and>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
          <separator
                name="##Repo-commit"
                visible="true">
@@ -2575,12 +2639,10 @@
                   <count
                         value="1">
                   </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                     </instanceof>
+                  <iterate>
+	                     <instanceof
+	                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+	                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2947,9 +3009,6 @@
                            </instanceof>
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
                            </instanceof>
                         </or>
                      </iterate>
@@ -3896,9 +3955,8 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ConfigureBranchCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewConfigureBranch"
-            name="Configure Branch">
+            id="org.eclipse.egit.ui.team.stash.drop"
+            name="%StashDropCommand.name">
       </command>
    </extension>
    <extension
@@ -3970,6 +4028,10 @@
       <image
             commandId="org.eclipse.egit.ui.history.CreateTag"
             icon="icons/obj16/new_tag_obj.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.history.PushCommit"
+            icon="icons/obj16/push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.CheckoutCommand"
@@ -4471,6 +4533,11 @@
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CreateTagOnCommitHandler"
             id="org.eclipse.egit.ui.history.CreateTag"
             name="%CreateTagCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.PushCommitHandler"
+            id="org.eclipse.egit.ui.history.PushCommit"
+            name="%PushCommit.name">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.ResetHandler"
