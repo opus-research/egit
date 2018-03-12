@@ -18,10 +18,4 @@
        <adapter type="org.eclipse.mylyn.team.ui.AbstractTaskReference"/>
     </factory>
    </extension>
-   <extension
-         point="org.eclipse.ui.startup">
-      <startup
-            class="org.eclipse.egit.internal.mylyn.ui.AutoStart">
-      </startup>
-   </extension>
 </plugin>
