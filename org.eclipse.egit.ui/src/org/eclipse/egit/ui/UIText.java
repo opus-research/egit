@@ -874,27 +874,6 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
-	public static String CleanRepositoryPage_cleanDirs;
-
-	/** */
-	public static String CleanRepositoryPage_cleanFiles;
-
-	/** */
-	public static String CleanRepositoryPage_cleaningItems;
-
-	/** */
-	public static String CleanRepositoryPage_findingItems;
-
-	/** */
-	public static String CleanRepositoryPage_includeIgnored;
-
-	/** */
-	public static String CleanRepositoryPage_message;
-
-	/** */
-	public static String CleanRepositoryPage_title;
-
-	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
@@ -4316,9 +4295,6 @@ public class UIText extends NLS {
 	public static String GitVariableResolver_VariableReferencesNonExistentResource;
 
 	/** */
-	public static String DecoratableResourceHelper_noHead;
-
-	/** */
 	public static String StagingView_UnstagedChanges;
 
 	/** */
@@ -4518,9 +4494,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitOpenInCompareAction_cannotRetrieveCommitWithId;
-
-	/** */
-	public static String EclipseSshSessionFactory_noIdentities;
 
 	/** */
 	public static String CloneFailureDialog_tile;
