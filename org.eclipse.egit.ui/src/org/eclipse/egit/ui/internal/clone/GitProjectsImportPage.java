@@ -295,6 +295,11 @@ public class GitProjectsImportPage extends WizardPage {
 		layout.marginWidth = 0;
 		projectGroup.setLayout(layout);
 		projectGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+	}
+
+	public void setVisible(boolean visible) {
+		super.setVisible(visible);
 	}
 
 	/**
