@@ -29,6 +29,7 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
@@ -177,11 +178,11 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		SWTBotView view = bot
 				.viewById("org.eclipse.team.ui.GenericHistoryView");
 		SWTBotToolbarToggleButton folder = (SWTBotToolbarToggleButton) view
-				.toolbarButton(UIText.GitHistoryPage_AllInParentTooltip);
+				.toolbarButton(UIText.HistoryPage_ShowAllVersionsForFolder);
 		SWTBotToolbarToggleButton project = (SWTBotToolbarToggleButton) view
-				.toolbarButton(UIText.GitHistoryPage_AllInProjectTooltip);
+				.toolbarButton(UIText.HistoryPage_ShowAllVersionsForProject);
 		SWTBotToolbarToggleButton repo = (SWTBotToolbarToggleButton) view
-				.toolbarButton(UIText.GitHistoryPage_AllInRepoTooltip);
+				.toolbarButton(UIText.HistoryPage_ShowAllVersionsForRepo);
 		switch (filter) {
 		case 0:
 			if (folder.isChecked())
@@ -291,7 +292,9 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		ContextMenuHelper.clickContextMenu(table,
 				UIText.GitHistoryPage_CreateTagMenuLabel);
-		SWTBotShell dialog = bot.shell(UIText.CreateTagDialog_NewTag);
+		SWTBotShell dialog = bot.shell(NLS.bind(
+				UIText.CreateTagDialog_CreateTagOnCommitTitle, commit[0]
+						.getId().name()));
 		dialog.bot().textWithLabel(UIText.CreateTagDialog_tagName).setText(
 				"NewTag");
 		dialog.bot().textWithLabel(UIText.CreateTagDialog_tagMessage).setText(

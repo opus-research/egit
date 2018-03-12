@@ -41,7 +41,7 @@
          </action>
          <action
                class="org.eclipse.egit.ui.internal.actions.FetchAction"
-               definitionId="org.eclipse.egit.ui.team.Fetch"
+               definitionId="org.eclipse.egit.ui.RepositoriesViewFetch"
                icon="$nl$/icons/obj16/pull.gif"
                id="org.eclipse.egit.ui.internal.actions.FetchAction"
                label="%FetchAction_label"
@@ -497,12 +497,6 @@
             id="org.eclipse.egit.ui.commandCategory"
             name="%Git">
       </category>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.commands.ConfigureDebugTraceCommand"
-            id="org.eclipse.egit.ui.command.configureTrace"
-            name="%ConfigureTraceCommand.name">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.views">
@@ -1098,24 +1092,6 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
-               label="%RepoViewRenameBranch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
                commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
                label="%RepoViewRemoveRemote.label"
                style="push">
@@ -1273,17 +1249,17 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewAddRepository"
                style="push"
-               tooltip="%RepoViewAddRepository.tooltip">
+               tooltip="Add an existing local Git Repository to this view">
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewClone"
                style="push"
-               tooltip="%RepoViewCloneRepository.tooltip">
+               tooltip="Clone a Git Repository and add the clone to this view">
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewCreateRepository"
                style="push"
-               tooltip="%RepoViewCreateRepository.tooltip">
+               tooltip="Create a new Git Repository and add it to this view">
          </command>
          <separator
                name="org.eclipse.egit.ui.viewActions"
@@ -1296,33 +1272,23 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
                style="toggle">
-         </command>
-         <separator
-               name="org.eclipse.egit.ui.separator1"
-               visible="true">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
-               helpContextId="Hierarchical Branch Representation"
-               style="toggle"
-               tooltip="%RepoViewHierarchicalBranchRepresenation.tooltip">
          </command>
       </menuContribution>
       <menuContribution
             locationURI="menu:org.eclipse.egit.ui.RepositoriesView">
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewAddRepository"
-               label="%RepoAddRepositoryViewMenu.label"
+               label="&amp;Add a Repository"
                style="push">
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewClone"
-               label="%RepoCloneRepositoryViewMenu.label"
+               label="&amp;Clone a Repository"
                style="push">
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewCreateRepository"
-               label="%RepoCreateRepositoryViewMenu.label"
+               label="&amp;Create a Repository"
                style="push">
          </command>
          <separator
@@ -1331,21 +1297,12 @@
          </separator>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
-               label="%RepoViewRefreshViewMenu.label"
+               label="&amp;Refresh"
                style="push">
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
-               label="%RepoViewLinkWithSelectionMenu.label"
-               style="toggle">
-         </command>
-         <separator
-               name="org.eclipse.egit.ui.separator2"
-               visible="true">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
-               label="%HierarchyLayout.label"
+               label="Link with &amp;Selection"
                style="toggle">
          </command>
       </menuContribution>
@@ -1382,12 +1339,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.FetchCommand"
             id="org.eclipse.egit.ui.RepositoriesViewFetch"
             name="%FetchCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
-            name="%RenameBranchCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -1517,6 +1468,7 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand"
             id="org.eclipse.egit.ui.RepositoriesViewMerge"
             name="%MergeWithDialogCommand">
       </command>
@@ -1536,23 +1488,13 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CreateRepositoryCommand"
             id="org.eclipse.egit.ui.RepositoriesViewCreateRepository"
-            name="%RepoViewCreateRepositoryCommand.name">
+            name="Create a Repository">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.DeleteCommand"
             id="org.eclipse.egit.ui.RepositoriesViewDelete"
             name="%DeleteRepositoryCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchHierarchyCommand"
-            id="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
-            name="%ToggleLayoutCommand.name">
-         <state
-               class="org.eclipse.ui.handlers.RegistryToggleState:false"
-               id="org.eclipse.ui.commands.toggleState">
-         </state>
       </command>
    </extension>
    <extension
@@ -1673,10 +1615,6 @@
             commandId="org.eclipse.egit.ui.RepositoriesViewDelete"
             icon="icons/obj16/delete_obj.gif">
       </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
-            icon="icons/elcl16/hierarchicalLayout.gif">
-      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -1738,8 +1676,7 @@
       <participant
             class="org.eclipse.egit.ui.internal.synchronize.GitModelSynchronizeParticipant"
             id="org.eclipse.egit.ui.modelCompareParticipant"
-            name="%Synchronize_Name"
-            icon="icons/obj16/gitrepository.gif"
+            name="%Synchronize_ModelName"
             persistent="false"/>
    </extension>
    <extension
@@ -1963,42 +1900,11 @@
             hasPages="true"
             icon="icons/etool16/createRepository.gif"
             id="org.eclipse.egit.ui.CreateRepositoryWizard"
-            name="%CreateRepositoryWizard.name">
+            name="Git Repository">
       </wizard>
       <category
             id="org.eclipse.egit.ui.wizardCategory"
             name="%Git">
       </category>
-   </extension>
-   <extension
-         point="org.eclipse.ui.handlers">
-      <handler
-            class="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand"
-            commandId="org.eclipse.egit.ui.RepositoriesViewMerge">
-         <activeWhen>
-            <iterate
-                  ifEmpty="false">
-               <or>
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                  </instanceof>
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                  </instanceof>
-               </or>
-            </iterate></activeWhen>
-      </handler>
-      <handler
-            class="org.eclipse.egit.ui.internal.actions.MergeAction"
-            commandId="org.eclipse.egit.ui.RepositoriesViewMerge">
-         <activeWhen>
-            <iterate
-                  ifEmpty="false">
-               <instanceof
-                     value="org.eclipse.core.resources.IProject">
-               </instanceof>
-            </iterate>
-         </activeWhen>
-      </handler>
    </extension>
 </plugin>
