@@ -27,6 +27,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.SystemReader;
@@ -153,20 +154,26 @@ public class RepositoryFinder {
 		}
 	}
 
-	private void findInDirectoryAndParents(IContainer container,
-			File path) {
-		FileRepositoryBuilder builder = new FileRepositoryBuilder();
-		builder.addCeilingDirectories(ceilingDirectories);
-		builder.findGitDir(path);
-		File gitDir = builder.getGitDir();
-		if (gitDir != null)
-			register(container, gitDir);
+	private void findInDirectoryAndParents(IContainer container, File startPath) {
+		File path = startPath;
+		while (path != null && !ceilingDirectories.contains(path)) {
+			findInDirectory(container, path);
+			path = path.getParentFile();
+		}
 	}
 
 	private void findInDirectory(final IContainer container,
 			final File path) {
+		if (GitTraceLocation.CORE.isActive())
+			GitTraceLocation.getTrace().trace(
+					GitTraceLocation.CORE.getLocation(),
+					"Looking at candidate dir: " //$NON-NLS-1$
+							+ path);
+
 		FileRepositoryBuilder builder = new FileRepositoryBuilder();
-		builder.addCeilingDirectory(path);
+		File parent = path.getParentFile();
+		if (parent != null)
+			builder.addCeilingDirectory(parent);
 		builder.findGitDir(path);
 		File gitDir = builder.getGitDir();
 		if (gitDir != null)
