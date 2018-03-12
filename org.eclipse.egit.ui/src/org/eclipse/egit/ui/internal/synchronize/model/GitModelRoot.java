@@ -43,14 +43,19 @@ public class GitModelRoot {
 	 * @return children
 	 */
 	public GitModelObject[] getChildren() {
-		return getChildrenImpl();
+		if (children == null)
+			children = getChildrenImpl();
+
+		return children;
 	}
 
 	/**
 	 *  Disposes all nested resources
 	 */
 	public void dispose() {
-		disposeOldChildren();
+		for (GitModelObject child : children)
+			child.dispose();
+
 		gsds.dispose();
 	}
 
@@ -71,17 +76,8 @@ public class GitModelRoot {
 		} catch (IOException e) {
 				Activator.logError(e.getMessage(), e);
 		}
-		disposeOldChildren();
-		children = restult.toArray(new GitModelObject[restult.size()]);
 
-		return children;
-	}
-
-	private void disposeOldChildren() {
-		if (children == null)
-			return;
-		for (GitModelObject child : children)
-			child.dispose();
+		return restult.toArray(new GitModelObject[restult.size()]);
 	}
 
 }
