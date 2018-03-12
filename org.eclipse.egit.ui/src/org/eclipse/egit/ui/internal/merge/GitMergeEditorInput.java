@@ -67,6 +67,7 @@ import org.eclipse.jgit.util.IO;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
@@ -106,7 +107,8 @@ public class GitMergeEditorInput extends CompareEditorInput {
 
 	@Override
 	public Object getAdapter(Class adapter) {
-		if (adapter == IFile.class || adapter == IResource.class) {
+		if ((adapter == IFile.class || adapter == IResource.class)
+				&& isUIThread()) {
 			Object selectedEdition = getSelectedEdition();
 			if (selectedEdition instanceof DiffNode) {
 				DiffNode diffNode = (DiffNode) selectedEdition;
@@ -118,6 +120,10 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			}
 		}
 		return super.getAdapter(adapter);
+	}
+
+	private static boolean isUIThread() {
+		return Display.getCurrent() != null;
 	}
 
 	@Override
@@ -265,8 +271,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 		monitor.setTaskName(UIText.GitMergeEditorInput_CalculatingDiffTaskName);
 		IDiffContainer result = new DiffNode(Differencer.CONFLICTING);
 
-		TreeWalk tw = new TreeWalk(repository);
-		try {
+		try (TreeWalk tw = new TreeWalk(repository)) {
 			int dirCacheIndex = tw.addTree(new DirCacheIterator(repository
 					.readDirCache()));
 			int fileTreeIndex = tw.addTree(new FileTreeIterator(repository));
@@ -402,8 +407,6 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				new DiffNode(fileParent, kind, anc, leftEditable, right);
 			}
 			return result;
-		} finally {
-			tw.release();
 		}
 	}
 

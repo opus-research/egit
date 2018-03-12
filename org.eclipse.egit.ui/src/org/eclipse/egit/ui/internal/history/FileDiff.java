@@ -58,7 +58,7 @@ public class FileDiff extends WorkbenchAdapter {
 	/**
 	 * Comparator for sorting FileDiffs based on getPath().
 	 */
-	public static Comparator<FileDiff> PATH_COMPARATOR = new Comparator<FileDiff>() {
+	public static final Comparator<FileDiff> PATH_COMPARATOR = new Comparator<FileDiff>() {
 		public int compare(FileDiff o1, FileDiff o2) {
 			return o1.getPath().compareTo(o2.getPath());
 		}
@@ -230,11 +230,8 @@ public class FileDiff extends WorkbenchAdapter {
 			return;
 		}
 
-		ObjectReader reader = db.newObjectReader();
-		try {
+		try (ObjectReader reader = db.newObjectReader()) {
 			outputEclipseDiff(d, db, reader, diffFmt);
-		} finally {
-			reader.release();
 		}
 	}
 

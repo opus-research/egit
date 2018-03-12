@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 SAP AG and others.
+ * Copyright (c) 2013, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -188,8 +188,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		else if (o instanceof Repository)
 			repo = (Repository) o;
 		else if (o instanceof IAdaptable) {
-			IResource resource = (IResource) ((IAdaptable) o)
-					.getAdapter(IResource.class);
+			IResource resource = CommonUtils.getAdapter(((IAdaptable) o), IResource.class);
 			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource);
@@ -276,9 +275,8 @@ public class RebaseInteractiveView extends ViewPart implements
 			private RepositoryCommit loadCommit(
 					AbbreviatedObjectId abbreviatedObjectId) {
 				if (abbreviatedObjectId != null) {
-					RevWalk walk = new RevWalk(
-							RebaseInteractiveView.this.currentRepository);
-					try {
+					try (RevWalk walk = new RevWalk(
+							RebaseInteractiveView.this.currentRepository)) {
 						Collection<ObjectId> resolved = walk.getObjectReader()
 								.resolve(abbreviatedObjectId);
 						if (resolved.size() == 1) {
@@ -290,8 +288,6 @@ public class RebaseInteractiveView extends ViewPart implements
 						}
 					} catch (IOException e) {
 						return null;
-					} finally {
-						walk.release();
 					}
 				}
 				return null;

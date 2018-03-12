@@ -2,17 +2,15 @@
  * Copyright (C) 2006, 2012 Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2014, Obeo
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.core.storage;
+package org.eclipse.egit.core.internal.storage;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -22,6 +20,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
@@ -32,34 +31,22 @@ import org.eclipse.jgit.treewalk.WorkingTreeOptions;
 import org.eclipse.jgit.util.io.AutoCRLFInputStream;
 import org.eclipse.osgi.util.NLS;
 
-/**
- * Provides access to a git blob.
- *
- * @since 3.6
- */
-public class GitBlobStorage implements IStorage {
-	/** Repository containing the object this storage provides access to. */
+/** Accesses a blob from Git. */
+class BlobStorage implements IStorage {
 	protected final Repository db;
 
-	/** Repository-relative path of the underlying object. */
-	protected final String path;
+	protected final RepositoryUtil repositoryUtil;
 
-	/** Id of this object in its repository. */
-	protected final ObjectId blobId;
+	private final String path;
 
-	/**
-	 * @param repository
-	 *            The repository containing this object.
-	 * @param path
-	 *            Repository-relative path of the underlying object.
-	 * @param blob
-	 *            Id of this object in its repository.
-	 */
-	public GitBlobStorage(final Repository repository, final String path,
+	private final ObjectId blobId;
+
+	BlobStorage(final Repository repository, final String fileName,
 			final ObjectId blob) {
-		this.db = repository;
-		this.path = path;
-		this.blobId = blob;
+		db = repository;
+		path = fileName;
+		blobId = blob;
+		repositoryUtil = Activator.getDefault().getRepositoryUtil();
 	}
 
 	public InputStream getContents() throws CoreException {
@@ -79,22 +66,20 @@ public class GitBlobStorage implements IStorage {
 
 		try {
 			WorkingTreeOptions workingTreeOptions = db.getConfig().get(WorkingTreeOptions.KEY);
-			final InputStream objectInputStream = db.open(blobId,
-					Constants.OBJ_BLOB).openStream();
 			switch (workingTreeOptions.getAutoCRLF()) {
 			case INPUT:
 				// When autocrlf == input the working tree could be either CRLF or LF, i.e. the comparison
 				// itself should ignore line endings.
 			case FALSE:
-				return objectInputStream;
+				return db.open(blobId, Constants.OBJ_BLOB).openStream();
 			case TRUE:
 			default:
-				return new AutoCRLFInputStream(objectInputStream, true);
+				return new AutoCRLFInputStream(db.open(blobId, Constants.OBJ_BLOB).openStream(), true);
 			}
 		} catch (MissingObjectException notFound) {
 			throw new CoreException(Activator.error(NLS.bind(
 					CoreText.BlobStorage_blobNotFound, blobId.name(), path),
-					notFound));
+					null));
 		}
 	}
 
@@ -128,7 +113,7 @@ public class GitBlobStorage implements IStorage {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		GitBlobStorage other = (GitBlobStorage) obj;
+		BlobStorage other = (BlobStorage) obj;
 		if (blobId == null) {
 			if (other.blobId != null)
 				return false;
@@ -147,21 +132,5 @@ public class GitBlobStorage implements IStorage {
 		return true;
 	}
 
-	/**
-	 * Returns the absolute path on disk of the underlying object.
-	 * <p>
-	 * The returned path may not point to an existing file if the object does
-	 * not exist locally.
-	 * </p>
-	 *
-	 * @return The absolute path on disk of the underlying object.
-	 */
-	public IPath getAbsolutePath() {
-		final File repoDir;
-		if (db.isBare())
-			repoDir = db.getDirectory();
-		else
-			repoDir = db.getWorkTree();
-		return new Path(repoDir.getAbsolutePath() + File.separatorChar + path);
-	}
+
 }
