@@ -10,8 +10,6 @@ package org.eclipse.egit.ui.internal.decorators;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.WeakHashMap;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.ContainerTreeIterator;
@@ -19,7 +17,6 @@ import org.eclipse.egit.core.ContainerTreeIterator.ResourceEntry;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
-import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.Constants;
@@ -37,7 +34,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
  *
  * @see IDecoratableResource
  */
-public class DecoratableResourceHelper {
+class DecoratableResourceHelper {
 
 	static final int T_HEAD = 0;
 
@@ -45,21 +42,8 @@ public class DecoratableResourceHelper {
 
 	static final int T_WORKSPACE = 2;
 
-	private static final Map<Repository, DirCache> repoToDirCache = new WeakHashMap<Repository, DirCache>();
-
-	/**
-	 * Creates a list of decoratable resources for the given list of resources
-	 *
-	 * @param resources
-	 *            the list of resources to be decorated
-	 * @return the list of decoratable resources
-	 * @throws IOException
-	 */
-	public static IDecoratableResource[] createDecoratableResources(
+	static IDecoratableResource[] createDecoratableResources(
 			final IResource[] resources) throws IOException {
-		if (resources == null)
-			return null;
-
 		// Use first (available) resource to get repository mapping
 		int i = 0;
 		while (resources[i] == null) {
@@ -128,17 +112,6 @@ public class DecoratableResourceHelper {
 		return decoratableResources;
 	}
 
-	static DirCache getDirCache(Repository repository) throws IOException {
-		synchronized(repoToDirCache) {
-			DirCache dirCache = repoToDirCache.get(repository);
-			if (dirCache != null && !dirCache.isOutdated())
-				return dirCache;
-			dirCache = repository.readDirCache();
-			repoToDirCache.put(repository, dirCache);
-			return dirCache;
-		}
-	}
-
 	private static TreeWalk createThreeWayTreeWalk(
 			final RepositoryMapping mapping,
 			final ArrayList<String> resourcePaths) throws IOException {
@@ -163,7 +136,7 @@ public class DecoratableResourceHelper {
 			treeWalk.addTree(new EmptyTreeIterator());
 
 		// Index
-		treeWalk.addTree(new DirCacheIterator(getDirCache(repository)));
+		treeWalk.addTree(new DirCacheIterator(repository.readDirCache()));
 
 		// Working directory
 		treeWalk.addTree(IteratorService.createInitialIterator(repository));
@@ -228,7 +201,8 @@ public class DecoratableResourceHelper {
 			decoratableResource.dirty = false;
 			decoratableResource.assumeValid = true;
 		} else {
-			if (workspaceIterator.isModified(indexEntry, true))
+			if (workspaceIterator != null
+					&& workspaceIterator.isModified(indexEntry, true))
 				decoratableResource.dirty = true;
 		}
 		return decoratableResource;

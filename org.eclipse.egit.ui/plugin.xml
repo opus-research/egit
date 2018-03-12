@@ -615,12 +615,6 @@
             id="org.eclipse.egit.ui.command.configureTrace"
             name="%ConfigureTraceCommand.name">
       </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.commands.shared.FetchChangeFromGerritCommand"
-            id="org.eclipse.egit.ui.FetchGerritChange"
-            name="%FetchFromGerritCommand.name">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.views">
@@ -1350,24 +1344,6 @@
                   <iterate
                         ifEmpty="false"
                         operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.FetchGerritChange"
-               label="%FetchFromGerritCommand.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
                      <instanceof
                            value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
                      </instanceof>
@@ -2289,10 +2265,6 @@
             commandId="org.eclipse.egit.ui.team.Push"
             icon="icons/obj16/push.gif">
       </image>
-      <image
-            commandId="org.eclipse.egit.ui.FetchGerritChange"
-            icon="icons/obj16/gerrit_obj.gif">
-      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -2302,13 +2274,6 @@
             namespace="GitRepository"
             properties="isBare,isSafe,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase"
             type="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
-      </propertyTester>
-      <propertyTester
-            class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
-            id="org.eclipse.egit.ui.ResourceTester"
-            namespace="GitResource"
-            properties="isShared"
-            type="org.eclipse.core.resources.IResource">
       </propertyTester>
    </extension>
    <extension
@@ -2390,23 +2355,6 @@
             contentExtensionId="org.eclipse.egit.ui.changeSetContent"
             icon="$nl$/icons/obj16/changelog_obj.gif"
             modelProviderId="org.eclipse.egit.ui.changeSetModel"/>
-   </extension>
-   <extension point="org.eclipse.ui.navigator.viewer">
-       <viewer viewerId="org.eclipse.egit.ui.compareSynchronization">
-           <popupMenu
-                allowsPlatformContributions="false"
-                id="org.eclipse.egit.ui.compareSynchronizationMenu">
-             <insertionPoint name="gitActions" separator="true"/>
-             <insertionPoint name="file"/>
-             <insertionPoint name="file-bottom"/>
-             <insertionPoint name="edit" separator="true"/>
-             <insertionPoint name="synchronize"/>
-             <insertionPoint name="navigate" separator="true"/>
-             <insertionPoint name="modelTeam" separator="true"/>
-             <insertionPoint name="sort" separator="true"/>
-			 <insertionPoint name="additions" separator="true"/>
-          </popupMenu>
-       </viewer>
    </extension>
    <extension
          name="%TeamMenuCommandsLabel"
@@ -2746,11 +2694,6 @@
                      style="push">
                </command>
                <command
-                     commandId="org.eclipse.egit.ui.FetchGerritChange"
-                     label="%FetchFromGerritCommand.label"
-                     style="push">
-               </command>
-               <command
                      commandId="org.eclipse.egit.ui.team.Push"
                      label="%PushAction_label"
                      style="push">
@@ -2776,14 +2719,9 @@
                            value="1">
                      </count>
                      <iterate>
-                        <and>
-                           <adapt
-                                 type="org.eclipse.core.resources.IProject">
-                           </adapt>
-                           <test
-                                 property="GitResource.isShared">
-                           </test>
-                        </and>
+                        <adapt
+                              type="org.eclipse.core.resources.IProject">
+                        </adapt>
                      </iterate>
                   </and>
                </visibleWhen>
@@ -2836,6 +2774,21 @@
                   name="projectGroup"
                   visible="true">
             </separator>
+            <visibleWhen
+                  checkEnabled="false">
+               <with
+                     variable="activeMenuSelection">
+                  <count
+                        value="+">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <adapt type="org.eclipse.core.resources.IResource">
+                     </adapt>
+                  </iterate>
+               </with>
+            </visibleWhen>
          </menu>
       </menuContribution>
    </extension>

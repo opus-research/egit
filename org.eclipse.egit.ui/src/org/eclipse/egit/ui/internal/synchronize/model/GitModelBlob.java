@@ -8,12 +8,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import static org.eclipse.compare.structuremergeviewer.Differencer.ADDITION;
-import static org.eclipse.compare.structuremergeviewer.Differencer.CHANGE;
-import static org.eclipse.compare.structuremergeviewer.Differencer.DELETION;
 import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
 import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
-import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import java.io.IOException;
 
@@ -36,11 +32,9 @@ public class GitModelBlob extends GitModelCommit {
 
 	private final IPath location;
 
-	/** {@link ObjectId} of base variant */
-	protected final ObjectId baseId;
+	private final ObjectId baseId;
 
-	/** {@link ObjectId} of remove variant */
-	protected final ObjectId remoteId;
+	private final ObjectId remoteId;
 
 	private final ObjectId ancestorId;
 
@@ -124,24 +118,6 @@ public class GitModelBlob extends GitModelCommit {
 	}
 
 	@Override
-	public int getKind() {
-		if (kind != LEFT && kind != RIGHT)
-			return kind;
-
-		int changeKind;
-		if (zeroId().equals(remoteId))
-			changeKind = DELETION;
-		else if (zeroId().equals(ancestorId))
-			changeKind = ADDITION;
-		else
-			changeKind = CHANGE;
-
-		kind |= changeKind;
-
-		return kind;
-	}
-
-	@Override
 	public void prepareInput(CompareConfiguration configuration,
 			IProgressMonitor monitor) throws CoreException {
 		createCompareInput();
@@ -153,8 +129,7 @@ public class GitModelBlob extends GitModelCommit {
 		if (obj == this)
 			return true;
 
-		if (obj instanceof GitModelBlob && !(obj instanceof GitModelCacheFile)
-				&& !(obj instanceof GitModelWorkingFile)) {
+		if (obj instanceof GitModelBlob) {
 			GitModelBlob objBlob = (GitModelBlob) obj;
 
 			boolean equalsRemoteId;
@@ -162,10 +137,9 @@ public class GitModelBlob extends GitModelCommit {
 			if (objRemoteId != null)
 				equalsRemoteId = objRemoteId.equals(remoteId);
 			else
-				equalsRemoteId = remoteId == null;
+				equalsRemoteId = baseCommit == null;
 
-			return objBlob.baseId.equals(baseId) && equalsRemoteId
-					&& objBlob.location.equals(location);
+			return objBlob.baseId.equals(baseId) && equalsRemoteId;
 		}
 
 		return false;
@@ -173,16 +147,11 @@ public class GitModelBlob extends GitModelCommit {
 
 	@Override
 	public int hashCode() {
-		int result = baseId.hashCode() ^ location.hashCode();
+		int result = baseId.hashCode();
 		if (remoteId != null)
 			result ^= remoteId.hashCode();
 
 		return result;
-	}
-
-	@Override
-	public String toString() {
-		return "ModelBlob[objectId=" + baseId + ", location=" + getLocation() + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	private void createCompareInput() {
