@@ -257,10 +257,10 @@ public class IndexDiffCacheEntry {
 				lock.lock();
 				try {
 					long startTime = System.currentTimeMillis();
-					IndexDiffData result = calcIndexDiffDataFull(monitor, getName());
-					if (monitor.isCanceled())
+					IndexDiff result = calcIndexDiff(monitor, getName());
+					if (monitor.isCanceled() || (result == null))
 						return Status.CANCEL_STATUS;
-					indexDiffData = result;
+					indexDiffData = new IndexDiffData(result);
 					if (GitTraceLocation.INDEXDIFFCACHE.isActive()) {
 						long time = System.currentTimeMillis() - startTime;
 						StringBuilder message = new StringBuilder(
@@ -338,9 +338,9 @@ public class IndexDiffCacheEntry {
 				lock.lock();
 				try {
 					long startTime = System.currentTimeMillis();
-					IndexDiffData result = calcIndexDiffDataIncremental(monitor,
+					IndexDiffData result = calcIndexDiffData(monitor,
 							getName(), filesToUpdate, resourcesToUpdate);
-					if (monitor.isCanceled())
+					if (monitor.isCanceled() || (result == null))
 						return Status.CANCEL_STATUS;
 					indexDiffData = result;
 					if (GitTraceLocation.INDEXDIFFCACHE.isActive()) {
@@ -378,21 +378,17 @@ public class IndexDiffCacheEntry {
 		job.schedule();
 	}
 
-	private IndexDiffData calcIndexDiffDataIncremental(IProgressMonitor monitor,
+	private IndexDiffData calcIndexDiffData(IProgressMonitor monitor,
 			String jobName, Collection<String> filesToUpdate,
 			Collection<IResource> resourcesToUpdate) throws IOException {
-		if (indexDiffData == null)
-			// Incremental update not possible without prior indexDiffData
-			// -> do full refresh instead
-			return calcIndexDiffDataFull(monitor, jobName);
-
 		EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(
 				monitor);
 
 		List<String> treeFilterPaths = calcTreeFilterPaths(filesToUpdate);
 
-		WorkingTreeIterator iterator = IteratorService
-				.createInitialIterator(repository);
+		WorkingTreeIterator iterator = IteratorService.createInitialIterator(repository);
+		if (iterator == null)
+			return null; // workspace is closed
 		IndexDiff diffForChangedResources = new IndexDiff(repository,
 				Constants.HEAD, iterator);
 		diffForChangedResources.setFilter(PathFilterGroup
@@ -434,7 +430,7 @@ public class IndexDiffCacheEntry {
 			}
 	}
 
-	private IndexDiffData calcIndexDiffDataFull(IProgressMonitor monitor, String jobName)
+	private IndexDiff calcIndexDiff(IProgressMonitor monitor, String jobName)
 			throws IOException {
 		EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(
 				monitor);
@@ -442,9 +438,11 @@ public class IndexDiffCacheEntry {
 		IndexDiff newIndexDiff;
 		WorkingTreeIterator iterator = IteratorService
 				.createInitialIterator(repository);
+		if (iterator == null)
+			return null; // workspace is closed
 		newIndexDiff = new IndexDiff(repository, Constants.HEAD, iterator);
 		newIndexDiff.diff(jgitMonitor, 0, 0, jobName);
-		return new IndexDiffData(newIndexDiff);
+		return newIndexDiff;
 	}
 
 	private String getReloadJobName() {
