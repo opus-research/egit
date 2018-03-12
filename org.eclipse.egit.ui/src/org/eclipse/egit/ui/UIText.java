@@ -187,6 +187,12 @@ public class UIText extends NLS {
 	public static String GitCloneWizard_abortingCloneTitle;
 
 	/** */
+	public static String GitCloneWizard_CloneFailedHeading;
+
+	/** */
+	public static String GitCloneWizard_CloneCanceledMessage;
+
+	/** */
 	public static String GitCloneWizard_title;
 
 	/** */
@@ -1354,9 +1360,6 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_parent;
 
 	/** */
-	public static String CommitMessageViewer_SelectOneCommitMessage;
-
-	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
@@ -2219,9 +2222,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_notContainedInCommit;
 
 	/** */
-	public static String CommitFileDiffViewer_SelectOneCommitMessage;
-
-	/** */
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
@@ -2294,15 +2294,6 @@ public class UIText extends NLS {
 	public static String RemoteSelectionCombo_sourceRef;
 
 	/** */
-	public static String RefreshPreferencePage_title;
-
-	/** */
-	public static String RefreshPreferencesPage_RefreshOnlyWhenActive;
-
-	/** */
-	public static String RefreshPreferencesPage_RefreshWhenIndexChange;
-
-	/** */
 	public static String RemoteSelectionCombo_destinationName;
 
 	/** */
@@ -2355,12 +2346,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_PleaseEnterNameMessage;
-
-	/** */
-	public static String GitModelIndex_index;
-
-	/** */
-	public static String GitModelWorkingTree_workingTree;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
