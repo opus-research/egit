@@ -1774,16 +1774,13 @@ public class UIText extends NLS {
 	public static String CommitDialog_Message;
 
 	/** */
+	public static String CommitDialog_MessageNoFilesSelected;
+
+	/** */
 	public static String CommitDialog_Path;
 
 	/** */
 	public static String CommitDialog_Title;
-
- 	/** */
-	public static String CommitDialog_Push;
-
-	/** */
-	public static String CommitDialog_ExecutePush;
 
 	/** */
 	public static String ConfigurationChecker_checkHomeDirectory;
@@ -1889,6 +1886,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SpellCheckingMessageArea_selectAll;
+
+	/** */
+	public static String CommitMessageComponent_MessageInvalidAuthor;
+
+	/** */
+	public static String CommitMessageComponent_MessageInvalidCommitter;
 
 	/** */
 	public static String CommitMessageViewer_author;
@@ -3147,19 +3150,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitActionHandler_repository;
-
-	/** */
-	public static String CommitActionHandler_CommandNotDefined;
-
-	/** */
-	public static String CommitActionHandler_CommandNotEnabled;
-
-	/** */
-	public static String CommitActionHandler_CommandNotHandled;
-
-	/** */
-	public static String CommitActionHandler_NoSelection;
-
 
 	/** */
 	public static String CommitEditor_couldNotShowRepository;

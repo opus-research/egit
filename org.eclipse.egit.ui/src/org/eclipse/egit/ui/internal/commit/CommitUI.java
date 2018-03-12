@@ -14,6 +14,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -59,7 +60,7 @@ import org.eclipse.ui.PlatformUI;
 /**
  * UI component for performing a commit
  */
-public class CommitUI {
+public class CommitUI  {
 
 	private IndexDiff indexDiff;
 
@@ -83,11 +84,8 @@ public class CommitUI {
 
 	private boolean preselectAll;
 
-	private boolean executePush;
-
 	/**
 	 * Constructs a CommitUI object
-	 *
 	 * @param shell
 	 *            Shell to use for UI interaction. Must not be null.
 	 * @param repo
@@ -98,8 +96,8 @@ public class CommitUI {
 	 *            if selectedResources contains a resource that is parent of the
 	 *            file. selectedResources must not be null.
 	 * @param preselectAll
-	 *            preselect all changed files in the commit dialog. If set to
-	 *            true selectedResources are ignored.
+	 * 			  preselect all changed files in the commit dialog.
+	 * 			  If set to true selectedResources are ignored.
 	 */
 	public CommitUI(Shell shell, Repository repo,
 			IResource[] selectedResources, boolean preselectAll) {
@@ -122,27 +120,25 @@ public class CommitUI {
 			return;
 		}
 
-		BasicConfigurationDialog.show(new Repository[] { repo });
+		BasicConfigurationDialog.show(new Repository[]{repo});
 
 		resetState();
 		final IProject[] projects = getProjectsOfRepositories();
 		try {
-			PlatformUI.getWorkbench().getProgressService()
-					.busyCursorWhile(new IRunnableWithProgress() {
+			PlatformUI.getWorkbench().getProgressService().busyCursorWhile(new IRunnableWithProgress() {
 
-						public void run(IProgressMonitor monitor)
-								throws InvocationTargetException,
-								InterruptedException {
-							try {
-								buildIndexHeadDiffList(projects, monitor);
-							} catch (IOException e) {
-								throw new InvocationTargetException(e);
-							}
-						}
-					});
+				public void run(IProgressMonitor monitor) throws InvocationTargetException,
+						InterruptedException {
+					try {
+						buildIndexHeadDiffList(projects, monitor);
+					} catch (IOException e) {
+						throw new InvocationTargetException(e);
+					}
+				}
+			});
 		} catch (InvocationTargetException e) {
-			Activator.handleError(UIText.CommitAction_errorComputingDiffs,
-					e.getCause(), true);
+			Activator.handleError(UIText.CommitAction_errorComputingDiffs, e.getCause(),
+					true);
 			return;
 		} catch (InterruptedException e) {
 			return;
@@ -151,7 +147,9 @@ public class CommitUI {
 		CommitHelper commitHelper = new CommitHelper(repo);
 
 		if (!commitHelper.canCommit()) {
-			MessageDialog.openError(shell, UIText.CommitAction_cannotCommit,
+			MessageDialog.openError(
+					shell,
+					UIText.CommitAction_cannotCommit,
 					commitHelper.getCannotCommitMessage());
 			return;
 		}
@@ -179,8 +177,7 @@ public class CommitUI {
 		commitDialog.setPreselectAll(preselectAll);
 		commitDialog.setAuthor(commitHelper.getAuthor());
 		commitDialog.setCommitter(commitHelper.getCommitter());
-		commitDialog.setAllowToChangeSelection(!commitHelper.isMergedResolved
-				&& !commitHelper.isCherryPickResolved);
+		commitDialog.setAllowToChangeSelection(!commitHelper.isMergedResolved && !commitHelper.isCherryPickResolved);
 		commitDialog.setCommitMessage(commitHelper.getCommitMessage());
 
 		if (commitDialog.open() != IDialogConstants.OK_ID)
@@ -188,7 +185,8 @@ public class CommitUI {
 
 		final CommitOperation commitOperation;
 		try {
-			commitOperation = new CommitOperation(repo,
+			commitOperation= new CommitOperation(
+					repo,
 					commitDialog.getSelectedFiles(), notIndexed, notTracked,
 					commitDialog.getAuthor(), commitDialog.getCommitter(),
 					commitDialog.getCommitMessage());
@@ -203,14 +201,11 @@ public class CommitUI {
 		if (commitHelper.isMergedResolved)
 			commitOperation.setRepository(repo);
 		performCommit(repo, commitOperation, false);
-
-		this.executePush = commitDialog.isExecutePush();
 		return;
 	}
 
 	/**
 	 * Uses a Job to perform the given CommitOperation
-	 *
 	 * @param repository
 	 * @param commitOperation
 	 * @param openNewCommit
@@ -225,7 +220,8 @@ public class CommitUI {
 				try {
 					commitOperation.execute(monitor);
 					commit = commitOperation.getCommit();
-					CommitMessageComponentStateManager.deleteState(repository);
+					CommitMessageComponentStateManager.deleteState(
+							repository);
 					RepositoryMapping mapping = RepositoryMapping
 							.findRepositoryMapping(repository);
 					if (mapping != null)
@@ -314,7 +310,7 @@ public class CommitUI {
 			} else {
 				// could be file outside of workspace
 				for (IResource resource : selectedResources) {
-					if (resource.getFullPath().toFile().equals(new File(uri))) {
+					if(resource.getFullPath().toFile().equals(new File(uri))) {
 						preselectionCandidates.add(fileName);
 					}
 				}
@@ -357,7 +353,6 @@ public class CommitUI {
 
 	static class CountingVisitor implements IResourceVisitor {
 		int count;
-
 		public boolean visit(IResource resource) throws CoreException {
 			count++;
 			return true;
@@ -370,13 +365,6 @@ public class CommitUI {
 				files.add(filename);
 			category.add(filename);
 		}
-	}
-
-	/**
-	 * @return true if the user chose to push the changes that were committed.
-	 */
-	public boolean isExecutePush() {
-		return executePush;
 	}
 
 }
