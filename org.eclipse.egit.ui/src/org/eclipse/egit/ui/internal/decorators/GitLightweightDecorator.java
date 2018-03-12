@@ -18,8 +18,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -52,14 +50,12 @@ import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ILightweightLabelDecorator;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.LabelProviderChangedEvent;
-import org.eclipse.jgit.events.IndexChangedEvent;
-import org.eclipse.jgit.events.IndexChangedListener;
-import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
-import org.eclipse.jgit.events.RepositoryEvent;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.IndexChangedEvent;
+import org.eclipse.jgit.lib.RefsChangedEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryChangedEvent;
+import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.osgi.util.TextProcessor;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
@@ -81,7 +77,7 @@ import org.eclipse.ui.themes.ITheme;
  */
 public class GitLightweightDecorator extends LabelProvider implements
 		ILightweightLabelDecorator, IPropertyChangeListener,
-		IResourceChangeListener, RepositoryChangeListener, RefsChangedListener, IndexChangedListener {
+		IResourceChangeListener, RepositoryChangeListener, RepositoryListener {
 
 	/**
 	 * Property constant pointing back to the extension point id of the
@@ -112,8 +108,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 		UIPreferences.THEME_UncommittedChangeBackgroundColor,
 		UIPreferences.THEME_UncommittedChangeForegroundColor};
 
-	private final List<ListenerHandle> myHandles = new LinkedList<ListenerHandle>();
-
 	/**
 	 * Constructs a new Git resource decorator
 	 */
@@ -122,8 +116,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		Activator.addPropertyChangeListener(this);
 		PlatformUI.getWorkbench().getThemeManager().getCurrentTheme()
 				.addPropertyChangeListener(this);
-		myHandles.add(Repository.getGlobalListenerList().addIndexChangedListener(this));
-		myHandles.add(Repository.getGlobalListenerList().addRefsChangedListener(this));
+		Repository.addAnyRepositoryChangedListener(this);
 		GitProjectData.addRepositoryChangeListener(this);
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(this,
 				IResourceChangeEvent.POST_CHANGE);
@@ -168,9 +161,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 				.removePropertyChangeListener(this);
 		TeamUI.removePropertyChangeListener(this);
 		Activator.removePropertyChangeListener(this);
-		for (ListenerHandle lh : myHandles)
-			lh.remove();
-		myHandles.clear();
+		Repository.removeAnyRepositoryChangedListener(this);
 		GitProjectData.removeRepositoryChangeListener(this);
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
 	}
@@ -247,6 +238,15 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 		/** */
 		public static final String BINDING_STAGED_FLAG = "staged"; //$NON-NLS-1$
+
+		/** */
+		public static final String FILE_FORMAT_DEFAULT="{dirty:>} {name}"; //$NON-NLS-1$
+
+		/** */
+		public static final String FOLDER_FORMAT_DEFAULT = "{dirty:>} {name}"; //$NON-NLS-1$
+
+		/** */
+		public static final String PROJECT_FORMAT_DEFAULT ="{dirty:>} {name} [{repository} {branch}]";  //$NON-NLS-1$
 
 		private IPreferenceStore store;
 
@@ -634,7 +634,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @param e
 	 *            The original change event
 	 */
-	private void repositoryChanged(RepositoryEvent<?> e) {
+	private void repositoryChanged(RepositoryChangedEvent e) {
 		final Set<RepositoryMapping> ms = new HashSet<RepositoryMapping>();
 		for (final IProject p : ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects()) {
@@ -647,11 +647,25 @@ public class GitLightweightDecorator extends LabelProvider implements
 		}
 	}
 
-	public void onIndexChanged(IndexChangedEvent e) {
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see
+	 * org.eclipse.jgit.lib.RepositoryListener#indexChanged(org.eclipse.jgit
+	 * .lib.IndexChangedEvent)
+	 */
+	public void indexChanged(IndexChangedEvent e) {
 		repositoryChanged(e);
 	}
 
-	public void onRefsChanged(RefsChangedEvent e) {
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see
+	 * org.eclipse.jgit.lib.RepositoryListener#refsChanged(org.eclipse.jgit.
+	 * lib.RefsChangedEvent)
+	 */
+	public void refsChanged(RefsChangedEvent e) {
 		repositoryChanged(e);
 	}
 

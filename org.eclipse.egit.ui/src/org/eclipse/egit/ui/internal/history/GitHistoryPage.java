@@ -57,13 +57,13 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.IndexChangedEvent;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.RefsChangedEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
@@ -110,7 +110,7 @@ import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
-public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
+public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 	private static final String PREF_COMMENT_WRAP = UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP;
 
 	private static final String PREF_COMMENT_FILL = UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL;
@@ -226,9 +226,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	/** We need to remember the current repository */
 	private Repository db;
-
-	/** Our active registration for reference change events. */
-	private ListenerHandle refsListener;
 
 	/**
 	 * Highlight flag that can be applied to commits to make them stand out.
@@ -441,6 +438,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		attachContextMenu(commentViewer.getControl());
 		attachContextMenu(fileViewer.getControl());
 		layout();
+
+		Repository.addAnyRepositoryChangedListener(this);
+
+		getSite().setSelectionProvider(revObjectSelectionProvider);
 	}
 
 	private void openInCompare(CompareEditorInput input) {
@@ -509,7 +510,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	private Runnable refschangedRunnable;
 
-	public void onRefsChanged(final RefsChangedEvent e) {
+	public void refsChanged(final RefsChangedEvent e) {
 		if (e.getRepository() != db)
 			return;
 
@@ -537,6 +538,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				getControl().getDisplay().asyncExec(refschangedRunnable);
 			}
 		}
+	}
+
+	public void indexChanged(final IndexChangedEvent e) {
+		// We do not use index information here now
 	}
 
 	private void finishContextMenu() {
@@ -821,11 +826,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	public void dispose() {
-		if (refsListener != null) {
-			refsListener.remove();
-			refsListener = null;
-		}
-
+		Repository.removeAnyRepositoryChangedListener(this);
 		// dispose of the actions (the history framework doesn't do this for us)
 		for (BooleanPrefAction action: actionsToDispose)
 			action.dispose();
@@ -899,14 +900,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			return false;
 
 		db = null;
-		if (currentWalk != null) {
-			currentWalk.release();
-			currentWalk = null;
-		}
-		if (refsListener != null) {
-			refsListener.remove();
-			refsListener = null;
-		}
 
 		final ArrayList<String> paths = new ArrayList<String>(in.length);
 		for (final IResource r : in) {
@@ -914,7 +907,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			if (map == null)
 				continue;
 
-			db = map.getRepository();
+			if (db == null)
+				db = map.getRepository();
+			else if (db != map.getRepository())
+				return false;
 
 			if (showAllFilter == ShowFilter.SHOWALLFOLDER) {
 				final String name = map.getRepoRelativePath(r.getParent());
@@ -935,8 +931,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 		if (db == null)
 			return false;
-		if (refsListener == null)
-			refsListener = db.getListenerList().addRefsChangedListener(this);
 
 		final AnyObjectId headId;
 		try {
@@ -947,7 +941,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			return false;
 		}
 
-		if (currentWalk == null
+		if (currentWalk == null || currentWalk.getRepository() != db
 				|| pathChange(pathFilters, paths) || headId != null
 				&& !headId.equals(currentHeadId)) {
 			// TODO Do not dispose SWTWalk just because HEAD changed
@@ -986,7 +980,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			currentWalk.setTreeFilter(TreeFilter.ALL);
 			fileWalker.setFilter(TreeFilter.ANY_DIFF);
 		}
-		fileViewer.setTreeWalk(db, fileWalker);
+		fileViewer.setTreeWalk(fileWalker);
 		fileViewer.addSelectionChangedListener(commentViewer);
 		commentViewer.setTreeWalk(fileWalker);
 		commentViewer.setDb(db);

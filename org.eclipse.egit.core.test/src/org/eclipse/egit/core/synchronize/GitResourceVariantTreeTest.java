@@ -42,7 +42,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.team.core.variants.IResourceVariant;
 import org.eclipse.team.core.variants.ResourceVariantByteStore;
 import org.eclipse.team.core.variants.SessionResourceVariantByteStore;
@@ -61,7 +60,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 	public void createGitRepository() throws Exception {
 		IProject iProject = project.project;
 		if (!gitDir.exists())
-			new FileRepository(gitDir).create();
+			new Repository(gitDir).create();
 
 		new ConnectProviderOperation(iProject, gitDir).execute(null);
 		repo = RepositoryMapping.getMapping(iProject).getRepository();
@@ -76,6 +75,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		new DisconnectProviderOperation(projects).execute(null);
 
 		repo.close();
+		super.tearDown();
 	}
 
 	/**
@@ -109,7 +109,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 	public void shouldReturnTwoRoots() throws Exception {
 		// when
 		// create second project
-		TestProject secondProject = new TestProject(false, "Project-2");
+		TestProject secondProject = new TestProject(true, "Project-2");
 		IProject secondIProject = secondProject.project;
 		// add connect project with repository
 		new ConnectProviderOperation(secondIProject, gitDir).execute(null);

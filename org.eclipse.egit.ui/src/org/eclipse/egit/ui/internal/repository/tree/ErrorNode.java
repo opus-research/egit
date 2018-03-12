@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.internal.repository.tree;
 
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 
 /**
  * Represents the "Error" node
@@ -28,7 +27,7 @@ public class ErrorNode extends RepositoryTreeNode<String> {
 	 * @param error
 	 *            the error message
 	 */
-	public ErrorNode(RepositoryTreeNode parent, FileRepository repository,
+	public ErrorNode(RepositoryTreeNode parent, Repository repository,
 			String error) {
 		super(parent, RepositoryTreeNodeType.ERROR, repository, error);
 	}

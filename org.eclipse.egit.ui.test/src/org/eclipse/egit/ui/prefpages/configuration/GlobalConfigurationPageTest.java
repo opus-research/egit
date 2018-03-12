@@ -13,11 +13,15 @@ package org.eclipse.egit.ui.prefpages.configuration;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.EGitTestCase;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jgit.storage.file.FileBasedConfig;
+import org.eclipse.jgit.lib.FileBasedConfig;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
@@ -32,10 +36,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class GlobalConfigurationPageTest {
 
@@ -47,7 +47,7 @@ public class GlobalConfigurationPageTest {
 
 	private static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
 
-	private static final TestUtil util = TestUtil.getInstance();
+	private static final TestUtil util = new TestUtil();
 
 	private static FileBasedConfig config;
 

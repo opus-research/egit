@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
 import org.eclipse.egit.ui.internal.repository.tree.ErrorNode;
@@ -51,7 +52,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.RemoteConfig;
 
 /**
@@ -67,6 +67,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 		List<RepositoryTreeNode> nodes = new ArrayList<RepositoryTreeNode>();
 		List<String> directories = new ArrayList<String>();
+		RepositoryUtil repositoryUtil = Activator.getDefault().getRepositoryUtil();
 
 		if (inputElement instanceof Collection) {
 			for (Iterator it = ((Collection) inputElement).iterator(); it
@@ -78,15 +79,18 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 					directories.add((String) next);
 			}
 		} else if (inputElement instanceof IWorkspaceRoot) {
-			directories.addAll(Activator.getDefault().getRepositoryUtil()
-					.getConfiguredRepositories());
+			directories.addAll(repositoryUtil.getConfiguredRepositories());
 		}
 
 		for (String directory : directories) {
 			try {
-				RepositoryNode rNode = new RepositoryNode(null, repositoryCache
-						.lookupRepository(new File(directory)));
-				nodes.add(rNode);
+				File gitDir = new File(directory);
+				if (gitDir.exists()) {
+					RepositoryNode rNode = new RepositoryNode(null, repositoryCache
+							.lookupRepository(gitDir));
+					nodes.add(rNode);
+				} else
+					repositoryUtil.removeDir(gitDir);
 			} catch (IOException e) {
 				// ignore for now
 			}
@@ -107,7 +111,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 	public Object[] getChildren(Object parentElement) {
 
 		RepositoryTreeNode node = (RepositoryTreeNode) parentElement;
-		FileRepository repo = node.getRepository();
+		Repository repo = node.getRepository();
 
 		switch (node.getType()) {
 
@@ -217,7 +221,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 			if (node.getRepository().isBare())
 				return children.toArray();
-			File workingDir = repo.getWorkTree();
+			File workingDir = repo.getWorkDir();
 			if (workingDir == null || !workingDir.exists())
 				return children.toArray();
 
@@ -372,7 +376,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 		case WORKINGDIR:
 			if (node.getRepository().isBare())
 				return false;
-			File workingDir = repo.getWorkTree();
+			File workingDir = repo.getWorkDir();
 			if (workingDir == null || !workingDir.exists())
 				return false;
 			return workingDir.listFiles().length > 0;

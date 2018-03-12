@@ -167,6 +167,9 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
+	public static String RemoteRefUpdateCantBeReused;
+
+	/** */
 	public static String ResetOperation_cantUpdate;
 
 	/** */
@@ -288,6 +291,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
+
+	/** */
+	public static String OperationAlreadyExecuted;
+
+	/** */
+	public static String OperationNotYetExecuted;
 
 	static {
 		initializeMessages("org.eclipse.egit.core.coretext", //$NON-NLS-1$

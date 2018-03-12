@@ -36,11 +36,10 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.team.core.RepositoryProvider;
 import org.junit.Test;
 
-public class T0001_ConnectProviderOperationTest extends GitTestCase {
+public class ConnectProviderOperationTest extends GitTestCase {
 
 	@Test
 	public void testNoRepository() throws CoreException {
@@ -58,7 +57,7 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 
 		File gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), Constants.DOT_GIT);
-		Repository repository = new FileRepository(gitDir);
+		Repository repository = new Repository(gitDir);
 		repository.create();
 		repository.close();
 		ConnectProviderOperation operation = new ConnectProviderOperation(
@@ -81,7 +80,7 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 
 		File gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), Constants.DOT_GIT);
-		Repository thisGit = new FileRepository(gitDir);
+		Repository thisGit = new Repository(gitDir);
 		thisGit.create();
 		Tree rootTree = new Tree(thisGit);
 		Tree prjTree = rootTree.addTree(project.getProject().getName());
@@ -112,7 +111,6 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 		new Job("wait") {
 			protected IStatus run(IProgressMonitor monitor) {
 
-				System.out.println("MyJob");
 				f[0] = true;
 				return null;
 			}
@@ -123,10 +121,8 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 			}
 		};
 		while (!f[0]) {
-			System.out.println("Waiting");
 			Thread.sleep(1000);
 		}
-		System.out.println("DONE");
 
 		assertNotNull(RepositoryProvider.getProvider(project.getProject()));
 

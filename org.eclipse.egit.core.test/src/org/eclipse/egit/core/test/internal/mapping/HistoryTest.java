@@ -32,7 +32,6 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
 import org.eclipse.team.core.history.IFileHistoryProvider;
@@ -40,7 +39,7 @@ import org.eclipse.team.core.history.IFileRevision;
 import org.junit.Before;
 import org.junit.Test;
 
-public class T0002_HistoryTest extends GitTestCase {
+public class HistoryTest extends GitTestCase {
 
 	protected static final PersonIdent jauthor;
 
@@ -64,8 +63,8 @@ public class T0002_HistoryTest extends GitTestCase {
 		project.createSourceFolder();
 		gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), Constants.DOT_GIT);
-		thisGit = new FileRepository(gitDir);
-		workDir = thisGit.getWorkTree();
+		thisGit = new Repository(gitDir);
+		workDir = thisGit.getWorkDir();
 		thisGit.create();
 		objectWriter = new ObjectWriter(thisGit);
 
