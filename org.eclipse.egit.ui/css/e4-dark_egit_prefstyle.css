@@ -35,8 +35,3 @@ Form Section LayoutComposite StyledText
     background-color: #313538;
     color: #dddddd;
  }
-
-SpellcheckableMessageArea {
-	background-color: red;
-}
-
