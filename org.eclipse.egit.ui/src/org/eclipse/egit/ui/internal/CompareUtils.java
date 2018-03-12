@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010-2012 SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,8 +11,6 @@
  *    Stefan Lay (SAP AG) - initial implementation
  *    Yann Simon <yann.simon.fr@gmail.com> - implementation of getHeadTypedElement
  *    Robin Stocker <robin@nibor.org>
- *    Laurent Goubet <laurent.goubet@obeo.fr>
- *    Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
@@ -30,15 +28,9 @@ import org.eclipse.compare.structuremergeviewer.DiffNode;
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.compare.structuremergeviewer.IStructureComparator;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.mapping.ResourceMapping;
-import org.eclipse.core.resources.mapping.ResourceMappingContext;
-import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -50,14 +42,12 @@ import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
 import org.eclipse.egit.ui.internal.actions.CompareWithCommitActionHandler;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
-import org.eclipse.egit.ui.internal.synchronize.compare.LocalNonWorkspaceTypedElement;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jgit.dircache.DirCache;
@@ -390,116 +380,6 @@ public class CompareUtils {
 	}
 
 	/**
-	 * Opens a compare editor comparing the working directory version of the
-	 * given IFile with the version of that file corresponding to
-	 * {@code refName}.
-	 *
-	 * @param repository
-	 *            The repository to load file revisions from.
-	 * @param file
-	 *            File to compare revisions for.
-	 * @param refName
-	 *            Reference to compare with the workspace version of
-	 *            {@code file}. Can be either a commit ID, a reference or a
-	 *            branch name.
-	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this
-	 *            page if any is available. Otherwise open a new one.
-	 * @throws IOException
-	 *             If HEAD or {@code refName} can't be resolved in the given
-	 *             repository.
-	 */
-	public static void compareWorkspaceWithRef(Repository repository,
-			IFile file, String refName, IWorkbenchPage page) throws IOException {
-		final RepositoryMapping mapping = RepositoryMapping.getMapping(file);
-		final String gitPath = mapping.getRepoRelativePath(file);
-		final ITypedElement base = SaveableCompareEditorInput
-				.createFileElement(file);
-
-		CompareEditorInput in = prepareCompareInput(repository, gitPath, base,
-				refName);
-
-		if (page != null)
-			openInCompare(page, in);
-		else
-			CompareUI.openCompareEditor(in);
-	}
-
-	/**
-	 * Opens a compare editor comparing the working directory version of the
-	 * given File with the version corresponding to {@code refName} of the same
-	 * file.
-	 *
-	 * @param repository
-	 *            The repository to load file revisions from.
-	 * @param file
-	 *            File to compare revisions for.
-	 * @param refName
-	 *            Reference to compare with the workspace version of
-	 *            {@code file}. Can be either a commit ID, a reference or a
-	 *            branch name.
-	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this
-	 *            page if any is available. Otherwise open a new one.
-	 * @throws IOException
-	 *             If HEAD or {@code refName} can't be resolved in the given
-	 *             repository.
-	 */
-	public static void compareLocalWithRef(Repository repository, File file,
-			String refName, IWorkbenchPage page) throws IOException {
-		final String gitPath = getRepoRelativePath(repository, file);
-		final ITypedElement base = new LocalNonWorkspaceTypedElement(new Path(
-				file.getAbsolutePath()));
-
-		CompareEditorInput in = prepareCompareInput(repository, gitPath, base,
-				refName);
-
-		if (page != null)
-			openInCompare(page, in);
-		else
-			CompareUI.openCompareEditor(in);
-	}
-
-	/*
-	 * Creates a compare input that can be used to compare a given local file
-	 * with another reference. The given "base" element should always reflect a
-	 * local file, either in the workspace (IFile) or on the file system
-	 * (java.io.File) since we'll use "HEAD" to find a common ancestor of this
-	 * base and the reference we compare it with.
-	 */
-	private static CompareEditorInput prepareCompareInput(
-			Repository repository, String gitPath, ITypedElement base,
-			String refName) throws IOException {
-		final ObjectId destCommitId = repository.resolve(refName);
-		RevWalk rw = new RevWalk(repository);
-		RevCommit commit = rw.parseCommit(destCommitId);
-		rw.release();
-		final ITypedElement destCommit = getFileRevisionTypedElement(gitPath,
-				commit, repository);
-
-		final ITypedElement commonAncestor;
-		if (base != null && commit != null) {
-			final ObjectId headCommitId = repository.resolve(Constants.HEAD);
-			commonAncestor = getFileRevisionTypedElementForCommonAncestor(
-					gitPath, headCommitId, destCommitId, repository);
-		} else {
-			commonAncestor = null;
-		}
-
-		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-				base, destCommit, commonAncestor, null);
-		in.getCompareConfiguration().setRightLabel(refName);
-		return in;
-	}
-
-	private static String getRepoRelativePath(Repository repository, File file) {
-		IPath workdirPath = new Path(repository.getWorkTree().getPath());
-		IPath filePath = new Path(file.getPath()).setDevice(null);
-		return filePath.removeFirstSegments(workdirPath.segmentCount())
-				.toString();
-	}
-
-	/**
 	 * Opens a compare editor. The working tree version of the given file is
 	 * compared with the version in the HEAD commit. Use this method if the
 	 * given file is outide the workspace.
@@ -581,28 +461,7 @@ public class CompareUtils {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
 		final Repository repository = mapping.getRepository();
 		final String gitPath = mapping.getRepoRelativePath(baseFile);
-		final String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
-		return getIndexTypedElement(repository, gitPath, encoding);
-	}
 
-	/**
-	 * Get a typed element for the repository and repository-relative path in the index.
-	 *
-	 * @param repository
-	 * @param repoRelativePath
-	 * @return typed element
-	 * @throws IOException
-	 */
-	public static ITypedElement getIndexTypedElement(
-			final Repository repository, final String repoRelativePath)
-			throws IOException {
-		String encoding = CompareCoreUtils.getResourceEncoding(repository, repoRelativePath);
-		return getIndexTypedElement(repository, repoRelativePath, encoding);
-	}
-
-	private static ITypedElement getIndexTypedElement(
-			final Repository repository, final String gitPath,
-			String encoding) throws IOException {
 		DirCache dc = repository.lockDirCache();
 		final DirCacheEntry entry;
 		try {
@@ -612,6 +471,7 @@ public class CompareUtils {
 		}
 
 		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
+		String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
 		final EditableRevision next = new EditableRevision(nextFile, encoding);
 
 		IContentChangeListener listener = new IContentChangeListener() {
@@ -807,47 +667,4 @@ public class CompareUtils {
 		}
 	}
 
-	/**
-	 * Indicates if it is OK to open the selected file directly in a compare
-	 * editor.
-	 * <p>
-	 * It is not OK to show the single file if the file is part of a
-	 * logical model element that spans multiple files.
-	 * </p>
-	 *
-	 * @param file
-	 *            file the user is trying to compare
-	 * @return <code>true</code> if the file can be opened directly in a compare
-	 *         editor, <code>false</code> if the synchronize view should be
-	 *         opened instead.
-	 */
-	public static boolean canDirectlyOpenInCompare(IFile file) {
-		/*
-		 * Note : it would be better to use a remote context here in order to
-		 * give the model provider a chance to resolve the remote logical model
-		 * instead of only relying on the local one. However, this might be a
-		 * long operation and would not really provide more context : we're
-		 * trying to determine if the local file can be compared alone, this can
-		 * be done by relying on the local model only.
-		 */
-		final ResourceMapping[] mappings = ResourceUtil.getResourceMappings(
-				file, ResourceMappingContext.LOCAL_CONTEXT);
-
-		for (ResourceMapping mapping : mappings) {
-			try {
-				final ResourceTraversal[] traversals = mapping.getTraversals(
-						ResourceMappingContext.LOCAL_CONTEXT, null);
-				for (ResourceTraversal traversal : traversals) {
-					final IResource[] resources = traversal.getResources();
-					for (IResource resource : resources) {
-						if (!resource.equals(file))
-							return false;
-					}
-				}
-			} catch (CoreException e) {
-				Activator.logError(e.getMessage(), e);
-			}
-		}
-		return true;
-	}
 }

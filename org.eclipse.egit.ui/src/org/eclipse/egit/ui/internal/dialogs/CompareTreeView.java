@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011-2013 SAP AG and others.
+ * Copyright (c) 2011, 2012 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,7 +8,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Robin Stocker <robin@nibor.org> - ignore linked resources
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
@@ -44,7 +43,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.FileEditableRevision;
@@ -101,6 +99,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
+import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.model.IWorkbenchAdapter;
 import org.eclipse.ui.model.WorkbenchContentProvider;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
@@ -116,8 +115,7 @@ import org.eclipse.ui.part.ViewPart;
  * If the input is an {@link IContainer}, the tree is similar to the tree shown
  * by the PackageExplorer (based on {@link WorkbenchLabelProvider} and
  * {@link WorkbenchContentProvider}, otherwise a simple tree representing files
- * and folders is used based on {@link PathNode} instances. Linked resources
- * however are ignored and not listed as content.
+ * and folders is used based on {@link PathNode} instances.
  * <p>
  * The tree nodes are shown with icons for "Added", "Deleted", and
  * "Same Contents" for files. Files with same content can be hidden using a
@@ -125,7 +123,6 @@ import org.eclipse.ui.part.ViewPart;
  * <p>
  * This view can also show files and folders outside the Eclipse workspace when
  * a {@link Repository} is used as input.
- * <p>
  */
 public class CompareTreeView extends ViewPart implements IMenuListener, IShowInSource {
 	/** The "magic" compare version to compare with the index */
@@ -935,12 +932,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				children = super.getChildren(element);
 			List<Object> childList = new ArrayList<Object>(children.length);
 			for (Object child : children) {
-				IResource childResource = (IResource) child;
-				if (childResource.isLinked())
-					continue;
-				IPath path = new Path(
-						repositoryMapping.getRepoRelativePath(childResource));
-				boolean isFile = childResource.getType() == IResource.FILE;
+				IPath path = new Path(repositoryMapping
+						.getRepoRelativePath((IResource) child));
+				boolean isFile = ((IResource) child).getType() == IResource.FILE;
 
 				// each path that is not ignored creates an entry in either
 				// compareVersionMap or addedPaths, so we can check if a path
@@ -1154,8 +1148,10 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		if (openAction != null)
 			manager.appendToGroup(ICommonMenuConstants.GROUP_OPEN, openAction);
 
-		MenuManager showInSubMenu = UIUtils.createShowInMenu(
-				getSite().getWorkbenchWindow());
+		MenuManager showInSubMenu = new MenuManager(
+				UIText.CompareTreeView_ShowIn_label);
+		showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN
+				.create(getSite().getWorkbenchWindow()));
 		manager.appendToGroup(ICommonMenuConstants.GROUP_OPEN, showInSubMenu);
 	}
 

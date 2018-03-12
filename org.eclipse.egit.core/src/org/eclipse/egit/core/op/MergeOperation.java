@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2010 SAP AG.
- * Copyright (C) 2012, 2013 Tomasz Zarna <tzarna@gmail.com>
+ * Copyright (C) 2012, Tomasz Zarna <Tomasz.Zarna@pl.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
 package org.eclipse.egit.core.op;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -30,13 +31,11 @@ import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
-import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -108,14 +107,11 @@ public class MergeOperation implements IEGitOperation {
 				mymonitor.worked(1);
 				MergeCommand merge;
 				try {
-					FastForwardMode ffmode = getFastForwardMode();
 					Ref ref = repository.getRef(refName);
 					if (ref != null)
-						merge = git.merge().include(ref).setFastForward(ffmode);
+						merge = git.merge().include(ref);
 					else
-						merge = git.merge()
-								.include(ObjectId.fromString(refName))
-								.setFastForward(ffmode);
+						merge = git.merge().include(ObjectId.fromString(refName));
 				} catch (IOException e) {
 					throw new TeamException(CoreText.MergeOperation_InternalError, e);
 				}
@@ -126,15 +122,26 @@ public class MergeOperation implements IEGitOperation {
 				try {
 					mergeResult = merge.call();
 					mymonitor.worked(1);
-					if (MergeResult.MergeStatus.NOT_SUPPORTED.equals(mergeResult.getMergeStatus()))
+					if (MergeResult.MergeStatus.FAILED.equals(mergeResult.getMergeStatus()))
+						throw new TeamException(mergeResult.toString());
+					else if (MergeResult.MergeStatus.NOT_SUPPORTED.equals(mergeResult.getMergeStatus()))
 						throw new TeamException(new Status(IStatus.INFO, Activator.getPluginId(), mergeResult.toString()));
 				} catch (NoHeadException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedNoHead, e);
 				} catch (ConcurrentRefUpdateException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedRefUpdate, e);
 				} catch (CheckoutConflictException e) {
-					mergeResult = new MergeResult(e.getConflictingPaths());
-					return;
+					StringBuilder builder = new StringBuilder();
+					for (String f : e.getConflictingPaths()) {
+						builder.append("\n"); //$NON-NLS-1$
+						builder.append(f);
+					}
+					throw new TeamException(
+								new Status(
+									IStatus.INFO,
+									Activator.getPluginId(),
+									MessageFormat.format(CoreText.MergeOperation_CheckoutConflict,
+									builder.toString())));
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
 				} finally {
@@ -148,17 +155,6 @@ public class MergeOperation implements IEGitOperation {
 		ResourcesPlugin.getWorkspace().run(action, monitor);
 	}
 
-	private FastForwardMode getFastForwardMode() throws IOException {
-		FastForwardMode ffmode = FastForwardMode.valueOf(repository.getConfig()
-				.getEnum(ConfigConstants.CONFIG_KEY_MERGE, null,
-						ConfigConstants.CONFIG_KEY_FF,
-						FastForwardMode.Merge.TRUE));
-		ffmode = repository.getConfig().getEnum(
-				ConfigConstants.CONFIG_BRANCH_SECTION, repository.getBranch(),
-				ConfigConstants.CONFIG_KEY_MERGEOPTIONS, ffmode);
-		return ffmode;
-	}
-
 	/**
 	 * @return the merge result, or <code>null</code> if this has not been
 	 *         executed or if an exception occurred
@@ -170,4 +166,6 @@ public class MergeOperation implements IEGitOperation {
 	public ISchedulingRule getSchedulingRule() {
 		return ResourcesPlugin.getWorkspace().getRoot();
 	}
+
+
 }
