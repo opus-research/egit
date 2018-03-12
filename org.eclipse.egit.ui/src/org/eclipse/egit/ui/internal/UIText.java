@@ -14,7 +14,6 @@
  * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
  * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
  * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
- * Copyright (C) 2015, Laurent Delaigue <laurent.delaigue@obeo.fr>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -677,15 +676,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_useLogicalModel;
-
-	/** */
-	public static String GitPreferenceRoot_preferreMergeStrategy_group;
-
-	/** */
-	public static String GitPreferenceRoot_preferreMergeStrategy_label;
-
-	/** */
-	public static String GitPreferenceRoot_defaultMergeStrategyLabel;
 
 	/** */
 	public static String ProcessStepsRebaseCommand_CancelDialogMessage;
@@ -5145,6 +5135,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
+
+	/** */
+	public static String StagingViewLabelProvider_SymlinkError;
 
 	/** */
 	public static String StashApplyCommand_applyFailed;
