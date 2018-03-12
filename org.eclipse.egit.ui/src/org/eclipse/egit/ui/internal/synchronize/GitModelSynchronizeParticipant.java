@@ -217,7 +217,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		if (object instanceof IFile) {
 			IFile file = (IFile) object;
 			GitSynchronizeData gsd = gsds.getData(file.getProject());
-			if (gsd != null && !gsd.shouldIncludeLocal())
+			if (!gsd.shouldIncludeLocal())
 				return getFileFromGit(gsd, file.getLocation());
 		}
 
