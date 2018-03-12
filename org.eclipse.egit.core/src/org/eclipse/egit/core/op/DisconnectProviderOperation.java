@@ -19,8 +19,8 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.team.core.RepositoryProvider;
 
 /**
@@ -56,11 +56,8 @@ public class DisconnectProviderOperation implements IWorkspaceRunnable {
 				obj = ((IAdaptable)obj).getAdapter(IResource.class);
 				if (obj instanceof IProject) {
 					final IProject p = (IProject) obj;
-					// TODO is this the right location?
-					if (GitTraceLocation.CORE.isActive())
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.CORE.getLocation(),
-								"disconnect " + p.getName()); //$NON-NLS-1$
+
+					Activator.trace("disconnect " + p.getName());  //$NON-NLS-1$
 					unmarkTeamPrivate(p);
 					RepositoryProvider.unmap(p);
 					m.worked(100);
@@ -85,11 +82,7 @@ public class DisconnectProviderOperation implements IWorkspaceRunnable {
 					unmarkTeamPrivate((IContainer) c[k]);
 				}
 				if (c[k].isTeamPrivateMember()) {
-					// TODO is this the right location?
-					if (GitTraceLocation.CORE.isActive())
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.CORE.getLocation(),
-								"notTeamPrivate " + c[k]); //$NON-NLS-1$
+					Activator.trace("notTeamPrivate " + c[k]);  //$NON-NLS-1$
 					c[k].setTeamPrivateMember(false);
 				}
 			}
