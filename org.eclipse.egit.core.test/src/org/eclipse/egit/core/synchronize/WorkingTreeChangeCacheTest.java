@@ -8,8 +8,17 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
+import static org.eclipse.compare.structuremergeviewer.Differencer.ADDITION;
+import static org.eclipse.compare.structuremergeviewer.Differencer.CHANGE;
+import static org.eclipse.compare.structuremergeviewer.Differencer.DELETION;
+import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
+import static org.eclipse.jgit.junit.JGitTestUtil.deleteTrashFile;
+import static org.eclipse.jgit.junit.JGitTestUtil.writeTrashFile;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
@@ -23,7 +32,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceAddition() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -36,8 +45,8 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceAdditions() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
-		writeTrashFile("b.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
+		writeTrashFile(db, "b.txt", "trash");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -51,7 +60,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceAdditionInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -64,8 +73,8 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceAdditionsInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
-		writeTrashFile("folder/b.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
+		writeTrashFile(db, "folder/b.txt", "trash");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -79,9 +88,9 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceDeletion() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
 		new Git(db).add().addFilepattern("a.txt").call();
-		deleteTrashFile("a.txt");
+		deleteTrashFile(db, "a.txt");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -94,11 +103,11 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceDeletions() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
-		writeTrashFile("b.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
+		writeTrashFile(db, "b.txt", "trash");
 		new Git(db).add().addFilepattern("a.txt").addFilepattern("b.txt").call();
-		deleteTrashFile("a.txt");
-		deleteTrashFile("b.txt");
+		deleteTrashFile(db, "a.txt");
+		deleteTrashFile(db, "b.txt");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -112,9 +121,9 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceDeletionInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
 		new Git(db).add().addFilepattern("folder/a.txt").call();
-		deleteTrashFile("folder/a.txt");
+		deleteTrashFile(db, "folder/a.txt");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -127,11 +136,11 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceDeletionsInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
-		writeTrashFile("folder/b.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
+		writeTrashFile(db, "folder/b.txt", "trash");
 		new Git(db).add().addFilepattern("folder/a.txt").addFilepattern("folder/b.txt").call();
-		deleteTrashFile("folder/a.txt");
-		deleteTrashFile("folder/b.txt");
+		deleteTrashFile(db, "folder/a.txt");
+		deleteTrashFile(db, "folder/b.txt");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -145,9 +154,9 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceChange() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
 		new Git(db).add().addFilepattern("a.txt").call();
-		writeTrashFile("a.txt", "modification");
+		writeTrashFile(db, "a.txt", "modification");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -160,11 +169,11 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceChanges() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
-		writeTrashFile("b.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
+		writeTrashFile(db, "b.txt", "trash");
 		new Git(db).add().addFilepattern("a.txt").addFilepattern("b.txt").call();
-		writeTrashFile("a.txt", "modification");
-		writeTrashFile("b.txt", "modification");
+		writeTrashFile(db, "a.txt", "modification");
+		writeTrashFile(db, "b.txt", "modification");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -178,9 +187,9 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceChangeInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
 		new Git(db).add().addFilepattern("folder/a.txt").call();
-		writeTrashFile("folder/a.txt", "modification");
+		writeTrashFile(db, "folder/a.txt", "modification");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -193,11 +202,11 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceChagneInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
-		writeTrashFile("folder/b.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
+		writeTrashFile(db, "folder/b.txt", "trash");
 		new Git(db).add().addFilepattern("folder/a.txt").addFilepattern("folder/b.txt").call();
-		writeTrashFile("folder/a.txt", "modification");
-		writeTrashFile("folder/b.txt", "modification");
+		writeTrashFile(db, "folder/a.txt", "modification");
+		writeTrashFile(db, "folder/b.txt", "modification");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -211,8 +220,8 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldNotListIgnorefFile() throws Exception {
 		// given
-		writeTrashFile("a.txt", "content");
-		writeTrashFile(".gitignore", "a.txt");
+		writeTrashFile(db, "a.txt", "content");
+		writeTrashFile(db, ".gitignore", "a.txt");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -220,6 +229,33 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 		// then
 		assertThat(result.size(), is(1));
 		assertFileAddition(result, ".gitignore", ".gitignore");
+	}
+
+	private void assertFileAddition(Map<String, Change> result, String path, String fileName) {
+		commonFileAsserts(result, path, fileName);
+		assertThat(result.get(path).getKind(), is(RIGHT | ADDITION));
+		assertThat(result.get(path).getObjectId(), not(ZERO_ID));
+		assertNull(result.get(path).getRemoteObjectId());
+	}
+
+	private void assertFileDeletion(Map<String, Change> result, String path, String fileName) {
+		commonFileAsserts(result, path, fileName);
+		assertThat(result.get(path).getKind(), is(RIGHT | DELETION));
+		assertThat(result.get(path).getRemoteObjectId(), not(ZERO_ID));
+		assertNull(result.get(path).getObjectId());
+	}
+
+	private void assertFileChange(Map<String, Change> result, String path, String fileName) {
+		commonFileAsserts(result, path, fileName);
+		assertThat(result.get(path).getKind(), is(RIGHT | CHANGE));
+		assertThat(result.get(path).getObjectId(), not(ZERO_ID));
+		assertThat(result.get(path).getRemoteObjectId(), not(ZERO_ID));
+	}
+
+	private void commonFileAsserts(Map<String, Change> result, String path,
+			String fileName) {
+		assertTrue(result.containsKey(path));
+		assertThat(result.get(path).getName(), is(fileName));
 	}
 
 }
