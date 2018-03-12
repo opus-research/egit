@@ -338,7 +338,7 @@ public class GitResourceVariantTreeSubscriber extends
 		 * @return The file revision that should be considered for the local
 		 *         (left) side a delta
 		 */
-		private IFileRevision getLocalFileRevision(IFile local) {
+		protected IFileRevision getLocalFileRevision(IFile local) {
 			final GitSynchronizeData data = gsds.getData(local.getProject());
 			if (data.shouldIncludeLocal())
 				return new WorkspaceFileRevision(local);
@@ -480,6 +480,21 @@ public class GitResourceVariantTreeSubscriber extends
 			sourceTree = new GitSourceResourceVariantTree(cache, gsds);
 
 		return sourceTree;
+	}
+
+	/**
+	 * This can be used to retrieve the version of the given resource
+	 * corresponding to the source tree of this subscriber.
+	 *
+	 * @param resource
+	 *            The resource for which we need a variant.
+	 * @return The revision of the given resource cached in the source tree of
+	 *         this subscriber.
+	 * @throws TeamException
+	 */
+	public IFileRevision getSourceFileRevision(IFile resource)
+			throws TeamException {
+		return syncInfoConverter.getLocalFileRevision(resource);
 	}
 
 	@Override

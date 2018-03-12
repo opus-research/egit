@@ -15,10 +15,7 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.variants.CachedResourceVariant;
 
-/**
- * Base class for EGit's remote resource variants.
- */
-public abstract class GitRemoteResource extends CachedResourceVariant {
+abstract class GitRemoteResource extends CachedResourceVariant {
 
 	private final String path;
 
@@ -73,10 +70,7 @@ public abstract class GitRemoteResource extends CachedResourceVariant {
 		return commitId != null;
 	}
 
-	/**
-	 * @return the commit Id for this resource variant.
-	 */
-	public RevCommit getCommitId() {
+	RevCommit getCommitId() {
 		return commitId;
 	}
 
@@ -88,10 +82,7 @@ public abstract class GitRemoteResource extends CachedResourceVariant {
 		return objectId != null ? objectId : zeroId();
 	}
 
-	/**
-	 * @return path to the resource.
-	 */
-	public String getPath() {
+	String getPath() {
 		return path;
 	}
 

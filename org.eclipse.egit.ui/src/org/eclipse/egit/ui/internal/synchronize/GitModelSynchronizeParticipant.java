@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.compare.CompareNavigator;
+import org.eclipse.compare.ITypedElement;
+import org.eclipse.compare.ResourceNode;
+import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IEncodedStorage;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -43,15 +47,22 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.team.core.TeamException;
+import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.team.core.mapping.ISynchronizationContext;
 import org.eclipse.team.core.mapping.ISynchronizationScopeManager;
 import org.eclipse.team.core.mapping.provider.MergeContext;
 import org.eclipse.team.core.mapping.provider.SynchronizationScopeManager;
+import org.eclipse.team.core.subscribers.Subscriber;
+import org.eclipse.team.core.subscribers.SubscriberMergeContext;
+import org.eclipse.team.internal.ui.mapping.ResourceDiffCompareInput;
 import org.eclipse.team.ui.TeamUI;
 import org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration;
 import org.eclipse.team.ui.synchronize.ModelSynchronizeParticipant;
@@ -207,6 +218,48 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 		// fallback to super ISynchronizationCompareAdapter
 		return super.hasCompareInputFor(object);
+	}
+
+	@Override
+	public ICompareInput asCompareInput(Object object) {
+		final ICompareInput input = super.asCompareInput(object);
+		final ISynchronizationContext ctx = getContext();
+
+		if (input instanceof ResourceDiffCompareInput && ctx instanceof SubscriberMergeContext) {
+			// Team only considers local resources as "left"
+			// We'll use the cached data instead as left could be remote
+			final IResource resource = ((ResourceNode) input.getLeft())
+					.getResource();
+			final Subscriber subscriber = ((SubscriberMergeContext)ctx).getSubscriber();
+
+			if (resource instanceof IFile
+					&& subscriber instanceof GitResourceVariantTreeSubscriber) {
+				try {
+					final IFileRevision revision = ((GitResourceVariantTreeSubscriber) subscriber)
+							.getSourceFileRevision((IFile) resource);
+					final ITypedElement newSource = new FileRevisionTypedElement(
+							revision,
+							getLocalEncoding(resource));
+					((ResourceDiffCompareInput) input).setLeft(newSource);
+				} catch (TeamException e) {
+					// Keep the input from super as-is
+				}
+			}
+		}
+
+		return input;
+	}
+
+	private static String getLocalEncoding(IResource resource) {
+		if (resource instanceof IEncodedStorage) {
+			IEncodedStorage es = (IEncodedStorage) resource;
+			try {
+				return es.getCharset();
+			} catch (CoreException e) {
+				Activator.logError(e.getMessage(), e);
+			}
+		}
+		return null;
 	}
 
 	@Override
