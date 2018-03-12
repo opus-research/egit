@@ -16,10 +16,9 @@
 		<menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=group.gitflow">
 			<command
-         commandId="org.eclipse.egit.gitflow.ui.command.init"
-         icon="icons/obj16/git-flow_16x10.png"
-         label="%TeamGitFlowInit.name"
-         style="push">
+                  commandId="org.eclipse.egit.gitflow.ui.command.init"
+                  label="%TeamGitFlowInit.name"
+                  style="push">
 				<visibleWhen
                      checkEnabled="false">
 					<iterate
@@ -42,8 +41,7 @@
 		<menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=group.gitflow">
 			<menu
-         icon="icons/obj16/git-flow_16x10.png"
-         label="%TeamGitFlowMenu.name">
+               label="%TeamGitFlowMenu.name">
 				<visibleWhen
                      checkEnabled="false">
 					<iterate
@@ -239,10 +237,10 @@
                   operator="and">
 					<and>
 						<adapt type="org.eclipse.jgit.lib.Repository">
-         <test
-               forcePluginActivation="true"
-               property="GitFlowRepository.isInitialized">
-         </test>
+							<test
+                        forcePluginActivation="true"
+                        property="GitFlowRepository.isDevelop">
+							</test>
 						</adapt>
 					</and>
 				</iterate>
@@ -301,10 +299,10 @@
                   operator="and">
 					<and>
 						<adapt type="org.eclipse.jgit.lib.Repository">
-         <test
-               forcePluginActivation="true"
-               property="GitFlowRepository.isInitialized">
-         </test>
+							<test
+                        forcePluginActivation="true"
+                        property="GitFlowRepository.isDevelop">
+							</test>
 						</adapt>
 					</and>
 				</iterate>
@@ -548,10 +546,10 @@
                   operator="and">
 					<adapt type="org.eclipse.jgit.lib.Repository">
 						<and>
-         <test
-               forcePluginActivation="true"
-               property="GitFlowRepository.isInitialized">
-         </test>
+							<test
+                        forcePluginActivation="true"
+                        property="GitFlowRepository.isDevelop">
+							</test>
 						</and>
 					</adapt>
 				</iterate>
@@ -633,8 +631,7 @@
 		<menuContribution
             locationURI="popup:team.main?after=group11">
 			<menu
-         icon="icons/obj16/git-flow_16x10.png"
-         label="%TeamGitFlowMenu.name">
+                  label="%TeamGitFlowMenu.name">
 				<visibleWhen
                      checkEnabled="false">
 					<iterate
@@ -726,10 +723,9 @@
 		<menuContribution
             locationURI="popup:team.main?after=group11">
 			<command
-         commandId="org.eclipse.egit.gitflow.ui.command.init"
-         icon="icons/obj16/git-flow_16x10.png"
-         label="%TeamGitFlowInit.name"
-         style="push">
+                  commandId="org.eclipse.egit.gitflow.ui.command.init"
+                  label="%TeamGitFlowInit.name"
+                  style="push">
 				<visibleWhen
                      checkEnabled="false">
 					<iterate
@@ -759,7 +755,6 @@
           allPopups="false"
           locationURI="popup:org.eclipse.egit.ui.historyPageContributions?after=additions">
        <menu
-             icon="icons/obj16/git-flow_16x10.png"
              label="%TeamGitFlowMenu.name">
           <dynamic
                 class="org.eclipse.egit.gitflow.ui.internal.menu.DynamicHistoryMenu"
