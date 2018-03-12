@@ -3654,9 +3654,6 @@ public class UIText extends NLS {
 	public static String GitSelectWizardPage_UseNewProjectsWizardButton;
 
 	/** */
-	public static String GitSelectWizardPage_UseImportProjectsWizardButton;
-
-	/** */
 	public static String MergeAction_CannotMerge;
 
 	/** */

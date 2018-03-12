@@ -37,7 +37,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.actions.NewProjectAction;
 
 /**
@@ -99,8 +98,6 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 				return myProjectsImportPage;
 			case GitSelectWizardPage.NEW_WIZARD:
 				return null;
-			case GitSelectWizardPage.IMPORT_WIZARD:
-				return null;
 			case GitSelectWizardPage.GENERAL_WIZARD:
 				return myCreateGeneralProjectPage;
 			}
@@ -118,8 +115,6 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 		case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
 			return myProjectsImportPage.isPageComplete();
 		case GitSelectWizardPage.NEW_WIZARD:
-			return true;
-		case GitSelectWizardPage.IMPORT_WIZARD:
 			return true;
 		case GitSelectWizardPage.GENERAL_WIZARD:
 			return myCreateGeneralProjectPage.isPageComplete();
@@ -201,21 +196,6 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 			} catch (CoreException e) {
 				throw new InvocationTargetException(e);
 			}
-			break;
-		}
-		case GitSelectWizardPage.IMPORT_WIZARD: {
-			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				public void run() {
-					System.setProperty(
-							ActionFactory.IMPORT.getId() + ".source", //$NON-NLS-1$
-							mySelectionPage.getPath());
-					ActionFactory.IMPORT.create(
-							PlatformUI.getWorkbench()
-									.getActiveWorkbenchWindow()).run();
-					System.getProperties().remove(
-							ActionFactory.IMPORT.getId() + ".source"); //$NON-NLS-1$
-				}
-			});
 			break;
 		}
 		case GitSelectWizardPage.GENERAL_WIZARD: {

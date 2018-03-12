@@ -48,7 +48,6 @@ import org.eclipse.ui.IImportWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.actions.NewProjectAction;
 
 /**
@@ -164,8 +163,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 				return projectsImportPage;
 			case GitSelectWizardPage.NEW_WIZARD:
 				return null;
-			case GitSelectWizardPage.IMPORT_WIZARD:
-				return null;
 			case GitSelectWizardPage.GENERAL_WIZARD:
 				return createGeneralProjectPage;
 			}
@@ -221,8 +218,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
 			return projectsImportPage.isPageComplete();
 		case GitSelectWizardPage.NEW_WIZARD:
-			return true;
-		case GitSelectWizardPage.IMPORT_WIZARD:
 			return true;
 		case GitSelectWizardPage.GENERAL_WIZARD:
 			return createGeneralProjectPage.isPageComplete();
@@ -287,21 +282,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			} catch (CoreException e) {
 				throw new InvocationTargetException(e);
 			}
-			break;
-		}
-		case GitSelectWizardPage.IMPORT_WIZARD: {
-			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				public void run() {
-					System.setProperty(
-							ActionFactory.IMPORT.getId() + ".source", //$NON-NLS-1$
-							importWithDirectoriesPage.getPath());
-					ActionFactory.IMPORT.create(
-							PlatformUI.getWorkbench()
-									.getActiveWorkbenchWindow()).run();
-					System.getProperties().remove(
-							ActionFactory.IMPORT.getId() + ".source"); //$NON-NLS-1$
-				}
-			});
 			break;
 		}
 		case GitSelectWizardPage.GENERAL_WIZARD: {
