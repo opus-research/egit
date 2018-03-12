@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2009, Robin Rosenberg
- * Copyright (C) 2009, Mykola Nikishov <mn@mn.com.ua>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,11 +10,8 @@ package org.eclipse.egit.ui.internal.sharing;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -125,7 +121,7 @@ class ExistingOrNewPage extends WizardPage {
 				try {
 					Repository repository = new Repository(gitDir);
 					repository.create();
-					for (IProject project : getProjects().keySet()) {
+					for (IProject project : getProjects()) {
 						// If we don't refresh the project directories right
 						// now we won't later know that a .git directory
 						// exists within it and we won't mark the .git
@@ -232,25 +228,10 @@ class ExistingOrNewPage extends WizardPage {
 		return true;
 	}
 
-	/**
-	 * @return map between project and repository root directory (converted to a
-	 *         path relative to project's root) for all projects selected by
-	 *         user
-	 */
-	public Map<IProject, File> getProjects() {
-		final TreeItem[] selection = tree.getSelection();
-		Map<IProject, File> ret = new HashMap<IProject, File>(selection.length);
-		for (int i = 0; i < selection.length; ++i) {
-			final TreeItem treeItem = selection[i];
-			final IProject project = (IProject) treeItem.getData();
-			final File selectedRepo = new File(treeItem.getText(2));
-			File localPathToRepo = selectedRepo;
-			if (selectedRepo.isAbsolute()) {
-				final URI projectLocation = project.getLocationURI();
-				localPathToRepo = new File(projectLocation.relativize(selectedRepo.toURI()).getPath());
-			}
-			ret.put(project, localPathToRepo);
-		}
+	public IProject[] getProjects() {
+		IProject[] ret = new IProject[tree.getSelection().length];
+		for (int i = 0; i < ret.length; ++i)
+			ret[i] = (IProject)tree.getSelection()[i].getData();
 		return ret;
 	}
 }
