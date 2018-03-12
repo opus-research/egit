@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
@@ -38,7 +36,6 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.EditableRevision;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.LocalFileRevision;
@@ -293,35 +290,8 @@ public class CompareTreeView extends ViewPart {
 			tv.setExpandedState(selected, !tv.getExpandedState(selected));
 			return;
 		} else if (selected instanceof IFile) {
-			final IFile res = (IFile) selected;
-			left = new EditableRevision(new LocalFileRevision(res)) {
-				@Override
-				public void setContent(final byte[] newContent) {
-					try {
-						PlatformUI.getWorkbench().getProgressService().run(
-								false, false, new IRunnableWithProgress() {
-									public void run(IProgressMonitor myMonitor)
-											throws InvocationTargetException,
-											InterruptedException {
-										try {
-											res.setContents(
-													new ByteArrayInputStream(
-															newContent), false,
-													true, myMonitor);
-										} catch (CoreException e) {
-											throw new InvocationTargetException(
-													e);
-										}
-									}
-								});
-					} catch (InvocationTargetException e) {
-						Activator.handleError(e.getTargetException()
-								.getMessage(), e.getTargetException(), true);
-					} catch (InterruptedException e) {
-						// ignore here
-					}
-				}
-			};
+			IFile res = (IFile) selected;
+			left = new FileRevisionTypedElement(new LocalFileRevision(res));
 			GitFileRevision rightRevision = rightVersionMap.get(new Path(
 					repositoryMapping.getRepoRelativePath(res)));
 			if (rightRevision == null)
