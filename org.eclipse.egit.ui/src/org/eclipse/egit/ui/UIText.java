@@ -217,6 +217,9 @@ public class UIText extends NLS {
 	public static String GitDecoratorPreferencePage_bindingRepositoryNameFlag;
 
 	/** */
+	public static String GitDecoratorPreferencePage_iconsShowDirty;
+
+	/** */
 	public static String GitDocument_errorLoadCommit;
 
 	/** */
@@ -1300,12 +1303,6 @@ public class UIText extends NLS {
 	public static String ConfigureUriPage_ConfigurePush_pagetitle;
 
 	/** */
-	public static String ConfigureUriPage_DuplicateUriMessage;
-
-	/** */
-	public static String ConfigureUriPage_DuplicateUriTitle;
-
-	/** */
 	public static String ConfigureUriPage_FetchUri_label;
 
 	/** */
@@ -1316,9 +1313,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigureUriPage_ParsingProblem_message;
-
-	/** */
-	public static String ConfigureUriPage_PushUriGroup;
 
 	/** */
 	public static String ConfigureUriPage_Remove_button;
@@ -2406,9 +2400,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SelectSynchronizeResourceDialog_includeUncommitedChnages;
-
-	/** */
-	public static String SelectUriWiazrd_Title;
 
 	/** */
 	public static String SynchronizeWithAction_localRepoName;
