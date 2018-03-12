@@ -13,9 +13,9 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.op.TagOperation;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.dialogs.CreateTagDialog;
-import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
@@ -64,10 +64,13 @@ public class CreateTagOnCommitHandler extends AbstractHistoryCommanndHandler {
 
 	@Override
 	public boolean isEnabled() {
-		GitHistoryPage page = getPage();
-		if (page == null)
+		try {
+			IStructuredSelection sel = getSelection(null);
+			return sel.size() == 1
+					&& sel.getFirstElement() instanceof RevCommit;
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, false);
 			return false;
-		IStructuredSelection sel = getSelection(page);
-		return sel.size() == 1 && sel.getFirstElement() instanceof RevCommit;
+		}
 	}
 }
