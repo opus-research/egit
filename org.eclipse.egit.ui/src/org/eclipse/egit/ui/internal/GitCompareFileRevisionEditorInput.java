@@ -239,16 +239,11 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		} else if (getResource(input) != null) {
 			String label = NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_workspace, new Object[]{ input.getLeft().getName() });
 			cc.setLeftLabel(label);
-		} else {
-			cc.setLeftLabel(left.getName());
 		}
 		if (getRightRevision() != null) {
 			String rightLabel = getFileRevisionLabel(getRightRevision());
 			cc.setRightLabel(rightLabel);
-		} else {
-			cc.setRightLabel(right.getName());
 		}
-
 	}
 
 	private String getFileRevisionLabel(FileRevisionTypedElement element) {
@@ -256,7 +251,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		if (fileObject instanceof LocalFileRevision){
 			return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_localRevision, new Object[]{element.getName(), element.getTimestamp()});
 		} else {
-			return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_repository, new Object[]{element.getName(), element.getContentIdentifier(), element.getAuthor()});
+			return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_repository, new Object[]{ element.getName(), element.getContentIdentifier()});
 		}
 	}
 

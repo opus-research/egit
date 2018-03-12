@@ -54,8 +54,6 @@ public class CloneOperation implements IRunnableWithProgress {
 
 	private final File workdir;
 
-	private final File gitdir;
-
 	private final String branch;
 
 	private final String remoteName;
@@ -93,7 +91,6 @@ public class CloneOperation implements IRunnableWithProgress {
 		this.allSelected = allSelected;
 		this.selectedBranches = selectedBranches;
 		this.workdir = workdir;
-		this.gitdir = new File(workdir, Constants.DOT_GIT);
 		this.branch = branch;
 		this.remoteName = remoteName;
 	}
@@ -127,14 +124,6 @@ public class CloneOperation implements IRunnableWithProgress {
 		}
 	}
 
-
-	/**
-	 * @return The git directory which will contain the repository
-	 */
-	public File getGitDir() {
-		return gitdir;
-	}
-
 	private void closeLocal() {
 		if (local != null) {
 			local.close();
@@ -146,12 +135,10 @@ public class CloneOperation implements IRunnableWithProgress {
 			throws URISyntaxException, IOException {
 		monitor.setTaskName("Initializing local repository");
 
+		final File gitdir = new File(workdir, ".git");
 		local = new Repository(gitdir);
 		local.create();
-
-		final RefUpdate head = local.updateRef(Constants.HEAD);
-		head.disableRefLog();
-		head.link(branch);
+		local.writeSymref(Constants.HEAD, branch);
 
 		remoteConfig = new RemoteConfig(local.getConfig(), remoteName);
 		remoteConfig.addURI(uri);

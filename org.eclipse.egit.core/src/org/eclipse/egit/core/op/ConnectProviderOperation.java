@@ -23,7 +23,6 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
@@ -31,7 +30,6 @@ import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
 
@@ -51,7 +49,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 	 *            the project to connect to the Git team provider.
 	 */
 	public ConnectProviderOperation(final IProject proj) {
-		this(proj, proj.getLocation().append("/").append(Constants.DOT_GIT).toFile());
+		this(proj, new File(".git"));
 	}
 
 	/**
@@ -60,7 +58,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 	 * @param proj
 	 *            the project to connect to the Git team provider.
 	 * @param pathToRepo
-	 *            absolute path to the repository
+	 *            relative path to the repository
 	 */
 	public ConnectProviderOperation(final IProject proj, File pathToRepo) {
 		this.projects.put(proj, pathToRepo);
@@ -127,16 +125,16 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 
 	/**
 	 * @param repos
-	 *         available repositories
+	 *            available repositories
 	 * @param suggestedRepo
-	 *         relative path to git repository
+	 *            relative path to git repository
 	 * @return a repository mapping which corresponds to a suggested repository
 	 *         location, <code>null</code> otherwise
 	 */
 	private RepositoryMapping findActualRepository(
 			Collection<RepositoryMapping> repos, File suggestedRepo) {
 		for (RepositoryMapping rm : repos) {
-			if (rm.getGitDirAbsolutePath().equals(Path.fromOSString(suggestedRepo.getPath())))
+			if (rm.getGitDir().equals(suggestedRepo.getPath()))
 				return rm;
 		}
 		return null;

@@ -108,18 +108,13 @@
                label="%CommitAction_label"
                menubarPath="team.main/group1"
                tooltip="%CommitAction_tooltip"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.CompareWithIndexAction"
-               id="org.eclipse.egit.ui.internal.actions.CompareWithIndexAction"
-               label="%CompareWithIndexAction_label"
-               menubarPath="compareWithMenu/gitCompareWithGroup"
-               tooltip="%CompareWithIndexAction_tooltip"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.IgnoreAction"
-               id="org.eclipse.egit.ui.internal.actions.IgnoreAction"
-               label="%IgnoreAction_label"
-               menubarPath="team.main/group1"
-               tooltip="%IgnoreAction_tooltip"/>
+	 <action
+	       class="org.eclipse.egit.ui.internal.actions.CompareWithIndexAction"
+	       id="org.eclipse.egit.ui.internal.actions.CompareWithIndexAction"
+	       label="%CompareWithIndexAction_label"
+	       menubarPath="compareWithMenu/gitCompareWithGroup"
+	       tooltip="%CompareWithIndexAction_tooltip">
+	 </action>
 	  </objectContribution>
 	  <objectContribution
          id="org.eclipse.egit.ui.resetto"
@@ -170,17 +165,6 @@
 	       menubarPath="additions">
 	 </action>
 	  </objectContribution>
-   	  <objectContribution
-         adaptable="true"
-         id="org.eclipse.egit.ui.fileContributions"
-         objectClass="org.eclipse.core.resources.IFile">
-         <action
-               class="org.eclipse.egit.ui.internal.actions.CompareWithRevisionAction"
-               id="org.eclipse.egit.ui.internal.actions.CompareWithRevisionAction"
-               label="%CompareWithRevisionAction_label"
-               menubarPath="compareWithMenu/gitCompareWithGroup"
-               tooltip="%CompareWithRevisionAction_tooltip" />
-      </objectContribution>
    </extension>
 
    <extension
@@ -200,7 +184,7 @@
             </adapter>
          </factory>
    </extension>
-
+   
    <extension point="org.eclipse.ui.preferencePages">
       <page name="%GitPreferences_name"
             category="org.eclipse.team.ui.TeamPreferences"
@@ -304,32 +288,6 @@
          <description>
             %Theme_CommitMessageFont_description
          </description>
-      </fontDefinition>
-	<colorDefinition
-        id="org.eclipse.egit.ui.UncommittedChangeForegroundColor"
-        categoryId="org.eclipse.egit.ui.GitTheme"
-        label="%Theme_UncommittedChangeForegroundColor_label"
-        value="COLOR_LIST_FOREGROUND">
-        <description>
-        %Theme_UncommittedChangeForegroundColor_description
-        </description>
-      </colorDefinition>
-      <colorDefinition
-        id="org.eclipse.egit.ui.UncommittedChangeBackgroundColor"
-        categoryId="org.eclipse.egit.ui.GitTheme"
-        label="%Theme_UncommittedChangeBackgroundColor_label"
-        value="COLOR_LIST_BACKGROUND">
-        <description>
-        %Theme_UncommittedChangeBackgroundColor_description
-        </description>
-      </colorDefinition>
-      <fontDefinition
-        id="org.eclipse.egit.ui.UncommittedChangeFont"
-        categoryId="org.eclipse.egit.ui.GitTheme"
-        label="%Theme_UncommittedChangeFont_label">
-        <description>
-        %Theme_UncommittedChangeFont_description
-        </description>
       </fontDefinition>
    </extension>
 

@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.core.test;
+package org.eclipse.egit.core;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -20,6 +20,7 @@ import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
@@ -46,7 +47,7 @@ public class T0003_AdaptableFileTreeIteratorTest extends GitTestCase {
 		fileWriter.close();
 
 		final ConnectProviderOperation operation = new ConnectProviderOperation(
-				project.getProject(), gitDir);
+				project.getProject(), new File("../.git"));
 		operation.run(null);
 	}
 
