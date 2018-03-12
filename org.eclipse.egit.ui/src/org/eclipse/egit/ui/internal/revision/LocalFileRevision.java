@@ -66,7 +66,6 @@ public class LocalFileRevision extends FileRevision {
 		this.state = null;
 	}
 
-	@Override
 	public String getContentIdentifier() {
 		if (file != null)
 			return baseRevision == null ? NLS.bind(
@@ -74,24 +73,20 @@ public class LocalFileRevision extends FileRevision {
 		return ""; //$NON-NLS-1$
 	}
 
-	@Override
 	public String getAuthor() {
 		return ""; //$NON-NLS-1$
 	}
 
-	@Override
 	public String getComment() {
 		if (file != null)
 			return UIText.LocalFileRevision_currentVersionTag;
 		return null;
 	}
 
-	@Override
 	public ITag[] getTags() {
 		return new ITag[0];
 	}
 
-	@Override
 	public IStorage getStorage(IProgressMonitor monitor) throws CoreException {
 		if (file != null) {
 			return file;
@@ -99,7 +94,6 @@ public class LocalFileRevision extends FileRevision {
 		return state;
 	}
 
-	@Override
 	public String getName() {
 		if (file != null) {
 			return file.getName();
@@ -108,7 +102,6 @@ public class LocalFileRevision extends FileRevision {
 		return state.getName();
 	}
 
-	@Override
 	public long getTimestamp() {
 		if (file != null) {
 			return file.getLocalTimeStamp();
@@ -117,7 +110,6 @@ public class LocalFileRevision extends FileRevision {
 		return state.getModificationTime();
 	}
 
-	@Override
 	public boolean exists() {
 		if (file != null) {
 			return file.exists();
@@ -135,12 +127,10 @@ public class LocalFileRevision extends FileRevision {
 		this.baseRevision = baseRevision;
 	}
 
-	@Override
 	public boolean isPropertyMissing() {
 		return true;
 	}
 
-	@Override
 	public IFileRevision withAllProperties(IProgressMonitor monitor) {
 		return this;
 	}
@@ -163,7 +153,6 @@ public class LocalFileRevision extends FileRevision {
 		return (this.getTimestamp() > compareRevisionTime);
 	}
 
-	@Override
 	public URI getURI() {
 		if (file != null)
 			return file.getLocationURI();
@@ -192,7 +181,6 @@ public class LocalFileRevision extends FileRevision {
 		return file != null;
 	}
 
-	@Override
 	public boolean equals(Object obj) {
 		if (obj == this)
 			return true;
@@ -211,7 +199,6 @@ public class LocalFileRevision extends FileRevision {
 				.getModificationTime() == s2.getModificationTime());
 	}
 
-	@Override
 	public int hashCode() {
 		if (file != null)
 			return file.hashCode();

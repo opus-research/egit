@@ -82,10 +82,13 @@ public abstract class GitTestCase {
 		fileWriter.write(content);
 		fileWriter.close();
 		byte[] fileContents = IO.readFully(file);
-		try (ObjectInserter inserter = repository.newObjectInserter()) {
+		ObjectInserter inserter = repository.newObjectInserter();
+		try {
 			ObjectId objectId = inserter.insert(Constants.OBJ_BLOB, fileContents);
 			inserter.flush();
 			return objectId;
+		} finally {
+			inserter.release();
 		}
 	}
 
@@ -98,14 +101,10 @@ public abstract class GitTestCase {
 		byte[] readFully = IO.readFully(file);
 		FileUtils.delete(file);
 		FileOutputStream fileOutputStream = new FileOutputStream(file);
-		try {
-			byte[] truncatedData = new byte[readFully.length - 1];
-			System.arraycopy(readFully, 0, truncatedData, 0,
-					truncatedData.length);
-			fileOutputStream.write(truncatedData);
-		} finally {
-			fileOutputStream.close();
-		}
+		byte[] truncatedData = new byte[readFully.length - 1];
+		System.arraycopy(readFully, 0, truncatedData, 0, truncatedData.length);
+		fileOutputStream.write(truncatedData);
+		fileOutputStream.close();
 		return id;
 	}
 }

@@ -9,12 +9,13 @@
 package org.eclipse.egit.ui.internal.staging;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.DecorationResult;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
 import org.eclipse.egit.ui.internal.staging.StagingView.Presentation;
@@ -26,6 +27,7 @@ import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
@@ -39,6 +41,9 @@ public class StagingViewLabelProvider extends LabelProvider {
 	private StagingView stagingView;
 
 	private WorkbenchLabelProvider workbenchLabelProvider = new WorkbenchLabelProvider();
+
+	private Image DEFAULT = PlatformUI.getWorkbench().getSharedImages()
+			.getImage(ISharedImages.IMG_OBJ_FILE);
 
 	private final Image FOLDER = PlatformUI.getWorkbench().getSharedImages()
 			.getImage(ISharedImages.IMG_OBJ_FOLDER);
@@ -83,24 +88,31 @@ public class StagingViewLabelProvider extends LabelProvider {
 	}
 
 	private Image getEditorImage(StagingEntry diff) {
-		if (diff.isSubmodule()) {
+		if (diff.isSubmodule())
 			return SUBMODULE;
-		}
 
-		Image image;
-		if (diff.getPath() != null) {
-			image = (Image) resourceManager
-					.get(UIUtils.getEditorImage(diff.getPath()));
-		} else {
-			image = (Image) resourceManager.get(UIUtils.DEFAULT_FILE_IMG);
+		Image image = DEFAULT;
+		String name = new Path(diff.getPath()).lastSegment();
+		if (name != null) {
+			ImageDescriptor descriptor = PlatformUI.getWorkbench()
+					.getEditorRegistry().getImageDescriptor(name);
+			image = (Image) this.resourceManager.get(descriptor);
 		}
 		if (diff.isSymlink()) {
-			IPath diffLocation = diff.getLocation();
-			if (diffLocation != null) {
-				File diffFile = diffLocation.toFile();
-				if (diffFile.isDirectory()) {
-					image = FOLDER;
+			try {
+				IPath diffLocation = diff.getLocation();
+				if (diffLocation != null) {
+					File diffFile = diffLocation.toFile();
+					if (diffFile.exists()) {
+						String targetPath = FS.DETECTED.readSymLink(diffFile);
+						if (targetPath != null
+								&& new File(diffFile, targetPath).isDirectory())
+							image = FOLDER;
+					}
 				}
+			} catch (IOException e) {
+				Activator
+						.error(UIText.StagingViewLabelProvider_SymlinkError, e);
 			}
 			image = addSymlinkDecorationToImage(image);
 		}
@@ -119,7 +131,6 @@ public class StagingViewLabelProvider extends LabelProvider {
 		return (Image) this.resourceManager.get(decorated);
 	}
 
-	@Override
 	public Image getImage(Object element) {
 
 		if (element instanceof StagingFolderEntry) {

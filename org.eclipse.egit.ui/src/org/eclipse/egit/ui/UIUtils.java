@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,13 +10,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
-import java.lang.ref.SoftReference;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -25,7 +22,10 @@ import org.eclipse.core.commands.NotEnabledException;
 import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.expressions.IEvaluationContext;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.variables.IStringVariableManager;
+import org.eclipse.core.variables.VariablesPlugin;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.UIIcons;
@@ -86,8 +86,6 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
-import org.eclipse.ui.IEditorDescriptor;
-import org.eclipse.ui.IEditorRegistry;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.ISources;
@@ -105,12 +103,6 @@ import org.eclipse.ui.services.IServiceLocator;
  * Some utilities for UI code
  */
 public class UIUtils {
-
-	/** Default image descriptor for files */
-	public static final ImageDescriptor DEFAULT_FILE_IMG = PlatformUI
-			.getWorkbench().getSharedImages()
-			.getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
-
 	/**
 	 * these activate the content assist; alphanumeric, space plus some expected
 	 * special chars
@@ -285,7 +277,6 @@ public class UIUtils {
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 
-			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 
 				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
@@ -331,22 +322,18 @@ public class UIUtils {
 
 						IContentProposal propsal = new IContentProposal() {
 
-							@Override
 							public String getLabel() {
 								return null;
 							}
 
-							@Override
 							public String getDescription() {
 								return null;
 							}
 
-							@Override
 							public int getCursorPosition() {
 								return 0;
 							}
 
-							@Override
 							public String getContent() {
 								return uriString;
 							}
@@ -367,7 +354,6 @@ public class UIUtils {
 				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 
 		return new IPreviousValueProposalHandler() {
-			@Override
 			public void updateProposals() {
 				String value = textField.getText();
 				// don't store empty values
@@ -436,7 +422,6 @@ public class UIUtils {
 							stroke.format()));
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
-			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
@@ -523,7 +508,6 @@ public class UIUtils {
 
 		widget.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				resource.dispose();
 			}
@@ -543,15 +527,11 @@ public class UIUtils {
 
 		widget.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				resources.dispose();
 			}
 		});
 	}
-
-	/** Key is file extension, value is the reference to the image descriptor */
-	private static Map<String, SoftReference<ImageDescriptor>> extensionToDescriptor = new HashMap<>();
 
 	/**
 	 * Get editor image for path
@@ -560,38 +540,14 @@ public class UIUtils {
 	 * @return image descriptor
 	 */
 	public static ImageDescriptor getEditorImage(final String path) {
-		if (path == null || path.length() <= 0) {
-			return DEFAULT_FILE_IMG;
+		if (path != null && path.length() > 0) {
+			final String name = new Path(path).lastSegment();
+			if (name != null)
+				return PlatformUI.getWorkbench().getEditorRegistry()
+						.getImageDescriptor(name);
 		}
-		final String fileName = new Path(path).lastSegment();
-		if (fileName == null) {
-			return DEFAULT_FILE_IMG;
-		}
-		IEditorRegistry registry = PlatformUI.getWorkbench()
-				.getEditorRegistry();
-		IEditorDescriptor defaultEditor = registry.getDefaultEditor(fileName);
-		if (defaultEditor != null) {
-			return defaultEditor.getImageDescriptor();
-		}
-		// now we know there is no Eclipse editor for the file, and Eclipse will
-		// check Program.findProgram() and this will be slow, see bug 464891
-		int extensionIndex = fileName.lastIndexOf('.');
-		if (extensionIndex < 0) {
-			// Program.findProgram() uses extensions only
-			return DEFAULT_FILE_IMG;
-		}
-		String key = fileName.substring(extensionIndex);
-		SoftReference<ImageDescriptor> cached = extensionToDescriptor.get(key);
-		if (cached != null) {
-			ImageDescriptor descriptor = cached.get();
-			if (descriptor != null) {
-				return descriptor;
-			}
-		}
-		// In worst case this calls Program.findProgram() and blocks UI
-		ImageDescriptor descriptor = registry.getImageDescriptor(fileName);
-		extensionToDescriptor.put(key, new SoftReference<>(descriptor));
-		return descriptor;
+		return PlatformUI.getWorkbench().getSharedImages()
+				.getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
 	}
 
 	/**
@@ -624,7 +580,6 @@ public class UIUtils {
 		collapseItem.setToolTipText(UIText.UIUtils_CollapseAll);
 		collapseItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				viewer.collapseAll();
 			}
@@ -638,7 +593,6 @@ public class UIUtils {
 		expandItem.setToolTipText(UIText.UIUtils_ExpandAll);
 		expandItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				viewer.expandAll();
 			}
@@ -669,6 +623,23 @@ public class UIUtils {
 		if (section == null)
 			section = settings.addNewSection(sectionName);
 		return section;
+	}
+
+	/**
+	 * @return The default repository directory as configured in the
+	 *         preferences, with variables substituted. An empty string if there
+	 *         was an error during substitution.
+	 */
+	public static String getDefaultRepositoryDir() {
+		String dir = Activator.getDefault().getPreferenceStore()
+				.getString(UIPreferences.DEFAULT_REPO_DIR);
+		IStringVariableManager manager = VariablesPlugin.getDefault()
+				.getStringVariableManager();
+		try {
+			return manager.performStringSubstitution(dir);
+		} catch (CoreException e) {
+			return ""; //$NON-NLS-1$
+		}
 	}
 
 	/**
@@ -780,7 +751,6 @@ public class UIUtils {
 					UIText.CancelAfterSaveDialog_Title, null,
 					cancelConfirmationQuestion,
 					MessageDialog.QUESTION, buttons, 0) {
-				@Override
 				protected int getShellStyle() {
 					return (SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL
 							| SWT.SHEET | getDefaultOrientation());
@@ -869,8 +839,8 @@ public class UIUtils {
 	}
 
 	private static String getShowInMenuLabel() {
-		IBindingService bindingService = CommonUtils.getAdapter(PlatformUI
-				.getWorkbench(), IBindingService.class);
+		IBindingService bindingService = (IBindingService) PlatformUI
+				.getWorkbench().getAdapter(IBindingService.class);
 		if (bindingService != null) {
 			String keyBinding = bindingService
 					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);
@@ -893,8 +863,8 @@ public class UIUtils {
 	 *         than one {@code Trigger}.
 	 */
 	public static KeyStroke getKeystrokeOfBestActiveBindingFor(String commandId) {
-		IBindingService bindingService = CommonUtils.getAdapter(
-				PlatformUI.getWorkbench(), IBindingService.class);
+		IBindingService bindingService = (IBindingService) PlatformUI
+				.getWorkbench().getAdapter(IBindingService.class);
 		TriggerSequence ts = bindingService.getBestActiveBindingFor(commandId);
 		if (ts == null)
 			return null;

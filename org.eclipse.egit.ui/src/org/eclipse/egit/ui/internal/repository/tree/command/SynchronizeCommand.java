@@ -39,7 +39,6 @@ import org.eclipse.osgi.util.NLS;
 public class SynchronizeCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final RepositoryTreeNode node = getSelectedNodes(event).get(0);
 		final String refName = getRefName(node);

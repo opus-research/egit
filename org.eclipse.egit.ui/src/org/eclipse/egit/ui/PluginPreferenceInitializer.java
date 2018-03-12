@@ -4,7 +4,6 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,11 +12,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
+import java.io.File;
+
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.history.FindToolbar;
 import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jgit.util.FS;
 
 /**
  * Plugin extension point to initialize the plugin runtime preferences.
@@ -34,7 +36,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 	/**
 	 * This method initializes the plugin preferences with default values.
 	 */
-	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
 		int[] w;
@@ -79,10 +80,11 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 
 		store.setDefault(UIPreferences.REFESH_ON_INDEX_CHANGE, true);
 		store.setDefault(UIPreferences.REFESH_ONLY_WHEN_ACTIVE, true);
-
+		store.setDefault(UIPreferences.DEFAULT_REPO_DIR, new File(FS.DETECTED.userHome(), "git").getPath()); //$NON-NLS-1$
 		store.setDefault(UIPreferences.SHOW_REBASE_CONFIRM, true);
 		store.setDefault(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, true);
 		store.setDefault(UIPreferences.SHOW_HOME_DIR_WARNING, true);
+		store.setDefault(UIPreferences.SHOW_GIT_PREFIX_WARNING, true);
 		store.setDefault(UIPreferences.SHOW_DETACHED_HEAD_WARNING, true);
 		store.setDefault(UIPreferences.SHOW_CHECKOUT_CONFIRMATION, true);
 		store.setDefault(UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
@@ -97,20 +99,17 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.DATE_FORMAT,
 				UIPreferences.DEFAULT_DATE_FORMAT);
 		store.setDefault(UIPreferences.HISTORY_MAX_NUM_COMMITS, 10000);
-		store.setDefault(UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE, true);
 		store.setDefault(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, false);
 		store.setDefault(UIPreferences.BLAME_IGNORE_WHITESPACE, false);
 		store.setDefault(UIPreferences.REMOTE_CONNECTION_TIMEOUT, 30 /* seconds */);
 		store.setDefault(UIPreferences.STAGING_VIEW_PRESENTATION,
 				StagingView.Presentation.LIST.name());
 		store.setDefault(UIPreferences.STAGING_VIEW_FILENAME_MODE, true);
-		store.setDefault(UIPreferences.STAGING_VIEW_COMPARE_MODE, true);
 		store.setDefault(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE, false);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HISTORY_SIZE, 10);
 		store.setDefault(UIPreferences.CHECKOUT_PROJECT_RESTORE, true);
 		store.setDefault(UIPreferences.HISTORY_MAX_TAG_LENGTH, 18);
 		store.setDefault(UIPreferences.HISTORY_MAX_BRANCH_LENGTH, 18);
-		store.setDefault(UIPreferences.HISTORY_MAX_DIFF_LINES, 1000);
 		store.setDefault(UIPreferences.CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG, true);
 		store.setDefault(UIPreferences.MERGE_MODE, "2"); //$NON-NLS-1$
 		store.setDefault(UIPreferences.USE_LOGICAL_MODEL, true);

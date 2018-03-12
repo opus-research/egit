@@ -51,7 +51,6 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 		return container;
 	}
 
-	@Override
 	public int getProblemSeverity() {
 		if (container == null)
 			return SEVERITY_NONE;
@@ -64,7 +63,6 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 		}
 	}
 
-	@Override
 	public Object getAdapter(Class adapter) {
 		if (adapter == IResource.class || adapter == IContainer.class)
 			return getContainer();

@@ -165,10 +165,12 @@ public class GitSynchronizeData {
 	 * @throws IOException
 	 */
 	public void updateRevs() throws IOException {
-		try (ObjectWalk ow = new ObjectWalk(repo)) {
-			ow.setRetainBody(true);
+		ObjectWalk ow = new ObjectWalk(repo);
+		try {
 			srcRevCommit = getCommit(srcRev, ow);
 			dstRevCommit = getCommit(dstRev, ow);
+		} finally {
+			ow.release();
 		}
 
 		if (this.dstRevCommit != null && this.srcRevCommit != null)
@@ -270,12 +272,10 @@ public class GitSynchronizeData {
 		this.includedResources = includedResources;
 		Set<String> paths = new HashSet<String>();
 		RepositoryMapping rm = RepositoryMapping.findRepositoryMapping(repo);
-		if (rm != null) {
-			for (IResource resource : includedResources) {
-				String repoRelativePath = rm.getRepoRelativePath(resource);
-				if (repoRelativePath != null && repoRelativePath.length() > 0)
-					paths.add(repoRelativePath);
-			}
+		for (IResource resource : includedResources) {
+			String repoRelativePath = rm.getRepoRelativePath(resource);
+			if (repoRelativePath != null && repoRelativePath.length() > 0)
+				paths.add(repoRelativePath);
 		}
 
 		if (!paths.isEmpty())

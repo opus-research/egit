@@ -85,7 +85,6 @@ public class CommitSelectDialog extends TitleAreaDialog {
 		tv.setInput(commits);
 		table.setHeaderVisible(true);
 		tv.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				if (!event.getSelection().isEmpty())
 					selected = (RevCommit) ((IStructuredSelection) event
@@ -96,7 +95,6 @@ public class CommitSelectDialog extends TitleAreaDialog {
 			}
 		});
 		tv.addDoubleClickListener(new IDoubleClickListener() {
-			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				okPressed();
 			}

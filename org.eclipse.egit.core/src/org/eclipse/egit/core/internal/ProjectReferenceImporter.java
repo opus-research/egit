@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2011, 2012 Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -187,19 +187,19 @@ public class ProjectReferenceImporter {
 	 */
 	private static IPath getWorkingDir(URIish gitUrl, String branch,
 			Set<String> allBranches) {
-		final IPath defaultRepoLocation = new Path(
-				RepositoryUtil.getDefaultRepositoryDir());
+		final IPath workspaceLocation = ResourcesPlugin.getWorkspace()
+				.getRoot().getRawLocation();
 		final String humanishName = gitUrl.getHumanishName();
 		String extendedName;
-		if (allBranches.size() == 1 || branch.equals(Constants.MASTER)) {
+		if (allBranches.size() == 1 || branch.equals(Constants.MASTER))
 			extendedName = humanishName;
-		} else {
+		else
 			extendedName = humanishName + "_" + branch; //$NON-NLS-1$
-		}
-		return defaultRepoLocation.append(extendedName);
+		final IPath workDir = workspaceLocation.append(extendedName);
+		return workDir;
 	}
 
-	static File findConfiguredRepository(URIish gitUrl) {
+	private static File findConfiguredRepository(URIish gitUrl) {
 		for (String repoDir : getRepositoryUtil().getConfiguredRepositories()) {
 			File repoDirFile = new File(repoDir);
 			if (repositoryAlreadyExistsForUrl(repoDirFile, gitUrl))
@@ -243,29 +243,14 @@ public class ProjectReferenceImporter {
 			if (existingUrl.equals(url))
 				return true;
 
-			// there may be slight differences in the URLs...
-			URIish canonExistingUrl = canonicalizeURL(existingUrl);
-			URIish canonUrl = canonicalizeURL(url);
-			if (canonExistingUrl.equals(canonUrl))
+			// try URLs without user name, since often project sets contain
+			// anonymous URLs, and remote URL might be anonymous as well
+			URIish anonExistingUrl = existingUrl.setUser(null);
+			URIish anonUrl = url.setUser(null);
+			if (anonExistingUrl.equals(anonUrl))
 				return true;
 		}
 		return false;
-	}
-
-	private static URIish canonicalizeURL(URIish existingUrl) {
-		// try URLs without user name, since often project sets contain
-		// anonymous URLs, and remote URL might be anonymous as well
-		URIish newURL = existingUrl.setUser(null);
-
-		// some URLs end with .git, some don't
-		String path = existingUrl.getPath();
-		if (path.endsWith(".git")) { //$NON-NLS-1$
-			newURL = newURL
-					.setPath(path.substring(0,
-					path.lastIndexOf(".git"))); //$NON-NLS-1$
-		}
-
-		return newURL;
 	}
 
 	private List<IProject> importProjects(final Set<ProjectReference> projects,

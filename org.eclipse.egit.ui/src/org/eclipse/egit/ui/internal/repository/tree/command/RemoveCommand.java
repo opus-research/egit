@@ -65,7 +65,6 @@ import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
  */
 public class RemoveCommand extends
 		RepositoriesViewCommandHandler<RepositoryNode> {
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		removeRepository(event, false);
 		return null;
@@ -127,7 +126,6 @@ public class RemoveCommand extends
 						false };
 				Display.getDefault().syncExec(new Runnable() {
 
-					@Override
 					public void run() {
 						try {
 							confirmedCanceled[0] = confirmProjectDeletion(
@@ -190,7 +188,6 @@ public class RemoveCommand extends
 			IProgressMonitor monitor) {
 		IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor actMonitor)
 			throws CoreException {
 
@@ -252,7 +249,8 @@ public class RemoveCommand extends
 
 	private static void closeSubmoduleRepositories(Repository repo)
 			throws IOException {
-		try (SubmoduleWalk walk = SubmoduleWalk.forIndex(repo)) {
+		SubmoduleWalk walk = SubmoduleWalk.forIndex(repo);
+		try {
 			while (walk.next()) {
 				Repository subRepo = walk.getRepository();
 				if (subRepo != null) {
@@ -268,30 +266,29 @@ public class RemoveCommand extends
 					}
 				}
 			}
+		} finally {
+			walk.release();
 		}
 	}
 
 	private boolean isTracked(File file, Repository repo) throws IOException {
 		ObjectId objectId = repo.resolve(Constants.HEAD);
 		RevTree tree;
-		try (RevWalk rw = new RevWalk(repo);
-				TreeWalk treeWalk = new TreeWalk(repo)) {
-			if (objectId != null)
-				tree = rw.parseTree(objectId);
-			else
-				tree = null;
+		if (objectId != null)
+			tree = new RevWalk(repo).parseTree(objectId);
+		else
+			tree = null;
 
-			treeWalk.setRecursive(true);
-			if (tree != null)
-				treeWalk.addTree(tree);
-			else
-				treeWalk.addTree(new EmptyTreeIterator());
-			treeWalk.addTree(new DirCacheIterator(repo.readDirCache()));
-			treeWalk.setFilter(PathFilterGroup
-					.createFromStrings(Collections.singleton(Repository
-							.stripWorkDir(repo.getWorkTree(), file))));
-			return treeWalk.next();
-		}
+		TreeWalk treeWalk = new TreeWalk(repo);
+		treeWalk.setRecursive(true);
+		if (tree != null)
+			treeWalk.addTree(tree);
+		else
+			treeWalk.addTree(new EmptyTreeIterator());
+		treeWalk.addTree(new DirCacheIterator(repo.readDirCache()));
+		treeWalk.setFilter(PathFilterGroup.createFromStrings(Collections.singleton(
+				Repository.stripWorkDir(repo.getWorkTree(), file))));
+		return treeWalk.next();
 
 	}
 

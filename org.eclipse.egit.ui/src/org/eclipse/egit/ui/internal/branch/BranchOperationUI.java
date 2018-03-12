@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.branch;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +24,6 @@ import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
@@ -57,8 +55,6 @@ import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
-import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
@@ -68,7 +64,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.PlatformUI;
@@ -230,7 +225,7 @@ public class BranchOperationUI {
 			return;
 		}
 
-		if (shouldCancelBecauseOfRunningLaunches(new NullProgressMonitor()))
+		if (shouldCancelBecauseOfRunningLaunches())
 			return;
 
 		askForTargetIfNecessary();
@@ -258,7 +253,6 @@ public class BranchOperationUI {
 						final AtomicReference<IMemento> memento = new AtomicReference<IMemento>();
 						bop.addPreExecuteTask(new PreExecuteTask() {
 
-							@Override
 							public void preExecute(Repository pRepo,
 									IProgressMonitor pMonitor)
 									throws CoreException {
@@ -269,7 +263,6 @@ public class BranchOperationUI {
 						});
 						bop.addPostExecuteTask(new PostExecuteTask() {
 
-							@Override
 							public void postExecute(Repository pRepo,
 									IProgressMonitor pMonitor)
 									throws CoreException {
@@ -330,7 +323,6 @@ public class BranchOperationUI {
 	public void run(IProgressMonitor monitor) throws CoreException {
 		if (!repository.getRepositoryState().canCheckout()) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
 					MessageDialog.openError(getShell(),
 							UIText.BranchAction_cannotCheckout, NLS.bind(
@@ -342,7 +334,7 @@ public class BranchOperationUI {
 			return;
 		}
 
-		if (shouldCancelBecauseOfRunningLaunches(monitor))
+		if (shouldCancelBecauseOfRunningLaunches())
 			return;
 
 		askForTargetIfNecessary();
@@ -384,7 +376,6 @@ public class BranchOperationUI {
 	private String getTargetWithDialog() {
 		final String[] dialogResult = new String[1];
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				dialogResult[0] = getTargetWithDialogInUI();
 			}
@@ -428,7 +419,6 @@ public class BranchOperationUI {
 	private String getTargetWithCheckoutRemoteTrackingDialog() {
 		final String[] dialogResult = new String[1];
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				dialogResult[0] = getTargetWithCheckoutRemoteTrackingDialogInUI();
 			}
@@ -476,7 +466,6 @@ public class BranchOperationUI {
 	public void show(final CheckoutResult result) {
 		if (result.getStatus() == CheckoutResult.Status.CONFLICTS) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
 					Shell shell = PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getShell();
@@ -507,7 +496,6 @@ public class BranchOperationUI {
 			if (!show)
 				return;
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
 					Shell shell = PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getShell();
@@ -523,7 +511,6 @@ public class BranchOperationUI {
 
 	private void showDetachedHeadWarning() {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				IPreferenceStore store = Activator.getDefault()
 						.getPreferenceStore();
@@ -542,8 +529,7 @@ public class BranchOperationUI {
 		});
 	}
 
-	private boolean shouldCancelBecauseOfRunningLaunches(
-			IProgressMonitor monitor) {
+	private boolean shouldCancelBecauseOfRunningLaunches() {
 		if (mode == MODE_CHECKOUT)
 			return false;
 		if (!showQuestionsBeforeCheckout)
@@ -553,11 +539,10 @@ public class BranchOperationUI {
 				.getBoolean(UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING))
 			return false;
 
-		final ILaunchConfiguration launchConfiguration = getRunningLaunchConfiguration(monitor);
+		final ILaunchConfiguration launchConfiguration = getRunningLaunchConfiguration();
 		if (launchConfiguration != null) {
 			final boolean[] dialogResult = new boolean[1];
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				@Override
 				public void run() {
 					dialogResult[0] = showContinueDialogInUI(store,
 							launchConfiguration);
@@ -591,49 +576,25 @@ public class BranchOperationUI {
 		return false;
 	}
 
-	private ILaunchConfiguration getRunningLaunchConfiguration(
-			IProgressMonitor monitor) {
-		final ILaunchConfiguration[] lc = new ILaunchConfiguration[1];
-		try {
-			ModalContext.run(new IRunnableWithProgress() {
+	private ILaunchConfiguration getRunningLaunchConfiguration() {
+		Set<IProject> projects = new HashSet<IProject>(
+				Arrays.asList(ProjectUtil.getProjects(repository)));
 
-				@Override
-				public void run(IProgressMonitor m)
-						throws InvocationTargetException, InterruptedException {
-
-					Set<IProject> projects = new HashSet<IProject>(Arrays
-							.asList(ProjectUtil.getProjects(repository)));
-
-					ILaunchManager launchManager = DebugPlugin.getDefault()
-							.getLaunchManager();
-					ILaunch[] launches = launchManager.getLaunches();
-					m.beginTask(
-							UIText.BranchOperationUI_SearchLaunchConfiguration,
-							launches.length);
-					for (ILaunch launch : launches) {
-						m.worked(1);
-						if (launch.isTerminated())
-							continue;
-						ISourceLocator locator = launch.getSourceLocator();
-						if (locator instanceof ISourceLookupDirector) {
-							ISourceLookupDirector director = (ISourceLookupDirector) locator;
-							ISourceContainer[] containers = director
-									.getSourceContainers();
-							if (isAnyProjectInSourceContainers(containers,
-									projects)) {
-								lc[0] = launch.getLaunchConfiguration();
-								return;
-							}
-						}
-					}
-				}
-			}, true, monitor, Display.getDefault());
-		} catch (InvocationTargetException e) {
-			// ignore
-		} catch (InterruptedException e) {
-			// ignore
+		ILaunchManager launchManager = DebugPlugin.getDefault()
+				.getLaunchManager();
+		ILaunch[] launches = launchManager.getLaunches();
+		for (ILaunch launch : launches) {
+			if (launch.isTerminated())
+				continue;
+			ISourceLocator locator = launch.getSourceLocator();
+			if (locator instanceof ISourceLookupDirector) {
+				ISourceLookupDirector director = (ISourceLookupDirector) locator;
+				ISourceContainer[] containers = director.getSourceContainers();
+				if (isAnyProjectInSourceContainers(containers, projects))
+					return launch.getLaunchConfiguration();
+			}
 		}
-		return lc[0];
+		return null;
 	}
 
 	private boolean isAnyProjectInSourceContainers(

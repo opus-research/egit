@@ -152,18 +152,16 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
 				.getIndexDiffCacheEntry(this.repository);
-		if (entry != null) {
-			entry.addIndexDiffChangedListener(this);
-		}
+
+		entry.addIndexDiffChangedListener(this);
 	}
 
 	private void unregisterIndexDiffChangeListener() {
 		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
 				.getIndexDiffCacheEntry(this.repository);
-		if (entry != null) {
-			entry.removeIndexDiffChangedListener(this);
-		}
+
+		entry.removeIndexDiffChangedListener(this);
 	}
 
 	private void registerRefChangedListener() {
@@ -269,9 +267,12 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	}
 
 	private void reparsePlan() {
-		try (RevWalk walk = new RevWalk(repository.newObjectReader())) {
+		RevWalk walk = new RevWalk(repository.newObjectReader());
+		try {
 			doneList = parseDone(walk);
 			todoList = parseTodo(walk);
+		} finally {
+			walk.release();
 		}
 		planList = JoinedList.wrap(doneList, todoList);
 		notifyPlanWasUpdatedFromRepository();
