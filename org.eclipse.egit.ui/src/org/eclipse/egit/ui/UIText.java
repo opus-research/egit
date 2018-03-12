@@ -3,6 +3,7 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
+ * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -758,6 +759,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
+
+	/** */
+	public static String ReplaceWithPreviousActionHandler_NoParentCommitDialogMessage;
+
+	/** */
+	public static String ReplaceWithPreviousActionHandler_NoParentCommitDialogTitle;
 
 	/** */
 	public static String RepositoryPropertySource_EditConfigButton;
@@ -2581,6 +2588,24 @@ public class UIText extends NLS {
 	public static String BranchOperationUI_DetachedHeadMessage;
 
 	/** */
+	public static String BranchRenameDialog_Message;
+
+	/** */
+	public static String BranchRenameDialog_NewNameLabel;
+
+	/** */
+	public static String BranchRenameDialog_RenameExceptionMessage;
+
+	/** */
+	public static String BranchRenameDialog_Title;
+
+	/** */
+	public static String BranchRenameDialog_WindowTitle;
+
+	/** */
+	public static String BranchRenameDialog_WrongPrefixErrorMessage;
+
+	/** */
 	public static String BranchResultDialog_buttonCommit;
 
 	/** */
@@ -3539,6 +3564,9 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_OpenCommitLabel;
 
 	/** */
+	public static String CommitGraphTable_RenameBranchMenuLabel;
+
+	/** */
 	public static String CommitGraphTable_UnableToCreatePatch;
 
 	/** */
@@ -3759,6 +3787,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RenameBranchDialog_WindowTitle;
+
+	/** */
+	public static String RenameBranchOnCommitHandler_SelectBranchDialogMessage;
+
+	/** */
+	public static String RenameBranchOnCommitHandler_SelectBranchDialogTitle;
 
 	/** */
 	public static String RevertFailureDialog_Message;
@@ -4152,6 +4186,27 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitSearchResult_LabelSingle;
+
+	/** */
+	public static String CommitSelectDialog_AuthoColumn;
+
+	/** */
+	public static String CommitSelectDialog_DateColumn;
+
+	/** */
+	public static String CommitSelectDialog_IdColumn;
+
+	/** */
+	public static String CommitSelectDialog_Message;
+
+	/** */
+	public static String CommitSelectDialog_MessageColumn;
+
+	/** */
+	public static String CommitSelectDialog_Title;
+
+	/** */
+	public static String CommitSelectDialog_WindowTitle;
 
 	/** */
 	public static String CommitSelectionDialog_BuildingCommitListMessage;
