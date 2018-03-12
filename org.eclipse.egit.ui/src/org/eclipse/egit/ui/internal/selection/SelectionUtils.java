@@ -21,7 +21,6 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -222,45 +221,30 @@ public class SelectionUtils {
 					GitTraceLocation.SELECTION.getLocation(), "selection=" //$NON-NLS-1$
 							+ selection + ", locations=" //$NON-NLS-1$
 							+ Arrays.toString(locations));
-		boolean hadNull = false;
+
 		for (IPath location : locations) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
 					.getMapping(location);
 			if (repositoryMapping == null) {
-				hadNull = true;
+				Repository repository = org.eclipse.egit.core.Activator
+						.getDefault().getRepositoryCache()
+						.getRepository(location);
+				return repository;
 			}
-			if (mapping == null) {
+			if (mapping == null)
 				mapping = repositoryMapping;
-			}
-			boolean mismatch = false;
-			if (hadNull) {
-				mismatch = mapping != null;
-			} else {
-				if (repositoryMapping == null) {
-					mismatch = true;
-				} else {
-					mismatch = mapping == null
-							|| mapping.getRepository() != repositoryMapping
-									.getRepository();
-				}
-			}
-			if (mismatch) {
-				if (warn) {
+			if (mapping.getRepository() != repositoryMapping.getRepository()) {
+				if (warn)
 					MessageDialog.openError(shell,
 							UIText.RepositoryAction_multiRepoSelectionTitle,
 							UIText.RepositoryAction_multiRepoSelection);
-				}
 				return null;
 			}
 		}
 		Repository result = null;
 		if (mapping == null)
 			for (Object o : selection.toArray()) {
-				Repository nextRepo = null;
-				if (o instanceof Repository)
-					nextRepo = (Repository) o;
-				else if (o instanceof PlatformObject)
-					nextRepo = CommonUtils.getAdapter(((PlatformObject) o), Repository.class);
+				Repository nextRepo = AdapterUtils.adapt(o, Repository.class);
 				if (nextRepo != null && result != null
 						&& !result.equals(nextRepo)) {
 					if (warn)

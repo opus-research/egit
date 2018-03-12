@@ -24,10 +24,7 @@ public class StagingEntryAdapterFactory implements IAdapterFactory {
 		if (adaptableObject != null) {
 			StagingEntry entry = (StagingEntry) adaptableObject;
 			if (adapterType == IResource.class) {
-				IResource resource = entry.getFile();
-				if (resource != null && resource.isAccessible()) {
-					return resource;
-				}
+				return entry.getFile();
 			} else if (adapterType == IPath.class) {
 				return entry.getLocation();
 			} else if (adapterType == Repository.class) {
