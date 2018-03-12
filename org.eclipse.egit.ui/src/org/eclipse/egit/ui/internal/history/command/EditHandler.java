@@ -35,19 +35,18 @@ import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.progress.UIJob;
 
 /** Checks out a commit (in interactive rebase mode) for editing. */
 public class EditHandler extends AbstractHistoryCommandHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(event);
-		final RevCommit commit = getSelectedCommit(event);
+		final RevCommit commit = (RevCommit) getSelection(getPage())
+				.getFirstElement();
 
 		try {
 			if (!CommitUtil.isCommitInCurrentBranch(commit, repository)) {
-				MessageDialog.openError(
-						HandlerUtil.getActiveShellChecked(event),
+				MessageDialog.openError(getPage().getSite().getShell(),
 						UIText.EditHandler_Error_Title,
 						UIText.EditHandler_CommitNotOnCurrentBranch);
 				return null;
