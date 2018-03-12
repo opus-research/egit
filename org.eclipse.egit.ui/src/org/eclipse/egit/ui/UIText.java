@@ -568,9 +568,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_DefaultRepoFolderTooltip;
 
 	/** */
-	public static String GitPreferenceRoot_DefaultRepoFolderVariableButton;
-
-	/** */
 	public static String GitPreferenceRoot_HistoryGroupHeader;
 
 	/** */
@@ -2554,6 +2551,9 @@ public class UIText extends NLS {
 	public static String WindowCachePreferencePage_packedGitMMAP;
 
 	/** */
+	public static String WindowCachePreferencePage_streamFileThreshold;
+
+	/** */
 	public static String BasicConfigurationDialog_DialogMessage;
 
 	/** */
@@ -2581,10 +2581,67 @@ public class UIText extends NLS {
 	public static String BranchAction_repositoryState;
 
 	/** */
+	public static String BranchConfigurationDialog_BranchConfiguration;
+
+	/** */
+	public static String BranchConfigurationDialog_BranchConfigurationTitle;
+
+	/** */
+	public static String BranchConfigurationDialog_EditBranchConfigMessage;
+
+	/** */
+	public static String BranchConfigurationDialog_ExceptionGettingRefs;
+
+	/** */
+	public static String BranchConfigurationDialog_RebaseLabel;
+
+	/** */
+	public static String BranchConfigurationDialog_RemoteLabel;
+
+	/** */
+	public static String BranchConfigurationDialog_SaveBranchConfigFailed;
+
+	/** */
+	public static String BranchConfigurationDialog_UpstreamBranchLabel;
+
+	/** */
 	public static String BranchOperationUI_DetachedHeadTitle;
 
 	/** */
 	public static String BranchOperationUI_DetachedHeadMessage;
+
+	/** */
+	public static String BranchRenameDialog_Message;
+
+	/** */
+	public static String BranchRenameDialog_NewNameLabel;
+
+	/** */
+	public static String BranchRenameDialog_RenameExceptionMessage;
+
+	/** */
+	public static String BranchRenameDialog_Title;
+
+	/** */
+	public static String BranchRenameDialog_WindowTitle;
+
+	/** */
+	public static String BranchRenameDialog_WrongPrefixErrorMessage;
+
+	/** */
+	public static String BranchPropertySource_RebaseDescriptor;
+
+	/** */
+	public static String BranchPropertySource_RemoteDescriptor;
+
+	/** */
+	public static String BranchPropertySource_UpstreamBranchDescriptor;
+
+	/** */
+	public static String BranchPropertySource_UpstreamConfigurationCategory;
+
+	/** */
+	public static String BranchPropertySource_ValueNotSet;
 
 	/** */
 	public static String BranchResultDialog_buttonCommit;
@@ -2867,15 +2924,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_RemotesNodeText;
-
-	/** */
-	public static String RepositoriesView_RenameBranchFailure;
-
-	/** */
-	public static String RepositoriesView_RenameBranchMessage;
-
-	/** */
-	public static String RepositoriesView_RenameBranchTitle;
 
 	/** */
 	public static String RepositoriesView_WorkingDir_treenode;
@@ -3545,6 +3593,9 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_OpenCommitLabel;
 
 	/** */
+	public static String CommitGraphTable_RenameBranchMenuLabel;
+
+	/** */
 	public static String CommitGraphTable_UnableToCreatePatch;
 
 	/** */
@@ -3731,9 +3782,6 @@ public class UIText extends NLS {
 	public static String RemoveCommand_ConfirmDeleteBareRepositoryTitle;
 
 	/** */
-	public static String RenameBranchCommand_WrongNameMessage;
-
-	/** */
 	public static String RenameBranchDialog_DialogMessage;
 
 	/** */
@@ -3753,6 +3801,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RenameBranchDialog_WindowTitle;
+
+	/** */
+	public static String RenameBranchOnCommitHandler_SelectBranchDialogMessage;
+
+	/** */
+	public static String RenameBranchOnCommitHandler_SelectBranchDialogTitle;
 
 	/** */
 	public static String RevertFailureDialog_Message;
@@ -4235,6 +4289,9 @@ public class UIText extends NLS {
 	public static String StagingView_Commit;
 
 	/** */
+	public static String StagingView_checkoutFailed;
+
+	/** */
 	public static String StagingView_commitFailed;
 
 	/** */
@@ -4266,6 +4323,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_exceptionMessage;
+
+	/** */
+	public static String StagingView_replaceWithFileInGitIndex;
+
+	/** */
+	public static String StagingView_replaceWithHeadRevision;
 
 	/** */
 	public static String StagingView_UnstageItemMenuLabel;

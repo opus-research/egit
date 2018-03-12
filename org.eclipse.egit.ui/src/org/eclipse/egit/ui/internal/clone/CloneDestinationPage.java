@@ -16,10 +16,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.variables.IStringVariableManager;
-import org.eclipse.core.variables.VariablesPlugin;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -112,9 +108,11 @@ class CloneDestinationPage extends WizardPage {
 
 	@Override
 	public void setVisible(final boolean visible) {
-		if (visible)
-			if (this.availableRefs.isEmpty())
+		if (visible) {
+			if (this.availableRefs.isEmpty()) {
 				initialBranch.getCombo().setEnabled(false);
+			}
+		}
 		super.setVisible(visible);
 		if (visible)
 			directoryText.setFocus();
@@ -421,19 +419,9 @@ class CloneDestinationPage extends WizardPage {
 			// update repo-related selection only if it changed
 			final String n = validatedRepoSelection.getURI().getHumanishName();
 			setDescription(NLS.bind(UIText.CloneDestinationPage_description, n));
-			String defaultRepoDir = Activator.getDefault().getPreferenceStore()
+			String destinationDir = Activator.getDefault().getPreferenceStore()
 					.getString(UIPreferences.DEFAULT_REPO_DIR);
-			IStringVariableManager manager = VariablesPlugin.getDefault().getStringVariableManager();
-			String destinationDir;
-			File parentDir;
-			try {
-				destinationDir = manager.performStringSubstitution(defaultRepoDir);
-				parentDir = new File(destinationDir);
-			} catch (CoreException e) {
-				parentDir = null;
-			}
-			if (parentDir == null || !parentDir.exists() || !parentDir.isDirectory())
-				parentDir = ResourcesPlugin.getWorkspace().getRoot().getRawLocation().toFile();
+			File parentDir = new File(destinationDir);
 			directoryText.setText(new File(parentDir, n).getAbsolutePath());
 		}
 
