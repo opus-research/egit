@@ -15,17 +15,13 @@
 	<parent>
 		<groupId>org.eclipse.egit</groupId>
 		<artifactId>egit-parent</artifactId>
-		<version>4.2.0-SNAPSHOT</version>
+		<version>4.3.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>org.eclipse.egit.gitflow.test</artifactId>
 	<packaging>eclipse-test-plugin</packaging>
 
 	<name>GitFlow Test Plug-in</name>
-
-	<properties>
-		<coretest.vmparams></coretest.vmparams>
-	</properties>
 
 	<build>
 		<plugins>
@@ -34,6 +30,7 @@
 				<artifactId>tycho-surefire-plugin</artifactId>
 				<configuration>
 					<!--excludes> <exclude>**/Test*.class</exclude> </excludes -->
+					<argLine>${test.vmparams} ${coretest.vmparams}</argLine>
 					<useUIHarness>false</useUIHarness>
 					<useUIThread>false</useUIThread>
 				</configuration>

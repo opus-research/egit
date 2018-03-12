@@ -9,10 +9,10 @@
 package org.eclipse.egit.ui.gitflow;
 
 import static org.eclipse.swtbot.swt.finder.waits.Conditions.shellIsActive;
+import static org.junit.Assert.assertFalse;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.BranchOperation;
-import org.eclipse.egit.gitflow.op.InitOperation;
 import org.eclipse.egit.gitflow.ui.Activator;
 import org.eclipse.egit.gitflow.ui.internal.JobFamilies;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
@@ -56,10 +56,6 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 
 	abstract protected void selectOptions();
 
-	protected void init() throws CoreException {
-		new InitOperation(repository).execute(null);
-	}
-
 	@Override
 	protected void createFeature(String featureName) {
 		final SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
@@ -77,7 +73,7 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 		});
 
 		bot.waitUntil(shellIsActive(UIText.FeatureStartHandler_provideFeatureName));
-		bot.text().typeText(featureName);
+		bot.text().setText(featureName);
 		bot.button("OK").click();
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));
 	}
@@ -99,7 +95,14 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 		});
 
 		bot.waitUntil(shellIsActive(UIText.FeatureCheckoutHandler_selectFeature));
-		bot.table().select(featureName);
+		bot.text().setText("these are not the features you're looking for");
+		// Wait for filter to hit. Minimum delay must be greater than
+		// FilteredTree.getRefreshJobDelay().
+		TestUtil.waitForJobs(500, 5000);
+		assertFalse(bot.tree().hasItems());
+		bot.text().setText(featureName);
+		TestUtil.waitForJobs(500, 5000);
+		bot.tree().select(featureName);
 		bot.button("OK").click();
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));
 	}

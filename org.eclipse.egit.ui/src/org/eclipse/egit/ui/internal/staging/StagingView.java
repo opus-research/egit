@@ -32,7 +32,6 @@ import org.eclipse.core.commands.operations.IUndoContext;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -76,8 +75,8 @@ import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitJob;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
+import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
-import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageArea;
@@ -89,8 +88,6 @@ import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IAction;
@@ -140,6 +137,8 @@ import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -704,8 +703,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		unstagedViewer
-				.setComparator(new UnstagedComparator(getSortCheckState()));
+		unstagedViewer.setComparator(
+				new StagingEntryComparator(getSortCheckState(), getPreferenceStore()
+						.getBoolean(UIPreferences.STAGING_VIEW_FILENAME_MODE)));
 		enableAutoExpand(unstagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
 
@@ -1010,6 +1010,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
+		stagedViewer.setComparator(
+				new StagingEntryComparator(getSortCheckState(), getPreferenceStore()
+						.getBoolean(UIPreferences.STAGING_VIEW_FILENAME_MODE)));
 		enableAutoExpand(stagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(stagedViewer);
 
@@ -1060,6 +1063,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 			@Override
 			public void updateChangeIdToggleSelection(boolean selection) {
 				addChangeIdAction.setChecked(selection);
+				commitAndPushButton
+						.setImage(selection ? getImage(UIIcons.GERRIT) : null);
 			}
 
 			@Override
@@ -1374,14 +1379,17 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 			@Override
 			public void run() {
-				UnstagedComparator comparator = (UnstagedComparator) unstagedViewer
+				StagingEntryComparator comparator = (StagingEntryComparator) unstagedViewer
 						.getComparator();
-				comparator.setAlphabeticSort(isChecked());
+				comparator.setAlphabeticSort(!isChecked());
+				comparator = (StagingEntryComparator) stagedViewer.getComparator();
+				comparator.setAlphabeticSort(!isChecked());
 				unstagedViewer.refresh();
+				stagedViewer.refresh();
 			}
 		};
 
-		sortAction.setImageDescriptor(UIIcons.ALPHABETICALLY_SORT);
+		sortAction.setImageDescriptor(UIIcons.STATE_SORT);
 		sortAction.setId(SORT_ITEM_TOOLBAR_ID);
 		sortAction.setChecked(getSortCheckState());
 
@@ -1678,9 +1686,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 				getLabelProvider(unstagedViewer).setFileNameMode(enable);
 				getContentProvider(stagedViewer).setFileNameMode(enable);
 				getContentProvider(unstagedViewer).setFileNameMode(enable);
-				refreshViewersPreservingExpandedElements();
+				StagingEntryComparator comparator = (StagingEntryComparator) unstagedViewer
+						.getComparator();
+				comparator.setFileNamesFirst(enable);
+				comparator = (StagingEntryComparator) stagedViewer.getComparator();
+				comparator.setFileNamesFirst(enable);
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
+				refreshViewersPreservingExpandedElements();
 			}
 		};
 		fileNameModeAction.setChecked(getPreferenceStore().getBoolean(
@@ -2005,8 +2018,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 					openWorkingTreeVersion.setEnabled(!submoduleSelected
 							&& anyElementIsExistingFile(fileSelection));
 					menuMgr.add(openWorkingTreeVersion);
-					String label = stagingEntryList.get(0)
-							.staged() != Staged.NOT_STAGED
+					String label = stagingEntryList.get(0).isStaged()
 									? UIText.CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel
 									: UIText.StagingView_CompareWithIndexMenuLabel;
 					Action openCompareWithIndex = new Action(label) {
@@ -2412,7 +2424,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 		} else {
 			IResource resource = AdapterUtils.adapt(firstElement,
 					IResource.class);
-			showResource(resource);
+			if (resource != null) {
+				showResource(resource);
+			} else {
+				Repository repo = AdapterUtils.adapt(firstElement,
+						Repository.class);
+				if (repo != null && currentRepository != repo) {
+					reload(repo);
+				}
+			}
 		}
 	}
 
@@ -2427,12 +2447,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 				if (monitor.isCanceled()) {
 					return Status.CANCEL_STATUS;
 				}
-				Repository newRep = getRepositoryOrNestedSubmoduleRepository(resource);
-				if (newRep != null && newRep != currentRepository) {
-					if (monitor.isCanceled()) {
-						return Status.CANCEL_STATUS;
+				RepositoryMapping mapping = RepositoryMapping
+						.getMapping(resource);
+				if (mapping != null) {
+					Repository newRep = mapping.getRepository();
+					if (newRep != null && newRep != currentRepository) {
+						if (monitor.isCanceled()) {
+							return Status.CANCEL_STATUS;
+						}
+						reload(newRep);
 					}
-					reload(newRep);
 				}
 				return Status.OK_STATUS;
 			}
@@ -2449,20 +2473,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		};
 		job.setSystem(true);
 		schedule(job, false);
-	}
-
-	private static Repository getRepositoryOrNestedSubmoduleRepository(
-			IResource resource) {
-		IProject project = resource.getProject();
-		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-		if (mapping == null) {
-			return null;
-		}
-		Repository repo = mapping.getSubmoduleRepository(resource);
-		if (repo == null) {
-			repo = mapping.getRepository();
-		}
-		return repo;
 	}
 
 	private void stage(IStructuredSelection selection) {
@@ -3200,10 +3210,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 		if (amendPreviousCommitAction.isChecked())
 			commitOperation.setAmending(true);
-		commitOperation.setComputeChangeId(addChangeIdAction.isChecked());
+		final boolean gerritMode = addChangeIdAction.isChecked();
+		commitOperation.setComputeChangeId(gerritMode);
+
+		PushMode pushMode = null;
+		if (pushUpstream) {
+			pushMode = gerritMode ? PushMode.GERRIT : PushMode.UPSTREAM;
+		}
 		final Job commitJob = new CommitJob(currentRepository, commitOperation)
-			.setOpenCommitEditor(openNewCommitsAction.isChecked())
-			.setPushUpstream(pushUpstream);
+				.setOpenCommitEditor(openNewCommitsAction.isChecked())
+				.setPushUpstream(pushMode);
 
 		// don't allow to do anything as long as commit is in progress
 		enableAllWidgets(false);
@@ -3308,19 +3324,31 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	/**
-	 * This comparator sorts the {@link StagingEntry}s in a grouped or in a
-	 * alphabetically order. The grouped order is also in a alphabetically order
-	 * sorted.
+	 * This comparator sorts the {@link StagingEntry}s alphabetically or groups
+	 * them by state. If grouped by state the entries in the same group are also
+	 * ordered alphabetically.
 	 */
-	private static class UnstagedComparator extends ViewerComparator {
+	private static class StagingEntryComparator extends ViewerComparator {
 
 		private boolean alphabeticSort;
 
 		private Comparator<String> comparator;
 
-		private UnstagedComparator(boolean alphabeticSort) {
+		private boolean fileNamesFirst;
+
+		private StagingEntryComparator(boolean alphabeticSort,
+				boolean fileNamesFirst) {
 			this.alphabeticSort = alphabeticSort;
+			this.setFileNamesFirst(fileNamesFirst);
 			comparator = CommonUtils.STRING_ASCENDING_COMPARATOR;
+		}
+
+		public boolean isFileNamesFirst() {
+			return fileNamesFirst;
+		}
+
+		public void setFileNamesFirst(boolean fileNamesFirst) {
+			this.fileNamesFirst = fileNamesFirst;
 		}
 
 		private void setAlphabeticSort(boolean sort) {
@@ -3351,19 +3379,23 @@ public class StagingView extends ViewPart implements IShowInSource {
 				return cat1 - cat2;
 			}
 
-			String name1 = getStagingEntryName(e1);
-			String name2 = getStagingEntryName(e2);
+			String name1 = getStagingEntryText(e1);
+			String name2 = getStagingEntryText(e2);
 
 			return comparator.compare(name1, name2);
 		}
 
-		private String getStagingEntryName(Object element) {
-			String name = ""; //$NON-NLS-1$
+		private String getStagingEntryText(Object element) {
+			String text = ""; //$NON-NLS-1$
 			StagingEntry stagingEntry = getStagingEntry(element);
 			if (stagingEntry != null) {
-				name = stagingEntry.getName();
+				if (isFileNamesFirst()) {
+					text = stagingEntry.getName();
+				} else {
+					text = stagingEntry.getPath();
+				}
 			}
-			return name;
+			return text;
 		}
 
 		@Nullable
@@ -3383,15 +3415,30 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		private int getState(StagingEntry entry) {
 			switch (entry.getState()) {
-			case UNTRACKED:
+			case CONFLICTING:
 				return 1;
-			case MISSING:
-				return 2;
 			case MODIFIED:
+				return 2;
+			case MODIFIED_AND_ADDED:
 				return 3;
+			case MODIFIED_AND_CHANGED:
+				return 4;
+			case ADDED:
+				return 5;
+			case CHANGED:
+				return 6;
+			case MISSING:
+				return 7;
+			case MISSING_AND_CHANGED:
+				return 8;
+			case REMOVED:
+				return 9;
+			case UNTRACKED:
+				return 10;
 			default:
 				return super.category(entry);
 			}
 		}
+
 	}
 }
