@@ -25,15 +25,13 @@ import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.AnyObjectId;
+import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
 
@@ -118,20 +116,15 @@ class GitDocument extends Document implements RefsChangedListener {
 			setResolved(null, null, null, ""); //$NON-NLS-1$
 			return;
 		}
-		RevWalk rw = new RevWalk(repository);
-		RevCommit baselineCommit;
-		try {
-			baselineCommit = rw.parseCommit(commitId);
-		} catch (IOException err) {
+		Commit baselineCommit = repository.mapCommit(commitId);
+		if (baselineCommit == null) {
 			String msg = NLS.bind(UIText.GitDocument_errorLoadCommit,
 					new Object[] { commitId, baseline, resource, repository });
-			Activator.logError(msg, err);
+			Activator.logError(msg, new Throwable());
 			setResolved(null, null, null, ""); //$NON-NLS-1$
 			return;
-		} finally {
-			rw.release();
 		}
-		RevTree treeId = baselineCommit.getTree();
+		ObjectId treeId = baselineCommit.getTreeId();
 		if (treeId.equals(lastTree)) {
 			if (GitTraceLocation.QUICKDIFF.isActive())
 				GitTraceLocation.getTrace().trace(
@@ -139,7 +132,7 @@ class GitDocument extends Document implements RefsChangedListener {
 						"(GitDocument) already resolved"); //$NON-NLS-1$
 			return;
 		}
-		Tree baselineTree = repository.mapTree(treeId);
+		Tree baselineTree = baselineCommit.getTree();
 		if (baselineTree == null) {
 			String msg = NLS.bind(UIText.GitDocument_errorLoadTree,
 					new Object[] { treeId, baseline, resource, repository });

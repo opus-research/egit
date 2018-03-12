@@ -53,6 +53,7 @@ import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
+import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.GitIndex.Entry;
@@ -699,13 +700,13 @@ public class CommitDialog extends Dialog {
 			}
 			Repository repository = mapping.getRepository();
 
+			Commit headCommit;
 			try {
-				ObjectId id = repository.resolve(Constants.HEAD);
-				if (id == null
-						|| repository.open(id, Constants.OBJ_COMMIT).getType() != Constants.OBJ_COMMIT) {
-					return;
-				}
+				headCommit = repository.mapCommit(Constants.HEAD);
 			} catch (IOException e1) {
+				headCommit = null;
+			}
+			if (headCommit == null) {
 				return;
 			}
 

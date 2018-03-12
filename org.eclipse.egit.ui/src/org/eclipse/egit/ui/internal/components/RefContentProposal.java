@@ -20,8 +20,8 @@ import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 
@@ -136,9 +136,9 @@ public class RefContentProposal implements IContentProposal {
 				break;
 			case Constants.OBJ_TAG:
 				RevWalk walk = new RevWalk(db);
-				RevTag t = walk.parseTag(objectId);
+				Tag t = walk.parseTag(objectId).asTag(walk);
 				appendObjectSummary(sb, UIText.RefContentProposal_tag, t
-						.getTaggerIdent(), t.getFullMessage());
+						.getTagger(), t.getMessage());
 				break;
 			case Constants.OBJ_TREE:
 				sb.append(UIText.RefContentProposal_tree);
