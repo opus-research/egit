@@ -124,6 +124,9 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_CreateProjectsTask;
 
 	/** */
+	public static String SecureStoreUtils_writingCredentialsFailed;
+
+	/** */
 	public static String SelectRemoteNamePage_ConfigureFetch_button;
 
 	/** */
@@ -218,9 +221,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCloneWizard_errorCannotCreate;
-
-	/** */
-	public static String GitCloneWizard_writeToSecureStoreFailed;
 
 	/** */
 	public static String GitDecoratorPreferencePage_bindingRepositoryNameFlag;
@@ -601,6 +601,9 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
+	public static String ClearCredentialsCommand_clearingCredentialsFailed;
+
+	/** */
 	public static String ChangeCredentialsCommand_writingToSecureStoreFailed;
 
 	/** */
@@ -710,6 +713,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySelectionPage_errorValidating;
+
+	/** */
+	public static String RepositorySelectionPage_storeInSecureStore;
 
 	/** */
 	public static String RepositorySelectionPage_tip_file;
@@ -1346,6 +1352,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_StatusAddedIndexDiff;
+
+	/** */
+	public static String CommitDialog_StatusAssumeUnchaged;
 
 	/** */
 	public static String CommitDialog_StatusModified;
@@ -2528,7 +2537,16 @@ public class UIText extends NLS {
 	public static String LoginDialog_repository;
 
 	/** */
+	public static String LoginDialog_storeInSecureStore;
+
+	/** */
 	public static String LoginDialog_user;
+
+	/** */
+	public static String LoginService_readingCredentialsFailed;
+
+	/** */
+	public static String LoginService_storingCredentialsFailed;
 
 	/** */
 	public static String NewRemoteWizard_CheckingUriTaskName;
