@@ -63,9 +63,11 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 			try {
 				Repository repo = entry.getKey();
 				String dstRef = getDstRef(repo, launchFetch);
+				GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, dstRef, true);
 				Set<IResource> containers = entry.getValue();
-				GitSynchronizeData data = new GitSynchronizeData(repo, HEAD,
-						dstRef, true, containers);
+				if (!containers.isEmpty())
+					data.setIncludedResources(containers);
+
 				gsdSet.add(data);
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
@@ -82,17 +84,11 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 
 		for (IResource resource : resources) {
 			RepositoryMapping rm = RepositoryMapping.getMapping(resource);
-			if (rm == null) {
+			if (rm == null)
 				continue; // Linked resources may not be in a repo
-			}
-			if (resource instanceof IProject) {
+			if (resource instanceof IProject)
 				result.put(rm.getRepository(), new HashSet<IResource>());
-			} else if (resource instanceof IContainer) {
-				/*
-				 * if (resource.equals(rm.getContainer())) {
-				 * result.put(rm.getRepository(), new HashSet<IResource>()); }
-				 * else {
-				 */
+			else if (resource instanceof IContainer) {
 				Set<IResource> containers = result.get(rm.getRepository());
 				if (containers == null) {
 					containers = new HashSet<>();
@@ -100,9 +96,9 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 					containers.add(resource);
 				} else if (containers.size() > 0)
 					containers.add(resource);
-				// }
 			}
 		}
+
 		return result;
 	}
 
