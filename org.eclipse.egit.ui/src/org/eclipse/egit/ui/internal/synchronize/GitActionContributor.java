@@ -63,9 +63,6 @@ class GitActionContributor extends SynchronizePageActionGroup {
 	public void fillContextMenu(IMenuManager menu) {
 		IStructuredSelection selection = (IStructuredSelection) getContext()
 				.getSelection();
-		if (selection.isEmpty())
-			return;
-
 		Object element = selection.getFirstElement();
 		IResource resource = ResourceUtil.getResource(element);
 		if (resource != null) {
