@@ -66,7 +66,7 @@ public class GitProvider extends RepositoryProvider {
 	@Override
 	public void deconfigure() throws CoreException {
 		try {
-			GitProjectData.deconfigure(getProject());
+			GitProjectData.delete(getProject());
 		} catch (IOException e) {
 			throw new CoreException(new Status(IStatus.ERROR,
 					Activator.getPluginId(), e.getMessage(), e));
