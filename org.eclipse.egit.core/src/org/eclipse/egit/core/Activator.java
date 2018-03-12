@@ -72,11 +72,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	 * Construct the {@link Activator} singleton instance
 	 */
 	public Activator() {
-		Activator.setActivator(this);
-	}
-
-	private static void setActivator(Activator a) {
-		plugin = a;
+		plugin = this;
 	}
 
 	public void start(final BundleContext context) throws Exception {
