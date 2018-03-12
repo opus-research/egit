@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.egit.internal.mylyn.ui.commit;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -23,8 +24,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.internal.mylyn.ui.EGitMylynUI;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
-import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -48,7 +47,9 @@ public class TaskReferenceFactory implements IAdapterFactory {
 
 	@SuppressWarnings({ "rawtypes" })
 	public Class[] getAdapterList() {
-		return ADAPTER_TYPES;
+		final Class[] c = new Class[ADAPTER_TYPES.length];
+		System.arraycopy(ADAPTER_TYPES, 0, c, 0, c.length);
+		return c;
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -90,7 +91,9 @@ public class TaskReferenceFactory implements IAdapterFactory {
 					message = revCommit.getFullMessage();
 					timestamp = (long)revCommit.getCommitTime() * 1000;
 				}
-			} catch (Exception e) {
+			} catch (IOException e) {
+				continue;
+			} catch (RuntimeException e) {
 				continue;
 			}
 
@@ -116,14 +119,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 			commit = (RevCommit) element;
 		else if (element instanceof GitModelCommit) {
 			GitModelCommit modelCommit = (GitModelCommit) element;
-			if (!(modelCommit.getParent() instanceof GitModelRepository))
-				return null; // should never happen
-
-			GitModelRepository parent = (GitModelRepository) modelCommit.getParent();
-			Repository repo = parent.getRepository();
-			AbbreviatedObjectId id = modelCommit.getCachedCommitObj().getId();
-
-			commit = new RevWalk(repo).lookupCommit(id.toObjectId());
+			commit = modelCommit.getBaseCommit();
 		}
 		return commit;
 	}

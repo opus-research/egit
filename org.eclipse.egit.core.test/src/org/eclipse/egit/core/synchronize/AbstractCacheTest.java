@@ -22,7 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
