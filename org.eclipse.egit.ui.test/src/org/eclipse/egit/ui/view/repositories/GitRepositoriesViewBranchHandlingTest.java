@@ -44,7 +44,6 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
-import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -95,7 +94,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		final SWTBotView view = getOrOpenView();
 		SWTBotTreeItem localItem = myRepoViewUtil.getLocalBranchesItem(view
 				.bot().tree(), repositoryFile);
-		TestUtil.expandAndWait(localItem);
+		localItem.expand();
 		assertEquals("Wrong number of children", 1, localItem.getNodes().size());
 
 		assertEquals("master", localItem.getNodes().get(0));
@@ -116,7 +115,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
 				repositoryFile);
-		TestUtil.expandAndWait(localItem);
+		localItem.expand();
 		assertEquals("Wrong number of children", 2, localItem.getNodes().size());
 
 		localItem.getNode(0).select();
@@ -139,7 +138,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		refreshAndWait();
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
 				repositoryFile);
-		TestUtil.expandAndWait(localItem);
+		localItem.expand();
 		assertEquals("Wrong number of children", 1, localItem.getNodes().size());
 	}
 
@@ -154,7 +153,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		final SWTBotView view = getOrOpenView();
 		SWTBotTreeItem localItem = myRepoViewUtil.getLocalBranchesItem(view
 				.bot().tree(), repositoryFile);
-		TestUtil.expandAndWait(localItem);
+		localItem.expand();
 		assertEquals("Wrong number of children", 1, localItem.getNodes().size());
 
 		assertEquals("master", localItem.getNodes().get(0));
@@ -176,7 +175,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
 				repositoryFile);
-		TestUtil.expandAndWait(localItem);
+		localItem.expand();
 		assertEquals("Wrong number of children", 2, localItem.getNodes().size());
 
 		touchAndSubmit("Some more changes");
@@ -198,7 +197,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		refreshAndWait();
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
 				repositoryFile);
-		TestUtil.expandAndWait(localItem);
+		localItem.expand();
 		assertEquals("Wrong number of children", 1, localItem.getNodes().size());
 	}
 
@@ -206,14 +205,14 @@ public class GitRepositoriesViewBranchHandlingTest extends
 	public void testClonedRepository() throws Exception {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 
-		SWTBotTreeItem item = TestUtil.expandAndWait(myRepoViewUtil
-				.getLocalBranchesItem(tree, clonedRepositoryFile));
+		SWTBotTreeItem item = myRepoViewUtil.getLocalBranchesItem(tree,
+				clonedRepositoryFile).expand();
 
 		List<String> children = item.getNodes();
 		assertEquals("Wrong number of local children", 1, children.size());
 
-		item = TestUtil.expandAndWait(myRepoViewUtil.getRemoteBranchesItem(tree,
-				clonedRepositoryFile));
+		item = myRepoViewUtil.getRemoteBranchesItem(tree, clonedRepositoryFile)
+				.expand();
 		children = item.getNodes();
 		assertEquals("Wrong number of children", 2, children.size());
 		assertTrue("Missing remote branch", children.contains("origin/master"));
@@ -225,10 +224,9 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		shell.activate();
 		assertEquals("stable", shell.bot().textWithId("BranchName").getText());
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
-		bot.waitUntil(Conditions.shellCloses(shell));
 		refreshAndWait();
-		item = TestUtil.expandAndWait(myRepoViewUtil.getLocalBranchesItem(tree,
-				clonedRepositoryFile));
+		item = myRepoViewUtil.getLocalBranchesItem(tree, clonedRepositoryFile)
+				.expand();
 
 		children = item.getNodes();
 		assertEquals("Wrong number of local children", 2, children.size());
@@ -249,8 +247,8 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		touchAndSubmit(null);
 		refreshAndWait();
 
-		item = TestUtil.expandAndWait(myRepoViewUtil.getRemoteBranchesItem(tree,
-				clonedRepositoryFile));
+		item = myRepoViewUtil.getRemoteBranchesItem(tree, clonedRepositoryFile)
+				.expand();
 		List<String> children = item.getNodes();
 		assertEquals("Wrong number of remote children", 2, children.size());
 
@@ -267,8 +265,9 @@ public class GitRepositoriesViewBranchHandlingTest extends
 						.getBranch()));
 
 		// now let's try to create a local branch from the remote one
-		item = myRepoViewUtil.getRemoteBranchesItem(tree, clonedRepositoryFile);
-		TestUtil.expandAndWait(item).getNode("origin/stable").select();
+		item = myRepoViewUtil.getRemoteBranchesItem(tree, clonedRepositoryFile)
+				.expand();
+		item.getNode("origin/stable").select();
 		ContextMenuHelper.clickContextMenu(tree,
 				myUtil.getPluginLocalizedValue("CreateBranchCommand"));
 
@@ -280,8 +279,8 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		createPage.close();
 		// checkout master again
 
-		item = myRepoViewUtil.getLocalBranchesItem(tree, clonedRepositoryFile);
-		TestUtil.expandAndWait(item).getNode("master").select();
+		myRepoViewUtil.getLocalBranchesItem(tree, clonedRepositoryFile)
+				.expand().getNode("master").select();
 		ContextMenuHelper.clickContextMenu(tree,
 				myUtil.getPluginLocalizedValue("CheckoutCommand"));
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
@@ -292,8 +291,8 @@ public class GitRepositoriesViewBranchHandlingTest extends
 	public void testRenameBranch() throws Exception {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 
-		SWTBotTreeItem item = TestUtil.expandAndWait(myRepoViewUtil
-				.getLocalBranchesItem(tree, clonedRepositoryFile));
+		SWTBotTreeItem item = myRepoViewUtil.getLocalBranchesItem(tree,
+				clonedRepositoryFile).expand();
 
 		item.getNode("master").select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
@@ -315,8 +314,8 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		refreshAndWait();
 
-		item = TestUtil.expandAndWait(myRepoViewUtil.getLocalBranchesItem(tree,
-				clonedRepositoryFile));
+		item = myRepoViewUtil.getLocalBranchesItem(tree, clonedRepositoryFile)
+				.expand();
 		assertEquals("newmaster", item.getNode(0).select().getText());
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
@@ -331,8 +330,8 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		refreshAndWait();
 
-		item = TestUtil.expandAndWait(myRepoViewUtil.getLocalBranchesItem(tree,
-				clonedRepositoryFile));
+		item = myRepoViewUtil.getLocalBranchesItem(tree, clonedRepositoryFile)
+				.expand();
 		assertEquals("master", item.getNode(0).select().getText());
 	}
 
@@ -371,7 +370,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		SWTBotTreeItem localItem = myRepoViewUtil.getLocalBranchesItem(view
 				.bot().tree(), clonedRepositoryFile);
-		TestUtil.expandAndWait(localItem).getNode("configTest").select();
+		localItem.expand().getNode("configTest").select();
 
 		ContextMenuHelper.clickContextMenuSync(view.bot().tree(),
 				myUtil.getPluginLocalizedValue("ShowIn"),
@@ -383,24 +382,24 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				.tree()
 				.getTreeItem(
 						UIText.BranchPropertySource_UpstreamConfigurationCategory);
-		SWTBotTreeItem rebaseItem = TestUtil.expandAndWait(rootItem)
-				.getNode(UIText.BranchPropertySource_RebaseDescriptor);
+		SWTBotTreeItem rebaseItem = rootItem.expand().getNode(
+				UIText.BranchPropertySource_RebaseDescriptor);
 		assertEquals(UIText.BranchPropertySource_ValueNotSet,
 				rebaseItem.cell(1));
 
-		SWTBotTreeItem remoteItem = rootItem
-				.getNode(UIText.BranchPropertySource_RemoteDescriptor);
+		SWTBotTreeItem remoteItem = rootItem.expand().getNode(
+				UIText.BranchPropertySource_RemoteDescriptor);
 		assertEquals("origin", remoteItem.cell(1));
 
-		SWTBotTreeItem upstreamItem = rootItem
-				.getNode(UIText.BranchPropertySource_UpstreamBranchDescriptor);
+		SWTBotTreeItem upstreamItem = rootItem.expand().getNode(
+				UIText.BranchPropertySource_UpstreamBranchDescriptor);
 		assertEquals("refs/heads/master", upstreamItem.cell(1));
 
 		view = getOrOpenView();
 
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
 				clonedRepositoryFile);
-		TestUtil.expandAndWait(localItem).getNode("configTest").select();
+		localItem.expand().getNode("configTest").select();
 
 		ContextMenuHelper.clickContextMenu(view.bot().tree(),
 				myUtil.getPluginLocalizedValue("ConfigurBranchCommand.label"));
@@ -449,7 +448,6 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		if (!changed.get())
 			fail("We should have received a config change event");
 
-		refreshAndWait(); // Repo view updates itself after config change.
 		rebase = repo.getConfig().getBoolean(
 				ConfigConstants.CONFIG_BRANCH_SECTION, "configTest",
 				ConfigConstants.CONFIG_KEY_REBASE, false);
@@ -457,7 +455,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
 				clonedRepositoryFile);
-		TestUtil.expandAndWait(localItem).getNode("configTest").select();
+		localItem.expand().getNode("configTest").select();
 
 		ContextMenuHelper.clickContextMenu(view.bot().tree(),
 				myUtil.getPluginLocalizedValue("ShowIn"),
@@ -469,8 +467,8 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				.tree()
 				.getTreeItem(
 						UIText.BranchPropertySource_UpstreamConfigurationCategory);
-		rebaseItem = TestUtil.expandAndWait(rootItem)
-				.getNode(UIText.BranchPropertySource_RebaseDescriptor);
+		rebaseItem = rootItem.expand().getNode(
+				UIText.BranchPropertySource_RebaseDescriptor);
 		assertEquals("true", rebaseItem.cell(1));
 	}
 }
