@@ -92,15 +92,11 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 				actMonitor.beginTask(taskName, 1);
 				Git git = new Git(repository);
 				try {
-					if (ref != null) {
-						SetupUpstreamMode mode;
-						if (upstreamConfig == UpstreamConfig.NONE)
-							mode = SetupUpstreamMode.NOTRACK;
-						else
-							mode = SetupUpstreamMode.SET_UPSTREAM;
+					if (upstreamConfig != null
+							&& upstreamConfig != UpstreamConfig.NONE)
 						git.branchCreate().setName(name).setStartPoint(
-								ref.getName()).setUpstreamMode(mode).call();
-					}
+								ref.getName()).setUpstreamMode(
+								SetupUpstreamMode.TRACK).call();
 					else
 						git.branchCreate().setName(name).setStartPoint(commit)
 								.setUpstreamMode(SetupUpstreamMode.NOTRACK)
