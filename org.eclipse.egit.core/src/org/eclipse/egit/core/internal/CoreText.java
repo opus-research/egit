@@ -5,6 +5,7 @@
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  * Copyright (C) 2013, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
+ * Copyright (C) 2015, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -77,6 +78,15 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String ConnectProviderOperation_ConnectingProject;
+
+	/** */
+	public static String ConnectProviderOperation_ConnectErrors;
+
+	/** */
+	public static String ConnectProviderOperation_NoRepositoriesError;
+
+	/** */
+	public static String ConnectProviderOperation_UnexpectedRepositoryError;
 
 	/** */
 	public static String ContainerTreeIterator_DeletedFile;
@@ -178,6 +188,12 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
+	public static String RepositoryFinder_ResourceDoesNotExist;
+
+	/** */
+	public static String RepositoryMapping_ExceptionSubmoduleWalk;
+
+	/** */
 	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
 
 	/** */
@@ -194,6 +210,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String ResourceUtil_SaveLocalHistoryFailed;
+
+	/** */
+	public static String ResourceUtil_mapProjectJob;
 
 	/** */
 	public static String MergeOperation_InternalError;
@@ -386,6 +405,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitProjectData_UnmappingGoneResourceFailed;
+
+	/** */
+	public static String GitResourceVariantTreeSubscriber_name;
 
 	/** */
 	public static String GitResourceVariantTreeSubscriber_fetchTaskName;

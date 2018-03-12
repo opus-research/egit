@@ -7,6 +7,7 @@
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, 2013 François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2013 Laurent Goubet <laurent.goubet@obeo.fr>
+ * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -262,8 +263,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				if (o instanceof Repository)
 					repos.add((Repository) o);
 				else if (o instanceof PlatformObject) {
-					Repository repo = (Repository) ((PlatformObject) o)
-							.getAdapter(Repository.class);
+					Repository repo = CommonUtils.getAdapter(((PlatformObject) o), Repository.class);
 					if (repo != null)
 						repos.add(repo);
 				}
@@ -278,22 +278,26 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 *
 	 * @return repositories for selection, or an empty array
 	 */
-	protected Repository[] getRepositories() {
+	public Repository[] getRepositories() {
 		IProject[] selectedProjects = getProjectsForSelectedResources();
 		if (selectedProjects.length > 0)
 			return getRepositoriesFor(selectedProjects);
 		IStructuredSelection selection = getSelection();
 		if (!selection.isEmpty()) {
 			Set<Repository> repos = new LinkedHashSet<Repository>();
-			for (Object o : selection.toArray())
-				if (o instanceof Repository)
+			for (Object o : selection.toArray()) {
+				if (o instanceof Repository) {
 					repos.add((Repository) o);
-				else if (o instanceof PlatformObject) {
-					Repository repo = (Repository) ((PlatformObject) o)
-							.getAdapter(Repository.class);
-					if (repo != null)
+				} else if (o instanceof PlatformObject) {
+					Repository repo = CommonUtils.getAdapter(((PlatformObject) o), Repository.class);
+					if (repo != null) {
 						repos.add(repo);
+					} else {
+						// no repository found for one of the objects!
+						return new Repository[0];
+					}
 				}
+			}
 			return repos.toArray(new Repository[repos.size()]);
 		}
 		return new Repository[0];
@@ -326,6 +330,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return SelectionUtils.getSelection(evaluationContext);
 	}
 
+	@Override
 	public void setEnabled(Object evaluationContext) {
 		this.evaluationContext = (IEvaluationContext) evaluationContext;
 	}
@@ -469,12 +474,17 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		List<PreviousCommit> result = new ArrayList<PreviousCommit>();
 		Repository repository = getRepository();
 		IResource resource = getSelectedResources()[0];
-		String path = RepositoryMapping.getMapping(resource.getProject())
-				.getRepoRelativePath(resource);
-		RevWalk rw = new RevWalk(repository);
-		rw.sort(RevSort.COMMIT_TIME_DESC, true);
-		rw.sort(RevSort.BOUNDARY, true);
-		try {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(resource.getProject());
+		if (mapping == null) {
+			return result;
+		}
+		String path = mapping.getRepoRelativePath(resource);
+		if (path == null) {
+			return result;
+		}
+		try (RevWalk rw = new RevWalk(repository)) {
+			rw.sort(RevSort.COMMIT_TIME_DESC, true);
+			rw.sort(RevSort.BOUNDARY, true);
 			if (path.length() > 0) {
 				DiffConfig diffConfig = repository.getConfig().get(
 						DiffConfig.KEY);
@@ -502,7 +512,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				}
 				previousCommit = rw.next();
 			}
-		} finally {
 			rw.dispose();
 		}
 		return result;

@@ -7,6 +7,7 @@
  * Copyright (C) 2012, Daniel megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
+ * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +39,7 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -50,6 +52,7 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
@@ -164,6 +167,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				setChecked(historyPage.store.getBoolean(prefName));
 			}
 
+			@Override
 			public void run() {
 				historyPage.store.setValue(prefName, isChecked());
 				if (historyPage.store.needsSaving())
@@ -176,6 +180,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 			abstract void apply(boolean value);
 
+			@Override
 			public void propertyChange(final PropertyChangeEvent event) {
 				if (prefName.equals(event.getProperty())) {
 					setChecked(historyPage.store.getBoolean(prefName));
@@ -183,6 +188,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				}
 			}
 
+			@Override
 			public void dispose() {
 				// stop listening
 				historyPage.store.removePropertyChangeListener(this);
@@ -251,6 +257,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		BooleanPrefAction showTagSequenceAction;
 
+		BooleanPrefAction showBranchSequenceAction;
+
 		BooleanPrefAction wrapCommentAction;
 
 		BooleanPrefAction fillCommentAction;
@@ -303,6 +311,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			createShowEmailAddressesAction();
 			createShowNotesAction();
 			createShowTagSequenceAction();
+			createShowBranchSequenceAction();
 			createWrapCommentAction();
 			createFillCommentAction();
 			createFollowRenamesAction();
@@ -314,6 +323,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		private void createFindToolbarAction() {
 			findAction = new Action(UIText.GitHistoryPage_FindMenuLabel,
 					UIIcons.ELCL16_FIND) {
+				@Override
 				public void run() {
 					historyPage.store.setValue(
 							UIPreferences.RESOURCEHISTORY_SHOW_FINDTOOLBAR,
@@ -439,6 +449,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showCommentAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_REV_COMMENT,
 					UIText.ResourceHistory_toggleRevComment) {
+				@Override
 				void apply(final boolean value) {
 					historyPage.layout();
 					wrapCommentAction.setEnabled(isChecked());
@@ -452,6 +463,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showFilesAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_REV_DETAIL,
 					UIText.ResourceHistory_toggleRevDetail) {
+				@Override
 				void apply(final boolean value) {
 					historyPage.layout();
 				}
@@ -463,6 +475,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showRelativeDateAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE,
 					UIText.ResourceHistory_toggleRelativeDate) {
+				@Override
 				void apply(boolean date) {
 					// nothing, just set the Preference
 				}
@@ -475,6 +488,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showEmailAddressesAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES,
 					UIText.GitHistoryPage_toggleEmailAddresses) {
+				@Override
 				void apply(boolean date) {
 					// nothing, just set the Preference
 				}
@@ -487,6 +501,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showNotesAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_NOTES,
 					UIText.ResourceHistory_toggleShowNotes) {
+				@Override
 				void apply(boolean value) {
 					historyPage.refresh();
 				}
@@ -499,6 +514,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showTagSequenceAction = new BooleanPrefAction(
 					UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
 					UIText.ResourceHistory_ShowTagSequence) {
+				@Override
 				void apply(boolean value) {
 					// nothing, just set the Preference
 				}
@@ -507,10 +523,25 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			actionsToDispose.add(showTagSequenceAction);
 		}
 
+		private void createShowBranchSequenceAction() {
+			showBranchSequenceAction = new BooleanPrefAction(
+					UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE,
+					UIText.ResourceHistory_ShowBranchSequence) {
+				@Override
+				void apply(boolean value) {
+					// nothing, just set the Preference
+				}
+			};
+			showBranchSequenceAction
+					.apply(showBranchSequenceAction.isChecked());
+			actionsToDispose.add(showBranchSequenceAction);
+		}
+
 		private void createWrapCommentAction() {
 			wrapCommentAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
 					UIText.ResourceHistory_toggleCommentWrap) {
+				@Override
 				void apply(boolean wrap) {
 					// nothing, just set the Preference
 				}
@@ -523,6 +554,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			fillCommentAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL,
 					UIText.ResourceHistory_toggleCommentFill) {
+				@Override
 				void apply(boolean fill) {
 					// nothing, just set the Preference
 				}
@@ -681,6 +713,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	// react on changes to the relative date preference
 	private final IPropertyChangeListener listener = new IPropertyChangeListener() {
+		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			final String prop = event.getProperty();
 			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(prop)) {
@@ -831,6 +864,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				GridDataFactory.fillDefaults().grab(true, false).create());
 
 		commentViewer.addTextListener(new ITextListener() {
+			@Override
 			public void textChanged(TextEvent event) {
 				resizeCommentAndDiffScrolledComposite();
 			}
@@ -843,6 +877,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		TextSourceViewerConfiguration configuration = new TextSourceViewerConfiguration(
 				EditorsUI.getPreferenceStore()) {
 
+			@Override
 			public int getHyperlinkStateMask(ISourceViewer sourceViewer) {
 				return SWT.NONE;
 			}
@@ -861,6 +896,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				};
 			}
 
+			@Override
 			public IHyperlinkDetector[] getHyperlinkDetectors(ISourceViewer sourceViewer) {
 				return getRegisteredHyperlinkDetectors(sourceViewer);
 			}
@@ -886,6 +922,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		fileViewer = new CommitFileDiffViewer(revInfoSplit, getSite());
 		fileViewer.addSelectionChangedListener(new ISelectionChangedListener() {
+			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				ISelection selection = event.getSelection();
 				List<FileDiff> diffs = new ArrayList<FileDiff>();
@@ -924,6 +961,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private void layoutSashForm(final SashForm sf, final String key) {
 		sf.addDisposeListener(new DisposeListener() {
+			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				final int[] w = sf.getWeights();
 				store.putValue(key, UIPreferences.intArrayToString(w));
@@ -990,6 +1028,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private void attachCommitSelectionChanged() {
 		graph.addSelectionChangedListener(new ISelectionChangedListener() {
+			@Override
 			public void selectionChanged(final SelectionChangedEvent event) {
 				final ISelection s = event.getSelection();
 				if (s.isEmpty() || !(s instanceof IStructuredSelection)) {
@@ -1004,7 +1043,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					fileViewer.setInput(null);
 					return;
 				}
-
+				if (input == null) {
+					return;
+				}
 				final PlotCommit<?> c = (PlotCommit<?>) sel.getFirstElement();
 				commentViewer.setInput(c);
 				final PlotWalk walk = new PlotWalk(input.getRepository());
@@ -1025,11 +1066,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		});
 		commentViewer
 				.addCommitNavigationListener(new CommitNavigationListener() {
+					@Override
 					public void showCommit(final RevCommit c) {
 						graph.selectCommit(c);
 					}
 				});
 		findToolbar.addSelectionListener(new Listener() {
+			@Override
 			public void handleEvent(Event event) {
 				graph.selectCommit((RevCommit) event.data);
 			}
@@ -1085,6 +1128,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		IMenuManager showInMessageManager = new MenuManager(
 				UIText.GitHistoryPage_InRevisionCommentSubMenuLabel);
 		showSubMenuMgr.add(showInMessageManager);
+		showInMessageManager.add(actions.showBranchSequenceAction);
 		showInMessageManager.add(actions.showTagSequenceAction);
 		showInMessageManager.add(actions.wrapCommentAction);
 		showInMessageManager.add(actions.fillCommentAction);
@@ -1102,6 +1146,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		viewMenuMgr.add(actions.reuseCompareEditorAction);
 	}
 
+	@Override
 	public void dispose() {
 		trace = GitTraceLocation.HISTORYVIEW.isActive();
 		if (trace)
@@ -1173,6 +1218,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return topControl;
 	}
 
+	@Override
 	public void refresh() {
 		if (repoHasBeenRemoved(currentRepo))
 			clearHistoryPage();
@@ -1196,6 +1242,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return graph.getTableView();
 	}
 
+	@Override
 	public void onRefsChanged(final RefsChangedEvent e) {
 		if (input == null || e.getRepository() != input.getRepository())
 			return;
@@ -1206,6 +1253,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		synchronized (this) {
 			if (refschangedRunnable == null) {
 				refschangedRunnable = new Runnable() {
+					@Override
 					public void run() {
 						if (!getControl().isDisposed()) {
 							if (GitTraceLocation.HISTORYVIEW.isActive())
@@ -1313,14 +1361,15 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			} else if (o instanceof HistoryPageInput)
 				input = (HistoryPageInput) o;
 			else if (o instanceof IAdaptable) {
-				IResource resource = (IResource) ((IAdaptable) o)
-						.getAdapter(IResource.class);
+				IResource resource = CommonUtils.getAdapter(((IAdaptable) o), IResource.class);
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(resource);
-					repo = mapping.getRepository();
-					input = new HistoryPageInput(repo,
-							new IResource[] { resource });
+					if (mapping != null) {
+						repo = mapping.getRepository();
+						input = new HistoryPageInput(repo,
+								new IResource[] { resource });
+					}
 				}
 			}
 			if (repo == null) {
@@ -1375,8 +1424,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showHead(Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
+		try (RevWalk rw = new RevWalk(repo)) {
 			ObjectId head = repo.resolve(Constants.HEAD);
 			if (head == null)
 				return;
@@ -1388,8 +1436,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showRef(Ref ref, Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
+		try (RevWalk rw = new RevWalk(repo)) {
 			RevCommit c = rw.parseCommit(ref.getLeaf().getObjectId());
 			graph.selectCommit(c);
 		} catch (IOException e) {
@@ -1398,8 +1445,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showTag(Ref ref, Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
+		try (RevWalk rw = new RevWalk(repo)) {
 			RevCommit c = null;
 			RevObject any = rw.parseAny(ref.getLeaf().getObjectId());
 			if (any instanceof RevCommit)
@@ -1525,6 +1571,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation(), message);
 		getHistoryPageSite().getShell().getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				if (topControl.isDisposed())
 					return;
@@ -1544,14 +1591,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					GitTraceLocation.HISTORYVIEW.getLocation());
 	}
 
+	@Override
 	public boolean isValidInput(final Object object) {
 		return canShowHistoryFor(object);
 	}
 
+	@Override
 	public Object getAdapter(final Class adapter) {
 		return null;
 	}
 
+	@Override
 	public String getDescription() {
 		// this doesn't seem to be rendered anywhere, but still...
 		String filterHint = null;
@@ -1572,6 +1622,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return NLS.bind(DESCRIPTION_PATTERN, getName(), filterHint);
 	}
 
+	@Override
 	public String getName() {
 		return this.name;
 	}
@@ -1585,6 +1636,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	void setWarningTextInUIThread(final Job j) {
 		graph.getControl().getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				if (!graph.getControl().isDisposed() && job == j) {
 					setWarningText(UIText.GitHistoryPage_ListIncompleteWarningMessage);
@@ -1604,6 +1656,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			return;
 
 		graph.getControl().getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				if (!graph.getControl().isDisposed() && job == j) {
 					graph.setInput(highlightFlag, list, asArray, input, true);
@@ -1680,7 +1733,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				setupFileViewer(walk, db, paths);
 				setupCommentViewer(db);
 
-				loadHistory(INITIAL_ITEM, walk);
+				loadInitialHistory(walk);
 			} else
 				// needed for context menu and double click
 				graph.setHistoryPageInput(input);
@@ -1902,6 +1955,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		final Repository repository = fileViewer.getRepository();
 		Job formatJob = new Job(UIText.GitHistoryPage_FormatDiffJobName) {
+			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				final IDocument document = new Document();
 				final DiffStyleRangeFormatter formatter = new DiffStyleRangeFormatter(
@@ -1923,6 +1977,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				}
 				monitor.done();
 				UIJob uiJob = new UIJob(UIText.GitHistoryPage_FormatDiffJobName) {
+					@Override
 					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
 						if (UIUtils.isUsable(diffViewer)) {
 							diffViewer.setDocument(document);
@@ -2051,11 +2106,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return true;
 	}
 
+	@Override
 	public void loadItem(int item) {
-		if (job == null || job.loadMoreItemsThreshold() < item)
-			loadHistory(item, null);
+		if (job != null && job.loadMoreItemsThreshold() < item) {
+			loadHistory(item);
+		}
 	}
 
+	@Override
 	public void loadCommit(RevCommit c) {
 		if (job == null)
 			return;
@@ -2068,21 +2126,37 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	/**
-	 * Load history items incrementally
-	 * @param itemToLoad hint for index of item that should be loaded
-	 * @param walk the revwalk, used only if itemToLoad ==  INITIAL_ITEM
+	 * Load initial history items
+	 *
+	 * @param walk
+	 *            the revwalk, non null
 	 */
-	private void loadHistory(final int itemToLoad, RevWalk walk) {
-		if (itemToLoad == INITIAL_ITEM) {
-			job = new GenerateHistoryJob(this, graph.getControl(), walk,
-					resources);
-			job.setRule(this);
+	private void loadInitialHistory(@NonNull RevWalk walk) {
+		job = new GenerateHistoryJob(this, graph.getControl(), walk, resources);
+		job.setRule(this);
+		job.setLoadHint(INITIAL_ITEM);
+		if (trace)
+			GitTraceLocation.getTrace().trace(
+					GitTraceLocation.HISTORYVIEW.getLocation(),
+					"Scheduling initial GenerateHistoryJob"); //$NON-NLS-1$
+		schedule(job);
+	}
+
+	/**
+	 * Load history items incrementally
+	 *
+	 * @param itemToLoad
+	 *            hint for index of item that should be loaded
+	 */
+	private void loadHistory(final int itemToLoad) {
+		if (job == null) {
+			return;
 		}
 		job.setLoadHint(itemToLoad);
 		if (trace)
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.HISTORYVIEW.getLocation(),
-					"Scheduling GenerateHistoryJob"); //$NON-NLS-1$
+					"Scheduling incremental GenerateHistoryJob"); //$NON-NLS-1$
 		schedule(job);
 	}
 
@@ -2098,8 +2172,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		IWorkbenchPartSite site = getPartSite();
 		if (site != null) {
 			final IWorkbenchSiteProgressService p;
-			p = (IWorkbenchSiteProgressService) site
-					.getAdapter(IWorkbenchSiteProgressService.class);
+			p = CommonUtils.getAdapter(site, IWorkbenchSiteProgressService.class);
 			if (p != null) {
 				p.schedule(j, 0, true /* use half-busy cursor */);
 				return;
@@ -2182,14 +2255,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES);
 	}
 
+	@Override
 	public boolean contains(ISchedulingRule rule) {
 		return this == rule;
 	}
 
+	@Override
 	public boolean isConflicting(ISchedulingRule rule) {
 		return this == rule;
 	}
 
+	@Override
 	public ShowInContext getShowInContext() {
 		if (fileViewer != null && fileViewer.getControl().isFocusControl())
 			return fileViewer.getShowInContext();
@@ -2197,6 +2273,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			return null;
 	}
 
+	@Override
 	public String[] getShowInTargetIds() {
 		return new String[] { IHistoryView.VIEW_ID };
 	}
