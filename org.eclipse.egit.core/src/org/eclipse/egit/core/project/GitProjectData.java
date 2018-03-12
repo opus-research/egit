@@ -43,7 +43,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.WindowCache;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
 
@@ -67,11 +66,7 @@ public class GitProjectData {
 				uncache((IProject) event.getResource());
 				break;
 			case IResourceChangeEvent.PRE_DELETE:
-				try {
-					delete((IProject) event.getResource());
-				} catch (IOException e) {
-					Activator.logError(e.getMessage(), e);
-				}
+				delete((IProject) event.getResource());
 				break;
 			default:
 				break;
@@ -178,13 +173,10 @@ public class GitProjectData {
 	/**
 	 * Drop the Eclipse project from our association of projects/repositories
 	 *
-	 * @param p
-	 *            Eclipse project
-	 * @throws IOException
-	 *             if deletion of property files failed
+	 * @param p Eclipse project
 	 */
-	public static void delete(final IProject p) throws IOException {
-		trace("delete(" + p.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+	public static void delete(final IProject p) {
+		trace("delete(" + p.getName() + ")");   //$NON-NLS-1$ //$NON-NLS-2$
 		GitProjectData d = lookup(p);
 		if (d == null)
 			deletePropertyFiles(p);
@@ -324,16 +316,25 @@ public class GitProjectData {
 		return null;
 	}
 
-	private void deletePropertyFilesAndUncache() throws IOException {
+	private void deletePropertyFilesAndUncache() {
 		deletePropertyFiles(getProject());
 		uncache(getProject());
 	}
 
-	private static void deletePropertyFiles(IProject project) throws IOException {
+	private static void deletePropertyFiles(IProject project) {
 		final File dir = propertyFile(project).getParentFile();
-		FileUtils.recursiveDelete(dir);
-		trace("deleteDataFor(" //$NON-NLS-1$
-				+ project.getName() + ")"); //$NON-NLS-1$
+		final File[] todel = dir.listFiles();
+		if (todel != null) {
+			for (int k = 0; k < todel.length; k++) {
+				if (todel[k].isFile()) {
+					todel[k].delete();
+				}
+			}
+		}
+		dir.delete();
+		trace("deleteDataFor("  //$NON-NLS-1$
+				+ project.getName()
+				+ ")");  //$NON-NLS-1$
 	}
 
 	/**
@@ -363,19 +364,19 @@ public class GitProjectData {
 			} finally {
 				o.close();
 				if (!ok) {
-					FileUtils.delete(tmp);
+					tmp.delete();
 				}
 			}
-			FileUtils.delete(dat);
-			if (!tmp.renameTo(dat)) {
-				FileUtils.delete(tmp);
-				throw new CoreException(
-						Activator.error(NLS.bind(
-								CoreText.GitProjectData_saveFailed, dat), null));
-			}
 		} catch (IOException ioe) {
-			throw new CoreException(Activator.error(
-					NLS.bind(CoreText.GitProjectData_saveFailed, dat), ioe));
+			throw new CoreException(Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
+					dat), ioe));
+		}
+
+		dat.delete();
+		if (!tmp.renameTo(dat)) {
+			tmp.delete();
+			throw new CoreException(Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
+					dat), null));
 		}
 	}
 
