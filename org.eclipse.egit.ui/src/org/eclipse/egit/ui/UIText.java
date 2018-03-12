@@ -3493,6 +3493,9 @@ public class UIText extends NLS {
 	public static String UIUtils_StartTypingForPreviousValuesMessage;
 
 	/** */
+	public static String UIUtils_ShowInMenuLabel;
+
+	/** */
 	public static String UnmergedBranchDialog_Message;
 
 	/** */
@@ -3708,6 +3711,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_OpenInEditorMenuLabel;
+
+	/** */
+	public static String CommitFileDiffViewer_ShowInMenuLabel;
 
 	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
