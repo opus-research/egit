@@ -181,16 +181,8 @@ class CommitGraphTable {
 
 		copy = createStandardAction(ActionFactory.COPY);
 
-		table.setUseHashlookup(true);
-
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
 			public void selectionChanged(SelectionChangedEvent event) {
-				ISelection s = event.getSelection();
-				if (s.isEmpty() || !(s instanceof IStructuredSelection))
-					return;
-				final IStructuredSelection iss = (IStructuredSelection) s;
-				commitToShow = (PlotCommit<?>) iss.getFirstElement();
-
 				copy.setEnabled(canDoCopy());
 			}
 		});
@@ -261,7 +253,7 @@ class CommitGraphTable {
 		table.getTable().addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if (allCommits != null)
+				if ( allCommits != null)
 					allCommits.dispose();
 				if (renderer != null)
 					renderer.dispose();
@@ -345,11 +337,13 @@ class CommitGraphTable {
 
 	void selectCommit(final RevCommit c) {
 		if (c instanceof PlotCommit) {
-			table.setSelection(new StructuredSelection(c), true);
+			table.setSelection(new StructuredSelection(c));
+			table.reveal(c);
 		} else if (commitsMap != null) {
 			PlotCommit swtCommit = commitsMap.get(c.getId().name());
 			if (swtCommit != null) {
-				table.setSelection(new StructuredSelection(swtCommit), true);
+				table.setSelection(new StructuredSelection(swtCommit));
+				table.reveal(swtCommit);
 			}
 		}
 	}
@@ -400,6 +394,7 @@ class CommitGraphTable {
 		table.setInput(asArray);
 		if (asArray != null && asArray.length > 0) {
 			if (oldList != list) {
+				selectCommit(asArray[0]);
 				initCommitsMap();
 			}
 		} else {
