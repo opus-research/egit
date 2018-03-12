@@ -18,10 +18,13 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -254,60 +257,49 @@ public class ProjectUtil {
 	 * paths.
 	 *
 	 * @param repository
+	 *            the repository who's working tree is used as base for lookup
 	 * @param fileList
+	 *            the list of files/directories to lookup
 	 * @return valid projects containing one of the paths
 	 * @throws CoreException
 	 */
 	public static IProject[] getProjectsContaining(Repository repository,
 			Collection<String> fileList) throws CoreException {
-		List<IProject> result = new ArrayList<IProject>();
+		Set<IProject> result = new HashSet<IProject>();
+		Set<String> handledPaths = new TreeSet<String>();
 
-		/*
-		 * don't use getProjects() as this will remove projects without mapping,
-		 * which we want to have too (projects removed by a branch switch).
-		 */
-		IProject[] allProjects = ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects();
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 
-		for (IProject prj : allProjects)
-			for (String member : fileList)
-				try {
-					if (makePrjRelativePath(repository, prj, member) != null) {
-						result.add(prj);
-						break;
-					}
-				} catch (IOException e) {
-					// the given project seems invalid, so we ignore it.
-				}
+		for (String member : fileList) {
+			File file = new File(repository.getWorkTree(), member);
+
+			if (!file.exists())
+				continue;
+
+			// check the directory that the file resides in. findContainer
+			// can only handle directories.
+			if (file.isFile())
+				file = file.getParentFile();
+
+			// check whether we had this path to possibly (likely) skip the
+			// expensive lookup.
+			String absPath = file.getAbsolutePath();
+			if (handledPaths.contains(absPath))
+				continue;
+
+			// find a container(s) for the given directory (or parent directory
+			// for the given file)
+			IContainer[] containers = root.findContainersForLocationURI(file
+					.toURI());
+			for (IContainer container : containers)
+				if (container instanceof IProject)
+					result.add((IProject) container);
+
+			// remember to avoid re-calculation
+			handledPaths.add(absPath);
+		}
 
 		return result.toArray(new IProject[result.size()]);
-	}
-
-	/**
-	 * Tries to make a path relative to the given project, if the given member
-	 * is beneath the projects path. Returns <code>null</code> if the given
-	 * member is not inside the projects directory.
-	 *
-	 * @param repository
-	 *            the repository use to get the work tree from
-	 * @param prj
-	 *            the project to check
-	 * @param member
-	 *            the member to create a relative path from
-	 * @return either the relative path to the member or <code>null</code> if
-	 *         not a member of the given project.
-	 * @throws IOException
-	 */
-	private static String makePrjRelativePath(Repository repository,
-			IProject prj, String member) throws IOException {
-		String canonicalMember = new File(repository.getWorkTree(), member)
-				.getCanonicalPath();
-		String canonicalPrj = prj.getLocation().toFile().getCanonicalPath();
-
-		if (canonicalMember.startsWith(canonicalPrj))
-			return canonicalMember.substring(canonicalPrj.length());
-
-		return null;
 	}
 
 	/**
