@@ -383,21 +383,15 @@ public class CommitFileDiffViewer extends TableViewer {
 	 * @see IShowInSource#getShowInContext()
 	 */
 	public ShowInContext getShowInContext() {
-		if (db.isBare())
-			return null;
-		IPath workTreePath = new Path(db.getWorkTree().getAbsolutePath());
 		IStructuredSelection selection = (IStructuredSelection) getSelection();
-		List<Object> elements = new ArrayList<Object>();
-		for (Object selectedElement : selection.toList()) {
-			FileDiff fileDiff = (FileDiff) selectedElement;
-			IPath path = workTreePath.append(fileDiff.getPath());
-			IFile file = ResourceUtil.getFileForLocation(path);
+		List<IFile> files = new ArrayList<IFile>();
+		for (Object element : selection.toList()) {
+			FileDiff fileDiff = (FileDiff) element;
+			IFile file = ResourceUtil.getFileForLocation(db, fileDiff.getPath());
 			if (file != null)
-				elements.add(file);
-			else
-				elements.add(path);
+				files.add(file);
 		}
-		return new ShowInContext(null, new StructuredSelection(elements));
+		return new ShowInContext(null, new StructuredSelection(files));
 	}
 
 	private void openFileInEditor(String filePath) {
@@ -508,10 +502,10 @@ public class CommitFileDiffViewer extends TableViewer {
 		final ITypedElement base;
 		final ITypedElement next;
 
-		String path = new Path(getRepository().getWorkTree().getAbsolutePath())
-				.append(p).toOSString();
+		IPath path = new Path(getRepository().getWorkTree().getAbsolutePath())
+				.append(p);
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IFile[] files = root.findFilesForLocationURI(new File(path).toURI());
+		IFile[] files = root.findFilesForLocationURI(path.toFile().toURI());
 		if (files.length > 0)
 			next = SaveableCompareEditorInput.createFileElement(files[0]);
 		else
