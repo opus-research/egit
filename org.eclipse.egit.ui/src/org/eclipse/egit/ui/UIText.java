@@ -38,9 +38,6 @@ public class UIText extends NLS {
 	public static String AbstractHistoryCommanndHandler_NoUniqueRepository;
 
 	/** */
-	public static String AbstractRebaseCommand_DialogTitle;
-
-	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
@@ -416,12 +413,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_DefaultRepoFolderTooltip;
 
 	/** */
-	public static String GitPreferenceRoot_HideConfirmationGroup;
-
-	/** */
-	public static String GitPreferenceRoot_HideRebaseConfirmationField;
-
-	/** */
 	public static String GitPreferenceRoot_HistoryGroupHeader;
 
 	/** */
@@ -488,22 +479,10 @@ public class UIText extends NLS {
 	public static String RebaseCurrentRefCommand_RebasingCurrentJobName;
 
 	/** */
-	public static String RebaseResultDialog_AbortButton;
-
-	/** */
-	public static String RebaseResultDialog_AbortRebaseRadioText;
-
-	/** */
-	public static String RebaseResultDialog_ActionGroupTitle;
-
-	/** */
 	public static String RebaseResultDialog_CommitIdLabel;
 
 	/** */
 	public static String RebaseResultDialog_CommitMessageLabel;
-
-	/** */
-	public static String RebaseResultDialog_ConflictListFailureMessage;
 
 	/** */
 	public static String RebaseResultDialog_DetailsGroup;
@@ -521,22 +500,7 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_DiffDetailsLabel;
 
 	/** */
-	public static String RebaseResultDialog_DoNothingRadioText;
-
-	/** */
-	public static String RebaseResultDialog_MergeButton;
-
-	/** */
-	public static String RebaseResultDialog_SkipCommitButton;
-
-	/** */
-	public static String RebaseResultDialog_StartMergeRadioText;
-
-	/** */
 	public static String RebaseResultDialog_StatusLabel;
-
-	/** */
-	public static String RebaseResultDialog_ToggleShowButton;
 
 	/** */
 	public static String RebaseTargetSelectionDialog_DialogMessage;
@@ -1616,15 +1580,6 @@ public class UIText extends NLS {
 	public static String ConfirmationPage_title;
 
 	/** */
-	public static String ContinueRebaseCommand_CancelDialogMessage;
-
-	/** */
-	public static String ContinueRebaseCommand_CancelDialogTitle;
-
-	/** */
-	public static String ContinueRebaseCommand_JobName;
-
-	/** */
 	public static String CreateBranchPage_BranchNameLabel;
 
 	/** */
@@ -2159,12 +2114,6 @@ public class UIText extends NLS {
 	public static String GitCompareFileRevisionEditorInput_RevisionLabel;
 
 	/** */
-	public static String GitCompareFileRevisionEditorInput_LocalVersion;
-
-	/** */
-	public static String GitCompareFileRevisionEditorInput_StagedVersion;
-
-	/** */
 	public static String GitCreateGeneralProjectPage_DirLabel;
 
 	/** */
@@ -2676,15 +2625,6 @@ public class UIText extends NLS {
 	public static String SelectUriWiazrd_Title;
 
 	/** */
-	public static String SkipRebaseCommand_CancelDialogMessage;
-
-	/** */
-	public static String SkipRebaseCommand_CancelDialogTitle;
-
-	/** */
-	public static String SkipRebaseCommand_JobName;
-
-	/** */
 	public static String SynchronizeWithAction_localRepoName;
 
 	/** */
@@ -2714,5 +2654,4 @@ public class UIText extends NLS {
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
-
 }

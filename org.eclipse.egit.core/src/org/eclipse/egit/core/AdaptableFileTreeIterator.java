@@ -16,7 +16,6 @@ import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.WorkingTreeOptions;
@@ -36,22 +35,22 @@ public class AdaptableFileTreeIterator extends FileTreeIterator {
 	IWorkspaceRoot root;
 
 	/**
-	 * Create a new iterator to traverse the work tree of the given repository
+	 * Create a new iterator to traverse the given directory and its children
 	 * <p>
 	 * The iterator will automatically adapt to a {@link ContainerTreeIterator}
 	 * when encountering directories what can be mapped into the given workspace
 	 * root.
 	 *
-	 * @param repository
-	 *            the repository this iterator should traverse the working tree
-	 *            of
+	 * @param path
+	 *            the starting directory. This directory should correspond to
+	 *            the repository root.
 	 * @param workspaceRoot
 	 *            the workspace root to check resource mapping against.
+	 *
 	 */
-	public AdaptableFileTreeIterator(final Repository repository,
+	public AdaptableFileTreeIterator(final File path,
 			final IWorkspaceRoot workspaceRoot) {
-		super(repository.getWorkTree(), FS.DETECTED, repository.getConfig()
-				.get(WorkingTreeOptions.KEY));
+		super(path, FS.DETECTED, WorkingTreeOptions.createDefaultInstance());
 		root = workspaceRoot;
 	}
 

@@ -11,7 +11,6 @@
 package org.eclipse.egit.core.op;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,15 +22,11 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.MultiRule;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
@@ -119,28 +114,10 @@ public class ConnectProviderOperation implements IEGitOperation {
 						projectData.setRepositoryMappings(Arrays.asList(actualMapping));
 						projectData.store();
 					} catch (CoreException ce) {
-						try {
-							GitProjectData.delete(project);
-						} catch (IOException e) {
-							MultiStatus status = new MultiStatus(
-									Activator.getPluginId(), IStatus.ERROR,
-									e.getMessage(), e);
-							status.add(new Status(IStatus.ERROR, Activator
-									.getPluginId(), ce.getMessage(), ce));
-							throw new CoreException(status);
-						}
+						GitProjectData.delete(project);
 						throw ce;
 					} catch (RuntimeException ce) {
-						try {
-							GitProjectData.delete(project);
-						} catch (IOException e) {
-							MultiStatus status = new MultiStatus(
-									Activator.getPluginId(), IStatus.ERROR,
-									e.getMessage(), e);
-							status.add(new Status(IStatus.ERROR, Activator
-									.getPluginId(), ce.getMessage(), ce));
-							throw new CoreException(status);
-					}
+						GitProjectData.delete(project);
 						throw ce;
 					}
 					RepositoryProvider
