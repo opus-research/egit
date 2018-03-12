@@ -229,18 +229,6 @@ public class UIText extends NLS {
 	public static String GitDocument_errorRefreshQuickdiff;
 
 	/** */
-	public static String GitHistoryPage_AllChangesInFolderHint;
-
-	/** */
-	public static String GitHistoryPage_AllChangesInProjectHint;
-
-	/** */
-	public static String GitHistoryPage_AllChangesInRepoHint;
-
-	/** */
-	public static String GitHistoryPage_AllChangesOfResourceHint;
-
-	/** */
 	public static String GitDocument_errorResolveQuickdiff;
 
 	/** */
@@ -283,12 +271,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FileNotInCommit;
 
 	/** */
-	public static String GitHistoryPage_FileType;
-
-	/** */
-	public static String GitHistoryPage_FolderType;
-
-	/** */
 	public static String GitHistoryPage_fileNotFound;
 
 	/** */
@@ -304,13 +286,7 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_From;
 
 	/** */
-	public static String GitHistoryPage_MutiResourcesType;
-
-	/** */
 	public static String GitHistoryPage_OpenMenuLabel;
-
-	/** */
-	public static String GitHistoryPage_ProjectType;
 
 	/** */
 	public static String GitHistoryPage_QuickdiffMenuLabel;
