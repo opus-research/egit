@@ -139,8 +139,6 @@ public class MergeToolActionHandler extends RepositoryActionHandler {
 					boolean keepTemporaries = false;
 					File mergedDirPath = null;
 					File tempDirPath = null;
-					File workDirPath = null;
-					Repository repository = null;
 					if (leftResource != null) {
 						mergedAbsoluteFilePath = leftResource.getRawLocation()
 								.toOSString();
@@ -149,19 +147,6 @@ public class MergeToolActionHandler extends RepositoryActionHandler {
 								.getParentFile();
 						System.out.println("file: " //$NON-NLS-1$
 								+ mergedAbsoluteFilePath);
-					}
-					if (mergedAbsoluteFilePath != null) {
-						IPath[] paths = new Path[1];
-						paths[0] = new Path(mergedAbsoluteFilePath);
-						Map<Repository, Collection<String>> pathsByRepository = ResourceUtil
-								.splitPathsByRepository(Arrays.asList(paths));
-						Set<Repository> repos = pathsByRepository.keySet();
-						if (repos.size() == 1) {
-							repository = repos.iterator().next();
-						}
-						if (repository != null) {
-							workDirPath = repository.getWorkTree();
-						}
 					}
 					if (mergedAbsoluteFilePath != null && leftRevision != null
 							&& rightRevision != null) {
@@ -227,8 +212,7 @@ public class MergeToolActionHandler extends RepositoryActionHandler {
 					// execute
 					int exitCode = -1;
 					try {
-						exitCode = ToolsUtils.executeTool(workDirPath,
-								mergedAbsoluteFilePath,
+						exitCode = ToolsUtils.executeTool(mergedAbsoluteFilePath,
 								localAbsoluteFilePath, remoteAbsoluteFilePath,
 										baseAbsoluteFilePath,
 										baseAbsoluteFilePath != null ? mergeCmd
@@ -267,12 +251,18 @@ public class MergeToolActionHandler extends RepositoryActionHandler {
 							return; // abort the merge process
 						}
 					}
-					if (repository != null) {
-						if (addFile && GitPreferenceRoot.autoAddToIndex()
-								&& mergedAbsoluteFilePath != null) {
-							System.out.println("addFile: " //$NON-NLS-1$
-									+ mergedFileName);
-							Git git = new Git(repository);
+					if (addFile && GitPreferenceRoot.autoAddToIndex()
+							&& mergedAbsoluteFilePath != null) {
+						System.out.println("addFile: " //$NON-NLS-1$
+								+ mergedFileName);
+						IPath[] paths = new Path[1];
+						paths[0] = new Path(mergedAbsoluteFilePath);
+						Map<Repository, Collection<String>> pathsByRepository = ResourceUtil
+								.splitPathsByRepository(Arrays.asList(paths));
+						Set<Repository> repos = pathsByRepository.keySet();
+						if (repos.size() == 1) {
+							Repository repo = repos.iterator().next();
+							Git git = new Git(repo);
 							try {
 								git.add().addFilepattern(mergedRelativeFilePath)
 										.call();
@@ -280,8 +270,8 @@ public class MergeToolActionHandler extends RepositoryActionHandler {
 								e.printStackTrace();
 							}
 							git.close();
+							repo.close();
 						}
-						repository.close();
 					}
 					break;
 				}

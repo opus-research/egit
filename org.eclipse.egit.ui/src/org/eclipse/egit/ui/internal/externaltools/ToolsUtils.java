@@ -148,7 +148,6 @@ public class ToolsUtils {
 	}
 
 	/**
-	 * @param workingDirectory
 	 * @param mergedCompareFilePath
 	 * @param localCompareFilePath
 	 * @param remoteCompareFilePath
@@ -159,8 +158,7 @@ public class ToolsUtils {
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	public static int executeTool(File workingDirectory,
-			String mergedCompareFilePath,
+	public static int executeTool(String mergedCompareFilePath,
 			String localCompareFilePath, String remoteCompareFilePath,
 			String baseCompareFilePath, String toolCmd, File tempDir)
 					throws IOException, InterruptedException {
@@ -174,11 +172,11 @@ public class ToolsUtils {
 			int indexLast = toolCmd.indexOf(".sh"); //$NON-NLS-1$
 			if (osname.indexOf("windows") != -1 //$NON-NLS-1$
 					&& indexLast != -1) {
-				return runExternalToolMsysBash(workingDirectory, toolCmd,
+				return runExternalToolMsysBash(toolCmd,
 						mergedCompareFilePath, localCompareFilePath,
 						remoteCompareFilePath, baseCompareFilePath, tempDir);
 			} else {
-				return runExternalToolNative(workingDirectory, toolCmd,
+				return runExternalToolNative(toolCmd,
 						mergedCompareFilePath, localCompareFilePath,
 						remoteCompareFilePath, baseCompareFilePath);
 			}
@@ -187,7 +185,6 @@ public class ToolsUtils {
 	}
 
 	/**
-	 * @param workingDirectory
 	 * @param command
 	 * @param mergedCompareFilePath
 	 * @param localCompareFilePath
@@ -197,8 +194,7 @@ public class ToolsUtils {
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	public static int runExternalToolNative(File workingDirectory,
-			String command,
+	public static int runExternalToolNative(String command,
 			String mergedCompareFilePath, String localCompareFilePath,
 			String remoteCompareFilePath, String baseCompareFilePath)
 					throws IOException, InterruptedException {
@@ -207,11 +203,10 @@ public class ToolsUtils {
 		command = command.replace("$REMOTE", remoteCompareFilePath); //$NON-NLS-1$
 		command = command.replace("$BASE", baseCompareFilePath); //$NON-NLS-1$
 		String[] envp = null;
-		return runCommand(command, envp, workingDirectory);
+		return runCommand(command, envp);
 	}
 
 	/**
-	 * @param workingDirectory
 	 * @param cmd
 	 * @param mergedCompareFilePath
 	 * @param localCompareFilePath
@@ -222,7 +217,7 @@ public class ToolsUtils {
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	public static int runExternalToolMsysBash(File workingDirectory, String cmd,
+	public static int runExternalToolMsysBash(String cmd,
 			String mergedCompareFilePath, String localCompareFilePath,
 			String remoteCompareFilePath, String baseCompareFilePath,
 			File reusedTempDir) throws IOException, InterruptedException {
@@ -254,7 +249,7 @@ public class ToolsUtils {
 				"REMOTE=" + remoteCompareFilePath, //$NON-NLS-1$
 				"BASE=" + baseCompareFilePath //$NON-NLS-1$
 		}; // $NON-NLS-1$
-		int exitCode = runCommand(command, envp, workingDirectory);
+		int exitCode = runCommand(command, envp);
 		deleteTempDirectory(tempDir);
 		return exitCode;
 	}
@@ -279,13 +274,12 @@ public class ToolsUtils {
 		return fop;
 	}
 
-	private static int runCommand(String command, String[] envp,
-			File workingDirectory)
+	private static int runCommand(String command, String[] envp)
 			throws IOException, InterruptedException {
 		int exitCode = 0;
 		System.out.println("command: " + command); //$NON-NLS-1$
 		String[] cmdarray = command.split("\\s+"); //$NON-NLS-1$
-		Process p = Runtime.getRuntime().exec(cmdarray, envp, workingDirectory);
+		Process p = Runtime.getRuntime().exec(cmdarray, envp);
 		System.out.println("Waiting for command..."); //$NON-NLS-1$
 		exitCode = p.waitFor();
 		System.out.println("command done."); //$NON-NLS-1$
