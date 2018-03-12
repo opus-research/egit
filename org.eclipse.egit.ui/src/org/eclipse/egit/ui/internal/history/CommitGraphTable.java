@@ -467,9 +467,6 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CHERRYPICK,
 						UIText.GitHistoryPage_cherryPickMenuItem));
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.REVERT,
-						UIText.GitHistoryPage_revertMenuItem));
 				popupMgr.add(new Separator());
 
 				MenuManager resetManager = new MenuManager(
