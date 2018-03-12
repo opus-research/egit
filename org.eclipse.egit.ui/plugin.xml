@@ -368,6 +368,14 @@
 	      <keywordReference
 	            id="org.eclipse.egit.ui.keyword.refresh"/>
       </page>
+      <page name="%GitPreferences_ProjectPreferencePage_name"
+	    category="org.eclipse.egit.ui.GitPreferences"
+            class="org.eclipse.egit.ui.internal.preferences.ProjectsPreferencePage"
+	        id="org.eclipse.egit.ui.internal.preferences.ProjectsPreferencePage" >
+	    <keywordReference
+		  id="org.eclipse.egit.ui.keyword.git">
+	    </keywordReference>
+      </page>
       <page name="%GitPreferences_WindowCachePreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.WindowCachePreferencePage"
@@ -945,18 +953,11 @@
                class="org.eclipse.egit.ui.internal.repository.tree.command.PullCommand">
          </class>
          <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <and>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </and>
+            <iterate>
+               <instanceof
+                     value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+               </instanceof>
+            </iterate>
          </activeWhen>
       </handler>
       <handler
