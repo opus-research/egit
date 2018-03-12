@@ -636,14 +636,15 @@ public class CommitDialog extends TitleAreaDialog {
 			committerText.setText(committer);
 
 		amendingItem = new ToolItem(messageToolbar, SWT.CHECK);
-		amendingItem.setSelection(amending);
-		if (amending)
+		if (amending) {
+			amendingItem.setSelection(amending);
 			amendingItem.setEnabled(false); // if already set, don't allow any
 											// changes
-		else if (!amendAllowed) {
+		} else if (!amendAllowed) {
 			amendingItem.setEnabled(false);
 			originalChangeId = null;
 		}
+
 		amendingItem.setToolTipText(UIText.CommitDialog_AmendPreviousCommit);
 		Image amendImage = UIIcons.AMEND_COMMIT.createImage();
 		UIUtils.hookDisposal(amendingItem, amendImage);

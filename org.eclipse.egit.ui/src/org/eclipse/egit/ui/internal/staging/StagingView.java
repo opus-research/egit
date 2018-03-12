@@ -839,7 +839,7 @@ public class StagingView extends ViewPart {
 	}
 
 	private void reload(final Repository repository) {
-		final boolean repositoryChanged = currentRepository != repository;
+		final boolean repositoryChanged = currentRepository == repository;
 
 		final AtomicReference<IndexDiff> results = new AtomicReference<IndexDiff>();
 
@@ -855,7 +855,7 @@ public class StagingView extends ViewPart {
 			}
 		};
 
-		job.setUser(false);
+		job.setUser(true);
 		job.setRule(ResourcesPlugin.getWorkspace().getRoot());
 
 		job.addJobChangeListener(new JobChangeAdapter() {
@@ -985,8 +985,8 @@ public class StagingView extends ViewPart {
 	}
 
 	private void addHeadChangedWarning(String commitMessage) {
-		String message = UIText.StagingView_headCommitChanged + Text.DELIMITER
-				+ Text.DELIMITER + commitMessage;
+		String message = UIText.StagingView_headCommitChanged + "\n\n" + //$NON-NLS-1$
+				commitMessage;
 		commitMessageComponent.setCommitMessage(message);
 	}
 
