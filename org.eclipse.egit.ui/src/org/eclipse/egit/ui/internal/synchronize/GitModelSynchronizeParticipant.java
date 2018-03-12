@@ -5,11 +5,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *     Dariusz Luksza <dariusz@luksza.org> - initial API and implementation
- *     Laurent Goubet <laurent.goubet@obeo.fr> - Logical Model enhancements
- *     Gunnar Wagenknecht <gunnar@wagenknecht.org> - Logical Model enhancements
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
@@ -29,13 +24,13 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
@@ -63,8 +58,8 @@ import org.eclipse.team.ui.TeamUI;
 import org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration;
 import org.eclipse.team.ui.synchronize.ModelSynchronizeParticipant;
 import org.eclipse.ui.IMemento;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.IWorkbenchPart;
 
 /**
  * Git model synchronization participant
@@ -205,32 +200,27 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 	public boolean hasCompareInputFor(Object object) {
 		if (object instanceof GitModelBlob || object instanceof IFile)
 			return true;
-
 		// in Java Workspace model Java source files are passed as type
 		// CompilationUnit which can be adapted to IResource
-		IResource res = AdapterUtils.adapt(object, IResource.class);
-		if (res != null && res.getType() == IResource.FILE)
-			return true;
-
-		// fallback to super ISynchronizationCompareAdapter
+		if (object instanceof IAdaptable) {
+			IResource res = (IResource) ((IAdaptable) object)
+					.getAdapter(IResource.class);
+			if (res != null && res.getType() == IResource.FILE)
+				return true;
+		}
 		return super.hasCompareInputFor(object);
 	}
 
 	@Override
 	public ICompareInput asCompareInput(Object object) {
-		// handle file comparison of Workspace model without local changes
-		IResource resource = AdapterUtils.adapt(object, IResource.class);
-		if (resource != null && resource.getType() == IResource.FILE) {
-			GitSynchronizeData gsd = gsds.getData(resource.getProject());
+		// handle file comparison in Workspace model
+		if (object instanceof IFile) {
+			IFile file = (IFile) object;
+			GitSynchronizeData gsd = gsds.getData(file.getProject());
 			if (!gsd.shouldIncludeLocal())
-				return getFileFromGit(gsd, resource.getLocation());
+				return getFileFromGit(gsd, file.getLocation());
 		}
 
-		// note, ResourceDiffCompareInput maybe returned from super;
-		// it always has the local resource on the left side!
-		// this is only ok if "shouldIncludeLocal" is set to true
-
-		// fallback to super ISynchronizationCompareAdapter
 		return super.asCompareInput(object);
 	}
 
