@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2012 SAP AG.
+ * Copyright (c) 2011 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,12 +7,11 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Markus Keller <markus_keller@ch.ibm.com> - Open multiple detail dialogs from MultiPullResultDialog at once
+ *    Daniel Megert <daniel_megert@ch.ibm.com> - remove unnecessary @SuppressWarnings
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.pull;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -39,8 +38,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
@@ -172,17 +169,18 @@ public class MultiPullResultDialog extends Dialog {
 		Composite main = new Composite(parent, SWT.NONE);
 		GridLayoutFactory.fillDefaults().applyTo(main);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
-		tv = new TableViewer(main, SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER);
+		tv = new TableViewer(main, SWT.SINGLE | SWT.FULL_SELECTION | SWT.BORDER);
 		tv.setContentProvider(ArrayContentProvider.getInstance());
 
 		tv.addSelectionChangedListener(new ISelectionChangedListener() {
 			public void selectionChanged(SelectionChangedEvent event) {
 				IStructuredSelection sel = (IStructuredSelection) event
 						.getSelection();
-				boolean enabled = false;
-				for (Entry<Repository, Object> entry : (List<Entry<Repository, Object>>) sel
-						.toList()) {
-					enabled |= entry.getValue() instanceof PullResult;
+				boolean enabled = !sel.isEmpty();
+				if (enabled) {
+					Entry<Repository, Object> entry = (Entry<Repository, Object>) sel
+							.getFirstElement();
+					enabled = entry.getValue() instanceof PullResult;
 				}
 				getButton(DETAIL_BUTTON).setEnabled(enabled);
 			}
@@ -231,23 +229,12 @@ public class MultiPullResultDialog extends Dialog {
 	protected void buttonPressed(int buttonId) {
 		if (buttonId == DETAIL_BUTTON) {
 			IStructuredSelection sel = (IStructuredSelection) tv.getSelection();
-			Point location = null;
-			Rectangle clientArea = getShell().getMonitor().getClientArea();
-			int yMin = clientArea.y + clientArea.height;
-			for (Entry<Repository, Object> item : (List<Entry<Repository, Object>>) sel
-					.toList()) {
-				if (item.getValue() instanceof PullResult) {
-					PullResultDialog dialog = new PullResultDialog(getShell(),
-							item.getKey(), (PullResult) item.getValue());
-					dialog.open();
-					Shell shell = dialog.getShell();
-					if (location != null) {
-						int delta = shell.getFont().getFontData()[0].getHeight() * 3;
-						int y = Math.min(location.y + delta, yMin - shell.getClientArea().height);
-						shell.setLocation(location.x, y);
-					}
-					location = shell.getLocation();
-				}
+			Entry<Repository, Object> item = (Entry<Repository, Object>) sel
+					.getFirstElement();
+			if (item.getValue() instanceof PullResult) {
+				PullResultDialog dialog = new PullResultDialog(getShell(), item
+						.getKey(), (PullResult) item.getValue());
+				dialog.open();
 			}
 		}
 		super.buttonPressed(buttonId);
