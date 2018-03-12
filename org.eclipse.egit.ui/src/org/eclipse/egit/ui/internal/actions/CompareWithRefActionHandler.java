@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -47,7 +47,7 @@ public class CompareWithRefActionHandler extends RepositoryActionHandler {
 
 		CompareTargetSelectionDialog dlg = new CompareTargetSelectionDialog(
 				getShell(event), repo, resources.length == 1 ? resources[0]
-						.getFullPath().lastSegment() : null);
+						.getFullPath().toString() : null);
 		if (dlg.open() == Window.OK) {
 
 			if (resources.length == 1 && resources[0] instanceof IFile) {
