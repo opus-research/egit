@@ -41,9 +41,7 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
@@ -65,9 +63,11 @@ import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.CellLabelProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
+import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
@@ -77,7 +77,7 @@ import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StyledString;
-import org.eclipse.jface.viewers.TreeViewerColumn;
+import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
@@ -111,18 +111,14 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
-import org.eclipse.swt.widgets.Tree;
-import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Section;
-import org.eclipse.ui.model.BaseWorkbenchContentProvider;
 
 /**
  * Dialog is shown to user when they request to commit files. Changes in the
@@ -132,31 +128,6 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private static IPreferenceStore getPreferenceStore() {
 		return org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore();
-	}
-
-	static class CommitFileContentProvider extends BaseWorkbenchContentProvider {
-		@Override
-		public Object[] getElements(Object element) {
-			if (element instanceof Object[]) {
-				return (Object[]) element;
-			}
-			if (element instanceof Collection) {
-				return ((Collection) element).toArray();
-			}
-			return new Object[0];
-		}
-
-		public Object[] getChildren(Object parentElement) {
-			return new Object[0];
-		}
-
-		public Object getParent(Object element) {
-			return null;
-		}
-
-		public boolean hasChildren(Object element) {
-			return false;
-		}
 	}
 
 	static class CommitStatusLabelProvider extends BaseLabelProvider implements
@@ -352,7 +323,7 @@ public class CommitDialog extends TitleAreaDialog {
 
 	ToolItem showUntrackedItem;
 
-	CachedCheckboxTreeViewer filesViewer;
+	CheckboxTableViewer filesViewer;
 
 	Section filesSection;
 
@@ -808,47 +779,35 @@ public class CommitDialog extends TitleAreaDialog {
 
 		filesSection.setTextClient(filesToolbar);
 
-		PatternFilter patternFilter = new PatternFilter() {
-			@Override
-			protected boolean isLeafMatch(Viewer viewer, Object element) {
-				if(element instanceof CommitItem) {
-					CommitItem commitItem = (CommitItem) element;
-					return wordMatches(commitItem.path);
-				}
-				return super.isLeafMatch(viewer, element);
-			}
-		};
-		patternFilter.setIncludeLeadingWildcard(true);
-		FilteredCheckboxTree resourcesTreeComposite = new FilteredCheckboxTree(
-				filesArea, toolkit, SWT.FULL_SELECTION, patternFilter);
-		Tree resourcesTree = resourcesTreeComposite.getViewer().getTree();
-		resourcesTree.setData(FormToolkit.KEY_DRAW_BORDER,
+		Table resourcesTable = toolkit.createTable(filesArea, SWT.H_SCROLL
+				| SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.MULTI | SWT.CHECK);
+		resourcesTable.setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		resourcesTreeComposite.setLayoutData(GridDataFactory.fillDefaults()
+		resourcesTable.setLayoutData(GridDataFactory.fillDefaults()
 				.hint(600, 200).grab(true, true).create());
 
-		resourcesTree.addSelectionListener(new CommitItemSelectionListener());
+		resourcesTable.addSelectionListener(new CommitItemSelectionListener());
 
-		resourcesTree.setHeaderVisible(true);
-		TreeColumn statCol = new TreeColumn(resourcesTree, SWT.LEFT);
+		resourcesTable.setHeaderVisible(true);
+		TableColumn statCol = new TableColumn(resourcesTable, SWT.LEFT);
 		statCol.setText(UIText.CommitDialog_Status);
 		statCol.setWidth(150);
 		statCol.addSelectionListener(new HeaderSelectionListener(
 				CommitItem.Order.ByStatus));
 
-		TreeColumn resourceCol = new TreeColumn(resourcesTree, SWT.LEFT);
+		TableColumn resourceCol = new TableColumn(resourcesTable, SWT.LEFT);
 		resourceCol.setText(UIText.CommitDialog_Path);
 		resourceCol.setWidth(415);
 		resourceCol.addSelectionListener(new HeaderSelectionListener(
 				CommitItem.Order.ByFile));
 
-		filesViewer = resourcesTreeComposite.getCheckboxTreeViewer();
-		new TreeViewerColumn(filesViewer, statCol)
+		filesViewer = new CheckboxTableViewer(resourcesTable);
+		new TableViewerColumn(filesViewer, statCol)
 				.setLabelProvider(createStatusLabelProvider());
-		new TreeViewerColumn(filesViewer, resourceCol)
+		new TableViewerColumn(filesViewer, resourceCol)
 				.setLabelProvider(new CommitPathLabelProvider());
 		ColumnViewerToolTipSupport.enableFor(filesViewer);
-		filesViewer.setContentProvider(new CommitFileContentProvider());
+		filesViewer.setContentProvider(ArrayContentProvider.getInstance());
 		filesViewer.setUseHashlookup(true);
 		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
 				.getDialogSettings();
@@ -857,7 +816,7 @@ public class CommitDialog extends TitleAreaDialog {
 					.booleanValue();
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items.toArray());
-		filesViewer.getTree().setMenu(getContextMenu());
+		filesViewer.getTable().setMenu(getContextMenu());
 		filesViewer.addCheckStateListener(new ICheckStateListener() {
 
 			public void checkStateChanged(CheckStateChangedEvent event) {
@@ -929,7 +888,7 @@ public class CommitDialog extends TitleAreaDialog {
 					updateFileSectionText();
 				}
 			});
-//			filesViewer.setAllGrayed(true);
+			filesViewer.setAllGrayed(true);
 			filesViewer.setAllChecked(true);
 		} else {
 			final boolean includeUntracked = getPreferenceStore().getBoolean(
@@ -1041,14 +1000,14 @@ public class CommitDialog extends TitleAreaDialog {
 	private void updateFileSectionText() {
 		filesSection.setText(MessageFormat.format(UIText.CommitDialog_Files,
 				Integer.valueOf(filesViewer.getCheckedElements().length),
-				Integer.valueOf(filesViewer.getTree().getItemCount())));
+				Integer.valueOf(filesViewer.getTable().getItemCount())));
 	}
 
 	private Menu getContextMenu() {
 		if (!allowToChangeSelection)
 			return null;
-		final Menu menu = new Menu(filesViewer.getTree());
-		filesViewer.getTree().addDisposeListener(new DisposeListener() {
+		final Menu menu = new Menu(filesViewer.getTable());
+		filesViewer.getTable().addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
 				menu.dispose();
