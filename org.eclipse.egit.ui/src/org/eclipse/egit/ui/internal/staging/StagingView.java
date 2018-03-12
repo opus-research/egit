@@ -531,7 +531,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		enableAutoExpand(unstagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
 
 		Composite rebaseAndCommitComposite = toolkit.createComposite(horizontalSashForm);
@@ -803,7 +802,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		enableAutoExpand(stagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(stagedViewer);
 
 		selectionChangedListener = new ISelectionListener() {
@@ -890,8 +888,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 		srv.addPostSelectionListener(selectionChangedListener);
 
 		// Use current selection to populate staging view
-		UIUtils.notifySelectionChangedWithCurrentSelection(
-				selectionChangedListener, site);
+		ISelection selection = srv.getSelection();
+		if (selection != null && !selection.isEmpty()) {
+			IWorkbenchPart part = site.getPage().getActivePart();
+			if (part != null)
+				selectionChangedListener.selectionChanged(part, selection);
+		}
 
 		site.setSelectionProvider(unstagedViewer);
 
