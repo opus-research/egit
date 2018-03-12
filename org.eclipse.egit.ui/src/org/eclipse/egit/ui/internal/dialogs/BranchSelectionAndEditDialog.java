@@ -30,9 +30,7 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -170,23 +168,8 @@ public class BranchSelectionAndEditDialog extends
 		newButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// try to read default source ref from git config
-				// in the case that no base is selected in dialog
-				String base = refNameFromDialog();
-				if (base == null) {
-					String sourceRef = repo.getConfig().getString(
-							ConfigConstants.CONFIG_WORKFLOW_SECTION, null,
-							ConfigConstants.CONFIG_KEY_DEFBRANCHSTARTPOINT);
-					try {
-						Ref ref = repo.getRef(sourceRef);
-						if (ref != null) {
-							base = ref.getName();
-						}
-					} catch (IOException e1) {
-						// base = null;
-					}
-				}
-				CreateBranchWizard wiz = new CreateBranchWizard(repo, base);
+				CreateBranchWizard wiz = new CreateBranchWizard(repo,
+						refNameFromDialog());
 				if (new WizardDialog(getShell(), wiz).open() == Window.OK) {
 					String newRefName = wiz.getNewBranchName();
 					try {
