@@ -2913,7 +2913,7 @@
    <extension point="org.eclipse.ui.navigator.viewer">
        <viewer viewerId="org.eclipse.egit.ui.compareSynchronization">
            <popupMenu
-                allowsPlatformContributions="true"
+                allowsPlatformContributions="false"
                 id="org.eclipse.egit.ui.compareSynchronizationMenu">
              <insertionPoint name="gitActions" separator="true"/>
              <insertionPoint name="file"/>
@@ -3150,19 +3150,5 @@
             id="org.eclipse.egit.ui.wizardCategory"
             name="%Git">
       </category>
-   </extension>
-   <extension
-         point="org.eclipse.ui.perspectiveExtensions">
-      <perspectiveExtension
-            targetID="*">
-         <view
-               id="org.eclipse.egit.ui.RepositoriesView"
-               minimized="false"
-               ratio="0.6"
-               relationship="bottom"
-               relative="org.eclipse.jdt.ui.PackageExplorer"
-               visible="false">
-         </view>
-      </perspectiveExtension>
    </extension>
 </plugin>
