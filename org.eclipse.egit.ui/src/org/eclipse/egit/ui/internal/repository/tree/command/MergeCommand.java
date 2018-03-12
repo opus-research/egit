@@ -62,7 +62,7 @@ public class MergeCommand extends
 		if (node instanceof RefNode) {
 			String refName = ((RefNode) node).getObject().getName();
 			try {
-				if (refName.equals(repository.getFullBranch()))
+				if (repository.getFullBranch().equals(refName))
 					targetRef = null;
 				else
 					targetRef = refName;

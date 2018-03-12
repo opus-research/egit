@@ -17,6 +17,7 @@
 package org.eclipse.egit.ui.internal.actions;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -46,7 +48,6 @@ import org.eclipse.jgit.diff.DiffConfig;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.FollowFilter;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -91,8 +92,8 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	private IProject[] getProjectsForSelectedResources(
 			IStructuredSelection selection) {
 		Set<IProject> ret = new LinkedHashSet<IProject>();
-		for (IResource resource : getSelectedAdaptables(selection,
-				IResource.class)) {
+		for (IResource resource : (IResource[]) getSelectedAdaptables(
+				selection, IResource.class)) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
 			if (mapping != null && (mapping.getContainer() instanceof IProject))
 				ret.add((IProject) mapping.getContainer());
@@ -107,8 +108,8 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	private Set<IProject> extractProjectsFromMappings(
 			IStructuredSelection selection) {
 		Set<IProject> ret = new LinkedHashSet<IProject>();
-		for (ResourceMapping mapping : getSelectedAdaptables(selection,
-				ResourceMapping.class)) {
+		for (ResourceMapping mapping : (ResourceMapping[]) getSelectedAdaptables(
+				selection, ResourceMapping.class)) {
 			IProject[] mappedProjects = mapping.getProjects();
 			if (mappedProjects != null && mappedProjects.length != 0) {
 				// Some mappings (WorkingSetResourceMapping) return the projects
@@ -253,18 +254,19 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	protected Repository[] getRepositories(ExecutionEvent event)
 			throws ExecutionException {
 		IProject[] selectedProjects = getProjectsForSelectedResources(event);
-		if (selectedProjects.length > 0) {
+		if (selectedProjects.length > 0)
 			return getRepositoriesFor(selectedProjects);
-		}
 		IStructuredSelection selection = getSelection(event);
 		if (!selection.isEmpty()) {
 			Set<Repository> repos = new LinkedHashSet<Repository>();
-			for (Object o : selection.toArray()) {
-				Repository repo = AdapterUtils.adapt(o, Repository.class);
-				if (repo != null) {
-					repos.add(repo);
+			for (Object o : selection.toArray())
+				if (o instanceof Repository)
+					repos.add((Repository) o);
+				else if (o instanceof PlatformObject) {
+					Repository repo = CommonUtils.getAdapter(((PlatformObject) o), Repository.class);
+					if (repo != null)
+						repos.add(repo);
 				}
-			}
 			return repos.toArray(new Repository[repos.size()]);
 		}
 		return new Repository[0];
@@ -284,12 +286,16 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		if (!selection.isEmpty()) {
 			Set<Repository> repos = new LinkedHashSet<Repository>();
 			for (Object o : selection.toArray()) {
-				Repository repo = AdapterUtils.adapt(o, Repository.class);
-				if (repo != null) {
-					repos.add(repo);
-				} else {
-					// no repository found for one of the objects!
-					return new Repository[0];
+				if (o instanceof Repository) {
+					repos.add((Repository) o);
+				} else if (o instanceof PlatformObject) {
+					Repository repo = CommonUtils.getAdapter(((PlatformObject) o), Repository.class);
+					if (repo != null) {
+						repos.add(repo);
+					} else {
+						// no repository found for one of the objects!
+						return new Repository[0];
+					}
 				}
 			}
 			return repos.toArray(new Repository[repos.size()]);
@@ -337,22 +343,22 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * @param c
 	 * @return the selected adaptables
 	 */
-	private <T> List<T> getSelectedAdaptables(ISelection selection,
-			Class<T> c) {
-		List<T> result;
+	@SuppressWarnings("unchecked")
+	private Object[] getSelectedAdaptables(ISelection selection, Class c) {
+		ArrayList result = null;
 		if (selection != null && !selection.isEmpty()) {
-			result = new ArrayList<>();
+			result = new ArrayList();
 			Iterator elements = ((IStructuredSelection) selection).iterator();
 			while (elements.hasNext()) {
-				T adapter = AdapterUtils.adapt(elements.next(), c);
-				if (adapter != null) {
+				Object adapter = AdapterUtils.adapt(elements.next(), c);
+				if (c.isInstance(adapter))
 					result.add(adapter);
-				}
 			}
-		} else {
-			result = Collections.emptyList();
 		}
-		return result;
+		if (result != null && !result.isEmpty())
+			return result
+					.toArray((Object[]) Array.newInstance(c, result.size()));
+		return (Object[]) Array.newInstance(c, 0);
 	}
 
 	/**
@@ -445,9 +451,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 
 	protected boolean isLocalBranchCheckedout(Repository repository) {
 		try {
-			String fullBranch = repository.getFullBranch();
-			return fullBranch != null
-					&& fullBranch.startsWith(Constants.R_HEADS);
+			return repository.getFullBranch().startsWith(Constants.R_HEADS);
 		} catch (Exception e) {
 			// do nothing
 		}
@@ -488,11 +492,8 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				rw.setTreeFilter(filter);
 			}
 
-			Ref head = repository.getRef(Constants.HEAD);
-			if (head == null) {
-				return result;
-			}
-			RevCommit headCommit = rw.parseCommit(head.getObjectId());
+			RevCommit headCommit = rw.parseCommit(repository.getRef(
+					Constants.HEAD).getObjectId());
 			rw.markStart(headCommit);
 			headCommit = rw.next();
 

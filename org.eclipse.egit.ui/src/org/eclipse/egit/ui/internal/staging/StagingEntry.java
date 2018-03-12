@@ -24,7 +24,6 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 
 
@@ -197,7 +196,6 @@ public class StagingEntry extends PlatformObject
 	/**
 	 * @return the location (path) of the entry
 	 */
-	@NonNull
 	public IPath getLocation() {
 		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
 		return absolutePath;
@@ -276,30 +274,20 @@ public class StagingEntry extends PlatformObject
 	}
 
 	@Override
-	public boolean isMissing() {
-		return state == State.MISSING || state == State.MISSING_AND_CHANGED;
-	}
-
-	@Override
-	public StagingState getStagingState() {
+	public Staged staged() {
 		switch (state) {
 		case ADDED:
-			return StagingState.ADDED;
+			return Staged.ADDED;
 		case CHANGED:
-			return StagingState.MODIFIED;
+			return Staged.MODIFIED;
 		case REMOVED:
-			return StagingState.REMOVED;
+			return Staged.REMOVED;
 		case MISSING:
 		case MISSING_AND_CHANGED:
-			return StagingState.REMOVED;
+			return Staged.REMOVED;
 		default:
-			return StagingState.NOT_STAGED;
+			return Staged.NOT_STAGED;
 		}
-	}
-
-	@Override
-	public boolean isStaged() {
-		return getStagingState() != StagingState.NOT_STAGED;
 	}
 
 	@Override

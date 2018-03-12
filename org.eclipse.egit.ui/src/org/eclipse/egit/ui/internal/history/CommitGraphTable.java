@@ -63,7 +63,6 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
@@ -861,18 +860,11 @@ class CommitGraphTable {
 				Map<String, Ref> branches = lastInput.getRepository()
 						.getRefDatabase().getRefs(Constants.R_HEADS);
 				int count = 0;
-				IStructuredSelection selection = (IStructuredSelection) selectionProvider
-						.getSelection();
-				if (selection.isEmpty()) {
-					return false;
-				}
-				ObjectId selectedId = ((RevCommit) selection.getFirstElement())
-						.getId();
 				for (Ref branch : branches.values()) {
-					ObjectId objectId = branch.getLeaf().getObjectId();
-					if (objectId != null && objectId.equals(selectedId)) {
+					if (branch.getLeaf().getObjectId()
+							.equals(((RevCommit) ((IStructuredSelection) selectionProvider
+									.getSelection()).getFirstElement()).getId()))
 						count++;
-					}
 				}
 				return (count > 1);
 
