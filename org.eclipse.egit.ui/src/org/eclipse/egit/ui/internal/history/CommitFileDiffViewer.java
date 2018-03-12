@@ -456,7 +456,7 @@ public class CommitFileDiffViewer extends TableViewer {
 			} else {
 				String message = NLS.bind(
 						UIText.CommitFileDiffViewer_notContainedInCommit, d
-.getNewPath(), commit.getName());
+.getNewPath(), d.getCommit().getId().getName());
 				Activator.showError(message, null);
 			}
 		} catch (IOException e) {
