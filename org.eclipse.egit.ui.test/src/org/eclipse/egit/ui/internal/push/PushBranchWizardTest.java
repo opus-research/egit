@@ -22,7 +22,6 @@ import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -207,7 +206,8 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	}
 
 	private SWTBotTree selectProject() {
-		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
+		SWTBotTree projectExplorerTree = bot
+				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		return projectExplorerTree;
 	}

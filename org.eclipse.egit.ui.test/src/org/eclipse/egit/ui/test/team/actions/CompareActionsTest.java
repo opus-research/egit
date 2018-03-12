@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2013 SAP AG and others.
+ * Copyright (c) 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -47,6 +47,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.util.RawParseUtils;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
@@ -55,6 +56,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
 import org.eclipse.team.ui.synchronize.ISynchronizeManager;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -67,6 +69,10 @@ import org.junit.runner.RunWith;
 public class CompareActionsTest extends LocalRepositoryTestCase {
 	private static File repositoryFile;
 
+	private static SWTBotPerspective perspective;
+
+	// private static String LOCAL_BRANCHES;
+	//
 	private static String TAGS;
 	private static ObjectId commitOfTag;
 
@@ -74,6 +80,8 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 	public static void setup() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		Repository repo = lookupRepository(repositoryFile);
+		perspective = bot.activePerspective();
+		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
 
 		disablePerspectiveSwitchPrompt();
 
@@ -104,6 +112,11 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 				.setValue(SYNCHRONIZING_COMPLETE_PERSPECTIVE, NEVER);
 		Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, false);
+	}
+
+	@AfterClass
+	public static void shutdown() {
+		perspective.activate();
 	}
 
 	@Before
@@ -315,7 +328,8 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 	}
 
 	private SWTBotTree selectProjectItem() {
-		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
+		SWTBotTree projectExplorerTree = bot.viewById(
+				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		return projectExplorerTree;
 	}
