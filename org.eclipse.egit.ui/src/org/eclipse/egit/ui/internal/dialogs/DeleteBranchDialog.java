@@ -12,9 +12,7 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.DeleteBranchOperation;
@@ -44,8 +42,6 @@ import org.eclipse.swt.widgets.Shell;
  *
  */
 public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
-
-	private final Set<Ref> selectedRefs = new HashSet<Ref>();
 
 	private static final class BranchLabelProvider extends LabelProvider {
 		@Override
@@ -94,8 +90,7 @@ public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public DeleteBranchDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
-				| ALLOW_MULTISELECTION);
+		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES);
 		try {
 			currentBranch = repo.getFullBranch();
 		} catch (IOException e) {
@@ -119,52 +114,36 @@ public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 	}
 
 	@Override
-	protected String refNameFromDialog() {
-		selectedRefs.clear();
-		Set<String> selected = new HashSet<String>();
-		IStructuredSelection selection = (IStructuredSelection) branchTree.getSelection();
-		for (Object sel : selection.toArray()) {
-			if (!(sel instanceof RefNode))
-				continue;
-
-			RefNode node = (RefNode) sel;
-			Ref ref = node.getObject();
-			selectedRefs.add(ref);
-			selected.add(ref.getName());
-		}
-
-		boolean enabled = !selected.isEmpty()
-				&& !selected.contains(currentBranch);
-		getButton(Window.OK).setEnabled(enabled);
-
-		return null;
-	}
-
-	@Override
 	protected void refNameSelected(String refName) {
-		// unused
+		getButton(Window.OK).setEnabled(
+				refName != null && !refName.equals(currentBranch));
 	}
 
 	@Override
 	protected void buttonPressed(int buttonId) {
 		if (buttonId == Window.OK) {
+			Ref ref = refFromDialog();
 			try {
-				int result = deleteBranch(selectedRefs, false);
+				int result = deleteBranch(ref, false);
 				if (result == DeleteBranchOperation.REJECTED_UNMERGED) {
-					List<RefNode> nodes = extractSelectedRefNodes();
-
+					List<RefNode> nodes = new ArrayList<RefNode>();
+					nodes
+							.add((RefNode) ((IStructuredSelection) super.branchTree
+									.getSelection()).getFirstElement());
 					MessageDialog messageDialog = new BranchMessageDialog(
 							getShell(), nodes);
-
-					if (messageDialog.open() == Window.OK)
-						deleteBranch(selectedRefs, true);
-					else
+					if (messageDialog.open() == Window.OK) {
+						deleteBranch(ref, false);
+					} else {
 						return;
-				} else if (result == DeleteBranchOperation.REJECTED_CURRENT)
+					}
+				} else if (result == DeleteBranchOperation.REJECTED_CURRENT) {
 					Activator
 							.handleError(
 									UIText.DeleteBranchCommand_CannotDeleteCheckedOutBranch,
 									null, true);
+				}
+
 			} catch (CoreException e) {
 				Activator.handleError(e.getMessage(), e, true);
 			}
@@ -173,22 +152,9 @@ public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 		super.buttonPressed(buttonId);
 	}
 
-	private int deleteBranch(final Set<Ref> ref, boolean force) throws CoreException {
+	private int deleteBranch(final Ref ref, boolean force) throws CoreException {
 		DeleteBranchOperation dbop = new DeleteBranchOperation(repo, ref, force);
 		dbop.execute(null);
 		return dbop.getStatus();
 	}
-
-	private List<RefNode> extractSelectedRefNodes() {
-		List<RefNode> nodes = new ArrayList<RefNode>();
-		Object[] array = ((IStructuredSelection) super.branchTree
-				.getSelection()).toArray();
-
-		for (Object selected : array)
-			if (selected instanceof RefNode)
-				nodes.add((RefNode) selected);
-
-		return nodes;
-	}
-
 }
