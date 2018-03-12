@@ -29,8 +29,8 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -111,11 +111,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		// first time: expect new branch
 		TestUtil.joinJobs(JobFamilies.PUSH);
 		SWTBotShell confirmed = bot.shell(dialogTitle);
-		SWTBotTable table = confirmed.bot().table();
-		int rowCount = table.rowCount();
+		SWTBotTreeItem[] treeItems = confirmed.bot().tree().getAllItems();
 		boolean newBranch = false;
-		for (int i = 0; i < rowCount; i++) {
-			newBranch = table.getTableItem(i).getText(3).equals(
+		for (SWTBotTreeItem item : treeItems) {
+			newBranch = item.getText().contains(
 					UIText.PushResultTable_statusOkNewBranch);
 			if (newBranch)
 				break;
@@ -130,11 +129,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimplePushCommand"));
 
 		confirmed = bot.shell(dialogTitle);
-		table = confirmed.bot().table();
-		rowCount = table.rowCount();
+		treeItems = confirmed.bot().tree().getAllItems();
 		boolean uptodate = false;
-		for (int i = 0; i < rowCount; i++) {
-			uptodate = table.getTableItem(i).getText(3).equals(
+		for (SWTBotTreeItem item : treeItems) {
+			uptodate = item.getText().contains(
 					UIText.PushResultTable_statusUpToDate);
 			if (uptodate)
 				break;
@@ -154,12 +152,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimplePushCommand"));
 
 		confirmed = bot.shell(dialogTitle);
-		table = confirmed.bot().table();
-		rowCount = table.rowCount();
+		treeItems = confirmed.bot().tree().getAllItems();
 		newBranch = false;
-		for (int i = 0; i < rowCount; i++) {
-			newBranch = table.getTableItem(i).getText(3).startsWith(
-					objectIdBefore);
+		for (SWTBotTreeItem item : treeItems) {
+			newBranch = item.getText().contains(objectIdBefore);
 			if (newBranch)
 				break;
 		}
@@ -195,7 +191,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
 		SWTBotShell confirm = bot.shell(dialogTitle);
-		assertEquals("Wrong result table row count", 0, confirm.bot().table()
+		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
 				.rowCount());
 		confirm.close();
 
@@ -225,10 +221,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		TestUtil.joinJobs(JobFamilies.FETCH);
 		confirm = bot.shell(dialogTitle);
-		SWTBotTable table = confirm.bot().table();
+		SWTBotTreeItem[] treeItems = confirm.bot().tree().getAllItems();
 		boolean found = false;
-		for (int i = 0; i < table.rowCount(); i++) {
-			found = table.getTableItem(i).getText(2).startsWith(objid);
+		for (SWTBotTreeItem item : treeItems) {
+			found = item.getText().contains(objid);
 			if (found)
 				break;
 		}
@@ -241,7 +237,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
 		confirm = bot.shell(dialogTitle);
-		assertEquals("Wrong result table row count", 0, confirm.bot().table()
+		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
 				.rowCount());
 	}
 }
