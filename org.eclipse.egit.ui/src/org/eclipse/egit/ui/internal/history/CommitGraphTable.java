@@ -71,6 +71,7 @@ import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSourceAdapter;
@@ -157,6 +158,8 @@ class CommitGraphTable {
 	private final TableLoader tableLoader;
 
 	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
+
+	private boolean enableAntialias = true;
 
 	CommitGraphTable(Composite parent, final TableLoader loader,
 			final ResourceManager resources) {
@@ -475,6 +478,15 @@ class CommitGraphTable {
 	}
 
 	void doPaint(final Event event) {
+		// enable antialiasing early to avoid different font extent in
+		// PlotRenderer
+		if (this.enableAntialias)
+			try {
+				event.gc.setAntialias(SWT.ON);
+			} catch (SWTException e) {
+				this.enableAntialias = false;
+			}
+
 		final RevCommit c = (RevCommit) ((TableItem) event.item).getData();
 		if (c instanceof SWTCommit) {
 			final SWTLane lane = ((SWTCommit) c).getLane();
@@ -668,12 +680,16 @@ class CommitGraphTable {
 		public void menuDetected(MenuDetectEvent e) {
 			popupMgr.removeAll();
 
+			final HistoryPageInput lastInput = this.input;
+			if (lastInput == null)
+				return;
+
 			int selectionSize = ((IStructuredSelection) selectionProvider
 					.getSelection()).size();
 
-			if (input.isSingleFile()) {
+			if (lastInput.isSingleFile()) {
 				if (selectionSize == 1)
-					if (input.getSingleFile() instanceof IResource)
+					if (lastInput.getSingleFile() instanceof IResource)
 						popupMgr
 								.add(getCommandContributionItem(
 										HistoryViewCommands.COMPARE_WITH_TREE,
@@ -705,8 +721,8 @@ class CommitGraphTable {
 
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (!input.getRepository().isBare()) {
-					if (hasMultipleRefNodes()) {
+				if (!lastInput.getRepository().isBare()) {
+					if (hasMultipleRefNodes(lastInput)) {
 						popupMgr.add(getCommandContributionItem(
 								HistoryViewCommands.CHECKOUT,
 								UIText.GitHistoryPage_CheckoutMenuLabel2));
@@ -741,6 +757,9 @@ class CommitGraphTable {
 						HistoryViewCommands.CREATE_PATCH,
 						UIText.GitHistoryPage_CreatePatchMenuLabel));
 				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.CHERRYPICK,
+						UIText.GitHistoryPage_cherryPickMenuItem));
+				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.MERGE,
 						UIText.GitHistoryPage_mergeMenuItem));
 				popupMgr.add(getCommandContributionItem(
@@ -757,7 +776,7 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.COMPARE_VERSIONS,
 						UIText.GitHistoryPage_CompareWithEachOtherMenuLabel));
-				if (!input.isSingleFile())
+				if (!lastInput.isSingleFile())
 					popupMgr
 							.add(getCommandContributionItem(
 									HistoryViewCommands.COMPARE_VERSIONS_IN_TREE,
@@ -766,9 +785,6 @@ class CommitGraphTable {
 
 			popupMgr.add(new Separator());
 
-			popupMgr.add(getCommandContributionItem(
-					HistoryViewCommands.CHERRYPICK,
-					UIText.GitHistoryPage_cherryPickMenuItem));
 			popupMgr.add(getCommandContributionItem(HistoryViewCommands.REVERT,
 					UIText.GitHistoryPage_revertMenuItem));
 
@@ -824,9 +840,9 @@ class CommitGraphTable {
 			popupMgr.add(new Separator());
 		}
 
-		private boolean hasMultipleRefNodes() {
+		private boolean hasMultipleRefNodes(HistoryPageInput lastInput) {
 			try {
-				Map<String, Ref> branches = input.getRepository()
+				Map<String, Ref> branches = lastInput.getRepository()
 						.getRefDatabase().getRefs(Constants.R_HEADS);
 				int count = 0;
 				for (Ref branch : branches.values()) {
