@@ -398,12 +398,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_revertMenuItem;
 
 	/** */
-	public static String GitHistoryPage_mergeMenuItem;
-
-	/** */
-	public static String GitHistoryPage_rebaseMenuItem;
-
-	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
@@ -456,9 +450,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
-
-	/** */
-	public static String GitPreferenceRoot_ShowInitialConfigDialogCheckbox;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -657,24 +648,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickOperation_InternalError;
-
-	/** */
-	public static String CompareTargetSelectionDialog_CompareButton;
-
-	/** */
-	public static String CompareTargetSelectionDialog_CompareMessage;
-
-	/** */
-	public static String CompareTargetSelectionDialog_CompareTitle;
-
-	/** */
-	public static String CompareTargetSelectionDialog_WindowTitle;
-
-	/** */
-	public static String MergeHandler_SelectBranchMessage;
-
-	/** */
-	public static String MergeHandler_SelectBranchTitle;
 
 	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
@@ -1448,9 +1421,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_AddChangeIdTooltip;
 
 	/** */
-	public static String CommitDialog_WrongTypeOfCommitMessageProvider;
-
-	/** */
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
@@ -1914,21 +1884,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String WindowCachePreferencePage_packedGitMMAP;
-
-	/** */
-	public static String BasicConfigurationDialog_DialogMessage;
-
-	/** */
-	public static String BasicConfigurationDialog_DialogTitle;
-
-	/** */
-	public static String BasicConfigurationDialog_UserEmailLabel;
-
-	/** */
-	public static String BasicConfigurationDialog_UserNameLabel;
-
-	/** */
-	public static String BasicConfigurationDialog_WindowTitle;
 
 	/** */
 	public static String BranchAction_branchFailed;
@@ -2498,13 +2453,7 @@ public class UIText extends NLS {
 	public static String CreateTagDialog_CreateTagOnCommitTitle;
 
 	/** */
-	public static String CreateTagDialog_ExceptionRetrievingTagsMessage;
-
-	/** */
 	public static String CreateTagDialog_GetTagJobName;
-
-	/** */
-	public static String CreateTagDialog_LightweightTagMessage;
 
 	/** */
 	public static String CreateTagDialog_LoadingMessageText;
@@ -2538,7 +2487,7 @@ public class UIText extends NLS {
 	public static String CommitAction_MergeHeadErrorTitle;
 
 	/** */
-	public static String CommitActionHandler_calculatingChanges;
+	public static String CommitActionHandler_caculatingChanges;
 
 	/** */
 	public static String CommitActionHandler_repository;
