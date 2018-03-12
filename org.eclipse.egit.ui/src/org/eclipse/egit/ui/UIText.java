@@ -2,7 +2,7 @@
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
- *
+ * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -1882,6 +1882,12 @@ public class UIText extends NLS {
 	public static String ConfigurationEditorComponent_AddButton;
 
 	/** */
+	public static String ConfigurationEditorComponent_BrowseForPrefix;
+
+	/** */
+	public static String ConfigurationEditorComponent_CannotChangeGitPrefixError;
+
+	/** */
 	public static String ConfigurationEditorComponent_ChangeButton;
 
 	/** */
@@ -1892,6 +1898,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_EmptyStringNotAllowed;
+
+	/** */
+	public static String ConfigurationEditorComponent_GitPrefixSelectionErrorMessage;
+
+	/** */
+	public static String ConfigurationEditorComponent_GitPrefixSelectionErrorTitle;
 
 	/** */
 	public static String ConfigurationEditorComponent_KeyColumnHeader;
@@ -1934,6 +1946,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_RemoveSubsectionTitle;
+
+	/** */
+	public static String ConfigurationEditorComponent_SelectGitInstallation;
 
 	/** */
 	public static String ConfigurationEditorComponent_ValueColumnHeader;
@@ -3357,6 +3372,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitEditorPage_TooltipSignedOffByCommitter;
+
+	/** */
+	public static String Header_contextMenu_copy;
+
+	/** */
+	public static String Header_contextMenu_copy_SHA1;
+	/** */
+
+	public static String Header_copy_SHA1_error_title;
+
+	/** */
+	public static String Header_copy_SHA1_error_message;
 
 	/** */
 	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
