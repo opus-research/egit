@@ -9,7 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.storage;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -57,9 +56,6 @@ class BlobStorage implements IStorage {
 
 	private InputStream open() throws IOException, CoreException,
 			IncorrectObjectTypeException {
-		if (blobId == null)
-			return new ByteArrayInputStream(new byte[0]);
-
 		try {
 			return db.open(blobId, Constants.OBJ_BLOB).openStream();
 		} catch (MissingObjectException notFound) {

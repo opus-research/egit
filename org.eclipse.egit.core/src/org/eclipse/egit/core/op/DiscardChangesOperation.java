@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -163,9 +162,8 @@ public class DiscardChangesOperation implements IEGitOperation {
 	private void discardChanges() throws GitAPIException {
 		Map<Repository, Collection<String>> pathsByRepository = ResourceUtil
 				.splitResourcesByRepository(files);
-		for (Entry<Repository, Collection<String>> entry : pathsByRepository.entrySet()) {
-			Repository repository = entry.getKey();
-			Collection<String> paths = entry.getValue();
+		for (Repository repository : pathsByRepository.keySet()) {
+			Collection<String> paths = pathsByRepository.get(repository);
 			CheckoutCommand checkoutCommand = new Git(repository).checkout();
 			checkoutCommand.setStartPoint(this.revision);
 			for (String path : paths)

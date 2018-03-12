@@ -37,8 +37,7 @@ public class GitModelWorkingFile extends GitModelBlob {
 			ComparisonDataSource remoteData, ComparisonDataSource ancestorData) {
 		// currently shouldn't be used. Compare editor for working tree files is
 		// opened directly from GitOpenInCompareAction
-		throw new UnsupportedOperationException(
-				"Compare editor for working tree files is should be opened directly from GitOpenInCompareAction"); //$NON-NLS-1$
+		return null;
 	}
 
 	@Override
