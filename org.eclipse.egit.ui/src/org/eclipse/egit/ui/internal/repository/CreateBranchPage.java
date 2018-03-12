@@ -149,7 +149,6 @@ class CreateBranchPage extends WizardPage {
 					.setToolTipText(UIText.CreateBranchPage_SourceBranchTooltip);
 		}
 		this.branchCombo = new Combo(main, SWT.READ_ONLY | SWT.DROP_DOWN);
-		branchCombo.setData("org.eclipse.swtbot.widget.key", "BaseBranch"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false).applyTo(
 				this.branchCombo);
@@ -183,6 +182,8 @@ class CreateBranchPage extends WizardPage {
 			this.branchCombo.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
+					upstreamConfig = getDefaultUpstreamConfig(myRepository,
+							branchCombo.getText());
 					checkPage();
 				}
 			});
@@ -329,8 +330,7 @@ class CreateBranchPage extends WizardPage {
 				buttonConfigMerge.setSelection(false);
 			buttonConfigRebase.setSelection(false);
 			buttonConfigNone.setSelection(false);
-			switch (getDefaultUpstreamConfig(myRepository, branchCombo
-					.getText())) {
+			switch (upstreamConfig) {
 			case MERGE:
 				buttonConfigMerge.setSelection(true);
 				break;

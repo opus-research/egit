@@ -148,6 +148,21 @@
                label="%DiscardChangesAction_label"
                menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
          <action
+               class="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
+               id="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
+               label="%ReplaceWithRefAction_label"
+               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadAction"
+               id="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadAction"
+               label="%ReplaceWithHeadAction_label"
+               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitAction"
+               id="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitAction"
+               label="%ReplaceWithCommitAction_label"
+               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
+         <action
                class="org.eclipse.egit.ui.internal.actions.ApplyPatchAction"
                definitionId="org.eclipse.egit.ui.team.ApplyPatch"
                enablesFor="*"
@@ -1555,7 +1570,7 @@
          </separator>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
-               icon="icons/obj16/tags.gif"
+               icon="icons/obj16/new_tag_obj.gif"
                label="%RepoViewCreateTag.label"
                style="push">
             <visibleWhen
@@ -2314,6 +2329,11 @@
                style="toggle"
                tooltip="%RepoViewHierarchicalBranchRepresenation.tooltip">
          </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesToggleBranchCommit"
+               style="toggle"
+               tooltip="%RepoViewBranchCommit.tooltip">
+         </command>
       </menuContribution>
       <menuContribution
             locationURI="menu:org.eclipse.egit.ui.RepositoriesView">
@@ -2353,6 +2373,11 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
                label="%HierarchyLayout.label"
+               style="toggle">
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesToggleBranchCommit"
+               label="%BranchCommit.label"
                style="toggle">
          </command>
       </menuContribution>
@@ -2841,6 +2866,16 @@
                id="org.eclipse.ui.commands.toggleState">
          </state>
       </command>
+       <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand"
+            id="org.eclipse.egit.ui.RepositoriesToggleBranchCommit"
+            name="%ToggleBranchCommitCommand.name">
+         <state
+               class="org.eclipse.ui.handlers.RegistryToggleState:false"
+               id="org.eclipse.ui.commands.toggleState">
+         </state>
+      </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.commands.shared.RebaseCurrentRefCommand"
@@ -2886,7 +2921,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
-            icon="icons/obj16/version_rep.gif">
+            icon="icons/obj16/new_tag_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.ShowRepositoriesView"
@@ -2914,7 +2949,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.CreateTag"
-            icon="icons/obj16/version_rep.gif">
+            icon="icons/obj16/new_tag_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.CheckoutCommand"
@@ -2955,6 +2990,10 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
             icon="icons/elcl16/hierarchicalLayout.gif">
+      </image>
+       <image
+            commandId="org.eclipse.egit.ui.RepositoriesToggleBranchCommit"
+            icon="icons/obj16/changelog_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewRemove"
@@ -3050,7 +3089,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Tag"
-            icon="icons/obj16/tags.gif">
+            icon="icons/obj16/new_tag_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.AssumeUnchanged"
@@ -3219,6 +3258,24 @@
             defaultHandler="org.eclipse.egit.ui.internal.actions.DiscardChangesActionHandler"
             id="org.eclipse.egit.ui.team.Discard"
             name="%ReplaceWithIndexCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadActionHandler"
+            id="org.eclipse.egit.ui.team.ReplaceWithHead"
+            name="%ReplaceWithHeadCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitActionHandler"
+            id="org.eclipse.egit.ui.team.ReplaceWithCommit"
+            name="%ReplaceWithCommitCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithRefActionHandler"
+            id="org.eclipse.egit.ui.team.ReplaceWithRef"
+            name="%ReplaceWithRefCommand.name">
       </command>
             <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -3425,6 +3482,11 @@
             defaultHandler="org.eclipse.egit.ui.internal.history.command.RebaseCurrentHandler"
             id="org.eclipse.egit.ui.RebaseCurrent"
             name="%RebaseCurrentCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.OpenInCommitViewerHandler"
+            id="org.eclipse.egit.ui.history.OpenInCommitViewerCommand"
+            name="%OpenInCommitViewerCommand.name">
       </command>
    </extension>
    <extension
