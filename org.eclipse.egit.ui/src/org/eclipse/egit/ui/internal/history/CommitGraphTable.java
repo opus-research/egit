@@ -229,11 +229,11 @@ class CommitGraphTable {
 	}
 
 	/**
-	 * Returns the SWT TableView of this CommitGraphTable.
+	 * Returns the SWT Table that backs this CommitGraphTable.
 	 *
 	 * @return Table the SWT Table
 	 */
-	public TableViewer getTableView() {
-		return table;
+	public Table getTable() {
+		return table.getTable();
 	}
 }

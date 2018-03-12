@@ -15,6 +15,7 @@ import java.util.Map;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.CoreText;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.lib.Ref;
@@ -26,7 +27,7 @@ import org.eclipse.jgit.transport.URIish;
 /**
  * Operation of listing remote repository advertised refs.
  */
-public class ListRemoteOperation {
+public class ListRemoteOperation implements IRunnableWithProgress {
 	private final Repository localDb;
 
 	private final URIish uri;
@@ -70,13 +71,6 @@ public class ListRemoteOperation {
 		return remoteRefsMap.get(refName);
 	}
 
-	/**
-	 * @param pm
-	 *            the monitor to be used for reporting progress and responding
-	 *            to cancellation. The monitor is never <code>null</code>
-	 * @throws InvocationTargetException
-	 * @throws InterruptedException
-	 */
 	public void run(IProgressMonitor pm) throws InvocationTargetException,
 			InterruptedException {
 		Transport transport = null;
@@ -106,7 +100,6 @@ public class ListRemoteOperation {
 	private void checkState() {
 		if (remoteRefsMap == null)
 			throw new IllegalStateException(
-					"Error occurred during remote repo " +  //$NON-NLS-1$
-					"listing, no refs available"); //$NON-NLS-1$
+					"Error occurred during remote repo listing, no refs available");
 	}
 }

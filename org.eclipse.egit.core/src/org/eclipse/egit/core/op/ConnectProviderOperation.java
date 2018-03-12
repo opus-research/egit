@@ -25,9 +25,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitProvider;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -51,7 +51,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 	 *            the project to connect to the Git team provider.
 	 */
 	public ConnectProviderOperation(final IProject proj) {
-		this(proj, proj.getLocation().append(Constants.DOT_GIT).toFile());
+		this(proj, proj.getLocation().append("/").append(Constants.DOT_GIT).toFile());
 	}
 
 	/**
@@ -90,12 +90,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 				m.setTaskName(NLS.bind(
 						CoreText.ConnectProviderOperation_ConnectingProject,
 						project.getName()));
-				// TODO is this the right location?
-				if (GitTraceLocation.CORE.isActive())
-					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.CORE.getLocation(),
-							"Locating repository for " + project);
-
+				Activator.trace("Locating repository for " + project); //$NON-NLS-1$
 				Collection<RepositoryMapping> repos = new RepositoryFinder(
 						project).find(new SubProgressMonitor(m, 40));
 				File suggestedRepo = projects.get(project);
@@ -119,12 +114,9 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 							new SubProgressMonitor(m, 50));
 					m.worked(10);
 				} else {
-					// TODO is this the right location?
-					if (GitTraceLocation.CORE.isActive())
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.CORE.getLocation(),
-								"Attempted to share project without repository ignored :" //$NON-NLS-1$
-										+ project);
+					Activator
+							.trace("Attempted to share project without repository ignored :" //$NON-NLS-1$
+									+ project);
 					m.worked(60);
 				}
 			}
