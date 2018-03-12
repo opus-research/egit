@@ -9,8 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.credentials;
 
-import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.egit.core.Activator;
@@ -134,17 +132,6 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 		});
 
 		return result[0];
-	}
-
-	@Override
-	public void reset(URIish uri) {
-		try {
-			Activator.getDefault().getSecureStore().clearCredentials(uri);
-		} catch (IOException e) {
-			Activator.logError(MessageFormat.format(
-					UIText.EGitCredentialsProvider_FailedToClearCredentials,
-					uri), e);
-		}
 	}
 
 	/**

@@ -57,8 +57,7 @@ public class PullResultDialog extends Dialog {
 	 */
 	public PullResultDialog(Shell shell, Repository repo, PullResult result) {
 		super(shell);
-		setShellStyle(getShellStyle() & ~SWT.APPLICATION_MODAL | SWT.SHELL_TRIM);
-		setBlockOnOpen(false);
+		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repo = repo;
 		this.result = result;
 		hasUpdates = hasFetchResults() || hasMergeResults()

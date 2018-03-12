@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2011 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -45,10 +45,7 @@ public class GitSynchronizeData {
 	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace()
 					.getRoot();
 
-	/**
-	 * Matches all strings that start from R_HEADS
-	 */
-	public static final Pattern BRANCH_NAME_PATTERN = Pattern.compile("^" + R_HEADS + ".*?"); //$NON-NLS-1$ //$NON-NLS-2$
+	private static final Pattern BRANCH_NAME_PATTERN = Pattern.compile("^" + R_HEADS + ".*?"); //$NON-NLS-1$ //$NON-NLS-2$
 
 	private final boolean includeLocal;
 
@@ -138,12 +135,8 @@ public class GitSynchronizeData {
 	 */
 	public void updateRevs() throws IOException {
 		ObjectWalk ow = new ObjectWalk(repo);
-		try {
-			srcRevCommit = getCommit(srcRev, ow);
-			dstRevCommit = getCommit(dstRev, ow);
-		} finally {
-			ow.release();
-		}
+		srcRevCommit = getCommit(srcRev, ow);
+		dstRevCommit = getCommit(dstRev, ow);
 
 		if (this.dstRevCommit != null || this.srcRevCommit != null)
 			this.ancestorRevCommit = getCommonAncestor(repo, this.srcRevCommit,

@@ -16,26 +16,17 @@ package org.eclipse.egit.ui.internal.clone;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.RepositoryUtil;
-import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.op.CloneOperation;
-import org.eclipse.egit.core.op.CloneOperation.PostCloneTask;
 import org.eclipse.egit.core.op.ConfigureFetchAfterCloneTask;
 import org.eclipse.egit.core.op.ConfigurePushAfterCloneTask;
-import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.op.SetChangeIdTask;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
@@ -45,7 +36,6 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
-import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -53,13 +43,10 @@ import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.ui.IWorkingSet;
 
 /**
  * Import Git Repository Wizard. A front end to a git clone operation.
@@ -147,17 +134,6 @@ public class GitCloneWizard extends Wizard {
 		callerRunsCloneOperation = newValue;
 	}
 
-	/**
-	 * Set whether to show project import options on the destination page
-	 *
-	 * @param show
-	 * @return this wizard
-	 */
-	public GitCloneWizard setShowProjectImport(boolean show) {
-		cloneDestination.setShowProjectImport(show);
-		return this;
-	}
-
 	@Override
 	public boolean performCancel() {
 		if (alreadyClonedInto != null) {
@@ -240,30 +216,12 @@ public class GitCloneWizard extends Wizard {
 		final CloneOperation op = new CloneOperation(uri, allSelected,
 				selectedBranches, workdir, ref != null ? ref.getName() : null,
 				remoteName, timeout);
+		if (gerritConfiguration.configureGerrit())
+			doGerritConfiguration(remoteName, op);
 		UserPasswordCredentials credentials = cloneSource.getCredentials();
 		if (credentials != null)
 			op.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
 					credentials.getUser(), credentials.getPassword()));
-		op.setCloneSubmodules(cloneDestination.isCloneSubmodules());
-
-		if (gerritConfiguration.configureGerrit()) {
-			boolean hasReviewNotes = hasReviewNotes(uri, timeout, credentials);
-			if (!hasReviewNotes)
-				MessageDialog.openInformation(getShell(),
-						UIText.GitCloneWizard_MissingNotesTitle,
-						UIText.GitCloneWizard_MissingNotesMessage);
-			doGerritConfiguration(remoteName, op, hasReviewNotes);
-		}
-
-		if (cloneDestination.isImportProjects()) {
-			final IWorkingSet[] sets = cloneDestination.getWorkingSets();
-			op.addPostCloneTask(new PostCloneTask() {
-				public void execute(Repository repository,
-						IProgressMonitor monitor) throws CoreException {
-					importProjects(repository, sets);
-				}
-			});
-		}
 
 		alreadyClonedInto = workdir.getPath();
 
@@ -275,77 +233,13 @@ public class GitCloneWizard extends Wizard {
 		return true;
 	}
 
-	private void importProjects(final Repository repository,
-			final IWorkingSet[] sets) {
-		String repoName = Activator.getDefault().getRepositoryUtil()
-				.getRepositoryName(repository);
-		Job importJob = new Job(MessageFormat.format(
-				UIText.GitCloneWizard_jobImportProjects, repoName)) {
-
-			protected IStatus run(IProgressMonitor monitor) {
-				List<File> files = new ArrayList<File>();
-				ProjectUtil.findProjectFiles(files, repository.getWorkTree(),
-						null, monitor);
-				if (files.isEmpty())
-					return Status.OK_STATUS;
-
-				Set<ProjectRecord> records = new LinkedHashSet<ProjectRecord>();
-				for (File file : files)
-					records.add(new ProjectRecord(file));
-				try {
-					ProjectUtils.createProjects(records, repository, sets,
-							monitor);
-				} catch (InvocationTargetException e) {
-					Activator.logError(e.getLocalizedMessage(), e);
-				} catch (InterruptedException e) {
-					Activator.logError(e.getLocalizedMessage(), e);
-				}
-				return Status.OK_STATUS;
-			}
-		};
-		importJob.schedule();
-	}
-
-	private boolean hasReviewNotes(final URIish uri, int timeout,
-			UserPasswordCredentials credentials) {
-		boolean hasNotes = false;
-		try {
-			final Repository db = new FileRepository(new File("/tmp")); //$NON-NLS-1$
-			final ListRemoteOperation listRemoteOp = new ListRemoteOperation(db, uri, timeout);
-			if (credentials != null)
-				listRemoteOp
-				.setCredentialsProvider(new EGitCredentialsProvider(
-						credentials.getUser(), credentials
-						.getPassword()));
-			getContainer().run(true, true, new IRunnableWithProgress() {
-				public void run(IProgressMonitor monitor)
-						throws InvocationTargetException, InterruptedException {
-					listRemoteOp.run(monitor);
-				}
-			});
-			String notesRef = Constants.R_NOTES + "review"; //$NON-NLS-1$
-			hasNotes = listRemoteOp.getRemoteRef(notesRef) != null;
-		} catch (IOException e) {
-			Activator.handleError(UIText.GitCloneWizard_failed,
-					e, true);
-		} catch (InvocationTargetException e) {
-			Activator.handleError(UIText.GitCloneWizard_failed,
-					e.getCause(), true);
-		} catch (InterruptedException e) {
-			// nothing to do
-		}
-		return hasNotes;
-	}
-
 	private void doGerritConfiguration(final String remoteName,
-			final CloneOperation op, final boolean hasNotes) {
+			final CloneOperation op) {
 		String gerritBranch = gerritConfiguration.getBranch();
 		URIish pushURI = gerritConfiguration.getURI();
-		if (hasNotes) {
-			String notesRef = Constants.R_NOTES + "review"; //$NON-NLS-1$
-			op.addPostCloneTask(new ConfigureFetchAfterCloneTask(remoteName,
-					notesRef + ":" + notesRef)); //$NON-NLS-1$
-		}
+		String notesRef = Constants.R_NOTES + "review"; //$NON-NLS-1$
+		op.addPostCloneTask(new ConfigureFetchAfterCloneTask(remoteName,
+				notesRef + ":" + notesRef)); //$NON-NLS-1$
 		if (gerritBranch != null && gerritBranch.length() > 0) {
 			ConfigurePushAfterCloneTask push = new ConfigurePushAfterCloneTask(remoteName,
 					"HEAD:refs/for/" + gerritBranch, pushURI); //$NON-NLS-1$
