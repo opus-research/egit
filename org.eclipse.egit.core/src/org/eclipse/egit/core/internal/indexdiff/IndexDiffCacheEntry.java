@@ -56,8 +56,6 @@ import org.eclipse.team.core.Team;
  */
 public class IndexDiffCacheEntry {
 
-	private static final String GITIGNORE_NAME = ".gitignore"; //$NON-NLS-1$
-
 	private static final int RESOURCE_LIST_UPDATE_LIMIT = 1000;
 
 	private Repository repository;
@@ -144,8 +142,6 @@ public class IndexDiffCacheEntry {
 	private void scheduleReloadJob() {
 		if (reloadJob != null)
 			reloadJob.cancel();
-		if (!checkRepository())
-			return;
 		reloadJob = new Job(getReloadJobName()) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
@@ -187,20 +183,12 @@ public class IndexDiffCacheEntry {
 		reloadJob.schedule();
 	}
 
-	private boolean checkRepository() {
-		if (Activator.getDefault() == null)
-			return false;
-		if (!repository.getDirectory().exists())
-			return false;
-		return true;
-	}
-
 	private void waitForWorkspaceLock() {
 		// Wait for the workspace lock to avoid starting the calculation
 		// of an IndexDiff while the workspace changes (e.g. due to a
 		// branch switch).
 		// The index diff calculation jobs do not lock the workspace
-		// during execution to avoid blocking the workspace.
+		// during execution to avoid blocking the wordspace.
 		try {
 			ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
 
@@ -215,8 +203,6 @@ public class IndexDiffCacheEntry {
 
 	private void scheduleUpdateJob(final Collection<String> filesToUpdate,
 			final Collection<IFile> fileResourcesToUpdate) {
-		if (!checkRepository())
-			return;
 		Job job = new Job(getReloadJobName()) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
@@ -318,8 +304,6 @@ public class IndexDiffCacheEntry {
 			public void resourceChanged(IResourceChangeEvent event) {
 				final Collection<String> filesToUpdate = new HashSet<String>();
 				final Collection<IFile> fileResourcesToUpdate = new HashSet<IFile>();
-				final boolean[] gitIgnoreChanged = new boolean[1];
-				gitIgnoreChanged[0] = false;
 
 				try {
 					event.getDelta().accept(new IResourceDeltaVisitor() {
@@ -347,10 +331,6 @@ public class IndexDiffCacheEntry {
 								// Ignore the change
 								return true;
 
-							if (resource.getName().equals(GITIGNORE_NAME)) {
-								gitIgnoreChanged[0] = true;
-								return false;
-							}
 							// Don't include ignored resources
 							if (Team.isIgnoredHint(resource))
 								return false;
@@ -368,9 +348,7 @@ public class IndexDiffCacheEntry {
 					return;
 				}
 
-				if (gitIgnoreChanged[0] || indexDiffData == null)
-					scheduleReloadJob();
-				else if (!filesToUpdate.isEmpty())
+				if (!filesToUpdate.isEmpty())
 					if (filesToUpdate.size() < RESOURCE_LIST_UPDATE_LIMIT)
 						scheduleUpdateJob(filesToUpdate, fileResourcesToUpdate);
 					else
