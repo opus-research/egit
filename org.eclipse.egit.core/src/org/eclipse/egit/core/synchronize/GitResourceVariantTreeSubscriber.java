@@ -27,7 +27,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
@@ -90,8 +89,7 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public boolean isSupervised(IResource res) throws TeamException {
 		return IResource.FILE == res.getType()
-				&& (ResourceUtil.isNonWorkspace(res) || gsds.contains(res
-						.getProject()) && shouldBeIncluded(res));
+				&& gsds.contains(res.getProject()) && shouldBeIncluded(res);
 	}
 
 	/**
@@ -248,7 +246,7 @@ public class GitResourceVariantTreeSubscriber extends
 	protected SyncInfo getSyncInfo(IResource local, IResourceVariant base,
 			IResourceVariant remote) throws TeamException {
 
-		Repository repo = getRepository(local);
+		Repository repo = gsds.getData(local.getProject()).getRepository();
 		SyncInfo info = new GitSyncInfo(local, base, remote,
 				getResourceComparator(), cache.get(repo), repo);
 
@@ -277,10 +275,4 @@ public class GitResourceVariantTreeSubscriber extends
 		return false;
 	}
 
-	private Repository getRepository(IResource local) {
-		if (!ResourceUtil.isNonWorkspace(local))
-			return gsds.getData(local.getProject()).getRepository();
-
-		return RepositoryMapping.getMapping(local.getFullPath()).getRepository();
-	}
 }
