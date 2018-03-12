@@ -19,7 +19,6 @@ import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
-import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.util.FS;
 
 /**
@@ -69,7 +68,7 @@ public class AdaptableFileTreeIterator extends FileTreeIterator {
 	 * @param workspaceRoot
 	 *            the workspace root to check resource mapping against.
 	 */
-	protected AdaptableFileTreeIterator(final WorkingTreeIterator parent,
+	protected AdaptableFileTreeIterator(final AdaptableFileTreeIterator parent,
 			File path, final IWorkspaceRoot workspaceRoot) {
 		super(parent, path, FS.DETECTED);
 		root = workspaceRoot;
