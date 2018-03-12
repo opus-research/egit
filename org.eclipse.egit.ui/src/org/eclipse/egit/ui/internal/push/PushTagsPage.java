@@ -8,28 +8,26 @@
 package org.eclipse.egit.ui.internal.push;
 
 import java.net.URISyntaxException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.SelectionType;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
-import org.eclipse.egit.ui.internal.repository.RepositoriesViewStyledCellLabelProvider;
+import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.layout.LayoutConstants;
+import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
-import org.eclipse.jface.viewers.CheckboxTreeViewer;
+import org.eclipse.jface.viewers.CheckboxTableViewer;
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.ViewerComparator;
@@ -39,9 +37,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 
@@ -57,10 +52,6 @@ public class PushTagsPage extends WizardPage {
 	private RemoteConfig selectedRemoteConfig = null;
 
 	private List<TagNode> selectedTags = new ArrayList<TagNode>();
-
-	private boolean forceUpdateSelected = false;
-
-	private Label tagsLabel;
 
 	/**
 	 * @param repository
@@ -83,8 +74,7 @@ public class PushTagsPage extends WizardPage {
 
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
-		main.setLayout(GridLayoutFactory.swtDefaults()
-				.spacing(LayoutConstants.getSpacing()).numColumns(2).create());
+		main.setLayout(GridLayoutFactory.swtDefaults().numColumns(2).create());
 
 		Label remoteLabel = new Label(main, SWT.NONE);
 		remoteLabel.setText(UIText.PushTagsPage_RemoteLabel);
@@ -102,50 +92,26 @@ public class PushTagsPage extends WizardPage {
 					}
 				});
 
-		tagsLabel = new Label(main, SWT.NONE);
-		tagsLabel.setText(UIText.PushTagsPage_TagsLabelNoneSelected);
-		tagsLabel.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, false).span(2, 1).create());
-
-		FilteredCheckboxTree tree = new FilteredCheckboxTree(main, null,
-				SWT.BORDER);
-		tree.setLayoutData(GridDataFactory.fillDefaults().grab(true, true)
-				.span(2, 1).hint(400, 300).create());
-
-		final Button forceUpdateButton = new Button(main, SWT.CHECK);
-		forceUpdateButton
-				.setText(UIText.PushTagsPage_ForceUpdateButton);
-		forceUpdateButton.setSelection(false);
-		forceUpdateButton.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, false).span(2, 1).create());
-		forceUpdateButton.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				forceUpdateSelected = forceUpdateButton.getSelection();
-			}
-		});
-
-		final CachedCheckboxTreeViewer treeViewer = tree
-				.getCheckboxTreeViewer();
-		final TagsNode tagsNode = new TagsNode(null, repository);
-		RepositoriesViewContentProvider contentProvider = new RepositoriesViewContentProvider() {
-			@Override
-			public Object[] getElements(Object inputElement) {
-				return getChildren(tagsNode);
-			}
-		};
-		treeViewer.setContentProvider(contentProvider);
-		treeViewer
-				.setLabelProvider(new RepositoriesViewStyledCellLabelProvider());
-		treeViewer.setComparator(new ViewerComparator(
+		final CheckboxTableViewer tagsTable = CheckboxTableViewer.newCheckList(
+				main, SWT.BORDER);
+		tagsTable.getControl().setLayoutData(
+				GridDataFactory.fillDefaults().grab(true, true).span(2, 1)
+						.hint(400, 300).create());
+		RepositoriesViewContentProvider contentProvider = new RepositoriesViewContentProvider();
+		Object[] tagNodes = contentProvider.getChildren(new TagsNode(null,
+				repository));
+		tagsTable.setContentProvider(new ArrayContentProvider());
+		tagsTable.setLabelProvider(new DelegatingStyledCellLabelProvider(
+				new RepositoriesViewLabelProvider()));
+		tagsTable.setComparator(new ViewerComparator(
 				CommonUtils.STRING_ASCENDING_COMPARATOR));
-		treeViewer.setInput(tagsNode);
+		tagsTable.setInput(tagNodes);
 
-		final Object[] tagNodes = contentProvider.getElements(tagsNode);
-		initiallySelectTags(tagNodes, treeViewer);
+		initiallySelectTags(tagNodes, tagsTable);
 
-		treeViewer.addCheckStateListener(new ICheckStateListener() {
+		tagsTable.addCheckStateListener(new ICheckStateListener() {
 			public void checkStateChanged(CheckStateChangedEvent event) {
-				setSelectedTags(treeViewer.getCheckedElements());
+				setSelectedTags(tagsTable.getCheckedElements());
 			}
 		});
 
@@ -165,12 +131,8 @@ public class PushTagsPage extends WizardPage {
 		return selectedTags;
 	}
 
-	boolean isForceUpdateSelected() {
-		return forceUpdateSelected;
-	}
-
 	private void initiallySelectTags(Object[] tagNodes,
-			CheckboxTreeViewer viewer) {
+			CheckboxTableViewer tagsTable) {
 		List<TagNode> checkedTags = new ArrayList<TagNode>();
 		for (Object node : tagNodes) {
 			if (node instanceof TagNode) {
@@ -183,10 +145,10 @@ public class PushTagsPage extends WizardPage {
 
 		TagNode[] checkedTagsArray = checkedTags
 				.toArray(new TagNode[checkedTags.size()]);
-		viewer.setCheckedElements(checkedTagsArray);
-		viewer.setSelection(StructuredSelection.EMPTY);
+		tagsTable.setCheckedElements(checkedTagsArray);
+		tagsTable.setSelection(StructuredSelection.EMPTY);
 		if (checkedTagsArray.length > 0)
-			viewer.reveal(checkedTagsArray[0]);
+			tagsTable.reveal(checkedTagsArray[0]);
 		setSelectedTags(checkedTagsArray);
 	}
 
@@ -196,12 +158,6 @@ public class PushTagsPage extends WizardPage {
 			if (tag instanceof TagNode)
 				selectedTags.add((TagNode) tag);
 		}
-		int number = selectedTags.size();
-		if (number == 0)
-			tagsLabel.setText(UIText.PushTagsPage_TagsLabelNoneSelected);
-		else
-			tagsLabel.setText(MessageFormat.format(UIText.PushTagsPage_TagsLabelSelected,
-					Integer.valueOf(selectedTags.size())));
 		setPageComplete(isPageComplete());
 	}
 

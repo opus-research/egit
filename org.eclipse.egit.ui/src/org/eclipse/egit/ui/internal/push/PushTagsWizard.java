@@ -120,14 +120,11 @@ public class PushTagsWizard extends Wizard {
 
 	private List<RefSpec> getRefSpecs() {
 		List<RefSpec> specs = new ArrayList<RefSpec>();
-		String prefix;
-		if (pushTagsPage.isForceUpdateSelected())
-			prefix = "+"; //$NON-NLS-1$
-		else
-			prefix = ""; //$NON-NLS-1$
 		for (TagNode tag : pushTagsPage.getSelectedTags()) {
 			String refName = tag.getObject().getName();
-			RefSpec spec = new RefSpec(prefix + refName);
+			// Force as we have a confirmation page and don't want to add a
+			// "force" checkbox
+			RefSpec spec = new RefSpec("+" + refName); //$NON-NLS-1$
 			specs.add(spec);
 		}
 		return specs;
