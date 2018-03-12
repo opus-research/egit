@@ -865,6 +865,9 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_browse;
 
 	/** */
+	public static String RepositorySearchDialog_CheckAllRepositories;
+
+	/** */
 	public static String RepositorySearchDialog_directory;
 
 	/** */
@@ -883,7 +886,7 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_searchRepositoriesMessage;
 
 	/** */
-	public static String RepositorySearchDialog_ToggleSelectionButton;
+	public static String RepositorySearchDialog_UncheckAllRepositories;
 
 	/** */
 	public static String RepositorySelectionPage_BrowseLocalFile;
@@ -1189,6 +1192,9 @@ public class UIText extends NLS {
 	public static String RefSpecPanel_fetch;
 
 	/** */
+	public static String RefSpecPanel_fetchTitle;
+
+	/** */
 	public static String RefSpecPanel_srcFetchDescription;
 
 	/** */
@@ -1241,6 +1247,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefSpecPanel_push;
+
+	/** */
+	public static String RefSpecPanel_pushTitle;
 
 	/** */
 	public static String RefSpecPanel_srcPushDescription;
@@ -3731,15 +3740,6 @@ public class UIText extends NLS {
 	public static String GitActionContributor_Pull;
 
 	/** */
-	public static String GitVariableResolver_InternalError;
-
-	/** */
-	public static String GitVariableResolver_NoSelectedResource;
-
-	/** */
-	public static String GitVariableResolver_VariableReferencesNonExistentResource;
-
-	/** */
 	public static String DecoratableResourceHelper_noHead;
 
 	/** */
@@ -3795,6 +3795,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_LinkSelection;
+
+	/** */
+	public static String StagingView_exceptionTitle;
+
+	/** */
+	public static String StagingView_exceptionMessage;
 
 	/** */
 	public static String SynchronizeWithMenu_custom;
