@@ -11,8 +11,6 @@ package org.eclipse.egit.ui.internal.decorators;
 
 import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 
-import java.io.IOException;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
@@ -34,11 +32,6 @@ public class DecoratableResourceMapping extends DecoratableResource {
 	public static final int RESOURCE_MAPPING = 0x10;
 
 	/**
-	 * Denotes the type of decoratable resource, used by the decoration helper.
-	 */
-	public static final int WORKING_SET = 0x9999;
-
-	/**
 	 * Stores the actual mapping we are currently decorating.
 	 */
 	private ResourceMapping mapping;
@@ -47,9 +40,8 @@ public class DecoratableResourceMapping extends DecoratableResource {
 	 * Creates a decoratable resource mapping (used for e.g. working sets)
 	 *
 	 * @param mapping the resource mapping to decorate
-	 * @throws IOException
 	 */
-	public DecoratableResourceMapping(ResourceMapping mapping) throws IOException {
+	public DecoratableResourceMapping(ResourceMapping mapping) {
 		super(null); // no resource ...
 
 		this.mapping = mapping;
@@ -57,13 +49,6 @@ public class DecoratableResourceMapping extends DecoratableResource {
 
 		if(projects == null || projects.length == 0)
 			return;
-
-		// collect repository and branch info to allow decoration
-		// of mappings if they all share the same repository (bug 369969)
-		Set<String> repoNames = new HashSet<String>(projects.length);
-		String lastBranch = null;
-		String lastBranchStatus = null;
-
 
 		// we could use DecoratableResourceAdapter for each project, but that would be too much overhead,
 		// as we need only very little information at all...
@@ -79,8 +64,7 @@ public class DecoratableResourceMapping extends DecoratableResource {
 			// at least one contained resource is tracked for sure here.
 			tracked = true;
 
-			Repository repository = repoMapping.getRepository();
-			String repoRelative = makeRepoRelative(repository, prj) + "/"; //$NON-NLS-1$
+			String repoRelative = makeRepoRelative(repoMapping.getRepository(), prj) + "/"; //$NON-NLS-1$
 
 			Set<String> modified = diffData.getModified();
 			Set<String> conflicting = diffData.getConflicting();
@@ -91,25 +75,10 @@ public class DecoratableResourceMapping extends DecoratableResource {
 
 			if(containsPrefix(conflicting, repoRelative))
 				conflicts = true;
-
-			repoNames.add(DecoratableResourceHelper
-					.getRepositoryName(repository));
-			lastBranch = DecoratableResourceHelper.getShortBranch(repository);
-			lastBranchStatus = DecoratableResourceHelper
-					.getBranchStatus(repository);
-		}
-
-		// only set repo info if unique (bug 369969)
-		if(repoNames.size() == 1) {
-			repositoryName = repoNames.iterator().next();
-			branch = lastBranch;
-			branchStatus = lastBranchStatus;
 		}
 	}
 
 	public int getType() {
-		if (mapping.getModelObject() instanceof IWorkingSet)
-			return WORKING_SET;
 		return RESOURCE_MAPPING;
 	}
 
