@@ -18,6 +18,7 @@ import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.lib.Repository;
@@ -67,9 +68,12 @@ public class FeatureFinishOperationTest extends AbstractFeatureOperationTest {
 				repository.getFullBranch());
 		assertEquals(null, findBranch(repository, branchName));
 
-		assertEquals(2, countCommits(repository));
+		assertEquals(1, countCommits(repository));
 		assertTrue(new File(repository.getDirectory() + "/../" + fileName).exists());
 		assertTrue(new File(repository.getDirectory() + "/../" + fileName2).exists());
+
+		Status status = Git.wrap(repository).status().call();
+		assertTrue(status.hasUncommittedChanges());
 	}
 
 	private int countCommits(Repository repository) throws GitAPIException,

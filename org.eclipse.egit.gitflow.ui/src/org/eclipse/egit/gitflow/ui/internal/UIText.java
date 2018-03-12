@@ -46,9 +46,6 @@ public class UIText extends NLS {
 	public static String FeatureFinishHandler_finishingFeature;
 
 	/**	 */
-	public static String FeatureFinishHandler_rewordSquashedCommitMessage;
-
-	/**	 */
 	public static String FeatureRebaseHandler_problemsOccurred;
 
 	/**	 */
