@@ -15,7 +15,6 @@ package org.eclipse.egit.ui.internal.clone;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -63,8 +62,6 @@ public class GitSelectRepositoryPage extends WizardPage {
 
 	private final RepositoryUtil util;
 
-	private final boolean allowBare;
-
 	private TreeViewer tv;
 
 	private Button addRepo;
@@ -72,25 +69,13 @@ public class GitSelectRepositoryPage extends WizardPage {
 	private IPreferenceChangeListener configChangeListener;
 
 	/**
-	 * Creates a new {@link GitSelectRepositoryPage} that allows also bare
-	 * repositories to be selected.
+	 *
 	 */
 	public GitSelectRepositoryPage() {
-		this(true);
-	}
-
-	/**
-	 * Creates a new {@link GitSelectRepositoryPage}.
-	 *
-	 * @param allowBare
-	 *            whether bare repositories shall be shown
-	 */
-	public GitSelectRepositoryPage(boolean allowBare) {
 		super(GitSelectRepositoryPage.class.getName());
 		setTitle(UIText.GitSelectRepositoryPage_PageTitle);
 		setMessage(UIText.GitSelectRepositoryPage_PageMessage);
 		util = Activator.getDefault().getRepositoryUtil();
-		this.allowBare = allowBare;
 	}
 
 	/**
@@ -120,26 +105,6 @@ public class GitSelectRepositoryPage extends WizardPage {
 		tv = tree.getViewer();
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tree);
 		tv.setContentProvider(new RepositoriesViewContentProvider() {
-
-			@Override
-			public Object[] getElements(Object inputElement) {
-				Object[] elements = super.getElements(inputElement);
-				if (allowBare) {
-					return elements;
-				}
-				List<Object> result = new ArrayList<>();
-				for (Object element : elements) {
-					if (element instanceof RepositoryTreeNode) {
-						RepositoryTreeNode node = (RepositoryTreeNode) element;
-						if (node.getRepository() != null
-								&& !node.getRepository().isBare()) {
-							result.add(element);
-						}
-					}
-				}
-				return result.toArray();
-			}
-
 			// we never show children, only the Repository nodes
 			@Override
 			public Object[] getChildren(Object parentElement) {
@@ -258,8 +223,6 @@ public class GitSelectRepositoryPage extends WizardPage {
 			dirsBefore = Collections.emptyList();
 		}
 		if (!dirsBefore.containsAll(dirsAfter)) {
-			IStructuredSelection previousSelection = (IStructuredSelection) tv
-					.getSelection();
 			tv.setInput(dirsAfter);
 			for (String dir : dirsAfter) {
 				if (!dirsBefore.contains(dir)) {
@@ -267,21 +230,14 @@ public class GitSelectRepositoryPage extends WizardPage {
 						Repository newRepository = org.eclipse.egit.core.Activator
 								.getDefault().getRepositoryCache()
 								.lookupRepository(new File(dir));
-						if (!allowBare && newRepository.isBare()) {
-							// Re-set to previous selection, if any
-							if (!previousSelection.isEmpty()) {
-								tv.setSelection(previousSelection);
-							}
-						} else {
-							RepositoryNode node = new RepositoryNode(null,
-									newRepository);
-							tv.setSelection(new StructuredSelection(node));
-						}
+						RepositoryNode node = new RepositoryNode(null,
+								newRepository);
+						tv.setSelection(new StructuredSelection(node));
+						break;
 					} catch (IOException e1) {
 						Activator.handleError(e1.getMessage(), e1,
 								false);
 					}
-					break;
 				}
 			}
 		}
