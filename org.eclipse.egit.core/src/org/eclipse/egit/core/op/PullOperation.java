@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -27,7 +26,6 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.api.errors.DetachedHeadException;
@@ -70,14 +68,13 @@ public class PullOperation implements IEGitOperation {
 		else
 			monitor = m;
 		monitor.beginTask(NLS.bind(CoreText.PullOperation_TaskName, Integer
-				.valueOf(repositories.length)), repositories.length * 2);
+				.valueOf(repositories.length)), repositories.length);
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 			public void run(IProgressMonitor mymonitor) throws CoreException {
 				for (int i = 0; i < repositories.length; i++) {
 					Repository repository = repositories[i];
 					if (mymonitor.isCanceled())
 						throw new CoreException(Status.CANCEL_STATUS);
-					IProject[] validProjects = ProjectUtil.getValidOpenProjects(repository);
 					PullCommand pull = new Git(repository).pull();
 					try {
 						pull.setProgressMonitor(new EclipseGitProgressTransformer(
@@ -102,9 +99,6 @@ public class PullOperation implements IEGitOperation {
 						results.put(repository,
 								Activator.error(cause.getMessage(), cause));
 					} finally {
-						mymonitor.worked(1);
-						ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
-								mymonitor, 1));
 						mymonitor.worked(1);
 					}
 				}
