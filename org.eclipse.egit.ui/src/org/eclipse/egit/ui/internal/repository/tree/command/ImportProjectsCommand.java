@@ -19,6 +19,7 @@ import org.eclipse.egit.ui.internal.clone.GitCreateProjectViaWizardWizard;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.widgets.Display;
 
 /**
@@ -29,7 +30,8 @@ public class ImportProjectsCommand extends
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		List<RepositoryTreeNode> selectedNodes = getSelectedNodes(event);
 		if (selectedNodes == null || selectedNodes.isEmpty()) {
-			MessageDialog.openError(Display.getDefault().getActiveShell(),
+			MessageDialog
+					.openError(Display.getDefault().getActiveShell(),
 					UIText.ImportProjectsWrongSelection,
 					UIText.ImportProjectsSelectionInRepositoryRequired);
 			return null;
@@ -59,9 +61,9 @@ public class ImportProjectsCommand extends
 			return null;
 		}
 
-		ImportProjectsWizardDialog dlg = new ImportProjectsWizardDialog(
-				getShell(event), new GitCreateProjectViaWizardWizard(
-						node.getRepository(), path));
+		WizardDialog dlg = new WizardDialog(
+				getShell(event),
+				new GitCreateProjectViaWizardWizard(node.getRepository(), path));
 		dlg.setHelpAvailable(false);
 		dlg.open();
 
