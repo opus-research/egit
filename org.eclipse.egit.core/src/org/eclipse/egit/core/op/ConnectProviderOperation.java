@@ -51,7 +51,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 	 *            the project to connect to the Git team provider.
 	 */
 	public ConnectProviderOperation(final IProject proj) {
-		this(proj, proj.getLocation().append(Constants.DOT_GIT).toFile());
+		this(proj, new File(Constants.DOT_GIT));
 	}
 
 	/**
@@ -60,7 +60,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 	 * @param proj
 	 *            the project to connect to the Git team provider.
 	 * @param pathToRepo
-	 *            absolute path to the repository
+	 *            relative path to the repository
 	 */
 	public ConnectProviderOperation(final IProject proj, File pathToRepo) {
 		this.projects.put(proj, pathToRepo);
@@ -127,16 +127,16 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 
 	/**
 	 * @param repos
-	 *         available repositories
+	 *            available repositories
 	 * @param suggestedRepo
-	 *         relative path to git repository
+	 *            relative path to git repository
 	 * @return a repository mapping which corresponds to a suggested repository
 	 *         location, <code>null</code> otherwise
 	 */
 	private RepositoryMapping findActualRepository(
 			Collection<RepositoryMapping> repos, File suggestedRepo) {
 		for (RepositoryMapping rm : repos) {
-			if (rm.getGitDirAbsolutePath().equals(Path.fromOSString(suggestedRepo.getPath())))
+			if (Path.fromOSString(rm.getGitDir()).equals(Path.fromOSString(suggestedRepo.getPath())))
 				return rm;
 		}
 		return null;

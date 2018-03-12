@@ -16,8 +16,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.TrackOperation;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -42,15 +40,15 @@ public class Track extends RepositoryAction {
 							try {
 								op.run(arg0);
 							} catch (CoreException e) {
-								throw new InvocationTargetException(e);
+								MessageDialog.openError(getShell(),
+										"Track failed", e.getMessage());
 							}
 						}
 					});
 		} catch (InvocationTargetException e) {
-			Activator.logError(UIText.Track_error, e);
-			MessageDialog.openError(getShell(), UIText.Track_error, UIText.Track_see_log);
+			MessageDialog.openError(getShell(), "Track failed", e.getMessage());
 		} catch (InterruptedException e) {
-			MessageDialog.openError(getShell(), UIText.Track_error, e.getMessage());
+			MessageDialog.openError(getShell(), "Track failed", e.getMessage());
 		}
 	}
 
