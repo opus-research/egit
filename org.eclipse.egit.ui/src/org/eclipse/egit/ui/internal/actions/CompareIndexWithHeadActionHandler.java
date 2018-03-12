@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
@@ -167,7 +168,11 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 				|| repository.isBare()) {
 			return false;
 		}
-		IPath workDir = new Path(repository.getWorkTree().getAbsolutePath());
+		File workTree = repository.getWorkTree();
+		if (workTree == null) {
+			return false;
+		}
+		IPath workDir = new Path(workTree.getAbsolutePath());
 		String resRelPath = location.makeRelativeTo(workDir).toString();
 		// This action at the moment only works for files anyway
 		if (resRelPath.length() == 0 || resRelPath.equals(location)) {
