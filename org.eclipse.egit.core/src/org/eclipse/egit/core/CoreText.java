@@ -66,6 +66,9 @@ public class CoreText extends NLS {
 	public static String CommitOperation_couldNotFindRepositoryMapping;
 
 	/** */
+	public static String ConfigureFetchAfterCloneTask_couldNotFetch;
+
+	/** */
 	public static String ConnectProviderOperation_connecting;
 
 	/** */
@@ -76,6 +79,18 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String DeleteTagOperation_exceptionMessage;
+
+	/** */
+	public static String DiffHeaderFormat_Email;
+
+	/** */
+	public static String DiffHeaderFormat_None;
+
+	/** */
+	public static String DiffHeaderFormat_Oneline;
+
+	/** */
+	public static String DiffHeaderFormat_Workspace;
 
 	/** */
 	public static String DiscardChangesOperation_discardFailed;
@@ -91,6 +106,15 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String DiscardChangesOperation_repoNotFound;
+
+	/** */
+	public static String DeleteResourcesOperation_deletingResources;
+
+	/** */
+	public static String DeleteResourcesOperation_deleteFailed;
+
+	/** */
+	public static String DeleteResourcesOperation_deleteFailedSeeLog;
 
 	/** */
 	public static String DisconnectProviderOperation_disconnecting;
@@ -141,6 +165,9 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
+	public static String RepositoryUtil_noHead;
+
+	/** */
 	public static String RemoteRefUpdateCantBeReused;
 
 	/** */
@@ -174,6 +201,9 @@ public class CoreText extends NLS {
 	public static String ResetOperation_updatingFailed;
 
 	/** */
+	public static String MergeOperation_CheckoutConflict;
+
+	/** */
 	public static String MergeOperation_InternalError;
 
 	/** */
@@ -198,6 +228,9 @@ public class CoreText extends NLS {
 	public static String CloneOperation_checkingOutFiles;
 
 	/** */
+	public static String CloneOperation_failed_cleanup;
+
+	/** */
 	public static String CloneOperation_initializingRepository;
 
 	/** */
@@ -210,10 +243,22 @@ public class CoreText extends NLS {
 	public static String CreateLocalBranchOperation_CreatingBranchMessage;
 
 	/** */
-	public static String CreatePatchOperation_commitRequired;
+	public static String CreatePatchOperation_repoRequired;
 
 	/** */
-	public static String CreatePatchOperation_repoRequired;
+	public static String CreatePatchOperation_cannotCreatePatchForMergeCommit;
+
+	/** */
+	public static String CreatePatchOperation_cannotCreatePatchForFirstCommit;
+
+	/** */
+	public static String CreatePatchOperation_couldNotFindProject;
+
+	/** */
+	public static String CreatePatchOperation_patchFileCouldNotBeWritten;
+
+	/** */
+	public static String IndexDiffCacheEntry_refreshingProjects;
 
 	/** */
 	public static String IndexDiffCacheEntry_reindexing;
@@ -268,6 +313,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String RevertCommitOperation_reverting;
+
+	/** */
+	public static String BranchOperation_closingMissingProject;
 
 	/** */
 	public static String BranchOperation_performingBranch;

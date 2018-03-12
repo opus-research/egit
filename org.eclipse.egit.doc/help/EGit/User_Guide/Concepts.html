@@ -38,6 +38,7 @@
 		<ul>
 			<li>comparing two objects boils down to comparing two SHA-1 hashes</li>
 			<li>since object names are computed from the object content in the same way in every git repository the same object will be stored under the same name in all repositories which happen to contain this object</li>
+			<li>an object never changes once created (obvious since changing the contents means a new hash must be calculated and a new name assigned)</li>
 			<li>repository corruption can easily be detected by checking if the SHA-1 object name still is the secure hash of the object's content</li>
 		</ul>
 		<p>Git has four object types :</p>
@@ -51,8 +52,8 @@
 				<b>Tree objects</b> together with their file system names and modes
 			</li>
 			<li>A 
-				<b>Commit object</b> represents a snapshot of the directory structure at the time of the commit and has links to its predecessor and successor 
-				<b>Commit objects</b> which form an acyclic graph of the repository revisions forming the repository history.
+				<b>Commit object</b> represents a snapshot of the directory structure at the time of the commit and has a link to its predecessor 
+				<b>Commit object</b> which form an acyclic graph of the repository revisions forming the repository history.
 			</li>
 			<li>A 
 				<b>Tag object</b> is a symbolic named link to another repository object which contains the object name and type of the referenced object and optionally information about the one who created the tag and signing information.
@@ -91,7 +92,7 @@
 			</li>
 			<li>Do modifications in the working directory</li>
 			<li>Tell git about these modifications (add modified files). This transfers the modified file contents into the object database and prepares the tree to be committed in the index.</li>
-			<li>Commit the tree prepared in the index into the object database. </li>
+			<li>Commit the tree prepared in the index into the object database.</li>
 			<li>The result is a new commit object and the 
 				<i>HEAD</i> of the current branch moves to the new commit.
 			</li>
@@ -100,7 +101,7 @@
 		<p>You start from a fresh checkout of a branch of a local repository. You want to do some changes and record snapshots of these changes in the repository whenever you reach a state of your changes you want to record.</p>
 		<p>Each file in the working directory can either be 
 			<i>tracked</i> or 
-			<i>untracked</i>. 
+			<i>untracked</i>.
 		</p>
 		<ul>
 			<li>Tracked files are those which were in the last snapshot or files which have been newly staged into the 

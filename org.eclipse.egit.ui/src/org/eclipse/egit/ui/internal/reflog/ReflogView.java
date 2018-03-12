@@ -1,8 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, Chris Aniszczyk <caniszczyk@gmail.com>
- * Copyright (c) 2011, Matthias Sohn <matthias.sohn@sap.com>
- * and others.
- *
+ * Copyright (c) 2011, 2012 Chris Aniszczyk <caniszczyk@gmail.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -39,14 +36,13 @@ import org.eclipse.jface.layout.TreeColumnLayout;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ColumnWeightData;
-import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
@@ -54,13 +50,12 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
-import org.eclipse.jgit.lib.Config;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.ReflogEntry;
 import org.eclipse.swt.SWT;
@@ -81,7 +76,9 @@ import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
+import org.eclipse.ui.OpenAndLinkWithEditorHelper;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.contexts.IContextService;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.forms.IFormColors;
@@ -120,8 +117,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 
 	private final DateFormat absoluteFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
 
-	private String myEmail;
-
 	@Override
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
@@ -153,7 +148,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		final TreeColumnLayout layout = new TreeColumnLayout();
 
 		FilteredTree filteredTree = new FilteredTree(tableComposite, SWT.NONE
-				| SWT.BORDER, new PatternFilter(), true) {
+				| SWT.BORDER | SWT.FULL_SELECTION, new PatternFilter(), true) {
 			@Override
 			protected void createControl(Composite composite, int treeStyle) {
 				super.createControl(composite, treeStyle);
@@ -193,6 +188,32 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 
 		});
 
+		TreeViewerColumn commitMessageColumn = createColumn(layout,
+				UIText.ReflogView_CommitMessageColumnHeader, 40, SWT.LEFT);
+		commitMessageColumn.setLabelProvider(new ColumnLabelProvider() {
+
+			@Override
+			public String getText(Object element) {
+				final ReflogEntry entry = (ReflogEntry) element;
+				RevCommit c = getCommit(entry);
+				return c == null ? "" : c.getShortMessage(); //$NON-NLS-1$
+			}
+
+			private RevCommit getCommit(final ReflogEntry entry) {
+				RevWalk walk = new RevWalk(getRepository());
+				walk.setRetainBody(true);
+				RevCommit c = null;
+				try {
+					c = walk.parseCommit(entry.getNewId());
+				} catch (IOException ignored) {
+					// ignore
+				} finally {
+					walk.release();
+				}
+				return c;
+			}
+		});
+
 		TreeViewerColumn dateColumn = createColumn(layout,
 				UIText.ReflogView_DateColumnHeader, 15, SWT.LEFT);
 		dateColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -206,12 +227,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			}
 
 			@Override
-			public String getToolTipText(Object element) {
-				final ReflogEntry entry = (ReflogEntry) element;
-				return entry.getNewId().name();
-			}
-
-			@Override
 			public Image getImage(Object element) {
 				return null;
 			}
@@ -219,7 +234,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		});
 
 		TreeViewerColumn messageColumn = createColumn(layout,
-				UIText.ReflogView_MessageColumnHeader, 50, SWT.LEFT);
+				UIText.ReflogView_MessageColumnHeader, 40, SWT.LEFT);
 		messageColumn.setLabelProvider(new ColumnLabelProvider() {
 
 			private ResourceManager resourceManager = new LocalResourceManager(
@@ -260,62 +275,45 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			}
 		});
 
-		TreeViewerColumn whoColumn = createColumn(layout,
-				UIText.ReflogView_CommitterColumnHeader, 15, SWT.LEFT);
-		whoColumn.setLabelProvider(new ColumnLabelProvider() {
-
+		new OpenAndLinkWithEditorHelper(refLogTableTreeViewer) {
 			@Override
-			public String getText(Object element) {
-				final ReflogEntry entry = (ReflogEntry) element;
-				final PersonIdent who = entry.getWho();
-				String email = who.getEmailAddress();
-				if (email.equals(myEmail))
-					return UIText.ReflogView_CommitterMe;
-				return who.getName() + " <" + email + ">";  //$NON-NLS-1$//$NON-NLS-2$
-			}
+			protected void linkToEditor(ISelection selection) {
+				// Not supported
 
+			}
 			@Override
-			public String getToolTipText(Object element) {
-				final ReflogEntry entry = (ReflogEntry) element;
-				return entry.getNewId().name();
+			protected void open(ISelection sel, boolean activate) {
+				handleOpen(sel, OpenStrategy.activateOnOpen());
 			}
-
 			@Override
-			public Image getImage(Object element) {
-				return null;
+			protected void activate(ISelection selection) {
+				handleOpen(selection, true);
 			}
-
-		});
-
-		refLogTableTreeViewer.addOpenListener(new IOpenListener() {
-
-			public void open(OpenEvent event) {
-				IStructuredSelection selection = (IStructuredSelection) event
-						.getSelection();
-				if (selection.isEmpty())
-					return;
+			private void handleOpen(ISelection selection, boolean activateOnOpen) {
+				if (selection instanceof IStructuredSelection)
+					if (selection.isEmpty())
+						return;
 				Repository repo = getRepository();
 				if (repo == null)
 					return;
 				RevWalk walk = new RevWalk(repo);
 				try {
-					for (Object element : selection.toArray()) {
+					for (Object element : ((IStructuredSelection)selection).toArray()) {
 						ReflogEntry entry = (ReflogEntry) element;
 						ObjectId id = entry.getNewId();
 						if (id == null || id.equals(ObjectId.zeroId()))
 							id = entry.getOldId();
 						if (id != null && !id.equals(ObjectId.zeroId()))
 							CommitEditor.openQuiet(new RepositoryCommit(repo,
-									walk.parseCommit(id)));
+									walk.parseCommit(id)), activateOnOpen);
 					}
 				} catch (IOException e) {
 					Activator.logError(UIText.ReflogView_ErrorOnOpenCommit, e);
 				} finally {
 					walk.release();
 				}
-
 			}
-		});
+		};
 
 		selectionChangedListener = new ISelectionListener() {
 			public void selectionChanged(IWorkbenchPart part,
@@ -359,6 +357,15 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 	@Override
 	public void setFocus() {
 		refLogTableTreeViewer.getControl().setFocus();
+		activateContextService();
+	}
+
+	private void activateContextService() {
+		IContextService contextService = (IContextService) getSite()
+				.getService(IContextService.class);
+		if (contextService != null)
+			contextService.activateContext(VIEW_ID);
+
 	}
 
 	@Override
@@ -480,15 +487,10 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 	 */
 	private void showReflogFor(Repository repository, String ref) {
 		if (repository != null && ref != null) {
-			Config c = repository.getConfig();
-			if (c != null)
-				myEmail = c.getString(ConfigConstants.CONFIG_USER_SECTION,
-						null, ConfigConstants.CONFIG_KEY_EMAIL);
 			refLogTableTreeViewer.setInput(new ReflogInput(repository, ref));
 			updateRefLink(ref);
 			form.setText(getRepositoryName(repository));
-		} else
-			myEmail = null;
+		}
 	}
 
 	private TreeViewerColumn createColumn(

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011 SAP AG.
+ * Copyright (c) 2011, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,10 +7,14 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Daniel Megert <daniel_megert@ch.ibm.com> - remove unnecessary @SuppressWarnings
+ *    Markus Keller <markus_keller@ch.ibm.com> - Open multiple detail dialogs from MultiPullResultDialog at once
+ *    Daniel Megert <daniel_megert@ch.ibm.com> - Use correct syntax when a single ref was updated
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.pull;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -37,6 +41,8 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
@@ -60,7 +66,7 @@ public class MultiPullResultDialog extends Dialog {
 	private static final int DETAIL_BUTTON = 99;
 
 	// the value is either a PullResult or an IStatus
-	private final Map<Repository, Object> results = new HashMap<Repository, Object>();
+	private final Map<Repository, Object> results = new LinkedHashMap<Repository, Object>();
 
 	private TableViewer tv;
 
@@ -105,6 +111,8 @@ public class MultiPullResultDialog extends Dialog {
 				else {
 					int updated = pullRes.getFetchResult()
 							.getTrackingRefUpdates().size();
+					if ( updated == 1)
+						return UIText.MultiPullResultDialog_UpdatedOneMessage;
 					return NLS.bind(
 							UIText.MultiPullResultDialog_UpdatedMessage,
 							Integer.valueOf(updated));
@@ -152,7 +160,8 @@ public class MultiPullResultDialog extends Dialog {
 	protected MultiPullResultDialog(Shell parentShell,
 			Map<Repository, Object> results) {
 		super(parentShell);
-		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
+		setShellStyle(getShellStyle() & ~SWT.APPLICATION_MODAL | SWT.SHELL_TRIM);
+		setBlockOnOpen(false);
 		this.results.putAll(results);
 	}
 
@@ -167,19 +176,17 @@ public class MultiPullResultDialog extends Dialog {
 		Composite main = new Composite(parent, SWT.NONE);
 		GridLayoutFactory.fillDefaults().applyTo(main);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
-		tv = new TableViewer(main, SWT.SINGLE | SWT.FULL_SELECTION | SWT.BORDER);
+		tv = new TableViewer(main, SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER);
 		tv.setContentProvider(ArrayContentProvider.getInstance());
 
 		tv.addSelectionChangedListener(new ISelectionChangedListener() {
-			@SuppressWarnings("unchecked")
 			public void selectionChanged(SelectionChangedEvent event) {
 				IStructuredSelection sel = (IStructuredSelection) event
 						.getSelection();
-				boolean enabled = !sel.isEmpty();
-				if (enabled) {
-					Entry<Repository, Object> entry = (Entry<Repository, Object>) sel
-							.getFirstElement();
-					enabled = entry.getValue() instanceof PullResult;
+				boolean enabled = false;
+				for (Entry<Repository, Object> entry : (List<Entry<Repository, Object>>) sel
+						.toList()) {
+					enabled |= entry.getValue() instanceof PullResult;
 				}
 				getButton(DETAIL_BUTTON).setEnabled(enabled);
 			}
@@ -224,17 +231,62 @@ public class MultiPullResultDialog extends Dialog {
 				true);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	protected void buttonPressed(int buttonId) {
 		if (buttonId == DETAIL_BUTTON) {
+			final Shell shell = getShell();
+			Rectangle trim = shell.computeTrim(0, 0, 0, 0);
+			int xOffset = 0;
+			int xDelta = -trim.x + 3;
+			int yOffset = 0;
+			int yDelta = -trim.y - 3;
+
 			IStructuredSelection sel = (IStructuredSelection) tv.getSelection();
-			Entry<Repository, Object> item = (Entry<Repository, Object>) sel
-					.getFirstElement();
-			if (item.getValue() instanceof PullResult) {
-				PullResultDialog dialog = new PullResultDialog(getShell(), item
-						.getKey(), (PullResult) item.getValue());
-				dialog.open();
+			for (Entry<Repository, Object> item : (List<Entry<Repository, Object>>) sel
+					.toList()) {
+
+				if (item.getValue() instanceof PullResult) {
+					final int x = xOffset;
+					final int y = yOffset;
+					xOffset += xDelta;
+					yOffset += yDelta;
+
+					PullResultDialog dialog = new PullResultDialog(shell,
+							item.getKey(), (PullResult) item.getValue()) {
+						private Point initialLocation;
+
+						@Override
+						protected Point getInitialLocation(Point initialSize) {
+							initialLocation = super
+									.getInitialLocation(initialSize);
+							initialLocation.x += x;
+							initialLocation.y += y;
+							return initialLocation;
+						}
+
+						@Override
+						public boolean close() {
+							// restore shell location if we moved it:
+							Shell resultShell = getShell();
+							if (resultShell != null
+									&& !resultShell.isDisposed()) {
+								Point location = resultShell.getLocation();
+								if (location.equals(initialLocation))
+									resultShell.setLocation(location.x - x,
+											location.y - y);
+							}
+							boolean result = super.close();
+
+							// activate next result dialog (not the multi-result dialog):
+							Shell[] subShells = shell.getShells();
+							if (subShells.length > 0) {
+								subShells[subShells.length - 1].setActive();
+							}
+							return result;
+						}
+					};
+					dialog.open();
+				}
 			}
 		}
 		super.buttonPressed(buttonId);

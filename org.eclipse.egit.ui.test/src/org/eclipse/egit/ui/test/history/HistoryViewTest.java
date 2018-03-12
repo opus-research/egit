@@ -30,6 +30,8 @@ import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Display;
@@ -49,9 +51,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Tests for the Team->Branch action
- */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class HistoryViewTest extends LocalRepositoryTestCase {
 	private static final String SECONDFOLDER = "secondFolder";
@@ -111,10 +110,10 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		assertEquals("Wrong commit message", ADDEDMESSAGE,
 				getHistoryViewTable(PROJ1, SECONDFOLDER, ADDEDFILE)
-						.getTableItem(0).getText(0));
+						.getTableItem(0).getText(1));
 		assertEquals("Wrong commit message", "Initial commit",
 				getHistoryViewTable(PROJ1, FOLDER, FILE2).getTableItem(0)
-						.getText(0));
+						.getText(1));
 	}
 
 	@Test
@@ -220,7 +219,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		SWTBotTable table = getHistoryViewTable(PROJ1);
 		int rowCount = table.rowCount();
 		assertTrue(table.rowCount() > 0);
-		assertEquals(table.getTableItem(rowCount - 1).getText(0),
+		assertEquals(table.getTableItem(rowCount - 1).getText(1),
 				"Initial commit");
 	}
 
@@ -232,7 +231,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		int countAfter = getHistoryViewTable(PROJ1).rowCount();
 		assertEquals("Wrong number of entries", countBefore + 1, countAfter);
 		assertEquals("Wrong comit message", commitMessage,
-				getHistoryViewTable(PROJ1).getTableItem(0).getText(0));
+				getHistoryViewTable(PROJ1).getTableItem(0).getText(1));
 	}
 
 	/**
@@ -268,8 +267,9 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 				// empty
 			}
 		});
-		return bot.viewById("org.eclipse.team.ui.GenericHistoryView").bot()
-				.table();
+		String genericHistoryViewId = "org.eclipse.team.ui.GenericHistoryView";
+		TestUtil.waitUntilViewWithGivenIdShows(genericHistoryViewId);
+		return bot.viewById(genericHistoryViewId).bot().table();
 	}
 
 	@Test
@@ -374,6 +374,17 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 				.startsWith(FILE1));
 	}
 
+	@Test
+	public void testRebaseAlreadyUpToDate() throws Exception {
+		Repository repo = lookupRepository(repoFile);
+		Ref stable = repo.getRef("stable");
+		SWTBotTable table = getHistoryViewTable(PROJ1);
+		SWTBotTableItem stableItem = getTableItemWithId(table, stable.getObjectId());
+
+		stableItem.contextMenu(UIText.GitHistoryPage_rebaseMenuItem).click();
+		TestUtil.joinJobs(JobFamilies.REBASE);
+	}
+
 	private RevCommit[] checkoutLine(final SWTBotTable table, int line)
 			throws InterruptedException {
 		table.getTableItem(line).select();
@@ -413,5 +424,17 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		boolean isChecked = showAllBranches.isChecked();
 		if(isChecked && !checked || !isChecked && checked)
 			showAllBranches.click();
+	}
+
+	private static SWTBotTableItem getTableItemWithId(SWTBotTable table,
+			ObjectId wantedId) {
+		for (int i = 0; i < table.rowCount(); i++) {
+			String id = table.cell(i, UIText.CommitGraphTable_CommitId);
+			String idWithoutEllipsis = id.substring(0, 7);
+			if (wantedId.getName().startsWith(idWithoutEllipsis))
+				return table.getTableItem(i);
+		}
+
+		throw new IllegalStateException("TableItem for commit with ID " + wantedId + " not found.");
 	}
 }

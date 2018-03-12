@@ -31,7 +31,11 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryCache.FileKey;
+import org.eclipse.jgit.util.FS;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -69,9 +73,8 @@ public class ProjectUtil {
 			if (projectFile.exists()) {
 				final File file = p.getLocation().toFile();
 				if (file.getAbsolutePath().startsWith(
-						parentFile.getAbsolutePath())) {
+						parentFile.getAbsolutePath()))
 					result.add(p);
-				}
 			}
 		}
 		return result.toArray(new IProject[result.size()]);
@@ -94,6 +97,29 @@ public class ProjectUtil {
 	 */
 	public static void refreshValidProjects(IProject[] projects,
 			IProgressMonitor monitor) throws CoreException {
+		refreshValidProjects(projects, true, monitor);
+	}
+
+	/**
+	 * The method refreshes the given projects. Projects with missing .project
+	 * file are deleted. The method should be called in the following flow:<br>
+	 * <ol>
+	 * <li>Call {@link ProjectUtil#getValidOpenProjects(Repository)}
+	 * <li>Perform a workdir checkout (e.g. branch, reset)
+	 * <li>Call
+	 * {@link ProjectUtil#refreshValidProjects(IProject[], IProgressMonitor)}
+	 * </ol>
+	 *
+	 * @param projects
+	 *            list of valid projects before workdir checkout.
+	 * @param delete
+	 *            true to delete projects, false to close them
+	 * @param monitor
+	 *
+	 * @throws CoreException
+	 */
+	public static void refreshValidProjects(IProject[] projects,
+			boolean delete, IProgressMonitor monitor) throws CoreException {
 		try {
 			monitor.beginTask(CoreText.ProjectUtil_refreshingProjects,
 					projects.length);
@@ -107,17 +133,73 @@ public class ProjectUtil {
 						IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
 				File projectFile = new File(projectFilePath);
 				if (projectFile.exists())
-						p.refreshLocal(IResource.DEPTH_INFINITE,
-								new SubProgressMonitor(monitor, 1));
-
-				 else
+					p.refreshLocal(IResource.DEPTH_INFINITE,
+							new SubProgressMonitor(monitor, 1));
+				else if (delete)
 					p.delete(false, true, new SubProgressMonitor(monitor, 1));
-
+				else
+					closeMissingProject(p, projectFile, monitor);
 				monitor.worked(1);
 			}
 		} finally {
 			monitor.done();
 		}
+	}
+
+	/**
+	 * Close a project that has already been deleted on disk. This will fall
+	 * back to deleting the project if it cannot be successfully closed.
+	 * <p>
+	 * Closing a missing project involves creating a temporary '.project' file
+	 * since only existing projects can be closed
+	 *
+	 * @param p
+	 * @param projectFile
+	 * @param monitor
+	 * @throws CoreException
+	 */
+	static void closeMissingProject(IProject p, File projectFile,
+			IProgressMonitor monitor) throws CoreException {
+		// Don't close/delete if already closed
+		if (p.exists() && !p.isOpen())
+			return;
+
+		// Create temporary .project file so it can be closed
+		boolean closeFailed = false;
+		File projectRoot = projectFile.getParentFile();
+		if (!projectRoot.isFile()) {
+			boolean hasRoot = projectRoot.exists();
+			try {
+				if (!hasRoot)
+					FileUtils.mkdirs(projectRoot, true);
+				if (projectFile.createNewFile())
+					p.close(new SubProgressMonitor(monitor, 1));
+				else
+					closeFailed = true;
+			} catch (IOException e) {
+				closeFailed = true;
+			} finally {
+				// Clean up created .project file
+				try {
+					FileUtils.delete(projectFile, FileUtils.RETRY
+							| FileUtils.SKIP_MISSING);
+				} catch (IOException e) {
+					closeFailed = true;
+				}
+				// Clean up created folder
+				if (!hasRoot)
+					try {
+						FileUtils.delete(projectRoot, FileUtils.RETRY
+								| FileUtils.SKIP_MISSING | FileUtils.RECURSIVE);
+					} catch (IOException e) {
+						closeFailed = true;
+					}
+			}
+		} else
+			closeFailed = true;
+		// Delete projects that can't be closed
+		if (closeFailed)
+			p.delete(false, true, new SubProgressMonitor(monitor, 1));
 	}
 
 	/**
@@ -157,14 +239,13 @@ public class ProjectUtil {
 		List<IProject> result = new ArrayList<IProject>();
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
-		for (IProject project : projects) {
+		for (IProject project : projects)
 			if (project.isAccessible()) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(project);
 				if (mapping != null && mapping.getRepository() == repository)
 					result.add(project);
 			}
-		}
 		return result.toArray(new IProject[result.size()]);
 	}
 
@@ -182,6 +263,10 @@ public class ProjectUtil {
 			final File directory, final Set<String> visistedDirs,
 			final IProgressMonitor monitor) {
 		if (directory == null)
+			return false;
+
+		if (directory.getName().equals(Constants.DOT_GIT)
+				&& FileKey.isGitRepository(directory, FS.DETECTED))
 			return false;
 
 		IProgressMonitor pm = monitor;
@@ -230,10 +315,9 @@ public class ProjectUtil {
 				continue;
 			try {
 				String canonicalPath = contents[i].getCanonicalPath();
-				if (!directoriesVisited.add(canonicalPath)) {
+				if (!directoriesVisited.add(canonicalPath))
 					// already been here --> do not recurse
 					continue;
-				}
 			} catch (IOException exception) {
 				Activator.logError(exception.getLocalizedMessage(), exception);
 

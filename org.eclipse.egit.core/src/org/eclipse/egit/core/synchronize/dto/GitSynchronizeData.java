@@ -45,7 +45,10 @@ public class GitSynchronizeData {
 	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace()
 					.getRoot();
 
-	private static final Pattern BRANCH_NAME_PATTERN = Pattern.compile("^" + R_HEADS + ".*?"); //$NON-NLS-1$ //$NON-NLS-2$
+	/**
+	 * Matches all strings that start from R_HEADS
+	 */
+	public static final Pattern BRANCH_NAME_PATTERN = Pattern.compile("^" + R_HEADS + ".*?"); //$NON-NLS-1$ //$NON-NLS-2$
 
 	private final boolean includeLocal;
 
@@ -142,7 +145,7 @@ public class GitSynchronizeData {
 			ow.release();
 		}
 
-		if (this.dstRevCommit != null || this.srcRevCommit != null)
+		if (this.dstRevCommit != null && this.srcRevCommit != null)
 			this.ancestorRevCommit = getCommonAncestor(repo, this.srcRevCommit,
 					this.dstRevCommit);
 		else
@@ -257,11 +260,35 @@ public class GitSynchronizeData {
 	}
 
 	/**
+	 * Disposes all nested resources
+	 */
+	public void dispose() {
+		if (projects != null)
+			projects.clear();
+		if (includedPaths != null)
+			includedPaths.clear();
+	}
+
+	/**
 	 * @return instance of {@link TreeFilter} when synchronization was launched
 	 *         from nested node (like folder) or {@code null} otherwise
 	 */
 	public TreeFilter getPathFilter() {
 		return pathFilter;
+	}
+
+	/**
+	 * @return synchronization source rev
+	 */
+	public String getSrcRev() {
+		return srcRev;
+	}
+
+	/**
+	 * @return synchronization destination rev
+	 */
+	public String getDstRev() {
+		return dstRev;
 	}
 
 	private RemoteConfig extractRemoteName(String rev) {

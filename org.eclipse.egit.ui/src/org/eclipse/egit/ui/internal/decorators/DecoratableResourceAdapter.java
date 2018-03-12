@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -39,10 +38,10 @@ class DecoratableResourceAdapter extends DecoratableResource {
 
 	private IndexDiffData indexDiffData;
 
-	@SuppressWarnings("fallthrough")
-	public DecoratableResourceAdapter(IResource resourceToWrap)
+	public DecoratableResourceAdapter(IndexDiffData indexDiffData, IResource resourceToWrap)
 			throws IOException {
 		super(resourceToWrap);
+		this.indexDiffData = indexDiffData;
 		trace = GitTraceLocation.DECORATION.isActive();
 		long start = 0;
 		if (trace) {
@@ -60,23 +59,23 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			repository = mapping.getRepository();
 			if (repository == null)
 				return;
-			repositoryName = DecoratableResourceHelper
-					.getRepositoryName(repository);
-			branch = DecoratableResourceHelper.getShortBranch(repository);
 
-			indexDiffData = Activator.getDefault().getIndexDiffCache()
-					.getIndexDiffCacheEntry(repository).getIndexDiff();
-			if (indexDiffData != null)
-				switch (resource.getType()) {
-				case IResource.FILE:
-					extractResourceProperties();
-					break;
-				case IResource.PROJECT:
-					tracked = true;
-				case IResource.FOLDER:
-					extractContainerProperties();
-					break;
-				}
+			switch (resource.getType()) {
+			case IResource.FILE:
+				extractResourceProperties();
+				break;
+			case IResource.PROJECT:
+				// We only need this very expensive info for project decoration
+				repositoryName = DecoratableResourceHelper
+						.getRepositoryName(repository);
+				branch = DecoratableResourceHelper.getShortBranch(repository);
+				branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
+				tracked = true;
+				//$FALL-THROUGH$
+			case IResource.FOLDER:
+				extractContainerProperties();
+				break;
+			}
 		} finally {
 			if (trace)
 				GitTraceLocation
@@ -87,12 +86,18 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		}
 	}
 
+	@Override
+	public String toString() {
+		return "DecoratableResourceAdapter[" + getName() + (isTracked() ? ", tracked" : "") + (isIgnored() ? ", ignored" : "") + (isDirty() ? ", dirty" : "") + (hasConflicts() ? ",conflicts" : "") + ", staged=" + staged + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$//$NON-NLS-7$//$NON-NLS-8$//$NON-NLS-9$//$NON-NLS-10$//$NON-NLS-11$
+	}
+
 	private void extractResourceProperties() {
 		String repoRelativePath = makeRepoRelative(resource);
 
 		// ignored
 		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
-		ignored = containsPrefixPath(ignoredFiles, repoRelativePath);
+		ignored = ignoredFiles.contains(repoRelativePath)
+				|| containsPrefixPath(ignoredFiles, repoRelativePath);
 		Set<String> untracked = indexDiffData.getUntracked();
 		tracked = !untracked.contains(repoRelativePath) && !ignored;
 
@@ -143,9 +148,13 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		Set<String> conflicting = indexDiffData.getConflicting();
 		conflicts = containsPrefix(conflicting, repoRelativePath);
 
-		// locally modified
+		// locally modified / untracked
 		Set<String> modified = indexDiffData.getModified();
-		dirty = containsPrefix(modified, repoRelativePath);
+		Set<String> untracked = indexDiffData.getUntracked();
+		Set<String> missing = indexDiffData.getMissing();
+		dirty = containsPrefix(modified, repoRelativePath)
+				|| containsPrefix(untracked, repoRelativePath)
+				|| containsPrefix(missing, repoRelativePath);
 	}
 
 	private String makeRepoRelative(IResource res) {
@@ -166,9 +175,15 @@ class DecoratableResourceAdapter extends DecoratableResource {
 	}
 
 	private boolean containsPrefixPath(Set<String> collection, String path) {
-		for (String entry : collection)
-			if (path.startsWith(entry))
+		for (String entry : collection) {
+			String entryPath;
+			if (entry.endsWith("/")) //$NON-NLS-1$
+				entryPath = entry;
+			else
+				entryPath = entry + "/"; //$NON-NLS-1$
+			if (path.startsWith(entryPath))
 				return true;
+		}
 		return false;
 	}
 
