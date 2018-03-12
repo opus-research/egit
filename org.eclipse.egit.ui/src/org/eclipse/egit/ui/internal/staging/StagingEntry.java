@@ -22,7 +22,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.jgit.lib.Repository;
 
@@ -30,7 +29,7 @@ import org.eclipse.jgit.lib.Repository;
 /**
  * A staged/unstaged entry in the table
  */
-public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
+public class StagingEntry implements IAdaptable, IProblemDecoratable {
 	/**
 	 * State of the node
 	 */
@@ -54,7 +53,7 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		PARTIALLY_MODIFIED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** not ignored, and not in the index */
-		UNTRACKED(EnumSet.of(Action.STAGE, Action.DELETE, Action.IGNORE)),
+		UNTRACKED(EnumSet.of(Action.STAGE, Action.DELETE)),
 
 		/** in conflict */
 		CONFLICTING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION,
@@ -83,7 +82,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		STAGE,
 		UNSTAGE,
 		DELETE,
-		IGNORE,
 		LAUNCH_MERGE_TOOL,
 	}
 
@@ -184,62 +182,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 			return getFile();
 		}
 		return null;
-	}
-
-	public int getType() {
-		return IResource.FILE;
-	}
-
-	public String getName() {
-		// Not used in StagingViewLabelProvider
-		return null;
-	}
-
-	public String getRepositoryName() {
-		return null;
-	}
-
-	public String getBranch() {
-		return null;
-	}
-
-	public String getBranchStatus() {
-		return null;
-	}
-
-	public boolean isTracked() {
-		return state != State.UNTRACKED;
-	}
-
-	public boolean isIgnored() {
-		return false;
-	}
-
-	public boolean isDirty() {
-		return state == State.MODIFIED || state == State.PARTIALLY_MODIFIED;
-	}
-
-	public Staged staged() {
-		switch (state) {
-		case ADDED:
-			return Staged.ADDED;
-		case CHANGED:
-			return Staged.MODIFIED;
-		case REMOVED:
-			return Staged.REMOVED;
-		case MISSING:
-			return Staged.REMOVED;
-		default:
-			return Staged.NOT_STAGED;
-		}
-	}
-
-	public boolean hasConflicts() {
-		return state == State.CONFLICTING;
-	}
-
-	public boolean isAssumeValid() {
-		return false;
 	}
 
 	@Override
