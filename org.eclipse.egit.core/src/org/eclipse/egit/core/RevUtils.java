@@ -40,25 +40,16 @@ public class RevUtils {
 		RevWalk rw = new RevWalk(repo);
 		rw.setRevFilter(RevFilter.MERGE_BASE);
 
-		RevCommit srcRev = lookupCommit(rw, commit1);
-		RevCommit dstRev = lookupCommit(rw, commit2);
+		RevCommit srcRev = rw.lookupCommit(commit1);
+		RevCommit dstRev = rw.lookupCommit(commit2);
 
-		if (dstRev != null)
-			rw.markStart(dstRev);
-		if (srcRev != null)
-			rw.markStart(srcRev);
+		rw.markStart(dstRev);
+		rw.markStart(srcRev);
 
 		RevCommit result;
 		result = rw.next();
 
 		return result != null ? result : null;
-	}
-
-	private static RevCommit lookupCommit(RevWalk rw, AnyObjectId commit) {
-		if (commit == null)
-			return null;
-
-		return rw.lookupCommit(commit);
 	}
 
 }
