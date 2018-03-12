@@ -48,7 +48,7 @@ public class CreateTagOnCommitHandler extends AbstractHistoryCommanndHandler {
 		tag.setObjectId(commit);
 
 		try {
-			new TagOperation(repo, tag, dialog.shouldOverWriteTag())
+			new TagOperation(repo, tag, false)
 					.execute(new NullProgressMonitor());
 		} catch (CoreException e) {
 			throw new ExecutionException(e.getMessage(), e);

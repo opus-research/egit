@@ -11,29 +11,46 @@
 package org.eclipse.egit.ui.wizards.clone;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.egit.ui.common.EGitTestCase;
+import org.eclipse.egit.ui.common.GitImportRepoWizard;
 import org.eclipse.egit.ui.common.RepoPropertiesPage;
 import org.eclipse.egit.ui.common.RepoRemoteBranchesPage;
 import org.eclipse.egit.ui.common.WorkingCopyPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
+import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class GitCloneWizardTest extends GitCloneWizardTestBase {
+import java.io.File;
+import java.io.IOException;
+
+public class GitCloneWizardTest extends EGitTestCase {
+
+	private static final int NUMBER_RANDOM_COMMITS = 100;
+
+	private static SampleTestRepository r;
+
+	private GitImportRepoWizard importWizard;
 
 	@BeforeClass
 	public static void setup() throws Exception {
-		r = new SampleTestRepository(NUMBER_RANDOM_COMMITS, false);
+		r = new SampleTestRepository(NUMBER_RANDOM_COMMITS);
+	}
+
+	@AfterClass
+	public static void tearDown() throws IOException {
+		r.shutDown();
 	}
 
 	@Test
@@ -172,7 +189,7 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 
 	@Test
 	public void canCloneARemoteRepo() throws Exception {
-		destRepo = new File(ResourcesPlugin.getWorkspace()
+		File destRepo = new File(ResourcesPlugin.getWorkspace()
 				.getRoot().getLocation().toFile(), "test1");
 
 		importWizard.openWizard();
@@ -181,11 +198,45 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 		RepoRemoteBranchesPage remoteBranches = propertiesPage
 				.nextToRemoteBranches(r.getUri());
 
-		cloneRepo(destRepo, remoteBranches);
+		remoteBranches.assertRemoteBranches(SampleTestRepository.FIX, Constants.MASTER);
+		remoteBranches.selectBranches(SampleTestRepository.FIX, Constants.MASTER);
+
+		WorkingCopyPage workingCopy = remoteBranches.nextToWorkingCopy();
+		workingCopy.setDirectory(destRepo.toString());
+
+		workingCopy.assertDirectory(destRepo.toString());
+		workingCopy.assertBranch(Constants.MASTER);
+		workingCopy.assertRemoteName(Constants.DEFAULT_REMOTE_NAME);
+		workingCopy.waitForCreate();
+
+		// Some random sampling to see we got something. We do not test
+		// the integrity of the repository here. Only a few basic properties
+		// we'd expect from a clone made this way, that would possibly
+		// not hold true given other parameters in the GUI.
+		Repository repository = new FileRepository(new File(destRepo, Constants.DOT_GIT));
+		// we always have an origin/master
+		assertNotNull(repository.resolve("origin/master"));
+		// and a local master initialized from origin/master (default!)
+		assertEquals(repository.resolve("master"), repository
+				.resolve("origin/master"));
+		// A well known tag
+		assertNotNull(repository.resolve(Constants.R_TAGS + SampleTestRepository.v1_0_name).name());
+		// lots of refs
+		int refs = repository.getAllRefs().size();
+		assertTrue(refs >= 4);
+		// and a known file in the working dir
+		assertTrue(new File(destRepo, SampleTestRepository.A_txt_name).exists());
+		assertFalse(repository.getIndex().isChanged());
+		assertFalse(repository.getIndex().getEntry(SampleTestRepository.A_txt_name).isModified(
+				destRepo));
+		// No project have been imported
+		assertEquals(0,
+				ResourcesPlugin.getWorkspace().getRoot().getProjects().length);
+
 	}
 
 	@Test
-	public void clonedRepositoryShouldExistOnFileSystem() {
+	public void clonedRepositoryShouldExistOnFileSystem() throws Exception {
 		importWizard.openWizard();
 		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
@@ -197,7 +248,7 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 
 	@Test
 	public void alteringSomeParametersDuringClone() throws Exception {
-		destRepo = new File(ResourcesPlugin.getWorkspace()
+		File destRepo = new File(ResourcesPlugin.getWorkspace()
 				.getRoot().getLocation().toFile(), "test2");
 
 		importWizard.openWizard();
@@ -273,6 +324,13 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 				.assertErrorMessage("git://www.example.com/EGIT: Connection timed out");
 		remoteBranches.assertCannotProceed();
 		remoteBranches.cancel();
+	}
+
+	@Before
+	public void setupViews() {
+		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
+		bot.viewByTitle("Package Explorer").show();
+		importWizard = new GitImportRepoWizard();
 	}
 
 }

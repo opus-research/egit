@@ -18,38 +18,34 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.IteratorService;
+import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.ObjectId;
@@ -66,8 +62,6 @@ import org.eclipse.ui.PlatformUI;
  * Scan for modified resources in the same project as the selected resources.
  */
 public class CommitActionHandler extends RepositoryActionHandler {
-
-	private Map<Repository, IndexDiff> indexDiffs;
 
 	private ArrayList<IFile> notIndexed;
 
@@ -91,24 +85,11 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		}
 
 		resetState();
-		final IProject[] projects = getProjectsInRepositoryOfSelectedResources(event);
 		try {
-			PlatformUI.getWorkbench().getProgressService().busyCursorWhile(new IRunnableWithProgress() {
-
-				public void run(IProgressMonitor monitor) throws InvocationTargetException,
-						InterruptedException {
-					try {
-						buildIndexHeadDiffList(projects, monitor);
-					} catch (IOException e) {
-						throw new InvocationTargetException(e);
-					}
-				}
-			});
-		} catch (InvocationTargetException e) {
-			Activator.handleError(UIText.CommitAction_errorComputingDiffs, e.getCause(),
+			buildIndexHeadDiffList(event);
+		} catch (IOException e) {
+			Activator.handleError(UIText.CommitAction_errorComputingDiffs, e,
 					true);
-			return null;
-		} catch (InterruptedException e) {
 			return null;
 		}
 
@@ -166,7 +147,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		CommitDialog commitDialog = new CommitDialog(getShell(event));
 		commitDialog.setAmending(amending);
 		commitDialog.setAmendAllowed(amendAllowed);
-		commitDialog.setFileList(files, indexDiffs);
+		commitDialog.setFileList(files);
 		commitDialog.setPreselectedFiles(getSelectedFiles(event));
 		commitDialog.setAuthor(author);
 		commitDialog.setCommitter(committer);
@@ -220,14 +201,6 @@ public class CommitActionHandler extends RepositoryActionHandler {
 				}
 				return Status.OK_STATUS;
 			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.COMMIT))
-					return true;
-				return super.belongsTo(family);
-			}
-
 		};
 		job.setUser(true);
 		job.schedule();
@@ -241,7 +214,6 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		notTracked = new ArrayList<IFile>();
 		amending = false;
 		previousCommit = null;
-		indexDiffs = new HashMap<Repository, IndexDiff>();
 	}
 
 	/**
@@ -290,11 +262,11 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		}
 	}
 
-	private void buildIndexHeadDiffList(IProject[] selectedProjects, IProgressMonitor monitor)
-			throws IOException, OperationCanceledException {
+	private void buildIndexHeadDiffList(ExecutionEvent event)
+			throws IOException, ExecutionException {
 		HashMap<Repository, HashSet<IProject>> repositories = new HashMap<Repository, HashSet<IProject>>();
 
-		for (IProject project : selectedProjects) {
+		for (IProject project : getProjectsInRepositoryOfSelectedResources(event)) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
 					.getMapping(project);
 			assert repositoryMapping != null;
@@ -311,19 +283,17 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			projects.add(project);
 		}
 
-		monitor.beginTask(UIText.CommitActionHandler_caculatingChanges,
-				repositories.size());
 		for (Map.Entry<Repository, HashSet<IProject>> entry : repositories
 				.entrySet()) {
 			Repository repository = entry.getKey();
-			monitor.subTask(NLS.bind(UIText.CommitActionHandler_repository,
-					repository.getDirectory().getPath()));
 			HashSet<IProject> projects = entry.getValue();
 
-			IndexDiff indexDiff = new IndexDiff(repository, Constants.HEAD,
-					IteratorService.createInitialIterator(repository));
+			AdaptableFileTreeIterator fileTreeIterator =
+				new AdaptableFileTreeIterator(repository.getWorkTree(),
+						ResourcesPlugin.getWorkspace().getRoot());
+
+			IndexDiff indexDiff = new IndexDiff(repository, Constants.HEAD, fileTreeIterator);
 			indexDiff.diff();
-			indexDiffs.put(repository, indexDiff);
 
 			for (IProject project : projects) {
 				includeList(project, indexDiff.getAdded(), indexChanges);
@@ -333,15 +303,10 @@ public class CommitActionHandler extends RepositoryActionHandler {
 				includeList(project, indexDiff.getModified(), notIndexed);
 				includeList(project, indexDiff.getUntracked(), notTracked);
 			}
-			if (monitor.isCanceled())
-				throw new OperationCanceledException();
-			monitor.worked(1);
 		}
-		monitor.done();
 	}
 
-
-	private void includeList(IProject project, Set<String> added,
+	private void includeList(IProject project, HashSet<String> added,
 			ArrayList<IFile> category) {
 		String repoRelativePath = RepositoryMapping.getMapping(project)
 				.getRepoRelativePath(project);
@@ -383,7 +348,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			reader = new FileReader(mergeMsg);
 			BufferedReader br = new BufferedReader(reader);
 			try {
-				StringBuilder message = new StringBuilder();
+				StringBuffer message = new StringBuffer();
 				String s;
 				String newLine = newLine();
 				while ((s = br.readLine()) != null) {

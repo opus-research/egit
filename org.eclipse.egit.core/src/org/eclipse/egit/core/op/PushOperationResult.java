@@ -208,9 +208,6 @@ public class PushOperationResult {
 	 */
 	@Override
 	public boolean equals(final Object obj) {
-		if (obj == this)
-			return true;
-
 		if (!(obj instanceof PushOperationResult))
 			return false;
 
@@ -247,11 +244,6 @@ public class PushOperationResult {
 			}
 		}
 		return true;
-	}
-
-	@Override
-	public int hashCode() {
-		return urisEntries.hashCode();
 	}
 
 	private static class Entry {

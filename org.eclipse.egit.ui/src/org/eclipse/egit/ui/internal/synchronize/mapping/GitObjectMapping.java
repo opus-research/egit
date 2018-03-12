@@ -12,8 +12,8 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
+import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelObjectContainer;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
 
@@ -34,8 +34,8 @@ public abstract class GitObjectMapping extends ResourceMapping {
 			return new GitBlobMapping((GitModelBlob) object);
 		if (object instanceof GitModelTree)
 			return new GitTreeMapping((GitModelTree) object);
-		if (object instanceof GitModelObjectContainer)
-			return new GitContainerMapping((GitModelObjectContainer) object);
+		if (object instanceof GitModelCommit)
+			return new GitCommitMapping((GitModelCommit) object);
 		if (object instanceof GitModelRepository)
 			return new GitRepositoryMapping((GitModelRepository) object);
 

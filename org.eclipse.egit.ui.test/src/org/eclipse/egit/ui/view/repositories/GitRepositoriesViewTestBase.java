@@ -27,12 +27,12 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
@@ -69,10 +69,15 @@ public abstract class GitRepositoriesViewTestBase extends
 	private SWTBotView viewbot;
 
 	// the human-readable view name
-	protected final static String viewName = myUtil.getPluginLocalizedValue("GitRepositoriesView_name");
+	protected static String viewName;
 
 	// the human readable Git category
-	private final static String gitCategory = myUtil.getPluginLocalizedValue("GitCategory_name");
+	private static String gitCategory;
+
+	static {
+		viewName = myUtil.getPluginLocalizedValue("GitRepositoriesView_name");
+		gitCategory = myUtil.getPluginLocalizedValue("GitCategory_name");
+	}
 
 	/**
 	 * remove all configured repositories from the view
@@ -84,7 +89,7 @@ public abstract class GitRepositoriesViewTestBase extends
 
 	protected static File createProjectAndCommitToRepository() throws Exception {
 
-		File gitDir = new File(new File(getTestDirectory(), REPO1),
+		File gitDir = new File(new File(testDirectory, REPO1),
 				Constants.DOT_GIT);
 		gitDir.mkdir();
 		Repository myRepository = lookupRepository(gitDir);
@@ -165,7 +170,7 @@ public abstract class GitRepositoriesViewTestBase extends
 			throws Exception {
 		Repository myRepository = org.eclipse.egit.core.Activator.getDefault()
 				.getRepositoryCache().lookupRepository(repositoryDir);
-		File gitDir = new File(getTestDirectory(), REPO2);
+		File gitDir = new File(testDirectory, REPO2);
 		Repository myRemoteRepository = lookupRepository(gitDir);
 		myRemoteRepository.create();
 
@@ -186,7 +191,7 @@ public abstract class GitRepositoriesViewTestBase extends
 				myRepository, "push");
 
 		pa.run(null, false);
-		TestUtil.joinJobs(JobFamilies.PUSH);
+
 		try {
 			// delete the stable branch again
 			RefUpdate op = myRepository.updateRef("refs/heads/stable");
@@ -211,7 +216,8 @@ public abstract class GitRepositoriesViewTestBase extends
 		RefUpdate updateRef = myRepository.updateRef(newRefName);
 		Ref sourceBranch = myRepository.getRef("refs/heads/master");
 		ObjectId startAt = sourceBranch.getObjectId();
-		String startBranch = Repository.shortenRefName(sourceBranch.getName());
+		String startBranch = myRepository
+				.shortenRefName(sourceBranch.getName());
 		updateRef.setNewObjectId(startAt);
 		updateRef
 				.setRefLogMessage("branch: Created from " + startBranch, false); //$NON-NLS-1$
@@ -262,8 +268,8 @@ public abstract class GitRepositoriesViewTestBase extends
 	protected void refreshAndWait() throws Exception {
 		RepositoriesView view = (RepositoriesView) getOrOpenView()
 				.getReference().getPart(false);
-		view.refresh();
-		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
+		Job refreshJob = view.refresh();
+		refreshJob.join();
 	}
 
 	@SuppressWarnings("boxing")

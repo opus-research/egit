@@ -36,7 +36,6 @@ import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -120,11 +119,11 @@ public class RepositoriesView extends CommonNavigator {
 
 	private final RepositoryCache repositoryCache;
 
-	private long lastInputChange = 0L;
+	private long lastInputChange = 0l;
 
-	private long lastRepositoryChange = 0L;
+	private long lastRepositoryChange = 0l;
 
-	private long lastInputUpdate = -1L;
+	private long lastInputUpdate = -1l;
 
 	private boolean reactOnSelection = false;
 
@@ -373,11 +372,12 @@ public class RepositoriesView extends CommonNavigator {
 	}
 
 	/**
-	 * Refresh Repositories View
+	 * @return the job used to perform the refresh
 	 */
-	public void refresh() {
-		lastInputUpdate = -1L;
-		scheduleRefresh(0);
+	public Job refresh() {
+		// TODO make this void and change the tests accordingly
+		lastInputUpdate = -1l;
+		return scheduleRefresh(0);
 	}
 
 	private Job scheduleRefresh(long delay) {
@@ -479,13 +479,6 @@ public class RepositoriesView extends CommonNavigator {
 					schedule(DEFAULT_REFRESH_DELAY);
 				}
 				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.REPO_VIEW_REFRESH))
-					return true;
-				return super.belongsTo(family);
 			}
 
 		};

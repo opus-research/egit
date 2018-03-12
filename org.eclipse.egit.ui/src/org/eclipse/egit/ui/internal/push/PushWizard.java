@@ -22,12 +22,9 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.PushOperation;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
-import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
@@ -42,7 +39,6 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -91,21 +87,17 @@ public class PushWizard extends Wizard {
 		refSpecPage = new RefSpecPage(localDb, true) {
 			@Override
 			public void setVisible(boolean visible) {
-				if (visible) {
+				if (visible)
 					setSelection(repoPage.getSelection());
-					setCredentials(repoPage.getCredentials());
-				}
 				super.setVisible(visible);
 			}
 		};
 		confirmPage = new ConfirmationPage(localDb) {
 			@Override
 			public void setVisible(boolean visible) {
-				if (visible) {
+				if (visible)
 					setSelection(repoPage.getSelection(), refSpecPage
 							.getRefSpecs());
-					setCredentials(repoPage.getCredentials());
-				}
 				super.setVisible(visible);
 			}
 		};
@@ -128,19 +120,9 @@ public class PushWizard extends Wizard {
 			saveRefSpecs();
 		}
 
-		if (repoPage.getStoreInSecureStore()) {
-			if (!SecureStoreUtils.storeCredentials(repoPage
-					.getCredentials(), repoPage.getSelection().getURI()))
-				return false;
-		}
-
 		final PushOperation operation = createPushOperation();
 		if (operation == null)
 			return false;
-		UserPasswordCredentials credentials = repoPage.getCredentials();
-		if (credentials != null)
-			operation.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
-					credentials.getUser(), credentials.getPassword()));
 		final PushOperationResult resultToCompare;
 		if (confirmPage.isShowOnlyIfChangedSelected())
 			resultToCompare = confirmPage.getConfirmedResult();
@@ -210,13 +192,11 @@ public class PushWizard extends Wizard {
 				}
 
 				spec = new PushOperationSpecification();
-				for (final URIish uri : repoPage.getSelection().getPushURIs())
+				for (final URIish uri : repoPage.getSelection().getAllURIs())
 					spec.addURIRefUpdates(uri, ConfirmationPage
 							.copyUpdates(updates));
 			}
-			int timeout = Activator.getDefault().getPreferenceStore().getInt(
-					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-			return new PushOperation(localDb, spec, false, config, timeout);
+			return new PushOperation(localDb, spec, false, config);
 		} catch (final IOException e) {
 			ErrorDialog.openError(getShell(),
 					UIText.PushWizard_cantPrepareUpdatesTitle,
@@ -233,7 +213,7 @@ public class PushWizard extends Wizard {
 		if (repoSelection.isConfigSelected())
 			destination = repoSelection.getConfigName();
 		else
-			destination = repoSelection.getURI(true).toString();
+			destination = repoSelection.getURI().toString();
 		return destination;
 	}
 

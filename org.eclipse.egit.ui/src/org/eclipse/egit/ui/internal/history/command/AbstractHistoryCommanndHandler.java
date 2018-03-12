@@ -8,25 +8,24 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history.command;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.compare.CompareEditorInput;
+import org.eclipse.compare.CompareUI;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.preferences.DefaultScope;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
-import org.eclipse.egit.ui.internal.history.HistoryPageInput;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
+import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
@@ -36,6 +35,11 @@ import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.team.ui.history.IHistoryPage;
 import org.eclipse.team.ui.history.IHistoryView;
+import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IEditorReference;
+import org.eclipse.ui.IReusableEditor;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -46,12 +50,22 @@ import org.eclipse.ui.handlers.HandlerUtil;
  * Common helper methods for the history command handlers
  */
 abstract class AbstractHistoryCommanndHandler extends AbstractHandler {
+
+	/** The team ui plugin ID which is not accessible */
+	private static final String TEAM_UI_PLUGIN = "org.eclipse.team.ui"; //$NON-NLS-1$
+
+	/**
+	 * A copy of the non-accessible preference constant
+	 * IPreferenceIds.REUSE_OPEN_COMPARE_EDITOR from the team ui plug in
+	 */
+	private static final String REUSE_COMPARE_EDITOR_PREFID = "org.eclipse.team.ui.reuse_open_compare_editors"; //$NON-NLS-1$
+
 	protected IWorkbenchPart getPart(ExecutionEvent event)
 			throws ExecutionException {
 		return HandlerUtil.getActivePartChecked(event);
 	}
 
-	private Object getInput(ExecutionEvent event) throws ExecutionException {
+	protected Object getInput(ExecutionEvent event) throws ExecutionException {
 		IWorkbenchPart part = getPart(event);
 		if (!(part instanceof IHistoryView))
 			throw new ExecutionException(
@@ -63,24 +77,72 @@ abstract class AbstractHistoryCommanndHandler extends AbstractHandler {
 			throws ExecutionException {
 		IWorkbenchPage workBenchPage = HandlerUtil
 				.getActiveWorkbenchWindowChecked(event).getActivePage();
-		CompareUtils.openInCompare(workBenchPage, input);
+		IEditorPart editor = findReusableCompareEditor(input, workBenchPage);
+		if (editor != null) {
+			IEditorInput otherInput = editor.getEditorInput();
+			if (otherInput.equals(input)) {
+				// simply provide focus to editor
+				if (OpenStrategy.activateOnOpen())
+					workBenchPage.activate(editor);
+				else
+					workBenchPage.bringToTop(editor);
+			} else {
+				// if editor is currently not open on that input either re-use
+				// existing
+				CompareUI.reuseCompareEditor(input, (IReusableEditor) editor);
+				if (OpenStrategy.activateOnOpen())
+					workBenchPage.activate(editor);
+				else
+					workBenchPage.bringToTop(editor);
+			}
+		} else {
+			CompareUI.openCompareEditor(input);
+		}
+	}
+
+	private IEditorPart findReusableCompareEditor(CompareEditorInput input,
+			IWorkbenchPage page) {
+		IEditorReference[] editorRefs = page.getEditorReferences();
+		// first loop looking for an editor with the same input
+		for (int i = 0; i < editorRefs.length; i++) {
+			IEditorPart part = editorRefs[i].getEditor(false);
+			if (part != null
+					&& (part.getEditorInput() instanceof GitCompareFileRevisionEditorInput)
+					&& part instanceof IReusableEditor
+					&& part.getEditorInput().equals(input)) {
+				return part;
+			}
+		}
+		// if none found and "Reuse open compare editors" preference is on use
+		// a non-dirty editor
+		if (isReuseOpenEditor()) {
+			for (int i = 0; i < editorRefs.length; i++) {
+				IEditorPart part = editorRefs[i].getEditor(false);
+				if (part != null
+						&& (part.getEditorInput() instanceof SaveableCompareEditorInput)
+						&& part instanceof IReusableEditor && !part.isDirty()) {
+					return part;
+				}
+			}
+		}
+		// no re-usable editor found
+		return null;
+	}
+
+	/**
+	 * @return the flag
+	 */
+	private boolean isReuseOpenEditor() {
+		boolean defaultReuse = new DefaultScope().getNode(TEAM_UI_PLUGIN)
+				.getBoolean(REUSE_COMPARE_EDITOR_PREFID, false);
+		return new InstanceScope().getNode(TEAM_UI_PLUGIN).getBoolean(
+				REUSE_COMPARE_EDITOR_PREFID, defaultReuse);
 	}
 
 	protected Repository getRepository(ExecutionEvent event)
 			throws ExecutionException {
 		Object input = getInput(event);
-		if (input instanceof HistoryPageInput)
-			return ((HistoryPageInput) input).getRepository();
-		if (input instanceof RepositoryTreeNode)
-			return ((RepositoryTreeNode) input).getRepository();
 		return RepositoryMapping.getMapping((IResource) input).getRepository();
-	}
-
-	protected String getRepoRelativePath(Repository repo, File file) {
-		IPath workdirPath = new Path(repo.getWorkTree().getPath());
-		IPath filePath = new Path(file.getPath()).setDevice(null);
-		return filePath.removeFirstSegments(workdirPath.segmentCount())
-				.toString();
 	}
 
 	/**

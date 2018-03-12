@@ -24,10 +24,8 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -237,7 +235,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		// wizard directory should be .git
 		assertEquals(Constants.DOT_GIT, wizardNode);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
-		shell.bot().label("Import Projects"); // wait for import projects page
+		waitInUI();
 		assertTrue(shell.bot().tree().getAllItems().length == 0);
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// go to project with .project
@@ -588,11 +586,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 				tree, repositoryFile).expand();
 		SWTBotTreeItem masterNode = localBranchesItem.getNode("master");
 		masterNode.select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("RepoViewCheckout.label"));
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("RepoViewCreateBranch.label"));
+		ContextMenuHelper.clickContextMenu(tree, "Create Branch...");
 		SWTBotShell createBranchShell = bot
 				.shell(UIText.CreateBranchWizard_NewBranchTitle);
 		createBranchShell.bot().textWithId("BranchName").setText("abc");
@@ -600,13 +594,12 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
 		// delete branch
-		// lookup node again. Widget might have changed due to refresh
-		localBranchesItem = myRepoViewUtil.getLocalBranchesItem(
-				tree, repositoryFile).expand();
 		localBranchesItem.getNode("abc").select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
+		ContextMenuHelper.clickContextMenu(tree, "Delete Branch...");
 
+		SWTBotShell deleteBranchDialog = bot
+				.shell(UIText.RepositoriesView_ConfirmDeleteTitle);
+		deleteBranchDialog.bot().button(IDialogConstants.OK_LABEL).click();
 		refreshAndWait();
 		SWTBotTreeItem[] items = myRepoViewUtil.getLocalBranchesItem(tree,
 				repositoryFile).getItems();
@@ -643,8 +636,16 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 				repositoryFile).expand();
 		// delete both
 		localBranchesItem.select("abc", "123");
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
+		ContextMenuHelper.clickContextMenu(tree,
+				UIText.RepositoriesView_DeleteBranchMenu);
+
+		SWTBotShell deleteBranchDialog = bot
+				.shell(UIText.RepositoriesView_ConfirmDeleteTitle);
+		assertNotNull(deleteBranchDialog.bot().table(0).getTableItem(
+				"refs/heads/abc"));
+		assertNotNull(deleteBranchDialog.bot().table(0).getTableItem(
+				"refs/heads/123"));
+		deleteBranchDialog.bot().button(IDialogConstants.OK_LABEL).click();
 		refreshAndWait();
 
 		SWTBotTreeItem[] items = myRepoViewUtil.getLocalBranchesItem(tree,

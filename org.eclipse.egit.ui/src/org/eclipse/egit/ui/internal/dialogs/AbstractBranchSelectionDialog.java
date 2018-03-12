@@ -19,9 +19,9 @@ import java.util.List;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
-import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
+import org.eclipse.egit.ui.internal.repository.tree.LocalBranchesNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
-import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
+import org.eclipse.egit.ui.internal.repository.tree.RemoteBranchesNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
@@ -72,12 +72,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 
 	private final RepositoryTreeNode<Repository> tags;
 
-	private boolean showLocalBranches = true;
-
-	private boolean showRemoteBranches = true;
-
-	private boolean showTags = true;
-
 	/**
 	 * Construct a dialog to select a branch.
 	 * <p>
@@ -90,7 +84,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	public AbstractBranchSelectionDialog(Shell parentShell,
 			Repository repository) {
 		this(parentShell, repository, null);
-		setHelpAvailable(false);
 	}
 
 	/**
@@ -106,11 +99,10 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 			Repository repository, String refToMark) {
 		super(parentShell);
 		this.repo = repository;
-		localBranches = new LocalNode(null, this.repo);
-		remoteBranches = new RemoteTrackingNode(null, this.repo);
+		localBranches = new LocalBranchesNode(null, this.repo);
+		remoteBranches = new RemoteBranchesNode(null, this.repo);
 		tags = new TagsNode(null, this.repo);
 		this.refToMark = refToMark;
-		setHelpAvailable(false);
 	}
 
 	/**
@@ -171,8 +163,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 			public void open(OpenEvent event) {
 				RepositoryTreeNode node = (RepositoryTreeNode) ((IStructuredSelection) branchTree
 						.getSelection()).getFirstElement();
-				if (node == null)
-					return;
 				if (node.getType() != RepositoryTreeNodeType.REF
 						&& node.getType() != RepositoryTreeNodeType.TAG)
 					branchTree.setExpandedState(node, !branchTree
@@ -203,12 +193,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		super.create();
 
 		List<RepositoryTreeNode> roots = new ArrayList<RepositoryTreeNode>();
-		if (showLocalBranches)
-			roots.add(localBranches);
-		if (showRemoteBranches)
-			roots.add(remoteBranches);
-		if (showTags)
-			roots.add(tags);
+		roots.add(localBranches);
+		roots.add(remoteBranches);
+		roots.add(tags);
 
 		branchTree.setInput(roots);
 
@@ -304,22 +291,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	}
 
 	/**
-	 * @return the selected {@link Ref} from the tree, may be null
-	 */
-	protected Ref refFromDialog() {
-		IStructuredSelection sel = (IStructuredSelection) branchTree
-				.getSelection();
-		if (sel.size() != 1)
-			return null;
-		RepositoryTreeNode node = (RepositoryTreeNode) sel.getFirstElement();
-		if (node.getType() == RepositoryTreeNodeType.REF
-				|| node.getType() == RepositoryTreeNodeType.TAG) {
-			return ((Ref) node.getObject());
-		}
-		return null;
-	}
-
-	/**
 	 * Subclasses may add UI elements
 	 *
 	 * @param parent
@@ -333,15 +304,4 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		return super.getShellStyle() | SWT.RESIZE;
 	}
 
-	/**
-	 * @param showLocalBranches show/hide the local branches root
-	 * @param showRemoteBranches show/hide the remote branches root
-	 * @param showTags show/hide the tag root
-	 */
-	protected void setRootsToShow(boolean showLocalBranches,
-			boolean showRemoteBranches, boolean showTags) {
-		this.showLocalBranches = showLocalBranches;
-		this.showRemoteBranches = showRemoteBranches;
-		this.showTags = showTags;
-	}
 }

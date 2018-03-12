@@ -150,7 +150,7 @@ public class CommitCombo extends Composite {
 		Assert.isNotNull(revCommit);
 		checkWidget();
 
-		String shortSha1 = revCommit.abbreviate(8).name();
+		String shortSha1 = revCommit.getName().substring(0, 8);
 		String message = shortSha1 + ": " + revCommit.getShortMessage(); //$NON-NLS-1$
 		combo.add(message);
 		commits.add(new ComboCommitEnt(revCommit.getId(), message));
@@ -170,13 +170,6 @@ public class CommitCombo extends Composite {
 			SWT.error(SWT.ERROR_INVALID_RANGE);
 		}
 		return commits.get(index).objectId;
-	}
-
-	/**
-	 * @return the number of items
-	 */
-	public int getItemCount() {
-		return commits.size();
 	}
 
 	/**

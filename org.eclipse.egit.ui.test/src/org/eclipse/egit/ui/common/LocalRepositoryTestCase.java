@@ -13,30 +13,17 @@ package org.eclipse.egit.ui.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.StringTokenizer;
-
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
-import org.eclipse.egit.core.op.ListRemoteOperation;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.Eclipse;
@@ -50,8 +37,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
-import org.eclipse.jgit.util.FileUtils;
-import org.eclipse.jgit.util.IO;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -60,6 +45,16 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.StringTokenizer;
 
 /**
  * Base class for testing with local (file-system based) repositories
@@ -102,7 +97,7 @@ import org.junit.BeforeClass;
 public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	// the temporary directory
-	private static File testDirectory;
+	protected static File testDirectory;
 
 	protected static final String REPO1 = "FirstRepository";
 
@@ -122,10 +117,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected static final String FOLDER = "folder";
 
-	public static File getTestDirectory() {
-		return testDirectory;
-	}
-	
 	@BeforeClass
 	public static void beforeClassBase() throws Exception {
 		deleteAllProjects();
@@ -133,13 +124,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		File userHome = FS.DETECTED.userHome();
 		testDirectory = new File(userHome, "LocalRepositoriesTests");
 		if (testDirectory.exists())
-			FileUtils.delete(testDirectory, FileUtils.RECURSIVE | FileUtils.RETRY);
+			deleteRecursive(testDirectory);
 		testDirectory.mkdir();
-		// we don't want to clone into <user_home> but into our test directory
-		File repoRoot = new File(testDirectory, "RepositoryRoot");
-		repoRoot.mkdir();
-		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore().setValue(
-				UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 	}
 
 	@AfterClass
@@ -148,28 +134,30 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		new Eclipse().reset();
 		// cleanup
 		deleteAllProjects();
-		shutDownRepositories();
-		FileUtils.delete(testDirectory, FileUtils.RECURSIVE | FileUtils.RETRY);
-		Activator.getDefault().getRepositoryCache().clear();
+		deleteRecursive(testDirectory);
 	}
 
-	private static void shutDownRepositories() {
-		RepositoryCache cache = Activator.getDefault().getRepositoryCache();
-		for(Repository repository:cache.getAllRepositories())
-			repository.close();
-		cache.clear();
+	protected static void deleteRecursive(File dirOrFile) {
+		if (dirOrFile.isDirectory()) {
+			for (File file : dirOrFile.listFiles()) {
+				deleteRecursive(file);
+			}
+		}
+		boolean deleted = dirOrFile.delete();
+		if (!deleted) {
+			dirOrFile.deleteOnExit();
+		}
 	}
 
-	protected static void deleteAllProjects() throws Exception {
+	protected static void deleteAllProjects() throws CoreException {
 		for (IProject prj : ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects())
 			if (prj.getName().equals(PROJ1))
 				prj.delete(false, false, null);
 			else if (prj.getName().equals(PROJ2)) {
 				// delete the .project on disk
-				FileUtils.delete(EFS.getStore(
-						prj.getFile(".project").getLocationURI()).toLocalFile(
-						EFS.NONE, null), FileUtils.RETRY);
+				EFS.getStore(prj.getFile(".project").getLocationURI())
+						.toLocalFile(EFS.NONE, null).delete();
 				prj.delete(false, false, null);
 			}
 
@@ -320,9 +308,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		Repository myRepository = lookupRepository(repositoryDir);
 		URIish uri = new URIish("file:///" + myRepository.getDirectory());
 		File workdir = new File(testDirectory, CHILDREPO);
-		Ref master = myRepository.getRef("refs/heads/master");
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir,
-				master, "origin", 0);
+				"refs/heads/master", "origin");
 		clop.run(null);
 		return new File(workdir, Constants.DOT_GIT);
 	}
@@ -335,27 +322,24 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		RefUpdate updateRef = myRepository.updateRef(newRefName);
 		Ref sourceBranch = myRepository.getRef("refs/heads/master");
 		ObjectId startAt = sourceBranch.getObjectId();
-		String startBranch = Repository.shortenRefName(sourceBranch.getName());
+		String startBranch = myRepository
+				.shortenRefName(sourceBranch.getName());
 		updateRef.setNewObjectId(startAt);
 		updateRef
 				.setRefLogMessage("branch: Created from " + startBranch, false); //$NON-NLS-1$
 		updateRef.update();
 	}
 
-	protected void assertClickOpens(SWTBotTree tree, String menu, String window) {
+	protected void assertClickOpens(SWTBotTree tree, String menu, String window)
+			throws InterruptedException {
 		ContextMenuHelper.clickContextMenu(tree, menu);
 		SWTBotShell shell = bot.shell(window);
 		shell.activate();
+		waitInUI();
 		shell.bot().button(IDialogConstants.CANCEL_LABEL).click();
 		shell.close();
 	}
 
-	/**
-	 *  This method should only be used in exceptional cases.
-	 *  Try to avoid using it e.g. by joining execution jobs
-	 *  instead of waiting a given amount of time {@link TestUtil#joinJobs(Object)}
-	 * @throws InterruptedException
-	 */
 	protected static void waitInUI() throws InterruptedException {
 		Thread.sleep(1000);
 	}
@@ -420,7 +404,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		String message = commitMessage;
 		if (message == null)
 			message = newContent;
-		// TODO: remove after replacing GitIndex in CommitOperation
 		waitInUI();
 		CommitOperation op = new CommitOperation(commitables,
 				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
@@ -457,7 +440,16 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		IFile file = ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ1)
 				.getFile(new Path("folder/test.txt"));
 		if (file.exists()) {
-			byte[] bytes = IO.readFully(file.getLocation().toFile());
+			byte[] bytes = new byte[0];
+			InputStream is = null;
+			try {
+				is = file.getContents();
+				bytes = new byte[is.available()];
+				is.read(bytes);
+			} finally {
+				if (is != null)
+					is.close();
+			}
 			return new String(bytes, file.getCharset());
 		} else {
 			return "";
@@ -506,12 +498,4 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		display.post(evt);
 	}
 
-	protected static Collection<Ref> getRemoteRefs(URIish uri) throws Exception {
-		final Repository db = new FileRepository(new File("/tmp")); //$NON-NLS-1$
-		int timeout = 20;
-		ListRemoteOperation listRemoteOp = new ListRemoteOperation(db, uri,
-				timeout);
-		listRemoteOp.run(null);
-		return listRemoteOp.getRemoteRefs();
-	}
 }

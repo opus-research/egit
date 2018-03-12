@@ -14,9 +14,6 @@ package org.eclipse.egit.ui.internal.actions;
  * Commands wrapped by actions for menu contributions
  */
 public class ActionCommands {
-	/** Add to index action command id */
-	public static final String ADD_TO_INDEX = "org.eclipse.egit.ui.team.AddToIndex"; //$NON-NLS-1$
-
 	/** "Apply patch" action command id */
 	public static final String APPLY_PATCH = "org.eclipse.egit.ui.team.ApplyPatch"; //$NON-NLS-1$
 
@@ -67,10 +64,4 @@ public class ActionCommands {
 
 	/** "Track" action command id */
 	public static final String TRACK_ACTION = "org.eclipse.egit.ui.team.Track"; //$NON-NLS-1$
-
-	/** "Pull from upstream configuration" action command id */
-	public static final String PULL_FROM_UPSTREAM_CONFIG = "org.eclipse.egit.ui.team.PullFromUpstreamConfig"; //$NON-NLS-1$
-
-	/** "Merge Tool" action command id */
-	public static final String MERGE_TOOL_ACTION = "org.eclipse.egit.ui.team.MergeTool"; //$NON-NLS-1$
 }

@@ -15,7 +15,6 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,28 +34,22 @@ class EclipseProxySelector extends ProxySelector {
 		final ArrayList<Proxy> r = new ArrayList<Proxy>();
 		final String host = uri.getHost();
 
-		if (host != null) {
-			String type = IProxyData.SOCKS_PROXY_TYPE;
-			if ("http".equals(uri.getScheme())) //$NON-NLS-1$
-				type = IProxyData.HTTP_PROXY_TYPE;
-			else if ("ftp".equals(uri.getScheme())) //$NON-NLS-1$
-				type = IProxyData.HTTP_PROXY_TYPE;
-			else if ("https".equals(uri.getScheme())) //$NON-NLS-1$
-				type = IProxyData.HTTPS_PROXY_TYPE;
-			try {
-				URI queryUri = new URI(type, "//" + host, null); //$NON-NLS-1$
-				final IProxyData[] dataArray = service.select(queryUri);
-				for (IProxyData data : dataArray) {
-					if (IProxyData.HTTP_PROXY_TYPE.equals(data.getType()))
-						addProxy(r, Proxy.Type.HTTP, data);
-					else if (IProxyData.HTTPS_PROXY_TYPE.equals(data.getType()))
-						addProxy(r, Proxy.Type.HTTP, data);
-					else if (IProxyData.SOCKS_PROXY_TYPE.equals(data.getType()))
-						addProxy(r, Proxy.Type.SOCKS, data);
-				}
-			} catch (URISyntaxException e) {
-				// just add nothing to r
-			}
+		String type = IProxyData.SOCKS_PROXY_TYPE;
+		if ("http".equals(uri.getScheme())) //$NON-NLS-1$
+			type = IProxyData.HTTP_PROXY_TYPE;
+		else if ("ftp".equals(uri.getScheme())) //$NON-NLS-1$
+			type = IProxyData.HTTP_PROXY_TYPE;
+		else if ("https".equals(uri.getScheme())) //$NON-NLS-1$
+			type = IProxyData.HTTPS_PROXY_TYPE;
+
+		final IProxyData data = service.getProxyDataForHost(host, type);
+		if (data != null) {
+			if (IProxyData.HTTP_PROXY_TYPE.equals(data.getType()))
+				addProxy(r, Proxy.Type.HTTP, data);
+			else if (IProxyData.HTTPS_PROXY_TYPE.equals(data.getType()))
+				addProxy(r, Proxy.Type.HTTP, data);
+			else if (IProxyData.SOCKS_PROXY_TYPE.equals(data.getType()))
+				addProxy(r, Proxy.Type.SOCKS, data);
 		}
 		if (r.isEmpty())
 			r.add(Proxy.NO_PROXY);

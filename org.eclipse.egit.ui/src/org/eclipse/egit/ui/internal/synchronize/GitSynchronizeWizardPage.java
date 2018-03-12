@@ -166,12 +166,12 @@ class GitSynchronizeWizardPage extends WizardPage {
 							.getRepository());
 					CCombo combo = (CCombo) branchesEditor.getControl();
 					int index = branch == null ? 0 : combo.indexOf(branch);
-					return Integer.valueOf(index);
+					return new Integer(index);
 				} else {
 					String branch = selectedBranches.get(element);
 					CCombo combo = (CCombo) branchesEditor.getControl();
 					int index = branch == null ? 0 : combo.indexOf(branch);
-					return Integer.valueOf(index);
+					return new Integer(index);
 				}
 			}
 

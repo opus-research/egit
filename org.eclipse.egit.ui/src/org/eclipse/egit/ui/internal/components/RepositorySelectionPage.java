@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
@@ -42,7 +41,6 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.layout.GridData;
@@ -57,7 +55,6 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Wizard page that allows the user entering the location of a remote repository
@@ -87,8 +84,6 @@ public class RepositorySelectionPage extends WizardPage {
 
 	private Text passText;
 
-	private Button storeCheckbox;
-
 	private Combo scheme;
 
 	private Text portText;
@@ -112,14 +107,6 @@ public class RepositorySelectionPage extends WizardPage {
 	private Button uriButton;
 
 	private IPreviousValueProposalHandler uriProposalHandler;
-
-	private String user;
-
-	private String password;
-
-	private boolean storeInSecureStore = true;
-
-	private String helpContext = null;
 
 	/**
 	 * Transport protocol abstraction
@@ -315,7 +302,7 @@ public class RepositorySelectionPage extends WizardPage {
 		this.uri = new URIish();
 		this.sourceSelection = sourceSelection;
 
-		String preset = presetUri;
+		String preset = null;
 		if (presetUri == null) {
 			Clipboard clippy = new Clipboard(Display.getCurrent());
 			String text = (String) clippy.getContents(TextTransfer
@@ -551,36 +538,13 @@ public class RepositorySelectionPage extends WizardPage {
 		userText.setLayoutData(createFieldGridData());
 		userText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
-				Protocol protocol = getProtocol();
-				if (protocol != Protocol.HTTP && protocol != Protocol.HTTPS)
-					setURI(uri.setUser(nullString(userText.getText())));
-				user = userText.getText();
+				setURI(uri.setUser(nullString(userText.getText())));
 			}
 		});
 
 		newLabel(g, UIText.RepositorySelectionPage_promptPassword + ":"); //$NON-NLS-1$
 		passText = new Text(g, SWT.BORDER | SWT.PASSWORD);
 		passText.setLayoutData(createFieldGridData());
-		passText.addModifyListener(new ModifyListener() {
-			public void modifyText(final ModifyEvent e) {
-				setURI(uri.setPass(null));
-				password = passText.getText();
-			}
-		});
-
-		newLabel(g, UIText.RepositorySelectionPage_storeInSecureStore);
-		storeCheckbox = new Button(g, SWT.CHECK);
-		storeCheckbox.setSelection(storeInSecureStore);
-		storeCheckbox.addSelectionListener(new SelectionListener() {
-			public void widgetSelected(SelectionEvent e) {
-				storeInSecureStore = storeCheckbox.getSelection();
-			}
-
-			public void widgetDefaultSelected(SelectionEvent e) {
-				storeInSecureStore = storeCheckbox.getSelection();
-			}
-		});
-
 		return g;
 	}
 
@@ -869,19 +833,13 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void updateAuthGroup() {
-		Protocol p = getProtocol();
-		if (p != null) {
+		int idx = scheme.getSelectionIndex();
+		if (idx >= 0) {
+			Protocol p = Protocol.values()[idx];
 			hostText.setEnabled(p.hasHost());
 			portText.setEnabled(p.hasPort());
 			setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
-	}
-
-	private Protocol getProtocol() {
-		int idx = scheme.getSelectionIndex();
-		if (idx >= 0)
-			return Protocol.values()[idx];
-		return null;
 	}
 
 	@Override
@@ -896,38 +854,6 @@ public class RepositorySelectionPage extends WizardPage {
 	 */
 	public void saveUriInPrefs() {
 		uriProposalHandler.updateProposals();
-	}
-
-	/**
-	 * @return credentials
-	 */
-	public UserPasswordCredentials getCredentials() {
-		if ((user == null || user.length() == 0)
-				&& (password == null || password.length() == 0))
-			return null;
-		return new UserPasswordCredentials(user, password);
-	}
-
-	/**
-	 * @return true if credentials should be stored
-	 */
-	public boolean getStoreInSecureStore() {
-		return this.storeInSecureStore;
-	}
-
-	/**
-	 * Set the ID for context sensitive help
-	 *
-	 * @param id
-	 *            help context
-	 */
-	public void setHelpContext(String id) {
-		helpContext = id;
-	}
-
-	@Override
-	public void performHelp() {
-		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
 	}
 
 	private void setEnabledRecursively(final Control control,

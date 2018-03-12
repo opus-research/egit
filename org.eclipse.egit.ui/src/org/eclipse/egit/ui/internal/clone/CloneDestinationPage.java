@@ -17,16 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.ComboViewer;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.LabelProvider;
-import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -39,12 +32,12 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Wizard page that allows the user entering the location of a repository to be
@@ -60,13 +53,11 @@ class CloneDestinationPage extends WizardPage {
 
 	private Ref validatedHEAD;
 
-	private ComboViewer initialBranch;
+	private Combo initialBranch;
 
 	private Text directoryText;
 
 	private Text remoteText;
-
-	private String helpContext = null;
 
 	CloneDestinationPage() {
 		super(CloneDestinationPage.class.getName());
@@ -90,7 +81,7 @@ class CloneDestinationPage extends WizardPage {
 	public void setVisible(final boolean visible) {
 		if (visible) {
 			if (this.availableRefs.isEmpty()) {
-				initialBranch.getCombo().setEnabled(false);
+				initialBranch.setEnabled(false);
 			}
 		}
 		super.setVisible(visible);
@@ -120,10 +111,7 @@ class CloneDestinationPage extends WizardPage {
 		final Group g = createGroup(parent,
 				UIText.CloneDestinationPage_groupDestination);
 
-		Label dirLabel = new Label(g, SWT.NONE);
-		dirLabel.setText(UIText.CloneDestinationPage_promptDirectory + ":"); //$NON-NLS-1$
-		dirLabel
-				.setToolTipText(UIText.CloneDestinationPage_DefaultRepoFolderTooltip);
+		newLabel(g, UIText.CloneDestinationPage_promptDirectory + ":"); //$NON-NLS-1$
 		final Composite p = new Composite(g, SWT.NONE);
 		final GridLayout grid = new GridLayout();
 		grid.numColumns = 2;
@@ -156,22 +144,14 @@ class CloneDestinationPage extends WizardPage {
 		});
 
 		newLabel(g, UIText.CloneDestinationPage_promptInitialBranch + ":"); //$NON-NLS-1$
-		initialBranch = new ComboViewer(g, SWT.DROP_DOWN | SWT.READ_ONLY);
-		initialBranch.getCombo().setLayoutData(createFieldGridData());
-		initialBranch.getCombo().addSelectionListener(new SelectionAdapter() {
+		initialBranch = new Combo(g, SWT.DROP_DOWN | SWT.READ_ONLY);
+		initialBranch.setLayoutData(createFieldGridData());
+		initialBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				checkPage();
 			}
 		});
-		initialBranch.setContentProvider(ArrayContentProvider.getInstance());
-		initialBranch.setLabelProvider(new LabelProvider(){
-			@Override
-			public String getText(Object element) {
-				if (((Ref)element).getName().startsWith(Constants.R_HEADS))
-					return ((Ref)element).getName().substring(Constants.R_HEADS.length());
-				return ((Ref)element).getName();
-			} });
 	}
 
 	private void createConfigGroup(final Composite parent) {
@@ -220,10 +200,11 @@ class CloneDestinationPage extends WizardPage {
 	/**
 	 * @return initial branch selected (includes refs/heads prefix).
 	 */
-	public Ref getInitialBranch() {
-		IStructuredSelection selection =
-			(IStructuredSelection)initialBranch.getSelection();
-		return (Ref)selection.getFirstElement();
+	public String getInitialBranch() {
+		final int ix = initialBranch.getSelectionIndex();
+		if (ix < 0)
+			return Constants.R_HEADS + Constants.MASTER;
+		return Constants.R_HEADS + initialBranch.getItem(ix);
 	}
 
 	/**
@@ -234,27 +215,13 @@ class CloneDestinationPage extends WizardPage {
 	}
 
 	/**
-	 * Set the ID for context sensitive help
-	 *
-	 * @param id
-	 *            help context
-	 */
-	public void setHelpContext(String id) {
-		helpContext = id;
-	}
-
-	@Override
-	public void performHelp() {
-		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
-	}
-
-	/**
 	 * Check internal state for page completion status.
 	 */
 	private void checkPage() {
 		final String dstpath = directoryText.getText();
 		if (dstpath.length() == 0) {
-			setErrorMessage(UIText.CloneDestinationPage_errorDirectoryRequired);
+			setErrorMessage(NLS.bind(UIText.CloneDestinationPage_fieldRequired,
+					UIText.CloneDestinationPage_promptDirectory));
 			setPageComplete(false);
 			return;
 		}
@@ -274,13 +241,15 @@ class CloneDestinationPage extends WizardPage {
 			return;
 		}
 		if (!availableRefs.isEmpty()
-			&& initialBranch.getCombo().getSelectionIndex() < 0) {
-			setErrorMessage(UIText.CloneDestinationPage_errorInitialBranchRequired);
+				&& initialBranch.getSelectionIndex() < 0) {
+			setErrorMessage(NLS.bind(UIText.CloneDestinationPage_fieldRequired,
+					UIText.CloneDestinationPage_promptInitialBranch));
 			setPageComplete(false);
 			return;
 		}
 		if (remoteText.getText().length() == 0) {
-			setErrorMessage(UIText.CloneDestinationPage_errorRemoteNameRequired);
+			setErrorMessage(NLS.bind(UIText.CloneDestinationPage_fieldRequired,
+					UIText.CloneDestinationPage_promptRemoteName));
 			setPageComplete(false);
 			return;
 		}
@@ -321,25 +290,25 @@ class CloneDestinationPage extends WizardPage {
 			// update repo-related selection only if it changed
 			final String n = validatedRepoSelection.getURI().getHumanishName();
 			setDescription(NLS.bind(UIText.CloneDestinationPage_description, n));
-			String destinationDir = Activator.getDefault().getPreferenceStore()
-					.getString(UIPreferences.DEFAULT_REPO_DIR);
-			File parentDir = new File(destinationDir);
-			if (!parentDir.exists() || !parentDir.isDirectory()) {
-				parentDir = ResourcesPlugin.getWorkspace().getRoot()
-						.getRawLocation().toFile();
-			}
-			directoryText.setText(new File(parentDir, n).getAbsolutePath());
+			directoryText.setText(new File(ResourcesPlugin.getWorkspace()
+					.getRoot().getRawLocation().toFile(), n).getAbsolutePath());
 		}
 
 		validatedSelectedBranches = branches;
 		validatedHEAD = head;
 
-		initialBranch.setInput(branches);
-		if (head != null && branches.contains(head))
-			initialBranch.setSelection(new StructuredSelection(head));
-		else
-			initialBranch
-					.setSelection(new StructuredSelection(branches.get(0)));
+		initialBranch.removeAll();
+		final Ref actHead = head;
+		int newix = 0;
+		for (final Ref r : branches) {
+			String name = r.getName();
+			if (name.startsWith(Constants.R_HEADS))
+				name = name.substring((Constants.R_HEADS).length());
+			if (actHead != null && actHead.getName().equals(r.getName()))
+				newix = initialBranch.getItemCount();
+			initialBranch.add(name);
+		}
+		initialBranch.select(newix);
 		checkPage();
 	}
 

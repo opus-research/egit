@@ -14,7 +14,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.util.Collection;
 
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
@@ -22,7 +21,6 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
@@ -55,38 +53,23 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	public static void beforeClass() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
+		waitInUI();
 		// now let's clone the remote repository
 		URIish uri = new URIish("file:///" + remoteRepositoryFile.getPath());
-		File workdir = new File(getTestDirectory(), "ClonedRepo");
+		File workdir = new File(testDirectory, "ClonedRepo");
 
-		Collection<Ref> remoteRefs = getRemoteRefs(uri);
-		Ref myref = null;
-		for (Ref ref : remoteRefs) {
-			if (ref.getName().equals("refs/heads/master")) {
-				myref = ref;
-				break;
-			}
-		}
 		CloneOperation op = new CloneOperation(uri, true, null, workdir,
-				myref, "origin", 0);
+				"refs/heads/master", "origin");
 		op.run(null);
 
 		clonedRepositoryFile = new File(workdir, Constants.DOT_GIT);
 
 		// now let's clone the remote repository
 		uri = new URIish(remoteRepositoryFile.getPath());
-		workdir = new File(getTestDirectory(), "ClonedRepo2");
+		workdir = new File(testDirectory, "ClonedRepo2");
 
-		remoteRefs = getRemoteRefs(uri);
-		myref = null;
-		for (Ref ref : remoteRefs) {
-			if (ref.getName().equals("refs/heads/master")) {
-				myref = ref;
-				break;
-			}
-		}
-		op = new CloneOperation(uri, true, null, workdir, myref,
-				"origin", 0);
+		op = new CloneOperation(uri, true, null, workdir, "refs/heads/master",
+				"origin");
 		op.run(null);
 
 		clonedRepositoryFile2 = new File(workdir, Constants.DOT_GIT);
@@ -110,7 +93,6 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		// add the configuration for push
 		repository.getConfig().setString("remote", "origin", "push",
 				"refs/heads/*:refs/remotes/origin/*");
-		repository.getConfig().save();
 
 		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
 				"origin").expand().getNode(1).select();

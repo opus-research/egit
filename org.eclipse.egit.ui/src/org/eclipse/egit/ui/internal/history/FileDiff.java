@@ -21,12 +21,10 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.DiffFormatter;
-import org.eclipse.jgit.diff.EditList;
 import org.eclipse.jgit.diff.MyersDiff;
 import org.eclipse.jgit.diff.RawText;
-import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
@@ -66,56 +64,16 @@ class FileDiff {
 			walk.addTree(new EmptyTreeIterator());
 			walk.addTree(commit.getTree());
 		}
+		List<DiffEntry> entries = DiffEntry.scan(walk);
 
-		if (walk.getTreeCount() <= 2) {
-			List<DiffEntry> entries = DiffEntry.scan(walk);
-			for (DiffEntry entry : entries) {
-				final FileDiff d = new FileDiff(commit, entry);
-				r.add(d);
-			}
-		}
-		else { // DiffEntry does not support walks with more than two trees
-			final int nTree = walk.getTreeCount();
-			final int myTree = nTree - 1;
-			while (walk.next()) {
-				if (matchAnyParent(walk, myTree))
-					continue;
-
-				final FileDiffForMerges d = new FileDiffForMerges(commit);
-				d.path = walk.getPathString();
-				int m0 = 0;
-				for (int i = 0; i < myTree; i++)
-					m0 |= walk.getRawMode(i);
-				final int m1 = walk.getRawMode(myTree);
-				d.change = ChangeType.MODIFY;
-				if (m0 == 0 && m1 != 0)
-					d.change = ChangeType.ADD;
-				else if (m0 != 0 && m1 == 0)
-					d.change = ChangeType.DELETE;
-				else if (m0 != m1 && walk.idEqual(0, myTree))
-					d.change = ChangeType.MODIFY; // there is no ChangeType.TypeChanged
-				d.blobs = new ObjectId[nTree];
-				d.modes = new FileMode[nTree];
-				for (int i = 0; i < nTree; i++) {
-					d.blobs[i] = walk.getObjectId(i);
-					d.modes[i] = walk.getFileMode(i);
-				}
-				r.add(d);
-			}
-
+		for (DiffEntry entry : entries) {
+			final FileDiff d = new FileDiff(commit, entry);
+			r.add(d);
 		}
 
 		final FileDiff[] tmp = new FileDiff[r.size()];
 		r.toArray(tmp);
 		return tmp;
-	}
-
-	private static boolean matchAnyParent(final TreeWalk walk, final int myTree) {
-		final int m = walk.getRawMode(myTree);
-		for (int i = 0; i < myTree; i++)
-			if (walk.getRawMode(i) == m && walk.idEqual(i, myTree))
-				return true;
-		return false;
 	}
 
 	/**
@@ -194,9 +152,8 @@ class FileDiff {
 
 		final RawText a = getRawText(id1, reader);
 		final RawText b = getRawText(id2, reader);
-		EditList editList = MyersDiff.INSTANCE
-				.diff(RawTextComparator.DEFAULT, a, b);
-		diffFmt.format(editList, a, b);
+		final MyersDiff diff = new MyersDiff(a, b);
+		diffFmt.format(diff.getEdits(), a, b);
 	}
 
 	private String getProjectRelativePath(Repository db, String repoPath) {
@@ -250,39 +207,5 @@ class FileDiff {
 	FileDiff(final RevCommit c, final DiffEntry entry) {
 		diffEntry = entry;
 		commit = c;
-	}
-
-	private static class FileDiffForMerges extends FileDiff {
-		private String path;
-
-		private ChangeType change;
-
-		private ObjectId[] blobs;
-
-		private FileMode[] modes;
-
-		private FileDiffForMerges(final RevCommit c) {
-			super (c, null);
-		}
-
-		@Override
-		public String getPath() {
-			return path;
-		}
-
-		@Override
-		public ChangeType getChange() {
-			return change;
-		}
-
-		@Override
-		public ObjectId[] getBlobs() {
-			return blobs;
-		}
-
-		@Override
-		public FileMode[] getModes() {
-			return modes;
-		}
 	}
 }

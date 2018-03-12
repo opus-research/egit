@@ -18,9 +18,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.op.ListRemoteOperation;
-import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
@@ -30,7 +28,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -70,8 +67,6 @@ public class RefSpecPage extends WizardPage {
 
 	private String configName;
 
-	private UserPasswordCredentials credentials;
-
 	/**
 	 * Create specifications selection page for provided context.
 	 *
@@ -105,13 +100,6 @@ public class RefSpecPage extends WizardPage {
 		} else
 			checkPage();
 		revalidate();
-	}
-
-	/**
-	 * @param credentials
-	 */
-	public void setCredentials(UserPasswordCredentials credentials) {
-		this.credentials = credentials;
 	}
 
 	public void createControl(Composite parent) {
@@ -232,14 +220,8 @@ public class RefSpecPage extends WizardPage {
 		final ListRemoteOperation listRemotesOp;
 		try {
 			final URIish uri;
-			uri = newRepoSelection.getURI(pushPage);
-			int timeout = Activator.getDefault().getPreferenceStore().getInt(
-					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-			listRemotesOp = new ListRemoteOperation(local, uri, timeout);
-			if (credentials != null)
-				listRemotesOp
-						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
-								credentials.getUser(), credentials.getPassword()));
+			uri = newRepoSelection.getURI();
+			listRemotesOp = new ListRemoteOperation(local, uri);
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
