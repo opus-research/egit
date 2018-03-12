@@ -31,7 +31,6 @@ import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -196,7 +195,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
 		SWTBotShell confirm = bot.shell(dialogTitle);
-		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
+		assertEquals("Wrong result table row count", 0, confirm.bot().table()
 				.rowCount());
 		confirm.close();
 
@@ -226,10 +225,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		TestUtil.joinJobs(JobFamilies.FETCH);
 		confirm = bot.shell(dialogTitle);
-		SWTBotTreeItem[] treeItems = confirm.bot().tree().getAllItems();
+		SWTBotTable table = confirm.bot().table();
 		boolean found = false;
-		for (SWTBotTreeItem item : treeItems) {
-			found = item.getText().contains(objid);
+		for (int i = 0; i < table.rowCount(); i++) {
+			found = table.getTableItem(i).getText(2).startsWith(objid);
 			if (found)
 				break;
 		}
@@ -242,7 +241,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
 		confirm = bot.shell(dialogTitle);
-		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
+		assertEquals("Wrong result table row count", 0, confirm.bot().table()
 				.rowCount());
 	}
 }
