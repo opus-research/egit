@@ -2517,6 +2517,9 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_CreatingTagTaskName;
 
 	/** */
+	public static String FetchGerritChangePage_ExistingRefMessage;
+
+	/** */
 	public static String FetchGerritChangePage_FetchingTaskName;
 
 	/** */
@@ -2536,6 +2539,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchGerritChangePage_PageTitle;
+
+	/** */
+	public static String FetchGerritChangePage_ProvideRefNameMessage;
 
 	/** */
 	public static String FetchGerritChangePage_RunInBackground;
