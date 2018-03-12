@@ -172,6 +172,9 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_errorComputingHistory;
 
 	/** */
+	public static String GenerateHistoryJob_NoCommits;
+
+	/** */
 	public static String EGitCredentialsProvider_errorReadingCredentials;
 
 	/** */
@@ -499,6 +502,9 @@ public class UIText extends NLS {
 	public static String RebaseCurrentRefCommand_RebasingCurrentJobName;
 
 	/** */
+	public static String RebaseResultDialog_Aborted;
+
+	/** */
 	public static String RebaseResultDialog_AbortRebaseRadioText;
 
 	/** */
@@ -509,6 +515,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseResultDialog_CommitMessageLabel;
+
+	/** */
+	public static String RebaseResultDialog_Conflicting;
 
 	/** */
 	public static String RebaseResultDialog_ConflictListFailureMessage;
@@ -526,6 +535,18 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_DoNothingRadioText;
 
 	/** */
+	public static String RebaseResultDialog_FastForward;
+
+	/** */
+	public static String RebaseResultDialog_NextSteps;
+
+	/** */
+	public static String RebaseResultDialog_NextStepsAfterResolveConflicts;
+
+	/** */
+	public static String RebaseResultDialog_NextStepsDoNothing;
+
+	/** */
 	public static String RebaseResultDialog_SkipCommitButton;
 
 	/** */
@@ -535,7 +556,16 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_StatusLabel;
 
 	/** */
+	public static String RebaseResultDialog_Stopped;
+
+	/** */
+	public static String RebaseResultDialog_SuccessfullyFinished;
+
+	/** */
 	public static String RebaseResultDialog_ToggleShowButton;
+
+	/** */
+	public static String RebaseResultDialog_UpToDate;
 
 	/** */
 	public static String RebaseTargetSelectionDialog_DialogMessage;
@@ -1333,13 +1363,25 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_notFound;
 
 	/** */
-	public static String PullCurrentBranchActionHandler_PullCanceledMessage;
+	public static String PullOperationUI_BranchNotConfiguredForPullMessage;
 
 	/** */
-	public static String PullCurrentBranchActionHandler_PullCanceledTitle;
+	public static String PullOperationUI_NoLocalBranchMessage;
 
 	/** */
-	public static String PullCurrentBranchActionHandler_PullJobname;
+	public static String PullOperationUI_PullCanceledWindowTitle;
+
+	/** */
+	public static String PullOperationUI_PullErrorWindowTitle;
+
+	/** */
+	public static String PullOperationUI_PullingTaskName;
+
+	/** */
+	public static String PullOperationUI_PullOperationCanceledMessage;
+
+	/** */
+	public static String PullOperationUI_UnexpectedExceptionGettingBranchMessage;
 
 	/** */
 	public static String PullResultDialog_DialogTitle;
@@ -2173,6 +2215,9 @@ public class UIText extends NLS {
 	public static String FindToolbar_PreviousTooltip;
 
 	/** */
+	public static String FormatJob_buildingCommitInfo;
+
+	/** */
 	public static String WindowCachePreferencePage_title;
 
 	/** */
@@ -2264,6 +2309,24 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialogPreferencePage_hardWrapMessageTooltip;
+
+	/** */
+	public static String CommitDialogPreferencePage_createChangeId;
+
+	/** */
+	public static String CommitDialogPreferencePage_createChangeIdTooltip;
+
+	/** */
+	public static String CommitDialogPreferencePage_footers;
+
+	/** */
+	public static String CommitDialogPreferencePage_formatting;
+
+	/** */
+	public static String CommitDialogPreferencePage_signedOffBy;
+
+	/** */
+	public static String CommitDialogPreferencePage_signedOffByTooltip;
 
 	/** */
 	public static String Decorator_exceptionMessage;
@@ -2900,12 +2963,6 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_deselectAll;
 
 	/** */
-	public static String GitLightweightDecorator_AsynchronousDecorationError;
-
-	/** */
-	public static String GitLightweightDecorator_ResourceError;
-
-	/** */
 	public static String GitTraceConfigurationDialog_ApplyButton;
 
 	/** */
@@ -3348,6 +3405,7 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_ExpandAll;
+	/** */
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
