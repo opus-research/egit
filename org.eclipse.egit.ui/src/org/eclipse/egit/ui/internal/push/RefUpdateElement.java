@@ -206,7 +206,7 @@ class RefUpdateElement extends WorkbenchAdapter {
 	 * @param ref
 	 * @return shortened ref name
 	 */
-	protected String shortenRef(String ref) {
+	protected String shortenRef(final String ref) {
 		return NoteMap.shortenRefName(Repository.shortenRefName(ref));
 	}
 
