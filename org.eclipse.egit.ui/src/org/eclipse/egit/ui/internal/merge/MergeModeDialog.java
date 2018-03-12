@@ -10,7 +10,7 @@ package org.eclipse.egit.ui.internal.merge;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.SWT;
@@ -26,7 +26,7 @@ import org.eclipse.swt.widgets.Shell;
  * Asks the user whether to use the workspace or HEAD
  */
 public class MergeModeDialog extends Dialog {
-	private boolean useWs = false;
+	private boolean useWs = true;
 
 	Button dontAskAgain;
 
@@ -68,7 +68,6 @@ public class MergeModeDialog extends Dialog {
 		dontAskAgain = new Button(main, SWT.CHECK);
 		dontAskAgain.setText(UIText.MergeModeDialog_DontAskAgainLabel);
 		useWorkspace.setSelection(useWs);
-		useHead.setSelection(!useWs);
 		return main;
 	}
 

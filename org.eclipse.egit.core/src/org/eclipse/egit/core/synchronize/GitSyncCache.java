@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,19 +13,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -58,24 +54,16 @@ class GitSyncCache {
 			Map<GitSynchronizeData, Collection<String>> updateRequests,
 			IProgressMonitor monitor) {
 		GitSyncCache cache = new GitSyncCache();
-		mergeAllDataIntoCache(updateRequests, monitor, cache);
-		return cache;
-	}
-
-	public static void mergeAllDataIntoCache(
-			Map<GitSynchronizeData, Collection<String>> updateRequests,
-			IProgressMonitor monitor, GitSyncCache cache) {
 		SubMonitor m = SubMonitor.convert(monitor, updateRequests.size());
 
 		for (Entry<GitSynchronizeData, Collection<String>> entry : updateRequests
 				.entrySet()) {
-			Collection<String> paths = entry.getValue();
-			GitSyncCache partialCache = getAllData(entry.getKey(), paths);
-			cache.merge(partialCache, new HashSet<String>(paths));
+			cache.merge(getAllData(entry.getKey(), entry.getValue()));
 			m.worked(1);
 		}
 
 		m.done();
+		return cache;
 	}
 
 	private static GitSyncCache getAllData(GitSynchronizeData gsd,
@@ -121,10 +109,8 @@ class GitSyncCache {
 
 		try {
 			// setup local tree
-			FileTreeIterator fti = null;
 			if (gsd.shouldIncludeLocal()) {
-				fti = new FileTreeIterator(repo);
-				tw.addTree(fti);
+				tw.addTree(new FileTreeIterator(repo));
 				if (filter != null)
 					tw.setFilter(AndTreeFilter.create(filter,
 							new NotIgnoredFilter(0)));
@@ -147,12 +133,6 @@ class GitSyncCache {
 			else
 				tw.addTree(new EmptyTreeIterator());
 
-			DirCacheIterator dci = null;
-			if (fti != null) {
-				dci = new DirCacheIterator(DirCache.read(repo));
-				tw.addTree(dci);
-				fti.setDirCacheIterator(tw, 3);
-			}
 			List<ThreeWayDiffEntry> diffEntrys = ThreeWayDiffEntry.scan(tw);
 			tw.release();
 
@@ -186,11 +166,11 @@ class GitSyncCache {
 		return cache.get(repo.getDirectory());
 	}
 
-	public void merge(GitSyncCache other, Set<String> filterPaths) {
-		for (Entry<File, GitSyncObjectCache> entry : other.cache.entrySet()) {
+	public void merge(GitSyncCache newCache) {
+		for (Entry<File, GitSyncObjectCache> entry : newCache.cache.entrySet()) {
 			File key = entry.getKey();
 			if (cache.containsKey(key))
-				cache.get(key).merge(entry.getValue(), filterPaths);
+				cache.get(key).merge(entry.getValue());
 			else
 				cache.put(key, entry.getValue());
 		}

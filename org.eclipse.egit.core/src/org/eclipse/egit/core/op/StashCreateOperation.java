@@ -10,16 +10,13 @@
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.StashCreateCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Repository;
@@ -33,8 +30,6 @@ public class StashCreateOperation implements IEGitOperation {
 
 	private final Repository repository;
 
-	private final String message;
-
 	private RevCommit commit;
 
 	/**
@@ -43,18 +38,7 @@ public class StashCreateOperation implements IEGitOperation {
 	 * @param repository
 	 */
 	public StashCreateOperation(final Repository repository) {
-		this(repository, null);
-	}
-
-	/**
-	 * Create operation for repository
-	 *
-	 * @param repository
-	 * @param message
-	 */
-	public StashCreateOperation(final Repository repository, final String message) {
 		this.repository = repository;
-		this.message = message;
 	}
 
 	/**
@@ -71,10 +55,7 @@ public class StashCreateOperation implements IEGitOperation {
 
 			public void run(IProgressMonitor pm) throws CoreException {
 				try {
-					StashCreateCommand command = Git.wrap(repository).stashCreate();
-					if (message != null)
-						command.setWorkingDirectoryMessage(message);
-					commit = command.call();
+					commit = Git.wrap(repository).stashCreate().call();
 				} catch (JGitInternalException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
@@ -88,12 +69,11 @@ public class StashCreateOperation implements IEGitOperation {
 				}
 			}
 		};
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE,
+		ResourcesPlugin.getWorkspace().run(action,
 				monitor != null ? monitor : new NullProgressMonitor());
 	}
 
 	public ISchedulingRule getSchedulingRule() {
-		return RuleUtil.getRule(repository);
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,15 +8,17 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.synchronize.model.TreeBuilder.FileModelFactory;
-import org.eclipse.egit.ui.internal.synchronize.model.TreeBuilder.TreeModelFactory;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -26,9 +28,45 @@ public class GitModelCache extends GitModelObjectContainer {
 
 	private final Path location;
 
+	private final FileModelFactory fileFactory;
+
+	private final Map<String, GitModelCacheTree> cacheTreeMap;
+
 	private final Repository repo;
 
-	private GitModelObject[] children;
+	private final Map<String, Change> cache;
+
+	/**
+	 * This interface enables creating proper instance of {@link GitModelBlob}
+	 * for cached and working files. In case of working files the left side
+	 * content of Compare View is loaded from local hard drive.
+	 */
+	protected interface FileModelFactory {
+		/**
+		 * Creates proper instance of {@link GitModelBlob} for cache and working
+		 * tree model representation
+		 *
+		 * @param objParent
+		 *            parent object
+		 * @param repo
+		 *            repository associated with file that will be created
+		 * @param change
+		 *            change associated with file that will be created
+		 * @param fullPath
+		 *            absolute path
+		 * @return instance of {@link GitModelBlob}
+		 */
+		GitModelBlob createFileModel(GitModelObjectContainer objParent,
+				Repository repo, Change change, IPath fullPath);
+
+		/**
+		 * Distinguish working tree from changed/staged tree
+		 *
+		 * @return {@code true} when this tree is working tree, {@code false}
+		 *         when it is a cached tree
+		 */
+		boolean isWorkingTree();
+	}
 
 	/**
 	 * Constructs model node that represents current status of Git cache.
@@ -62,27 +100,19 @@ public class GitModelCache extends GitModelObjectContainer {
 	 *            parent object
 	 * @param repo
 	 *            repository associated with this object
-	 * @param changes
+	 * @param cache
 	 *            list of changes associated with this object
 	 * @param fileFactory
 	 *            leaf instance factory
 	 */
-	protected GitModelCache(GitModelRepository parent, final Repository repo,
-			Map<String, Change> changes, final FileModelFactory fileFactory) {
+	protected GitModelCache(GitModelRepository parent, Repository repo, Map<String, Change> cache,
+			FileModelFactory fileFactory) {
 		super(parent);
 		this.repo = repo;
-		this.location = new Path(repo.getWorkTree().toString());
-
-		this.children = TreeBuilder.build(this, repo, changes, fileFactory,
-				new TreeModelFactory() {
-					public GitModelTree createTreeModel(
-							GitModelObjectContainer parentObject,
-							IPath fullPath,
-							int kind) {
-						return new GitModelCacheTree(parentObject, repo,
-								fullPath, fileFactory);
-					}
-				});
+		this.cache = cache;
+		this.fileFactory = fileFactory;
+		cacheTreeMap = new HashMap<String, GitModelCacheTree>();
+		location = new Path(repo.getWorkTree().toString());
 	}
 
 	@Override
@@ -92,7 +122,17 @@ public class GitModelCache extends GitModelObjectContainer {
 
 	@Override
 	public GitModelObject[] getChildren() {
-		return children;
+		List<GitModelObject> result = new ArrayList<GitModelObject>();
+
+		for (Entry<String, Change> cacheEntry : cache.entrySet()) {
+			GitModelObject entry = extractFromCache(cacheEntry.getValue(), cacheEntry.getKey());
+			if (entry == null)
+				continue;
+
+			result.add(entry);
+		}
+
+		return result.toArray(new GitModelObject[result.size()]);
 	}
 
 	@Override
@@ -136,10 +176,34 @@ public class GitModelCache extends GitModelObjectContainer {
 
 	@Override
 	public void dispose() {
-		if (children != null) {
-			for (GitModelObject object : children)
-				object.dispose();
-			children = null;
-		}
+		for (GitModelTree modelTree : cacheTreeMap.values())
+			modelTree.dispose();
+
+		cache.clear();
+		cacheTreeMap.clear();
 	}
+
+	private GitModelObject extractFromCache(Change change, String path) {
+		if (path.contains("/")) //$NON-NLS-1$
+			return handleCacheTree(change, path);
+
+		return fileFactory.createFileModel(this, repo, change,
+				location.append(path));
+	}
+
+	private GitModelObject handleCacheTree(Change change, String path) {
+		int firstSlash = path.indexOf("/");//$NON-NLS-1$
+		String pathKey = path.substring(0, firstSlash);
+		GitModelCacheTree cacheTree = cacheTreeMap.get(pathKey);
+		if (cacheTree == null) {
+			IPath newPath = location.append(pathKey);
+			cacheTree = new GitModelCacheTree(this, repo, newPath, fileFactory);
+			cacheTreeMap.put(pathKey, cacheTree);
+		}
+
+		cacheTree.addChild(change, path.substring(firstSlash + 1));
+
+		return cacheTree;
+	}
+
 }

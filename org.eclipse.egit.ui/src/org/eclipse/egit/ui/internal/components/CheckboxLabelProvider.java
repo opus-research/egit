@@ -13,7 +13,7 @@ import static org.eclipse.jface.resource.ImageDescriptor.createFromImageData;
 import static org.eclipse.jface.resource.JFaceResources.getResources;
 
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.swt.SWT;
@@ -91,8 +91,6 @@ public abstract class CheckboxLabelProvider extends CenteredImageLabelProvider {
 		layout.marginTop = 0;
 		layout.marginLeft = 0;
 		layout.marginBottom = 0;
-		layout.marginRight = 0;
-		layout.spacing = 0;
 		composite.setLayout(layout);
 		createButton(composite, gray, true, true);
 		createButton(composite, gray, false, true);
@@ -105,23 +103,18 @@ public abstract class CheckboxLabelProvider extends CenteredImageLabelProvider {
 		shell.setLocation(0, 0);
 		shell.setSize(cSize);
 
-		Display display = shell.getShell().getDisplay();
-
 		shell.open();
-		Image canvas = new Image(display, cSize.x, cSize.y);
-		GC gc = new GC(canvas);
-		composite.print(gc);
-
+		GC gc = new GC(composite);
 		int buttonX = cSize.x / 4;
 		Image[] images = new Image[4];
+		Display display = shell.getShell().getDisplay();
 
 		for (int i = 0; i < 4; i++) {
-			Image image = new Image(display, buttonX, cSize.y);
+			Image image = new Image(display, buttonX, buttonX);
 			gc.copyArea(image, buttonX * i, 0);
 			images[i] = getImage(resourceManager, gray, image);
 		}
 
-		canvas.dispose();
 		gc.dispose();
 		shell.close();
 
