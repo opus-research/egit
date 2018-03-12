@@ -263,9 +263,9 @@ public class RepositoriesView extends CommonNavigator {
 	private void activateContextService() {
 		IContextService contextService = (IContextService) getSite()
 				.getService(IContextService.class);
-		if (contextService != null) {
+		if (contextService != null)
 			contextService.activateContext(VIEW_ID);
-		}
+
 	}
 
 	private void initRepositoriesAndListeners() {
