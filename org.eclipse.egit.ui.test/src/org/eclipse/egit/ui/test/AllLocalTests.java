@@ -34,7 +34,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		AllTeamActionTests.class,                   //
 		HistoryViewTest.class,                      //
 		PushTest.class,
- GitScopeUtilTest.class,
+		GitScopeUtilTest.class,
 		SpellcheckableMessageAreaTest.class,
 		TraceConfigurationDialogTest.class,
 		SynchronizeViewWorkspaceModelTest.class,
