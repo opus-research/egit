@@ -31,7 +31,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.core.trace.GitTraceLocation;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.GitIndex.Entry;
@@ -84,13 +83,9 @@ public class UpdateJob extends Job {
 					}
 				}
 				long t1=System.currentTimeMillis();
-				// TODO is this the right location?
-				if (GitTraceLocation.CORE.isActive())
-					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.CORE.getLocation(),
-							"Counted " + count[0] //$NON-NLS-1$
-									+ " items to update in " //$NON-NLS-1$
-									+ (t1 - t0) / 1000.0 + "s"); //$NON-NLS-1$
+				System.out.println("Counted " + count[0] //$NON-NLS-1$
+						+ " items to update in " //$NON-NLS-1$
+						+ (t1 - t0) / 1000.0 + "s"); //$NON-NLS-1$
 				m.beginTask(CoreText.UpdateOperation_updating, count[0]);
 				final IProgressMonitor fm = m;
 				for (Object obj : rsrcList) {
@@ -112,8 +107,7 @@ public class UpdateJob extends Job {
 											fm.worked(1);
 										}
 									} catch (IOException e) {
-										if (GitTraceLocation.CORE.isActive())
-											GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+										e.printStackTrace();
 										throw Activator.error(CoreText.UpdateOperation_failed, e);
 									}
 									return true;
@@ -137,16 +131,13 @@ public class UpdateJob extends Job {
 			} catch (NotSupportedException e) {
 				return Activator.error(e.getMessage(),e).getStatus();
 			} catch (RuntimeException e) {
-				if (GitTraceLocation.CORE.isActive())
-					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+				e.printStackTrace();
 				return Activator.error(CoreText.UpdateOperation_failed, e).getStatus();
 			} catch (IOException e) {
-				if (GitTraceLocation.CORE.isActive())
-					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+				e.printStackTrace();
 				return Activator.error(CoreText.UpdateOperation_failed, e).getStatus();
 			} catch (CoreException e) {
-				if (GitTraceLocation.CORE.isActive())
-					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+				e.printStackTrace();
 				return Activator.error(CoreText.UpdateOperation_failed, e).getStatus();
 			} finally {
 				try {
@@ -157,8 +148,7 @@ public class UpdateJob extends Job {
 						r.fireRepositoryChanged();
 					}
 				} catch (IOException e) {
-					if (GitTraceLocation.CORE.isActive())
-						GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+					e.printStackTrace();
 				} finally {
 					m.done();
 				}
@@ -172,10 +162,7 @@ public class UpdateJob extends Job {
 	}
 
 	private void trace(final String m) {
-		// TODO is this the right location?
-		if (GitTraceLocation.CORE.isActive())
-			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.CORE.getLocation(), "(UpdateJob)" + m);
+		Activator.trace("(UpdateJob)"+m);  //$NON-NLS-1$
 	}
 
 }
