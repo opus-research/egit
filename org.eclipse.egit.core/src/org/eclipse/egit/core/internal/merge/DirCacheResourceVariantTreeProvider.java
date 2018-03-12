@@ -13,12 +13,12 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.internal.storage.GitLocalResourceVariant;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.storage.IndexResourceVariant;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
-import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.variants.IResourceVariantTree;
 
@@ -49,14 +49,11 @@ public class DirCacheResourceVariantTreeProvider implements
 	 * @param repository
 	 *            The repository which DirCache info we need to cache as
 	 *            IResourceVariantTrees.
-	 * @param useWorkspace
-	 *            Whether we should use local data instead of what's in the
-	 *            index for our side.
 	 * @throws IOException
 	 *             if we somehow cannot read the DirCache.
 	 */
-	public DirCacheResourceVariantTreeProvider(Repository repository,
-			boolean useWorkspace) throws IOException {
+	public DirCacheResourceVariantTreeProvider(Repository repository)
+			throws IOException {
 		final DirCache cache = repository.readDirCache();
 		final GitResourceVariantCache baseCache = new GitResourceVariantCache();
 		final GitResourceVariantCache sourceCache = new GitResourceVariantCache();
@@ -64,10 +61,9 @@ public class DirCacheResourceVariantTreeProvider implements
 
 		for (int i = 0; i < cache.getEntryCount(); i++) {
 			final DirCacheEntry entry = cache.getEntry(i);
+			final IPath path = new Path(entry.getPathString());
 			final IResource resource = ResourceUtil
-					.getResourceHandleForLocation(repository,
-							entry.getPathString(),
-							FileMode.fromBits(entry.getRawMode()) == FileMode.TREE);
+					.getResourceHandleForLocation(path);
 			// Resource variants only make sense for IResources. Do not consider
 			// files outside of the workspace or otherwise non accessible.
 			if (resource == null || resource.getProject() == null
@@ -83,13 +79,8 @@ public class DirCacheResourceVariantTreeProvider implements
 						IndexResourceVariant.create(repository, entry));
 				break;
 			case DirCacheEntry.STAGE_2:
-				if (useWorkspace) {
-					sourceCache.setVariant(resource, new GitLocalResourceVariant(
-							resource));
-				} else {
-					sourceCache.setVariant(resource,
-							IndexResourceVariant.create(repository, entry));
-				}
+				sourceCache.setVariant(resource,
+						IndexResourceVariant.create(repository, entry));
 				break;
 			case DirCacheEntry.STAGE_3:
 				remoteCache.setVariant(resource,
