@@ -22,7 +22,6 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -111,20 +110,11 @@ class CommitFileDiffViewer extends TableViewer {
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				final FileDiff d = (FileDiff) iss.getFirstElement();
-				if (compareMode) {
-					if (d.getBlobs().length <= 2)
+				if (walker != null && d.getBlobs().length <= 2)
+					if (compareMode)
 						showTwoWayFileDiff(d);
 					else
-						MessageDialog
-								.openInformation(
-										PlatformUI.getWorkbench()
-												.getActiveWorkbenchWindow()
-												.getShell(),
-										UIText.CommitFileDiffViewer_CanNotOpenCompareEditorTitle,
-										UIText.CommitFileDiffViewer_MergeCommitMultiAncestorMessage);
-				}
-				else
-					openFileInEditor(d);
+						openFileInEditor(d);
 			}
 		});
 
@@ -167,7 +157,7 @@ class CommitFileDiffViewer extends TableViewer {
 					d.getChange().equals(ChangeType.DELETE)?
 							d.getCommit().getParent(0) : d.getCommit(),
 					db, d.getChange().equals(ChangeType.DELETE)?
-							d.getBlobs()[0] : d.getBlobs()[d.getBlobs().length - 1]);
+							d.getBlobs()[0] : d.getBlobs()[1]);
 			if (rev != null)
 				EgitUiEditorUtils.openEditor(page, rev,
 						new NullProgressMonitor());
