@@ -85,7 +85,6 @@ public class GitCreatePatchWizard extends Wizard {
 
 	private OptionsPage optionsPage;
 
-
 	// The initial size of this wizard.
 	private final static int INITIAL_WIDTH = 300;
 
