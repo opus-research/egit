@@ -34,7 +34,7 @@ import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.internal.resources.IResourceState.Staged;
+import org.eclipse.egit.ui.internal.resources.IResourceState.StagingState;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Repository;
@@ -160,13 +160,13 @@ public class ResourceStateFactory {
 		Set<String> removed = indexDiffData.getRemoved();
 		Set<String> changed = indexDiffData.getChanged();
 		if (added.contains(repoRelativePath)) {
-			state.setStaged(Staged.ADDED);
+			state.setStagingState(StagingState.ADDED);
 		} else if (removed.contains(repoRelativePath)) {
-			state.setStaged(Staged.REMOVED);
+			state.setStagingState(StagingState.REMOVED);
 		} else if (changed.contains(repoRelativePath)) {
-			state.setStaged(Staged.MODIFIED);
+			state.setStagingState(StagingState.MODIFIED);
 		} else {
-			state.setStaged(Staged.NOT_STAGED);
+			state.setStagingState(StagingState.NOT_STAGED);
 		}
 
 		// conflicting
@@ -215,9 +215,9 @@ public class ResourceStateFactory {
 		changed.addAll(indexDiffData.getAdded());
 		changed.addAll(indexDiffData.getRemoved());
 		if (containsPrefix(changed, repoRelativePath)) {
-			state.setStaged(Staged.MODIFIED);
+			state.setStagingState(StagingState.MODIFIED);
 		} else {
-			state.setStaged(Staged.NOT_STAGED);
+			state.setStagingState(StagingState.NOT_STAGED);
 		}
 		// conflicting
 		Set<String> conflicting = indexDiffData.getConflicting();

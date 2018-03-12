@@ -40,7 +40,7 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.resources.ResourceStateFactory;
-import org.eclipse.egit.ui.internal.resources.IResourceState.Staged;
+import org.eclipse.egit.ui.internal.resources.IResourceState.StagingState;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -387,7 +387,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 						UIPreferences.THEME_IgnoredResourceFont);
 			} else if (!resource.isTracked()
 					|| resource.isDirty()
-					|| resource.staged() != Staged.NOT_STAGED) {
+					|| resource.isStaged()) {
 				bc = current.getColorRegistry().get(
 						UIPreferences.THEME_UncommittedChangeBackgroundColor);
 				fc = current.getColorRegistry().get(
@@ -450,8 +450,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 			bindings.put(BINDING_BRANCH_NAME, resource.getBranch());
 			bindings.put(BINDING_BRANCH_STATUS, resource.getBranchStatus());
 			bindings.put(BINDING_DIRTY_FLAG, resource.isDirty() ? ">" : null); //$NON-NLS-1$
-			bindings.put(BINDING_STAGED_FLAG,
-					resource.staged() != Staged.NOT_STAGED ? "*" : null); //$NON-NLS-1$
+			bindings.put(BINDING_STAGED_FLAG, resource.isStaged() ? "*" : null); //$NON-NLS-1$
 
 			decorate(decoration, format, bindings);
 		}
@@ -470,12 +469,12 @@ public class GitLightweightDecorator extends LabelProvider implements
 					overlay = assumeValidImage;
 
 				// Staged overrides tracked
-				Staged staged = resource.staged();
+				StagingState staged = resource.getStagingState();
 				if (store.getBoolean(UIPreferences.DECORATOR_SHOW_STAGED_ICON)
-						&& staged != Staged.NOT_STAGED) {
-					if (staged == Staged.ADDED)
+						&& staged != StagingState.NOT_STAGED) {
+					if (staged == StagingState.ADDED)
 						overlay = stagedAddedImage;
-					else if (staged == Staged.REMOVED)
+					else if (staged == StagingState.REMOVED)
 						overlay = stagedRemovedImage;
 					else
 						overlay = stagedImage;

@@ -59,7 +59,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			setDirty(baseState.isDirty());
 			setConflicts(baseState.hasConflicts());
 			setAssumeValid(baseState.isAssumeValid());
-			setStaged(baseState.staged());
+			setStagingState(baseState.getStagingState());
 			if (resource.getType() == IResource.PROJECT) {
 				// We only need this very expensive info for project decoration
 				repositoryName = DecoratableResourceHelper
@@ -84,7 +84,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 				+ (isIgnored() ? ", ignored" : "") //$NON-NLS-1$ //$NON-NLS-2$
 				+ (isDirty() ? ", dirty" : "") //$NON-NLS-1$//$NON-NLS-2$
 				+ (hasConflicts() ? ",conflicts" : "")//$NON-NLS-1$//$NON-NLS-2$
-				+ ", staged=" + staged() //$NON-NLS-1$
+				+ ", staged=" + getStagingState() //$NON-NLS-1$
 				+ "]"; //$NON-NLS-1$
 	}
 
