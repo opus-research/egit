@@ -10,16 +10,11 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
-import java.net.URISyntaxException;
-
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.push.PushOperationUI;
+import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.internal.repository.tree.PushNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteNode;
-import org.eclipse.jgit.transport.RemoteConfig;
 
 /**
  * Pushes to the remote
@@ -29,17 +24,10 @@ public class PushConfiguredRemoteCommand extends
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		PushNode node = getSelectedNodes(event).get(0);
 		RemoteNode remote = (RemoteNode) node.getParent();
-		RemoteConfig config;
-		try {
-			config = new RemoteConfig(node.getRepository().getConfig(), remote
-					.getObject());
-		} catch (URISyntaxException e) {
-			throw new ExecutionException(e.getMessage());
-		}
-		int timeout = Activator.getDefault().getPreferenceStore().getInt(
-				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-		new PushOperationUI(node.getRepository(), config, timeout, false)
-				.start();
+
+		new PushConfiguredRemoteAction(node.getRepository(), remote.getObject())
+				.run(getShell(event), false);
+
 		return null;
 	}
 }
