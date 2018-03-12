@@ -13,6 +13,7 @@ package org.eclipse.egit.ui.wizards.clone;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -259,16 +260,12 @@ public class GitCloneWizardTest extends EGitTestCase {
 				.assertErrorMessage("At least one branch must be selected.");
 		remoteBranches.assertNextIsDisabled();
 
-		// TODO the "fix" branch alone is cloning too fast if delay is used
-		// remoteBranches.selectBranches(SampleTestRepository.FIX);
-		remoteBranches.selectBranches(SampleTestRepository.FIX, Constants.MASTER);
-		
+		remoteBranches.selectBranches(SampleTestRepository.FIX);
 		remoteBranches.assertNextIsEnabled();
 
 		WorkingCopyPage workingCopy = remoteBranches.nextToWorkingCopy();
 		workingCopy.setDirectory(destRepo.toString());
-		// TODO see above
-		// workingCopy.assertBranch(SampleTestRepository.FIX);
+		workingCopy.assertBranch(SampleTestRepository.FIX);
 		workingCopy.setRemoteName("src");
 		workingCopy.waitForCreate();
 
@@ -279,8 +276,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 		Repository repository = new Repository(new File(destRepo, Constants.DOT_GIT));
 		assertNotNull(repository.resolve("src/" + SampleTestRepository.FIX));
 		// we didn't clone that one
-		// TODO above
-		//assertNull(repository.resolve("src/master"));
+		assertNull(repository.resolve("src/master"));
 		// and a local master initialized from origin/master (default!)
 		assertEquals(repository.resolve("stable"), repository
 				.resolve("src/stable"));
