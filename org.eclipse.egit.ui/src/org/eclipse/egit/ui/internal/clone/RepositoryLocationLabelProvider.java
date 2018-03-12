@@ -27,7 +27,6 @@ class RepositoryLocationLabelProvider extends LabelProvider {
 
 	@Override
 	public Image getImage(Object element) {
-		// TODO Auto-generated method stub
 		return super.getImage(element);
 	}
 }
