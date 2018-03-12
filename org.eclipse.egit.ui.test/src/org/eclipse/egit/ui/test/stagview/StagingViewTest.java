@@ -63,11 +63,11 @@ public class StagingViewTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void testCommitSingleFile() throws Exception {
-		StagingViewTester stagingViewTester = StagingViewTester
-				.openStagingView();
-		selectRepositoryNode();
 		setTestFileContent("I have changed this");
 		new Git(repository).add().addFilepattern(".").call();
+		selectRepositoryNode();
+		StagingViewTester stagingViewTester = StagingViewTester
+				.openStagingView();
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		stagingViewTester.setAuthor(TestUtil.TESTAUTHOR);
 		stagingViewTester.setCommitter(TestUtil.TESTCOMMITTER);
@@ -75,12 +75,6 @@ public class StagingViewTest extends LocalRepositoryTestCase {
 		stagingViewTester.commit();
 		TestUtil.checkHeadCommit(repository, TestUtil.TESTAUTHOR,
 				TestUtil.TESTCOMMITTER, "The new commit");
-	}
-
-	private void selectRepositoryNode() throws Exception {
-		SWTBotTreeItem repoNode = repoViewUtil.getRootItem(repoViewTree,
-				repositoryFile);
-		repoNode.select();
 	}
 
 	@Test
@@ -128,4 +122,9 @@ public class StagingViewTest extends LocalRepositoryTestCase {
 		stagingViewTester.commit();
 	}
 
+	private void selectRepositoryNode() throws Exception {
+		SWTBotTreeItem repoNode = repoViewUtil.getRootItem(repoViewTree,
+				repositoryFile);
+		repoNode.select();
+	}
 }
