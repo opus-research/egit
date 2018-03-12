@@ -9,6 +9,7 @@
  * Copyright (C) 2012, 2014 Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * Copyright (C) 2013, Ben Hammen <hammenb@gmail.com>
+ * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -32,6 +33,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String AbortRebaseCommand_JobName;
+
+	/** */
+	public static String AbstractHistoryCommandHandler_ActionRequiresOneSelectedCommitMessage;
 
 	/** */
 	public static String AbstractHistoryCommanndHandler_CouldNotGetRepositoryMessage;
@@ -385,6 +389,12 @@ public class UIText extends NLS {
 	public static String GitDocument_errorResolveQuickdiff;
 
 	/** */
+	public static String GitDocument_ReloadJobError;
+
+	/** */
+	public static String GitDocument_ReloadJobName;
+
+	/** */
 	public static String GitHistoryPage_AllChangesInRepoHint;
 
 	/** */
@@ -562,6 +572,12 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_rebaseInteractiveMenuItem;
 
 	/** */
+	public static String GitHistoryPage_rewordMenuItem;
+
+	/** */
+	public static String GitHistoryPage_editMenuItem;
+
+	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
@@ -647,6 +663,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_SecureStoreUseByDefault;
+
+	/** */
+	public static String GitPreferenceRoot_useLogicalModel;
 
 	/** */
 	public static String ProcessStepsRebaseCommand_CancelDialogMessage;
@@ -1039,6 +1058,9 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
+	public static String CancelAfterSaveDialog_Title;
+
+	/** */
 	public static String CleanRepositoryPage_cleanDirs;
 
 	/** */
@@ -1187,6 +1209,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareTreeView_WorkspaceVersionText;
+
+	/** */
+	public static String CompareTreeView_CompareModeTooltip;
 
 	/** */
 	public static String CompareUtils_errorGettingEncoding;
@@ -2470,6 +2495,9 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_ChooseNameMessage;
 
 	/** */
+	public static String CreateBranchPage_CreateBranchNameProviderFailed;
+
+	/** */
 	public static String CreateBranchPage_CreatingBranchMessage;
 
 	/** */
@@ -2512,9 +2540,6 @@ public class UIText extends NLS {
 	public static String CreateRepositoryPage_DirectoryLabel;
 
 	/** */
-	public static String CreateRepositoryPage_MissingNameMessage;
-
-	/** */
 	public static String CreateRepositoryPage_NotADirectoryMessage;
 
 	/** */
@@ -2530,10 +2555,7 @@ public class UIText extends NLS {
 	public static String CreateRepositoryPage_PleaseSelectDirectoryMessage;
 
 	/** */
-	public static String CreateRepositoryPage_PleaseUseAbsoluePathMessage;
-
-	/** */
-	public static String CreateRepositoryPage_RepositoryNameLabel;
+	public static String CreateRepositoryPage_PleaseUseAbsolutePathMessage;
 
 	/** */
 	public static String PushResultDialog_ConfigureButton;
@@ -2699,6 +2721,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchGerritChangePage_LocalBranchRadio;
+
+	/** */
+	public static String FetchGerritChangePage_LocalBranchCheckout;
 
 	/** */
 	public static String FetchGerritChangePage_MissingChangeMessage;
@@ -2911,10 +2936,22 @@ public class UIText extends NLS {
 	public static String BranchOperationUI_CheckoutRemoteTrackingTitle;
 
 	/** */
+	public static String BranchOperationUI_Continue;
+
+	/** */
 	public static String BranchOperationUI_DetachedHeadTitle;
 
 	/** */
 	public static String BranchOperationUI_DetachedHeadMessage;
+
+	/** */
+	public static String BranchOperationUI_RunningLaunchDontShowAgain;
+
+	/** */
+	public static String BranchOperationUI_RunningLaunchMessage;
+
+	/** */
+	public static String BranchOperationUI_RunningLaunchTitle;
 
 	/** */
 	public static String BranchRenameDialog_Message;
@@ -3317,6 +3354,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_RebaseCheckbox;
+
+	/** */
+	public static String DialogsPreferencePage_RunningLaunchOnCheckout;
 
 	/** */
 	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
@@ -4010,6 +4050,9 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenInEditorMenuLabel;
 
 	/** */
+	public static String CommitFileDiffViewer_OpenPreviousInEditorMenuLabel;
+
+	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
 
 	/** */
@@ -4029,6 +4072,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitGraphTable_DeleteBranchAction;
+
+	/** */
+	public static String CommitGraphTable_HoverAdditionalTags;
 
 	/** */
 	public static String CommitGraphTable_messageColumn;
@@ -4835,6 +4881,9 @@ public class UIText extends NLS {
 	public static String StagingView_CommitToolTip;
 
 	/** */
+	public static String StagingView_cancelCommitAfterSaving;
+
+	/** */
 	public static String StagingView_checkoutFailed;
 
 	/** */
@@ -5031,6 +5080,39 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebasePulldownAction_Abort;
+
+	/** */
+	public static String RewordHandler_CommitNotOnCurrentBranch;
+
+	/** */
+	public static String RewordHandler_Error_Title;
+
+	/** */
+	public static String RewordHandler_ErrorCheckingIfCommitIsOnCurrentBranch;
+
+	/** */
+	public static String RewordHandler_InternalError;
+
+	/** */
+	public static String RewordHandler_JobName;
+
+	/** */
+	public static String EditHandler_JobName;
+
+	/** */
+	public static String EditHandler_CommitNotOnCurrentBranch;
+
+	/** */
+	public static String EditHandler_Error_Title;
+
+	/** */
+	public static String EditHandler_ErrorCheckingIfCommitIsOnCurrentBranch;
+
+	/** */
+	public static String EditHandler_InternalError;
+
+	/** */
+	public static String EditHandler_OpenStagingAndRebaseInteractiveViews;
 
 	/** */
 	public static String SynchronizeCommand_jobName;
