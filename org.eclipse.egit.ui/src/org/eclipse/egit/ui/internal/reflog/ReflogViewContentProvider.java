@@ -7,13 +7,12 @@
  *
  * Contributors:
  *   Chris Aniszczyk <caniszczyk@gmail.com> - initial implementation
- *   EclipseSource - Filtered Viewer
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.reflog;
 
 import java.util.Collection;
 
-import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Repository;
@@ -23,7 +22,7 @@ import org.eclipse.jgit.storage.file.ReflogEntry;
  * A content provider for reflog entries given a repository
  */
 public class ReflogViewContentProvider implements
-		ITreeContentProvider {
+		IStructuredContentProvider {
 
 	public Object[] getElements(Object inputElement) {
 		if(inputElement instanceof Repository) {
@@ -45,18 +44,6 @@ public class ReflogViewContentProvider implements
 	}
 
 	public void dispose() {
-		// Do nothing
-	}
-
-	public Object[] getChildren(Object parentElement) {
-		return null;
-	}
-
-	public Object getParent(Object element) {
-		return null;
-	}
-
-	public boolean hasChildren(Object element) {
-		return false;
+		// nothing to dispose
 	}
 }
