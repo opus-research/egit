@@ -325,9 +325,9 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 		String preset = presetUri;
 		if (presetUri == null) {
-			Clipboard clipboard = new Clipboard(Display.getCurrent());
-			String text = stripGitCloneCommand(
-					(String) clipboard.getContents(TextTransfer.getInstance()));
+			Clipboard clippy = new Clipboard(Display.getCurrent());
+			String text = (String) clippy.getContents(TextTransfer
+					.getInstance());
 			try {
 				if (text != null) {
 					text = text.trim();
@@ -337,15 +337,13 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					URIish u = new URIish(text);
 					if (canHandleProtocol(u))
 						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
-								|| Protocol.HTTP.handles(u)
-								|| Protocol.HTTPS.handles(u)
 								|| text.endsWith(Constants.DOT_GIT_EXT))
 							preset = text;
 				}
 			} catch (URISyntaxException e) {
 				// ignore, preset is null
 			}
-			clipboard.dispose();
+			clippy.dispose();
 		}
 		this.presetUri = preset;
 
