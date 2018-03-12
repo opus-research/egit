@@ -12,8 +12,6 @@ package org.eclipse.egit.ui.internal.blame;
 
 import java.util.Date;
 
-import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.text.revisions.Revision;
 import org.eclipse.jface.text.source.LineRange;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -24,7 +22,7 @@ import org.eclipse.swt.graphics.RGB;
 /**
  * Annotation revision
  */
-public class BlameRevision extends Revision implements IAdaptable {
+public class BlameRevision extends Revision {
 
 	private int start;
 
@@ -48,7 +46,7 @@ public class BlameRevision extends Revision implements IAdaptable {
 
 	public Date getDate() {
 		PersonIdent person = commit.getAuthorIdent();
-		if (person == null)
+		if( person == null)
 			person = commit.getCommitterIdent();
 		return person != null ? person.getWhen() : new Date(0);
 	}
@@ -129,11 +127,4 @@ public class BlameRevision extends Revision implements IAdaptable {
 		return commit.getAuthorIdent().getName();
 	}
 
-	public Object getAdapter(Class adapter) {
-		if (Repository.class == adapter)
-			return repository;
-		if (RevCommit.class == adapter)
-			return commit;
-		return Platform.getAdapterManager().getAdapter(this, adapter);
-	}
 }
