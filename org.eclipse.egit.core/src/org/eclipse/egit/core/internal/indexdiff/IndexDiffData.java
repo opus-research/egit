@@ -63,8 +63,8 @@ public class IndexDiffData {
 	}
 
 	/**
-	 * The method merges the existing IndexDiffData object baseDiff with a new
-	 * IndexDiffData object that was calculated for a subset of files
+	 * This constructor merges the existing IndexDiffData object baseDiff with a
+	 * new IndexDiffData object that was calculated for a subset of files
 	 * (changedFiles).
 	 *
 	 * @param baseDiff

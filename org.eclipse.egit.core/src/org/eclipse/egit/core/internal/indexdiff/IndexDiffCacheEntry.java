@@ -56,11 +56,8 @@ public class IndexDiffCacheEntry {
 
 	private Job reloadJob;
 
-	private ReentrantLock lock = new ReentrantLock(true); /*
-														 * used to serialize
-														 * index diff update
-														 * jobs
-														 */
+	// used to serialize index diff update jobs
+	private ReentrantLock lock = new ReentrantLock(true);
 
 	private Set<IndexDiffChangedListener> listeners = new HashSet<IndexDiffChangedListener>();
 
@@ -211,9 +208,8 @@ public class IndexDiffCacheEntry {
 			tmpListeners = listeners
 					.toArray(new IndexDiffChangedListener[listeners.size()]);
 		}
-		for (int i = 0; i < tmpListeners.length; i++) {
+		for (int i = 0; i < tmpListeners.length; i++)
 			tmpListeners[i].indexDiffChanged(repository, indexDiffData);
-		}
 	}
 
 	private IndexDiff calcIndexDiff(IProgressMonitor monitor, String jobName) {
@@ -249,8 +245,8 @@ public class IndexDiffCacheEntry {
 						public boolean visit(IResourceDelta delta)
 								throws CoreException {
 							// If the file has changed but not in a way that we
-							// care
-							// about (e.g. marker changes to files) then ignore
+							// care about (e.g. marker changes to files) then
+							// ignore
 							if (delta.getKind() == IResourceDelta.CHANGED
 									&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
 								return true;
@@ -262,8 +258,7 @@ public class IndexDiffCacheEntry {
 								return true;
 
 							// If the resource is not part of a project under
-							// Git
-							// revision control
+							// Git revision control
 							final RepositoryMapping mapping = RepositoryMapping
 									.getMapping(resource);
 							if (mapping == null
@@ -288,9 +283,8 @@ public class IndexDiffCacheEntry {
 					return;
 				}
 
-				if (!filesToUpdate.isEmpty()) {
+				if (!filesToUpdate.isEmpty())
 					scheduleUpdateJob(filesToUpdate, fileResourcesToUpdate);
-				}
 			}
 
 		};
