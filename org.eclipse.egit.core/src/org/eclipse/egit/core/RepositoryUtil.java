@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014, 2015 SAP AG and others.
+ * Copyright (c) 2010, 2014 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -28,7 +28,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -36,8 +35,8 @@ import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.VariablesPlugin;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.CheckoutEntry;
 import org.eclipse.jgit.lib.Constants;
@@ -586,21 +585,18 @@ public class RepositoryUtil {
 	 * @since 4.1.0
 	 */
 	public static boolean canBeAutoIgnored(IPath path) throws IOException {
-		Repository repository = Activator.getDefault().getRepositoryCache()
-				.getRepository(path);
-		if (repository == null || repository.isBare()) {
-			return false;
+		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
+		if (mapping == null) {
+			return false; // Linked resources may not be mapped
 		}
+		Repository repository = mapping.getRepository();
 		WorkingTreeIterator treeIterator = IteratorService
 				.createInitialIterator(repository);
 		if (treeIterator == null) {
 			return false;
 		}
-		String repoRelativePath = path
-				.makeRelativeTo(
-						new Path(repository.getWorkTree().getAbsolutePath()))
-				.toString();
-		if (repoRelativePath.length() == 0 || repoRelativePath.equals(path)) {
+		String repoRelativePath = mapping.getRepoRelativePath(path);
+		if (repoRelativePath == null || repoRelativePath.isEmpty()) {
 			return false;
 		}
 		try (TreeWalk walk = new TreeWalk(repository)) {
