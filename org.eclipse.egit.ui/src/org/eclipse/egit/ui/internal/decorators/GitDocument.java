@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.eclipse.core.resources.IEncodedStorage;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.GitProvider;
@@ -72,7 +73,8 @@ class GitDocument extends Document implements RepositoryListener {
 
 	void populate() throws IOException {
 		Activator.trace("(GitDocument) populate: " + resource); //$NON-NLS-1$
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+		final IProject project = resource.getProject();
+		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
 		if (mapping == null) {
 			setResolved(null, null, null, ""); //$NON-NLS-1$
 			return;
@@ -169,8 +171,11 @@ class GitDocument extends Document implements RepositoryListener {
 	}
 
 	private Repository getRepository() {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-		return (mapping != null) ? mapping.getRepository() : null;
+		IProject project = resource.getProject();
+		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+		if (mapping != null)
+			return mapping.getRepository();
+		return null;
 	}
 
 	/**
