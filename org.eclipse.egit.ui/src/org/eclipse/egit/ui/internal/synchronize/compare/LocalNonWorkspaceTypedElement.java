@@ -12,13 +12,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.compare;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.Collections;
 
 import org.eclipse.compare.ISharedDocumentAdapter;
@@ -38,7 +37,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.events.IndexChangedEvent;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
@@ -80,7 +78,7 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 		this.repository = repository;
 
 		File file = path.toFile();
-		exists = file.exists() || Files.isSymbolicLink(file.toPath());
+		exists = file.exists();
 		if (exists) {
 			timestamp = file.lastModified();
 		}
@@ -92,12 +90,8 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 			try {
 				File file = path.toFile();
 				timestamp = file.lastModified();
-				if (Files.isSymbolicLink(file.toPath())) {
-					String symLink = FileUtils.readSymLink(file);
-					return new ByteArrayInputStream(Constants.encode(symLink));
-				}
 				return new FileInputStream(file);
-			} catch (IOException | UnsupportedOperationException e) {
+			} catch (FileNotFoundException e) {
 				Activator.error(e.getMessage(), e);
 			}
 		}
@@ -165,18 +159,11 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 			} else {
 				File file = path.toFile();
 				try {
-					java.nio.file.Path fp = file.toPath();
-					if (Files.isSymbolicLink(fp)) {
-						String sp = new String(getContent(), Constants.CHARSET);
-						FileUtils.createSymLink(file, sp);
-					} else {
-						if (!file.exists()) {
-							FileUtils.createNewFile(file);
-						}
-						try (FileOutputStream out = new FileOutputStream(
-								file)) {
-							out.write(getContent());
-						}
+					if (!file.exists()) {
+						FileUtils.createNewFile(file);
+					}
+					try (FileOutputStream out = new FileOutputStream(file)) {
+						out.write(getContent());
 					}
 					fDirty = false;
 				} catch (IOException e) {
