@@ -276,7 +276,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		secondtextFile2.create(new ByteArrayInputStream("Some more content"
 				.getBytes(firstProject.getDefaultCharset())), false, null);
 		// TODO we should be able to hide the .project
-		// since it is not ignored, make sure it's committed
 		// IFile gitignore = secondPoject.getFile(".gitignore");
 		// gitignore.create(new ByteArrayInputStream("/.project\n"
 		// .getBytes(firstProject.getDefaultCharset())), false, null);
@@ -284,8 +283,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		new ConnectProviderOperation(secondProject, gitDir).execute(null);
 
 		IFile[] commitables = new IFile[] { firstProject.getFile(".project"),
-				textFile, textFile2, secondtextFile, secondtextFile2,
-				secondProject.getFile(".project") };
+				textFile, textFile2, secondtextFile, secondtextFile2 };
 		ArrayList<IFile> untracked = new ArrayList<IFile>();
 		untracked.addAll(Arrays.asList(commitables));
 		// commit to stable
