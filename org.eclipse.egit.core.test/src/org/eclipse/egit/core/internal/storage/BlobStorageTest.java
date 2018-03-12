@@ -100,7 +100,6 @@ public class BlobStorageTest extends GitTestCase {
 			disconnectOp.execute(progress);
 			Activator.getDefault().getRepositoryUtil().removeDir(singleProjectGitDir);
 			singleProjectRepo.close();
-			singleRepoProject.dispose();
 		}
 	}
 

@@ -23,7 +23,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
@@ -98,11 +97,6 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 			}
 
 		}
-
-		Repository repo = AdapterUtils.adapt(input, Repository.class);
-		if (repo != null)
-			return repo;
-
 		throw new ExecutionException(
 				UIText.AbstractHistoryCommanndHandler_CouldNotGetRepositoryMessage);
 	}
@@ -153,13 +147,11 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 	}
 
 	protected IStructuredSelection getSelection(GitHistoryPage page) {
-		if (page == null)
-			return StructuredSelection.EMPTY;
 		ISelection pageSelection = page.getSelectionProvider().getSelection();
-		if (pageSelection instanceof IStructuredSelection)
+		if (pageSelection instanceof IStructuredSelection) {
 			return (IStructuredSelection) pageSelection;
-		else
-			return StructuredSelection.EMPTY;
+		} else
+			return new StructuredSelection();
 	}
 
 	/**

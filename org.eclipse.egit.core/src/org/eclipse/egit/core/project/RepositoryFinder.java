@@ -11,6 +11,7 @@
 package org.eclipse.egit.core.project;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -159,7 +160,12 @@ public class RepositoryFinder {
 	}
 
 	private void register(final IContainer c, final File gitdir) {
-		File f = gitdir.getAbsoluteFile();
+		File f;
+		try {
+			f = gitdir.getCanonicalFile();
+		} catch (IOException ioe) {
+			f = gitdir.getAbsoluteFile();
+		}
 		if (gitdirs.contains(f))
 			return;
 		gitdirs.add(f);

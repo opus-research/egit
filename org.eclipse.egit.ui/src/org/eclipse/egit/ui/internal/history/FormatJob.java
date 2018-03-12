@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.history;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
@@ -23,7 +22,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.swt.custom.StyleRange;
@@ -62,7 +60,7 @@ class FormatJob extends Job {
 		CommitInfoBuilder builder;
 		synchronized(lock) {
 			builder = new CommitInfoBuilder(formatRequest.getRepository(), formatRequest.getCommit(),
-					formatRequest.getCurrentDiffs(), formatRequest.isFill(), formatRequest.getAllRefs());
+					formatRequest.getCurrentDiffs(), formatRequest.isFill());
 			builder.setColors(formatRequest.getLinkColor(),
 					formatRequest.getDarkGrey(),
 					formatRequest.getHunkheaderColor(),
@@ -131,14 +129,6 @@ class FormatJob extends Job {
 			this.linesRemovedColor = linesRemovedColor;
 		}
 
-		public Collection<Ref> getAllRefs() {
-			return allRefs;
-		}
-
-		public void setAllRefs(Collection<Ref> allRefs) {
-			this.allRefs = allRefs;
-		}
-
 		private Repository repository;
 
 		private PlotCommit<?> commit;
@@ -157,12 +147,10 @@ class FormatJob extends Job {
 
 		private Color linesRemovedColor;
 
-		private Collection<Ref> allRefs;
-
 		FormatRequest(Repository repository, PlotCommit<?> commit,
 				boolean fill, List<FileDiff> currentDiffs, Color linkColor,
 				Color darkGrey, Color hunkheaderColor, Color linesAddedColor,
-				Color linesRemovedColor, Collection<Ref> allRefs) {
+				Color linesRemovedColor) {
 			this.repository = repository;
 			this.commit = commit;
 			this.fill = fill;
@@ -172,7 +160,6 @@ class FormatJob extends Job {
 			this.hunkheaderColor = hunkheaderColor;
 			this.linesAddedColor = linesAddedColor;
 			this.linesRemovedColor = linesRemovedColor;
-			this.allRefs = allRefs;
 		}
 
 		public Repository getRepository() {

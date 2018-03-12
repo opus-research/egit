@@ -5,7 +5,6 @@
  * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -34,16 +33,15 @@ import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -63,51 +61,6 @@ import org.eclipse.ui.dialogs.PatternFilter;
  * {@link #createCustomArea(Composite)}.
  */
 public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
-
-	/**
-	 * Get the target merge ref name for the currently checkout branch
-	 *
-	 * @param repo
-	 * @return ref node
-	 */
-	protected static String getMergeTarget(Repository repo) {
-		String branch;
-		try {
-			branch = repo.getBranch();
-		} catch (IOException e) {
-			return null;
-		}
-		if (branch == null)
-			return null;
-
-		String merge = repo.getConfig().getString(
-				ConfigConstants.CONFIG_BRANCH_SECTION, branch,
-				ConfigConstants.CONFIG_KEY_MERGE);
-		if (merge == null)
-			return null;
-
-		String remote = repo.getConfig().getString(
-				ConfigConstants.CONFIG_BRANCH_SECTION, branch,
-				ConfigConstants.CONFIG_KEY_REMOTE);
-		if (remote == null)
-			return null;
-
-		if (".".equals(remote)) //$NON-NLS-1$
-			return merge;
-		else
-			return Constants.R_REMOTES + remote + "/" //$NON-NLS-1$
-					+ Repository.shortenRefName(merge);
-	}
-
-	/**
-	 * Get the target merge ref name for the currently checkout branch
-	 *
-	 * @param repo
-	 * @return ref node
-	 */
-	protected static int getSelectSetting(Repository repo) {
-		return getMergeTarget(repo) != null ? SELECT_CURRENT_REF : 0;
-	}
 
 	/** The {@link Repository} used in the constructor */
 	protected final Repository repo;
@@ -278,20 +231,20 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		});
 
 		// double-click support
-		branchTree.addDoubleClickListener(new IDoubleClickListener() {
-			public void doubleClick(DoubleClickEvent event) {
+		branchTree.addOpenListener(new IOpenListener() {
+
+			public void open(OpenEvent event) {
 				RepositoryTreeNode node = (RepositoryTreeNode) ((IStructuredSelection) branchTree
 						.getSelection()).getFirstElement();
 				if (node == null)
 					return;
-				final RepositoryTreeNodeType type = node.getType();
-				if (type != RepositoryTreeNodeType.REF
-						&& type != RepositoryTreeNodeType.TAG
-						&& type != RepositoryTreeNodeType.ADDITIONALREF)
-					branchTree.setExpandedState(node,
-							!branchTree.getExpandedState(node));
+				if (node.getType() != RepositoryTreeNodeType.REF
+						&& node.getType() != RepositoryTreeNodeType.TAG)
+					branchTree.setExpandedState(node, !branchTree
+							.getExpandedState(node));
 				else if (getButton(Window.OK).isEnabled())
 					buttonPressed(OK);
+
 			}
 		});
 
@@ -372,32 +325,22 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		RepositoryTreeNode node;
 		try {
 			if (refName.startsWith(Constants.R_HEADS)) {
-				Ref ref = repo.getRef(refName);
-				if (ref == null)
-					return false;
-				node = new RefNode(localBranches, repo, ref);
-			} else if (refName.startsWith(Constants.R_REMOTES)) {
-				Ref ref = repo.getRef(refName);
-				if (ref == null)
-					return false;
-				node = new RefNode(remoteBranches, repo, ref);
+				Ref ref = this.repo.getRef(refName);
+				node = new RefNode(localBranches, this.repo, ref);
 			} else {
 				String mappedRef = Activator.getDefault().getRepositoryUtil()
-						.mapCommitToRef(repo, refName, false);
+						.mapCommitToRef(this.repo, refName, false);
 				if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_REMOTES)) {
-					Ref ref = repo.getRef(mappedRef);
-					if (ref == null)
-						return false;
-					node = new RefNode(remoteBranches, repo, ref);
+					Ref ref = this.repo.getRef(mappedRef);
+					node = new RefNode(remoteBranches, this.repo, ref);
 				} else if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_TAGS)) {
-					Ref ref = repo.getRef(mappedRef);
-					if (ref == null)
-						return false;
-					node = new TagNode(tags, repo, ref);
-				} else
+					Ref ref = this.repo.getRef(mappedRef);
+					node = new TagNode(tags, this.repo, ref);
+				} else {
 					return false;
+				}
 			}
 		} catch (IOException e) {
 			return false;
@@ -448,8 +391,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 			return null;
 		RepositoryTreeNode node = (RepositoryTreeNode) sel.getFirstElement();
 		if (node.getType() == RepositoryTreeNodeType.REF
-				|| node.getType() == RepositoryTreeNodeType.TAG)
+				|| node.getType() == RepositoryTreeNodeType.TAG) {
 			return ((Ref) node.getObject());
+		}
 		return null;
 	}
 
@@ -467,16 +411,4 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		return super.getShellStyle() | SWT.RESIZE;
 	}
 
-	/**
-	 * Get short name of current branch
-	 *
-	 * @return branch name
-	 */
-	protected String getCurrentBranch() {
-		try {
-			return repo.getBranch();
-		} catch (IOException e) {
-			return null;
-		}
-	}
 }

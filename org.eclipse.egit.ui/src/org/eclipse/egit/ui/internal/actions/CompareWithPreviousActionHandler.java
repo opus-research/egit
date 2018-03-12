@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.actions;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
@@ -24,7 +23,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.IEGitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -32,12 +30,11 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
+import org.eclipse.egit.ui.internal.job.JobUtil;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.FollowFilter;
-import org.eclipse.jgit.revwalk.RenameCallback;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.widgets.Shell;
@@ -52,18 +49,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
 public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 
 	private static class CompareWithPreviousOperation implements IEGitOperation {
-
-		private static class PreviousCommit {
-
-			final RevCommit commit;
-
-			final String path;
-
-			PreviousCommit(final RevCommit commit, final String path) {
-				this.commit = commit;
-				this.path = path;
-			}
-		}
 
 		private ExecutionEvent event;
 
@@ -84,19 +69,19 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 		}
 
 		public void execute(IProgressMonitor monitor) throws CoreException {
-			PreviousCommit previous = findPreviousCommit();
+			RevCommit previous = findPreviousCommit();
 			if (previous != null)
 				if (resource instanceof IFile) {
 					final ITypedElement base = SaveableCompareEditorInput
 							.createFileElement((IFile) resource);
 					ITypedElement next = CompareUtils
-							.getFileRevisionTypedElement(previous.path,
-									previous.commit, repository);
+							.getFileRevisionTypedElement(getRepositoryPath(),
+									previous, repository);
 					CompareEditorInput input = new GitCompareFileRevisionEditorInput(
 							base, next, null);
 					CompareUI.openCompareEditor(input);
 				} else
-					openCompareTreeView(previous.commit);
+					openCompareTreeView(previous);
 			else
 				showNotFoundDialog();
 		}
@@ -119,37 +104,18 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 			});
 		}
 
-		private PreviousCommit findPreviousCommit() {
-			final AtomicReference<String> previousPath = new AtomicReference<String>();
+		private RevCommit findPreviousCommit() {
 			RevWalk rw = new RevWalk(repository);
 			try {
 				String path = getRepositoryPath();
-				if (path.length() > 0) {
-					FollowFilter filter = FollowFilter.create(path);
-					filter.setRenameCallback(new RenameCallback() {
-
-						public void renamed(DiffEntry entry) {
-							if (previousPath.get() == null)
-								previousPath.set(entry.getOldPath());
-						}
-					});
-					rw.setTreeFilter(filter);
-				}
-
+				if (path.length() > 0)
+					rw.setTreeFilter(FollowFilter.create(path));
 				RevCommit headCommit = rw.parseCommit(repository.getRef(
 						Constants.HEAD).getObjectId());
 				rw.markStart(headCommit);
 				headCommit = rw.next();
-
-				if (headCommit == null)
-					return null;
-				RevCommit previousCommit = rw.next();
-				if (previousCommit == null)
-					return null;
-
-				if (previousPath.get() == null)
-					previousPath.set(getRepositoryPath());
-				return new PreviousCommit(previousCommit, previousPath.get());
+				if (headCommit != null)
+					return rw.next();
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
 			} finally {

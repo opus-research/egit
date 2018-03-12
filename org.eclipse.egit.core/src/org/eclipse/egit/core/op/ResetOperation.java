@@ -118,7 +118,7 @@ public class ResetOperation implements IEGitOperation {
 
 		IProject[] validProjects = null;
 		if (type == ResetType.HARD)
-			validProjects = ProjectUtil.getValidOpenProjects(repository);
+			validProjects = ProjectUtil.getValidProjects(repository);
 		boolean merging = false;
 		if (repository.getRepositoryState().equals(RepositoryState.MERGING)
 				|| repository.getRepositoryState().equals(

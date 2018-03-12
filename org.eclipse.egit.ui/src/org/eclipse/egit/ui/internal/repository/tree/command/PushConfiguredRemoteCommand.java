@@ -31,6 +31,7 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.ui.ISources;
 
 /**
  * Pushes to the remote
@@ -57,7 +58,8 @@ public class PushConfiguredRemoteCommand extends
 	public void setEnabled(Object evaluationContext) {
 		if (evaluationContext instanceof IEvaluationContext) {
 			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
-			Object selection = getSelection(ctx);
+			Object selection = ctx
+					.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
 			if (selection instanceof IStructuredSelection) {
 				IStructuredSelection sel = (IStructuredSelection) selection;
 				if (sel.getFirstElement() instanceof RepositoryTreeNode) {
@@ -82,15 +84,6 @@ public class PushConfiguredRemoteCommand extends
 		if (node instanceof PushNode)
 			try {
 				RemoteNode remote = (RemoteNode) node.getParent();
-				return new RemoteConfig(node.getRepository().getConfig(),
-						remote.getObject());
-			} catch (URISyntaxException e) {
-				throw new ExecutionException(e.getMessage());
-			}
-
-		if (node instanceof RemoteNode)
-			try {
-				RemoteNode remote = (RemoteNode) node;
 				return new RemoteConfig(node.getRepository().getConfig(),
 						remote.getObject());
 			} catch (URISyntaxException e) {
