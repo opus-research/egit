@@ -10,23 +10,22 @@ package org.eclipse.egit.core.test;
 
 import java.io.File;
 import java.io.IOException;
+import org.eclipse.jgit.lib.Constants;
+
+import junit.framework.TestCase;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.jgit.junit.MockSystemReader;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.util.SystemReader;
-import org.junit.After;
-import org.junit.Before;
 
-public abstract class GitTestCase {
+public abstract class GitTestCase extends TestCase {
 
 	protected TestProject project;
 
 	protected File gitDir;
 
-	@Before
-	public void prepare() throws Exception {
-		System.out.println("setUp");
+	protected void setUp() throws Exception {
+		super.setUp();
 		((MockSystemReader) SystemReader.getInstance()).setProperty(
 				Constants.GIT_CEILING_DIRECTORIES_KEY, ResourcesPlugin
 						.getWorkspace().getRoot().getLocation().toFile()
@@ -37,9 +36,8 @@ public abstract class GitTestCase {
 		rmrf(gitDir);
 	}
 
-	@After
-	public void cleanup() throws Exception {
-		System.out.println("tearDown");
+	protected void tearDown() throws Exception {
+		super.tearDown();
 		project.dispose();
 		rmrf(gitDir);
 	}
