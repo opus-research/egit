@@ -485,9 +485,6 @@ public class RepositoriesView extends CommonNavigator {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
 			if (mapping == null)
 				return;
-			String repoPath = mapping.getRepoRelativePath(resource);
-			if( repoPath == null)
-				return;
 
 			boolean added = repositoryUtil.addConfiguredRepository(mapping
 					.getRepository().getDirectory());
@@ -522,7 +519,7 @@ public class RepositoriesView extends CommonNavigator {
 				}
 			}
 
-			IPath relPath = new Path(repoPath);
+			IPath relPath = new Path(mapping.getRepoRelativePath(resource));
 
 			for (String segment : relPath.segments()) {
 				for (Object child : cp.getChildren(currentNode)) {
