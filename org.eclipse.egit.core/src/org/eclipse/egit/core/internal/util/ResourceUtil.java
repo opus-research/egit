@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *
@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.util;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -19,7 +18,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.filesystem.URIUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
@@ -50,14 +48,12 @@ public class ResourceUtil {
 	 */
 	public static IResource getResourceForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		URI uri = URIUtil.toURI(location);
-		IFile file = getFileForLocationURI(root, uri);
-		if (file != null)
+		IFile file = root.getFileForLocation(location);
+		if (file != null && file.exists())
 			return file;
-		IContainer[] containers = root.findContainersForLocationURI(uri);
-		for (IContainer container : containers)
-			if (container.exists())
-				return container;
+		IContainer container = root.getContainerForLocation(location);
+		if (container != null && container.exists())
+			return container;
 		return null;
 	}
 
@@ -69,12 +65,13 @@ public class ResourceUtil {
 	 */
 	public static IFile getFileForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		URI uri = URIUtil.toURI(location);
-		return getFileForLocationURI(root, uri);
+		return root.getFileForLocation(location);
 	}
 
 	/**
-	 * Get the {@link IFile} corresponding to the arguments if it exists.
+	 * Get the {@link IFile} corresponding to the arguments, using
+	 * {@link IWorkspaceRoot#getFileForLocation(org.eclipse.core.runtime.IPath)}
+	 * .
 	 *
 	 * @param repository
 	 *            the repository of the file
@@ -84,8 +81,9 @@ public class ResourceUtil {
 	 */
 	public static IFile getFileForLocation(Repository repository,
 			String repoRelativePath) {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
-		return getFileForLocation(path);
+		return root.getFileForLocation(path);
 	}
 
 	/**
@@ -148,14 +146,6 @@ public class ResourceUtil {
 	 */
 	public static boolean isNonWorkspace(IResource resource) {
 		return resource.getLocation() == null;
-	}
-
-	private static IFile getFileForLocationURI(IWorkspaceRoot root, URI uri) {
-		IFile[] files = root.findFilesForLocationURI(uri);
-		for (IFile file : files)
-			if (file.exists())
-				return file;
-		return null;
 	}
 
 	private static void addPathToMap(RepositoryMapping repositoryMapping,
