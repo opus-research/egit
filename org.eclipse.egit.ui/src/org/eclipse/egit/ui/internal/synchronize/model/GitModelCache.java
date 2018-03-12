@@ -42,11 +42,9 @@ public class GitModelCache extends GitModelObjectContainer {
 	 */
 	protected int dirCacheIteratorNth;
 
-	private final Path location;
-
 	private final FileModelFactory fileFactory;
 
-	private final Map<String, GitModelCacheTree> cacheTreeMap;
+	private final Map<IPath, GitModelCacheTree> cacheTreeMap;
 
 	private static final int BASE_NTH = 0;
 
@@ -113,8 +111,7 @@ public class GitModelCache extends GitModelObjectContainer {
 			FileModelFactory fileFactory) throws IOException {
 		super(parent, baseCommit, RIGHT);
 		this.fileFactory = fileFactory;
-		cacheTreeMap = new HashMap<String, GitModelCacheTree>();
-		location = new Path(getRepository().getWorkTree().toString());
+		cacheTreeMap = new HashMap<IPath, GitModelCacheTree>();
 	}
 
 	@Override
@@ -177,15 +174,15 @@ public class GitModelCache extends GitModelObjectContainer {
 			return null;
 
 		if (shouldIncludeEntry(tw)) {
-			String path = tw.getPathString();
+			IPath path = getLocation().append(tw.getPathString());
 			ObjectId repoId = tw.getObjectId(BASE_NTH);
 			ObjectId cacheId = tw.getObjectId(REMOTE_NTH);
 
-			if (path.contains("/")) //$NON-NLS-1$
+			if (path.getFileExtension() == null)
 				return handleCacheTree(repoId, cacheId, path);
 
 			return fileFactory.createFileModel(this, baseCommit, repoId,
-					cacheId, getLocation().append(path));
+					cacheId, path);
 		}
 
 		return null;
@@ -202,25 +199,22 @@ public class GitModelCache extends GitModelObjectContainer {
 	}
 
 	private GitModelObject handleCacheTree(ObjectId repoId, ObjectId cacheId,
-			String path) throws IOException {
-		int firstSlash = path.indexOf("/");//$NON-NLS-1$
-		String pathKey = path.substring(0, firstSlash);
-		GitModelCacheTree cacheTree = cacheTreeMap.get(pathKey);
+			IPath path) throws IOException {
+		GitModelCacheTree cacheTree = cacheTreeMap.get(path);
 		if (cacheTree == null) {
 			cacheTree = new GitModelCacheTree(this, baseCommit, repoId,
-					cacheId, getLocation().append(pathKey), fileFactory);
-			cacheTreeMap.put(pathKey, cacheTree);
+					cacheId, path, fileFactory);
+			cacheTreeMap.put(path, cacheTree);
 		}
 
-		cacheTree.addChild(repoId, cacheId,
-				path.substring(firstSlash + 1));
+		cacheTree.addChild(repoId, cacheId, path);
 
 		return cacheTree;
 	}
 
 	@Override
 	public IPath getLocation() {
-		return location;
+		return new Path(getRepository().getWorkTree().toString());
 	}
 
 }
