@@ -600,9 +600,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 					boolean equalContent = compareVersionIterator
 							.getEntryObjectId().equals(
 									baseVersionIterator.getEntryObjectId());
-					if (equalContent)
-						continue;
-					type = Type.FILE_BOTH_SIDES_DIFFER;
+					type = equalContent ? Type.FILE_BOTH_SIDES_SAME
+							: Type.FILE_BOTH_SIDES_DIFFER;
 				} else if (compareVersionIterator != null
 						&& baseVersionIterator == null) {
 					type = Type.FILE_DELETED;
@@ -611,10 +610,13 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 					type = Type.FILE_ADDED;
 				}
 
-				monitor.setTaskName(currentPath.toString());
+				IFile file = null;
+				if (type != Type.FILE_BOTH_SIDES_SAME) {
+					monitor.setTaskName(currentPath.toString());
 
-				IFile file = ResourceUtil.getFileForLocation(repository,
+					file = ResourceUtil.getFileForLocation(repository,
 						repoRelativePath);
+				}
 
 				if (baseVersionIterator != null) {
 					if (baseCommit == null) {
@@ -656,11 +658,13 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				// If a file is not "equal content", the container nodes up to
 				// the root must be shown in any case, so propagate the
 				// change of the "only equal content" flag.
-				IPath path = currentPath;
-				while (path.segmentCount() > 0) {
-					path = path.removeLastSegments(1);
-					ContainerNode node = containerNodes.get(path);
-					node.setOnlyEqualContent(false);
+				if (type != Type.FILE_BOTH_SIDES_SAME) {
+					IPath path = currentPath;
+					while (path.segmentCount() > 0) {
+						path = path.removeLastSegments(1);
+						ContainerNode node = containerNodes.get(path);
+						node.setOnlyEqualContent(false);
+					}
 				}
 			}
 		} finally {
