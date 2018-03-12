@@ -301,9 +301,6 @@ public class UIText extends NLS {
 	public static String ExistingOrNewPage_WrongPathErrorDialogTitle;
 
 	/** */
-	public static String GitCloneSourceProviderExtension_Local;
-
-	/** */
 	public static String GitCloneWizard_abortingCloneMsg;
 
 	/** */
