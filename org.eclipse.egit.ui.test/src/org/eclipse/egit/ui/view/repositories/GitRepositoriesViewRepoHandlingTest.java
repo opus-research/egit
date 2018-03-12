@@ -285,7 +285,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 						myUtil
 								.getPluginLocalizedValue("RepoViewCloneRepository.tooltip"))
 				.click();
-		SWTBotShell shell = bot.shell(UIText.GitCloneWizard_title).activate();
+		SWTBotShell shell = bot.shell(UIText.GitCloneWizard_title);
 		shell.bot().tree().select("Clone URI");
 
 		shell.bot().button("Next >").click();		// for some reason, textWithLabel doesn't seem to work
