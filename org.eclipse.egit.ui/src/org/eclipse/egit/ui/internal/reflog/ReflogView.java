@@ -39,8 +39,6 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
@@ -52,7 +50,6 @@ import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -70,7 +67,7 @@ import org.eclipse.ui.part.ViewPart;
  * A view that shows reflog entries.  The View includes a quick filter that searches
  * on both the commit hashes and commit messages.
  */
-public class ReflogView extends ViewPart implements RefsChangedListener {
+public class ReflogView extends ViewPart {
 
 	/**
 	 * View id
@@ -252,7 +249,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		service.addPostSelectionListener(selectionChangedListener);
 
 		getSite().setSelectionProvider(refLogTableTreeViewer);
-		Repository.getGlobalListenerList().addRefsChangedListener(this);
 	}
 
 	@Override
@@ -278,9 +274,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 				IResource resource = (IResource) ssel.getFirstElement();
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource.getProject());
-				if ( mapping != null ) {
-					repository = mapping.getRepository();
-				}
+				repository = mapping.getRepository();
 			}
 			if (ssel.getFirstElement() instanceof IAdaptable) {
 				IResource adapted = (IResource) ((IAdaptable) ssel
@@ -324,14 +318,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			return repoName + '|' + state.getDescription();
 		else
 			return repoName;
-	}
-
-	public void onRefsChanged(RefsChangedEvent event) {
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				ReflogView.this.refLogTableTreeViewer.refresh();
-			}
-		});
 	}
 
 }
