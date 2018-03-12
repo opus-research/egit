@@ -22,7 +22,6 @@ import java.util.Set;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
@@ -149,7 +148,6 @@ public class ConnectProviderOperation implements IEGitOperation {
 					projectData = GitProjectData.get(project);
 					project.refreshLocal(IResource.DEPTH_INFINITE,
 							new SubProgressMonitor(monitor, 50));
-					markGitDirTeamPrivate(project);
 					monitor.worked(10);
 				} else {
 					// TODO is this the right location?
@@ -163,18 +161,6 @@ public class ConnectProviderOperation implements IEGitOperation {
 			}
 		} finally {
 			monitor.done();
-		}
-	}
-
-	private void markGitDirTeamPrivate(IProject project) throws CoreException  {
-		RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(project);
-		File gitDir = repositoryMapping.getRepository().getDirectory();
-		IPath gitDirPath = new Path(gitDir.getAbsolutePath());
-		IPath location = project.getLocation();
-		if (location.isPrefixOf(gitDirPath)) {
-			IPath gitDirRelativePath = gitDirPath.removeFirstSegments(location.segmentCount());
-			IResource gitDirResource = project.findMember(gitDirRelativePath);
-			gitDirResource.setTeamPrivateMember(true);
 		}
 	}
 
