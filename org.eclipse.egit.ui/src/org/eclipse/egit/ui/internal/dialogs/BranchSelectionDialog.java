@@ -1,8 +1,8 @@
 ﻿/*******************************************************************************
  * Copyright (C) 2007, Dave Watson <dwatson@mimvista.com>
- * Copyright (C) 2007, Robin Rosenberg <me@lathund.dewire.com.dewire.com>
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,18 +15,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
-import org.eclipse.egit.ui.internal.ValidationUtils;
-import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.InputDialog;
-import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceResources;
@@ -43,43 +41,38 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefRename;
 import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RefUpdate.Result;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.dialogs.FilteredTree;
+import org.eclipse.ui.dialogs.PatternFilter;
 
 /**
  * The branch and reset selection dialog
- *
  */
-public class BranchSelectionDialog extends Dialog {
+public class BranchSelectionDialog extends TitleAreaDialog {
 
 	private final Repository repo;
 
-	private final boolean showResetType;
-
 	private TreeViewer branchTree;
 
-	private Button confirmationBtn;
+	/**
+	 * button which finally triggers the action
+	 */
+	protected Button confirmationBtn;
 
 	private Button renameButton;
 
 	private Button newButton;
 
 	private String selectedBranch;
-
-	private ResetType resetType = ResetType.MIXED;
 
 	private final RepositoryTreeNode<Repository> localBranches;
 
@@ -91,12 +84,10 @@ public class BranchSelectionDialog extends Dialog {
 	 * Construct a dialog to select a branch to reset to or check out
 	 * @param parentShell
 	 * @param repo
-	 * @param showReset true if the "reset" part should be shown
 	 */
-	public BranchSelectionDialog(Shell parentShell, Repository repo, boolean showReset) {
+	public BranchSelectionDialog(Shell parentShell, Repository repo) {
 		super(parentShell);
 		this.repo = repo;
-		this.showResetType = showReset;
 		localBranches = new RepositoryTreeNode<Repository>(null,
 				RepositoryTreeNodeType.LOCALBRANCHES, this.repo, this.repo);
 		remoteBranches = new RepositoryTreeNode<Repository>(null,
@@ -108,15 +99,16 @@ public class BranchSelectionDialog extends Dialog {
 	@Override
 	protected Composite createDialogArea(Composite base) {
 		Composite parent = (Composite) super.createDialogArea(base);
-		parent.setLayout(GridLayoutFactory.swtDefaults().create());
-		new Label(parent, SWT.NONE).setText(UIText.BranchSelectionDialog_Refs);
+		parent.setLayout(GridLayoutFactory.fillDefaults().create());
 
-		branchTree = new TreeViewer(parent, SWT.SINGLE | SWT.BORDER);
+		// TODO deprecated constructor for now
+		FilteredTree tree = new FilteredTree(parent, SWT.SINGLE | SWT.BORDER, new PatternFilter());
+		branchTree = tree.getViewer();
 		new RepositoriesViewLabelProvider(branchTree);
 		branchTree.setContentProvider(new RepositoriesViewContentProvider());
 
 		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300).applyTo(
-				branchTree.getTree());
+				tree);
 		branchTree.addSelectionChangedListener(new ISelectionChangedListener() {
 
 			public void selectionChanged(SelectionChangedEvent event) {
@@ -132,16 +124,19 @@ public class BranchSelectionDialog extends Dialog {
 								.startsWith(Constants.R_REMOTES));
 
 				// we don't allow reset on tags, but checkout
-				if (showResetType)
+				if (!canConfirmOnTag())
 					confirmationBtn.setEnabled(branchSelected);
 				else
 					confirmationBtn.setEnabled(branchSelected || tagSelected);
 
-				if (!showResetType) {
-					// we don't support rename on tags
-					renameButton.setEnabled(branchSelected && !tagSelected);
+				// we don't support rename on tags
+				if (renameButton != null) {
+					renameButton.setEnabled(branchSelected && !tagSelected
+							&& !tagSelected);
+				}
 
-					// new branch can not be based on a tag
+				// new branch can not be based on a tag
+				if (newButton != null) {
 					newButton.setEnabled(branchSelected && !tagSelected);
 				}
 			}
@@ -162,14 +157,14 @@ public class BranchSelectionDialog extends Dialog {
 			}
 		});
 
-		if (showResetType) {
-			buildResetGroup(parent);
-		}
+		createCustomArea(parent);
 
-		String rawTitle = showResetType ? UIText.BranchSelectionDialog_TitleReset
-				: UIText.BranchSelectionDialog_TitleCheckout;
-		getShell().setText(
-				NLS.bind(rawTitle, new Object[] { repo.getDirectory() }));
+		String rawTitle = getTitle();
+		String title = NLS.bind(rawTitle, new Object[] { repo.getDirectory() });
+
+		setTitle(title);
+		setMessage(getMessageText());
+		getShell().setText(title);
 
 		return parent;
 	}
@@ -230,38 +225,6 @@ public class BranchSelectionDialog extends Dialog {
 		return true;
 	}
 
-	private void buildResetGroup(Composite parent) {
-		Group g = new Group(parent, SWT.NONE);
-		g.setText(UIText.BranchSelectionDialog_ResetType);
-		g.setLayoutData(GridDataFactory.swtDefaults().align(SWT.CENTER, SWT.CENTER).create());
-		g.setLayout(new RowLayout(SWT.VERTICAL));
-
-		Button soft = new Button(g, SWT.RADIO);
-		soft.setText(UIText.BranchSelectionDialog_ResetTypeSoft);
-		soft.addListener(SWT.Selection, new Listener() {
-			public void handleEvent(Event event) {
-				resetType = ResetType.SOFT;
-			}
-		});
-
-		Button medium = new Button(g, SWT.RADIO);
-		medium.setSelection(true);
-		medium.setText(UIText.BranchSelectionDialog_ResetTypeMixed);
-		medium.addListener(SWT.Selection, new Listener() {
-			public void handleEvent(Event event) {
-				resetType = ResetType.MIXED;
-			}
-		});
-
-		Button hard = new Button(g, SWT.RADIO);
-		hard.setText(UIText.BranchSelectionDialog_ResetTypeHard);
-		hard.addListener(SWT.Selection, new Listener() {
-			public void handleEvent(Event event) {
-				resetType = ResetType.HARD;
-			}
-		});
-	}
-
 	/**
 	 * @return the selected refName
 	 */
@@ -269,26 +232,9 @@ public class BranchSelectionDialog extends Dialog {
 		return this.selectedBranch;
 	}
 
-	/**
-	 * @return Type of Reset
-	 */
-	public ResetType getResetType() {
-		return resetType;
-	}
-
 	@Override
 	protected void okPressed() {
 		this.selectedBranch = refNameFromDialog();
-		if (showResetType) {
-			if (resetType == ResetType.HARD) {
-				if (!MessageDialog.openQuestion(getShell(),
-						UIText.BranchSelectionDialog_ReallyResetTitle,
-						UIText.BranchSelectionDialog_ReallyResetMessage)) {
-					return;
-				}
-			}
-		}
-
 		super.okPressed();
 	}
 
@@ -317,123 +263,151 @@ public class BranchSelectionDialog extends Dialog {
 
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		if (!showResetType) {
-			newButton = new Button(parent, SWT.PUSH);
-			newButton.setFont(JFaceResources.getDialogFont());
-			newButton.setText(UIText.BranchSelectionDialog_NewBranch);
-			setButtonLayoutData(newButton);
-			((GridLayout)parent.getLayout()).numColumns++;
+		newButton = new Button(parent, SWT.PUSH);
+		newButton.setFont(JFaceResources.getDialogFont());
+		newButton.setText(UIText.BranchSelectionDialog_NewBranch);
+		setButtonLayoutData(newButton);
+		((GridLayout)parent.getLayout()).numColumns++;
 
-			renameButton = new Button(parent, SWT.PUSH);
-			renameButton.setFont(JFaceResources.getDialogFont());
-			renameButton.setText(UIText.BranchSelectionDialog_Rename);
-			setButtonLayoutData(renameButton);
-			((GridLayout)parent.getLayout()).numColumns++;
+		renameButton = new Button(parent, SWT.PUSH);
+		renameButton.setFont(JFaceResources.getDialogFont());
+		renameButton.setText(UIText.BranchSelectionDialog_Rename);
+		setButtonLayoutData(renameButton);
+		((GridLayout)parent.getLayout()).numColumns++;
 
-			renameButton.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent e) {
+		renameButton.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
 
-					String refName = refNameFromDialog();
-					String refPrefix;
+				String refName = refNameFromDialog();
+				String refPrefix;
 
+				// the button should be disabled anyway, but we check again
+				if (refName.equals(Constants.HEAD))
+					return;
+
+				if (refName.startsWith(Constants.R_HEADS))
+					refPrefix = Constants.R_HEADS;
+				else if (refName.startsWith(Constants.R_REMOTES))
+					refPrefix = Constants.R_REMOTES;
+				else if (refName.startsWith(Constants.R_TAGS))
+					refPrefix = Constants.R_TAGS;
+				else {
 					// the button should be disabled anyway, but we check again
-					if (refName.equals(Constants.HEAD))
-						return;
+					return;
+				}
 
-					if (refName.startsWith(Constants.R_HEADS))
-						refPrefix = Constants.R_HEADS;
-					else if (refName.startsWith(Constants.R_REMOTES))
-						refPrefix = Constants.R_REMOTES;
-					else if (refName.startsWith(Constants.R_TAGS))
-						refPrefix = Constants.R_TAGS;
-					else {
-						// the button should be disabled anyway, but we check again
-						return;
-					}
+				String branchName = refName.substring(refPrefix.length());
 
-					String branchName = refName.substring(refPrefix.length());
-
-					InputDialog labelDialog = getRefNameInputDialog(NLS
-							.bind(
-									UIText.BranchSelectionDialog_QuestionNewBranchNameMessage,
-									branchName, refPrefix), refPrefix);
-					if (labelDialog.open() == Window.OK) {
-						String newRefName = refPrefix + labelDialog.getValue();
-						try {
-							RefRename renameRef = repo.renameRef(refName, newRefName);
-							if (renameRef.rename() != Result.RENAMED) {
-								reportError(
-										null,
-										UIText.BranchSelectionDialog_ErrorCouldNotRenameRef,
-										refName, newRefName, renameRef
-												.getResult());
-							}
-							branchTree.refresh();
-							markRef(newRefName);
-						} catch (Throwable e1) {
+				InputDialog labelDialog = getRefNameInputDialog(NLS
+						.bind(
+								UIText.BranchSelectionDialog_QuestionNewBranchNameMessage,
+								branchName, refPrefix), refPrefix);
+				if (labelDialog.open() == Window.OK) {
+					String newRefName = refPrefix + labelDialog.getValue();
+					try {
+						RefRename renameRef = repo.renameRef(refName, newRefName);
+						if (renameRef.rename() != Result.RENAMED) {
 							reportError(
-									e1,
+									null,
 									UIText.BranchSelectionDialog_ErrorCouldNotRenameRef,
-									refName, newRefName, e1.getMessage());
+									refName, newRefName, renameRef
+											.getResult());
 						}
+						branchTree.refresh();
+						markRef(newRefName);
+					} catch (Throwable e1) {
+						reportError(
+								e1,
+								UIText.BranchSelectionDialog_ErrorCouldNotRenameRef,
+								refName, newRefName, e1.getMessage());
 					}
 				}
-			});
-			newButton.addSelectionListener(new SelectionAdapter() {
+			}
+		});
+		newButton.addSelectionListener(new SelectionAdapter() {
 
-				public void widgetSelected(SelectionEvent e) {
-					// check what ref name the user selected, if any.
-					String refName = refNameFromDialog();
+			public void widgetSelected(SelectionEvent e) {
+				// check what ref name the user selected, if any.
+				String refName = refNameFromDialog();
 
+				// the button should be disabled anyway, but we check again
+				if (refName.equals(Constants.HEAD))
+					return;
+				if (refName.startsWith(Constants.R_TAGS))
 					// the button should be disabled anyway, but we check again
-					if (refName.equals(Constants.HEAD))
-						return;
-					if (refName.startsWith(Constants.R_TAGS))
-						// the button should be disabled anyway, but we check again
-						return;
+					return;
 
-					InputDialog labelDialog = getRefNameInputDialog(
-							NLS
-									.bind(
-											UIText.BranchSelectionDialog_QuestionNewBranchMessage,
-											refName, Constants.R_HEADS),
-							Constants.R_HEADS);
+				InputDialog labelDialog = getRefNameInputDialog(
+						NLS
+								.bind(
+										UIText.BranchSelectionDialog_QuestionNewBranchMessage,
+										refName, Constants.R_HEADS),
+						Constants.R_HEADS);
 
-					if (labelDialog.open() == Window.OK) {
-						String newRefName = Constants.R_HEADS + labelDialog.getValue();
-						RefUpdate updateRef;
-						try {
-							updateRef = repo.updateRef(newRefName);
-							Ref startRef = repo.getRef(refName);
-							ObjectId startAt = repo.resolve(refName);
-							String startBranch;
-							if (startRef != null)
-								startBranch = refName;
-							else
-								startBranch = startAt.name();
-							startBranch = repo.shortenRefName(startBranch);
-							updateRef.setNewObjectId(startAt);
-							updateRef.setRefLogMessage("branch: Created from " + startBranch, false); //$NON-NLS-1$
-							updateRef.update();
-							branchTree.refresh();
-							markRef(newRefName);
-						} catch (Throwable e1) {
-							reportError(
-									e1,
-									UIText.BranchSelectionDialog_ErrorCouldNotCreateNewRef,
-									newRefName);
-						}
+				if (labelDialog.open() == Window.OK) {
+					String newRefName = Constants.R_HEADS + labelDialog.getValue();
+					RefUpdate updateRef;
+					try {
+						updateRef = repo.updateRef(newRefName);
+						Ref startRef = repo.getRef(refName);
+						ObjectId startAt = repo.resolve(refName);
+						String startBranch;
+						if (startRef != null)
+							startBranch = refName;
+						else
+							startBranch = startAt.name();
+						startBranch = repo.shortenRefName(startBranch);
+						updateRef.setNewObjectId(startAt);
+						updateRef.setRefLogMessage("branch: Created from " + startBranch, false); //$NON-NLS-1$
+						updateRef.update();
+						branchTree.refresh();
+						markRef(newRefName);
+					} catch (Throwable e1) {
+						reportError(
+								e1,
+								UIText.BranchSelectionDialog_ErrorCouldNotCreateNewRef,
+								newRefName);
 					}
 				}
-			});
-		}
+			}
+		});
 		confirmationBtn = createButton(parent, IDialogConstants.OK_ID,
-				showResetType ? UIText.BranchSelectionDialog_OkReset
-						: UIText.BranchSelectionDialog_OkCheckout, true);
+				UIText.BranchSelectionDialog_OkCheckout, true);
 		createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
 
 		// can't advance without a selection
 		confirmationBtn.setEnabled(!branchTree.getSelection().isEmpty());
+	}
+
+	/**
+	 * @return the message shown above the refs tree
+	 */
+	protected String getMessageText() {
+		return UIText.BranchSelectionDialog_Refs;
+	}
+
+	/**
+	* Subclasses may add UI elements
+	* @param parent
+	*/
+	protected void createCustomArea(Composite parent) {
+	// do nothing
+	}
+
+	/**
+	* Subclasses may change the title of the dialog
+	* @return the title of the dialog
+	*/
+	protected String getTitle() {
+		return UIText.BranchSelectionDialog_TitleCheckout;
+	}
+
+	/**
+	*
+	* @return if the confirmation button is enabled when a tag is selected
+	*/
+	protected boolean canConfirmOnTag() {
+		return true;
 	}
 
 	@Override

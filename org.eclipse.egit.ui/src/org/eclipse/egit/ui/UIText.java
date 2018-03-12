@@ -310,7 +310,13 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_ScanningForRepositories_message;
 
 	/** */
-	public static String RepositorySearchDialog_ToggleSelection_button;
+	public static String RepositorySearchDialog_DeselectAll_button;
+
+	/** */
+	public static String RepositorySearchDialog_SelectAll_button;
+
+	/** */
+	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
@@ -341,6 +347,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_searchRepositories;
+
+	/** */
+	public static String RepositorySearchDialog_searchRepositoriesMessage;
 
 	/** */
 	public static String RepositorySelectionPage_BrowseLocalFile;
@@ -1411,6 +1420,12 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_addVariablesAction;
 
 	/** */
+	public static String DecoratorPreferencesPage_addVariablesAction2;
+
+	/** */
+	public static String DecoratorPreferencesPage_addVariablesAction3;
+
+	/** */
 	public static String DecoratorPreferencesPage_recomputeAncestorDecorations;
 
 	/** */
@@ -1523,9 +1538,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_CheckingOutMessage;
-
-	/** */
-	public static String RepositoriesView_Synchronize_MenuItem;
 
 	/** */
 	public static String RepositoriesView_CheckOut_MenuItem;
@@ -1851,6 +1863,42 @@ public class UIText extends NLS {
 	/** */
 	public static String GitShareProjectsPage_RepositoryLabel;
 
+ 	/** */
+	public static String MergeAction_CannotMerge;
+
+	/** */
+	public static String MergeAction_ChangedFiles;
+
+	/** */
+	public static String MergeAction_ErrorMergeEnabling;
+
+	/** */
+	public static String MergeAction_HeadIsNoBranch;
+
+	/** */
+	public static String MergeAction_JobNameMerge;
+
+	/** */
+	public static String MergeAction_ProblemMerge;
+
+	/** */
+	public static String MergeAction_UnableMerge;
+
+	/** */
+	public static String MergeAction_WrongRepositoryState;
+
+	/** */
+	public static String MergeTargetSelectionDialog_ButtonMerge;
+
+	/** */
+	public static String MergeTargetSelectionDialog_OnlyFastForward;
+
+	/** */
+	public static String MergeTargetSelectionDialog_SelectRef;
+
+	/** */
+	public static String MergeTargetSelectionDialog_TitleMerge;
+
 	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
 
@@ -1938,66 +1986,6 @@ public class UIText extends NLS {
 	 * able to find the corresponding bundle file.
 	 */
 	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.uitext"; //$NON-NLS-1$
-
-	/** */
-	public static String CommitAction_commit;
-
-	/** */
-	public static String GitResourceVariantTree_couldNotFindBlob;
-
-	/** */
-	public static String GitResourceVariantTree_fetchingMembers;
-
-	/** */
-	public static String GitResourceVariantTree_fetchingVariant;
-
-	/** */
-	public static String GitResourceVariantTree_unableToReadRepository;
-
-	/** */
-	public static String GitSynchronizeWizard_synchronize;
-
-	/** */
-	public static String GitSynchronizeWizard_gitResourceSynchronization;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_title;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_description;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_repositories;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_branches;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_selectAll;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_deselectAll;
-
-	/** */
-	public static String GitBranchSubscriberParticipant_git;
-
-	/** */
-	public static String GitBranchResourceVariantTreeSubscriber_gitBranches;
-
-	/** */
-	public static String RemoteSelectionCombo_remoteName;
-
-	/** */
-	public static String RemoteSelectionCombo_remoteRef;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_header;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_selectProject;
-
-	/** */
-	public static String SynchronizeWithAction_localRepoName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
