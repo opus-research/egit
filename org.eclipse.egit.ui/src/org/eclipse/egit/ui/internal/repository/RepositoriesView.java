@@ -14,8 +14,6 @@ package org.eclipse.egit.ui.internal.repository;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.commands.Command;
@@ -29,13 +27,15 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.egit.core.RepositoryCache;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -49,14 +49,10 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
-import org.eclipse.jgit.events.ConfigChangedEvent;
-import org.eclipse.jgit.events.ConfigChangedListener;
-import org.eclipse.jgit.events.IndexChangedEvent;
-import org.eclipse.jgit.events.IndexChangedListener;
-import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
+import org.eclipse.jgit.lib.IndexChangedEvent;
+import org.eclipse.jgit.lib.RefsChangedEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorInput;
@@ -105,13 +101,7 @@ public class RepositoriesView extends CommonNavigator {
 
 	private final Set<Repository> repositories = new HashSet<Repository>();
 
-	private final RefsChangedListener myRefsChangedListener;
-
-	private final IndexChangedListener myIndexChangedListener;
-
-	private final ConfigChangedListener myConfigChangeListener;
-
-	private final List<ListenerHandle> myListeners = new LinkedList<ListenerHandle>();
+	private RepositoryListener repositoryListener;
 
 	private Job scheduledJob;
 
@@ -146,23 +136,13 @@ public class RepositoriesView extends CommonNavigator {
 			}
 		};
 
-		myRefsChangedListener = new RefsChangedListener() {
-			public void onRefsChanged(RefsChangedEvent e) {
+		repositoryListener = new RepositoryListener() {
+			public void refsChanged(RefsChangedEvent e) {
 				lastRepositoryChange = System.currentTimeMillis();
 				scheduleRefresh(DEFAULT_REFRESH_DELAY);
 			}
-		};
 
-		myIndexChangedListener = new IndexChangedListener() {
-			public void onIndexChanged(IndexChangedEvent event) {
-				lastRepositoryChange = System.currentTimeMillis();
-				scheduleRefresh(DEFAULT_REFRESH_DELAY);
-
-			}
-		};
-
-		myConfigChangeListener = new ConfigChangedListener() {
-			public void onConfigChanged(ConfigChangedEvent event) {
+			public void indexChanged(IndexChangedEvent e) {
 				lastRepositoryChange = System.currentTimeMillis();
 				scheduleRefresh(DEFAULT_REFRESH_DELAY);
 			}
@@ -248,31 +228,19 @@ public class RepositoriesView extends CommonNavigator {
 		// react on changes in the configured repositories
 		repositoryUtil.getPreferences().addPreferenceChangeListener(
 				configurationListener);
-		initRepositoriesAndListeners();
-		return viewer;
-	}
 
-	private void initRepositoriesAndListeners() {
-		synchronized (repositories) {
-			repositories.clear();
-			unregisterRepositoryListener();
-			// listen for repository changes
-			for (String dir : repositoryUtil.getConfiguredRepositories()) {
-				try {
-					Repository repo = repositoryCache
-							.lookupRepository(new File(dir));
-					myListeners.add(repo.getListenerList()
-							.addIndexChangedListener(myIndexChangedListener));
-					myListeners.add(repo.getListenerList()
-							.addRefsChangedListener(myRefsChangedListener));
-					myListeners.add(repo.getListenerList()
-							.addConfigChangedListener(myConfigChangeListener));
-					repositories.add(repo);
-				} catch (IOException e) {
-					Activator.handleError(e.getMessage(), e, false);
-				}
+		// listen for repository changes
+		for (String dir : repositoryUtil.getConfiguredRepositories()) {
+			try {
+				Repository repo = repositoryCache
+						.lookupRepository(new File(dir));
+				repo.addRepositoryChangedListener(repositoryListener);
+				repositories.add(repo);
+			} catch (IOException e) {
+				Activator.handleError(e.getMessage(), e, false);
 			}
 		}
+		return viewer;
 	}
 
 	@Override
@@ -318,64 +286,76 @@ public class RepositoriesView extends CommonNavigator {
 				scheduleRefresh(0);
 			}
 
+			boolean doSetSelection = false;
+
 			if (this.scheduledJob != null) {
-				try {
-					this.scheduledJob.join();
-				} catch (InterruptedException e) {
-					Activator.handleError(e.getMessage(), e, false);
+				int state = this.scheduledJob.getState();
+				if (state == Job.WAITING || state == Job.RUNNING) {
+					this.scheduledJob
+							.addJobChangeListener(new JobChangeAdapter() {
+
+								@Override
+								public void done(IJobChangeEvent event) {
+									showResource(resource);
+								}
+							});
+				} else {
+					doSetSelection = true;
 				}
 			}
 
-			RepositoryTreeNode currentNode = null;
-			ITreeContentProvider cp = (ITreeContentProvider) getCommonViewer()
-					.getContentProvider();
-			for (Object repo : cp.getElements(getCommonViewer().getInput())) {
-				RepositoryTreeNode node = (RepositoryTreeNode) repo;
-				// TODO equals implementation of Repository?
-				if (mapping.getRepository().getDirectory().equals(
-						((Repository) node.getObject()).getDirectory())) {
-					for (Object child : cp.getChildren(node)) {
-						RepositoryTreeNode childNode = (RepositoryTreeNode) child;
-						if (childNode.getType() == RepositoryTreeNodeType.WORKINGDIR) {
+			if (doSetSelection) {
+				RepositoryTreeNode currentNode = null;
+				ITreeContentProvider cp = (ITreeContentProvider) getCommonViewer()
+						.getContentProvider();
+				for (Object repo : cp.getElements(getCommonViewer().getInput())) {
+					RepositoryTreeNode node = (RepositoryTreeNode) repo;
+					// TODO equals implementation of Repository?
+					if (mapping.getRepository().getDirectory().equals(
+							((Repository) node.getObject()).getDirectory())) {
+						for (Object child : cp.getChildren(node)) {
+							RepositoryTreeNode childNode = (RepositoryTreeNode) child;
+							if (childNode.getType() == RepositoryTreeNodeType.WORKINGDIR) {
+								currentNode = childNode;
+								break;
+							}
+						}
+						break;
+					}
+				}
+
+				IPath relPath = new Path(mapping.getRepoRelativePath(resource));
+
+				for (String segment : relPath.segments()) {
+					for (Object child : cp.getChildren(currentNode)) {
+						RepositoryTreeNode<File> childNode = (RepositoryTreeNode<File>) child;
+						if (childNode.getObject().getName().equals(segment)) {
 							currentNode = childNode;
 							break;
 						}
 					}
-					break;
 				}
-			}
 
-			IPath relPath = new Path(mapping.getRepoRelativePath(resource));
+				final RepositoryTreeNode selNode = currentNode;
 
-			for (String segment : relPath.segments()) {
-				for (Object child : cp.getChildren(currentNode)) {
-					RepositoryTreeNode<File> childNode = (RepositoryTreeNode<File>) child;
-					if (childNode.getObject().getName().equals(segment)) {
-						currentNode = childNode;
-						break;
+				Display.getDefault().asyncExec(new Runnable() {
+
+					public void run() {
+						selectReveal(new StructuredSelection(selNode));
 					}
-				}
+				});
+
 			}
-
-			final RepositoryTreeNode selNode = currentNode;
-
-			Display.getDefault().asyncExec(new Runnable() {
-
-				public void run() {
-					selectReveal(new StructuredSelection(selNode));
-				}
-			});
-
 		} catch (RuntimeException rte) {
 			Activator.handleError(rte.getMessage(), rte, false);
 		}
 	}
 
 	/**
+	 * Executes an immediate refresh
 	 * @return the job used to perform the refresh
 	 */
 	public Job refresh() {
-		// TODO make this void and change the tests accordingly
 		lastInputUpdate = -1l;
 		return scheduleRefresh(0);
 	}
@@ -416,8 +396,24 @@ public class RepositoriesView extends CommonNavigator {
 							GitTraceLocation.REPOSITORIESVIEW.getLocation(),
 							"Running the update"); //$NON-NLS-1$
 				lastInputUpdate = System.currentTimeMillis();
-				if (needsNewInput)
-					initRepositoriesAndListeners();
+				if (needsNewInput) {
+					synchronized (repositories) {
+						unregisterRepositoryListener();
+						repositories.clear();
+						for (String dir : repositoryUtil
+								.getConfiguredRepositories()) {
+							try {
+								Repository repo = repositoryCache
+										.lookupRepository(new File(dir));
+								repo
+										.addRepositoryChangedListener(repositoryListener);
+								repositories.add(repo);
+							} catch (IOException e) {
+								Activator.handleError(e.getMessage(), e, false);
+							}
+						}
+					}
+				}
 
 				Display.getDefault().asyncExec(new Runnable() {
 					public void run() {
@@ -498,9 +494,8 @@ public class RepositoriesView extends CommonNavigator {
 	}
 
 	private void unregisterRepositoryListener() {
-		for (ListenerHandle lh : myListeners)
-			lh.remove();
-		myListeners.clear();
+		for (Repository repo : repositories)
+			repo.removeRepositoryChangedListener(repositoryListener);
 	}
 
 	public boolean show(ShowInContext context) {
@@ -574,7 +569,7 @@ public class RepositoriesView extends CommonNavigator {
 	// public void run(IProgressMonitor monitor)
 	// throws CoreException {
 	// File workDir = repos.get(0).getRepository()
-	// .getWorkTree();
+	// .getWorkDir();
 	//
 	// File gitDir = repos.get(0).getRepository()
 	// .getDirectory();

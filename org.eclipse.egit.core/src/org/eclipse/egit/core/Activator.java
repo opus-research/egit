@@ -9,26 +9,22 @@
  *******************************************************************************/
 package org.eclipse.egit.core;
 
-import java.util.Dictionary;
-import java.util.Hashtable;
-
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Plugin;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.osgi.service.debug.DebugOptions;
-import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.osgi.framework.BundleContext;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * The plugin class for the org.eclipse.egit.core plugin. This
  * is a singleton class.
  */
-public class Activator extends Plugin implements DebugOptionsListener {
+public class Activator extends Plugin {
 	private static Activator plugin;
 	private RepositoryCache repositoryCache;
-	private RepositoryUtil repositoryUtil;
 
 	/**
 	 * @return the singleton {@link Activator}
@@ -76,12 +72,14 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 		super.start(context);
 
-		// we want to be notified about debug options changes
-		Dictionary<String, String> props = new Hashtable<String, String>(4);
-		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle()
-				.getSymbolicName());
-		context.registerService(DebugOptionsListener.class.getName(), this,
-				props);
+		if (isDebugging()) {
+			ServiceTracker debugTracker = new ServiceTracker(context,
+					DebugOptions.class.getName(), null);
+			debugTracker.open();
+
+			DebugOptions opts = (DebugOptions) debugTracker.getService();
+			GitTraceLocation.initializeFromOptions(opts, true);
+		}
 
 		repositoryCache = new RepositoryCache();
 		try {
@@ -90,13 +88,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			logError(CoreText.Activator_ReconfigureWindowCacheError, e);
 		}
 		GitProjectData.attachToWorkspace(true);
-
-		repositoryUtil = new RepositoryUtil();
-	}
-
-	public void optionsChanged(DebugOptions options) {
-		// initialize the trace stuff
-		GitTraceLocation.initializeFromOptions(options, isDebugging());
 	}
 
 	/**
@@ -106,21 +97,11 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		return repositoryCache;
 	}
 
-	/**
-	 * @return the {@link RepositoryUtil} instance
-	 */
-	public RepositoryUtil getRepositoryUtil() {
-		return repositoryUtil;
-	}
-
 	public void stop(final BundleContext context) throws Exception {
 		GitProjectData.detachFromWorkspace();
 		repositoryCache = null;
-		repositoryUtil.dispose();
-		repositoryUtil = null;
 		super.stop(context);
 		plugin = null;
-
 	}
 
 }

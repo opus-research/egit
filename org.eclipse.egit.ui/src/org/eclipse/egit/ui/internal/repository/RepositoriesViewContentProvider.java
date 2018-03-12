@@ -25,7 +25,6 @@ import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.egit.core.RepositoryCache;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
@@ -53,7 +52,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.URIish;
 
 /**
  * Content Provider for the Git Repositories View
@@ -68,7 +66,6 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 		List<RepositoryTreeNode> nodes = new ArrayList<RepositoryTreeNode>();
 		List<String> directories = new ArrayList<String>();
-		RepositoryUtil repositoryUtil = Activator.getDefault().getRepositoryUtil();
 
 		if (inputElement instanceof Collection) {
 			for (Iterator it = ((Collection) inputElement).iterator(); it
@@ -80,18 +77,15 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 					directories.add((String) next);
 			}
 		} else if (inputElement instanceof IWorkspaceRoot) {
-			directories.addAll(repositoryUtil.getConfiguredRepositories());
+			directories.addAll(Activator.getDefault().getRepositoryUtil()
+					.getConfiguredRepositories());
 		}
 
 		for (String directory : directories) {
 			try {
-				File gitDir = new File(directory);
-				if (gitDir.exists()) {
-					RepositoryNode rNode = new RepositoryNode(null, repositoryCache
-							.lookupRepository(gitDir));
-					nodes.add(rNode);
-				} else
-					repositoryUtil.removeDir(gitDir);
+				RepositoryNode rNode = new RepositoryNode(null, repositoryCache
+						.lookupRepository(new File(directory)));
+				nodes.add(rNode);
 			} catch (IOException e) {
 				// ignore for now
 			}
@@ -136,7 +130,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 						refs.add(new RefNode(node, repo, refEntry.getValue()));
 				}
 			} catch (IOException e) {
-				return handleException(e, node);
+				handleException(e, node);
 			}
 
 			return refs.toArray();
@@ -152,7 +146,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 						refs.add(new RefNode(node, repo, refEntry.getValue()));
 				}
 			} catch (IOException e) {
-				return handleException(e, node);
+				handleException(e, node);
 			}
 
 			return refs.toArray();
@@ -166,7 +160,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 					refs.add(new TagNode(node, repo, refEntry.getValue()));
 				}
 			} catch (IOException e) {
-				return handleException(e, node);
+				handleException(e, node);
 			}
 
 			return refs.toArray();
@@ -183,7 +177,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 								.getValue()));
 				}
 			} catch (IOException e) {
-				return handleException(e, node);
+				handleException(e, node);
 			}
 
 			return refs.toArray();
@@ -222,7 +216,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 			if (node.getRepository().isBare())
 				return children.toArray();
-			File workingDir = repo.getWorkTree();
+			File workingDir = repo.getWorkDir();
 			if (workingDir == null || !workingDir.exists())
 				return children.toArray();
 
@@ -291,33 +285,23 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 				rc = new RemoteConfig(node.getRepository().getConfig(),
 						remoteName);
 			} catch (URISyntaxException e) {
-				return handleException(e, node);
+				handleException(e, node);
+				return children.toArray();
 			}
 
 			if (!rc.getURIs().isEmpty())
 				children.add(new FetchNode(node, node.getRepository(), rc
 						.getURIs().get(0).toPrivateString()));
 
-			int uriCount = rc.getPushURIs().size();
-			if (uriCount == 0 && !rc.getURIs().isEmpty())
-				uriCount++;
-
-			// show push if either a fetch or push URI is specified and
-			// at least one push specification
-			if (uriCount > 0 && !rc.getPushRefSpecs().isEmpty()) {
-				URIish firstUri;
-				if (!rc.getPushURIs().isEmpty())
-					firstUri = rc.getPushURIs().get(0);
+			if (!rc.getPushURIs().isEmpty())
+				if (rc.getPushURIs().size() == 1)
+					children.add(new PushNode(node, node.getRepository(), rc
+							.getPushURIs().get(0).toPrivateString()));
 				else
-					firstUri = rc.getURIs().get(0);
+					children.add(new PushNode(node, node.getRepository(), rc
+							.getPushURIs().get(0).toPrivateString()
+							+ "...")); //$NON-NLS-1$
 
-				if (uriCount == 1)
-					children.add(new PushNode(node, node.getRepository(),
-							firstUri.toPrivateString()));
-				else
-					children.add(new PushNode(node, node.getRepository(),
-							firstUri.toPrivateString() + "...")); //$NON-NLS-1$
-			}
 			return children.toArray();
 
 		}
@@ -343,17 +327,11 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 	}
 
-	private Object[] handleException(Exception e, RepositoryTreeNode parentNode) {
+	private void handleException(Exception e, RepositoryTreeNode parentNode) {
 		Activator.handleError(e.getMessage(), e, false);
 		// add a node indicating that there was an Exception
-		String message = e.getMessage();
-		if (message == null)
-			return new Object[] { new ErrorNode(parentNode, parentNode
-					.getRepository(),
-					UIText.RepositoriesViewContentProvider_ExceptionNodeText) };
-		else
-			return new Object[] { new ErrorNode(parentNode, parentNode
-					.getRepository(), message) };
+		new ErrorNode(parentNode, parentNode.getRepository(),
+				UIText.RepositoriesViewContentProvider_ExceptionNodeText);
 	}
 
 	public Object getParent(Object element) {
@@ -393,7 +371,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 		case WORKINGDIR:
 			if (node.getRepository().isBare())
 				return false;
-			File workingDir = repo.getWorkTree();
+			File workingDir = repo.getWorkDir();
 			if (workingDir == null || !workingDir.exists())
 				return false;
 			return workingDir.listFiles().length > 0;

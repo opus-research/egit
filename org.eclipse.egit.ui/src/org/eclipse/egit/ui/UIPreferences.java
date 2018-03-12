@@ -80,8 +80,6 @@ public class UIPreferences {
 	public final static String DECORATOR_SHOW_CONFLICTS_ICON = "decorator_show_conflicts_icon"; //$NON-NLS-1$
 	/** */
 	public final static String DECORATOR_SHOW_ASSUME_VALID_ICON = "decorator_show_assume_valid_icon"; //$NON-NLS-1$
-	/** */
-	public final static String DECORATOR_SHOW_DIRTY_ICON = "decorator_show_dirty_icon"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array

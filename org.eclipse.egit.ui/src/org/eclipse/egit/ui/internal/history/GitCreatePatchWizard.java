@@ -15,12 +15,18 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
@@ -35,7 +41,6 @@ import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -53,13 +58,14 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbenchPart;
+import org.osgi.framework.Bundle;
 
 /**
  * A wizard for creating a patch file by running the git diff command.
  */
 public class GitCreatePatchWizard extends Wizard {
 
-	private RevCommit commit;
+	private SWTCommit commit;
 
 	private TreeWalk walker;
 
@@ -81,7 +87,7 @@ public class GitCreatePatchWizard extends Wizard {
 	 * @param walker
 	 * @param db
 	 */
-	public static void run(IWorkbenchPart part, final RevCommit commit,
+	public static void run(IWorkbenchPart part, final SWTCommit commit,
 			TreeWalk walker, Repository db) {
 		final String title = UIText.GitCreatePatchWizard_CreatePatchTitle;
 		final GitCreatePatchWizard wizard = new GitCreatePatchWizard(commit,
@@ -101,7 +107,7 @@ public class GitCreatePatchWizard extends Wizard {
 	 * @param walker
 	 * @param db
 	 */
-	public GitCreatePatchWizard(RevCommit commit, TreeWalk walker, Repository db) {
+	public GitCreatePatchWizard(SWTCommit commit, TreeWalk walker, Repository db) {
 		this.commit = commit;
 		this.walker = walker;
 		this.db = db;
@@ -132,20 +138,13 @@ public class GitCreatePatchWizard extends Wizard {
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor) {
-					final StringBuilder sb = new StringBuilder();
-					DiffFormatter diffFmt = new DiffFormatter(new OutputStream() {
-
-						@Override
-						public void write(int c) throws IOException {
-							sb.append((char) c);
-
-						}
-					});
+					StringBuilder sb = new StringBuilder();
+					DiffFormatter diffFmt = new DiffFormatter();
 					try {
-						FileDiff[] diffs = FileDiff.compute(walker, commit);
-						for (FileDiff diff : diffs) {
-							diff.outputDiff(sb, db, diffFmt, isGit);
-						}
+						if (isGit)
+							writeGitPatch(sb, diffFmt);
+						else
+							writePatch(sb, diffFmt);
 
 						if (isFile) {
 							Writer output = new BufferedWriter(new FileWriter(
@@ -189,6 +188,69 @@ public class GitCreatePatchWizard extends Wizard {
 				clipboard.dispose();
 			}
 		});
+	}
+
+	// TODO use jgit API methods as soon as they are available
+	private void writeGitPatch(StringBuilder sb, DiffFormatter diffFmt)
+			throws IOException {
+
+		final SimpleDateFormat dtfmt;
+		dtfmt = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.US); //$NON-NLS-1$
+		dtfmt.setTimeZone(commit.getAuthorIdent().getTimeZone());
+		sb.append(UIText.GitHistoryPage_From).append(" ") //$NON-NLS-1$
+				.append(commit.getId().getName()).append(" ") //$NON-NLS-1$
+				.append(dtfmt.format(Long.valueOf(System.currentTimeMillis())))
+				.append("\n"); //$NON-NLS-1$
+		sb.append(UIText.GitHistoryPage_From)
+				.append(": ") //$NON-NLS-1$
+				.append(commit.getAuthorIdent().getName())
+				.append(" <").append(commit.getAuthorIdent().getEmailAddress()) //$NON-NLS-1$
+				.append(">\n"); //$NON-NLS-1$
+		sb.append(UIText.GitHistoryPage_Date).append(": ") //$NON-NLS-1$
+				.append(dtfmt.format(commit.getAuthorIdent().getWhen()))
+				.append("\n"); //$NON-NLS-1$
+		sb.append(UIText.GitHistoryPage_Subject).append(": [PATCH] ") //$NON-NLS-1$
+				.append(commit.getShortMessage());
+
+		String message = commit.getFullMessage().substring(
+				commit.getShortMessage().length());
+		sb.append(message).append("\n\n"); //$NON-NLS-1$
+
+		FileDiff[] diffs = FileDiff.compute(walker, commit);
+		for (FileDiff diff : diffs) {
+			sb.append("diff --git a").append(IPath.SEPARATOR) //$NON-NLS-1$
+					.append(diff.path).append(" b").append(IPath.SEPARATOR) //$NON-NLS-1$
+					.append(diff.path).append("\n"); //$NON-NLS-1$
+			diff.outputDiff(sb, db, diffFmt, false, false);
+		}
+		sb.append("\n--\n"); //$NON-NLS-1$
+		Bundle bundle = Activator.getDefault().getBundle();
+		String name = (String) bundle.getHeaders().get(
+				org.osgi.framework.Constants.BUNDLE_NAME);
+		String version = (String) bundle.getHeaders().get(
+				org.osgi.framework.Constants.BUNDLE_VERSION);
+		sb.append(name).append(" ").append(version); //$NON-NLS-1$
+	}
+
+	// TODO use jgit API methods as soon as they are available
+	private void writePatch(StringBuilder sb, DiffFormatter diffFmt)
+			throws IOException {
+		FileDiff[] diffs = FileDiff.compute(walker, commit);
+		for (FileDiff diff : diffs) {
+			String projectRelativePath = getProjectRelaticePath(diff);
+			sb.append("diff --git ").append(projectRelativePath).append(" ") //$NON-NLS-1$ //$NON-NLS-2$
+					.append(projectRelativePath).append("\n"); //$NON-NLS-1$
+			diff.outputDiff(sb, db, diffFmt, true, true);
+		}
+	}
+
+	private String getProjectRelaticePath(FileDiff diff) {
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		IWorkspaceRoot root = workspace.getRoot();
+		IPath absolutePath = new Path(db.getWorkDir().getAbsolutePath())
+				.append(diff.path);
+		IResource resource = root.getFileForLocation(absolutePath);
+		return resource.getProjectRelativePath().toString();
 	}
 
 	/**
@@ -320,7 +382,7 @@ public class GitCreatePatchWizard extends Wizard {
 				name = name.substring(0, name.length() - 1);
 			name = name.concat(".patch"); //$NON-NLS-1$
 
-			String defaultPath = db.getWorkTree().getAbsolutePath();
+			String defaultPath = db.getWorkDir().getAbsolutePath();
 
 			return (new File(defaultPath, name)).getPath();
 		}
@@ -394,6 +456,7 @@ public class GitCreatePatchWizard extends Wizard {
 	 * A wizard Page used to specify options of the created patch
 	 */
 	public static class OptionsPage extends WizardPage {
+
 		private Button gitFormat;
 
 		/**
@@ -424,5 +487,7 @@ public class GitCreatePatchWizard extends Wizard {
 			Dialog.applyDialogFont(composite);
 			setControl(composite);
 		}
+
 	}
+
 }

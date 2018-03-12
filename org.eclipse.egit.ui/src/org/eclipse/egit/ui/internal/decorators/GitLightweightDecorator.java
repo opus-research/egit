@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
@@ -51,20 +50,17 @@ import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ILightweightLabelDecorator;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.LabelProviderChangedEvent;
-import org.eclipse.jgit.events.IndexChangedEvent;
-import org.eclipse.jgit.events.IndexChangedListener;
-import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
-import org.eclipse.jgit.events.RepositoryEvent;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.IndexChangedEvent;
+import org.eclipse.jgit.lib.RefsChangedEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryChangedEvent;
+import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.osgi.util.TextProcessor;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.team.core.Team;
 import org.eclipse.team.ui.ISharedImages;
 import org.eclipse.team.ui.TeamImages;
 import org.eclipse.team.ui.TeamUI;
@@ -81,8 +77,7 @@ import org.eclipse.ui.themes.ITheme;
  */
 public class GitLightweightDecorator extends LabelProvider implements
 		ILightweightLabelDecorator, IPropertyChangeListener,
-		IResourceChangeListener, RepositoryChangeListener,
-		IndexChangedListener, RefsChangedListener {
+		IResourceChangeListener, RepositoryChangeListener, RepositoryListener {
 
 	/**
 	 * Property constant pointing back to the extension point id of the
@@ -113,9 +108,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 		UIPreferences.THEME_UncommittedChangeBackgroundColor,
 		UIPreferences.THEME_UncommittedChangeForegroundColor};
 
-	private ListenerHandle myIndexChangedHandle;
-	private ListenerHandle myRefsChangedHandle;
-
 	/**
 	 * Constructs a new Git resource decorator
 	 */
@@ -124,10 +116,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		Activator.addPropertyChangeListener(this);
 		PlatformUI.getWorkbench().getThemeManager().getCurrentTheme()
 				.addPropertyChangeListener(this);
-		myIndexChangedHandle = Repository.getGlobalListenerList()
-				.addIndexChangedListener(this);
-		myRefsChangedHandle = Repository.getGlobalListenerList()
-				.addRefsChangedListener(this);
+		Repository.addAnyRepositoryChangedListener(this);
 		GitProjectData.addRepositoryChangeListener(this);
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(this,
 				IResourceChangeEvent.POST_CHANGE);
@@ -142,19 +131,19 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * are cached in the registries. This avoids having to syncExec when
 	 * decorating since we ensure that the fonts and colors are pre-created.
 	 *
-	 * @param actFonts fonts ids to cache
-	 * @param actColors color ids to cache
+	 * @param fonts fonts ids to cache
+	 * @param colors color ids to cache
 	 */
-	private void ensureFontAndColorsCreated(final String[] actFonts, final String[] actColors) {
+	private void ensureFontAndColorsCreated(final String[] fonts, final String[] colors) {
 		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
 				ITheme theme  = PlatformUI.getWorkbench().getThemeManager().getCurrentTheme();
-				for (int i = 0; i < actColors.length; i++) {
-					theme.getColorRegistry().get(actColors[i]);
+				for (int i = 0; i < colors.length; i++) {
+					theme.getColorRegistry().get(colors[i]);
 
 				}
-				for (int i = 0; i < actFonts.length; i++) {
-					theme.getFontRegistry().get(actFonts[i]);
+				for (int i = 0; i < fonts.length; i++) {
+					theme.getFontRegistry().get(fonts[i]);
 				}
 			}
 		});
@@ -172,8 +161,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 				.removePropertyChangeListener(this);
 		TeamUI.removePropertyChangeListener(this);
 		Activator.removePropertyChangeListener(this);
-		myIndexChangedHandle.remove();
-		myRefsChangedHandle.remove();
+		Repository.removeAnyRepositoryChangedListener(this);
 		GitProjectData.removeRepositoryChangeListener(this);
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
 	}
@@ -185,7 +173,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 *      org.eclipse.jface.viewers.IDecoration)
 	 */
 	public void decorate(Object element, IDecoration decoration) {
-
 		final IResource resource = getResource(element);
 		if (resource == null)
 			return;
@@ -206,9 +193,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		// Don't decorate non-existing resources
 		if (!resource.exists() && !resource.isPhantom())
 			return;
-		// Don't decorate ignored resources (e.g. bin folder content)
-		if (Team.isIgnoredHint(resource))
-			return;
+
 		// Make sure we're dealing with a project under Git revision control
 		final RepositoryMapping mapping = RepositoryMapping
 				.getMapping(resource);
@@ -254,15 +239,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 		/** */
 		public static final String BINDING_STAGED_FLAG = "staged"; //$NON-NLS-1$
 
-		/** */
-		public static final String FILE_FORMAT_DEFAULT="{dirty:>} {name}"; //$NON-NLS-1$
-
-		/** */
-		public static final String FOLDER_FORMAT_DEFAULT = "{dirty:>} {name}"; //$NON-NLS-1$
-
-		/** */
-		public static final String PROJECT_FORMAT_DEFAULT ="{dirty:>} {name} [{repository} {branch}]";  //$NON-NLS-1$
-
 		private IPreferenceStore store;
 
 		/**
@@ -300,8 +276,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 		private static ImageDescriptor assumeValidImage;
 
-		private static ImageDescriptor dirtyImage;
-
 		static {
 			trackedImage = new CachedImageDescriptor(TeamImages
 					.getImageDescriptor(ISharedImages.IMG_CHECKEDIN_OVR));
@@ -312,7 +286,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 					UIIcons.OVR_STAGED_REMOVE);
 			conflictImage = new CachedImageDescriptor(UIIcons.OVR_CONFLICT);
 			assumeValidImage = new CachedImageDescriptor(UIIcons.OVR_ASSUMEVALID);
-			dirtyImage = new CachedImageDescriptor(UIIcons.OVR_DIRTY);
 		}
 
 		/**
@@ -417,12 +390,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 						overlay = stagedRemovedImage;
 					else
 						overlay = stagedImage;
-				}
-
-				// Dirty overrides staged
-				if(store
-						.getBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON) && resource.isDirty()) {
-					overlay = dirtyImage;
 				}
 
 				// Conflicts override everything
@@ -610,12 +577,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 					// All seems good, schedule the resource for update
 					if (Constants.GITIGNORE_FILENAME.equals(resource.getName())) {
 						// re-decorate all container members when .gitignore changes
-						IContainer parent = resource.getParent();
-						if (parent.exists())
-							resourcesToUpdate.addAll(Arrays.asList(parent
-									.members()));
-						else
-							return false;
+						resourcesToUpdate.addAll(Arrays.asList(resource.getParent().members()));
 					} else {
 						resourcesToUpdate.add(resource);
 					}
@@ -663,7 +625,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @param e
 	 *            The original change event
 	 */
-	private void repositoryChanged(RepositoryEvent e) {
+	private void repositoryChanged(RepositoryChangedEvent e) {
 		final Set<RepositoryMapping> ms = new HashSet<RepositoryMapping>();
 		for (final IProject p : ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects()) {
@@ -676,11 +638,25 @@ public class GitLightweightDecorator extends LabelProvider implements
 		}
 	}
 
-	public void onIndexChanged(IndexChangedEvent e) {
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see
+	 * org.eclipse.jgit.lib.RepositoryListener#indexChanged(org.eclipse.jgit
+	 * .lib.IndexChangedEvent)
+	 */
+	public void indexChanged(IndexChangedEvent e) {
 		repositoryChanged(e);
 	}
 
-	public void onRefsChanged(RefsChangedEvent e) {
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see
+	 * org.eclipse.jgit.lib.RepositoryListener#refsChanged(org.eclipse.jgit.
+	 * lib.RefsChangedEvent)
+	 */
+	public void refsChanged(RefsChangedEvent e) {
 		repositoryChanged(e);
 	}
 
@@ -698,8 +674,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 	// -------- Helper methods --------
 
-	private static IResource getResource(Object actElement) {
-		Object element = actElement;
+	private static IResource getResource(Object element) {
 		if (element instanceof ResourceMapping) {
 			element = ((ResourceMapping) element).getModelObject();
 		}

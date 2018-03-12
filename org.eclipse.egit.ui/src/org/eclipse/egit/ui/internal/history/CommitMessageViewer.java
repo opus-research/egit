@@ -295,57 +295,44 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 		styles.add(sr);
 	}
 
-	private void addDiff(final StringBuilder d,
-			final ArrayList<StyleRange> styles) {
-		DiffFormatter diffFmt = new DiffFormatter(new OutputStream() {
-
+	private void addDiff(final StringBuilder d, final ArrayList<StyleRange> styles) {
+		DiffFormatter diffFmt = new DiffFormatter() {
 			@Override
-			public void write(int c) throws IOException {
-				d.append((char) c);
-
-			}
-		}) {
-			@Override
-			protected void writeHunkHeader(int aCur, int aEnd, int bCur,
-					int bEnd) throws IOException {
+			protected void writeHunkHeader(OutputStream out, int aCur,
+					int aEnd, int bCur, int bEnd) throws IOException {
 				int start = d.length();
-				super.writeHunkHeader(aCur, aEnd, bCur, bEnd);
+				super.writeHunkHeader(out, aCur, aEnd, bCur, bEnd);
 				int end = d.length();
-				styles.add(new StyleRange(start, end - start,
-						sys_hunkHeaderColor, null));
+				styles.add(new StyleRange(start, end - start, sys_hunkHeaderColor, null));
 			}
-
 			@Override
-			protected void writeAddedLine(RawText b, int bCur)
+			protected void writeAddedLine(OutputStream out, RawText b, int bCur, boolean endOfLineMissing)
 					throws IOException {
 				int start = d.length();
-				super.writeAddedLine(b, bCur);
+				super.writeAddedLine(out, b, bCur, endOfLineMissing);
 				int end = d.length();
-				styles.add(new StyleRange(start, end - start,
-						sys_linesAddedColor, null));
+				styles.add(new StyleRange(start, end - start, sys_linesAddedColor, null));
 			}
-
 			@Override
-			protected void writeRemovedLine(RawText b, int bCur)
+			protected void writeRemovedLine(OutputStream out, RawText b, int bCur, boolean endOfLineMissing)
 					throws IOException {
 				int start = d.length();
-				super.writeRemovedLine(b, bCur);
+				super.writeRemovedLine(out, b, bCur, endOfLineMissing);
 				int end = d.length();
-				styles.add(new StyleRange(start, end - start,
-						sys_linesRemovedColor, null));
+				styles.add(new StyleRange(start, end - start, sys_linesRemovedColor, null));
 			}
 		};
 
-		if (commit.getParentCount() > 1)
+		if (!(commit.getParentCount() == 1))
 			return;
 		try {
 			FileDiff[] diffs = FileDiff.compute(walker, commit);
 
 			for (FileDiff diff : diffs) {
-				if (diff.getBlobs().length == 2) {
-					String path = diff.getPath();
+				if (diff.blobs.length == 2) {
+					String path = diff.path;
 					d.append(formatPathLine(path)).append("\n"); //$NON-NLS-1$
-					diff.outputDiff(d, db, diffFmt, true);
+					diff.outputDiff(d, db, diffFmt, false, false);
 				}
 			}
 		} catch (IOException e) {
@@ -383,12 +370,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 		@Override
 		public boolean equals(Object object) {
-			return super.equals(object) && targetCommit.equals(((ObjectLink)object).targetCommit);
-		}
-
-		@Override
-		public int hashCode() {
-			return super.hashCode() ^ targetCommit.hashCode();
+			return super.equals(object) && targetCommit.equals((RevCommit)object);
 		}
 	}
 
@@ -412,7 +394,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			IStructuredSelection sel = (IStructuredSelection)selection;
 			Object obj = sel.getFirstElement();
 			if (obj instanceof FileDiff) {
-				String path = ((FileDiff)obj).getPath();
+				String path = ((FileDiff)obj).path;
 				findAndSelect(0, formatPathLine(path), true, true, false, false);
 			}
 		}

@@ -10,17 +10,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-
-import org.eclipse.jface.viewers.CheckStateChangedEvent;
-import org.eclipse.jface.viewers.CheckboxTreeViewer;
-import org.eclipse.jface.viewers.ICheckStateListener;
-import org.eclipse.jface.viewers.ITreeContentProvider;
+import java.util.*;
+import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.widgets.Tree;
-import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
 
 /**
@@ -38,7 +30,7 @@ import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
  */
 public class CachedCheckboxTreeViewer extends ContainerCheckedTreeViewer {
 
-	private final Set<Object> checkState = new HashSet<Object>();
+	private Set checkState = new HashSet();
 
 	/**
 	 * Constructor for ContainerCheckedTreeViewer.
@@ -61,6 +53,9 @@ public class CachedCheckboxTreeViewer extends ContainerCheckedTreeViewer {
 	protected void updateCheckState(final Object element, final boolean state) {
 		if (state) {
 			// Add the item (or its children) to the cache
+			if (checkState == null) {
+				checkState = new HashSet();
+			}
 
 			ITreeContentProvider contentProvider = null;
 			if (getContentProvider() instanceof ITreeContentProvider) {
@@ -88,7 +83,7 @@ public class CachedCheckboxTreeViewer extends ContainerCheckedTreeViewer {
 
 			if (contentProvider != null) {
 				Object[] children = contentProvider.getChildren(element);
-				if (children !=null && children.length > 0) {
+				if (children.length > 0) {
 					for (int i = 0; i < children.length; i++) {
 						updateCheckState(children[i], state);
 					}
@@ -166,8 +161,11 @@ public class CachedCheckboxTreeViewer extends ContainerCheckedTreeViewer {
 	 */
 	public void setCheckedElements(Object[] elements) {
 		super.setCheckedElements(elements);
+		if (checkState == null) {
+			checkState = new HashSet();
+		} else {
 			checkState.clear();
-
+		}
 		ITreeContentProvider contentProvider = null;
 		if (getContentProvider() instanceof ITreeContentProvider) {
 			contentProvider = (ITreeContentProvider) getContentProvider();
@@ -187,12 +185,14 @@ public class CachedCheckboxTreeViewer extends ContainerCheckedTreeViewer {
 	 * @see org.eclipse.jface.viewers.CheckboxTreeViewer#setAllChecked(boolean)
 	 */
 	public void setAllChecked(boolean state) {
-		for (TreeItem item: super.getTree().getItems())
-			item.setChecked(state);
+		super.setAllChecked(state);
 		if (state) {
 
 			// Find all visible children, add only the visible leaf nodes to the check state cache
 			Object[] visible = getFilteredChildren(getRoot());
+			if (checkState == null) {
+				checkState = new HashSet();
+			}
 
 			ITreeContentProvider contentProvider = null;
 			if (getContentProvider() instanceof ITreeContentProvider) {
@@ -204,7 +204,7 @@ public class CachedCheckboxTreeViewer extends ContainerCheckedTreeViewer {
 					checkState.add(visible[i]);
 				}
 			} else {
-				Set<Object> toCheck = new HashSet<Object>();
+				Set toCheck = new HashSet();
 				for (int i = 0; i < visible.length; i++) {
 					addFilteredChildren(visible[i], contentProvider, toCheck);
 				}
@@ -230,7 +230,7 @@ public class CachedCheckboxTreeViewer extends ContainerCheckedTreeViewer {
 	 * @param contentProvider tree content provider to check for children
 	 * @param result collection to collect leaf nodes in
 	 */
-	private void addFilteredChildren(Object element, ITreeContentProvider contentProvider, Collection<Object> result) {
+	private void addFilteredChildren(Object element, ITreeContentProvider contentProvider, Collection result) {
 		if (!contentProvider.hasChildren(element)) {
 			result.add(element);
 		} else {

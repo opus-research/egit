@@ -40,7 +40,6 @@ import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
-import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.DecorationContext;
 import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.IDecoration;
@@ -52,7 +51,6 @@ import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -107,7 +105,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 	static {
 		final PreviewResource project = new PreviewResource(
-				"Project", IResource.PROJECT, "repository" + '|' + RepositoryState.MERGING.getDescription(), "master", true, false, true, Staged.NOT_STAGED, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"Project", IResource.PROJECT, "repository", "master", true, false, true, Staged.NOT_STAGED, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		final ArrayList<PreviewResource> children = new ArrayList<PreviewResource>();
 
 		children
@@ -448,7 +446,20 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					}
 				};
 
-				final IStructuredContentProvider contentsProvider = ArrayContentProvider.getInstance();
+				final IStructuredContentProvider contentsProvider = new IStructuredContentProvider() {
+					public Object[] getElements(Object inputElement) {
+						return ((Collection) inputElement).toArray();
+					}
+
+					public void dispose() {
+						// No-op
+					}
+
+					public void inputChanged(Viewer viewer, Object oldInput,
+							Object newInput) {
+						// No-op
+					}
+				};
 
 				final ListSelectionDialog dialog = new ListSelectionDialog(text
 						.getShell(), bindings.entrySet(), contentsProvider,
@@ -497,8 +508,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private Button showAssumeValid;
 
-		private Button showDirty;
-
 		public IconDecorationTab(TabFolder parent) {
 			Composite composite = SWTUtils.createHVFillComposite(parent,
 					SWTUtils.MARGINS_DEFAULT, 2);
@@ -513,15 +522,12 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					UIText.DecoratorPreferencesPage_iconsShowConflicts);
 			showAssumeValid = SWTUtils.createCheckBox(composite,
 					UIText.DecoratorPreferencesPage_iconsShowAssumeValid);
-			showDirty = SWTUtils.createCheckBox(composite,
-					UIText.GitDecoratorPreferencePage_iconsShowDirty);
 
 			showTracked.addSelectionListener(this);
 			showUntracked.addSelectionListener(this);
 			showStaged.addSelectionListener(this);
 			showConflicts.addSelectionListener(this);
 			showAssumeValid.addSelectionListener(this);
-			showDirty.addSelectionListener(this);
 
 			final TabItem tabItem = new TabItem(parent, SWT.NONE);
 			tabItem.setText(UIText.DecoratorPreferencesPage_iconLabel);
@@ -540,8 +546,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			showAssumeValid
 					.setSelection(store
 							.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON));
-			showDirty.setSelection(store
-					.getBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
 		}
 
 		public void performDefaults(IPreferenceStore store) {
@@ -560,9 +564,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			showAssumeValid
 					.setSelection(store
 							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON));
-			showDirty
-					.setSelection(store
-							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
 		}
 
 		public void performOk(IPreferenceStore store) {
@@ -576,8 +577,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					showConflicts.getSelection());
 			store.setValue(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON,
 					showAssumeValid.getSelection());
-			store.setValue(UIPreferences.DECORATOR_SHOW_DIRTY_ICON,
-					showDirty.getSelection());
 		}
 
 		public void widgetSelected(SelectionEvent e) {

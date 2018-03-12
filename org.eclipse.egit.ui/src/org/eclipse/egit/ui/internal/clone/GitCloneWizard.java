@@ -21,9 +21,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
@@ -55,26 +55,8 @@ public class GitCloneWizard extends Wizard {
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
 		cloneSource = new RepositorySelectionPage(true, null);
-		validSource = new SourceBranchPage() {
-
-			@Override
-			public void setVisible(boolean visible) {
-				if (visible)
-					setSelection(cloneSource.getSelection());
-				super.setVisible(visible);
-			}
-
-		};
-		cloneDestination = new CloneDestinationPage() {
-			@Override
-			public void setVisible(boolean visible) {
-				if (visible)
-					setSelection(cloneSource.getSelection(), validSource
-							.getAvailableBranches(), validSource
-							.getSelectedBranches(), validSource.getHEAD());
-				super.setVisible(visible);
-			}
-		};
+		validSource = new SourceBranchPage(cloneSource);
+		cloneDestination = new CloneDestinationPage(cloneSource, validSource);
 	}
 
 	@Override
@@ -209,10 +191,6 @@ public class GitCloneWizard extends Wizard {
 				MessageDialog.openInformation(getShell(),
 						UIText.GitCloneWizard_CloneFailedHeading,
 						UIText.GitCloneWizard_CloneCanceledMessage);
-				return false;
-			} catch (InvocationTargetException e) {
-				Activator.handleError(UIText.GitCloneWizard_CloneFailedHeading,
-						e.getTargetException(), true);
 				return false;
 			} catch (Exception e) {
 				Activator.handleError(UIText.GitCloneWizard_CloneFailedHeading,

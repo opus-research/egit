@@ -9,13 +9,10 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
@@ -43,7 +40,6 @@ public class TestProject {
 
 	private IPackageFragmentRoot sourceFolder;
 	private String location;
-	private TestUtils testUtils = new TestUtils();
 
 	/**
 	 * @throws CoreException
@@ -53,19 +49,14 @@ public class TestProject {
 		this(false);
 	}
 
-	public TestProject(boolean remove) throws CoreException {
-		this(remove, "Project-1");
-	}
-
 	/**
 	 * @param remove
 	 *            should project be removed if already exists
-	 * @param projectName
 	 * @throws CoreException
 	 */
-	public TestProject(final boolean remove, String projectName) throws CoreException {
+	public TestProject(final boolean remove) throws CoreException {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		project = root.getProject(projectName);
+		project = root.getProject("Project-1");
 		if (remove)
 			project.delete(true, null);
 		project.create(null);
@@ -114,30 +105,12 @@ public class TestProject {
 		return cu.getTypes()[0];
 	}
 
-	public IFile createFile(String name, byte[] content) throws Exception {
-		IFile file = project.getFile(name);
-		InputStream inputStream = new ByteArrayInputStream(content);
-		file.create(inputStream, true, null);
-
-		return file;
-	}
-
-	public IFolder createFolder(String name) throws Exception {
-		IFolder folder = project.getFolder(name);
-		folder.create(true, true, null);
-
-		IFile keep = project.getFile(name + "/keep");
-		keep.create(new ByteArrayInputStream(new byte[] {0}), true, null);
-
-		return folder;
-	}
-
 	public void dispose() throws CoreException, IOException {
 		waitForIndexer();
 		if (project.exists())
 			project.delete(true, true, null);
 		else
-			testUtils.deleteRecursive(new File(location));
+			TestUtils.rmrf(new File(location));
 	}
 
 	private IFolder createBinFolder() throws CoreException {

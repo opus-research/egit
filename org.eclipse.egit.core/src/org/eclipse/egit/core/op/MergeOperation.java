@@ -25,9 +25,10 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
+import org.eclipse.jgit.api.CheckoutConflictException;
 import org.eclipse.jgit.api.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.GitAPIException;
+import org.eclipse.jgit.api.InvalidMergeHeadsException;
 import org.eclipse.jgit.api.MergeCommand;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.NoHeadException;
@@ -74,9 +75,6 @@ public class MergeOperation implements IEGitOperation {
 	}
 
 	public void execute(IProgressMonitor m) throws CoreException {
-		if (mergeResult != null)
-			throw new CoreException(new Status(IStatus.ERROR, Activator
-					.getPluginId(), CoreText.OperationAlreadyExecuted));
 		IProgressMonitor monitor;
 		if (m == null)
 			monitor = new NullProgressMonitor();
@@ -109,7 +107,9 @@ public class MergeOperation implements IEGitOperation {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedNoHead, e);
 				} catch (ConcurrentRefUpdateException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedRefUpdate, e);
-				} catch (GitAPIException e) {
+				} catch (CheckoutConflictException e) {
+					throw new TeamException(e.getLocalizedMessage(), e.getCause());
+				} catch (InvalidMergeHeadsException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
 				}
 				ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
@@ -119,14 +119,6 @@ public class MergeOperation implements IEGitOperation {
 		};
 		// lock workspace to protect working tree changes
 		ResourcesPlugin.getWorkspace().run(action, monitor);
-	}
-
-	/**
-	 * @return the merge result, or <code>null</code> if this has not been
-	 *         executed or if an exception occurred
-	 */
-	public MergeResult getResult() {
-		return this.mergeResult;
 	}
 
 	public ISchedulingRule getSchedulingRule() {
