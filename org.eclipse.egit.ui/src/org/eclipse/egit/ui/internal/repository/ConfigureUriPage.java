@@ -14,7 +14,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -61,8 +60,6 @@ public class ConfigureUriPage extends WizardPage {
 	private final List<URIish> myUris = new ArrayList<URIish>();
 
 	private final RemoteConfig myConfig;
-
-	private UserPasswordCredentials credentials;
 
 	/**
 	 * @param fetchMode
@@ -118,10 +115,8 @@ public class ConfigureUriPage extends WizardPage {
 					SelectUriWizard slwz = new SelectUriWizard(false, uriText
 							.getText());
 					WizardDialog dlg = new WizardDialog(getShell(), slwz);
-					dlg.setHelpAvailable(false);
 					if (dlg.open() == Window.OK) {
 						URIish uri = slwz.getUri();
-						credentials = slwz.getCredentials();
 						uriText.setText(uri.toPrivateString());
 						checkPage();
 					}
@@ -175,7 +170,6 @@ public class ConfigureUriPage extends WizardPage {
 					SelectUriWizard selectWizard = new SelectUriWizard(false);
 					WizardDialog dlg = new WizardDialog(getShell(),
 							selectWizard);
-					dlg.setHelpAvailable(false);
 					if (dlg.open() == Window.OK) {
 						URIish uri = selectWizard.getUri();
 						if (uri.equals(myUri) || myUris.contains(uri)) {
@@ -188,7 +182,6 @@ public class ConfigureUriPage extends WizardPage {
 									message);
 							return;
 						}
-						credentials = selectWizard.getCredentials();
 						myUris.add(uri);
 						tv.setInput(myUris);
 						checkPage();
@@ -327,12 +320,5 @@ public class ConfigureUriPage extends WizardPage {
 			uris.add(myUri);
 		}
 		return uris;
-	}
-
-	/**
-	 * @return credentials
-	 */
-	public UserPasswordCredentials getCredentials() {
-		return credentials;
 	}
 }

@@ -93,7 +93,7 @@ public class GitModelCache extends GitModelObjectContainer {
 					GitModelObjectContainer modelParent, RevCommit commit,
 					ObjectId repoId, ObjectId cacheId, String name)
 					throws IOException {
-				return new GitModelCacheFile(modelParent, commit, repoId,
+				return new GitModelBlob(modelParent, commit, repoId, repoId,
 						cacheId, name);
 			}
 		});
@@ -179,7 +179,7 @@ public class GitModelCache extends GitModelObjectContainer {
 			if (path.split("/").length > 1) //$NON-NLS-1$
 				return handleCacheTree(repoId, cacheId, path);
 
-			return fileFactory.createFileModel(this, baseCommit, repoId,
+			return fileFactory.createFileModel(this, remoteCommit, repoId,
 					cacheId, path);
 		}
 
@@ -201,7 +201,7 @@ public class GitModelCache extends GitModelObjectContainer {
 		String pathKey = path.split("/")[0]; //$NON-NLS-1$
 		GitModelCacheTree cacheTree = cacheTreeMap.get(pathKey);
 		if (cacheTree == null) {
-			cacheTree = new GitModelCacheTree(this, baseCommit, repoId,
+			cacheTree = new GitModelCacheTree(this, remoteCommit, repoId,
 					cacheId, pathKey, fileFactory);
 			cacheTreeMap.put(pathKey, cacheTree);
 		}

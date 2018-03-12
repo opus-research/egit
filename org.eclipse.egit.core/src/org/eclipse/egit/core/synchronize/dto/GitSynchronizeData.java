@@ -8,8 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize.dto;
 
-import static org.eclipse.core.runtime.Assert.isNotNull;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -54,9 +52,6 @@ public class GitSynchronizeData {
 	 */
 	public GitSynchronizeData(Repository repository, String srcRev,
 			String dstRev, boolean includeLocal) throws IOException {
-		isNotNull(repository);
-		isNotNull(srcRev);
-		isNotNull(dstRev);
 		repo = repository;
 
 		ObjectWalk ow = new ObjectWalk(repo);

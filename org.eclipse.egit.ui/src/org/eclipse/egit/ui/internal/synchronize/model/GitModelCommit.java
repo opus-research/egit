@@ -88,9 +88,9 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	@Override
 	public int hashCode() {
-		int result = getLocation().hashCode() ^ baseCommit.hashCode();
-		if (remoteCommit != null)
-			result ^= remoteCommit.hashCode();
+		int result = getLocation().hashCode() ^ remoteCommit.hashCode();
+		if (baseCommit != null)
+			result ^= baseCommit.hashCode();
 
 		return result;
 	}
@@ -101,12 +101,12 @@ public class GitModelCommit extends GitModelObjectContainer implements
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
 		try {
-			RevTree actualTree = baseCommit.getTree();
+			RevTree actualTree = remoteCommit.getTree();
 
 			int actualNth = tw.addTree(actualTree);
 			int baseNth = -1;
-			if (remoteCommit != null)
-				baseNth = tw.addTree(remoteCommit.getTree());
+			if (baseCommit != null)
+				baseNth = tw.addTree(baseCommit.getTree());
 			int ancestorNth = tw.addTree(ancestorCommit.getTree());
 
 			while (tw.next()) {

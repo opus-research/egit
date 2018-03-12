@@ -222,7 +222,6 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 	 */
 	public GitTraceConfigurationDialog(Shell shell) {
 		super(shell);
-		setHelpAvailable(false);
 	}
 
 	@Override

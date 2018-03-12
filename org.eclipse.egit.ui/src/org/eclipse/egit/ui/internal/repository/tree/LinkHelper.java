@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.RepositoryUtil;
@@ -50,8 +49,7 @@ public class LinkHelper implements ILinkHelper {
 				if (part != null) {
 					IEditorInput input = part.getEditorInput();
 					if (input instanceof IFileEditorInput) {
-						IFile r = ((IFileEditorInput) input).getFile();
-						if (r.getLocation().toFile().equals(file)) {
+						if (((IFileEditorInput) input).getFile().equals(file)) {
 							aPage.activate(part);
 							return;
 						}

@@ -32,11 +32,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchSite;
@@ -161,23 +161,47 @@ public class RemoveCommand extends
 				for (RepositoryNode node : selectedNodes) {
 					util.removeDir(node.getRepository().getDirectory());
 				}
+				Display.getDefault().asyncExec(new Runnable() {
+					public void run() {
+						RepositoriesView view;
+						try {
+							view = getView(event);
+							view.getCommonViewer().refresh();
+						} catch (ExecutionException e) {
+							Activator.logError(e.getMessage(), e);
+						}
+					}
+				});
 
 				if (delete) {
 					try {
 						for (RepositoryNode node : selectedNodes) {
 							Repository repo = node.getRepository();
 							if (!repo.isBare())
-								FileUtils.delete(repo.getWorkTree(),
-										FileUtils.RECURSIVE | FileUtils.RETRY);
-							FileUtils.delete(repo.getDirectory(),
-									FileUtils.RECURSIVE | FileUtils.RETRY
-											| FileUtils.SKIP_MISSING);
+								deleteRecursive(repo.getWorkTree());
+							deleteRecursive(repo.getDirectory());
 						}
 					} catch (IOException e) {
 						return Activator.createErrorStatus(e.getMessage(), e);
 					}
 				}
 				return Status.OK_STATUS;
+			}
+
+			private void deleteRecursive(File fileToDelete) throws IOException {
+				if (fileToDelete == null)
+					return;
+				if (fileToDelete.exists()) {
+					if (fileToDelete.isDirectory()) {
+						for (File file : fileToDelete.listFiles()) {
+							deleteRecursive(file);
+						}
+					}
+					if (!fileToDelete.delete())
+						throw new IOException(NLS.bind(
+								UIText.RemoveCommand_DeleteFailureMessage,
+								fileToDelete.getAbsolutePath()));
+				}
 			}
 		};
 

@@ -17,8 +17,6 @@ import org.eclipse.core.runtime.Plugin;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
-import org.eclipse.egit.core.securestorage.EGitSecureStore;
-import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
 import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.osgi.framework.BundleContext;
@@ -31,7 +29,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	private static Activator plugin;
 	private RepositoryCache repositoryCache;
 	private RepositoryUtil repositoryUtil;
-	private EGitSecureStore secureStore;
 
 	/**
 	 * @return the singleton {@link Activator}
@@ -72,11 +69,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	 * Construct the {@link Activator} singleton instance
 	 */
 	public Activator() {
-		Activator.setActivator(this);
-	}
-
-	private static void setActivator(Activator a) {
-		plugin = a;
+		plugin = this;
 	}
 
 	public void start(final BundleContext context) throws Exception {
@@ -99,8 +92,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		GitProjectData.attachToWorkspace(true);
 
 		repositoryUtil = new RepositoryUtil();
-
-		secureStore = new EGitSecureStore(SecurePreferencesFactory.getDefault());
 	}
 
 	public void optionsChanged(DebugOptions options) {
@@ -122,21 +113,14 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		return repositoryUtil;
 	}
 
-	/**
-	 * @return the secure store
-	 */
-	public EGitSecureStore getSecureStore() {
-		return secureStore;
-	}
-
 	public void stop(final BundleContext context) throws Exception {
 		GitProjectData.detachFromWorkspace();
 		repositoryCache = null;
 		repositoryUtil.dispose();
 		repositoryUtil = null;
-		secureStore = null;
 		super.stop(context);
 		plugin = null;
+
 	}
 
 }

@@ -321,7 +321,7 @@ class ExistingOrNewPage extends WizardPage {
 		return ret;
 	}
 
-	private static class ProjectAndRepo {
+	private class ProjectAndRepo {
 		private IProject project;
 		private String repo;
 

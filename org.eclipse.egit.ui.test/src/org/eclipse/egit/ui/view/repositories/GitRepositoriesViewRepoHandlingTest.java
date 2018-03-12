@@ -19,6 +19,7 @@ import java.io.File;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -52,6 +53,10 @@ public class GitRepositoriesViewRepoHandlingTest extends
 	@BeforeClass
 	public static void beforeClass() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
+		File repoRoot = new File(testDirectory, "RepositoryRoot");
+		repoRoot.mkdir();
+		Activator.getDefault().getPreferenceStore().setValue(
+				UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 	}
 
 	@Test
@@ -272,7 +277,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotShell shell = bot.shell(
 				UIText.RepositorySearchDialog_AddGitRepositories).activate();
 		shell.bot().textWithLabel(UIText.RepositorySearchDialog_directory)
-				.setText(getTestDirectory().getPath());
+				.setText(testDirectory.getPath());
 		shell.bot().button(UIText.RepositorySearchDialog_Search).click();
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
 		refreshAndWait();
@@ -320,7 +325,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.click();
 		SWTBotShell shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle)
 				.activate();
-		IPath newPath = new Path(getTestDirectory().getPath())
+		IPath newPath = new Path(testDirectory.getPath())
 				.append("NewRepository");
 		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
 				.setText(newPath.toOSString());
@@ -337,7 +342,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 								.getPluginLocalizedValue("RepoViewCreateRepository.tooltip"))
 				.click();
 		shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle).activate();
-		newPath = new Path(getTestDirectory().getPath()).append("bare").append(
+		newPath = new Path(testDirectory.getPath()).append("bare").append(
 				"NewBareRepository");
 		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
 				.setText(newPath.toOSString());

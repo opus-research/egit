@@ -33,10 +33,8 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
 import org.eclipse.team.ui.mapping.SaveableComparison;
-/**
- * An abstract class for all container models in change set.
- */
-public abstract class GitModelObjectContainer extends GitModelObject implements
+
+abstract class GitModelObjectContainer extends GitModelObject implements
 		ISynchronizationCompareInput {
 
 	private int kind = -1;
@@ -45,40 +43,24 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 
 	private GitModelObject[] children;
 
-	/**
-	 * Base commit connected with this container
-	 */
 	protected final RevCommit baseCommit;
 
-	/**
-	 * Remote commit connected with this container
-	 */
 	protected final RevCommit remoteCommit;
 
-	/**
-	 * Ancestor commit connected with this container
-	 */
 	protected final RevCommit ancestorCommit;
 
-	/**
-	 *
-	 * @param parent instance of parent object
-	 * @param commit commit connected with this container
-	 * @param direction indicate change direction
-	 * @throws IOException
-	 */
 	protected GitModelObjectContainer(GitModelObject parent, RevCommit commit,
 			int direction) throws IOException {
 		super(parent);
 		kind = direction;
-		baseCommit = commit;
-		ancestorCommit = calculateAncestor(baseCommit);
+		remoteCommit = commit;
+		ancestorCommit = calculateAncestor(remoteCommit);
 
-		RevCommit[] parents = baseCommit.getParents();
+		RevCommit[] parents = remoteCommit.getParents();
 		if (parents != null && parents.length > 0)
-			remoteCommit = baseCommit.getParent(0);
+			baseCommit = remoteCommit.getParent(0);
 		else {
-			remoteCommit = null;
+			baseCommit = null;
 		}
 	}
 
@@ -134,7 +116,7 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	@Override
 	public String getName() {
 		if (name == null)
-			name = baseCommit.getShortMessage();
+			name = remoteCommit.getShortMessage();
 
 		return name;
 	}
@@ -201,22 +183,8 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 		return false;
 	}
 
-	/**
-	 * This method is used for lazy loading list of containrer's children
-	 *
-	 * @return list of children in this container
-	 */
 	protected abstract GitModelObject[] getChildrenImpl();
 
-	/**
-	 *
-	 * @param tw instance of {@link TreeWalk} that should be used
-	 * @param ancestorNth
-	 * @param baseNth
-	 * @param actualNth
-	 * @return {@link GitModelObject} instance of given parameters
-	 * @throws IOException
-	 */
 	protected GitModelObject getModelObject(TreeWalk tw, int ancestorNth,
 			int baseNth, int actualNth) throws IOException {
 		String objName = tw.getNameString();
@@ -232,20 +200,20 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 		int objectType = tw.getFileMode(actualNth).getObjectType();
 
 		if (objectType == Constants.OBJ_BLOB)
-			return new GitModelBlob(this, getBaseCommit(), objAncestorId,
+			return new GitModelBlob(this, getRemoteCommit(), objAncestorId,
 					objBaseId, objRemoteId, objName);
 		else if (objectType == Constants.OBJ_TREE)
-			return new GitModelTree(this, getBaseCommit(), objAncestorId,
+			return new GitModelTree(this, getRemoteCommit(), objAncestorId,
 					objBaseId, objRemoteId, objName);
 
 		return null;
 	}
 
 	private void calculateKind() {
-		ObjectId remote = remoteCommit != null ? remoteCommit.getId() : zeroId();
-		if (remote.equals(zeroId()))
+		ObjectId base = baseCommit != null ? baseCommit.getId() : zeroId();
+		if (base.equals(zeroId()))
 			kind = kind | ADDITION;
-		else if (baseCommit.equals(zeroId()))
+		else if (remoteCommit.equals(zeroId()))
 			kind = kind | DELETION;
 		else
 			kind = kind | CHANGE;

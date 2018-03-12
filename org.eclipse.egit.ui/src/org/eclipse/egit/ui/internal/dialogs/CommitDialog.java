@@ -168,7 +168,7 @@ public class CommitDialog extends Dialog {
 				IDialogConstants.CANCEL_LABEL, false);
 	}
 
-	SpellcheckableMessageArea commitText;
+	CommitMessageArea commitText;
 	Text authorText;
 	Text committerText;
 	Button amendingButton;
@@ -197,7 +197,7 @@ public class CommitDialog extends Dialog {
 		label.setText(UIText.CommitDialog_CommitMessage);
 		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
 
-		commitText = new SpellcheckableMessageArea(container, commitMessage);
+		commitText = new CommitMessageArea(container, commitMessage);
 		Point size = commitText.getTextWidget().getSize();
 		int minHeight = commitText.getTextWidget().getLineHeight() * 3;
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
@@ -254,7 +254,7 @@ public class CommitDialog extends Dialog {
 			public void widgetSelected(SelectionEvent e) {
 				String preferencePageId = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
 				PreferenceDialog dialog = PreferencesUtil
-						.createPreferenceDialogOn(getShell(), preferencePageId,
+						.createPreferenceDialogOn(null, preferencePageId,
 								new String[] { preferencePageId }, null);
 				dialog.open();
 				commitText.reconfigure();
@@ -277,7 +277,6 @@ public class CommitDialog extends Dialog {
 			public void widgetSelected(SelectionEvent arg0) {
 				if (!amendingButton.getSelection()) {
 					originalChangeId = null;
-					authorText.setText(author);
 				}
 				else {
 					saveOriginalChangeId();
@@ -289,8 +288,8 @@ public class CommitDialog extends Dialog {
 						commitText.setText(curText
 								+ previousCommitMessage.replaceAll(
 										"\n", Text.DELIMITER)); //$NON-NLS-1$
+						authorText.setText(previousAuthor);
 					}
-					authorText.setText(previousAuthor);
 				}
 				refreshChangeIdText();
 			}
@@ -419,9 +418,7 @@ public class CommitDialog extends Dialog {
 			// pre-emptively check any preselected files
 			for (IFile selectedFile : preselectedFiles) {
 				for (CommitItem item : items) {
-					if (item.file.equals(selectedFile) &&
-							!item.status.equals(UIText.CommitDialog_StatusUntracked) &&
-							!item.status.equals(UIText.CommitDialog_StatusAssumeUnchaged)) {
+					if (item.file.equals(selectedFile)) {
 						filesViewer.setChecked(item, true);
 						break;
 					}
@@ -571,9 +568,7 @@ public class CommitDialog extends Dialog {
 	 */
 	private static String getFileStatus(String path, IndexDiff indexDiff) {
 		String prefix = UIText.CommitDialog_StatusUnknown;
-		if (indexDiff.getAssumeUnchanged().contains(path)) {
-			prefix = UIText.CommitDialog_StatusAssumeUnchaged;
-		} else if (indexDiff.getAdded().contains(path)) {
+		if (indexDiff.getAdded().contains(path)) {
 			// added
 			if (indexDiff.getModified().contains(path))
 				prefix = UIText.CommitDialog_StatusAddedIndexDiff;
@@ -613,8 +608,9 @@ public class CommitDialog extends Dialog {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
 		String path = mapping.getRepoRelativePath(file);
 		Repository repo = mapping.getRepository();
-		AdaptableFileTreeIterator fileTreeIterator = new AdaptableFileTreeIterator(
-				repo, ResourcesPlugin.getWorkspace().getRoot());
+		AdaptableFileTreeIterator fileTreeIterator =
+			new AdaptableFileTreeIterator(repo.getWorkTree(),
+					ResourcesPlugin.getWorkspace().getRoot());
 		IndexDiff indexDiff = new IndexDiff(repo, Constants.HEAD, fileTreeIterator);
 		Set<String> repositoryPaths = Collections.singleton(path);
 		indexDiff.setFilter(PathFilterGroup.createFromStrings(repositoryPaths));

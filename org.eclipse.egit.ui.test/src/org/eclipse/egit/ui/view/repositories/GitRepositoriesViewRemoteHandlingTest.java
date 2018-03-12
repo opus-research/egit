@@ -17,6 +17,7 @@ import java.io.File;
 import java.util.List;
 
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -48,6 +49,10 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				repositoryFile);
+		File repoRoot = new File(testDirectory, "RepositoryRoot");
+		repoRoot.mkdir();
+		Activator.getDefault().getPreferenceStore().setValue(
+				UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 	}
 
 	/**

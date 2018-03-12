@@ -27,11 +27,8 @@ public class CreateBranchOnCommitHandler extends AbstractHistoryCommanndHandler 
 		PlotCommit commit = (PlotCommit) getSelection(getPage()).getFirstElement();
 		Repository repo = getRepository(event);
 
-		WizardDialog dlg = new WizardDialog(
-				HandlerUtil.getActiveShellChecked(event),
-				new CreateBranchWizard(repo, commit));
-		dlg.setHelpAvailable(false);
-		dlg.open();
+		new WizardDialog(HandlerUtil.getActiveShellChecked(event),
+				new CreateBranchWizard(repo, commit)).open();
 		return null;
 	}
 

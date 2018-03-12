@@ -32,13 +32,11 @@ import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -66,8 +64,6 @@ public class CloneOperation {
 	private RemoteConfig remoteConfig;
 
 	private FetchResult fetchResult;
-
-	private CredentialsProvider credentialsProvider;
 
 	/**
 	 * Create a new clone operation.
@@ -104,14 +100,6 @@ public class CloneOperation {
 	}
 
 	/**
-	 * Sets a credentials provider
-	 * @param credentialsProvider
-	 */
-	public void setCredentialsProvider(CredentialsProvider credentialsProvider) {
-		this.credentialsProvider = credentialsProvider;
-	}
-
-	/**
 	 * @param pm
 	 *            the monitor to be used for reporting progress and responding
 	 *            to cancellation. The monitor is never <code>null</code>
@@ -137,11 +125,7 @@ public class CloneOperation {
 				closeLocal();
 			}
 		} catch (final Exception e) {
-			try {
-				FileUtils.delete(workdir, FileUtils.RECURSIVE);
-			} catch (IOException ioe) {
-				throw new InvocationTargetException(ioe);
-			}
+			delete(workdir);
 			if (monitor.isCanceled())
 				throw new InterruptedException();
 			else
@@ -214,8 +198,6 @@ public class CloneOperation {
 	private void doFetch(final IProgressMonitor monitor)
 			throws NotSupportedException, TransportException {
 		final Transport tn = Transport.open(local, remoteConfig);
-		if (credentialsProvider != null)
-			tn.setCredentialsProvider(credentialsProvider);
 		tn.setTimeout(this.timeout);
 		try {
 			final EclipseGitProgressTransformer pm;
@@ -254,5 +236,16 @@ public class CloneOperation {
 			// this should never happen when writing in an empty folder
 			throw new IOException("Internal error occured on checking out files"); //$NON-NLS-1$
 		monitor.setTaskName(CoreText.CloneOperation_writingIndex);
+	}
+
+	private static void delete(final File d) {
+		if (d.isDirectory()) {
+			final File[] items = d.listFiles();
+			if (items != null) {
+				for (final File c : items)
+					delete(c);
+			}
+		}
+		d.delete();
 	}
 }
