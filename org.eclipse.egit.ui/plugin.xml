@@ -883,11 +883,6 @@
             id="org.eclipse.egit.ui.PushHeadToGerrit"
             name="%PushToGerritCommand.label">
       </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            id="org.eclipse.egit.ui.team.GarbageCollect"
-            name="%GarbageCollectCommand.label">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -1175,6 +1170,31 @@
                   </iterate>
                </and>
             </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.ui.edit.delete">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteFileCommand">
+         </class>
+         <activeWhen>
+               <and>
+                  <count
+                        value="+">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
          </activeWhen>
       </handler>
       <handler
@@ -1715,32 +1735,6 @@
             </and>
          </activeWhen>
       </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.team.GarbageCollect">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.GarbageCollectCommand">
-         </class>
-         <activeWhen>
-             <and>
-                  <count
-                        value="+">
-                  </count>
-                  <iterate>
-                     <and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <test
-                              property="GitRepository.isSafe">
-                        </test>
-                        <test
-                              property="GitRepository.containsHead">
-                        </test>
-                     </and>
-                  </iterate>
-               </and>
-         </activeWhen>
-      </handler>
    </extension>
    <extension
          point="org.eclipse.ui.views">
@@ -1883,6 +1877,14 @@
             viewerId="org.eclipse.egit.ui.RepositoriesView"
             class="org.eclipse.egit.ui.internal.repository.RepositoryDragAssistant">
       </dragAssistant>
+      <viewerActionBinding
+            viewerId="org.eclipse.egit.ui.RepositoriesView">
+         <includes>
+            <actionExtension
+                  pattern="org.eclipse.ui.navigator.resources.UndoRedoActionProvider">
+            </actionExtension>
+         </includes>
+      </viewerActionBinding>
    </extension>
    <extension
          point="org.eclipse.ui.menus">
@@ -3043,6 +3045,31 @@
                </and>
             </visibleWhen>
          </command>
+         <command
+               commandId="org.eclipse.ui.edit.delete"
+               label="%RepoViewDeleteFile.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="+">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
          <menu
                id="org.eclipse.egit.ui.RepositoriesViewShowIn"
                label="%ShowIn"
@@ -3184,24 +3211,6 @@
                name="##Repo-4"
                visible="true">
          </separator>
-         <command
-               commandId="org.eclipse.egit.ui.team.GarbageCollect"
-               label="%GarbageCollectCommand.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="+">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewRemove"
                label="%RepoViewRemove.label"
@@ -4354,10 +4363,6 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote"
             icon="icons/obj16/gerrit_obj.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.team.GarbageCollect"
-            icon="icons/elcl16/trash.gif">
       </image>
    </extension>
    <extension
