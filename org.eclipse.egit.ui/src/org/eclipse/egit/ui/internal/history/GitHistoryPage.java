@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (c) 2010, Stefan Lay <stefan.lay@sap.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +23,9 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Preferences;
+import org.eclipse.core.runtime.Preferences.IPropertyChangeListener;
+import org.eclipse.core.runtime.Preferences.PropertyChangeEvent;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
@@ -45,25 +47,22 @@ import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.text.ITextOperationTarget;
-import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.OpenStrategy;
-import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.IndexChangedEvent;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.RefsChangedEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
@@ -110,7 +109,7 @@ import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
-public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
+public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 	private static final String PREF_COMMENT_WRAP = UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP;
 
 	private static final String PREF_COMMENT_FILL = UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL;
@@ -143,10 +142,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	// dispose them when the page is disposed (the history framework
 	// does not do this for us)
 	private final List<BooleanPrefAction> actionsToDispose = new ArrayList<BooleanPrefAction>();
-
-	private final IPersistentPreferenceStore store = (IPersistentPreferenceStore) Activator.getDefault().getPreferenceStore();
-
-	private ListenerHandle myRefsChangedHandle;
 
 	/**
 	 * Determine if the input can be shown in this viewer.
@@ -192,6 +187,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		}
 		return false;
 	}
+
+	/** Plugin private preference store for the current workspace. */
+	private Preferences prefs;
 
 	/** Overall composite hosting all of our controls. */
 	private Composite ourControl;
@@ -375,6 +373,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	public void createControl(final Composite parent) {
 		GridData gd;
 
+		prefs = Activator.getDefault().getPluginPreferences();
 		ourControl = createMainPanel(parent);
 		gd = new GridData();
 		gd.verticalAlignment = SWT.FILL;
@@ -441,11 +440,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		attachContextMenu(fileViewer.getControl());
 		layout();
 
-		if (myRefsChangedHandle == null)
-			myRefsChangedHandle = Repository.getGlobalListenerList()
-					.addRefsChangedListener(this);
-
-		getSite().setSelectionProvider(revObjectSelectionProvider);
+		Repository.addAnyRepositoryChangedListener(this);
 	}
 
 	private void openInCompare(CompareEditorInput input) {
@@ -514,7 +509,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	private Runnable refschangedRunnable;
 
-	public void onRefsChanged(final RefsChangedEvent e) {
+	public void refsChanged(final RefsChangedEvent e) {
 		if (e.getRepository() != db)
 			return;
 
@@ -542,6 +537,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				getControl().getDisplay().asyncExec(refschangedRunnable);
 			}
 		}
+	}
+
+	public void indexChanged(final IndexChangedEvent e) {
+		// We do not use index information here now
 	}
 
 	private void finishContextMenu() {
@@ -605,17 +604,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		sf.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
 				final int[] w = sf.getWeights();
-				store.putValue(key, UIPreferences.intArrayToString(w));
-				if (store.needsSaving())
-					try {
-						store.save();
-					} catch (IOException e1) {
-						Activator.handleError(e1.getMessage(), e1, false);
-					}
-
+				UIPreferences.setValue(prefs, key, w);
 			}
 		});
-		sf.setWeights(UIPreferences.stringToIntArray(store.getString(key), 2));
+		sf.setWeights(UIPreferences.getIntArray(prefs, key, 2));
 	}
 
 	private Composite createMainPanel(final Composite parent) {
@@ -629,9 +621,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	private void layout() {
-		final boolean showComment = store.getBoolean(SHOW_COMMENT);
-		final boolean showFiles = store.getBoolean(SHOW_FILES);
-		final boolean showFindToolbar = store.getBoolean(SHOW_FIND_TOOLBAR);
+		final boolean showComment = prefs.getBoolean(SHOW_COMMENT);
+		final boolean showFiles = prefs.getBoolean(SHOW_FILES);
+		final boolean showFindToolbar = prefs.getBoolean(SHOW_FIND_TOOLBAR);
 
 		if (showComment && showFiles) {
 			graphDetailSplit.setMaximizedControl(null);
@@ -699,18 +691,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private IAction createFindToolbarAction() {
 		final IAction r = new Action(UIText.GitHistoryPage_find, UIIcons.ELCL16_FIND) {
 			public void run() {
-				store.setValue(SHOW_FIND_TOOLBAR, isChecked());
-				if (store.needsSaving()) {
-					try {
-						store.save();
-					} catch (IOException e) {
-						Activator.handleError(e.getMessage(), e, false);
-					}
-				}
+				prefs.setValue(SHOW_FIND_TOOLBAR, isChecked());
 				layout();
 			}
 		};
-		r.setChecked(store.getBoolean(SHOW_FIND_TOOLBAR));
+		r.setChecked(prefs.getBoolean(SHOW_FIND_TOOLBAR));
 		r.setToolTipText(UIText.HistoryPage_findbar_findTooltip);
 		return r;
 	}
@@ -826,11 +811,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	public void dispose() {
-		if (myRefsChangedHandle != null) {
-			myRefsChangedHandle.remove();
-			myRefsChangedHandle = null;
-		}
-
+		Repository.removeAnyRepositoryChangedListener(this);
 		// dispose of the actions (the history framework doesn't do this for us)
 		for (BooleanPrefAction action: actionsToDispose)
 			action.dispose();
@@ -847,6 +828,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					((ActionFactory.IWorkbenchAction) i).dispose();
 			}
 		}
+		Activator.getDefault().savePluginPreferences();
 		super.dispose();
 	}
 
@@ -904,10 +886,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			return false;
 
 		db = null;
-		if (currentWalk != null) {
-			currentWalk.release();
-			currentWalk = null;
-		}
 
 		final ArrayList<String> paths = new ArrayList<String>(in.length);
 		for (final IResource r : in) {
@@ -949,8 +927,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			return false;
 		}
 
-		if (currentWalk == null || pathChange(pathFilters, paths)
-				|| headId != null && !headId.equals(currentHeadId)) {
+		if (currentWalk == null || currentWalk.getRepository() != db
+				|| pathChange(pathFilters, paths) || headId != null
+				&& !headId.equals(currentHeadId)) {
 			// TODO Do not dispose SWTWalk just because HEAD changed
 			// In theory we should be able to update the graph and
 			// not dispose of the SWTWalk, even if HEAD was reset to
@@ -987,7 +966,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			currentWalk.setTreeFilter(TreeFilter.ALL);
 			fileWalker.setFilter(TreeFilter.ANY_DIFF);
 		}
-		fileViewer.setTreeWalk(db, fileWalker);
+		fileViewer.setTreeWalk(fileWalker);
 		fileViewer.addSelectionChangedListener(commentViewer);
 		commentViewer.setTreeWalk(fileWalker);
 		commentViewer.setDb(db);
@@ -1123,19 +1102,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		BooleanPrefAction(final String pn, final String text) {
 			setText(text);
 			prefName = pn;
-			store.addPropertyChangeListener(this);
-			setChecked(store.getBoolean(prefName));
+			prefs.addPropertyChangeListener(this);
+			setChecked(prefs.getBoolean(prefName));
 		}
 
 		public void run() {
-			store.setValue(prefName, isChecked());
-			if (store.needsSaving()) {
-				try {
-					store.save();
-				} catch (IOException e) {
-					Activator.handleError(e.getMessage(), e, false);
-				}
-			}
+			prefs.setValue(prefName, isChecked());
 			apply(isChecked());
 		}
 
@@ -1143,14 +1115,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 		public void propertyChange(final PropertyChangeEvent event) {
 			if (prefName.equals(event.getProperty())) {
-				setChecked(store.getBoolean(prefName));
+				setChecked(prefs.getBoolean(prefName));
 				apply(isChecked());
 			}
 		}
 
 		public void dispose() {
 			// stop listening
-			store.removePropertyChangeListener(this);
+			prefs.removePropertyChangeListener(this);
 		}
 	}
 

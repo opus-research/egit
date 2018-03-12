@@ -7,18 +7,15 @@
  *
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
- *    Mathias Kinzler (SAP AG) - use the abstract super class
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
 import org.eclipse.egit.core.op.ResetOperation.ResetType;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -31,33 +28,28 @@ import org.eclipse.swt.widgets.Shell;
 /**
  * Dialog for selecting a reset target.
  */
-public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
+public class ResetTargetSelectionDialog extends BranchSelectionDialog {
 
 	private ResetType resetType = ResetType.MIXED;
 
 	/**
 	 * Construct a dialog to select a branch to reset to
-	 *
 	 * @param parentShell
 	 * @param repo
 	 */
 	public ResetTargetSelectionDialog(Shell parentShell, Repository repo) {
 		super(parentShell, repo);
-		super.setHelpAvailable(false);
 	}
 
 	@Override
 	protected void createCustomArea(Composite parent) {
-		Composite main = new Composite(parent, SWT.NONE);
-		main.setLayout(new GridLayout(1, false));
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(main);
-		Group g = new Group(main, SWT.NONE);
-		g.setText(UIText.ResetTargetSelectionDialog_ResetTypeGroup);
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(g);
+		Group g = new Group(parent, SWT.NONE);
+		g.setText(UIText.BranchSelectionDialog_ResetType);
+		g.setLayoutData(GridDataFactory.fillDefaults().align(SWT.CENTER, SWT.CENTER).create());
 		g.setLayout(new GridLayout(1, false));
 
 		Button soft = new Button(g, SWT.RADIO);
-		soft.setText(UIText.ResetTargetSelectionDialog_ResetTypeSoftButton);
+		soft.setText(UIText.BranchSelectionDialog_ResetTypeSoft);
 		soft.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				resetType = ResetType.SOFT;
@@ -66,7 +58,7 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 		Button medium = new Button(g, SWT.RADIO);
 		medium.setSelection(true);
-		medium.setText(UIText.ResetTargetSelectionDialog_ResetTypeMixedButton);
+		medium.setText(UIText.BranchSelectionDialog_ResetTypeMixed);
 		medium.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				resetType = ResetType.MIXED;
@@ -74,7 +66,7 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		});
 
 		Button hard = new Button(g, SWT.RADIO);
-		hard.setText(UIText.ResetTargetSelectionDialog_ResetTypeHardButton);
+		hard.setText(UIText.BranchSelectionDialog_ResetTypeHard);
 		hard.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				resetType = ResetType.HARD;
@@ -83,27 +75,20 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	}
 
 	@Override
-	protected void refNameSelected(String refName) {
-		getButton(Window.OK).setEnabled(refName != null);
-	}
-
-	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		super.createButtonsForButtonBar(parent);
-		getButton(Window.OK).setText(
-				UIText.ResetTargetSelectionDialog_ResetButton);
+		confirmationBtn = createButton(parent, IDialogConstants.OK_ID,
+				UIText.BranchSelectionDialog_OkReset, true);
+		createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
 	}
 
 	@Override
 	protected String getTitle() {
-		String repoName = Activator.getDefault().getRepositoryUtil()
-				.getRepositoryName(repo);
-		return NLS.bind(UIText.ResetTargetSelectionDialog_ResetTitle, repoName);
+		return UIText.BranchSelectionDialog_TitleReset;
 	}
 
 	@Override
-	protected String getWindowTitle() {
-		return UIText.ResetTargetSelectionDialog_WindowTitle;
+	protected boolean canConfirmOnTag() {
+		return false;
 	}
 
 	/**
@@ -117,16 +102,11 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	protected void okPressed() {
 		if (resetType == ResetType.HARD) {
 			if (!MessageDialog.openQuestion(getShell(),
-					UIText.ResetTargetSelectionDialog_ResetQuestion,
-					UIText.ResetTargetSelectionDialog_ResetConfirmQuestion)) {
+					UIText.BranchSelectionDialog_ReallyResetTitle,
+					UIText.BranchSelectionDialog_ReallyResetMessage)) {
 				return;
 			}
 		}
 		super.okPressed();
-	}
-
-	@Override
-	protected String getMessageText() {
-		return UIText.ResetTargetSelectionDialog_SelectBranchForResetMessage;
 	}
 }

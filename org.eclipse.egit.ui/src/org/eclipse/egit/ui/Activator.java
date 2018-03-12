@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,15 +30,14 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
-import org.eclipse.jgit.events.IndexChangedEvent;
-import org.eclipse.jgit.events.IndexChangedListener;
-import org.eclipse.jgit.events.ListenerHandle;
+import org.eclipse.jgit.lib.IndexChangedEvent;
+import org.eclipse.jgit.lib.RefsChangedEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jsch.core.IJSchService;
 import org.eclipse.osgi.service.debug.DebugOptions;
@@ -154,7 +152,6 @@ public class Activator extends AbstractUIPlugin {
 
 	private RCS rcs;
 	private RIRefresh refreshJob;
-	private ListenerHandle refreshHandle;
 
 	/**
 	 * Constructor for the egit ui plugin singleton
@@ -184,8 +181,7 @@ public class Activator extends AbstractUIPlugin {
 
 	private void setupRepoIndexRefresh() {
 		refreshJob = new RIRefresh();
-		refreshHandle = Repository.getGlobalListenerList()
-				.addIndexChangedListener(refreshJob);
+		Repository.addAnyRepositoryChangedListener(refreshJob);
 	}
 
 	/**
@@ -221,7 +217,7 @@ public class Activator extends AbstractUIPlugin {
 			listener.propertyChange(event);
 	}
 
-	static class RIRefresh extends Job implements IndexChangedListener {
+	static class RIRefresh extends Job implements RepositoryListener {
 
 		RIRefresh() {
 			super(UIText.Activator_refreshJobName);
@@ -258,12 +254,10 @@ public class Activator extends AbstractUIPlugin {
 			return Status.OK_STATUS;
 		}
 
-		public void onIndexChanged(IndexChangedEvent e) {
+		public void indexChanged(IndexChangedEvent e) {
 			// Check the workspace setting "refresh automatically" setting first
-			boolean autoRefresh = new InstanceScope().getNode(
-					ResourcesPlugin.getPlugin().getBundle().getSymbolicName())
-					.getBoolean(ResourcesPlugin.PREF_AUTO_REFRESH, false);
-			if (!autoRefresh)
+			if (!ResourcesPlugin.getPlugin().getPluginPreferences().getBoolean(
+					ResourcesPlugin.PREF_AUTO_REFRESH))
 				return;
 
 			IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
@@ -280,6 +274,11 @@ public class Activator extends AbstractUIPlugin {
 			if (projectsToScan.size() > 0)
 				schedule();
 		}
+
+		public void refsChanged(RefsChangedEvent e) {
+			// Do not react here
+		}
+
 	}
 
 	static class RCS extends Job {
@@ -367,10 +366,6 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	public void stop(final BundleContext context) throws Exception {
-		if (refreshHandle != null) {
-			refreshHandle.remove();
-			refreshHandle = null;
-		}
 
 		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(

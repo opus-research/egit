@@ -27,6 +27,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
@@ -119,7 +120,7 @@ public class UntrackOperation implements IEGitOperation {
 		DirCacheEditor e = edits.get(db);
 		if (e == null) {
 			try {
-				e = db.lockDirCache().editor();
+				e = DirCache.lock(db).editor();
 			} catch (IOException err) {
 				throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, err));
 			}

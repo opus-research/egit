@@ -19,7 +19,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteNode;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -31,12 +31,12 @@ public class RemoveRemoteCommand extends
 		final RemoteNode node = getSelectedNodes(event).get(0);
 		final String configName = node.getObject();
 
-		boolean ok = MessageDialog.openConfirm(getShell(event),
-				UIText.RepositoriesView_ConfirmDeleteRemoteHeader, NLS.bind(
-						UIText.RepositoriesView_ConfirmDeleteRemoteMessage,
+		boolean ok = MessageDialog.openConfirm(getView(event).getSite()
+				.getShell(), UIText.RepositoriesView_ConfirmDeleteRemoteHeader,
+				NLS.bind(UIText.RepositoriesView_ConfirmDeleteRemoteMessage,
 						configName));
 		if (ok) {
-			StoredConfig config = node.getRepository().getConfig();
+			RepositoryConfig config = node.getRepository().getConfig();
 			config.unsetSection(RepositoriesView.REMOTE, configName);
 			try {
 				config.save();

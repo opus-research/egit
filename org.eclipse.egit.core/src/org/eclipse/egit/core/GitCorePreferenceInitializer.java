@@ -9,20 +9,19 @@
  *******************************************************************************/
 package org.eclipse.egit.core;
 
+import org.eclipse.core.runtime.Preferences;
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
-import org.eclipse.core.runtime.preferences.DefaultScope;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 
 /** Initializes plugin preferences with default values. */
 public class GitCorePreferenceInitializer extends AbstractPreferenceInitializer {
 	private static final int MB = 1024 * 1024;
 
 	public void initializeDefaultPreferences() {
-		final IEclipsePreferences p  = new DefaultScope().getNode(Activator.getPluginId());
+		final Preferences p = Activator.getDefault().getPluginPreferences();
 
-		p.putInt(GitCorePreferences.core_packedGitWindowSize, 8 * 1024);
-		p.putInt(GitCorePreferences.core_packedGitLimit, 10 * MB);
-		p.putBoolean(GitCorePreferences.core_packedGitMMAP, false);
-		p.putInt(GitCorePreferences.core_deltaBaseCacheLimit, 10 * MB);
+		p.setDefault(GitCorePreferences.core_packedGitWindowSize, 8 * 1024);
+		p.setDefault(GitCorePreferences.core_packedGitLimit, 10 * MB);
+		p.setDefault(GitCorePreferences.core_packedGitMMAP, false);
+		p.setDefault(GitCorePreferences.core_deltaBaseCacheLimit, 10 * MB);
 	}
 }

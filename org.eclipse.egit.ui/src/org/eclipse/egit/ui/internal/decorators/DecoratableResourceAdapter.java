@@ -29,6 +29,7 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -38,7 +39,6 @@ import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -91,12 +91,7 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 		headId = repository.resolve(Constants.HEAD);
 
 		store = Activator.getDefault().getPreferenceStore();
-		String repoName = Activator.getDefault().getRepositoryUtil().getRepositoryName(repository);
-		RepositoryState state = repository.getRepositoryState();
-		if (state != RepositoryState.SAFE)
-			repositoryName = repoName + '|' + state.getDescription();
-		else
-			repositoryName = repoName;
+		repositoryName = Activator.getDefault().getRepositoryUtil().getRepositoryName(repository);
 
 		branch = getShortBranch();
 
@@ -184,10 +179,12 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			dirty = false;
 			assumeValid = true;
 		} else {
-			if (workspaceIterator != null
-					&& workspaceIterator.isModified(indexEntry, true, true,
-							repository.getFS()))
+			if (!timestampMatches(indexEntry, resourceEntry))
 				dirty = true;
+
+			// TODO: Consider doing a content check here, to rule out false
+			// positives, as we might get mismatch between timestamps, even
+			// if the content is the same.
 		}
 	}
 
@@ -349,12 +346,12 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			treeWalk.addTree(new EmptyTreeIterator());
 
 		// Index
-		treeWalk.addTree(new DirCacheIterator(repository.readDirCache()));
+		treeWalk.addTree(new DirCacheIterator(DirCache.read(repository)));
 
 		// Working directory
 		IProject project = resource.getProject();
 		IWorkspaceRoot workspaceRoot = resource.getWorkspace().getRoot();
-		File repoRoot = repository.getWorkTree();
+		File repoRoot = repository.getWorkDir();
 
 		if (repoRoot.equals(project.getLocation().toFile()))
 			treeWalk.addTree(new ContainerTreeIterator(project));
@@ -365,6 +362,27 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 					workspaceRoot));
 
 		return treeWalk;
+	}
+
+	private static boolean timestampMatches(DirCacheEntry indexEntry,
+			ResourceEntry resourceEntry) {
+		long tIndex = indexEntry.getLastModified();
+		long tWorkspaceResource = resourceEntry.getLastModified();
+
+
+		// C-Git under Windows stores timestamps with 1-seconds resolution,
+		// so we need to check to see if this is the case here, and possibly
+		// fix the timestamp of the resource to match the resolution of the
+		// index.
+		// It also appears the timestamp in Java on Linux may also be rounded
+		// in which case the index timestamp may have subseconds, but not
+		// the timestamp from the workspace resource.
+		// If either timestamp looks rounded we skip the subscond part.
+		if (tIndex % 1000 == 0 || tWorkspaceResource % 1000 == 0) {
+			return tIndex / 1000 == tWorkspaceResource / 1000;
+		} else {
+			return tIndex == tWorkspaceResource;
+		}
 	}
 
 	private static boolean isIgnored(IResource resource) {

@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 
 import org.eclipse.core.resources.IResource;
@@ -191,13 +192,20 @@ class FileDiff {
 		final RawText a = getRawText(id1, db);
 		final RawText b = getRawText(id2, db);
 		final MyersDiff diff = new MyersDiff(a, b);
-		diffFmt.formatEdits(a, b, diff.getEdits());
+		diffFmt.formatEdits(new OutputStream() {
+
+			@Override
+			public void write(int c) throws IOException {
+				d.append((char) c);
+
+			}
+		}, a, b, diff.getEdits());
 	}
 
 	private String getProjectRelaticePath(Repository db, String repoPath) {
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		IWorkspaceRoot root = workspace.getRoot();
-		IPath absolutePath = new Path(db.getWorkTree().getAbsolutePath()).append(repoPath);
+		IPath absolutePath = new Path(db.getWorkDir().getAbsolutePath()).append(repoPath);
 		IResource resource = root.getFileForLocation(absolutePath);
 		return resource.getProjectRelativePath().toString();
 	}
@@ -205,7 +213,7 @@ class FileDiff {
 	private RawText getRawText(ObjectId id, Repository db) throws IOException {
 		if (id.equals(ObjectId.zeroId()))
 			return new RawText(new byte[] { });
-		return new RawText(db.open(id).getCachedBytes());
+		return new RawText(db.openBlob(id).getCachedBytes());
 	}
 
 	final RevCommit commit;

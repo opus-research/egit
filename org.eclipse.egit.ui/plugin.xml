@@ -301,15 +301,6 @@
 		  id="org.eclipse.egit.ui.keyword.git">
 	    </keywordReference>
       </page>
-   <page
-         category="org.eclipse.egit.ui.GitPreferences"
-         class="org.eclipse.egit.ui.internal.preferences.GlobalConfigurationPreferencePage"
-         id="org.eclipse.egit.ui.internal.preferences.GlobalConfigurationPreferencePage"
-         name="%ConfigurationPage.name">
-      <keywordReference
-            id="org.eclipse.egit.ui.keyword.git">
-      </keywordReference>
-   </page>
    </extension>
 
    <extension point="org.eclipse.ui.propertyPages">
@@ -853,93 +844,7 @@
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
                         </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                        </instanceof>
                      </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.TagsNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewMerge"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <and>
-                        <test
-                              property="GitRepository.canMerge">
-                        </test>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                           </instanceof>
-                           <and>
-                              <instanceof
-                                    value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                              </instanceof>
-                              <test
-                                    property="GitRepository.isRefCheckedOut">
-                              </test>
-                           </and>
-                        </or>
-                     </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <and>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                           </instanceof>
-                        </or>
-                        <test
-                              property="GitRepository.canMerge">
-                        </test>
-                        <not>
-                           <test
-                                 property="GitRepository.isRefCheckedOut">
-                           </test>
-                        </not>
-                     </and>
                   </iterate>
                </and>
             </visibleWhen>
@@ -1019,28 +924,6 @@
                </and>
             </visibleWhen>
          </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewReset"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
          <separator
                name="SecondGroup">
          </separator>
@@ -1073,6 +956,9 @@
             <visibleWhen
                   checkEnabled="false">
                <and>
+                  <count
+                        value="1">
+                  </count>
                   <iterate>
                      <and>
                         <or>
@@ -1415,34 +1301,6 @@
                class="org.eclipse.egit.ui.internal.repository.tree.command.SynchronizeCommand">
          </defaultHandler>
       </command>
-      <command
-            id="org.eclipse.egit.ui.RepositoriesViewCreateTag"
-            name="%CreateTagCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.CreateTagCommand">
-         </defaultHandler>
-      </command>
-      <command
-            id="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
-            name="%MergeCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand">
-         </defaultHandler>
-      </command>
-      <command
-            id="org.eclipse.egit.ui.RepositoriesViewMerge"
-            name="%MergeWithDialogCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand">
-         </defaultHandler>
-      </command>
-      <command
-            id="org.eclipse.egit.ui.RepositoriesViewReset"
-            name="%ResetCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.ResetCommand">
-         </defaultHandler>
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.commandImages">
@@ -1470,22 +1328,6 @@
             commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
             icon="icons/elcl16/synced.gif">
       </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
-            icon="icons/obj16/version_rep.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewMerge"
-            icon="icons/obj16/merge.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
-            icon="icons/obj16/merge.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewReset"
-            icon="icons/obj16/reset.gif">
-      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -1493,7 +1335,7 @@
             class="org.eclipse.egit.ui.internal.repository.tree.PropertyTester"
             id="org.eclipse.egit.ui.RepositoryTester"
             namespace="GitRepository"
-            properties="isBare,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge"
+            properties="isBare,isRefCheckedOut,isLocalBranch,fetchExists,pushExists"
             type="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
       </propertyTester>
    </extension>
@@ -1517,7 +1359,7 @@
          point="org.eclipse.team.ui.synchronizeWizards">
       <wizard
             class="org.eclipse.egit.ui.internal.synchronize.GitSynchronizeWizard"
-            description="%gitsyncwizard.description"
+            description="description"
             icon="icons/obj16/gitrepository.gif"
             id="org.eclipse.egit.ui.wizard1"
             name="%Synchronize_Name">
@@ -1532,78 +1374,5 @@
             name="%Synchronize_Name"
             persistent="false">
       </participant>
-   </extension>
-   <extension
-         name="The commands for the Team menu"
-         point="org.eclipse.ui.commands">
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.BranchActionHandler"
-            id="org.eclipse.egit.ui.team.Branch"
-            name="%BranchAction_label">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.CommitActionHandler"
-            id="org.eclipse.egit.ui.team.Commit"
-            name="%CommitAction_label">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.CompareWithHeadActionHandler"
-            id="org.eclipse.egit.ui.team.CompareWithHead"
-            name="%CompareWithHeadAction_label">
-      </command>
-            <command
-                  id="org.eclipse.egit.ui.team.CompareWithRevision"
-                  name="%CompareWithRevisionAction_label">
-            </command>
-            <command
-                  defaultHandler="org.eclipse.egit.ui.internal.actions.CompareWithIndexActionHandler"
-                  id="org.eclipse.egit.ui.team.CompareWithIndex"
-                  name="%CompareWithIndexAction_label">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.DiscardChangesActionHandler"
-            id="org.eclipse.egit.ui.team.Discard"
-            name="discard">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.FetchActionHandler"
-            id="org.eclipse.egit.ui.team.Fetch"
-            name="%FetchAction_label">
-      </command>
-            <command
-                  defaultHandler="org.eclipse.egit.ui.internal.actions.IgnoreActionHandler"
-                  id="org.eclipse.egit.ui.team.Ignore"
-                  name="%IgnoreAction_label">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.MergeActionHandler"
-            id="org.eclipse.egit.ui.team.Merge"
-            name="%MergeAction_label">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.PushActionHandler"
-            id="org.eclipse.egit.ui.team.Push"
-            name="%PushAction_label">
-      </command>
-            <command
-                  defaultHandler="org.eclipse.egit.ui.internal.actions.ResetActionHandler"
-                  id="org.eclipse.egit.ui.team.Reset"
-                  name="%ResetAction_label">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.SynchronizeWithActionHandler"
-            id="org.eclipse.egit.ui.team.SyncWith"
-            name="%SynchronizeWith_label">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.TagActionHandler"
-            id="org.eclipse.egit.ui.team.Tag"
-            name="%TagAction_label">
-      </command>
-            <command
-                  defaultHandler="org.eclipse.egit.ui.internal.actions.TrackHandler"
-                  id="org.eclipse.egit.ui.team.Track"
-                  name="%TrackAction_label">
-      </command>
    </extension>
 </plugin>

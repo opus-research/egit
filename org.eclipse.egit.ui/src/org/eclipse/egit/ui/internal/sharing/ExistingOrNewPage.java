@@ -26,8 +26,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
@@ -35,7 +33,6 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -151,7 +148,7 @@ class ExistingOrNewPage extends WizardPage {
 			public void widgetSelected(SelectionEvent e) {
 				File gitDir = new File(repositoryToCreate.getText(),Constants.DOT_GIT);
 				try {
-					Repository repository = new FileRepository(gitDir);
+					Repository repository = new Repository(gitDir);
 					repository.create();
 					for (IProject project : getProjects().keySet()) {
 						// If we don't refresh the project directories right
@@ -167,8 +164,6 @@ class ExistingOrNewPage extends WizardPage {
 							project.refreshLocal(IResource.DEPTH_ONE,
 									new NullProgressMonitor());
 					}
-					RepositoryUtil util = Activator.getDefault().getRepositoryUtil();
-					util.addConfiguredRepository(gitDir);
 				} catch (IOException e1) {
 					String msg = NLS
 							.bind(

@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2009, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Ketan Padegaonkar <KetanPadegaonkar@gmail.com>
- * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,49 +15,37 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.egit.ui.common.EGitTestCase;
-import org.eclipse.egit.ui.common.GitImportRepoWizard;
-import org.eclipse.egit.ui.common.RepoPropertiesPage;
-import org.eclipse.egit.ui.common.RepoRemoteBranchesPage;
-import org.eclipse.egit.ui.common.WorkingCopyPage;
-import org.eclipse.jgit.lib.Constants;
+import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
-import org.junit.AfterClass;
+import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
+import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
+import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-import java.io.File;
-import java.io.IOException;
+@RunWith(SWTBotJunit4ClassRunner.class)
+public class GitCloneWizardTest {
+	static {
+		System.setProperty("org.eclipse.swtbot.playback.delay", "50");
+	}
 
-public class GitCloneWizardTest extends EGitTestCase {
-
-	private static final int NUMBER_RANDOM_COMMITS = 100;
-
-	private static SampleTestRepository r;
+	private static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
 
 	private GitImportRepoWizard importWizard;
-
-	@BeforeClass
-	public static void setup() throws Exception {
-		r = new SampleTestRepository(NUMBER_RANDOM_COMMITS);
-	}
-
-	@AfterClass
-	public static void tearDown() throws IOException {
-		r.shutDown();
-	}
 
 	@Test
 	public void updatesParameterFieldsInImportDialogWhenURIIsUpdated()
 			throws Exception {
 
-		importWizard.openWizard();
-		RepoPropertiesPage propertiesPage = importWizard.openCloneWizard();
+		RepoPropertiesPage propertiesPage = importWizard.openWizard();
 
 		propertiesPage.setURI("git://www.jgit.org/EGIT");
 		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT", "git",
@@ -84,19 +71,19 @@ public class GitCloneWizardTest extends EGitTestCase {
 
 		propertiesPage.setURI("ssh://user@www.jgit.org/EGIT");
 		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT",
-				"ssh", "", true, "user", "", true, true);
+				"git+ssh", "", true, "user", "", true, true);
 
 		propertiesPage.setURI("ssh://user@www.jgit.org/EGIT");
 		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT",
-				"ssh", "", true, "user", "", true, true);
+				"git+ssh", "", true, "user", "", true, true);
 
 		propertiesPage.setURI("ssh://user:hi@www.jgit.org:33/EGIT");
 		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT",
-				"ssh", "33", true, "user", "hi", true, true);
+				"git+ssh", "33", true, "user", "hi", true, true);
 
 		propertiesPage.setURI("ssh:///EGIT");
 		propertiesPage.assertSourceParams(" Host required for ssh protocol.",
-				"", "/EGIT", "ssh", "", true, "", "", true, true);
+				"", "/EGIT", "git+ssh", "", true, "", "", true, true);
 
 		propertiesPage.setURI("file:///some/place");
 		if (Platform.getOS().equals(Platform.OS_WIN32))
@@ -117,26 +104,26 @@ public class GitCloneWizardTest extends EGitTestCase {
 		propertiesPage.assertURI("ssh://user@example.com/EGIT");
 
 		propertiesPage.assertSourceParams(null, "example.com", "/EGIT",
-				"ssh", "", true, "user", "", true, true);
+				"git+ssh", "", true, "user", "", true, true);
 
 		// ..change user
 		bot.textWithLabel("User:").setText("gitney");
 		propertiesPage.assertURI("ssh://gitney@example.com/EGIT");
 		propertiesPage.assertSourceParams(null, "example.com", "/EGIT",
-				"ssh", "", true, "gitney", "", true, true);
+				"git+ssh", "", true, "gitney", "", true, true);
 
 		// ..change password
 		bot.textWithLabel("Password:").setText("fsck");
 		// Password is not written into the URL here!
 		propertiesPage.assertURI("ssh://gitney@example.com/EGIT");
 		propertiesPage.assertSourceParams(null, "example.com", "/EGIT",
-				"ssh", "", true, "gitney", "fsck", true, true);
+				"git+ssh", "", true, "gitney", "fsck", true, true);
 
 		// change port number
 		bot.textWithLabel("Port:").setText("99");
 		propertiesPage.assertURI("ssh://gitney@example.com:99/EGIT");
 		propertiesPage.assertSourceParams(null, "example.com", "/EGIT",
-				"ssh", "99", true, "gitney", "fsck", true, true);
+				"git+ssh", "99", true, "gitney", "fsck", true, true);
 
 		// change protocol to another with user/password capability
 		bot.comboBoxWithLabel("Protocol:").setSelection("ftp");
@@ -191,44 +178,42 @@ public class GitCloneWizardTest extends EGitTestCase {
 	@Test
 	public void canCloneARemoteRepo() throws Exception {
 		File destRepo = new File(ResourcesPlugin.getWorkspace()
-				.getRoot().getLocation().toFile(), "test1");
+				.getRoot().getLocation().toFile(), "egit");
 
-		importWizard.openWizard();
-		RepoPropertiesPage propertiesPage = importWizard.openCloneWizard();
+		RepoPropertiesPage propertiesPage = importWizard.openWizard();
 
 		RepoRemoteBranchesPage remoteBranches = propertiesPage
-				.nextToRemoteBranches(r.getUri());
+				.nextToRemoteBranches("git://repo.or.cz/egit.git");
 
-		remoteBranches.assertRemoteBranches(SampleTestRepository.FIX, Constants.MASTER);
-		remoteBranches.selectBranches(SampleTestRepository.FIX, Constants.MASTER);
+		remoteBranches.assertRemoteBranches("historical/pre-eclipse", "master");
+		remoteBranches.selectBranches("historical/pre-eclipse");
 
 		WorkingCopyPage workingCopy = remoteBranches.nextToWorkingCopy();
-		workingCopy.setDirectory(destRepo.toString());
 
 		workingCopy.assertDirectory(destRepo.toString());
-		workingCopy.assertBranch(Constants.MASTER);
-		workingCopy.assertRemoteName(Constants.DEFAULT_REMOTE_NAME);
+		workingCopy.assertBranch("master");
+		workingCopy.assertRemoteName("origin");
 		workingCopy.waitForCreate();
 
 		// Some random sampling to see we got something. We do not test
 		// the integrity of the repository here. Only a few basic properties
 		// we'd expect from a clone made this way, that would possibly
 		// not hold true given other parameters in the GUI.
-		Repository repository = new FileRepository(new File(destRepo, Constants.DOT_GIT));
+		Repository repository = new Repository(new File(destRepo, ".git"));
 		// we always have an origin/master
 		assertNotNull(repository.resolve("origin/master"));
 		// and a local master initialized from origin/master (default!)
-		assertEquals(repository.resolve("master"), repository
+		assertEquals(repository.resolve("origin/master"), repository
 				.resolve("origin/master"));
 		// A well known tag
-		assertNotNull(repository.resolve(Constants.R_TAGS + SampleTestRepository.v1_0_name).name());
+		assertEquals("90b818e596660b813b6fcf68f1e9e9b62c615130", repository
+				.resolve("refs/tags/v0.4.0").name());
 		// lots of refs
-		int refs = repository.getAllRefs().size();
-		assertTrue(refs >= 4);
-		// and a known file in the working dir
-		assertTrue(new File(destRepo, SampleTestRepository.A_txt_name).exists());
+		assertTrue(repository.getAllRefs().size() >= 10);
+		// and a README in the working dir
+		assertTrue(new File(destRepo, "README").exists());
 		assertFalse(repository.getIndex().isChanged());
-		assertFalse(repository.getIndex().getEntry(SampleTestRepository.A_txt_name).isModified(
+		assertFalse(repository.getIndex().getEntry("README").isModified(
 				destRepo));
 		// No project have been imported
 		assertEquals(0,
@@ -238,59 +223,57 @@ public class GitCloneWizardTest extends EGitTestCase {
 
 	@Test
 	public void clonedRepositoryShouldExistOnFileSystem() throws Exception {
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
+		RepoPropertiesPage repoProperties = importWizard.openWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
-				.nextToRemoteBranches(r.getUri());
-		remoteBranches.assertRemoteBranches(SampleTestRepository.FIX, Constants.MASTER);
+				.nextToRemoteBranches("git://repo.or.cz/egit.git");
 		WorkingCopyPage workingCopy = remoteBranches.nextToWorkingCopy();
-		workingCopy.assertWorkingCopyExists(r.getUri());
+		workingCopy.assertWorkingCopyExists();
 	}
 
 	@Test
 	public void alteringSomeParametersDuringClone() throws Exception {
-		File destRepo = new File(ResourcesPlugin.getWorkspace()
-				.getRoot().getLocation().toFile(), "test2");
 
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
+		File destRepo = new File(ResourcesPlugin.getWorkspace()
+				.getRoot().getLocation().toFile(), "egit2");
+
+		RepoPropertiesPage repoProperties = importWizard.openWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
-				.nextToRemoteBranches(r.getUri());
+				.nextToRemoteBranches("git://repo.or.cz/egit.git");
 		remoteBranches.deselectAllBranches();
 		remoteBranches
 				.assertErrorMessage("At least one branch must be selected.");
 		remoteBranches.assertNextIsDisabled();
 
-		remoteBranches.selectBranches(SampleTestRepository.FIX);
+		remoteBranches.selectBranches("historical/pre-eclipse");
 		remoteBranches.assertNextIsEnabled();
 
 		WorkingCopyPage workingCopy = remoteBranches.nextToWorkingCopy();
 		workingCopy.setDirectory(destRepo.toString());
-		workingCopy.assertBranch(SampleTestRepository.FIX);
+		workingCopy.assertBranch("historical/pre-eclipse");
 		workingCopy.setRemoteName("src");
 		workingCopy.waitForCreate();
 
 		// Some random sampling to see we got something. We do not test
-		// the integrity of the repository here. Only a few basic properties
+		// the integrity of the repo here. Only a few basic properties
 		// we'd expect from a clone made this way, that would possibly
-		// not hold true given other parameters in the GUI.
-		Repository repository = new FileRepository(new File(destRepo, Constants.DOT_GIT));
-		assertNotNull(repository.resolve("src/" + SampleTestRepository.FIX));
+		// not hold true given othe parameters in the GUI.
+		Repository repository = new Repository(new File(destRepo, ".git"));
+		assertNotNull(repository.resolve("src/historical/pre-eclipse"));
 		// we didn't clone that one
 		assertNull(repository.resolve("src/master"));
 		// and a local master initialized from origin/master (default!)
 		assertEquals(repository.resolve("stable"), repository
 				.resolve("src/stable"));
 		// A well known tag
-		assertNotNull(repository.resolve(Constants.R_TAGS + SampleTestRepository.v2_0_name).name());
+		assertEquals("90b818e596660b813b6fcf68f1e9e9b62c615130", repository
+				.resolve("refs/tags/v0.4.0").name());
 		// lots of refs
-		assertTrue(repository.getAllRefs().size() >= 4);
+		assertTrue(repository.getAllRefs().size() >= 10);
 	}
 
 	@Test
 	public void invalidHostnameFreezesDialog() throws Exception {
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
+		RepoPropertiesPage repoProperties = importWizard.openWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://no.example.com/EGIT");
 		remoteBranches
@@ -303,8 +286,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 	// an error. Perhaps set a higher timeout for this test ?
 	@Ignore
 	public void invalidPortFreezesDialog() throws Exception {
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
+		RepoPropertiesPage repoProperties = importWizard.openWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://localhost:80/EGIT");
 		remoteBranches
@@ -317,8 +299,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 	// an error. Perhaps set a higher timeout for this test ?
 	@Ignore
 	public void timeoutToASocketFreezesDialog() throws Exception {
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
+		RepoPropertiesPage repoProperties = importWizard.openWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://www.example.com/EGIT");
 		remoteBranches
@@ -332,6 +313,24 @@ public class GitCloneWizardTest extends EGitTestCase {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
 		importWizard = new GitImportRepoWizard();
+	}
+
+	// TODO: push this in the junit class runner. This can then be shared across
+	// all tests.
+	@BeforeClass
+	public static void closeWelcomePage() {
+		try {
+			bot.viewByTitle("Welcome").close();
+		} catch (WidgetNotFoundException e) {
+			// somebody else probably closed it, lets not feel bad about it.
+		}
+	}
+
+	// TODO: push this in the junit class runner. This can then be shared across
+	// all tests.
+	@After
+	public void resetWorkbench() {
+		new Eclipse().reset();
 	}
 
 }

@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
 import org.eclipse.egit.ui.internal.repository.tree.ErrorNode;
@@ -67,7 +66,6 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 		List<RepositoryTreeNode> nodes = new ArrayList<RepositoryTreeNode>();
 		List<String> directories = new ArrayList<String>();
-		RepositoryUtil repositoryUtil = Activator.getDefault().getRepositoryUtil();
 
 		if (inputElement instanceof Collection) {
 			for (Iterator it = ((Collection) inputElement).iterator(); it
@@ -79,18 +77,15 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 					directories.add((String) next);
 			}
 		} else if (inputElement instanceof IWorkspaceRoot) {
-			directories.addAll(repositoryUtil.getConfiguredRepositories());
+			directories.addAll(Activator.getDefault().getRepositoryUtil()
+					.getConfiguredRepositories());
 		}
 
 		for (String directory : directories) {
 			try {
-				File gitDir = new File(directory);
-				if (gitDir.exists()) {
-					RepositoryNode rNode = new RepositoryNode(null, repositoryCache
-							.lookupRepository(gitDir));
-					nodes.add(rNode);
-				} else
-					repositoryUtil.removeDir(gitDir);
+				RepositoryNode rNode = new RepositoryNode(null, repositoryCache
+						.lookupRepository(new File(directory)));
+				nodes.add(rNode);
 			} catch (IOException e) {
 				// ignore for now
 			}
@@ -219,11 +214,12 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 		case WORKINGDIR: {
 			List<RepositoryTreeNode<File>> children = new ArrayList<RepositoryTreeNode<File>>();
 
-			if (node.getRepository().isBare())
+			if (node.getRepository().getConfig().getBoolean(
+					"core", "bare", false)) //$NON-NLS-1$ //$NON-NLS-2$
 				return children.toArray();
-			File workingDir = repo.getWorkTree();
+			File workingDir = repo.getWorkDir();
 			if (workingDir == null || !workingDir.exists())
-				return children.toArray();
+				return null;
 
 			File[] childFiles = workingDir.listFiles();
 			Arrays.sort(childFiles, new Comparator<File>() {
@@ -346,44 +342,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 	}
 
 	public boolean hasChildren(Object element) {
-		// for some of the nodes we can optimize this call
-		RepositoryTreeNode node = (RepositoryTreeNode) element;
-		Repository repo = node.getRepository();
-		switch (node.getType()) {
-		case BRANCHES:
-			return true;
-		case REPO:
-			return true;
-		case SYMBOLICREFS:
-			try {
-				for (Ref refEntry : repo.getRefDatabase().getRefs(
-						RefDatabase.ALL).values()) {
-					if (refEntry.isSymbolic())
-						return true;
-				}
-			} catch (IOException e) {
-				// true so that the node can be opened
-				return true;
-			}
-			return false;
-		case TAGS:
-			try {
-				return !repo.getRefDatabase().getRefs(Constants.R_TAGS)
-						.isEmpty();
-			} catch (IOException e) {
-				return true;
-			}
-		case WORKINGDIR:
-			if (node.getRepository().isBare())
-				return false;
-			File workingDir = repo.getWorkTree();
-			if (workingDir == null || !workingDir.exists())
-				return false;
-			return workingDir.listFiles().length > 0;
-		default:
-			Object[] children = getChildren(element);
-			return children != null && children.length > 0;
-		}
+		Object[] children = getChildren(element);
+		return children != null && children.length > 0;
 	}
 
 }

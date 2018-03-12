@@ -16,13 +16,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.QualifiedName;
-import org.eclipse.egit.ui.common.ExistingOrNewPage;
-import org.eclipse.egit.ui.common.SharingWizard;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.jgit.junit.MockSystemReader;
 import org.eclipse.jgit.lib.Constants;
@@ -30,7 +26,6 @@ import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,6 +33,9 @@ import org.junit.runner.RunWith;
 
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class SharingWizardTest {
+	static {
+		System.setProperty("org.eclipse.swtbot.playback.delay", "50");
+	}
 
 	private static final String projectName = "TestProject";
 
@@ -66,17 +64,6 @@ public class SharingWizardTest {
 		bot.textWithLabel("Project name:").setText(projectName);
 
 		bot.button("Finish").click();
-		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(IResource.DEPTH_INFINITE, null);
-	}
-
-	@AfterClass
-	public static void afterClass() throws Exception {
-		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(
-				projectName);
-		project.close(null);
-		project.delete(false, null);
-		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
-				IResource.DEPTH_INFINITE, null);
 	}
 
 	@Before
@@ -118,7 +105,6 @@ public class SharingWizardTest {
 
 		// share project
 		bot.button("Finish").click();
-		Thread.sleep(1000);
 		assertEquals("org.eclipse.egit.core.GitProvider",
 				workspace.getRoot().getProject(projectName)
 						.getPersistentProperty(

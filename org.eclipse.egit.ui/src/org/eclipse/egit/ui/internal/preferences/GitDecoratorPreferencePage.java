@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2000, 2007 IBM Corporation and others.
  * Copyright (C) 2009, Tor Arne Vestbø <torarnv@gmail.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,7 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,7 +28,6 @@ import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
 import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.preference.PreferenceStore;
@@ -40,7 +37,6 @@ import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
-import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.DecorationContext;
 import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.IDecoration;
@@ -52,7 +48,6 @@ import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -107,7 +102,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 	static {
 		final PreviewResource project = new PreviewResource(
-				"Project", IResource.PROJECT, "repository" + '|' + RepositoryState.MERGING.getDescription(), "master", true, false, true, Staged.NOT_STAGED, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"Project", IResource.PROJECT, "repository", "master", true, false, true, Staged.NOT_STAGED, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		final ArrayList<PreviewResource> children = new ArrayList<PreviewResource>();
 
 		children
@@ -448,7 +443,20 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					}
 				};
 
-				final IStructuredContentProvider contentsProvider = ArrayContentProvider.getInstance();
+				final IStructuredContentProvider contentsProvider = new IStructuredContentProvider() {
+					public Object[] getElements(Object inputElement) {
+						return ((Collection) inputElement).toArray();
+					}
+
+					public void dispose() {
+						// No-op
+					}
+
+					public void inputChanged(Viewer viewer, Object oldInput,
+							Object newInput) {
+						// No-op
+					}
+				};
 
 				final ListSelectionDialog dialog = new ListSelectionDialog(text
 						.getShell(), bindings.entrySet(), contentsProvider,
@@ -605,13 +613,9 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		IPreferenceStore store = getPreferenceStore();
 		final boolean okToClose = performOk(store);
 		if (store.needsSaving()) {
-			try {
-				((IPersistentPreferenceStore)store).save();
-				Activator.broadcastPropertyChange(new PropertyChangeEvent(this,
-						Activator.DECORATORS_CHANGED, null, null));
-			} catch (IOException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			}
+			Activator.getDefault().savePluginPreferences();
+			Activator.broadcastPropertyChange(new PropertyChangeEvent(this,
+					Activator.DECORATORS_CHANGED, null, null));
 		}
 		return okToClose;
 	}

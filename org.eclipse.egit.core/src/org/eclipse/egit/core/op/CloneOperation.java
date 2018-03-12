@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.lib.Commit;
@@ -30,15 +31,15 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.WorkDirCheckout;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * Clones a repository from a remote location to a local location.
@@ -58,7 +59,7 @@ public class CloneOperation {
 
 	private final String remoteName;
 
-	private FileRepository local;
+	private Repository local;
 
 	private RemoteConfig remoteConfig;
 
@@ -151,7 +152,7 @@ public class CloneOperation {
 			throws URISyntaxException, IOException {
 		monitor.setTaskName(CoreText.CloneOperation_initializingRepository);
 
-		local = new FileRepository(gitdir);
+		local = new Repository(gitdir);
 		local.create();
 
 		final RefUpdate head = local.updateRef(Constants.HEAD);
@@ -186,8 +187,10 @@ public class CloneOperation {
 		String branchName = branch.substring(Constants.R_HEADS.length());
 
 		// setup the default remote branch for branchName
-		local.getConfig().setString("branch", branchName, "remote", remoteName); //$NON-NLS-1$ //$NON-NLS-2$
-		local.getConfig().setString("branch", branchName, "merge", branch); //$NON-NLS-1$ //$NON-NLS-2$
+		local.getConfig().setString(RepositoryConfig.BRANCH_SECTION,
+				branchName, "remote", remoteName); //$NON-NLS-1$
+		local.getConfig().setString(RepositoryConfig.BRANCH_SECTION,
+				branchName, "merge", branch); //$NON-NLS-1$
 
 		local.getConfig().save();
 	}
@@ -220,7 +223,7 @@ public class CloneOperation {
 		u.forceUpdate();
 
 		monitor.setTaskName(CoreText.CloneOperation_checkingOutFiles);
-		co = new WorkDirCheckout(local, local.getWorkTree(), index, tree);
+		co = new WorkDirCheckout(local, local.getWorkDir(), index, tree);
 		co.checkout();
 		monitor.setTaskName(CoreText.CloneOperation_writingIndex);
 		index.write();

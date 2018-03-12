@@ -33,7 +33,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FS;
 import org.osgi.service.prefs.BackingStoreException;
 
@@ -42,8 +41,7 @@ import org.osgi.service.prefs.BackingStoreException;
  */
 public class RepositoryUtil {
 
-	/** The preferences to store the directories known to the Git Repositories view */
-	public static final String PREFS_DIRECTORIES = "GitRepositoriesView.GitDirectories"; //$NON-NLS-1$
+	private static final String PREFS_DIRECTORIES = "GitRepositoriesView.GitDirectories"; //$NON-NLS-1$
 
 	private final Map<String, Map<String, String>> commitMappingCache = new HashMap<String, Map<String, String>>();
 
@@ -119,12 +117,10 @@ public class RepositoryUtil {
 
 			Map<String, Date> tagMap = new HashMap<String, Date>();
 			try {
-				RevWalk rw = new RevWalk(repository);
 				Map<String, Ref> tags = repository.getRefDatabase().getRefs(
 						Constants.R_TAGS);
 				for (Ref tagRef : tags.values()) {
-					Tag tag = rw.parseTag(repository.resolve(tagRef.getName()))
-							.asTag(rw);
+					Tag tag = repository.mapTag(tagRef.getName());
 					if (tag.getObjId().name().equals(commitId)) {
 						Date timestamp;
 						if (tag.getTagger() != null) {
@@ -243,12 +239,26 @@ public class RepositoryUtil {
 	}
 
 	/**
+	 * Checks if the directories are still valid; in case of invalid directories
+	 * the underlying {@link IEclipsePreferences} will be changed (by removing
+	 * these directories) and the registered listeners will be notified.
+	 */
+	public void checkDirectories() {
+		getConfiguredRepositories(true);
+	}
+
+	/**
 	 *
 	 * @return the list of configured Repository paths; will be sorted
 	 */
 	public List<String> getConfiguredRepositories() {
+		return this.getConfiguredRepositories(false);
+	}
+
+	private List<String> getConfiguredRepositories(boolean checkPaths) {
 		synchronized (prefs) {
 			Set<String> configuredStrings = new HashSet<String>();
+			Set<String> resultStrings = new HashSet<String>();
 
 			String dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
 			if (dirs != null && dirs.length() > 0) {
@@ -257,10 +267,19 @@ public class RepositoryUtil {
 				while (tok.hasMoreTokens()) {
 					String dirName = tok.nextToken();
 					configuredStrings.add(dirName);
+					if (checkPaths) {
+						File testFile = new File(dirName);
+						if (!FileKey.isGitRepository(testFile, FS.DETECTED))
+							resultStrings.add(dirName);
+					}
+					resultStrings.add(dirName);
 				}
 			}
+
+			if (checkPaths && resultStrings.size() < configuredStrings.size())
+				saveDirs(resultStrings);
 			List<String> result = new ArrayList<String>();
-			result.addAll(configuredStrings);
+			result.addAll(resultStrings);
 			Collections.sort(result);
 			return result;
 		}
@@ -288,7 +307,7 @@ public class RepositoryUtil {
 				dirString = repositoryDir.getAbsolutePath();
 			}
 
-			List<String> dirStrings = getConfiguredRepositories();
+			List<String> dirStrings = getConfiguredRepositories(false);
 			if (dirStrings.contains(dirString)) {
 				return false;
 			} else {
@@ -316,7 +335,7 @@ public class RepositoryUtil {
 			}
 
 			Set<String> dirStrings = new HashSet<String>();
-			dirStrings.addAll(getConfiguredRepositories());
+			dirStrings.addAll(getConfiguredRepositories(false));
 			if (dirStrings.remove(dir)) {
 				saveDirs(dirStrings);
 				return true;
