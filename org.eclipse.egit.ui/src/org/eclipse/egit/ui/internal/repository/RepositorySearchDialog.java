@@ -13,9 +13,7 @@
 package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -44,7 +42,6 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.util.FS;
@@ -105,8 +102,6 @@ public class RepositorySearchDialog extends WizardPage {
 
 	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
-
-	private boolean allowBare;
 
 	private static final class ContentProvider implements ITreeContentProvider {
 
@@ -185,23 +180,19 @@ public class RepositorySearchDialog extends WizardPage {
 	 * @param existingDirs
 	 */
 	public RepositorySearchDialog(Collection<String> existingDirs) {
-		this(existingDirs, false, true);
+		this(existingDirs, false);
 	}
 
 	/**
 	 * @param existingDirs
-	 * @param fillSearch
-	 *            true to fill search results when initially displayed
-	 * @param allowBare
-	 *            if {@code true} allow bare repositories
+	 * @param fillSearch true to fill search results when initially displayed
 	 */
 	public RepositorySearchDialog(Collection<String> existingDirs,
-			boolean fillSearch, boolean allowBare) {
-		super("searchPage", UIText.RepositorySearchDialog_SearchTitle, //$NON-NLS-1$
-				UIIcons.WIZBAN_IMPORT_REPO);
+			boolean fillSearch) {
+		super(
+				"searchPage", UIText.RepositorySearchDialog_SearchTitle, UIIcons.WIZBAN_IMPORT_REPO); //$NON-NLS-1$
 		this.fExistingDirectories.addAll(existingDirs);
 		this.fillSearch = fillSearch;
-		this.allowBare = allowBare;
 	}
 
 	/**
@@ -420,7 +411,7 @@ public class RepositorySearchDialog extends WizardPage {
 
 		// check the root first
 		File resolved = FileKey.resolve(root, FS.DETECTED);
-		if ((resolved != null) && !suppressed(root, resolved)) {
+		if (resolved != null) {
 			gitDirs.add(resolved.getAbsoluteFile());
 			monitor.setTaskName(NLS.bind(
 					UIText.RepositorySearchDialog_RepositoriesFound_message,
@@ -428,11 +419,8 @@ public class RepositorySearchDialog extends WizardPage {
 		}
 
 		// check depth and if we are not in private git folder ".git" itself
-		if ((depth != 0) && !(resolved != null && isSameFile(root, resolved))) {
+		if ((depth != 0) && !root.equals(resolved)) {
 			File[] children = root.listFiles();
-			if (children == null) {
-				return;
-			}
 			for (File child : children) {
 				if (monitor.isCanceled()) {
 					return;
@@ -444,19 +432,6 @@ public class RepositorySearchDialog extends WizardPage {
 					findGitDirsRecursive(child, gitDirs, monitor, depth - 1);
 				}
 			}
-		}
-	}
-
-	private boolean suppressed(@NonNull File root, @NonNull File resolved) {
-			return !allowBare && !Constants.DOT_GIT.equals(resolved.getName())
-				&& isSameFile(root, resolved);
-	}
-
-	private boolean isSameFile(@NonNull File f1, @NonNull File f2) {
-		try {
-			return Files.isSameFile(f1.toPath(), f2.toPath());
-		} catch (IOException e) {
-			return false;
 		}
 	}
 

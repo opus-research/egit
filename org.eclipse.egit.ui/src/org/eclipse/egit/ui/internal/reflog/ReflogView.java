@@ -410,11 +410,21 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		}
 		Repository selectedRepo = null;
 		Object first = ssel.getFirstElement();
-		IResource adapted = AdapterUtils.adaptToAnyResource(first);
-		if (adapted != null) {
-			RepositoryMapping mapping = RepositoryMapping.getMapping(adapted);
+		if (first instanceof IResource) {
+			IResource resource = (IResource) first;
+			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
 			if (mapping != null) {
 				selectedRepo = mapping.getRepository();
+			}
+		}
+		if (selectedRepo == null) {
+			IResource adapted = AdapterUtils.adapt(first, IResource.class);
+			if (adapted != null) {
+				RepositoryMapping mapping = RepositoryMapping
+						.getMapping(adapted);
+				if (mapping != null) {
+					selectedRepo = mapping.getRepository();
+				}
 			}
 		}
 		if (selectedRepo == null) {
