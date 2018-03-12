@@ -2,7 +2,6 @@
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.indexdiff;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -385,16 +383,10 @@ public class IndexDiffCacheEntry {
 	}
 
 	private boolean checkRepository() {
-		if (Activator.getDefault() == null) {
+		if (Activator.getDefault() == null)
 			return false;
-		}
-		if (repository == null) {
+		if (!repository.getDirectory().exists())
 			return false;
-		}
-		File directory = repository.getDirectory();
-		if (directory == null || !directory.exists()) {
-			return false;
-		}
 		return true;
 	}
 
@@ -645,26 +637,13 @@ public class IndexDiffCacheEntry {
 	}
 
 	/**
-	 * Dispose cache entry by removing listeners. Pending update or reload jobs
-	 * are canceled.
+	 * Dispose cache entry by removing listeners.
 	 */
 	public void dispose() {
 		indexChangedListenerHandle.remove();
 		refsChangedListenerHandle.remove();
-		if (resourceChangeListener != null) {
+		if (resourceChangeListener != null)
 			ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
-		}
-		listeners.clear();
-		if (reloadJob != null) {
-			reloadJob.cancel();
-			reloadJob = null;
-		}
-		if (updateJob != null) {
-			updateJob.cleanupAndCancel();
-			updateJob = null;
-		}
-		indexDiffData = null;
-		lastIndex = null;
 	}
 
 }
