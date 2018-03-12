@@ -14,9 +14,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Andre Bossert <anb0s@anbos.de> - Extended support for nested repositories in project.
  *******************************************************************************/
 
 package org.eclipse.egit.ui.internal.decorators;
@@ -39,6 +36,9 @@ import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ExceptionCollector;
+import org.eclipse.egit.core.project.GitProjectData;
+import org.eclipse.egit.core.project.RepositoryMappingChangeListener;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIIcons;
@@ -107,6 +107,15 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 	private static RGB defaultBackgroundRgb;
 
+	private RepositoryMappingChangeListener mappingChangeListener = new RepositoryMappingChangeListener() {
+
+		@Override
+		public void repositoryChanged(RepositoryMapping which) {
+			fireLabelEvent();
+		}
+
+	};
+
 	/**
 	 * Constructs a new Git resource decorator
 	 */
@@ -120,6 +129,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 				.addPropertyChangeListener(this);
 
 		org.eclipse.egit.core.Activator.getDefault().getIndexDiffCache().addIndexDiffChangedListener(this);
+		GitProjectData.addRepositoryChangeListener(mappingChangeListener);
 	}
 
 	/**
@@ -158,6 +168,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 		TeamUI.removePropertyChangeListener(this);
 		Activator.removePropertyChangeListener(this);
 		org.eclipse.egit.core.Activator.getDefault().getIndexDiffCache().removeIndexDiffChangedListener(this);
+		GitProjectData.removeRepositoryChangeListener(mappingChangeListener);
+		mappingChangeListener = null;
 	}
 
 	/**
@@ -437,9 +449,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 				break;
 			case IResource.FOLDER:
 			case DecoratableResourceMapping.RESOURCE_MAPPING:
-				if (resource.isWorkingTreeRoot()) {
-					// Use the submodule formatting if it's a submodule or
-					// nested repository root
+				// Use the submodule formatting if it's a submodule root
+				if (resource.getBranch() != null) {
 					format = store.getString(
 							UIPreferences.DECORATOR_SUBMODULETEXT_DECORATION);
 				} else {
