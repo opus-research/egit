@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Google Inc.
- * Copyright (C) 2014, Obeo
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,7 +12,6 @@ package org.eclipse.egit.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.Arrays;
 
 import org.eclipse.core.filesystem.URIUtil;
@@ -31,7 +29,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
@@ -41,7 +39,6 @@ import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheBuilder;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.dircache.DirCacheEntry;
-import org.eclipse.jgit.errors.LockFailedException;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.TeamException;
 
@@ -57,13 +54,8 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		data = d;
 	}
 
-	@Override
 	public boolean deleteFile(final IResourceTree tree, final IFile file,
 			final int updateFlags, final IProgressMonitor monitor) {
-		if (!org.eclipse.egit.core.Activator.autoStageDeletion()) {
-			return false;
-		}
-
 		// Linked resources are not files, hence not tracked by git
 		if (file.isLinked())
 			return false;
@@ -81,9 +73,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 				.getIndexDiffCache();
 		IndexDiffCacheEntry indexDiffCacheEntry = indexDiffCache
 				.getIndexDiffCacheEntry(map.getRepository());
-		if (indexDiffCacheEntry == null) {
-			return false;
-		}
 		IndexDiffData indexDiff = indexDiffCacheEntry.getIndexDiff();
 		if (indexDiff != null) {
 			if (indexDiff.getUntracked().contains(repoRelativePath))
@@ -115,25 +104,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 				tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(),
 						0, CoreText.MoveDeleteHook_operationError, null));
 			tree.standardDeleteFile(file, updateFlags, monitor);
-		} catch (LockFailedException e) {
-			// FIXME The index is currently locked. This notably happens during
-			// rebase operations. auto-staging deletions should be queued... and
-			// the queued job will have to double-check whether the file has
-			// truly been deleted or if it was only deleted to be replaced by
-			// another version.
-			// This hook only exists to automatically add changes to the index.
-			// If the index is currently locked, do not accept the
-			// responsibility of deleting the file, return false to tell the
-			// workspace it can continue with the standard deletion. The user
-			// will have to stage the deletion later on _if_ this was truly
-			// needed, which won't happen for calls triggered by merge
-			// operations from the merge strategies.
-			Activator.getDefault().getLog()
-					.log(new Status(IStatus.WARNING, Activator.getPluginId(),
-							MessageFormat
-									.format(CoreText.MoveDeleteHook_cannotAutoStageDeletion,
-											file.getLocation())));
-			return FINISH_FOR_ME;
 		} catch (IOException e) {
 			tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(), 0,
 					CoreText.MoveDeleteHook_operationError, e));
@@ -144,7 +114,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return true;
 	}
 
-	@Override
 	public boolean deleteFolder(final IResourceTree tree, final IFolder folder,
 			final int updateFlags, final IProgressMonitor monitor) {
 		// Deleting a GIT repository which is in use is a pretty bad idea. To
@@ -157,7 +126,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		}
 	}
 
-	@Override
 	public boolean deleteProject(final IResourceTree tree,
 			final IProject project, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -166,7 +134,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return FINISH_FOR_ME;
 	}
 
-	@Override
 	public boolean moveFile(final IResourceTree tree, final IFile srcf,
 			final IFile dstf, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -184,34 +151,26 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			sCache = srcm.getRepository().lockDirCache();
 			final String sPath = srcm.getRepoRelativePath(srcf);
 			final DirCacheEntry sEnt = sCache.getEntry(sPath);
-			if (sEnt == null)
-				return FINISH_FOR_ME;
-
-			if (!sEnt.isMerged()) {
-				tree.failed(new Status(IStatus.WARNING, Activator.getPluginId(),
-						CoreText.MoveDeleteHook_unmergedFileError));
-				return I_AM_DONE;
+			if (sEnt == null) {
+				sCache.unlock();
+				return false;
 			}
-			if (org.eclipse.egit.core.Activator.autoStageMoves()) {
-				final DirCacheEditor sEdit = sCache.editor();
-				sEdit.add(new DirCacheEditor.DeletePath(sEnt));
-				if (dstm != null
-						&& dstm.getRepository() == srcm.getRepository()) {
-					final String dPath = srcm.getRepoRelativePath(dstf);
-					sEdit.add(new DirCacheEditor.PathEdit(dPath) {
 
-						@Override
-						public void apply(final DirCacheEntry dEnt) {
-							dEnt.copyMetaData(sEnt);
-						}
-					});
-				}
-				if (!sEdit.commit()) {
-					tree.failed(new Status(IStatus.ERROR,
-							Activator.getPluginId(), 0,
-							CoreText.MoveDeleteHook_operationError, null));
-				}
+			final DirCacheEditor sEdit = sCache.editor();
+			sEdit.add(new DirCacheEditor.DeletePath(sEnt));
+			if (dstm != null && dstm.getRepository() == srcm.getRepository()) {
+				final String dPath = srcm.getRepoRelativePath(dstf);
+				sEdit.add(new DirCacheEditor.PathEdit(dPath) {
+					@Override
+					public void apply(final DirCacheEntry dEnt) {
+						dEnt.copyMetaData(sEnt);
+					}
+				});
 			}
+			if (!sEdit.commit())
+				tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(),
+						0, CoreText.MoveDeleteHook_operationError, null));
+
 			tree.standardMoveFile(srcf, dstf, updateFlags, monitor);
 		} catch (IOException e) {
 			tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(), 0,
@@ -220,10 +179,9 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			if (sCache != null)
 				sCache.unlock();
 		}
-		return I_AM_DONE;
+		return true;
 	}
 
-	@Override
 	public boolean moveFolder(final IResourceTree tree, final IFolder srcf,
 			final IFolder dstf, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -239,13 +197,9 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		try {
 			final String sPath = srcm.getRepoRelativePath(srcf);
 			if (dstm != null && dstm.getRepository() == srcm.getRepository()) {
-				MoveResult result = null;
-				if (org.eclipse.egit.core.Activator.autoStageMoves()) {
-					final String dPath = srcm.getRepoRelativePath(dstf) + "/"; //$NON-NLS-1$
-					result = moveIndexContent(dPath, srcm, sPath);
-				} else {
-					result = checkUnmergedPaths(srcm, sPath);
-				}
+				final String dPath =
+					srcm.getRepoRelativePath(dstf) + "/"; //$NON-NLS-1$
+				MoveResult result = moveIndexContent(dPath, srcm, sPath);
 				switch (result) {
 				case SUCCESS:
 					break;
@@ -256,10 +210,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 				case UNTRACKED:
 					// we are not responsible for moving untracked files
 					return FINISH_FOR_ME;
-				case UNMERGED:
-					tree.failed(new Status(IStatus.WARNING, Activator.getPluginId(),
-							CoreText.MoveDeleteHook_unmergedFileInFolderError));
-					return I_AM_DONE;
 				}
 			}
 			tree.standardMoveFolder(srcf, dstf, updateFlags, monitor);
@@ -276,15 +226,17 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			TeamException {
 		IProject destination = source.getWorkspace().getRoot()
 				.getProject(description.getName());
-		RepositoryMapping repositoryMapping = RepositoryMapping.create(destination, gitDir.toFile());
-		if (repositoryMapping != null) {
-			GitProjectData projectData = new GitProjectData(destination);
-			projectData.setRepositoryMappings(Arrays.asList(repositoryMapping));
-			projectData.store();
-			GitProjectData.add(destination, projectData);
-			RepositoryProvider.map(destination, GitProvider.class.getName());
-			destination.refreshLocal(IResource.DEPTH_INFINITE, monitor);
-		}
+		GitProjectData projectData = new GitProjectData(destination);
+		RepositoryMapping repositoryMapping = new RepositoryMapping(
+				destination, gitDir.toFile());
+		projectData.setRepositoryMappings(Arrays
+				.asList(repositoryMapping));
+		projectData.store();
+		GitProjectData.add(destination, projectData);
+		RepositoryProvider
+				.map(destination, GitProvider.class.getName());
+		destination.refreshLocal(IResource.DEPTH_INFINITE,
+				new SubProgressMonitor(monitor, 50));
 	}
 
 	private boolean unmapProject(final IResourceTree tree, final IProject source) {
@@ -301,7 +253,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return false;
 	}
 
-	@Override
 	public boolean moveProject(final IResourceTree tree, final IProject source,
 			final IProjectDescription description, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -336,8 +287,9 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			return moveProjectHelperMoveOnlyProject(tree, source, description, updateFlags,
 					monitor, srcm, newLocationFile);
 		} else {
-			int dstAboveSrcRepo = newLocation.matchingFirstSegments(srcm.getGitDirAbsolutePath());
-			int srcAboveSrcRepo = sourceLocation.matchingFirstSegments(srcm.getGitDirAbsolutePath());
+			int dstAboveSrcRepo = newLocation.matchingFirstSegments(RepositoryMapping
+					.getMapping(source).getGitDirAbsolutePath());
+			int srcAboveSrcRepo = sourceLocation.matchingFirstSegments(RepositoryMapping.getMapping(source).getGitDirAbsolutePath());
 			if (dstAboveSrcRepo > 0 && srcAboveSrcRepo > 0) {
 				return moveProjectHelperMoveRepo(tree, source, description, updateFlags, monitor,
 					srcm, newLocation, sourceLocation);
@@ -367,12 +319,8 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 				return true;
 
 			monitor.worked(100);
-			MoveResult result = null;
-			if (org.eclipse.egit.core.Activator.autoStageMoves()) {
-				result = moveIndexContent(dPath, srcm, sPath);
-			} else {
-				result = checkUnmergedPaths(srcm, sPath);
-			}
+
+			MoveResult result = moveIndexContent(dPath, srcm, sPath);
 			switch (result) {
 			case SUCCESS:
 				break;
@@ -384,10 +332,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			case UNTRACKED:
 				// we are not responsible for moving untracked files
 				return FINISH_FOR_ME;
-			case UNMERGED:
-				tree.failed(new Status(IStatus.WARNING, Activator.getPluginId(),
-						CoreText.MoveDeleteHook_unmergedFileInFolderError));
-				return I_AM_DONE;
 			}
 
 			tree.standardMoveProject(source, description, updateFlags,
@@ -415,14 +359,11 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		// Moving repo, we need to unplug the previous location and
 		// Re-plug it again with the new location.
 		IPath gitDir = srcm.getGitDirAbsolutePath();
-		if (unmapProject(tree, source)) {
+		if (unmapProject(tree, source))
 			return true; // Error information in tree
-		}
 
 		monitor.worked(100);
-		if (gitDir == null) {
-			return true; // mapping on deleted container with relative path
-		}
+
 		IPath relativeGitDir = gitDir.makeRelativeTo(sourceLocation);
 		tree.standardMoveProject(source, description, updateFlags,
 				monitor);
@@ -438,7 +379,7 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return true; // We're done with the move
 	}
 
-	enum MoveResult { SUCCESS, FAILED, UNTRACKED, UNMERGED }
+	enum MoveResult{SUCCESS, FAILED, UNTRACKED}
 
 	private MoveResult moveIndexContent(String dPath,
 			final RepositoryMapping srcm, final String sPath) throws IOException {
@@ -456,8 +397,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			final int sPathLen = sPath.length() == 0 ? sPath.length() : sPath
 					.length() + 1;
 			for (final DirCacheEntry se : sEnt) {
-				if (!se.isMerged())
-					return MoveResult.UNMERGED;
 				final String p = se.getPathString().substring(sPathLen);
 				sEdit.add(new DirCacheEditor.PathEdit(dPath + p) {
 					@Override
@@ -473,28 +412,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		} finally {
 			if (sCache != null)
 				sCache.unlock();
-		}
-	}
-
-	private MoveResult checkUnmergedPaths(final RepositoryMapping srcm,
-			final String sPath) throws IOException {
-		final DirCache sCache = srcm.getRepository().lockDirCache();
-		try {
-			final DirCacheEntry[] sEnt = sCache.getEntriesWithin(sPath);
-			if (sEnt.length == 0) {
-				sCache.unlock();
-				return MoveResult.UNTRACKED;
-			}
-			for (final DirCacheEntry se : sEnt) {
-				if (!se.isMerged()) {
-					return MoveResult.UNMERGED;
-				}
-			}
-			return MoveResult.SUCCESS;
-		} finally {
-			if (sCache != null) {
-				sCache.unlock();
-			}
 		}
 	}
 

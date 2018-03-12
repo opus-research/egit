@@ -82,9 +82,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	public void shouldListSingleWorkspaceDeletion() throws Exception {
 		// given
 		writeTrashFile(db, "a.txt", "trash");
-		try (Git git = new Git(db)) {
-			git.add().addFilepattern("a.txt").call();
-		}
+		new Git(db).add().addFilepattern("a.txt").call();
 		deleteTrashFile(db, "a.txt");
 
 		// when
@@ -100,9 +98,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 		// given
 		writeTrashFile(db, "a.txt", "trash");
 		writeTrashFile(db, "b.txt", "trash");
-		try (Git git = new Git(db)) {
-			git.add().addFilepattern("a.txt").addFilepattern("b.txt").call();
-		}
+		new Git(db).add().addFilepattern("a.txt").addFilepattern("b.txt").call();
 		deleteTrashFile(db, "a.txt");
 		deleteTrashFile(db, "b.txt");
 
@@ -119,9 +115,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	public void shouldListSingleWorkspaceDeletionInFolder() throws Exception {
 		// given
 		writeTrashFile(db, "folder/a.txt", "trash");
-		try (Git git = new Git(db)) {
-			git.add().addFilepattern("folder/a.txt").call();
-		}
+		new Git(db).add().addFilepattern("folder/a.txt").call();
 		deleteTrashFile(db, "folder/a.txt");
 
 		// when
@@ -137,10 +131,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 		// given
 		writeTrashFile(db, "folder/a.txt", "trash");
 		writeTrashFile(db, "folder/b.txt", "trash");
-		try (Git git = new Git(db)) {
-			git.add().addFilepattern("folder/a.txt")
-					.addFilepattern("folder/b.txt").call();
-		}
+		new Git(db).add().addFilepattern("folder/a.txt").addFilepattern("folder/b.txt").call();
 		deleteTrashFile(db, "folder/a.txt");
 		deleteTrashFile(db, "folder/b.txt");
 
@@ -157,9 +148,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	public void shouldListSingleWorkspaceChange() throws Exception {
 		// given
 		writeTrashFile(db, "a.txt", "trash");
-		try (Git git = new Git(db)) {
-			git.add().addFilepattern("a.txt").call();
-		}
+		new Git(db).add().addFilepattern("a.txt").call();
 		writeTrashFile(db, "a.txt", "modification");
 
 		// when
@@ -175,9 +164,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 		// given
 		writeTrashFile(db, "a.txt", "trash");
 		writeTrashFile(db, "b.txt", "trash");
-		try (Git git = new Git(db)) {
-			git.add().addFilepattern("a.txt").addFilepattern("b.txt").call();
-		}
+		new Git(db).add().addFilepattern("a.txt").addFilepattern("b.txt").call();
 		writeTrashFile(db, "a.txt", "modification");
 		writeTrashFile(db, "b.txt", "modification");
 
@@ -194,9 +181,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	public void shouldListSingleWorkspaceChangeInFolder() throws Exception {
 		// given
 		writeTrashFile(db, "folder/a.txt", "trash");
-		try (Git git = new Git(db)) {
-			git.add().addFilepattern("folder/a.txt").call();
-		}
+		new Git(db).add().addFilepattern("folder/a.txt").call();
 		writeTrashFile(db, "folder/a.txt", "modification");
 
 		// when
@@ -212,10 +197,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 		// given
 		writeTrashFile(db, "folder/a.txt", "trash");
 		writeTrashFile(db, "folder/b.txt", "trash");
-		try (Git git = new Git(db)) {
-			git.add().addFilepattern("folder/a.txt")
-					.addFilepattern("folder/b.txt").call();
-		}
+		new Git(db).add().addFilepattern("folder/a.txt").addFilepattern("folder/b.txt").call();
 		writeTrashFile(db, "folder/a.txt", "modification");
 		writeTrashFile(db, "folder/b.txt", "modification");
 

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.0"?>
 <plugin>
-   <extension-point id="mergeStrategy" name="%MergeStrategy-extension-point.name" schema="schema/mergeStrategy.exsd"/>
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.eclipse.egit.core.GitCorePreferenceInitializer"/>
    </extension>
@@ -21,15 +20,5 @@
      <ignore
            enabled="true"
            pattern="*/.git/*"/>
-  </extension>
-  <extension
-        point="org.eclipse.core.contenttype.contentTypes">
-     <content-type
-           base-type="org.eclipse.core.runtime.text"
-           file-extensions="patch"
-           id="org.eclipse.egit.patch"
-           name="%patch_ContentTypeName"
-           priority="normal">
-     </content-type>
   </extension>
 </plugin>

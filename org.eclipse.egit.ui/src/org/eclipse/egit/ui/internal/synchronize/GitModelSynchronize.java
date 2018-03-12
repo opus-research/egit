@@ -1,7 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2010, 2012 Dariusz Luksza <dariusz@luksza.org>.
- * Copyright (C) 2012, 2013 Laurent Goubet <laurent.goubet@obeo.fr>
- * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,24 +13,23 @@ import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.resources.mapping.RemoteResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceMapping;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.GitSubscriberMergeContext;
 import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.team.ui.TeamUI;
 import org.eclipse.team.ui.synchronize.ISynchronizeParticipant;
@@ -44,6 +41,8 @@ import org.eclipse.ui.PlatformUI;
  * Utility class that launches model synchronization action
  */
 public class GitModelSynchronize {
+
+	private static final String providerId = "org.eclipse.egit.core.GitProvider"; //$NON-NLS-1$
 
 	/**
 	 * Launches Git Model synchronization action
@@ -64,20 +63,8 @@ public class GitModelSynchronize {
 	 */
 	public static final void launch(final GitSynchronizeDataSet gsdSet,
 			IResource[] resources) {
-		ResourceMapping[] mappings = getGitResourceMappings(resources);
+		ResourceMapping[] mappings = getSelectedResourceMappings(resources);
 
-		launch(gsdSet, mappings);
-	}
-
-	/**
-	 * Launches Git Model synchronization action using the specified resource
-	 * mapping
-	 *
-	 * @param gsdSet
-	 * @param mappings
-	 */
-	public static final void launch(final GitSynchronizeDataSet gsdSet,
-			ResourceMapping[] mappings) {
 		IWorkbenchWindow window = PlatformUI.getWorkbench()
 				.getActiveWorkbenchWindow();
 
@@ -91,18 +78,38 @@ public class GitModelSynchronize {
 	 * @return the resource mappings that contain resources associated with the
 	 *         given provider
 	 */
-	private static ResourceMapping[] getGitResourceMappings(
+	private static ResourceMapping[] getSelectedResourceMappings(
 			IResource[] elements) {
-		List<ResourceMapping> gitMappings = new ArrayList<>();
+		List<ResourceMapping> providerMappings = new ArrayList<ResourceMapping>();
 
 		for (IResource element : elements) {
-			ResourceMapping mapping = AdapterUtils.adapt(element,
-					ResourceMapping.class);
-			if (mapping != null && isMappedToGitProvider(mapping))
-				gitMappings.add(mapping);
+			Object adapted = getResourceMapping(element);
+			if (adapted != null && adapted instanceof ResourceMapping) {
+				ResourceMapping mapping = (ResourceMapping) adapted;
+
+				if (isMappedToProvider(mapping))
+					providerMappings.add(mapping);
+			}
 		}
 
-		return gitMappings.toArray(new ResourceMapping[gitMappings.size()]);
+		return providerMappings.toArray(new ResourceMapping[providerMappings
+				.size()]);
+	}
+
+	/**
+	 * Copied from TeamAction#getResourceMapping(Object)
+	 *
+	 * @param object
+	 * @return resource mapping
+	 */
+	private static Object getResourceMapping(Object object) {
+		if (object instanceof ResourceMapping)
+			return object;
+
+		if (object instanceof IAdaptable)
+			return ((IAdaptable) object).getAdapter(ResourceMapping.class);
+
+		return null;
 	}
 
 	/**
@@ -112,12 +119,14 @@ public class GitModelSynchronize {
 	 * @return <code>true</code> if resource is mapped to Git provider,
 	 *         <code>false</code> otherwise
 	 */
-	private static boolean isMappedToGitProvider(ResourceMapping element) {
+	private static boolean isMappedToProvider(ResourceMapping element) {
 		IProject[] projects = element.getProjects();
 		for (IProject project: projects) {
-			if (ResourceUtil.isSharedWithGit(project)) {
+			RepositoryProvider provider = RepositoryProvider
+					.getProvider(project);
+
+			if (provider != null && provider.getID().equals(providerId))
 				return true;
-			}
 		}
 		return false;
 	}
@@ -127,11 +136,9 @@ public class GitModelSynchronize {
 		final GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
 				gsdSet);
 
-		Job syncJob = new WorkspaceJob(
-				UIText.GitModelSynchronize_fetchGitDataJobName) {
-
+		Job syncJob = new Job(UIText.GitModelSynchonize_fetchGitDataJobName) {
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				subscriber.init(monitor);
 
 				return Status.OK_STATUS;

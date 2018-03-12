@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 SAP AG and others.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,14 +10,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
-import java.lang.ref.SoftReference;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -25,23 +19,13 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.NotEnabledException;
 import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
-import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.bindings.Trigger;
-import org.eclipse.jface.bindings.TriggerSequence;
 import org.eclipse.jface.bindings.keys.KeyStroke;
-import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.ControlDecoration;
 import org.eclipse.jface.fieldassist.FieldDecorationRegistry;
@@ -50,70 +34,43 @@ import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IRegion;
-import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.jface.text.hyperlink.IHyperlink;
-import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyleRange;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.graphics.FontMetrics;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Resource;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
-import org.eclipse.ui.IEditorDescriptor;
-import org.eclipse.ui.IEditorRegistry;
-import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchCommandConstants;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.keys.IBindingService;
-import org.eclipse.ui.services.IServiceLocator;
 
 /**
  * Some utilities for UI code
  */
 public class UIUtils {
-
-	/** Default image descriptor for files */
-	public static final ImageDescriptor DEFAULT_FILE_IMG = PlatformUI
-			.getWorkbench().getSharedImages()
-			.getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
-
 	/**
 	 * these activate the content assist; alphanumeric, space plus some expected
 	 * special chars
@@ -173,44 +130,14 @@ public class UIUtils {
 	}
 
 	/**
-	 * A provider of candidate elements for which content proposals may be
-	 * generated.
-	 *
-	 * @param <T>
-	 *            type of the candidate elements
+	 * Used for
+	 * {@link UIUtils#addRefContentProposalToText(Text, Repository, IRefListProvider)}
 	 */
-	public interface IContentProposalCandidateProvider<T> {
-
+	public interface IRefListProvider {
 		/**
-		 * Retrieves the collection of candidates eligible for content proposal
-		 * generation.
-		 *
-		 * @return collection of candidates
+		 * @return the List of {@link Ref}s to propose
 		 */
-		public Collection<? extends T> getCandidates();
-	}
-
-	/**
-	 * A factory for creating {@link IContentProposal}s for {@link Ref}s.
-	 *
-	 * @param <T>
-	 *            type of elements to create proposals for
-	 */
-	public interface IContentProposalFactory<T> {
-
-		/**
-		 * Gets a new {@link IContentProposal} for the given element. May or may
-		 * not consider the {@link Pattern} and creates a proposal only if it
-		 * matches the element with implementation-defined semantics.
-		 *
-		 * @param pattern
-		 *            constructed from current input to aid in selecting
-		 *            meaningful proposals; may be {@code null}
-		 * @param element
-		 *            to consider creating a proposal for
-		 * @return a new {@link IContentProposal}, or {@code null} if none
-		 */
-		public IContentProposal getProposal(Pattern pattern, T element);
+		public List<Ref> getRefList();
 	}
 
 	/**
@@ -244,29 +171,6 @@ public class UIUtils {
 	}
 
 	/**
-	 * @return the indent of controls that depend on the previous control (e.g.
-	 *         a checkbox that is only enabled when the checkbox above it is
-	 *         checked)
-	 */
-	public static int getControlIndent() {
-		// Eclipse 4.3: Use LayoutConstants.getIndent once we depend on 4.3
-		return 20;
-	}
-
-	/**
-	 * @param parent
-	 * @param style
-	 * @return a text field which is read-only but can be selected
-	 */
-	public static Text createSelectableLabel(Composite parent, int style) {
-		// See https://bugs.eclipse.org/bugs/show_bug.cgi?id=71765
-		Text text = new Text(parent, style | SWT.READ_ONLY);
-		text.setBackground(text.getDisplay().getSystemColor(
-				SWT.COLOR_WIDGET_BACKGROUND));
-		return text;
-	}
-
-	/**
 	 * Adds little bulb decoration to given control. Bulb will appear in top
 	 * left corner of control after giving focus for this control.
 	 *
@@ -276,9 +180,8 @@ public class UIUtils {
 	 *            instance of {@link Control} object with should be decorated
 	 * @param tooltip
 	 *            text value which should appear after clicking on bulb image.
-	 * @return the {@link ControlDecoration} created
 	 */
-	public static ControlDecoration addBulbDecorator(final Control control,
+	public static void addBulbDecorator(final Control control,
 			final String tooltip) {
 		ControlDecoration dec = new ControlDecoration(control, SWT.TOP
 				| SWT.LEFT);
@@ -290,52 +193,13 @@ public class UIUtils {
 		dec.setShowHover(true);
 
 		dec.setDescriptionText(tooltip);
-		return dec;
-	}
-
-	/**
-	 * Creates a simple {@link Pattern} that can be used for matching content
-	 * assist proposals. The pattern ignores leading blanks and allows '*' as a
-	 * wildcard matching multiple arbitrary characters.
-	 *
-	 * @param content
-	 *            to create the pattern from
-	 * @return the pattern, or {@code null} if none could be created
-	 */
-	public static Pattern createProposalPattern(String content) {
-		// Make the simplest possible pattern check: allow "*"
-		// for multiple characters.
-		String patternString = content;
-		// Ignore spaces in the beginning.
-		while (patternString.length() > 0 && patternString.charAt(0) == ' ') {
-			patternString = patternString.substring(1);
-		}
-
-		// We quote the string as it may contain spaces
-		// and other stuff colliding with the pattern.
-		patternString = Pattern.quote(patternString);
-
-		patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
-
-		// Make sure we add a (logical) * at the end.
-		if (!patternString.endsWith(".*")) { //$NON-NLS-1$
-			patternString = patternString + ".*"; //$NON-NLS-1$
-		}
-
-		// Compile a case-insensitive pattern (assumes ASCII only).
-		Pattern pattern;
-		try {
-			pattern = Pattern.compile(patternString, Pattern.CASE_INSENSITIVE);
-		} catch (PatternSyntaxException e) {
-			pattern = null;
-		}
-		return pattern;
 	}
 
 	/**
 	 * Adds a "previously used values" content proposal handler to a text field.
 	 * <p>
-	 * The list will be limited to 10 values.
+	 * The keyboard shortcut will be "M1+SPACE" and the list will be limited to
+	 * 10 values.
 	 *
 	 * @param textField
 	 *            the text field
@@ -346,58 +210,84 @@ public class UIUtils {
 	 */
 	public static IPreviousValueProposalHandler addPreviousValuesContentProposalToText(
 			final Text textField, final String preferenceKey) {
-		KeyStroke stroke = UIUtils
-				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke == null)
+		KeyStroke stroke;
+		try {
+			stroke = KeyStroke.getInstance("M1+SPACE"); //$NON-NLS-1$
+			addBulbDecorator(textField, NLS.bind(
+					UIText.UIUtils_PressShortcutMessage, stroke.format()));
+		} catch (ParseException e1) {
+			Activator.handleError(e1.getMessage(), e1, false);
+			stroke = null;
 			addBulbDecorator(textField,
 					UIText.UIUtils_StartTypingForPreviousValuesMessage);
-		else
-			addBulbDecorator(
-					textField,
-					NLS.bind(UIText.UIUtils_PressShortcutMessage,
-							stroke.format()));
+		}
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 
-			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<>();
 
-				Pattern pattern = createProposalPattern(contents);
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
+
+				// make the simplest possible pattern check: allow "*"
+				// for multiple characters
+				String patternString = contents;
+				// ignore spaces in the beginning
+				while (patternString.length() > 0
+						&& patternString.charAt(0) == ' ') {
+					patternString = patternString.substring(1);
+				}
+
+				// we quote the string as it may contain spaces
+				// and other stuff colliding with the Pattern
+				patternString = Pattern.quote(patternString);
+
+				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
+
+				// make sure we add a (logical) * at the end
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
+					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
+
+				// let's compile a case-insensitive pattern (assumes ASCII only)
+				Pattern pattern;
+				try {
+					pattern = Pattern.compile(patternString,
+							Pattern.CASE_INSENSITIVE);
+				} catch (PatternSyntaxException e) {
+					pattern = null;
+				}
+
 				String[] proposals = org.eclipse.egit.ui.Activator.getDefault()
 						.getDialogSettings().getArray(preferenceKey);
-				if (proposals != null) {
+
+				if (proposals != null)
 					for (final String uriString : proposals) {
 
 						if (pattern != null
-								&& !pattern.matcher(uriString).matches()) {
+								&& !pattern.matcher(uriString).matches())
 							continue;
-						}
+
 						IContentProposal propsal = new IContentProposal() {
 
-							@Override
 							public String getLabel() {
 								return null;
 							}
 
-							@Override
 							public String getDescription() {
 								return null;
 							}
 
-							@Override
 							public int getCursorPosition() {
 								return 0;
 							}
 
-							@Override
 							public String getContent() {
 								return uriString;
 							}
 						};
 						resultList.add(propsal);
 					}
-				}
+
 				return resultList.toArray(new IContentProposal[resultList
 						.size()]);
 			}
@@ -407,11 +297,10 @@ public class UIUtils {
 				new TextContentAdapter(), cp, stroke,
 				VALUE_HELP_ACTIVATIONCHARS);
 		// set the acceptance style to always replace the complete content
-		adapter.setProposalAcceptanceStyle(
-				ContentProposalAdapter.PROPOSAL_REPLACE);
+		adapter
+				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 
 		return new IPreviousValueProposalHandler() {
-			@Override
 			public void updateProposals() {
 				String value = textField.getText();
 				// don't store empty values
@@ -429,7 +318,7 @@ public class UIUtils {
 						settings.put(preferenceKey, existingValues);
 					} else {
 
-						List<String> values = new ArrayList<>(
+						List<String> values = new ArrayList<String>(
 								existingValues.length + 1);
 
 						for (String existingValue : existingValues)
@@ -466,73 +355,69 @@ public class UIUtils {
 	 * @param refListProvider
 	 *            provides the {@link Ref}s to show in the proposal
 	 */
-	public static final void addRefContentProposalToText(Text textField,
-			Repository repository,
-			IContentProposalCandidateProvider<Ref> refListProvider) {
-		UIUtils.<Ref> addContentProposalToText(textField,
-				refListProvider, (pattern, ref) -> {
-					String shortenedName = Repository
-							.shortenRefName(ref.getName());
-					if (pattern != null
-							&& !pattern.matcher(ref.getName()).matches()
-							&& !pattern.matcher(shortenedName).matches()) {
-						return null;
-					}
-					return new RefContentProposal(repository, ref);
-				}, UIText.UIUtils_StartTypingForRemoteRefMessage,
-				UIText.UIUtils_PressShortcutForRemoteRefMessage);
-	}
-
-	/**
-	 * Adds a content proposal for arbitrary elements to a text field.
-	 *
-	 * @param <T>
-	 *            type of the proposal candidate objects
-	 *
-	 * @param textField
-	 *            the text field
-	 * @param candidateProvider
-	 *            {@link IContentProposalCandidateProvider} providing the
-	 *            candidates eligible for creating {@link IContentProposal}s
-	 * @param factory
-	 *            {@link IContentProposalFactory} to use to create proposals
-	 *            from candidates
-	 * @param startTypingMessage
-	 *            hover message if no content assist key binding is active
-	 * @param shortcutMessage
-	 *            hover message if a content assist key binding is active,
-	 *            should have a "{0}" placeholder that will be filled by the
-	 *            appropriate keystroke
-	 */
-	public static final <T> void addContentProposalToText(Text textField,
-			IContentProposalCandidateProvider<T> candidateProvider,
-			IContentProposalFactory<T> factory, String startTypingMessage,
-			String shortcutMessage) {
-		KeyStroke stroke = UIUtils
-				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke == null) {
-			addBulbDecorator(textField, startTypingMessage);
-		} else {
-			addBulbDecorator(textField,
-					NLS.bind(shortcutMessage, stroke.format()));
+	public static final void addRefContentProposalToText(final Text textField,
+			final Repository repository, final IRefListProvider refListProvider) {
+		KeyStroke stroke;
+		try {
+			stroke = KeyStroke.getInstance("M1+SPACE"); //$NON-NLS-1$
+			UIUtils.addBulbDecorator(textField, NLS.bind(
+					UIText.UIUtils_PressShortcutMessage, stroke.format()));
+		} catch (ParseException e1) {
+			Activator.handleError(e1.getMessage(), e1, false);
+			stroke = null;
+			UIUtils.addBulbDecorator(textField,
+					UIText.UIUtils_StartTypingForPreviousValuesMessage);
 		}
-		IContentProposalProvider cp = new IContentProposalProvider() {
-			@Override
-			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<>();
 
-				Pattern pattern = createProposalPattern(contents);
-				Collection<? extends T> candidates = candidateProvider
-						.getCandidates();
-				if (candidates != null) {
-					for (final T candidate : candidates) {
-						IContentProposal proposal = factory.getProposal(pattern,
-								candidate);
-						if (proposal != null) {
-							resultList.add(proposal);
-						}
-					}
+		IContentProposalProvider cp = new IContentProposalProvider() {
+			public IContentProposal[] getProposals(String contents, int position) {
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
+
+				// make the simplest possible pattern check: allow "*"
+				// for multiple characters
+				String patternString = contents;
+				// ignore spaces in the beginning
+				while (patternString.length() > 0
+						&& patternString.charAt(0) == ' ') {
+					patternString = patternString.substring(1);
 				}
+
+				// we quote the string as it may contain spaces
+				// and other stuff colliding with the Pattern
+				patternString = Pattern.quote(patternString);
+
+				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
+
+				// make sure we add a (logical) * at the end
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
+					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
+
+				// let's compile a case-insensitive pattern (assumes ASCII only)
+				Pattern pattern;
+				try {
+					pattern = Pattern.compile(patternString,
+							Pattern.CASE_INSENSITIVE);
+				} catch (PatternSyntaxException e) {
+					pattern = null;
+				}
+
+				List<Ref> proposals = refListProvider.getRefList();
+
+				if (proposals != null)
+					for (final Ref ref : proposals) {
+						final String shortenedName = Repository
+								.shortenRefName(ref.getName());
+						if (pattern != null
+								&& !pattern.matcher(ref.getName()).matches()
+								&& !pattern.matcher(shortenedName).matches())
+							continue;
+
+						IContentProposal propsal = new RefContentProposal(
+								repository, ref);
+						resultList.add(propsal);
+					}
+
 				return resultList.toArray(new IContentProposal[resultList
 						.size()]);
 			}
@@ -542,8 +427,8 @@ public class UIUtils {
 				new TextContentAdapter(), cp, stroke,
 				UIUtils.VALUE_HELP_ACTIVATIONCHARS);
 		// set the acceptance style to always replace the complete content
-		adapter.setProposalAcceptanceStyle(
-				ContentProposalAdapter.PROPOSAL_REPLACE);
+		adapter
+				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 	}
 
 	/**
@@ -571,7 +456,6 @@ public class UIUtils {
 
 		widget.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				resource.dispose();
 			}
@@ -591,15 +475,11 @@ public class UIUtils {
 
 		widget.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				resources.dispose();
 			}
 		});
 	}
-
-	/** Key is file extension, value is the reference to the image descriptor */
-	private static Map<String, SoftReference<ImageDescriptor>> extensionToDescriptor = new HashMap<>();
 
 	/**
 	 * Get editor image for path
@@ -608,38 +488,14 @@ public class UIUtils {
 	 * @return image descriptor
 	 */
 	public static ImageDescriptor getEditorImage(final String path) {
-		if (path == null || path.length() <= 0) {
-			return DEFAULT_FILE_IMG;
+		if (path != null && path.length() > 0) {
+			final String name = new Path(path).lastSegment();
+			if (name != null)
+				return PlatformUI.getWorkbench().getEditorRegistry()
+						.getImageDescriptor(name);
 		}
-		final String fileName = new Path(path).lastSegment();
-		if (fileName == null) {
-			return DEFAULT_FILE_IMG;
-		}
-		IEditorRegistry registry = PlatformUI.getWorkbench()
-				.getEditorRegistry();
-		IEditorDescriptor defaultEditor = registry.getDefaultEditor(fileName);
-		if (defaultEditor != null) {
-			return defaultEditor.getImageDescriptor();
-		}
-		// now we know there is no Eclipse editor for the file, and Eclipse will
-		// check Program.findProgram() and this will be slow, see bug 464891
-		int extensionIndex = fileName.lastIndexOf('.');
-		if (extensionIndex < 0) {
-			// Program.findProgram() uses extensions only
-			return DEFAULT_FILE_IMG;
-		}
-		String key = fileName.substring(extensionIndex);
-		SoftReference<ImageDescriptor> cached = extensionToDescriptor.get(key);
-		if (cached != null) {
-			ImageDescriptor descriptor = cached.get();
-			if (descriptor != null) {
-				return descriptor;
-			}
-		}
-		// In worst case this calls Program.findProgram() and blocks UI
-		ImageDescriptor descriptor = registry.getImageDescriptor(fileName);
-		extensionToDescriptor.put(key, new SoftReference<>(descriptor));
-		return descriptor;
+		return PlatformUI.getWorkbench().getSharedImages()
+				.getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
 	}
 
 	/**
@@ -672,7 +528,6 @@ public class UIUtils {
 		collapseItem.setToolTipText(UIText.UIUtils_CollapseAll);
 		collapseItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				viewer.collapseAll();
 			}
@@ -686,7 +541,6 @@ public class UIUtils {
 		expandItem.setToolTipText(UIText.UIUtils_ExpandAll);
 		expandItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				viewer.expandAll();
 			}
@@ -793,52 +647,9 @@ public class UIUtils {
 	 * @see IWorkbench#saveAllEditors(boolean)
 	 */
 	public static boolean saveAllEditors(Repository repository) {
-		return saveAllEditors(repository, null);
-	}
-
-	/**
-	 * Prompt for saving all dirty editors for resources in the working
-	 * directory of the specified repository.
-	 *
-	 * If at least one file was saved, a dialog is displayed, asking the user if
-	 * she wants to cancel the operation. Cancelling allows the user to do
-	 * something with the newly saved files, before possibly restarting the
-	 * operation.
-	 *
-	 * @param repository
-	 * @param cancelConfirmationQuestion
-	 *            A string asking the user if she wants to cancel the operation.
-	 *            May be null to not open a dialog, but rather always continue.
-	 * @return true, if the user opted to continue, false otherwise
-	 * @see IWorkbench#saveAllEditors(boolean)
-	 */
-	public static boolean saveAllEditors(Repository repository,
-			String cancelConfirmationQuestion) {
 		IWorkbench workbench = PlatformUI.getWorkbench();
 		IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
-		RepositorySaveableFilter filter = new RepositorySaveableFilter(
-				repository);
-		boolean success = workbench.saveAll(window, window, filter, true);
-		if (success && cancelConfirmationQuestion != null && filter.isAnythingSaved()){
-			// allow the user to cancel the operation to first do something with
-			// the newly saved files
-			String[] buttons = new String[] { IDialogConstants.YES_LABEL,
-					IDialogConstants.NO_LABEL };
-			MessageDialog dialog = new MessageDialog(window.getShell(),
-					UIText.CancelAfterSaveDialog_Title, null,
-					cancelConfirmationQuestion,
-					MessageDialog.QUESTION, buttons, 0) {
-				@Override
-				protected int getShellStyle() {
-					return (SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL
-							| SWT.SHEET | getDefaultOrientation());
-				}
-			};
-			int choice = dialog.open();
-			if (choice != 1) // user clicked "yes" or closed dialog -> cancel
-				return false;
-		}
-		return success;
+		return workbench.saveAll(window, window, new RepositorySaveableFilter(repository), true);
 	}
 
 	/**
@@ -851,92 +662,9 @@ public class UIUtils {
 		return showInSubMenu;
 	}
 
-	/**
-	 * Use hyperlink detectors to find a text viewer's hyperlinks and apply them
-	 * to the text widget. Existing overlapping styles are overwritten by new
-	 * styles from this.
-	 *
-	 * @param textViewer
-	 * @param hyperlinkDetectors
-	 * @deprecated Instead of applying SWT styling directly use JFace
-	 *             infrastructure (
-	 *             {@link org.eclipse.jface.text.rules.DefaultDamagerRepairer
-	 *             DefaultDamagerRepairer},
-	 *             {@link org.eclipse.jface.text.rules.ITokenScanner
-	 *             ITokenScanner}) to do syntax coloring. See also
-	 *             {@link org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner}
-	 *             .
-	 */
-	@Deprecated
-	public static void applyHyperlinkDetectorStyleRanges(
-			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
-		StyleRange[] styleRanges = getHyperlinkDetectorStyleRanges(textViewer,
-				hyperlinkDetectors);
-		StyledText styledText = textViewer.getTextWidget();
-		// Apply hyperlink style ranges one by one. setStyleRange takes care to
-		// do the right thing in case they overlap with an existing style range.
-		for (StyleRange styleRange : styleRanges)
-			styledText.setStyleRange(styleRange);
-	}
-
-	/**
-	 * Use hyperlink detectors to find a text viewer's hyperlinks and return the
-	 * style ranges to render them.
-	 *
-	 * @param textViewer
-	 * @param hyperlinkDetectors
-	 * @return the style ranges to render the detected hyperlinks
-	 * @deprecated Instead of applying SWT styling directly use JFace
-	 *             infrastructure (
-	 *             {@link org.eclipse.jface.text.rules.DefaultDamagerRepairer
-	 *             DefaultDamagerRepairer},
-	 *             {@link org.eclipse.jface.text.rules.ITokenScanner
-	 *             ITokenScanner}) to do syntax coloring. See also
-	 *             {@link org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner}
-	 *             .
-	 */
-	@Deprecated
-	public static StyleRange[] getHyperlinkDetectorStyleRanges(
-			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
-		HashSet<StyleRange> styleRangeList = new LinkedHashSet<>();
-		if (hyperlinkDetectors != null && hyperlinkDetectors.length > 0) {
-			IDocument doc = textViewer.getDocument();
-			for (int line = 0; line < doc.getNumberOfLines(); line++) {
-				try {
-					IRegion region = doc.getLineInformation(line);
-					for (IHyperlinkDetector hyperLinkDetector : hyperlinkDetectors) {
-						IHyperlink[] hyperlinks = hyperLinkDetector
-								.detectHyperlinks(textViewer, region, true);
-						if (hyperlinks != null) {
-							for (IHyperlink hyperlink : hyperlinks) {
-								StyleRange hyperlinkStyleRange = new StyleRange(
-										hyperlink.getHyperlinkRegion()
-												.getOffset(), hyperlink
-												.getHyperlinkRegion()
-												.getLength(), Display
-												.getDefault().getSystemColor(
-														SWT.COLOR_BLUE),
-										Display.getDefault().getSystemColor(
-												SWT.COLOR_WHITE));
-								hyperlinkStyleRange.underline = true;
-								styleRangeList.add(hyperlinkStyleRange);
-							}
-						}
-					}
-				} catch (BadLocationException e) {
-					Activator.logError(e.getMessage(), e);
-					break;
-				}
-			}
-		}
-		StyleRange[] styleRangeArray = new StyleRange[styleRangeList.size()];
-		styleRangeList.toArray(styleRangeArray);
-		return styleRangeArray;
-	}
-
 	private static String getShowInMenuLabel() {
-		IBindingService bindingService = AdapterUtils.adapt(PlatformUI
-		.getWorkbench(), IBindingService.class);
+		IBindingService bindingService = (IBindingService) PlatformUI
+				.getWorkbench().getAdapter(IBindingService.class);
 		if (bindingService != null) {
 			String keyBinding = bindingService
 					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);
@@ -945,83 +673,5 @@ public class UIUtils {
 		}
 
 		return UIText.UIUtils_ShowInMenuLabel;
-	}
-
-	/**
-	 * Look up best active binding's keystroke for the given command
-	 *
-	 * @param commandId
-	 *            The identifier of the command for which the best active
-	 *            binding's keystroke should be retrieved; must not be null.
-	 * @return {@code KeyStroke} for the best active binding for the specified
-	 *         commandId or {@code null} if no binding is defined or if the
-	 *         binding service returns a {@code TriggerSequence} containing more
-	 *         than one {@code Trigger}.
-	 */
-	@Nullable
-	public static KeyStroke getKeystrokeOfBestActiveBindingFor(String commandId) {
-		IBindingService bindingService = AdapterUtils
-				.adapt(PlatformUI.getWorkbench(), IBindingService.class);
-		if (bindingService == null) {
-			return null;
-		}
-		TriggerSequence ts = bindingService.getBestActiveBindingFor(commandId);
-		if (ts == null)
-			return null;
-
-		Trigger[] triggers = ts.getTriggers();
-		if (triggers.length == 1 && triggers[0] instanceof KeyStroke)
-			return (KeyStroke) triggers[0];
-		else
-			return null;
-	}
-
-	/**
-	 * Copy from {@link org.eclipse.jface.dialogs.DialogPage} with changes to
-	 * accommodate the lack of a Dialog context.
-	 *
-	 * @param button
-	 *            the button to set the <code>GridData</code>
-	 */
-	public static void setButtonLayoutData(Button button) {
-		GC gc = new GC(button);
-		gc.setFont(JFaceResources.getDialogFont());
-		FontMetrics fontMetrics = gc.getFontMetrics();
-		gc.dispose();
-
-		GridData data = new GridData(GridData.HORIZONTAL_ALIGN_FILL);
-		int widthHint = Dialog.convertHorizontalDLUsToPixels(fontMetrics,
-				IDialogConstants.BUTTON_WIDTH);
-		Point minSize = button.computeSize(SWT.DEFAULT, SWT.DEFAULT, true);
-		data.widthHint = Math.max(widthHint, minSize.x);
-		button.setLayoutData(data);
-	}
-
-	/**
-	 * Locates the current part and selection and fires
-	 * {@link ISelectionListener#selectionChanged(IWorkbenchPart, ISelection)}
-	 * on the passed listener.
-	 *
-	 * @param serviceLocator
-	 * @param selectionListener
-	 */
-	public static void notifySelectionChangedWithCurrentSelection(
-			ISelectionListener selectionListener, IServiceLocator serviceLocator) {
-		IHandlerService handlerService = CommonUtils.getService(serviceLocator, IHandlerService.class);
-		IEvaluationContext state = handlerService.getCurrentState();
-		// This seems to be the most reliable way to get the active part, it
-		// also returns a part when it is called while creating a view that is
-		// being shown.Getting the active part through the active workbench
-		// window returned null in that case.
-		Object partObject = state.getVariable(ISources.ACTIVE_PART_NAME);
-		Object selectionObject = state
-				.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
-		if (partObject instanceof IWorkbenchPart
-				&& selectionObject instanceof ISelection) {
-			IWorkbenchPart part = (IWorkbenchPart) partObject;
-			ISelection selection = (ISelection) selectionObject;
-			if (!selection.isEmpty())
-				selectionListener.selectionChanged(part, selection);
-		}
 	}
 }

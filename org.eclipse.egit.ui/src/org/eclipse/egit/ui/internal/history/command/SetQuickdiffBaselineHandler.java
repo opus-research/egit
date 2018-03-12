@@ -12,21 +12,22 @@ import java.io.IOException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitQuickDiffProvider;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * "Set quickdiff baseline" to selected commit.
  */
 public class SetQuickdiffBaselineHandler extends AbstractHistoryCommandHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Repository repo = getRepository(event);
-		String baseline = getSelectedCommitId(event).name();
-		if (repo == null)
+		String baseline = ((RevCommit) getSelection(getPage()).getFirstElement())
+				.getId().name();
+		if (baseline == null)
 			throw new ExecutionException(
 					UIText.ResetQuickdiffBaselineHandler_NoTargetMessage);
 

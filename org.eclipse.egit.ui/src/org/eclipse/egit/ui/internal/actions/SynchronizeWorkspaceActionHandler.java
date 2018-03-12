@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -48,10 +48,9 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 		return true;
 	}
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IResource[] resources = getSelectedResources(event);
-		Map<Repository, Set<IResource>> containerMap = mapContainerResources(resources);
+		Map<Repository, Set<IContainer>> containerMap = mapContainerResources(resources);
 
 		if (containerMap.isEmpty())
 			return null;
@@ -59,14 +58,14 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 		boolean launchFetch = Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH);
 		GitSynchronizeDataSet gsdSet = new GitSynchronizeDataSet();
-		for (Entry<Repository, Set<IResource>> entry : containerMap.entrySet())
+		for (Entry<Repository, Set<IContainer>> entry : containerMap.entrySet())
 			try {
 				Repository repo = entry.getKey();
 				String dstRef = getDstRef(repo, launchFetch);
 				GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, dstRef, true);
-				Set<IResource> containers = entry.getValue();
+				Set<IContainer> containers = entry.getValue();
 				if (!containers.isEmpty())
-					data.setIncludedResources(containers);
+					data.setIncludedPaths(containers);
 
 				gsdSet.add(data);
 			} catch (IOException e) {
@@ -78,24 +77,22 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 		return null;
 	}
 
-	private Map<Repository, Set<IResource>> mapContainerResources(
+	private Map<Repository, Set<IContainer>> mapContainerResources(
 			IResource[] resources) {
-		Map<Repository, Set<IResource>> result = new HashMap<>();
+		Map<Repository, Set<IContainer>> result = new HashMap<Repository, Set<IContainer>>();
 
 		for (IResource resource : resources) {
 			RepositoryMapping rm = RepositoryMapping.getMapping(resource);
-			if (rm == null)
-				continue; // Linked resources may not be in a repo
 			if (resource instanceof IProject)
-				result.put(rm.getRepository(), new HashSet<IResource>());
+				result.put(rm.getRepository(), new HashSet<IContainer>());
 			else if (resource instanceof IContainer) {
-				Set<IResource> containers = result.get(rm.getRepository());
+				Set<IContainer> containers = result.get(rm.getRepository());
 				if (containers == null) {
-					containers = new HashSet<>();
+					containers = new HashSet<IContainer>();
 					result.put(rm.getRepository(), containers);
-					containers.add(resource);
+					containers.add((IContainer) resource);
 				} else if (containers.size() > 0)
-					containers.add(resource);
+					containers.add((IContainer) resource);
 			}
 		}
 
@@ -124,7 +121,7 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 		Ref ref;
 
 		try {
-			ref = repo.exactRef(HEAD);
+			ref = repo.getRef(HEAD);
 		} catch (IOException e) {
 			ref = null;
 		}

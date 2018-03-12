@@ -18,7 +18,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.AssumeUnchangedOperation;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 
 /**
  * This operation sets the assume-valid bit in the index for the selected
@@ -27,7 +27,6 @@ import org.eclipse.egit.ui.internal.UIText;
  * @see AssumeUnchangedOperation
  */
 public class AssumeUnchangedActionHandler extends RepositoryActionHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IResource[] resources = getSelectedResources(event);
 		if (resources.length == 0)

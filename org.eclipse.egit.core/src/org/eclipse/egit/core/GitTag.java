@@ -27,7 +27,6 @@ public class GitTag implements ITag {
 		this.name = name;
 	}
 
-	@Override
 	public String getName() {
 		return name;
 	}

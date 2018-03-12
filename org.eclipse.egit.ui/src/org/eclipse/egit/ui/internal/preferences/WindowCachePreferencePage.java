@@ -12,7 +12,7 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.project.GitProjectData;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.ui.IWorkbench;
@@ -41,7 +41,6 @@ public class WindowCachePreferencePage extends FieldEditorPreferencePage
 				GitCorePreferences.core_packedGitWindowSize,
 				UIText.WindowCachePreferencePage_packedGitWindowSize,
 				getFieldEditorParent(), 512, 128 * MB) {
-			@Override
 			protected boolean checkValue(final int number) {
 				return super.checkValue(number)
 						&& Integer.bitCount(number) == 1;
@@ -66,7 +65,6 @@ public class WindowCachePreferencePage extends FieldEditorPreferencePage
 				getFieldEditorParent()));
 	}
 
-	@Override
 	public boolean performOk() {
 		// first put the editor values into the configuration
 		super.performOk();
@@ -79,7 +77,6 @@ public class WindowCachePreferencePage extends FieldEditorPreferencePage
 		}
 	}
 
-	@Override
 	public void init(IWorkbench workbench) {
 		// Nothing to do
 	}

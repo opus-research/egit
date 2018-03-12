@@ -17,6 +17,7 @@ import java.net.URISyntaxException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
@@ -56,13 +57,8 @@ public class GitURI {
 		try {
 			if (SCHEME_SCM.equals(uri.getScheme())) {
 				final String ssp = uri.getSchemeSpecificPart();
-				int indexOfSemicolon = ssp.indexOf(';');
-				if (indexOfSemicolon < 0) {
-					throw new IllegalArgumentException(
-							NLS.bind(CoreText.GitURI_InvalidSCMURL,
-									new String[] { uri.toString() }));
-				}
 				if (ssp.startsWith(SCHEME_GIT)) {
+					int indexOfSemicolon = ssp.indexOf(';');
 					URIish r = new URIish(ssp.substring(
 							SCHEME_GIT.length() + 1, indexOfSemicolon));
 					IPath p = null;

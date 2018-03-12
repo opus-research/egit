@@ -5,9 +5,8 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011-2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011-2012, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2012-2013, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +17,8 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,35 +34,34 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.CreatePatchOperation;
 import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.ActionUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.actions.ResetMenu;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.text.AbstractHoverInformationControlManager;
+import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
+import org.eclipse.jface.text.DefaultInformationControl;
+import org.eclipse.jface.text.IInformationControl;
 import org.eclipse.jface.viewers.ColumnWeightData;
-import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
@@ -72,10 +69,8 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FileUtils;
-import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.SWTException;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSourceAdapter;
@@ -85,21 +80,27 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MenuDetectListener;
+import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.IWorkbenchActionConstants;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
@@ -154,19 +155,14 @@ class CommitGraphTable {
 
 	private RevCommit commitToShow;
 
+	private GraphLabelProvider graphLabelProvider;
+
 	private final TableLoader tableLoader;
 
 	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
 
-	private boolean enableAntialias = true;
-
 	CommitGraphTable(Composite parent, final TableLoader loader,
 			final ResourceManager resources) {
-		this(parent, loader, resources, true);
-	}
-
-	CommitGraphTable(Composite parent, final TableLoader loader,
-			final ResourceManager resources, boolean canShowEmailAddresses) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 		tableLoader = loader;
@@ -177,7 +173,6 @@ class CommitGraphTable {
 		rawTable.setLinesVisible(false);
 		rawTable.setFont(nFont);
 		rawTable.addListener(SWT.SetData, new Listener() {
-			@Override
 			public void handleEvent(Event event) {
 				if (tableLoader != null) {
 					TableItem item = (TableItem) event.item;
@@ -198,46 +193,33 @@ class CommitGraphTable {
 		createPaintListener(rawTable);
 
 		table = new TableViewer(rawTable) {
-			@Override
 			protected Widget doFindItem(final Object element) {
 				return element != null ? ((SWTCommit) element).widget : null;
 			}
 
-			@Override
 			protected void mapElement(final Object element, final Widget item) {
-				if (element == null) {
-					return;
-				}
 				((SWTCommit) element).widget = item;
 			}
 		};
 
-		GraphLabelProvider graphLabelProvider = new GraphLabelProvider(
-				canShowEmailAddresses);
-		graphLabelProvider.addListener(new ILabelProviderListener() {
-			@Override
-			public void labelProviderChanged(LabelProviderChangedEvent event) {
-				table.refresh();
-			}
-		});
+		graphLabelProvider = new GraphLabelProvider();
+
 		table.setLabelProvider(graphLabelProvider);
 		table.setContentProvider(new GraphContentProvider());
 		renderer = new SWTPlotRenderer(rawTable.getDisplay(), resources);
 
 		clipboard = new Clipboard(rawTable.getDisplay());
 		rawTable.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(final DisposeEvent e) {
 				clipboard.dispose();
 			}
 		});
 
-		copy = ActionUtils.createGlobalAction(ActionFactory.COPY,
-				() -> doCopy());
+		copy = createStandardAction(ActionFactory.COPY);
+
 		table.setUseHashlookup(true);
 
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				ISelection s = event.getSelection();
 				if (s.isEmpty() || !(s instanceof IStructuredSelection))
@@ -249,13 +231,11 @@ class CommitGraphTable {
 			}
 		});
 
-		final CommitGraphTableHoverManager hoverManager = new CommitGraphTableHoverManager(
-				table, renderer);
+		final RefHoverInformationControlManager hoverManager = new RefHoverInformationControlManager();
 		hoverManager.install(table.getTable());
 
 		table.getTable().addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				if (allCommits != null)
 					allCommits.dispose();
@@ -273,19 +253,34 @@ class CommitGraphTable {
 			final ResourceManager resources) {
 		this(parent, loader, resources);
 
-		final IAction selectAll = ActionUtils.createGlobalAction(
-				ActionFactory.SELECT_ALL,
-				() -> getTableView().getTable().selectAll());
-		ActionUtils.setGlobalActions(getControl(), copy, selectAll);
+		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
+		getControl().addFocusListener(new FocusListener() {
+			public void focusLost(FocusEvent e) {
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.SELECT_ALL.getId(), null);
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.COPY.getId(), null);
+				site.getActionBars().updateActionBars();
+			}
+
+			public void focusGained(FocusEvent e) {
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.SELECT_ALL.getId(), selectAll);
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.COPY.getId(), copy);
+				site.getActionBars().updateActionBars();
+			}
+		});
 
 		getTableView().addOpenListener(new IOpenListener() {
-			@Override
 			public void open(OpenEvent event) {
 				if (input == null || !input.isSingleFile())
 					return;
 
-				ICommandService srv = CommonUtils.getService(site, ICommandService.class);
-				IHandlerService hsrv = CommonUtils.getService(site, IHandlerService.class);
+				ICommandService srv = (ICommandService) site
+						.getService(ICommandService.class);
+				IHandlerService hsrv = (IHandlerService) site
+						.getService(IHandlerService.class);
 				Command cmd = srv.getCommand(HistoryViewCommands.SHOWVERSIONS);
 				Parameterization[] parms;
 				if (Activator.getDefault().getPreferenceStore().getBoolean(
@@ -347,6 +342,14 @@ class CommitGraphTable {
 		table.removePostSelectionChangedListener(l);
 	}
 
+	void setRelativeDate(boolean booleanValue) {
+		graphLabelProvider.setRelativeDate(booleanValue);
+	}
+
+	void setShowEmailAddresses(boolean booleanValue) {
+		graphLabelProvider.setShowEmailAddresses(booleanValue);
+	}
+
 	private boolean canDoCopy() {
 		return !table.getSelection().isEmpty();
 	}
@@ -403,7 +406,7 @@ class CommitGraphTable {
 	}
 
 	private void initCommitsMap() {
-		commitsMap = new HashMap<>();
+		commitsMap = new HashMap<String, PlotCommit>();
 		// ensure that filling (GenerateHistoryJob) and reading (here)
 		// the commit list is thread safe
 		synchronized (allCommits) {
@@ -425,24 +428,24 @@ class CommitGraphTable {
 		} finally {
 			gc.dispose();
 		}
-		layout.addColumnData(new ColumnWeightData(1, minWidth, true));
+		layout.addColumnData(new ColumnWeightData(3, minWidth, true));
 
 		final TableColumn graph = new TableColumn(rawTable, SWT.NONE);
 		graph.setResizable(true);
 		graph.setText(UIText.CommitGraphTable_messageColumn);
-		graph.setWidth(400);
+		graph.setWidth(250);
 		layout.addColumnData(new ColumnWeightData(20, true));
 
 		final TableColumn author = new TableColumn(rawTable, SWT.NONE);
 		author.setResizable(true);
 		author.setText(UIText.HistoryPage_authorColumn);
-		author.setWidth(100);
-		layout.addColumnData(new ColumnWeightData(5, true));
+		author.setWidth(250);
+		layout.addColumnData(new ColumnWeightData(10, true));
 
 		final TableColumn date = new TableColumn(rawTable, SWT.NONE);
 		date.setResizable(true);
 		date.setText(UIText.HistoryPage_authorDateColumn);
-		date.setWidth(100);
+		date.setWidth(250);
 		layout.addColumnData(new ColumnWeightData(5, true));
 
 		final TableColumn committer = new TableColumn(rawTable, SWT.NONE);
@@ -462,7 +465,6 @@ class CommitGraphTable {
 		// Tell SWT we will completely handle painting for some columns.
 		//
 		rawTable.addListener(SWT.EraseItem, new Listener() {
-			@Override
 			public void handleEvent(final Event event) {
 				if (0 <= event.index && event.index <= 5)
 					event.detail &= ~SWT.FOREGROUND;
@@ -470,7 +472,6 @@ class CommitGraphTable {
 		});
 
 		rawTable.addListener(SWT.PaintItem, new Listener() {
-			@Override
 			public void handleEvent(final Event event) {
 				doPaint(event);
 			}
@@ -478,26 +479,16 @@ class CommitGraphTable {
 	}
 
 	void doPaint(final Event event) {
-		// enable antialiasing early to avoid different font extent in
-		// PlotRenderer
-		if (this.enableAntialias)
-			try {
-				event.gc.setAntialias(SWT.ON);
-			} catch (SWTException e) {
-				this.enableAntialias = false;
-			}
-
 		final RevCommit c = (RevCommit) ((TableItem) event.item).getData();
 		if (c instanceof SWTCommit) {
 			final SWTLane lane = ((SWTCommit) c).getLane();
 			if (lane != null && lane.color.isDisposed())
 				return;
 		}
-		if (highlight != null && c != null && c.has(highlight)) {
+		if (highlight != null && c.has(highlight))
 			event.gc.setFont(hFont);
-		} else {
+		else
 			event.gc.setFont(nFont);
-		}
 
 		if (event.index == 1) {
 			renderer.paint(event, input == null ? null : input.getHead());
@@ -524,6 +515,93 @@ class CommitGraphTable {
 		return table;
 	}
 
+	private IAction createStandardAction(final ActionFactory af) {
+		final String text = af.create(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow()).getText();
+		IAction action = new Action() {
+
+			@Override
+			public String getActionDefinitionId() {
+				return af.getCommandId();
+			}
+
+			@Override
+			public String getId() {
+				return af.getId();
+			}
+
+			@Override
+			public String getText() {
+				return text;
+			}
+
+			@Override
+			public void run() {
+				if (af == ActionFactory.SELECT_ALL)
+					table.getTable().selectAll();
+				if (af == ActionFactory.COPY)
+					doCopy();
+			}
+		};
+		return action;
+	}
+
+	private static final class RefHoverInformationControlCreator extends
+			AbstractReusableInformationControlCreator {
+		@Override
+		protected IInformationControl doCreateInformationControl(Shell parent) {
+			return new DefaultInformationControl(parent);
+		}
+	}
+
+	private final class RefHoverInformationControlManager extends
+			AbstractHoverInformationControlManager {
+
+		protected RefHoverInformationControlManager() {
+			super(new RefHoverInformationControlCreator());
+		}
+
+		@Override
+		protected void computeInformation() {
+			MouseEvent e = getHoverEvent();
+
+			TableItem item = table.getTable().getItem(new Point(e.x, e.y));
+			if (item != null) {
+				SWTCommit commit = (SWTCommit) item.getData();
+				if (commit != null && commit.getRefCount() > 0) {
+					Rectangle itemBounds = item.getBounds();
+					int firstColumnWidth = table.getTable().getColumn(0).getWidth();
+					int relativeX = e.x - firstColumnWidth - itemBounds.x;
+					for (int i = 0; i < commit.getRefCount(); i++) {
+						Point textSpan = renderer.getRefHSpan(commit.getRef(i));
+						if ((textSpan != null)
+								&& (relativeX >= textSpan.x && relativeX <= textSpan.y)) {
+
+							String hoverText = getHoverText(commit.getRef(i));
+							int width = textSpan.y - textSpan.x;
+							Rectangle rectangle = new Rectangle(
+									firstColumnWidth + itemBounds.x
+											+ textSpan.x, itemBounds.y, width,
+									itemBounds.height);
+							setInformation(hoverText, rectangle);
+							return;
+						}
+					}
+				}
+			}
+
+			// computeInformation must setInformation in all cases
+			setInformation(null, null);
+		}
+
+		private String getHoverText(Ref r) {
+			String name = r.getName();
+			if (r.isSymbolic())
+				name += ": " + r.getLeaf().getName(); //$NON-NLS-1$
+			return name;
+		}
+	}
+
 	private final class CommitDragSourceListener extends DragSourceAdapter {
 		@Override
 		public void dragStart(DragSourceEvent event) {
@@ -531,7 +609,6 @@ class CommitGraphTable {
 			event.doit = commit.getParentCount() == 1;
 		}
 
-		@Override
 		public void dragSetData(DragSourceEvent event) {
 			boolean isFileTransfer = FileTransfer.getInstance()
 					.isSupportedType(event.dataType);
@@ -600,19 +677,20 @@ class CommitGraphTable {
 			IStructuredSelection selection = (IStructuredSelection) table
 					.getSelection();
 			RevCommit commit = (RevCommit) selection.getFirstElement();
-			try (RevWalk walk = new org.eclipse.jgit.revwalk.RevWalk(
-					input.getRepository())) {
+			RevWalk walk = new org.eclipse.jgit.revwalk.RevWalk(input.getRepository());
+			try {
 				return walk.parseCommit(commit.getId());
 			} catch (IOException e) {
 				throw new RuntimeException(
 						"Could not parse commit " + commit.getId(), e); //$NON-NLS-1$
+			} finally {
+				walk.release();
 			}
 		}
 
 		private void writeToFile(final String fileName, String content)
 				throws IOException {
-			Writer output = new BufferedWriter(new OutputStreamWriter(
-					new FileOutputStream(fileName), RawParseUtils.UTF8_CHARSET));
+			Writer output = new BufferedWriter(new FileWriter(fileName));
 			try {
 				output.write(content);
 			} finally {
@@ -646,20 +724,15 @@ class CommitGraphTable {
 			this.input = input;
 		}
 
-		@Override
 		public void menuDetected(MenuDetectEvent e) {
 			popupMgr.removeAll();
-
-			final HistoryPageInput lastInput = this.input;
-			if (lastInput == null)
-				return;
 
 			int selectionSize = ((IStructuredSelection) selectionProvider
 					.getSelection()).size();
 
-			if (lastInput.isSingleFile()) {
+			if (input.isSingleFile()) {
 				if (selectionSize == 1)
-					if (lastInput.getSingleFile() instanceof IResource)
+					if (input.getSingleFile() instanceof IResource)
 						popupMgr
 								.add(getCommandContributionItem(
 										HistoryViewCommands.COMPARE_WITH_TREE,
@@ -691,18 +764,9 @@ class CommitGraphTable {
 
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (!lastInput.getRepository().isBare()) {
-					if (hasMultipleRefNodes(lastInput)) {
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHECKOUT,
-								UIText.GitHistoryPage_CheckoutMenuLabel2));
-					} else {
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHECKOUT,
-								UIText.GitHistoryPage_CheckoutMenuLabel));
-					}
-				}
-
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.CHECKOUT,
+						UIText.GitHistoryPage_CheckoutMenuLabel));
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.PUSH_COMMIT,
 						UIText.GitHistoryPage_pushCommit));
@@ -719,9 +783,6 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_TAG,
 						UIText.GitHistoryPage_CreateTagMenuLabel));
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.DELETE_TAG,
-						UIText.CommitGraphTable_DeleteTagAction));
 				popupMgr.add(new Separator());
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_PATCH,
@@ -730,34 +791,47 @@ class CommitGraphTable {
 						HistoryViewCommands.CHERRYPICK,
 						UIText.GitHistoryPage_cherryPickMenuItem));
 				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.REVERT,
+						UIText.GitHistoryPage_revertMenuItem));
+				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.MERGE,
 						UIText.GitHistoryPage_mergeMenuItem));
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.REBASECURRENT,
 						UIText.GitHistoryPage_rebaseMenuItem));
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.REBASE_INTERACTIVE_CURRENT,
-						UIText.GitHistoryPage_rebaseInteractiveMenuItem));
 				popupMgr.add(new Separator());
 
-				MenuManager resetManager = ResetMenu.createMenu(site);
+				MenuManager resetManager = new MenuManager(
+						UIText.GitHistoryPage_ResetMenuLabel, UIIcons.RESET,
+						"Reset"); //$NON-NLS-1$
+
 				popupMgr.add(resetManager);
+
+				Map<String, String> parameters = new HashMap<String, String>();
+				parameters.put(HistoryViewCommands.RESET_MODE, "Soft"); //$NON-NLS-1$
+				resetManager.add(getCommandContributionItem(
+						HistoryViewCommands.RESET,
+						UIText.GitHistoryPage_ResetSoftMenuLabel, parameters));
+				parameters = new HashMap<String, String>();
+				parameters.put(HistoryViewCommands.RESET_MODE, "Mixed"); //$NON-NLS-1$
+				resetManager.add(getCommandContributionItem(
+						HistoryViewCommands.RESET,
+						UIText.GitHistoryPage_ResetMixedMenuLabel, parameters));
+				parameters = new HashMap<String, String>();
+				parameters.put(HistoryViewCommands.RESET_MODE, "Hard"); //$NON-NLS-1$
+				resetManager.add(getCommandContributionItem(
+						HistoryViewCommands.RESET,
+						UIText.GitHistoryPage_ResetHardMenuLabel, parameters));
 			} else if (selectionSize == 2) {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.COMPARE_VERSIONS,
 						UIText.GitHistoryPage_CompareWithEachOtherMenuLabel));
-				if (!lastInput.isSingleFile())
+				if (!input.isSingleFile())
 					popupMgr
 							.add(getCommandContributionItem(
 									HistoryViewCommands.COMPARE_VERSIONS_IN_TREE,
 									UIText.CommitGraphTable_CompareWithEachOtherInTreeMenuLabel));
 			}
-
-			popupMgr.add(new Separator());
-
-			popupMgr.add(getCommandContributionItem(HistoryViewCommands.REVERT,
-					UIText.GitHistoryPage_revertMenuItem));
-
 			popupMgr.add(new Separator());
 
 			MenuManager quickDiffManager = new MenuManager(
@@ -769,71 +843,24 @@ class CommitGraphTable {
 					HistoryViewCommands.SET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_SetAsBaselineMenuLabel));
 
-			Map<String, String> parameters = new HashMap<>();
+			Map<String, String> parameters = new HashMap<String, String>();
 			parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD"); //$NON-NLS-1$
 			quickDiffManager.add(getCommandContributionItem(
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_ResetBaselineToHeadMenuLabel,
 					parameters));
 
-			parameters = new HashMap<>();
+			parameters = new HashMap<String, String>();
 			parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD^1"); //$NON-NLS-1$
 			quickDiffManager.add(getCommandContributionItem(
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_ResetBaselineToParentOfHeadMenuLabel,
 					parameters));
 
-			popupMgr.add(new Separator());
-
-			MenuManager modifyManager = new MenuManager(
-					UIText.GitHistoryPage_ModifyMenuLabel, null, "Modify"); //$NON-NLS-1$
-
-			popupMgr.add(modifyManager);
-
-			if (selectionSize == 1) {
-				modifyManager.add(getCommandContributionItem(
-						HistoryViewCommands.REWORD,
-						UIText.GitHistoryPage_rewordMenuItem));
-				modifyManager.add(getCommandContributionItem(
-						HistoryViewCommands.EDIT,
-						UIText.GitHistoryPage_editMenuItem));
-			}
-
-			if (selectionSize >= 2)
-				modifyManager.add(getCommandContributionItem(
-						HistoryViewCommands.SQUASH,
-						UIText.GitHistoryPage_squashMenuItem));
-
 			// copy and such after additions
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
 			popupMgr.add(new Separator());
-		}
-
-		private boolean hasMultipleRefNodes(HistoryPageInput lastInput) {
-			try {
-				Map<String, Ref> branches = lastInput.getRepository()
-						.getRefDatabase().getRefs(Constants.R_HEADS);
-				int count = 0;
-				IStructuredSelection selection = (IStructuredSelection) selectionProvider
-						.getSelection();
-				if (selection.isEmpty()) {
-					return false;
-				}
-				ObjectId selectedId = ((RevCommit) selection.getFirstElement())
-						.getId();
-				for (Ref branch : branches.values()) {
-					ObjectId objectId = branch.getLeaf().getObjectId();
-					if (objectId != null && objectId.equals(selectedId)) {
-						count++;
-					}
-				}
-				return (count > 1);
-
-			} catch (IOException e) {
-				// ignore here
-			}
-			return false;
 		}
 
 		private CommandContributionItem getCommandContributionItem(

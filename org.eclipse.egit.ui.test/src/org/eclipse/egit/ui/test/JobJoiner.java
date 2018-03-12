@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2012, 2016 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -75,13 +75,10 @@ public class JobJoiner {
 	/**
 	 * Join the job. If the job is either not yet scheduled within the timeout
 	 * or not yet done, an {@link AssertionError} is thrown.
-	 *
-	 * @return the joined job, if any, or {@code null}
 	 */
-	public Job join() {
+	public void join() {
 		try {
 			doJoin();
-			return scheduledJob;
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new RuntimeException("Thread was interrupted.", e);

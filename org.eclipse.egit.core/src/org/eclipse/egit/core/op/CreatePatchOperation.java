@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,12 +35,13 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
@@ -50,12 +51,10 @@ import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.MissingObjectException;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
-import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -160,14 +159,32 @@ public class CreatePatchOperation implements IEGitOperation {
 		this.commit = commit;
 	}
 
-	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
-		EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(
-				monitor);
+		EclipseGitProgressTransformer gitMonitor;
+		if (monitor == null)
+			gitMonitor = new EclipseGitProgressTransformer(
+					new NullProgressMonitor());
+		else
+			gitMonitor = new EclipseGitProgressTransformer(monitor);
 
 		final StringBuilder sb = new StringBuilder();
-		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		final DiffFormatter diffFmt = new DiffFormatter(outputStream) {
+		final DiffFormatter diffFmt = new DiffFormatter(
+				new ByteArrayOutputStream() {
+
+					@Override
+					public synchronized void write(byte[] b, int off, int len) {
+						super.write(b, off, len);
+						if (currentEncoding == null)
+							sb.append(toString());
+						else
+							try {
+								sb.append(toString(currentEncoding));
+							} catch (UnsupportedEncodingException e) {
+								sb.append(toString());
+							}
+						reset();
+					}
+				}) {
 			private IProject project;
 
 			@Override
@@ -176,7 +193,7 @@ public class CreatePatchOperation implements IEGitOperation {
 				// for "workspace patches" add project header each time project changes
 				if (DiffHeaderFormat.WORKSPACE == headerFormat) {
 					IProject p = getProject(ent);
-					if (p != null && !p.equals(project)) {
+					if (!p.equals(project)) {
 						project = p;
 						getOutputStream().write(
 								encodeASCII("#P " + project.getName() + "\n")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -201,13 +218,11 @@ public class CreatePatchOperation implements IEGitOperation {
 				if (parents.length > 1)
 					throw new IllegalStateException(
 							CoreText.CreatePatchOperation_cannotCreatePatchForMergeCommit);
+				if (parents.length == 0)
+					throw new IllegalStateException(
+							CoreText.CreatePatchOperation_cannotCreatePatchForFirstCommit);
 
-				ObjectId parentId;
-				if (parents.length > 0)
-					parentId = parents[0].getId();
-				else
-					parentId = null;
-				List<DiffEntry> diffs = diffFmt.scan(parentId, commit.getId());
+				List<DiffEntry> diffs = diffFmt.scan(parents[0].getId(),commit.getId());
 				for (DiffEntry ent : diffs) {
 					String path;
 					if (ChangeType.DELETE.equals(ent.getChangeType()))
@@ -217,26 +232,20 @@ public class CreatePatchOperation implements IEGitOperation {
 					currentEncoding = CompareCoreUtils.getResourceEncoding(repository, path);
 					diffFmt.format(ent);
 				}
-			} else {
+			} else
 				diffFmt.format(
 						new DirCacheIterator(repository.readDirCache()),
 						new FileTreeIterator(repository));
-			}
-			diffFmt.flush();
 		} catch (IOException e) {
 			Activator.logError(CoreText.CreatePatchOperation_patchFileCouldNotBeWritten, e);
 		}
 
-		try {
-			String encoding = currentEncoding != null ? currentEncoding
-					: RawParseUtils.UTF8_CHARSET.name();
-			sb.append(outputStream.toString(encoding));
-		} catch (UnsupportedEncodingException e) {
-			sb.append(outputStream.toString());
-		}
-
 		if (DiffHeaderFormat.WORKSPACE == headerFormat)
 			updateWorkspacePatchPrefixes(sb, diffFmt);
+
+		// trim newline
+		if (sb.charAt(sb.length() - 1) == '\n')
+			sb.setLength(sb.length() - 1);
 
 		patchContent = sb.toString();
 	}
@@ -251,7 +260,7 @@ public class CreatePatchOperation implements IEGitOperation {
 		URI pathUri = repository.getWorkTree().toURI().resolve(URIUtil.toURI(path));
 		IFile[] files = ResourcesPlugin.getWorkspace().getRoot()
 				.findFilesForLocationURI(pathUri);
-		Assert.isLegal(files.length >= 1, NLS.bind(CoreText.CreatePatchOperation_couldNotFindProject, path,	repository));
+		Assert.isLegal(files.length == 1, NLS.bind(CoreText.CreatePatchOperation_couldNotFindProject, path, repository));
 		return files[0].getProject();
 	}
 
@@ -279,7 +288,7 @@ public class CreatePatchOperation implements IEGitOperation {
 			int brace = segment.indexOf('}');
 			if (brace > 0) {
 				String keyword = segment.substring(0, brace);
-				keyword = keyword.toUpperCase(Locale.ROOT).replaceAll(" ", "_"); //$NON-NLS-1$ //$NON-NLS-2$
+				keyword = keyword.toUpperCase().replaceAll(" ", "_"); //$NON-NLS-1$ //$NON-NLS-2$
 				value = processKeyword(commit, DiffHeaderKeyword.valueOf(keyword));
 			}
 
@@ -327,12 +336,7 @@ public class CreatePatchOperation implements IEGitOperation {
 	 * @param diffFmt
 	 */
 	public void updateWorkspacePatchPrefixes(StringBuilder sb, DiffFormatter diffFmt) {
-		RawText rt;
-		try {
-			rt = new RawText(sb.toString().getBytes("UTF-8")); //$NON-NLS-1$
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
-		}
+		RawText rt = new RawText(sb.toString().getBytes());
 
 		final String oldPrefix = diffFmt.getOldPrefix();
 		final String newPrefix = diffFmt.getNewPrefix();
@@ -391,9 +395,6 @@ public class CreatePatchOperation implements IEGitOperation {
 	 */
 	public static IPath computeWorkspacePath(final IPath path, final IProject project) {
 		RepositoryMapping rm = RepositoryMapping.getMapping(project);
-		if (rm == null) {
-			return path;
-		}
 		String repoRelativePath = rm.getRepoRelativePath(project);
 		// the relative path cannot be determined, return unchanged
 		if (repoRelativePath == null)
@@ -452,7 +453,6 @@ public class CreatePatchOperation implements IEGitOperation {
 		return name;
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return null;
 	}

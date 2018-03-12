@@ -11,8 +11,7 @@
 package org.eclipse.egit.core.test.op;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -41,7 +40,6 @@ public class RemoveFromIndexOperationTest extends GitTestCase {
 	private TestRepository testRepo2;
 	private TestProject project2;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -59,7 +57,6 @@ public class RemoveFromIndexOperationTest extends GitTestCase {
 		testRepo2.commit("initial commit repo 2");
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepo.dispose();
@@ -195,24 +192,6 @@ public class RemoveFromIndexOperationTest extends GitTestCase {
 				.toPortableString()));
 		assertTrue(testRepo.removedFromIndex(fileRepo2.getLocation()
 				.toPortableString()));
-	}
-
-	@Test
-	public void shouldRemoveFromIndexOnInitialCommit() throws Exception {
-		testRepo.dispose();
-		FileUtils.delete(gitDir, FileUtils.RECURSIVE | FileUtils.RETRY);
-		testRepo = new TestRepository(gitDir);
-		testRepo.connect(project.getProject());
-
-		IFile file = testUtils.addFileToProject(project.getProject(), "file.txt", "content");
-		new AddToIndexOperation(asList(file)).execute(null);
-
-		assertTrue(testRepo.inIndex(file.getLocation().toString()));
-
-		new RemoveFromIndexOperation(Arrays.asList(file.getLocation())).execute(null);
-
-		assertFalse(testRepo.inIndex(file.getLocation().toString()));
-		assertTrue(file.getLocation().toFile().exists());
 	}
 
 	private IFile createFileInRepo(String fileName) throws Exception {

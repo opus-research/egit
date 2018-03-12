@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011, 2015 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -10,15 +10,7 @@
  *****************************************************************************/
 package org.eclipse.egit.core;
 
-import org.eclipse.core.resources.IContainer;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.PlatformObject;
-import org.eclipse.egit.core.internal.Utils;
-import org.eclipse.jgit.annotations.Nullable;
 
 /**
  * Utilities for working with objects that implement {@link IAdaptable}
@@ -37,52 +29,14 @@ public class AdapterUtils {
 	 * @param <V> type of target
 	 * @return adapted
 	 */
-	@Nullable
+	@SuppressWarnings("unchecked")
 	public static <V> V adapt(Object object, Class<V> target) {
-		if (object == null) {
+		if (object == null)
 			return null;
-		}
-		if (target.isInstance(object)) {
-			return target.cast(object);
-		}
-		if (object instanceof IAdaptable) {
-			V adapter = Utils.getAdapter(((IAdaptable) object), target);
-			if (adapter != null || object instanceof PlatformObject) {
-				return adapter;
-			}
-		}
-		Object adapted = Platform.getAdapterManager().getAdapter(object, target);
-		return target.cast(adapted);
-	}
-
-	/**
-	 * Adapt object to one interface from list: {@link IResource},
-	 * {@link IContainer}, {@link IFile} or {@link IProject}.
-	 *
-	 * @param object
-	 * @return adapted resource
-	 */
-	@Nullable
-	public static IResource adaptToAnyResource(Object object) {
-		if (object == null) {
-			return null;
-		}
-		IResource resource = adapt(object, IResource.class);
-		if (resource != null) {
-			return resource;
-		}
-		resource = adapt(object, IFile.class);
-		if (resource != null) {
-			return resource;
-		}
-		resource = adapt(object, IProject.class);
-		if (resource != null) {
-			return resource;
-		}
-		resource = adapt(object, IContainer.class);
-		if (resource != null) {
-			return resource;
-		}
+		if (target.isInstance(object))
+			return (V) object;
+		if (object instanceof IAdaptable)
+			return (V) ((IAdaptable) object).getAdapter(target);
 		return null;
 	}
 }

@@ -18,7 +18,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.UntrackOperation;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 
 /**
  * An action to remove files from a Git repository. The removal does not alter
@@ -27,7 +27,6 @@ import org.eclipse.egit.ui.internal.UIText;
  * @see UntrackOperation
  */
 public class UntrackActionHandler extends RepositoryActionHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IResource[] resources = getSelectedResources();
 		if (resources.length == 0)

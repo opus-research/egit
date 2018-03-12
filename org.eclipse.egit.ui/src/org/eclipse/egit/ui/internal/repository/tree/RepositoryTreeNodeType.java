@@ -10,7 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree;
 
-import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
@@ -45,11 +45,11 @@ public enum RepositoryTreeNodeType {
 	/** */
 	TAG(UIIcons.TAG.createImage()), //
 	/**	 */
-	FOLDER(PlatformUI.getWorkbench().getSharedImages().getImage(
-			ISharedImages.IMG_OBJ_FOLDER)), //
-	/**	 */
 	FILE(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FILE)), //
+	/**	 */
+	FOLDER(PlatformUI.getWorkbench().getSharedImages().getImage(
+			ISharedImages.IMG_OBJ_FOLDER)), //
 	/**	 */
 	REMOTES(UIIcons.REMOTE_REPOSITORY.createImage()), //
 	/**	 */

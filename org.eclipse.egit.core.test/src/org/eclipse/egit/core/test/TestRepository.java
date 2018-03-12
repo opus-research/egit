@@ -2,8 +2,6 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
- * Copyright (C) 2015, Obeo
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,25 +11,17 @@
 package org.eclipse.egit.core.test;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.regex.Pattern;
 
-import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceVisitor;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.IWorkspaceRunnable;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.BranchOperation;
@@ -56,7 +46,7 @@ import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.FileUtils;
@@ -78,12 +68,16 @@ public class TestRepository {
 	 * @throws IOException
 	 */
 	public TestRepository(File gitDir) throws IOException {
-		Repository tmpRepository = FileRepositoryBuilder.create(gitDir);
+		FileRepository tmpRepository = new FileRepository(gitDir);
 		tmpRepository.create();
 		tmpRepository.close();
 		// use repository instance from RepositoryCache!
 		repository = Activator.getDefault().getRepositoryCache().lookupRepository(gitDir);
-		workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		try {
+			workdirPrefix = repository.getWorkTree().getCanonicalPath();
+		} catch (IOException err) {
+			workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/")) //$NON-NLS-1$
 			workdirPrefix += "/"; //$NON-NLS-1$
@@ -97,7 +91,11 @@ public class TestRepository {
 	 */
 	public TestRepository(Repository repository) throws IOException {
 		this.repository = repository;
-		workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		try {
+			workdirPrefix = repository.getWorkTree().getCanonicalPath();
+		} catch (IOException err) {
+			workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/")) //$NON-NLS-1$
 			workdirPrefix += "/"; //$NON-NLS-1$
@@ -183,8 +181,8 @@ public class TestRepository {
 	 */
 	public RevCommit appendContentAndCommit(IProject project, File file,
 			byte[] content, String commitMessage) throws Exception {
-		return appendContentAndCommit(project, file, new String(content,
-				"UTF-8"), commitMessage);
+		return appendContentAndCommit(project, file, new String(content),
+				commitMessage);
 	}
 
 	/**
@@ -226,13 +224,12 @@ public class TestRepository {
 			NoMessageException, UnmergedPathException,
 			ConcurrentRefUpdateException, JGitInternalException,
 			WrongRepositoryStateException, GitAPIException {
-		try (Git git = new Git(repository)) {
-			CommitCommand commitCommand = git.commit();
-			commitCommand.setAuthor("J. Git", "j.git@egit.org");
-			commitCommand.setCommitter(commitCommand.getAuthor());
-			commitCommand.setMessage(message);
-			return commitCommand.call();
-		}
+		Git git = new Git(repository);
+		CommitCommand commitCommand = git.commit();
+		commitCommand.setAuthor("J. Git", "j.git@egit.org");
+		commitCommand.setCommitter(commitCommand.getAuthor());
+		commitCommand.setMessage(message);
+		return commitCommand.call();
 	}
 
 	/**
@@ -246,36 +243,8 @@ public class TestRepository {
 	public void track(File file) throws IOException, NoFilepatternException, GitAPIException {
 		String repoPath = getRepoRelativePath(new Path(file.getPath())
 				.toString());
-		try (Git git = new Git(repository)) {
-			git.add().addFilepattern(repoPath).call();
-		}
+		new Git(repository).add().addFilepattern(repoPath).call();
 	}
-
-	/**
-	 * Adds all project files to version control
-	 *
-	 * @param project
-	 * @throws CoreException
-	 */
-	public void trackAllFiles(IProject project) throws CoreException {
-		project.accept(new IResourceVisitor() {
-
-			@Override
-			public boolean visit(IResource resource) throws CoreException {
-				if (resource instanceof IFile) {
-					try {
-						track(EFS.getStore(resource.getLocationURI())
-										.toLocalFile(0, null));
-					} catch (Exception e) {
-						throw new CoreException(Activator.error(e.getMessage(),
-								e));
-					}
-				}
-				return true;
-			}
-		});
-	}
-
 	/**
 	 * Removes file from version control
 	 *
@@ -285,8 +254,8 @@ public class TestRepository {
 	public void untrack(File file) throws IOException {
 		String repoPath = getRepoRelativePath(new Path(file.getPath())
 				.toString());
-		try (Git git = new Git(repository)) {
-			git.rm().addFilepattern(repoPath).call();
+		try {
+			new Git(repository).rm().addFilepattern(repoPath).call();
 		} catch (GitAPIException e) {
 			throw new IOException(e.getMessage());
 		}
@@ -317,7 +286,7 @@ public class TestRepository {
 			throws IOException {
 		RefUpdate updateRef;
 		updateRef = repository.updateRef(newRefName);
-		Ref startRef = repository.findRef(refName);
+		Ref startRef = repository.getRef(refName);
 		ObjectId startAt = repository.resolve(refName);
 		String startBranch;
 		if (startRef != null)
@@ -365,25 +334,8 @@ public class TestRepository {
 	 * @throws NoFilepatternException
 	 */
 	public void addToIndex(IResource resource) throws CoreException, IOException, NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(resource.getLocation().toString());
-		try (Git git = new Git(repository)) {
-			git.add().addFilepattern(repoPath).call();
-		}
-	}
-
-	/**
-	 * Remove the given resource form the index.
-	 *
-	 * @param file
-	 * @throws NoFilepatternException
-	 * @throws GitAPIException
-	 */
-	public void removeFromIndex(File file) throws NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(new Path(file.getPath())
-				.toString());
-		try (Git git = new Git(repository)) {
-			git.rm().addFilepattern(repoPath).call();
-		}
+		String repoPath = getRepoRelativePath(resource.getLocation().toOSString());
+		new Git(repository).add().addFilepattern(repoPath).call();
 	}
 
 	/**
@@ -394,7 +346,7 @@ public class TestRepository {
 	 * @throws IOException
 	 */
 	public void appendFileContent(File file, byte[] content) throws IOException {
-		appendFileContent(file, new String(content, "UTF-8"), true);
+		appendFileContent(file, new String(content), true);
 	}
 
 	/**
@@ -420,7 +372,7 @@ public class TestRepository {
 	 */
 	public void appendFileContent(File file, byte[] content, boolean append)
 			throws IOException {
-		appendFileContent(file, new String(content, "UTF-8"), append);
+		appendFileContent(file, new String(content), append);
 	}
 
 	/**
@@ -435,10 +387,9 @@ public class TestRepository {
 	 */
 	public void appendFileContent(File file, String content, boolean append)
 			throws IOException {
-		Writer fw = null;
+		FileWriter fw = null;
 		try {
-			fw = new OutputStreamWriter(new FileOutputStream(file, append),
-					"UTF-8");
+			fw = new FileWriter(file, append);
 			fw.append(content);
 		} finally {
 			if (fw != null)
@@ -455,31 +406,33 @@ public class TestRepository {
 	 */
 	public boolean inHead(String path) throws IOException {
 		ObjectId headId = repository.resolve(Constants.HEAD);
-		try (RevWalk rw = new RevWalk(repository);
-				TreeWalk tw = TreeWalk.forPath(repository, path,
-						rw.parseTree(headId))) {
+		RevWalk rw = new RevWalk(repository);
+		TreeWalk tw = null;
+		try {
+			tw = TreeWalk.forPath(repository, path, rw.parseTree(headId));
 			return tw != null;
+		} finally {
+			rw.release();
+			rw.dispose();
+			if (tw != null)
+				tw.release();
 		}
 	}
 
-	public boolean inIndex(String absolutePath) throws IOException {
-		return getDirCacheEntry(absolutePath) != null;
+	public boolean inIndex(String path) throws IOException {
+		return getDirCacheEntry(path) != null;
 	}
 
-	public boolean removedFromIndex(String absolutePath) throws IOException {
-		DirCacheEntry dc = getDirCacheEntry(absolutePath);
+	public boolean removedFromIndex(String path) throws IOException {
+		DirCacheEntry dc = getDirCacheEntry(path);
 		if (dc == null)
 			return true;
 
-		Ref ref = repository.exactRef(Constants.HEAD);
-		try (RevWalk rw = new RevWalk(repository)) {
-			RevCommit c = rw.parseCommit(ref.getObjectId());
+		Ref ref = repository.getRef(Constants.HEAD);
+		RevCommit c = new RevWalk(repository).parseCommit(ref.getObjectId());
+		TreeWalk tw = TreeWalk.forPath(repository, path, c.getTree());
 
-			try (TreeWalk tw = TreeWalk.forPath(repository,
-					getRepoRelativePath(absolutePath), c.getTree())) {
-				return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
-			}
-		}
+		return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
 	}
 
 	public long lastModifiedInIndex(String path) throws IOException {
@@ -529,33 +482,26 @@ public class TestRepository {
 	 * Connect a project to this repository
 	 *
 	 * @param project
-	 * @throws Exception
+	 * @throws CoreException
 	 */
-	public void connect(IProject project) throws Exception {
+	public void connect(IProject project) throws CoreException {
 		ConnectProviderOperation op = new ConnectProviderOperation(project,
 				this.getRepository().getDirectory());
 		op.execute(null);
-		TestUtils.waitForJobs(50, 5000, null);
 	}
 
 	/**
 	 * Disconnects provider from project
 	 *
 	 * @param project
-	 * @throws Exception
+	 * @throws CoreException
 	 */
-	public void disconnect(IProject project) throws Exception {
+	public void disconnect(IProject project) throws CoreException {
 		Collection<IProject> projects = Collections.singleton(project
 				.getProject());
 		DisconnectProviderOperation disconnect = new DisconnectProviderOperation(
 				projects);
-		ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
-			@Override
-			public void run(IProgressMonitor monitor) throws CoreException {
-				disconnect.execute(null);
-			}
-		}, project, IWorkspace.AVOID_UPDATE, null);
-		TestUtils.waitForJobs(5000, null);
+		disconnect.execute(null);
 	}
 
 	public URIish getUri() throws URISyntaxException {

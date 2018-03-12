@@ -49,13 +49,10 @@ public class RepositoriesViewSorter extends
 
 	@Override
 	public int compare(Viewer viewer, Object e1, Object e2) {
-		if (e1 instanceof RepositoryTreeNode
-				&& e2 instanceof RepositoryTreeNode) {
-			RepositoryTreeNode node1 = (RepositoryTreeNode) e1;
-			RepositoryTreeNode node2 = (RepositoryTreeNode) e2;
-			return node1.compareTo(node2);
-		} else {
+		if (e1 instanceof StashedCommitNode && e2 instanceof StashedCommitNode) {
+			// ok for positive indexes < ~2 billion
+			return ((StashedCommitNode)e1).getIndex() - ((StashedCommitNode)e1).getIndex();
+		} else
 			return super.compare(viewer, e1, e2);
-		}
 	}
 }

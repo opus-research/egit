@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2017 SAP AG and others.
+ * Copyright (c) 2010, SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,14 +7,12 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - input validation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
 import java.util.StringTokenizer;
-import java.util.regex.Pattern;
 
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.swt.SWT;
@@ -28,27 +26,9 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 /**
- * Requests a key and value for adding a configuration entry.
+ * Requests a key and value for adding a configuration entry
  */
 public class AddConfigEntryDialog extends TitleAreaDialog {
-
-	/**
-	 * Regular expression describing a valid git config key. See config.c in the
-	 * CGit sources, or https://git-scm.com/docs/git-config. Basically it's
-	 * section.subsection.name, where section and name must contain only
-	 * alphanumeric characters or the dash, and name must start with a letter.
-	 *
-	 * Cgit also allows periods in the section name to support the legacy syntax
-	 * [section.subsection]. For our use case, this is irrelevant, and EGit
-	 * takes only the first segment as section name.
-	 *
-	 * Note that we allow arbitrary whitespace before and after; we'll trim that
-	 * away in {@link #okPressed}.
-	 */
-	private static final Pattern VALID_KEY = Pattern
-			.compile(
-					"(\\h|\\v)*[-\\p{Alnum}]+(?:\\..*)?\\.\\p{Alpha}[-\\p{Alnum}]*(\\h|\\v)*"); //$NON-NLS-1$
-
 	private Text keyText;
 
 	private Text valueText;
@@ -85,12 +65,11 @@ public class AddConfigEntryDialog extends TitleAreaDialog {
 		keylLabel.setToolTipText(UIText.AddConfigEntryDialog_ConfigKeyTooltip);
 		keyText = new Text(main, SWT.BORDER);
 		if (suggestedKey != null) {
-			keyText.setText(trimKey(suggestedKey));
+			keyText.setText(suggestedKey);
 			keyText.selectAll();
 		}
 
 		keyText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				check();
 			}
@@ -100,7 +79,6 @@ public class AddConfigEntryDialog extends TitleAreaDialog {
 				.setText(UIText.AddConfigEntryDialog_ValueLabel);
 		valueText = new Text(main, SWT.BORDER);
 		valueText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				check();
 			}
@@ -109,14 +87,6 @@ public class AddConfigEntryDialog extends TitleAreaDialog {
 
 		applyDialogFont(main);
 		return main;
-	}
-
-	private boolean isValidKey(String keyValue) {
-		return keyValue != null && VALID_KEY.matcher(keyValue).matches();
-	}
-
-	private String trimKey(String keyValue) {
-		return keyValue.replaceAll("^(?:\\h|\\v)*|(?:\\h|\\v)*$", ""); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	@Override
@@ -136,13 +106,8 @@ public class AddConfigEntryDialog extends TitleAreaDialog {
 				return;
 			}
 			StringTokenizer st = new StringTokenizer(keyText.getText(), "."); //$NON-NLS-1$
-			if (st.countTokens() < 2) {
+			if (st.countTokens() < 2 || st.countTokens() > 3) {
 				setErrorMessage(UIText.AddConfigEntryDialog_KeyComponentsMessage);
-				hasError = true;
-				return;
-			}
-			if (!isValidKey(keyText.getText())) {
-				setErrorMessage(UIText.AddConfigEntryDialog_InvalidKeyMessage);
 				hasError = true;
 				return;
 			}
@@ -158,7 +123,7 @@ public class AddConfigEntryDialog extends TitleAreaDialog {
 
 	@Override
 	protected void okPressed() {
-		key = trimKey(keyText.getText());
+		key = keyText.getText();
 		value = valueText.getText();
 		super.okPressed();
 	}

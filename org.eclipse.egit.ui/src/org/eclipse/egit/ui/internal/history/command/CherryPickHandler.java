@@ -19,7 +19,6 @@ import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
@@ -27,17 +26,11 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public class CherryPickHandler extends AbstractHistoryCommandHandler {
 
-	@Override
-	public boolean isEnabled() {
-		final Repository repository = getRepository(getPage());
-		if (repository == null)
-			return false;
-		return repository.getRepositoryState().equals(RepositoryState.SAFE);
-	}
-
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		RevCommit commit = getSelectedCommit(event);
+		RevCommit commit = (RevCommit) getSelection(getPage())
+				.getFirstElement();
+		if (commit == null)
+			return null;
 		Repository repo = getRepository(event);
 		if (repo == null)
 			return null;

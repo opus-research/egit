@@ -13,13 +13,13 @@ import java.io.IOException;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.reflog.ReflogView;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.lib.ReflogEntry;
+import org.eclipse.jgit.storage.file.ReflogEntry;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
@@ -70,10 +70,13 @@ abstract class AbstractReflogCommandHandler extends AbstractHandler {
 			return null;
 
 		RevCommit commit = null;
-		try (RevWalk w = new RevWalk(repo)) {
+		RevWalk w = new RevWalk(repo);
+		try {
 			commit = w.parseCommit(entry.getNewId());
 		} catch (IOException e) {
 			throw new ExecutionException(e.getMessage(), e);
+		} finally {
+			w.release();
 		}
 		return commit;
 	}

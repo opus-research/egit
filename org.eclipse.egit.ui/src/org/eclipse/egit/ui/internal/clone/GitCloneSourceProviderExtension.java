@@ -17,9 +17,9 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositoryServerProvider;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -38,7 +38,7 @@ public class GitCloneSourceProviderExtension {
 	 *         point registry
 	 */
 	public static List<CloneSourceProvider> getCloneSourceProvider() {
-		List<CloneSourceProvider> cloneSourceProvider = new ArrayList<>();
+		List<CloneSourceProvider> cloneSourceProvider = new ArrayList<CloneSourceProvider>();
 
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
 		IConfigurationElement[] config = registry

@@ -43,7 +43,6 @@ public abstract class BooleanPrefAction extends Action implements
 		setChecked(store.getBoolean(prefName));
 	}
 
-	@Override
 	public void run() {
 		store.setValue(prefName, isChecked());
 		if (store.needsSaving())
@@ -60,7 +59,6 @@ public abstract class BooleanPrefAction extends Action implements
 	 */
 	protected abstract void apply(boolean value);
 
-	@Override
 	public void propertyChange(final PropertyChangeEvent event) {
 		if (prefName.equals(event.getProperty())) {
 			setChecked(store.getBoolean(prefName));
@@ -68,7 +66,6 @@ public abstract class BooleanPrefAction extends Action implements
 		}
 	}
 
-	@Override
 	public void dispose() {
 		// stop listening
 		store.removePropertyChangeListener(this);

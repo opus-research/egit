@@ -14,8 +14,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.EGitTestCase;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.GitTraceConfigurationDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.widgets.Display;
@@ -153,7 +153,6 @@ public class TraceConfigurationDialogTest {
 
 	private void getDialog() {
 		Display.getDefault().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				if (configurationDialog != null)
 					configurationDialog.close();

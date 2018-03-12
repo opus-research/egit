@@ -9,28 +9,18 @@
 package org.eclipse.egit.ui.internal.decorators;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.text.Document;
-import org.eclipse.jgit.diff.DiffConfig;
-import org.eclipse.jgit.diff.DiffConfig.RenameDetectionType;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.diff.RenameDetector;
-import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -38,14 +28,13 @@ import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.RepositoryProvider;
 
 class GitDocument extends Document implements RefsChangedListener {
 	private final IResource resource;
@@ -58,12 +47,9 @@ class GitDocument extends Document implements RefsChangedListener {
 
 	private ListenerHandle myRefsChangedHandle;
 
-	// Job that reloads the document when something has changed
-	private Job reloadJob;
-
 	private boolean disposed;
 
-	static Map<GitDocument, Repository> doc2repo = new WeakHashMap<>();
+	static Map<GitDocument, Repository> doc2repo = new WeakHashMap<GitDocument, Repository>();
 
 	static GitDocument create(final IResource resource) throws IOException {
 		if (GitTraceLocation.QUICKDIFF.isActive())
@@ -71,14 +57,13 @@ class GitDocument extends Document implements RefsChangedListener {
 					GitTraceLocation.QUICKDIFF.getLocation(),
 					"(GitDocument) create: " + resource); //$NON-NLS-1$
 		GitDocument ret = null;
-		if (ResourceUtil.isSharedWithGit(resource.getProject())) {
+		if (RepositoryProvider.getProvider(resource.getProject()) instanceof GitProvider) {
 			ret = new GitDocument(resource);
 			ret.populate();
 			final Repository repository = ret.getRepository();
-			if (repository != null) {
+			if (repository != null)
 				ret.myRefsChangedHandle = repository.getListenerList()
 						.addRefsChangedListener(ret);
-			}
 		}
 		return ret;
 	}
@@ -118,81 +103,64 @@ class GitDocument extends Document implements RefsChangedListener {
 		if (disposed)
 			return;
 
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-		if (mapping == null) {
-			setResolved(null, null, null, ""); //$NON-NLS-1$
-			return;
-		}
-		final String gitPath = mapping.getRepoRelativePath(resource);
-		if (gitPath == null) {
-			setResolved(null, null, null, ""); //$NON-NLS-1$
-			return;
-		}
-		final Repository repository = mapping.getRepository();
-		String baseline = GitQuickDiffProvider.baseline.get(repository);
-		if (baseline == null)
-			baseline = Constants.HEAD;
-		ObjectId commitId = repository.resolve(baseline);
-		if (commitId != null) {
-			if (commitId.equals(lastCommit)) {
+		TreeWalk tw = null;
+		RevWalk rw = null;
+		try {
+			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+			if (mapping == null) {
+				setResolved(null, null, null, ""); //$NON-NLS-1$
+				return;
+			}
+			final String gitPath = mapping.getRepoRelativePath(resource);
+			if (gitPath == null) {
+				setResolved(null, null, null, ""); //$NON-NLS-1$
+				return;
+			}
+			final Repository repository = mapping.getRepository();
+			String baseline = GitQuickDiffProvider.baseline.get(repository);
+			if (baseline == null)
+				baseline = Constants.HEAD;
+			ObjectId commitId = repository.resolve(baseline);
+			if (commitId != null) {
+				if (commitId.equals(lastCommit)) {
+					if (GitTraceLocation.QUICKDIFF.isActive())
+						GitTraceLocation.getTrace().trace(
+								GitTraceLocation.QUICKDIFF.getLocation(),
+								"(GitDocument) already resolved"); //$NON-NLS-1$
+					return;
+				}
+			} else {
+				if (repository.getRef(Constants.HEAD) == null) {
+					// Complain only if not an unborn branch
+					String msg = NLS.bind(UIText.GitDocument_errorResolveQuickdiff,
+							new Object[] { baseline, resource, repository });
+					Activator.logError(msg, new Throwable());
+				}
+				setResolved(null, null, null, ""); //$NON-NLS-1$
+				return;
+			}
+			rw = new RevWalk(repository);
+			RevCommit baselineCommit;
+			try {
+				baselineCommit = rw.parseCommit(commitId);
+			} catch (IOException err) {
+				String msg = NLS
+						.bind(UIText.GitDocument_errorLoadCommit, new Object[] {
+								commitId, baseline, resource, repository });
+				Activator.logError(msg, err);
+				setResolved(null, null, null, ""); //$NON-NLS-1$
+				return;
+			}
+			RevTree treeId = baselineCommit.getTree();
+			if (treeId.equals(lastTree)) {
 				if (GitTraceLocation.QUICKDIFF.isActive())
 					GitTraceLocation.getTrace().trace(
 							GitTraceLocation.QUICKDIFF.getLocation(),
 							"(GitDocument) already resolved"); //$NON-NLS-1$
 				return;
 			}
-		} else {
-			if (repository.exactRef(Constants.HEAD) == null) {
-				// Complain only if not an unborn branch
-				String msg = NLS.bind(UIText.GitDocument_errorResolveQuickdiff,
-						new Object[] { baseline, resource, repository });
-				Activator.logError(msg, new Throwable());
-			}
-			setResolved(null, null, null, ""); //$NON-NLS-1$
-			return;
-		}
 
-		RevCommit baselineCommit;
-		String oldPath = gitPath;
-
-		try (RevWalk rw = new RevWalk(repository);
-				ObjectReader reader = repository.newObjectReader()) {
-			baselineCommit = rw.parseCommit(commitId);
-			DiffConfig diffConfig = repository.getConfig().get(DiffConfig.KEY);
-			if (diffConfig.getRenameDetectionType() != RenameDetectionType.FALSE) {
-				TreeWalk walk = new TreeWalk(repository);
-				CanonicalTreeParser baseLineIterator = new CanonicalTreeParser();
-				baseLineIterator.reset(reader, baselineCommit.getTree());
-				walk.addTree(baseLineIterator);
-				walk.addTree(new DirCacheIterator(repository.readDirCache()));
-				List<DiffEntry> diffs = DiffEntry.scan(walk, true);
-				RenameDetector renameDetector = new RenameDetector(repository);
-				renameDetector.addAll(diffs);
-				List<DiffEntry> renames = renameDetector.compute();
-				for (DiffEntry e : renames) {
-					if (e.getNewPath().equals(gitPath)) {
-						oldPath = e.getOldPath();
-						break;
-					}
-				}
-			}
-		} catch (IOException err) {
-			String msg = NLS.bind(UIText.GitDocument_errorLoadCommit,
-					new Object[] { commitId, baseline, resource, repository });
-			Activator.logError(msg, err);
-			setResolved(null, null, null, ""); //$NON-NLS-1$
-			return;
-		}
-		RevTree treeId = baselineCommit.getTree();
-		if (treeId.equals(lastTree)) {
-			if (GitTraceLocation.QUICKDIFF.isActive())
-				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.QUICKDIFF.getLocation(),
-						"(GitDocument) already resolved"); //$NON-NLS-1$
-			return;
-		}
-
-		try (TreeWalk tw = TreeWalk.forPath(repository, oldPath, treeId)) {
+			tw = TreeWalk.forPath(repository, gitPath, treeId);
 			if (tw == null) {
 				if (GitTraceLocation.QUICKDIFF.isActive())
 					GitTraceLocation
@@ -238,10 +206,13 @@ class GitDocument extends Document implements RefsChangedListener {
 							"(GitDocument) already resolved"); //$NON-NLS-1$
 			}
 		} finally {
-			if (GitTraceLocation.QUICKDIFF.isActive()) {
+			if (tw != null)
+				tw.release();
+			if (rw != null)
+				rw.release();
+			if (GitTraceLocation.QUICKDIFF.isActive())
 				GitTraceLocation.getTrace().traceExit(
 						GitTraceLocation.QUICKDIFF.getLocation());
-			}
 		}
 
 	}
@@ -258,32 +229,19 @@ class GitDocument extends Document implements RefsChangedListener {
 			myRefsChangedHandle.remove();
 			myRefsChangedHandle = null;
 		}
-		cancelReloadJob();
 		disposed = true;
 	}
 
-	@Override
-	public void onRefsChanged(final RefsChangedEvent event) {
-		cancelReloadJob();
-
-		reloadJob = new Job(UIText.GitDocument_ReloadJobName) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
+	public void onRefsChanged(final RefsChangedEvent e) {
+		Activator.getDefault().getWorkbench().getDisplay().asyncExec(new Runnable() {
+			public void run() {
 				try {
 					populate();
-					return Status.OK_STATUS;
-				} catch (IOException e) {
-					return Activator.createErrorStatus(
-							UIText.GitDocument_ReloadJobError, e);
+				} catch (Exception e1) {
+					Activator.logError(UIText.GitDocument_errorRefreshQuickdiff, e1);
 				}
 			}
-		};
-		reloadJob.schedule();
-	}
-
-	private void cancelReloadJob() {
-		if (reloadJob != null && reloadJob.getState() != Job.NONE)
-			reloadJob.cancel();
+		});
 	}
 
 	private Repository getRepository() {

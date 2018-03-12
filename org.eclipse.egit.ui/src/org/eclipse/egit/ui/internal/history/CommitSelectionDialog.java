@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -33,7 +33,6 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.diff.DiffConfig;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
@@ -107,11 +106,9 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		final ResourceManager resources = new LocalResourceManager(
 				JFaceResources.getResources());
 		UIUtils.hookDisposal(main, resources);
-		// Table never shows e-mail addresses because it might get rather wide.
-		table = new CommitGraphTable(main, null, resources, false);
+		table = new CommitGraphTable(main, null, resources);
 		table.getTableView().addSelectionChangedListener(
 				new ISelectionChangedListener() {
-					@Override
 					public void selectionChanged(SelectionChangedEvent event) {
 						commitId = null;
 						IStructuredSelection sel = (IStructuredSelection) event
@@ -123,7 +120,6 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 					}
 				});
 		table.getTableView().addOpenListener(new IOpenListener() {
-			@Override
 			public void open(OpenEvent event) {
 				if (getButton(OK).isEnabled())
 					buttonPressed(OK);
@@ -149,7 +145,6 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		try {
 			PlatformUI.getWorkbench().getProgressService().run(true, true,
 					new IRunnableWithProgress() {
-						@Override
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
@@ -205,7 +200,6 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 								}
 								getShell().getDisplay().asyncExec(
 										new Runnable() {
-											@Override
 											public void run() {
 												updateUi();
 											}
@@ -257,19 +251,15 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		if (filterResources == null)
 			return TreeFilter.ALL;
 
-		List<TreeFilter> filters = new ArrayList<>();
+		List<TreeFilter> filters = new ArrayList<TreeFilter>();
 		for (IResource resource : filterResources) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
 			if (mapping != null) {
-				DiffConfig diffConfig = mapping.getRepository().getConfig().get(DiffConfig.KEY);
 				String path = mapping.getRepoRelativePath(resource);
-				if (path != null && !"".equals(path)) { //$NON-NLS-1$
-					if (resource.getType() == IResource.FILE)
-						filters.add(FollowFilter.create(path, diffConfig));
-					else
-						filters.add(AndTreeFilter.create(
-								PathFilter.create(path), TreeFilter.ANY_DIFF));
-				}
+				if (resource.getType() == IResource.FILE)
+					filters.add(FollowFilter.create(path));
+				else
+					filters.add(AndTreeFilter.create(PathFilter.create(path), TreeFilter.ANY_DIFF));
 			}
 		}
 

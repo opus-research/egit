@@ -12,7 +12,7 @@ package org.eclipse.egit.ui.internal.submodule;
 
 import java.io.File;
 
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.wizard.WizardPage;
@@ -45,7 +45,6 @@ public class SubmodulePathWizardPage extends WizardPage {
 		this.repo = repo;
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite displayArea = new Composite(parent, SWT.NONE);
 		GridLayoutFactory.swtDefaults().numColumns(2).equalWidth(false)
@@ -61,7 +60,6 @@ public class SubmodulePathWizardPage extends WizardPage {
 
 		pathText.addModifyListener(new ModifyListener() {
 
-			@Override
 			public void modifyText(ModifyEvent e) {
 				validate();
 			}

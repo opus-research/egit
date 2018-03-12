@@ -12,7 +12,7 @@ package org.eclipse.egit.ui.internal.reflog;
 
 import java.text.MessageFormat;
 
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.jface.viewers.Viewer;
@@ -38,12 +38,10 @@ public class RefSelectionDialog extends AbstractBranchSelectionDialog {
 				| EXPAND_REMOTE_BRANCHES_NODE | SHOW_REFERENCES);
 	}
 
-	@Override
 	protected void refNameSelected(String refName) {
 		getButton(Window.OK).setEnabled(refName != null);
 	}
 
-	@Override
 	protected String getTitle() {
 		String repoName;
 		if (!repo.isBare())
@@ -57,7 +55,6 @@ public class RefSelectionDialog extends AbstractBranchSelectionDialog {
 	protected void createCustomArea(Composite parent) {
 		branchTree.addFilter(new ViewerFilter() {
 
-			@Override
 			public boolean select(Viewer viewer, Object parentElement,
 					Object element) {
 				if (element instanceof AdditionalRefNode) {
@@ -69,7 +66,6 @@ public class RefSelectionDialog extends AbstractBranchSelectionDialog {
 		});
 	}
 
-	@Override
 	protected String getMessageText() {
 		return UIText.RefSelectionDialog_Messsage;
 	}

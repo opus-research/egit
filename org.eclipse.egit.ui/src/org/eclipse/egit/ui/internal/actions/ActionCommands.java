@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -47,6 +47,9 @@ public class ActionCommands {
 	/** "Compare with Commit" action command id */
 	public static final String COMPARE_WITH_COMMIT_ACTION = "org.eclipse.egit.ui.team.CompareWithCommit"; //$NON-NLS-1$
 
+	/** "Compare with revision" action command id */
+	public static final String COMPARE_WITH_REVISION_ACTION = "org.eclipse.egit.ui.team.CompareWithRevision"; //$NON-NLS-1$
+
 	/** "Compare with previous" action command id */
 	public static final String COMPARE_WITH_PREVIOUS_ACTION = "org.eclipse.egit.ui.team.CompareWithPrevious"; //$NON-NLS-1$
 
@@ -89,8 +92,8 @@ public class ActionCommands {
 	/** "Push" action command id */
 	public static final String PUSH_ACTION = "org.eclipse.egit.ui.team.Push"; //$NON-NLS-1$
 
-	/** "Push branch" action command id */
-	public static final String PUSH_BRANCH_ACTION = "org.eclipse.egit.ui.team.PushBranch"; //$NON-NLS-1$
+	/** "Rename Branch" action command id */
+	public static final String RENAME_BRANCH_ACTION = "org.eclipse.egit.ui.team.RenameBranch"; //$NON-NLS-1$
 
 	/** "Simple Push" action command id */
 	public static final String SIMPLE_PUSH_ACTION = "org.eclipse.egit.ui.team.SimplePush"; //$NON-NLS-1$
@@ -104,8 +107,11 @@ public class ActionCommands {
 	/** "Rebase" action command id */
 	public static final String REBASE_ACTION = "org.eclipse.egit.ui.team.Rebase"; //$NON-NLS-1$
 
-	/** "Stash Changes" action command id */
-	public static final String STASH_CREATE = "org.eclipse.egit.ui.team.stash.create"; //$NON-NLS-1$
+	/** "Show History" action command id */
+	public static final String SHOW_HISTORY = "org.eclipse.egit.ui.team.ShowHistory"; //$NON-NLS-1$
+
+	/** "Show Repository View" action command id */
+	public static final String SHOW_REPO_VIEW = "org.eclipse.egit.ui.team.ShowRepositoriesView"; //$NON-NLS-1$
 
 	/** "Synchronize with" action command id */
 	public static final String SYNC_WITH_ACTION = "org.eclipse.egit.ui.team.SyncWith"; //$NON-NLS-1$
@@ -119,13 +125,15 @@ public class ActionCommands {
 	/** "Track" action command id */
 	public static final String TRACK_ACTION = "org.eclipse.egit.ui.team.Track"; //$NON-NLS-1$
 
+	/** "Untrack" action command id */
+	public static final String UNTRACK_ACTION = "org.eclipse.egit.ui.internal.actions.Untrack"; //$NON-NLS-1$
+
 	/** "Pull from upstream configuration" action command id */
 	public static final String PULL_FROM_UPSTREAM_CONFIG = "org.eclipse.egit.ui.team.PullFromUpstreamConfig"; //$NON-NLS-1$
-
-	/** "Pull with a config dialog" action command id */
-	public static final String PULL_WITH_OPTIONS = "org.eclipse.egit.ui.team.PullWithOptions"; //$NON-NLS-1$
 
 	/** "Merge Tool" action command id */
 	public static final String MERGE_TOOL_ACTION = "org.eclipse.egit.ui.team.MergeTool"; //$NON-NLS-1$
 
+	/** "Show Blame Annotations" action command id */
+	public static final String SHOW_BLAME_ACTION = "org.eclipse.egit.ui.team.ShowBlameAnnotations"; //$NON-NLS-1$
 }

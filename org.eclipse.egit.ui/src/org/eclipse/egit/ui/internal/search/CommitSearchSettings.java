@@ -98,7 +98,7 @@ public class CommitSearchSettings {
 
 	private String textPattern = null;
 
-	private List<String> repositories = new LinkedList<>();
+	private List<String> repositories = new LinkedList<String>();
 
 	/**
 	 * Store search settings in dialog settings

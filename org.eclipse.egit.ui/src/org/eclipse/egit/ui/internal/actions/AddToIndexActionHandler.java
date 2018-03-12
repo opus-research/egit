@@ -19,7 +19,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.operations.GitScopeUtil;
 import org.eclipse.ui.IWorkbenchPart;
 
@@ -31,7 +31,6 @@ import org.eclipse.ui.IWorkbenchPart;
  */
 public class AddToIndexActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final IResource[] sel = getSelectedResources(event);
 		if (sel.length == 0)
@@ -78,7 +77,7 @@ public class AddToIndexActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return haveSelectedResourcesWithRepository();
+		return getProjectsInRepositoryOfSelectedResources().length > 0;
 	}
 
 }

@@ -48,7 +48,6 @@ public class CommitOperationTest extends GitTestCase {
 
 	Repository repository;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -59,7 +58,6 @@ public class CommitOperationTest extends GitTestCase {
 		testRepository.connect(project.getProject());
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();
@@ -103,15 +101,14 @@ public class CommitOperationTest extends GitTestCase {
 			assertEquals("No changes", e.getCause().getMessage());
 		}
 
-		try (TreeWalk treeWalk = new TreeWalk(repository)) {
-			treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-			assertTrue(treeWalk.next());
-			assertEquals("foo", treeWalk.getPathString());
-			treeWalk.enterSubtree();
-			assertTrue(treeWalk.next());
-			assertEquals("foo/a.txt", treeWalk.getPathString());
-			assertFalse(treeWalk.next());
-		}
+		TreeWalk treeWalk = new TreeWalk(repository);
+		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
+		assertTrue(treeWalk.next());
+		assertEquals("foo", treeWalk.getPathString());
+		treeWalk.enterSubtree();
+		assertTrue(treeWalk.next());
+		assertEquals("foo/a.txt", treeWalk.getPathString());
+		assertFalse(treeWalk.next());
 	}
 
 	@Test
@@ -129,10 +126,8 @@ public class CommitOperationTest extends GitTestCase {
 		commitOperation.setRepository(repository);
 		commitOperation.execute(null);
 
-		Iterator<RevCommit> commits;
-		try (Git git = new Git(repository)) {
-			commits = git.log().call().iterator();
-		}
+		Git git = new Git(repository);
+		Iterator<RevCommit> commits = git.log().call().iterator();
 		RevCommit firstCommit = commits.next();
 		assertTrue(firstCommit.getCommitTime() > 0);
 
@@ -146,9 +141,8 @@ public class CommitOperationTest extends GitTestCase {
 		commitOperation.setRepository(repository);
 		commitOperation.execute(null);
 
-		try (Git git = new Git(repository)) {
-			commits = git.log().call().iterator();
-		}
+		git = new Git(repository);
+		commits = git.log().call().iterator();
 		RevCommit secondCommit = commits.next();
 		assertTrue(secondCommit.getCommitTime() > 0);
 
@@ -176,25 +170,23 @@ public class CommitOperationTest extends GitTestCase {
 		commitOperation.setRepository(repository);
 		commitOperation.execute(null);
 
-		Iterator<RevCommit> commits;
-		try (Git git = new Git(repository)) {
-			commits = git.log().call().iterator();
-		}
+		Git git = new Git(repository);
+		Iterator<RevCommit> commits = git.log().call().iterator();
 		RevCommit secondCommit = commits.next();
-		try (TreeWalk treeWalk = new TreeWalk(repository)) {
-			treeWalk.addTree(secondCommit.getTree().getId());
-			treeWalk.setRecursive(true);
-			treeWalk.setPostOrderTraversal(true);
-			assertTrue(treeWalk.next());
-			assertEquals("sub1/a.txt", treeWalk.getPathString());
-			assertTrue(treeWalk.next());
-			assertEquals("sub1", treeWalk.getPathString());
-			assertTrue(treeWalk.next());
-			assertEquals("sub2/b.txt", treeWalk.getPathString());
-			assertTrue(treeWalk.next());
-			assertEquals("sub2", treeWalk.getPathString());
-			assertFalse(treeWalk.next());
-		}
+		TreeWalk treeWalk = new TreeWalk(repository);
+		treeWalk.addTree(secondCommit.getTree().getId());
+		treeWalk.setRecursive(true);
+		treeWalk.setPostOrderTraversal(true);
+		assertTrue(treeWalk.next());
+		assertEquals("sub1/a.txt", treeWalk.getPathString());
+		assertTrue(treeWalk.next());
+		assertEquals("sub1", treeWalk.getPathString());
+		assertTrue(treeWalk.next());
+		assertEquals("sub2/b.txt", treeWalk.getPathString());
+		assertTrue(treeWalk.next());
+		assertEquals("sub2", treeWalk.getPathString());
+		assertFalse(treeWalk.next());
+
 		project.getProject().getFolder("sub2").delete(IResource.FORCE, null);
 		IFile[] filesToCommit = { project.getProject().getFile("sub2/b.txt") };
 		ArrayList<IFile> notIndexed = new ArrayList<IFile>();
@@ -204,20 +196,18 @@ public class CommitOperationTest extends GitTestCase {
 		commitOperation.setCommitAll(false);
 		commitOperation.execute(null);
 
-		try (Git git = new Git(repository)) {
-			commits = git.log().call().iterator();
-		}
+		git = new Git(repository);
+		commits = git.log().call().iterator();
 		secondCommit = commits.next();
-		try (TreeWalk treeWalk = new TreeWalk(repository)) {
-			treeWalk.addTree(secondCommit.getTree().getId());
-			treeWalk.setRecursive(true);
-			treeWalk.setPostOrderTraversal(true);
-			assertTrue(treeWalk.next());
-			assertEquals("sub1/a.txt", treeWalk.getPathString());
-			assertTrue(treeWalk.next());
-			assertEquals("sub1", treeWalk.getPathString());
-			assertFalse(treeWalk.next());
-		}
+		treeWalk = new TreeWalk(repository);
+		treeWalk.addTree(secondCommit.getTree().getId());
+		treeWalk.setRecursive(true);
+		treeWalk.setPostOrderTraversal(true);
+		assertTrue(treeWalk.next());
+		assertEquals("sub1/a.txt", treeWalk.getPathString());
+		assertTrue(treeWalk.next());
+		assertEquals("sub1", treeWalk.getPathString());
+		assertFalse(treeWalk.next());
 	}
 
 	@Test

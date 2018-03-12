@@ -12,14 +12,14 @@ package org.eclipse.egit.ui.internal.commit;
 
 import java.text.MessageFormat;
 
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jface.viewers.ViewerComparator;
+import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
@@ -55,7 +55,6 @@ public class NotesBlock extends MasterDetailsBlock {
 		this.commit = commit;
 	}
 
-	@Override
 	public void createContent(IManagedForm managedForm, Composite parent) {
 		super.createContent(managedForm, parent);
 		sashForm.setWeights(new int[] { 25, 75 });
@@ -86,7 +85,7 @@ public class NotesBlock extends MasterDetailsBlock {
 		Table refsTable = toolkit.createTable(refsArea, SWT.H_SCROLL
 				| SWT.V_SCROLL | SWT.SINGLE);
 		refsViewer = new TableViewer(refsTable);
-		refsViewer.setComparator(new ViewerComparator());
+		refsViewer.setSorter(new ViewerSorter());
 		refsTable.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TREE_BORDER);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(refsTable);
 		refsViewer.setContentProvider(ArrayContentProvider.getInstance());
@@ -96,7 +95,6 @@ public class NotesBlock extends MasterDetailsBlock {
 		part = new SectionPart(refsSection);
 		refsViewer.addSelectionChangedListener(new ISelectionChangedListener() {
 
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				managedForm.fireSelectionChanged(part, event.getSelection());
 			}

@@ -22,7 +22,7 @@ import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.op.RemoveFromIndexOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 
 /**
  * Action for removing resource from the git index
@@ -31,7 +31,6 @@ import org.eclipse.egit.ui.internal.UIText;
  */
 public class RemoveFromIndexActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final IPath[] sel = getSelectedLocations(event);
 		if (sel.length == 0)
@@ -70,7 +69,7 @@ public class RemoveFromIndexActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return haveSelectedResourcesWithRepository();
+		return getProjectsInRepositoryOfSelectedResources().length > 0;
 	}
 
 }

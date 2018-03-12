@@ -25,13 +25,13 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.junit.Before;
 
 @SuppressWarnings("boxing")
 public abstract class AbstractCacheTest extends LocalDiskRepositoryTestCase {
 
-	protected Repository db;
+	protected FileRepository db;
 
 	protected static final String INITIAL_TAG = "initial-tag";
 
@@ -43,10 +43,9 @@ public abstract class AbstractCacheTest extends LocalDiskRepositoryTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		db = createWorkRepository();
-		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
-			git.tag().setName(INITIAL_TAG).call();
-		}
+		Git git = new Git(db);
+		git.commit().setMessage("initial commit").call();
+		git.tag().setName(INITIAL_TAG).call();
 	}
 
 	protected void assertFileAddition(Map<String, Change> result, String path, String fileName) {

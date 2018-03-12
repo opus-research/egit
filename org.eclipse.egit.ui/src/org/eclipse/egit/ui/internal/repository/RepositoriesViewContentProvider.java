@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -35,8 +34,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode;
@@ -68,14 +66,10 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevObject;
-import org.eclipse.jgit.revwalk.RevTag;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -94,15 +88,16 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 	private boolean branchHierarchyMode = false;
 
-	private Map<Repository, Map<String, Ref>> branchRefs = new WeakHashMap<>();
+	private Map<Repository, Map<String, Ref>> branchRefs = new WeakHashMap<Repository, Map<String, Ref>>();
 
-	private Map<Repository, ListenerHandle> refsChangedListeners = new WeakHashMap<>();
+	private Map<Repository, ListenerHandle> refsChangedListeners = new WeakHashMap<Repository, ListenerHandle>();
 
 	/**
 	 * Constructs this instance
 	 */
 	public RepositoriesViewContentProvider() {
-		ICommandService srv = CommonUtils.getService(PlatformUI.getWorkbench(), ICommandService.class);
+		ICommandService srv = (ICommandService) PlatformUI.getWorkbench()
+				.getService(ICommandService.class);
 		commandState = srv.getCommand(
 				ToggleBranchHierarchyCommand.ID)
 				.getState(ToggleBranchHierarchyCommand.TOGGLE_STATE);
@@ -115,12 +110,11 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 	}
 
-	@Override
 	@SuppressWarnings("unchecked")
 	public Object[] getElements(Object inputElement) {
 
-		List<RepositoryTreeNode> nodes = new ArrayList<>();
-		List<String> directories = new ArrayList<>();
+		List<RepositoryTreeNode> nodes = new ArrayList<RepositoryTreeNode>();
+		List<String> directories = new ArrayList<String>();
 		RepositoryUtil repositoryUtil = Activator.getDefault()
 				.getRepositoryUtil();
 
@@ -155,7 +149,6 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		return nodes.toArray();
 	}
 
-	@Override
 	public void dispose() {
 		commandState.removeListener(this);
 		for (ListenerHandle handle : refsChangedListeners.values())
@@ -163,12 +156,10 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		refsChangedListeners.clear();
 	}
 
-	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		// nothing
 	}
 
-	@Override
 	public Object[] getChildren(Object parentElement) {
 
 		RepositoryTreeNode node = (RepositoryTreeNode) parentElement;
@@ -177,7 +168,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		switch (node.getType()) {
 
 		case BRANCHES: {
-			List<RepositoryTreeNode> nodes = new ArrayList<>();
+			List<RepositoryTreeNode> nodes = new ArrayList<RepositoryTreeNode>();
 			nodes.add(new LocalNode(node, repo));
 			nodes.add(new RemoteTrackingNode(node, repo));
 			return nodes.toArray();
@@ -187,7 +178,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			if (branchHierarchyMode) {
 				BranchHierarchyNode hierNode = new BranchHierarchyNode(node,
 						repo, new Path(Constants.R_HEADS));
-				List<RepositoryTreeNode> children = new ArrayList<>();
+				List<RepositoryTreeNode> children = new ArrayList<RepositoryTreeNode>();
 				try {
 					for (IPath path : hierNode.getChildPaths()) {
 						children.add(new BranchHierarchyNode(node, node
@@ -202,7 +193,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 				}
 				return children.toArray();
 			} else {
-				List<RepositoryTreeNode<Ref>> refs = new ArrayList<>();
+				List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
 				try {
 					for (Entry<String, Ref> refEntry : getRefs(repo, Constants.R_HEADS).entrySet()) {
 						if (!refEntry.getValue().isSymbolic())
@@ -220,7 +211,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			if (branchHierarchyMode) {
 				BranchHierarchyNode hierNode = new BranchHierarchyNode(node,
 						repo, new Path(Constants.R_REMOTES));
-				List<RepositoryTreeNode> children = new ArrayList<>();
+				List<RepositoryTreeNode> children = new ArrayList<RepositoryTreeNode>();
 				try {
 					for (IPath path : hierNode.getChildPaths()) {
 						children.add(new BranchHierarchyNode(node, node
@@ -235,7 +226,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 				}
 				return children.toArray();
 			} else {
-				List<RepositoryTreeNode<Ref>> refs = new ArrayList<>();
+				List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
 				try {
 					for (Entry<String, Ref> refEntry : getRefs(repo, Constants.R_REMOTES).entrySet()) {
 						if (!refEntry.getValue().isSymbolic())
@@ -252,7 +243,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 		case BRANCHHIERARCHY: {
 			BranchHierarchyNode hierNode = (BranchHierarchyNode) node;
-			List<RepositoryTreeNode> children = new ArrayList<>();
+			List<RepositoryTreeNode> children = new ArrayList<RepositoryTreeNode>();
 			try {
 				for (IPath path : hierNode.getChildPaths()) {
 					children.add(new BranchHierarchyNode(node, node
@@ -268,11 +259,21 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case TAGS: {
-			return getTagsChildren(node, repo);
+			List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
+
+			try {
+				for (Entry<String, Ref> refEntry : getRefs(repo, Constants.R_TAGS).entrySet()) {
+					refs.add(new TagNode(node, repo, refEntry.getValue()));
+				}
+			} catch (IOException e) {
+				return handleException(e, node);
+			}
+
+			return refs.toArray();
 		}
 
 		case ADDITIONALREFS: {
-			List<RepositoryTreeNode<Ref>> refs = new ArrayList<>();
+			List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
 			try {
 				for (Entry<String, Ref> refEntry : getRefs(repo, RefDatabase.ALL).entrySet()) {
 					String name=refEntry.getKey();
@@ -289,7 +290,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case REMOTES: {
-			List<RepositoryTreeNode<String>> remotes = new ArrayList<>();
+			List<RepositoryTreeNode<String>> remotes = new ArrayList<RepositoryTreeNode<String>>();
 
 			Repository rep = node.getRepository();
 
@@ -305,7 +306,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 		case REPO: {
 
-			List<RepositoryTreeNode<? extends Object>> nodeList = new ArrayList<>();
+			List<RepositoryTreeNode<? extends Object>> nodeList = new ArrayList<RepositoryTreeNode<? extends Object>>();
 			nodeList.add(new BranchesNode(node, repo));
 			nodeList.add(new TagsNode(node, repo));
 			nodeList.add(new AdditionalRefsNode(node, repo));
@@ -322,17 +323,16 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case WORKINGDIR: {
-			List<RepositoryTreeNode<File>> children = new ArrayList<>();
+			List<RepositoryTreeNode<File>> children = new ArrayList<RepositoryTreeNode<File>>();
 
 			if (node.getRepository().isBare())
 				return children.toArray();
 			File workingDir = repo.getWorkTree();
-			if (!workingDir.exists())
+			if (workingDir == null || !workingDir.exists())
 				return children.toArray();
 
 			File[] childFiles = workingDir.listFiles();
 			Arrays.sort(childFiles, new Comparator<File>() {
-				@Override
 				public int compare(File o1, File o2) {
 					if (o1.isDirectory()) {
 						if (o2.isDirectory()) {
@@ -357,16 +357,12 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case FOLDER: {
-			List<RepositoryTreeNode<File>> children = new ArrayList<>();
+			List<RepositoryTreeNode<File>> children = new ArrayList<RepositoryTreeNode<File>>();
 
 			File parent = ((File) node.getObject());
 
 			File[] childFiles = parent.listFiles();
-			if (childFiles == null)
-				return children.toArray();
-
 			Arrays.sort(childFiles, new Comparator<File>() {
-				@Override
 				public int compare(File o1, File o2) {
 					if (o1.isDirectory()) {
 						if (o2.isDirectory()) {
@@ -392,7 +388,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 		case REMOTE: {
 
-			List<RepositoryTreeNode<String>> children = new ArrayList<>();
+			List<RepositoryTreeNode<String>> children = new ArrayList<RepositoryTreeNode<String>>();
 
 			String remoteName = (String) node.getObject();
 			RemoteConfig rc;
@@ -432,30 +428,21 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case SUBMODULES:
-			List<RepositoryNode> children = new ArrayList<>();
+			List<RepositoryNode> children = new ArrayList<RepositoryNode>();
 			try {
 				SubmoduleWalk walk = SubmoduleWalk.forIndex(node
 						.getRepository());
 				while (walk.next()) {
 					Repository subRepo = walk.getRepository();
-					if (subRepo != null) {
-						Repository cachedRepo = null;
-						try {
-							cachedRepo = repositoryCache
-								.lookupRepository(subRepo.getDirectory());
-						} finally {
-							subRepo.close();
-						}
-						if (cachedRepo != null)
-							children.add(new RepositoryNode(node, cachedRepo));
-					}
+					if (subRepo != null)
+						children.add(new RepositoryNode(node, subRepo));
 				}
 			} catch (IOException e) {
 				handleException(e, node);
 			}
 			return children.toArray();
 		case STASH:
-			List<StashedCommitNode> stashNodes = new ArrayList<>();
+			List<StashedCommitNode> stashNodes = new ArrayList<StashedCommitNode>();
 			int index = 0;
 			try {
 				for (RevCommit commit : Git.wrap(repo).stashList().call())
@@ -488,42 +475,6 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 	}
 
-	private Object[] getTagsChildren(RepositoryTreeNode parentNode,
-			Repository repo) {
-		List<RepositoryTreeNode<Ref>> nodes = new ArrayList<>();
-
-		try (RevWalk walk = new RevWalk(repo)) {
-			walk.setRetainBody(true);
-			Map<String, Ref> tagRefs = getRefs(repo, Constants.R_TAGS);
-			for (Ref tagRef : tagRefs.values()) {
-				ObjectId objectId = tagRef.getLeaf().getObjectId();
-				RevObject revObject = walk.parseAny(objectId);
-				RevObject peeledObject = walk.peel(revObject);
-				TagNode tagNode = createTagNode(parentNode, repo, tagRef,
-						revObject, peeledObject);
-				nodes.add(tagNode);
-			}
-		} catch (IOException e) {
-			return handleException(e, parentNode);
-		}
-
-		return nodes.toArray();
-	}
-
-	private TagNode createTagNode(RepositoryTreeNode parentNode,
-			Repository repo, Ref ref, RevObject revObject,
-			RevObject peeledObject) {
-		boolean annotated = (revObject instanceof RevTag);
-		if (peeledObject instanceof RevCommit) {
-			RevCommit commit = (RevCommit) peeledObject;
-			String id = commit.getId().name();
-			String message = commit.getShortMessage();
-			return new TagNode(parentNode, repo, ref, annotated, id, message);
-		} else {
-			return new TagNode(parentNode, repo, ref, annotated, "", ""); //$NON-NLS-1$ //$NON-NLS-2$
-		}
-	}
-
 	private Object[] handleException(Exception e, RepositoryTreeNode parentNode) {
 		Activator.handleError(e.getMessage(), e, false);
 		// add a node indicating that there was an Exception
@@ -537,14 +488,12 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 					.getRepository(), message) };
 	}
 
-	@Override
 	public Object getParent(Object element) {
 		if (element instanceof RepositoryTreeNode)
 			return ((RepositoryTreeNode) element).getParent();
 		return null;
 	}
 
-	@Override
 	public boolean hasChildren(Object element) {
 		// for some of the nodes we can optimize this call
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
@@ -568,7 +517,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			if (node.getRepository().isBare())
 				return false;
 			File workingDir = repo.getWorkTree();
-			if (!workingDir.exists())
+			if (workingDir == null || !workingDir.exists())
 				return false;
 			return workingDir.listFiles().length > 0;
 		default:
@@ -577,7 +526,6 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 	}
 
-	@Override
 	public void handleStateChange(State state, Object oldValue) {
 		try {
 			this.branchHierarchyMode = ((Boolean) state.getValue())
@@ -594,7 +542,6 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			branchRefs.put(repo, allRefs);
 			if (refsChangedListeners.get(repo) == null) {
 				RefsChangedListener listener = new RefsChangedListener() {
-					@Override
 					public void onRefsChanged(RefsChangedEvent event) {
 						synchronized (RepositoriesViewContentProvider.this) {
 							branchRefs.remove(repo);
@@ -608,7 +555,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		if (prefix.equals(RefDatabase.ALL))
 			return allRefs;
 
-		Map<String, Ref> filtered = new HashMap<>();
+		Map<String, Ref> filtered = new HashMap<String, Ref>();
 		for (Map.Entry<String, Ref> entry : allRefs.entrySet()) {
 			if (entry.getKey().startsWith(prefix))
 				filtered.put(entry.getKey(), entry.getValue());
@@ -645,20 +592,9 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 	 */
 	private boolean hasStashedCommits(final Repository repository) {
 		try {
-			return repository.exactRef(Constants.R_STASH) != null;
+			return repository.getRef(Constants.R_STASH) != null;
 		} catch (IOException e) {
 			return false;
 		}
-	}
-
-	/**
-	 * Tells whether this content provider is using a hierarchical branch
-	 * layout.
-	 *
-	 * @return {@code true} if this content provider uses a hierarchical branch
-	 *         layout; {@code false} otherwise
-	 */
-	public boolean isHierarchical() {
-		return branchHierarchyMode;
 	}
 }

@@ -1,5 +1,8 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2015 Benjamin Muskalla <bmuskalla@eclipsesource.com> and others.
+ * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2011-2012, IBM Corporation
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,12 +12,9 @@
  * Contributors:
  *    Benjamin Muskalla (EclipseSource) - initial implementation
  *    Tomasz Zarna (IBM) - show whitespace action, bug 371353
- *    Wayne Beaton (Eclipse Foundation) - Bug 433721
- *    Thomas Wolf (Paranor) - Hyperlink syntax coloring; bug 471355
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -26,10 +26,8 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.ActionUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuListener;
@@ -37,8 +35,8 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.action.SubMenuManager;
+import org.eclipse.jface.commands.ActionHandler;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.preference.JFacePreferences;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
@@ -53,12 +51,9 @@ import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.WhitespaceCharacterPainter;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistant;
-import org.eclipse.jface.text.presentation.IPresentationReconciler;
-import org.eclipse.jface.text.presentation.PresentationReconciler;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
 import org.eclipse.jface.text.quickassist.IQuickAssistProcessor;
 import org.eclipse.jface.text.reconciler.IReconciler;
-import org.eclipse.jface.text.rules.DefaultDamagerRepairer;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.AnnotationModel;
 import org.eclipse.jface.text.source.IAnnotationAccess;
@@ -77,20 +72,20 @@ import org.eclipse.swt.custom.BidiSegmentListener;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Layout;
+import org.eclipse.ui.ActiveShellExpression;
+import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.actions.ActionFactory;
-import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
+import org.eclipse.ui.handlers.IHandlerActivation;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.AnnotationPreference;
@@ -115,35 +110,37 @@ public class SpellcheckableMessageArea extends Composite {
 		/**
 		 * Creates a new action.
 		 *
-		 * @param target
-		 *            to operate on
-		 * @param operationCode
-		 *            the opcode
+		 * @param viewer the viewer
+		 * @param operationCode the opcode
 		 */
-		public TextViewerAction(ITextOperationTarget target,
-				int operationCode) {
+		public TextViewerAction(ITextViewer viewer, int operationCode) {
 			fOperationCode= operationCode;
-			fOperationTarget = target;
+			fOperationTarget= viewer.getTextOperationTarget();
 			update();
 		}
 
 		/**
 		 * Updates the enabled state of the action.
+		 * Fires a property change if the enabled state changes.
+		 *
+		 * @see Action#firePropertyChange(String, Object, Object)
 		 */
-		@Override
 		public void update() {
 			// XXX: workaround for https://bugs.eclipse.org/bugs/show_bug.cgi?id=206111
-			if (fOperationCode == ITextOperationTarget.REDO) {
+			if (fOperationCode == ITextOperationTarget.REDO)
 				return;
-			}
-			setEnabled(fOperationTarget != null
-					&& fOperationTarget.canDoOperation(fOperationCode));
+
+			boolean wasEnabled= isEnabled();
+			boolean isEnabled= (fOperationTarget != null && fOperationTarget.canDoOperation(fOperationCode));
+			setEnabled(isEnabled);
+
+			if (wasEnabled != isEnabled)
+				firePropertyChange(ENABLED, wasEnabled ? Boolean.TRUE : Boolean.FALSE, isEnabled ? Boolean.TRUE : Boolean.FALSE);
 		}
 
 		/**
 		 * @see Action#run()
 		 */
-		@Override
 		public void run() {
 			if (fOperationCode != -1 && fOperationTarget != null)
 				fOperationTarget.doOperation(fOperationCode);
@@ -166,7 +163,6 @@ public class SpellcheckableMessageArea extends Composite {
 			synchronizeWithPreference();
 		}
 
-		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			if (event.getProperty().equals(getPreferenceKey()))
 				synchronizeWithPreference();
@@ -185,7 +181,7 @@ public class SpellcheckableMessageArea extends Composite {
 			}
 		}
 
-		protected String getPreferenceKey() {
+		private String getPreferenceKey() {
 			return preferenceKey;
 		}
 
@@ -210,22 +206,15 @@ public class SpellcheckableMessageArea extends Composite {
 		protected ITextViewer getTextViewer() {
 			return viewer;
 		}
-
-		protected IPreferenceStore getStore() {
-			return store;
-		}
 	}
 
 	private final SourceViewer sourceViewer;
 
-	private TextSourceViewerConfiguration configuration;
-
 	private BidiSegmentListener hardWrapSegmentListener;
 
-	// XXX: workaround for https://bugs.eclipse.org/400727
-	private int brokenBidiPlatformTextWidth;
+	private ActionHandler quickFixActionHandler;
 
-	private IAction contentAssistAction;
+	private ActionHandler contentAssistActionHandler;
 
 	/**
 	 * @param parent
@@ -258,77 +247,45 @@ public class SpellcheckableMessageArea extends Composite {
 		setLayout(new FillLayout());
 
 		AnnotationModel annotationModel = new AnnotationModel();
-		sourceViewer = new HyperlinkSourceViewer(this, null,
-				SWT.MULTI | SWT.V_SCROLL | SWT.WRAP);
-		getTextWidget().setAlwaysShowScrollBars(false);
+		sourceViewer = new SourceViewer(this, null, null, true, SWT.MULTI
+				| SWT.V_SCROLL | SWT.WRAP);
 		getTextWidget().setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
-		sourceViewer.setDocument(new Document());
+
 		int endSpacing = 2;
 		int textWidth = getCharWidth() * MAX_LINE_WIDTH + endSpacing;
 		int textHeight = getLineHeight() * 7;
 		Point size = getTextWidget().computeSize(textWidth, textHeight);
 		getTextWidget().setSize(size);
 
-		computeBrokenBidiPlatformTextWidth(size.x);
-
 		getTextWidget().setEditable(!readOnly);
 
 		createMarginPainter();
 
 		configureHardWrap();
-
 		final IPropertyChangeListener propertyChangeListener = new IPropertyChangeListener() {
-			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				if (UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE.equals(event.getProperty())) {
 					getDisplay().asyncExec(new Runnable() {
-						@Override
 						public void run() {
 							configureHardWrap();
-							if (brokenBidiPlatformTextWidth != -1) {
-								layout();
-							}
 						}
 					});
 				}
 			}
 		};
 		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(propertyChangeListener);
-		final IPropertyChangeListener syntaxColoringChangeListener = new IPropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				if (JFacePreferences.HYPERLINK_COLOR
-						.equals(event.getProperty())) {
-					getDisplay().asyncExec(new Runnable() {
-						@Override
-						public void run() {
-							if (!isDisposed()) {
-								sourceViewer.refresh();
-							}
-						}
-					});
-				}
-			}
-		};
-		JFacePreferences.getPreferenceStore()
-				.addPropertyChangeListener(syntaxColoringChangeListener);
+
 		final SourceViewerDecorationSupport support = configureAnnotationPreferences();
+		if (isEditable(sourceViewer)) {
+			quickFixActionHandler = createQuickFixActionHandler(sourceViewer);
+		}
 
 		Document document = new Document(initialText);
 
-		configuration = new HyperlinkSourceViewer.Configuration(
-				EditorsUI.getPreferenceStore()) {
+		sourceViewer.configure(new TextSourceViewerConfiguration(EditorsUI
+				.getPreferenceStore()) {
 
-			@Override
-			public int getHyperlinkStateMask(ISourceViewer targetViewer) {
-				if (!targetViewer.isEditable()) {
-					return SWT.NONE;
-				}
-				return super.getHyperlinkStateMask(targetViewer);
-			}
-
-			@Override
 			protected Map getHyperlinkDetectorTargets(ISourceViewer targetViewer) {
 				return getHyperlinkTargets();
 			}
@@ -340,69 +297,27 @@ public class SpellcheckableMessageArea extends Composite {
 				return super.getReconciler(sourceViewer);
 			}
 
-			@Override
 			public IContentAssistant getContentAssistant(ISourceViewer viewer) {
 				if (!viewer.isEditable())
 					return null;
 				IContentAssistant assistant = createContentAssistant(viewer);
 				// Add content assist proposal handler if assistant exists
 				if (assistant != null)
-					contentAssistAction = createContentAssistAction(
-							sourceViewer);
+					contentAssistActionHandler = createContentAssistActionHandler(sourceViewer);
 				return assistant;
 			}
 
-			@Override
-			public IPresentationReconciler getPresentationReconciler(
-					ISourceViewer viewer) {
-				PresentationReconciler reconciler = new PresentationReconciler();
-				reconciler.setDocumentPartitioning(
-						getConfiguredDocumentPartitioning(viewer));
-				DefaultDamagerRepairer hyperlinkDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(this, viewer));
-				reconciler.setDamager(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				reconciler.setRepairer(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				return reconciler;
-			}
-
-		};
-
-		sourceViewer.configure(configuration);
+		});
 		sourceViewer.setDocument(document, annotationModel);
 
 		configureContextMenu();
 
 		getTextWidget().addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				support.uninstall();
 				Activator.getDefault().getPreferenceStore().removePropertyChangeListener(propertyChangeListener);
-				JFacePreferences.getPreferenceStore()
-						.removePropertyChangeListener(
-								syntaxColoringChangeListener);
 			}
 		});
-	}
-
-	private void computeBrokenBidiPlatformTextWidth(int textWidth) {
-		class BidiSegmentListenerTester implements BidiSegmentListener {
-			boolean called;
-
-			@Override
-			public void lineGetSegments(BidiSegmentEvent event) {
-				called = true;
-			}
-		}
-		BidiSegmentListenerTester tester = new BidiSegmentListenerTester();
-		StyledText textWidget = getTextWidget();
-		textWidget.addBidiSegmentListener(tester);
-		textWidget.setText(" "); //$NON-NLS-1$
-		textWidget.computeSize(SWT.DEFAULT, SWT.DEFAULT);
-		textWidget.removeBidiSegmentListener(tester);
-
-		brokenBidiPlatformTextWidth = tester.called ? -1 : textWidth;
 	}
 
 	private boolean isEditable(ISourceViewer viewer) {
@@ -412,18 +327,9 @@ public class SpellcheckableMessageArea extends Composite {
 	private void configureHardWrap() {
 		if (shouldHardWrap()) {
 			if (hardWrapSegmentListener == null) {
-				final StyledText textWidget = getTextWidget();
+				StyledText textWidget = getTextWidget();
 				hardWrapSegmentListener = new BidiSegmentListener() {
-					@Override
 					public void lineGetSegments(BidiSegmentEvent e) {
-						if (e.widget == textWidget) {
-							int footerOffset = CommonUtils
-									.getFooterOffset(textWidget.getText());
-							if (footerOffset >= 0
-									&& e.lineOffset >= footerOffset) {
-								return;
-							}
-						}
 						int[] segments = calculateWrapOffsets(e.lineText, MAX_LINE_WIDTH);
 						if (segments != null) {
 							char[] segmentsChars = new char[segments.length];
@@ -435,89 +341,62 @@ public class SpellcheckableMessageArea extends Composite {
 				};
 				textWidget.addBidiSegmentListener(hardWrapSegmentListener);
 				textWidget.setText(textWidget.getText()); // XXX: workaround for https://bugs.eclipse.org/384886
-
-				if (brokenBidiPlatformTextWidth != -1) {
-					Layout restrictedWidthLayout = new Layout() {
-						@Override
-						protected Point computeSize(Composite composite,
-								int wHint, int hHint, boolean flushCache) {
-							Point size = SpellcheckableMessageArea.this
-									.getSize();
-							Rectangle trim = SpellcheckableMessageArea.this
-									.computeTrim(0, 0, 0, 0);
-							size.x -= trim.width;
-							size.y -= trim.height;
-							if (size.x > brokenBidiPlatformTextWidth)
-								size.x = brokenBidiPlatformTextWidth;
-							return size;
-						}
-
-						@Override
-						protected void layout(Composite composite,
-								boolean flushCache) {
-							Point size = computeSize(composite, SWT.DEFAULT,
-									SWT.DEFAULT, flushCache);
-							textWidget.setBounds(0, 0, size.x, size.y);
-						}
-					};
-					setLayout(restrictedWidthLayout);
-				}
 			}
-
 		} else if (hardWrapSegmentListener != null) {
 			StyledText textWidget = getTextWidget();
 			textWidget.removeBidiSegmentListener(hardWrapSegmentListener);
 			textWidget.setText(textWidget.getText()); // XXX: workaround for https://bugs.eclipse.org/384886
 			hardWrapSegmentListener = null;
-
-			if (brokenBidiPlatformTextWidth != -1)
-				setLayout(new FillLayout());
 		}
-	}
-
-	private TextViewerAction createFromActionFactory(ActionFactory factory,
-			int operationCode) {
-		IWorkbenchAction template = factory
-				.create(PlatformUI.getWorkbench().getActiveWorkbenchWindow());
-		TextViewerAction action = new TextViewerAction(sourceViewer,
-				operationCode);
-		action.setText(template.getText());
-		action.setImageDescriptor(template.getImageDescriptor());
-		action.setDisabledImageDescriptor(
-				template.getDisabledImageDescriptor());
-		action.setActionDefinitionId(template.getActionDefinitionId());
-		template.dispose();
-		return action;
 	}
 
 	private void configureContextMenu() {
 		final boolean editable = isEditable(sourceViewer);
-		TextViewerAction cutAction;
-		TextViewerAction undoAction;
-		TextViewerAction redoAction;
-		TextViewerAction pasteAction;
-		IAction quickFixAction;
+		final TextViewerAction cutAction;
+		final TextViewerAction undoAction;
+		final TextViewerAction redoAction;
+		final TextViewerAction pasteAction;
 		if (editable) {
-			cutAction = createFromActionFactory(ActionFactory.CUT,
+			cutAction = new TextViewerAction(sourceViewer,
 					ITextOperationTarget.CUT);
-			undoAction = createFromActionFactory(ActionFactory.UNDO,
+			cutAction.setText(UIText.SpellCheckingMessageArea_cut);
+			cutAction
+					.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_CUT);
+
+			undoAction = new TextViewerAction(sourceViewer,
 					ITextOperationTarget.UNDO);
-			redoAction = createFromActionFactory(ActionFactory.REDO,
+			undoAction.setText(UIText.SpellcheckableMessageArea_undo);
+			undoAction
+					.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_UNDO);
+
+			redoAction = new TextViewerAction(sourceViewer,
 					ITextOperationTarget.REDO);
-			pasteAction = createFromActionFactory(ActionFactory.PASTE,
+			redoAction.setText(UIText.SpellcheckableMessageArea_redo);
+			redoAction
+					.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_REDO);
+
+			pasteAction = new TextViewerAction(sourceViewer,
 					ITextOperationTarget.PASTE);
-			quickFixAction = new QuickfixAction(sourceViewer);
+			pasteAction.setText(UIText.SpellCheckingMessageArea_paste);
+			pasteAction
+					.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_PASTE);
 		} else {
 			cutAction = null;
 			undoAction = null;
 			redoAction = null;
 			pasteAction = null;
-			quickFixAction = null;
 		}
-		TextViewerAction copyAction = createFromActionFactory(
-				ActionFactory.COPY, ITextOperationTarget.COPY);
-		TextViewerAction selectAllAction = createFromActionFactory(
-				ActionFactory.SELECT_ALL, ITextOperationTarget.SELECT_ALL);
+
+		final TextViewerAction copyAction = new TextViewerAction(sourceViewer,
+				ITextOperationTarget.COPY);
+		copyAction.setText(UIText.SpellCheckingMessageArea_copy);
+		copyAction.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_COPY);
+
+		final TextViewerAction selectAllAction = new TextViewerAction(
+				sourceViewer, ITextOperationTarget.SELECT_ALL);
+		selectAllAction.setText(UIText.SpellCheckingMessageArea_selectAll);
+		selectAllAction
+				.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_SELECT_ALL);
 
 		final TextEditorPropertyAction showWhitespaceAction = new TextEditorPropertyAction(
 				UIText.SpellcheckableMessageArea_showWhitespace,
@@ -525,38 +404,6 @@ public class SpellcheckableMessageArea extends Composite {
 				AbstractTextEditor.PREFERENCE_SHOW_WHITESPACE_CHARACTERS) {
 
 			private IPainter whitespaceCharPainter;
-
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				String property = event.getProperty();
-				if (property.equals(getPreferenceKey())
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_CARRIAGE_RETURN
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LINE_FEED
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_WHITESPACE_CHARACTER_ALPHA_VALUE
-								.equals(property)) {
-					synchronizeWithPreference();
-				}
-			}
 
 			@Override
 			protected void toggleState(boolean checked) {
@@ -573,21 +420,7 @@ public class SpellcheckableMessageArea extends Composite {
 				Assert.isTrue(whitespaceCharPainter == null);
 				ITextViewer v = getTextViewer();
 				if (v instanceof ITextViewerExtension2) {
-					IPreferenceStore store = getStore();
-					whitespaceCharPainter = new WhitespaceCharacterPainter(
-							v,
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_CARRIAGE_RETURN),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LINE_FEED),
-							store.getInt(AbstractTextEditor.PREFERENCE_WHITESPACE_CHARACTER_ALPHA_VALUE));
+					whitespaceCharPainter = new WhitespaceCharacterPainter(v);
 					((ITextViewerExtension2) v).addPainter(whitespaceCharPainter);
 				}
 			}
@@ -608,20 +441,16 @@ public class SpellcheckableMessageArea extends Composite {
 		};
 
 		MenuManager contextMenu = new MenuManager();
-		if (cutAction != null) {
+		if (cutAction != null)
 			contextMenu.add(cutAction);
-		}
 		contextMenu.add(copyAction);
-		if (pasteAction != null) {
+		if (pasteAction != null)
 			contextMenu.add(pasteAction);
-		}
 		contextMenu.add(selectAllAction);
-		if (undoAction != null) {
+		if (undoAction != null)
 			contextMenu.add(undoAction);
-		}
-		if (redoAction != null) {
+		if (redoAction != null)
 			contextMenu.add(redoAction);
-		}
 		contextMenu.add(new Separator());
 		contextMenu.add(showWhitespaceAction);
 		contextMenu.add(new Separator());
@@ -630,7 +459,6 @@ public class SpellcheckableMessageArea extends Composite {
 			final SubMenuManager quickFixMenu = new SubMenuManager(contextMenu);
 			quickFixMenu.setVisible(true);
 			quickFixMenu.addMenuListener(new IMenuListener() {
-				@Override
 				public void menuAboutToShow(IMenuManager manager) {
 					quickFixMenu.removeAll();
 					addProposals(quickFixMenu);
@@ -639,27 +467,102 @@ public class SpellcheckableMessageArea extends Composite {
 		}
 
 		final StyledText textWidget = getTextWidget();
-		List<IAction> globalActions = new ArrayList<>();
-		if (editable) {
-			globalActions.add(cutAction);
-			globalActions.add(pasteAction);
-			globalActions.add(undoAction);
-			globalActions.add(redoAction);
-			globalActions.add(quickFixAction);
-		}
-		globalActions.add(copyAction);
-		globalActions.add(selectAllAction);
-		if (contentAssistAction != null) {
-			globalActions.add(contentAssistAction);
-		}
-		ActionUtils.setGlobalActions(textWidget, globalActions,
-				getHandlerService());
-
 		textWidget.setMenu(contextMenu.createContextMenu(textWidget));
+
+		textWidget.addFocusListener(new FocusListener() {
+
+			private IHandlerActivation cutHandlerActivation;
+			private IHandlerActivation copyHandlerActivation;
+			private IHandlerActivation pasteHandlerActivation;
+			private IHandlerActivation selectAllHandlerActivation;
+			private IHandlerActivation undoHandlerActivation;
+			private IHandlerActivation redoHandlerActivation;
+			private IHandlerActivation quickFixHandlerActivation;
+			private IHandlerActivation contentAssistHandlerActivation;
+
+			public void focusGained(FocusEvent e) {
+				IHandlerService service = getHandlerService();
+				if (service == null)
+					return;
+
+				if (cutAction != null) {
+					cutAction.update();
+					cutHandlerActivation = service.activateHandler(
+							IWorkbenchCommandConstants.EDIT_CUT,
+							new ActionHandler(cutAction),
+							new ActiveShellExpression(getParent().getShell()));
+				}
+				copyAction.update();
+
+				copyHandlerActivation = service.activateHandler(
+						IWorkbenchCommandConstants.EDIT_COPY,
+						new ActionHandler(copyAction),
+						new ActiveShellExpression(getParent().getShell()));
+				if (pasteAction != null)
+					this.pasteHandlerActivation = service.activateHandler(
+							IWorkbenchCommandConstants.EDIT_PASTE,
+							new ActionHandler(pasteAction),
+							new ActiveShellExpression(getParent().getShell()));
+				selectAllHandlerActivation = service.activateHandler(
+						IWorkbenchCommandConstants.EDIT_SELECT_ALL,
+						new ActionHandler(selectAllAction),
+						new ActiveShellExpression(getParent().getShell()));
+				if (undoAction != null)
+					undoHandlerActivation = service.activateHandler(
+							IWorkbenchCommandConstants.EDIT_UNDO,
+							new ActionHandler(undoAction),
+							new ActiveShellExpression(getParent().getShell()));
+				if (redoAction != null)
+					redoHandlerActivation = service.activateHandler(
+							IWorkbenchCommandConstants.EDIT_REDO,
+							new ActionHandler(redoAction),
+							new ActiveShellExpression(getParent().getShell()));
+				if (quickFixActionHandler != null)
+					quickFixHandlerActivation = getHandlerService().activateHandler(
+							quickFixActionHandler.getAction().getActionDefinitionId(),
+							quickFixActionHandler,
+							new ActiveShellExpression(getParent().getShell()));
+				if (contentAssistActionHandler != null)
+					contentAssistHandlerActivation = getHandlerService().activateHandler(
+							contentAssistActionHandler.getAction().getActionDefinitionId(),
+							contentAssistActionHandler,
+							new ActiveShellExpression(getParent().getShell()));
+			}
+
+			public void focusLost(FocusEvent e) {
+				IHandlerService service = getHandlerService();
+				if (service == null)
+					return;
+
+				if (cutHandlerActivation != null)
+					service.deactivateHandler(cutHandlerActivation);
+
+				if (copyHandlerActivation != null)
+					service.deactivateHandler(copyHandlerActivation);
+
+				if (pasteHandlerActivation != null)
+					service.deactivateHandler(pasteHandlerActivation);
+
+				if (selectAllHandlerActivation != null)
+					service.deactivateHandler(selectAllHandlerActivation);
+
+				if (undoHandlerActivation != null)
+					service.deactivateHandler(undoHandlerActivation);
+
+				if (redoHandlerActivation != null)
+					service.deactivateHandler(redoHandlerActivation);
+
+				if (quickFixHandlerActivation != null)
+					service.deactivateHandler(quickFixHandlerActivation);
+
+				if (contentAssistHandlerActivation != null)
+					service.deactivateHandler(contentAssistHandlerActivation);
+			}
+
+		});
 
         sourceViewer.addSelectionChangedListener(new ISelectionChangedListener() {
 
-					@Override
 					public void selectionChanged(SelectionChangedEvent event) {
 						if (cutAction != null)
 							cutAction.update();
@@ -668,9 +571,9 @@ public class SpellcheckableMessageArea extends Composite {
 
 				});
 
-		if (editable) {
+		if (editable)
 			sourceViewer.addTextListener(new ITextListener() {
-				@Override
+
 				public void textChanged(TextEvent event) {
 					if (undoAction != null)
 						undoAction.update();
@@ -678,10 +581,8 @@ public class SpellcheckableMessageArea extends Composite {
 						redoAction.update();
 				}
 			});
-		}
 
 		textWidget.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				showWhitespaceAction.dispose();
 			}
@@ -690,47 +591,41 @@ public class SpellcheckableMessageArea extends Composite {
 
 	private void addProposals(final SubMenuManager quickFixMenu) {
 		IAnnotationModel sourceModel = sourceViewer.getAnnotationModel();
-		if (sourceModel == null) {
-			return;
-		}
 		Iterator annotationIterator = sourceModel.getAnnotationIterator();
 		while (annotationIterator.hasNext()) {
 			Annotation annotation = (Annotation) annotationIterator.next();
 			boolean isDeleted = annotation.isMarkedDeleted();
-			boolean isIncluded = !isDeleted
-					&& includes(sourceModel.getPosition(annotation),
-							getTextWidget().getCaretOffset());
-			boolean isFixable = isIncluded && sourceViewer
-					.getQuickAssistAssistant().canFix(annotation);
-			if (isFixable) {
+			boolean isIncluded = includes(sourceModel.getPosition(annotation),
+					getTextWidget().getCaretOffset());
+			boolean isFixable = sourceViewer.getQuickAssistAssistant().canFix(
+					annotation);
+			if (!isDeleted && isIncluded && isFixable) {
 				IQuickAssistProcessor processor = sourceViewer
-						.getQuickAssistAssistant().getQuickAssistProcessor();
+				.getQuickAssistAssistant()
+				.getQuickAssistProcessor();
 				IQuickAssistInvocationContext context = sourceViewer
-						.getQuickAssistInvocationContext();
+				.getQuickAssistInvocationContext();
 				ICompletionProposal[] proposals = processor
-						.computeQuickAssistProposals(context);
+				.computeQuickAssistProposals(context);
 
-				for (ICompletionProposal proposal : proposals) {
+				for (ICompletionProposal proposal : proposals)
 					quickFixMenu.add(createQuickFixAction(proposal));
-				}
 			}
 		}
 	}
 
 	private boolean includes(Position position, int caretOffset) {
-		return position != null && (position.includes(caretOffset)
-				|| (position.offset + position.length) == caretOffset);
+		return position.includes(caretOffset)
+		|| (position.offset + position.length) == caretOffset;
 	}
 
 	private IAction createQuickFixAction(final ICompletionProposal proposal) {
 		return new Action(proposal.getDisplayString()) {
 
-			@Override
 			public void run() {
 				proposal.apply(sourceViewer.getDocument());
 			}
 
-			@Override
 			public ImageDescriptor getImageDescriptor() {
 				Image image = proposal.getImage();
 				if (image != null)
@@ -750,7 +645,8 @@ public class SpellcheckableMessageArea extends Composite {
 	 *         found.
 	 */
 	protected IHandlerService getHandlerService() {
-		return CommonUtils.getService(PlatformUI.getWorkbench(), IHandlerService.class);
+		return (IHandlerService) PlatformUI.getWorkbench().getService(
+				IHandlerService.class);
 	}
 
 	private SourceViewerDecorationSupport configureAnnotationPreferences() {
@@ -806,32 +702,33 @@ public class SpellcheckableMessageArea extends Composite {
 		return sourceViewer.getTextWidget();
 	}
 
-	private static class QuickfixAction extends Action {
+	private ActionHandler createQuickFixActionHandler(
+			final ITextOperationTarget textOperationTarget) {
+		Action quickFixAction = new Action() {
 
-		private final ITextOperationTarget textOperationTarget;
-
-		public QuickfixAction(ITextOperationTarget target) {
-			textOperationTarget = target;
-			setActionDefinitionId(
-					ITextEditorActionDefinitionIds.QUICK_ASSIST);
-		}
-
-		@Override
-		public void run() {
-			if (textOperationTarget.canDoOperation(ISourceViewer.QUICK_ASSIST)) {
+			public void run() {
 				textOperationTarget.doOperation(ISourceViewer.QUICK_ASSIST);
 			}
-		}
-
+		};
+		quickFixAction
+		.setActionDefinitionId(ITextEditorActionDefinitionIds.QUICK_ASSIST);
+		return new ActionHandler(quickFixAction);
 	}
 
-	private IAction createContentAssistAction(
-			final SourceViewer viewer) {
-		Action proposalAction = new TextViewerAction(viewer,
-				ISourceViewer.CONTENTASSIST_PROPOSALS);
+	private ActionHandler createContentAssistActionHandler(
+			final ITextOperationTarget textOperationTarget) {
+		Action proposalAction = new Action() {
+			public void run() {
+				if (textOperationTarget
+						.canDoOperation(ISourceViewer.CONTENTASSIST_PROPOSALS)
+						&& getTextWidget().isFocusControl())
+					textOperationTarget
+							.doOperation(ISourceViewer.CONTENTASSIST_PROPOSALS);
+			}
+		};
 		proposalAction
 				.setActionDefinitionId(ITextEditorActionDefinitionIds.CONTENT_ASSIST_PROPOSALS);
-		return proposalAction;
+		return new ActionHandler(proposalAction);
 	}
 
 	/**
@@ -843,43 +740,18 @@ public class SpellcheckableMessageArea extends Composite {
 	public String getCommitMessage() {
 		String text = getText();
 		text = Utils.normalizeLineEndings(text);
-		if (shouldHardWrap()) {
-			text = wrapCommitMessage(text);
-		}
+		if (shouldHardWrap())
+			text = hardWrap(text);
 		return text;
-	}
-
-	/**
-	 * Wraps a commit message, leaving the footer as defined by
-	 * {@link CommonUtils#getFooterOffset(String)} unwrapped.
-	 *
-	 * @param text
-	 *            of the whole commit message, including footer, using '\n' as
-	 *            line delimiter
-	 * @return the wrapped text
-	 */
-	protected static String wrapCommitMessage(String text) {
-		// protected in order to be easily testable
-		int footerStart = CommonUtils.getFooterOffset(text);
-		if (footerStart < 0) {
-			return hardWrap(text);
-		} else {
-			// Do not wrap footer lines.
-			String footer = text.substring(footerStart);
-			text = hardWrap(text.substring(0, footerStart));
-			return text + footer;
-		}
 	}
 
 	/**
 	 * Hard-wraps the given text.
 	 *
-	 * @param text
-	 *            the text to wrap, must use '\n' as line delimiter
+	 * @param text the text to wrap, must use '\n' as line delimiter
 	 * @return the wrapped text
 	 */
-	protected static String hardWrap(String text) {
-		// protected for testing
+	public static String hardWrap(String text) {
 		int[] wrapOffsets = calculateWrapOffsets(text, MAX_LINE_WIDTH);
 		if (wrapOffsets != null) {
 			StringBuilder builder = new StringBuilder(text.length() + wrapOffsets.length);
@@ -903,7 +775,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @return map of targets
 	 */
 	protected Map<String, IAdaptable> getHyperlinkTargets() {
-		return Collections.singletonMap(EditorsUI.DEFAULT_TEXT_EDITOR_ID,
+		return Collections.singletonMap("org.eclipse.ui.DefaultTextEditor", //$NON-NLS-1$
 				getDefaultTarget());
 	}
 
@@ -930,7 +802,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @return text
 	 */
 	public String getText() {
-		return getDocument().get();
+		return getTextWidget().getText();
 	}
 
 	/**
@@ -944,26 +816,14 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @param text
 	 */
 	public void setText(String text) {
-		if (text != null) {
-			getDocument().set(text);
-		}
-	}
-
-	/**
-	 * Set the same background color to the styledText widget as the Composite
-	 */
-	@Override
-	public void setBackground(Color color) {
-		super.setBackground(color);
-		StyledText textWidget = getTextWidget();
-		textWidget.setBackground(color);
+		if (text != null)
+			getTextWidget().setText(text);
 	}
 
 	/**
 	 *
 	 */
-	@Override
-	public boolean forceFocus() {
+	public boolean setFocus() {
 		return getTextWidget().setFocus();
 	}
 

@@ -18,8 +18,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIUtils.IRefListProvider;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -65,7 +66,6 @@ public class FetchSourcePage extends WizardPage {
 		setTitle(UIText.FetchSourcePage_PageTitle);
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(2, false));
@@ -82,14 +82,17 @@ public class FetchSourcePage extends WizardPage {
 		sourceLabel.setText(UIText.FetchSourcePage_SourceLabel);
 		sourceText = new Text(main, SWT.BORDER);
 		sourceText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
 		});
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(sourceText);
 		UIUtils.addRefContentProposalToText(sourceText, repository,
-				() -> getRemoteRefs());
+				new IRefListProvider() {
+					public List<Ref> getRefList() {
+						return getRemoteRefs();
+					}
+				});
 		checkPage();
 		setControl(main);
 	}
@@ -130,15 +133,14 @@ public class FetchSourcePage extends WizardPage {
 	private List<Ref> getRemoteRefs() {
 		if (remoteRefs == null) {
 			URIish uriToCheck;
-			List<Ref> proposals = new ArrayList<>();
+			List<Ref> proposals = new ArrayList<Ref>();
 			uriToCheck = config.getURIs().get(0);
 			final ListRemoteOperation lop = new ListRemoteOperation(repository,
 					uriToCheck, Activator.getDefault().getPreferenceStore()
 							.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT));
 			try {
-				new ProgressMonitorDialog(getShell()).run(true, true,
+				new ProgressMonitorDialog(getShell()).run(false, true,
 						new IRunnableWithProgress() {
-							@Override
 							public void run(IProgressMonitor monitor)
 									throws InvocationTargetException,
 									InterruptedException {
@@ -156,7 +158,6 @@ public class FetchSourcePage extends WizardPage {
 						proposals.add(ref);
 				}
 				Collections.sort(proposals, new Comparator<Ref>() {
-					@Override
 					public int compare(Ref o1, Ref o2) {
 						return o1.getName().compareTo(o2.getName());
 					}

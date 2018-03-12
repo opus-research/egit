@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2013 SAP AG and others.
+ * Copyright (c) 2010-2012 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -28,17 +28,16 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
 import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
 import org.eclipse.egit.ui.internal.provisional.wizards.NoRepositoryInfoException;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.IWizardPage;
@@ -54,13 +53,10 @@ import org.eclipse.ui.actions.NewProjectAction;
  * A wizard which allows to optionally clone a repository and to import projects from a repository.
  */
 public class GitImportWizard extends AbstractGitCloneWizard implements IImportWizard {
-	private static final String GIT_IMPORT_SECTION = "GitImportWizard"; //$NON-NLS-1$
 
-	private GitSelectRepositoryPage selectRepoPage = new GitSelectRepositoryPage(
-			false);
+	private GitSelectRepositoryPage selectRepoPage = new GitSelectRepositoryPage();
 
 	private GitSelectWizardPage importWithDirectoriesPage = new GitSelectWizardPage(){
-		@Override
 		public void setVisible(boolean visible) {
 			if (existingRepo == null && visible && (cloneDestination.cloneSettingsChanged())) {
 				setCallerRunsCloneOperation(true);
@@ -69,7 +65,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					performClone(repositoryInfo);
 					importWithDirectoriesPage.getControl().getDisplay().asyncExec(new Runnable() {
 
-						@Override
 						public void run() {
 							runCloneOperation(getContainer(), repositoryInfo);
 							cloneDestination.saveSettingsForClonedRepo();
@@ -86,23 +81,9 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		}
 	};
 
-	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage() {
-		@Override
-		public void setVisible(boolean visible) {
-			if (visible)
-				setProjectsList(importWithDirectoriesPage.getPath());
-			super.setVisible(visible);
-		}
-	};
+	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage() ;
 
-	private GitCreateGeneralProjectPage createGeneralProjectPage = new GitCreateGeneralProjectPage() {
-		@Override
-		public void setVisible(boolean visible) {
-			if (visible)
-				setPath(importWithDirectoriesPage.getPath());
-			super.setVisible(visible);
-		}
-	};
+	private GitCreateGeneralProjectPage createGeneralProjectPage = new GitCreateGeneralProjectPage();
 
 	private Repository existingRepo;
 
@@ -124,7 +105,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		super(searchResult);
 		setWindowTitle(UIText.GitImportWizard_WizardTitle);
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
-		setDialogSettings(getImportWizardDialogSettings());
 	}
 
 	@Override
@@ -147,7 +127,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		return cloneSourceProvider;
 	}
 
-	@Override
 	public void init(IWorkbench workbench, IStructuredSelection selection) {
 		// nothing to do
 	}
@@ -166,11 +145,16 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		} else if (page == importWithDirectoriesPage)
 			switch (importWithDirectoriesPage.getWizardSelection()) {
 			case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
+				projectsImportPage.setProjectsList(importWithDirectoriesPage
+						.getPath());
 				return projectsImportPage;
 			case GitSelectWizardPage.NEW_WIZARD:
 				return null;
 			case GitSelectWizardPage.GENERAL_WIZARD:
+				createGeneralProjectPage.setPath(importWithDirectoriesPage
+						.getPath());
 				return createGeneralProjectPage;
+
 			}
 		else if (page == createGeneralProjectPage
 				|| page == projectsImportPage)
@@ -200,7 +184,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 	public boolean performFinish() {
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
-				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
 					importProjects(monitor);
@@ -237,21 +220,21 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			throws InvocationTargetException, InterruptedException {
 		switch (importWithDirectoriesPage.getWizardSelection()) {
 		case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD: {
-			final Set<ProjectRecord> projectsToCreate = new HashSet<>();
-			final List<IWorkingSet> workingSets = new ArrayList<>();
+			final Set<ProjectRecord> projectsToCreate = new HashSet<ProjectRecord>();
+			final List<IWorkingSet> workingSets = new ArrayList<IWorkingSet>();
+			final Repository[] repository = new Repository[1];
 			// get the data from the pages in the UI thread
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				@Override
 				public void run() {
 					projectsToCreate.addAll(projectsImportPage
 							.getCheckedProjects());
 					IWorkingSet[] workingSetArray = projectsImportPage
 							.getSelectedWorkingSets();
 					workingSets.addAll(Arrays.asList(workingSetArray));
-					projectsImportPage.saveWidgetValues();
+					repository[0] = getTargetRepository();
 				}
 			});
-			ProjectUtils.createProjects(projectsToCreate,
+			ProjectUtils.createProjects(projectsToCreate, repository[0],
 					workingSets.toArray(new IWorkingSet[workingSets.size()]),
 					monitor);
 			break;
@@ -259,7 +242,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		case GitSelectWizardPage.NEW_WIZARD: {
 			final File[] repoDir = new File[1];
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				@Override
 				public void run() {
 					repoDir[0] = getTargetRepository().getDirectory();
 				}
@@ -268,27 +250,21 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					.asList(ResourcesPlugin.getWorkspace().getRoot()
 							.getProjects());
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				@Override
 				public void run() {
 					new NewProjectAction(PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow()).run();
 				}
 			});
 			IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
-				@Override
 				public void run(IProgressMonitor actMonitor)
 						throws CoreException {
 					IProject[] currentProjects = ResourcesPlugin.getWorkspace()
 							.getRoot().getProjects();
-					SubMonitor progress = SubMonitor.convert(actMonitor,
-							currentProjects.length);
 					for (IProject current : currentProjects)
 						if (!previousProjects.contains(current)) {
 							ConnectProviderOperation cpo = new ConnectProviderOperation(
 									current, repoDir[0]);
-							cpo.execute(progress.newChild(1));
-						} else {
-							progress.worked(1);
+							cpo.execute(actMonitor);
 						}
 				}
 			};
@@ -306,7 +282,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			final File[] repoDir = new File[1];
 			// get the data from the page in the UI thread
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				@Override
 				public void run() {
 					projectName[0] = createGeneralProjectPage.getProjectName();
 					defaultLocation[0] = createGeneralProjectPage
@@ -317,24 +292,23 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			});
 			try {
 				IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
-					@Override
 					public void run(IProgressMonitor actMonitor)
 							throws CoreException {
 						final IProjectDescription desc = ResourcesPlugin
 								.getWorkspace().newProjectDescription(
 										projectName[0]);
 						desc.setLocation(new Path(path[0]));
-						SubMonitor progress = SubMonitor.convert(actMonitor, 4);
+
 						IProject prj = ResourcesPlugin.getWorkspace().getRoot()
 								.getProject(desc.getName());
-						prj.create(desc, progress.newChild(1));
-						prj.open(progress.newChild(1));
+						prj.create(desc, actMonitor);
+						prj.open(actMonitor);
 						ConnectProviderOperation cpo = new ConnectProviderOperation(
 								prj, repoDir[0]);
-						cpo.execute(progress.newChild(1));
+						cpo.execute(new NullProgressMonitor());
 
 						ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
-								IResource.DEPTH_ONE, progress.newChild(1));
+								IResource.DEPTH_ONE, actMonitor);
 					}
 				};
 				ResourcesPlugin.getWorkspace().run(wsr, monitor);
@@ -346,15 +320,5 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		}
 	}
 
-	static IDialogSettings getImportWizardDialogSettings() {
-		IDialogSettings settings = Activator.getDefault().getDialogSettings();
 
-		IDialogSettings wizardSettings = settings
-				.getSection(GitImportWizard.GIT_IMPORT_SECTION);
-		if (wizardSettings == null) {
-			wizardSettings = settings
-					.addNewSection(GitImportWizard.GIT_IMPORT_SECTION);
-		}
-		return wizardSettings;
-	}
 }

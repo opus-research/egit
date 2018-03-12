@@ -22,7 +22,6 @@ import org.eclipse.egit.ui.common.GitImportRepoWizard;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.common.RepoRemoteBranchesPage;
 import org.eclipse.egit.ui.common.WorkingCopyPage;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.equinox.internal.security.storage.PasswordProviderSelector;
 import org.eclipse.equinox.internal.security.storage.PasswordProviderSelector.ExtStorageModule;
 import org.eclipse.equinox.internal.security.storage.friends.IStorageConstants;
@@ -30,7 +29,7 @@ import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -73,8 +72,8 @@ public abstract class GitCloneWizardTestBase extends LocalRepositoryTestCase {
 		// the integrity of the repository here. Only a few basic properties
 		// we'd expect from a clone made this way, that would possibly
 		// not hold true given other parameters in the GUI.
-		Repository repository = FileRepositoryBuilder.create(new File(
-				destinationRepo, Constants.DOT_GIT));
+		Repository repository = new FileRepository(new File(destinationRepo,
+				Constants.DOT_GIT));
 		// we always have an origin/master
 		assertNotNull(repository.resolve("origin/master"));
 		// and a local master initialized from origin/master (default!)
@@ -114,7 +113,8 @@ public abstract class GitCloneWizardTestBase extends LocalRepositoryTestCase {
 
 	@Before
 	public void setupViews() {
-		TestUtil.showExplorerView();
+		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
+		bot.viewByTitle("Package Explorer").show();
 		importWizard = new GitImportRepoWizard();
 	}
 

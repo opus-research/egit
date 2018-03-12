@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,11 +13,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
@@ -58,24 +56,16 @@ class GitSyncCache {
 			Map<GitSynchronizeData, Collection<String>> updateRequests,
 			IProgressMonitor monitor) {
 		GitSyncCache cache = new GitSyncCache();
-		mergeAllDataIntoCache(updateRequests, monitor, cache);
-		return cache;
-	}
-
-	public static void mergeAllDataIntoCache(
-			Map<GitSynchronizeData, Collection<String>> updateRequests,
-			IProgressMonitor monitor, GitSyncCache cache) {
 		SubMonitor m = SubMonitor.convert(monitor, updateRequests.size());
 
 		for (Entry<GitSynchronizeData, Collection<String>> entry : updateRequests
 				.entrySet()) {
-			Collection<String> paths = entry.getValue();
-			GitSyncCache partialCache = getAllData(entry.getKey(), paths);
-			cache.merge(partialCache, new HashSet<String>(paths));
+			cache.merge(getAllData(entry.getKey(), entry.getValue()));
 			m.worked(1);
 		}
 
 		m.done();
+		return cache;
 	}
 
 	private static GitSyncCache getAllData(GitSynchronizeData gsd,
@@ -112,13 +102,14 @@ class GitSyncCache {
 		return OrTreeFilter.create(filters);
 	}
 
-	static boolean loadDataFromGit(GitSynchronizeData gsd,
+	private static void loadDataFromGit(GitSynchronizeData gsd,
 			TreeFilter filter, GitSyncObjectCache repoCache) {
 		Repository repo = gsd.getRepository();
+		TreeWalk tw = new TreeWalk(repo);
+		if (filter != null)
+			tw.setFilter(filter);
 
-		try (TreeWalk tw = new TreeWalk(repo)) {
-			if (filter != null)
-				tw.setFilter(filter);
+		try {
 			// setup local tree
 			FileTreeIterator fti = null;
 			if (gsd.shouldIncludeLocal()) {
@@ -152,15 +143,14 @@ class GitSyncCache {
 				tw.addTree(dci);
 				fti.setDirCacheIterator(tw, 3);
 			}
-			List<ThreeWayDiffEntry> diffEntrys = ThreeWayDiffEntry
-					.scan(tw, gsd);
+			List<ThreeWayDiffEntry> diffEntrys = ThreeWayDiffEntry.scan(tw);
+			tw.release();
+
 			for (ThreeWayDiffEntry diffEntry : diffEntrys)
 				repoCache.addMember(diffEntry);
 		} catch (Exception e) {
 			Activator.logError(e.getMessage(), e);
-			return false;
 		}
-		return true;
 	}
 
 	private static ObjectId getTree(RevCommit commit) {
@@ -177,7 +167,7 @@ class GitSyncCache {
 
 	/**
 	 * @param repo
-	 *            instance of {@link Repository} for which mapping should be
+	 *            instance of {@link Repository} for with mapping should be
 	 *            obtained
 	 * @return instance of {@link GitSyncObjectCache} connected associated with
 	 *         given repository or {@code null} when such mapping wasn't found
@@ -186,11 +176,11 @@ class GitSyncCache {
 		return cache.get(repo.getDirectory());
 	}
 
-	public void merge(GitSyncCache other, Set<String> filterPaths) {
-		for (Entry<File, GitSyncObjectCache> entry : other.cache.entrySet()) {
+	public void merge(GitSyncCache newCache) {
+		for (Entry<File, GitSyncObjectCache> entry : newCache.cache.entrySet()) {
 			File key = entry.getKey();
 			if (cache.containsKey(key))
-				cache.get(key).merge(entry.getValue(), filterPaths);
+				cache.get(key).merge(entry.getValue());
 			else
 				cache.put(key, entry.getValue());
 		}

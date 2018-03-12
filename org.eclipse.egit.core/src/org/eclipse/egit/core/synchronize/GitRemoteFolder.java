@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -43,7 +43,6 @@ class GitRemoteFolder extends GitRemoteResource {
 		this.cachedData = cachedData;
 	}
 
-	@Override
 	public boolean isContainer() {
 		return true;
 	}
@@ -53,7 +52,6 @@ class GitRemoteFolder extends GitRemoteResource {
 		// should be never used on folder
 	}
 
-	@Override
 	public boolean equals(Object object) {
 		if (object == this)
 			return true;
@@ -68,7 +66,6 @@ class GitRemoteFolder extends GitRemoteResource {
 		return false;
 	}
 
-	@Override
 	public int hashCode() {
 		return getObjectId().hashCode() ^ getPath().hashCode();
 	}

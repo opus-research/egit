@@ -11,6 +11,7 @@ package org.eclipse.egit.ui.test;
 import java.util.List;
 
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
+import org.eclipse.swtbot.eclipse.finder.finders.WorkbenchContentsFinder;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
 import org.eclipse.swtbot.swt.finder.results.BoolResult;
@@ -39,7 +40,7 @@ public class Eclipse {
 	private void closeAllShells() {
 		SWTBotShell[] shells = bot.shells();
 		for (SWTBotShell shell : shells) {
-			if (shell.isOpen() && !isEclipseShell(shell)) {
+			if (!isEclipseShell(shell)) {
 				shell.close();
 			}
 		}
@@ -48,9 +49,9 @@ public class Eclipse {
 	@SuppressWarnings("boxing")
 	public static boolean isEclipseShell(final SWTBotShell shell) {
 		return UIThreadRunnable.syncExec(new BoolResult() {
-			@Override
+
 			public Boolean run() {
-				return PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+				return new WorkbenchContentsFinder().activeWorkbenchWindow()
 						.getShell() == shell.widget;
 			}
 		});
@@ -69,10 +70,10 @@ public class Eclipse {
 			editor.save();
 		}
 	}
-
+	
 	/**
 	 * Opens the Eclipse Preferences and activates the dialog
-	 *
+	 * 
 	 * @param preferencePage
 	 *            previous instance of preference page, maybe null, if passed it
 	 *            will be reopened
@@ -81,11 +82,11 @@ public class Eclipse {
 	public SWTBotShell openPreferencePage(SWTBotShell preferencePage) {
 		if (preferencePage != null)
 			preferencePage.close();
+		bot.perspectiveById("org.eclipse.ui.resourcePerspective").activate();
 		// This does not work on Mac
 		// bot.menu("Window").menu("Preferences").click();
 		// Launch preferences programmatically instead
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow();
@@ -93,7 +94,6 @@ public class Eclipse {
 
 			}
 		});
-		TestUtil.processUIEvents();
 		return bot.shell("Preferences").activate();
 	}
 

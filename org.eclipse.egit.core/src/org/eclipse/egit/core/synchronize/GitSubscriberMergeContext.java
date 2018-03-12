@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.GitResourceDeltaVisitor;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
@@ -63,7 +63,6 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 
 		indexChangeListener = new IndexDiffChangedListener() {
-			@Override
 			public void indexDiffChanged(Repository repository,
 					IndexDiffData indexDiffData) {
 				handleRepositoryChange(repository);
@@ -71,7 +70,6 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 		};
 		resourceChangeListener = new IResourceChangeListener() {
 
-			@Override
 			public void resourceChanged(IResourceChangeEvent event) {
 				IResourceDelta delta = event.getDelta();
 				if (delta == null)
@@ -89,7 +87,6 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 		initialize();
 	}
 
-	@Override
 	public void markAsMerged(IDiff node, boolean inSyncHint,
 			IProgressMonitor monitor) throws CoreException {
 		IResource resource = getDiffTree().getResource(node);
@@ -98,7 +95,6 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 		operation.execute(monitor);
 	}
 
-	@Override
 	public void reject(IDiff diff, IProgressMonitor monitor)
 			throws CoreException {
 		// TODO Auto-generated method stub
@@ -135,16 +131,9 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 	}
 
 	private void handleRepositoryChange(Repository which) {
-		boolean shouldRefresh = false;
-		for (GitSynchronizeData gsd : gsds) {
-			if (which.equals(gsd.getRepository())) {
+		for (GitSynchronizeData gsd : gsds)
+			if (which.equals(gsd.getRepository()))
 				updateRevs(gsd);
-				shouldRefresh = true;
-			}
-		}
-
-		if (!shouldRefresh)
-			return;
 
 		subscriber.reset(this.gsds);
 		ResourceTraversal[] traversals = getScopeManager().getScope()

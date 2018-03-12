@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,14 +8,18 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Commit;
-import org.eclipse.egit.ui.internal.synchronize.model.TreeBuilder.FileModelFactory;
-import org.eclipse.egit.ui.internal.synchronize.model.TreeBuilder.TreeModelFactory;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -30,7 +34,7 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	private final IProject[] projects;
 
-	private GitModelObject[] children;
+	private final Map<String, GitModelObject> cachedTreeMap = new HashMap<String, GitModelObject>();
 
 	/**
 	 * @param parent
@@ -56,7 +60,6 @@ public class GitModelCommit extends GitModelObjectContainer implements
 		return new Path(repo.getWorkTree().getAbsolutePath());
 	}
 
-	@Override
 	public IProject[] getProjects() {
 		return projects;
 	}
@@ -78,33 +81,16 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	@Override
 	public GitModelObject[] getChildren() {
-		if (children == null)
-			children = createChildren();
-		return children;
-	}
+		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
-	private GitModelObject[] createChildren() {
-		FileModelFactory fileModelFactory = new FileModelFactory() {
-			@Override
-			public GitModelBlob createFileModel(GitModelObjectContainer parent,
-					Repository repository, Change change, IPath fullPath) {
-				return new GitModelBlob(parent, repository, change, fullPath);
+		if (commit.getChildren() != null) // prevent from NPE in empty commits
+			for (Entry<String, Change> cacheEntry : commit.getChildren().entrySet()) {
+				GitModelObject nested = addChild(cacheEntry.getValue(), cacheEntry.getKey());
+				if (nested != null)
+					result.add(nested);
 			}
 
-			@Override
-			public boolean isWorkingTree() {
-				return false;
-			}
-		};
-		TreeModelFactory treeModelFactory = new TreeModelFactory() {
-			@Override
-			public GitModelTree createTreeModel(GitModelObjectContainer parent,
-					IPath fullPath, int kind) {
-				return new GitModelTree(parent, fullPath, kind);
-			}
-		};
-		return TreeBuilder.build(this, repo, commit.getChildren(),
-				fileModelFactory, treeModelFactory);
+		return result.toArray(new GitModelObject[result.size()]);
 	}
 
 	/**
@@ -116,11 +102,10 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	@Override
 	public void dispose() {
-		if (children != null) {
-			for (GitModelObject child : children)
-				child.dispose();
-			children = null;
-		}
+		for (GitModelObject value : cachedTreeMap.values())
+			value.dispose();
+
+		cachedTreeMap.clear();
 	}
 
 	@Override
@@ -147,6 +132,38 @@ public class GitModelCommit extends GitModelObjectContainer implements
 	@Override
 	public String toString() {
 		return "ModelCommit[" + commit.getId() + "]"; //$NON-NLS-1$//$NON-NLS-2$
+	}
+
+	private GitModelObject addChild(Change change, String nestedPath) {
+		GitModelObject firstObject = null;
+		IPath tmpLocation = getLocation();
+		String[] segments = nestedPath.split("/"); //$NON-NLS-1$
+		GitModelObjectContainer tmpPartent = this;
+		Map<String, GitModelObject> tmpCache = cachedTreeMap;
+
+		for (int i = 0; i < segments.length; i++) {
+			String segment = segments[i];
+			tmpLocation = tmpLocation.append(segment);
+			if (i < segments.length - 1) {
+				GitModelTree tree = (GitModelTree) tmpCache.get(segment);
+				if (tree == null) {
+					tree = new GitModelTree(tmpPartent, tmpLocation, change.getKind());
+					tmpCache.put(segment, tree);
+				}
+				tmpPartent = tree;
+				tmpCache = tree.cachedTreeMap;
+				if (i == 0)
+					firstObject = tmpPartent;
+			} else { // handle last segment, it should be a file name
+				GitModelBlob blob = new GitModelBlob(tmpPartent, repo, change,
+						tmpLocation);
+				tmpCache.put(segment, blob);
+				if (i == 0)
+					firstObject = blob;
+			}
+		}
+
+		return firstObject;
 	}
 
 }

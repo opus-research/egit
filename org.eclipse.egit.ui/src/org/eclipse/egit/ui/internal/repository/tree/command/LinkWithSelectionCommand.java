@@ -22,7 +22,6 @@ import org.eclipse.ui.handlers.RegistryToggleState;
  */
 public class LinkWithSelectionCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		Command command = event.getCommand();
 		HandlerUtil.toggleCommandState(command);

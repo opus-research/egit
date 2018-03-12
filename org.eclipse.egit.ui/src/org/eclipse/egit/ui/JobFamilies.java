@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,212 +8,149 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.progress.IProgressService;
-
 /**
  * Job families of EGit jobs. May be used in tests to join job execution.
  *
  */
 public class JobFamilies {
-
-	/**
-	 * Job family with icon for progress reporting
-	 */
-	private static final class JobFamily {
-
-		/**
-		 * job family with custom progress icon
-		 *
-		 * @param imageDescriptor
-		 *            icon for this job family
-		 */
-		protected JobFamily(final ImageDescriptor imageDescriptor) {
-			IProgressService service = PlatformUI.getWorkbench()
-					.getProgressService();
-			service.registerIconForFamily(imageDescriptor, this);
-		}
-
-		/**
-		 * job family with standard repository icon
-		 */
-		protected JobFamily() {
-			this(UIIcons.REPOSITORY);
-		}
-	}
-
 	/**
 	 * GenerateHistoryJob
 	 */
-	public final static Object GENERATE_HISTORY = new JobFamily(
-			UIIcons.HISTORY);
-
-	/**
-	 * History diff jobs
-	 */
-	public final static Object HISTORY_DIFF = new JobFamily();
+	public final static Object GENERATE_HISTORY = new Object();
 
 	/**
 	 * Commit job
 	 */
-	public final static Object COMMIT = new JobFamily(UIIcons.COMMIT);
+	public final static Object COMMIT = new Object();
 
 	/**
 	 * Checkout job
 	 */
-	public final static Object CHECKOUT = new JobFamily(UIIcons.CHECKOUT);
-
-	/**
-	 * Merge job
-	 */
-	public final static Object MERGE = new JobFamily(UIIcons.MERGE);
+	public final static Object CHECKOUT = new Object();
 
 	/**
 	 * Push job
 	 */
-	public final static Object PUSH = new JobFamily(UIIcons.PUSH);
+	public final static Object PUSH = new Object();
 
 	/**
 	 * Fetch job
 	 */
-	public final static Object FETCH = new JobFamily(UIIcons.FETCH);
+	public final static Object FETCH = new Object();
 
 	/**
 	 * Repositories View refresh
 	 */
-	public final static Object REPO_VIEW_REFRESH = new JobFamily();
+	public final static Object REPO_VIEW_REFRESH = new Object();
 
 	/**
 	 * Delete repository job
 	 */
-	public final static Object REPOSITORY_DELETE = new JobFamily(
-			UIIcons.ELCL16_DELETE);
+	public final static Object REPOSITORY_DELETE = new Object();
 
 	/**
 	 * Tag job
 	 */
-	public final static Object TAG = new JobFamily(UIIcons.TAG);
+	public final static Object TAG = new Object();
 
 	/**
 	 * Reset job
 	 */
-	public static final Object RESET = new JobFamily(UIIcons.RESET);
+	public static final Object RESET = new Object();
 
 	/**
 	 * Rebase job
 	 */
-	public static final Object REBASE = new JobFamily(UIIcons.REBASE);
+	public static final Object REBASE = new Object();
 
 	/**
 	 * Pull job
 	 */
-	public final static Object PULL = new JobFamily(UIIcons.PULL);
+	public final static Object PULL = new Object();
 
 	/**
 	 * Format job
 	 */
-	public final static Object FORMAT_COMMIT_INFO = new JobFamily();
+	public final static Object FORMAT_COMMIT_INFO = new Object();
 
 	/**
 	 * Fill tag list
 	 */
-	public final static Object FILL_TAG_LIST = new JobFamily(UIIcons.TAGS);
+	public final static Object FILL_TAG_LIST = new Object();
 
 	/**
 	 * AssumeUnchanged/NoAssumeUnchanged
 	 */
-	public final static Object ASSUME_NOASSUME_UNCHANGED = new JobFamily();
+	public final static Object ASSUME_NOASSUME_UNCHANGED = new Object();
 
 	/**
 	 * Untrack
 	 */
-	public final static Object UNTRACK = new JobFamily();
+	public final static Object UNTRACK = new Object();
 
 	/**
 	 * Disconnect
 	 */
-	public final static Object DISCONNECT = new JobFamily();
+	public final static Object DISCONNECT = new Object();
 
 	/**
 	 * Discard Changes
 	 */
-	public final static Object DISCARD_CHANGES = new JobFamily();
+	public final static Object DISCARD_CHANGES = new Object();
 
 
 	/**
 	 * Add to index job
 	 */
-	public static final Object ADD_TO_INDEX = new JobFamily(UIIcons.ELCL16_ADD);
+	public static final Object ADD_TO_INDEX = new Object();
 
 	/**
 	 * Remove from index job
 	 */
-	public static final Object REMOVE_FROM_INDEX = new JobFamily();
-
-	/**
-	 * Updates staging view repository on selection change
-	 */
-	public static final Object UPDATE_SELECTION = new JobFamily();
+	public static final Object REMOVE_FROM_INDEX = new Object();
 
 	/**
 	 * Cherry pick commit job
 	 */
-	public static final Object CHERRY_PICK = new JobFamily(UIIcons.CHERRY_PICK);
-
-	/**
-	 * Squash commits job
-	 */
-	public static final Object SQUASH = new JobFamily(UIIcons.SQUASH_DOWN);
-
-	/**
-	 * Reword commit job
-	 */
-	public static final Object REWORD = new JobFamily(UIIcons.REWORD);
-
-	/**
-	 * Edit commit job
-	 */
-	public static final Object EDIT = new JobFamily();
+	public static final Object CHERRY_PICK = new Object();
 
 	/**
 	 * Revert commit job
 	 */
-	public static final Object REVERT_COMMIT = new JobFamily();
+	public static final Object REVERT_COMMIT = new Object();
 
 	/**
 	 * Clone repository job
 	 */
-	public static final Object CLONE = new JobFamily(UIIcons.CLONEGIT);
+	public static final Object CLONE = new Object();
 
 	/**
 	 * Fetch data from git job
 	 */
-	public static final Object SYNCHRONIZE_READ_DATA = new JobFamily();
+	public static final Object SYNCHRONIZE_READ_DATA = new Object();
 
 	/**
 	 * Show annotations git job
 	 */
-	public static final Object BLAME = new JobFamily();
+	public static final Object BLAME = new Object();
 
 	/**
 	 * Submodule add git job
 	 */
-	public static final Object SUBMODULE_ADD = new JobFamily();
+	public static final Object SUBMODULE_ADD = new Object();
 
 	/**
 	 * Submodule sync git job
 	 */
-	public static final Object SUBMODULE_SYNC = new JobFamily();
+	public static final Object SUBMODULE_SYNC = new Object();
 
 	/**
 	 * Submodule update git job
 	 */
-	public static final Object SUBMODULE_UPDATE = new JobFamily();
+	public static final Object SUBMODULE_UPDATE = new Object();
 
 	/**
 	 * Stash git job
 	 */
-	public static final Object STASH = new JobFamily(UIIcons.STASH);
+	public static final Object STASH = new Object();
 }

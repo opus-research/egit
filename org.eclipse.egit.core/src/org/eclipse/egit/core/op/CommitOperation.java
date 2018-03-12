@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -21,29 +20,24 @@ import java.util.HashSet;
 import java.util.TimeZone;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.RepositoryUtil;
-import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
@@ -175,21 +169,26 @@ public class CommitOperation implements IEGitOperation {
 		return result;
 	}
 
-	@Override
-	public void execute(IProgressMonitor monitor) throws CoreException {
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				if (commitAll)
 					commitAll();
 				else if (amending || commitFileList != null
 						&& commitFileList.size() > 0 || commitIndex) {
-					SubMonitor progress = SubMonitor.convert(actMonitor);
-					progress.setTaskName(
-							CoreText.CommitOperation_PerformingCommit);
+					actMonitor.beginTask(
+							CoreText.CommitOperation_PerformingCommit,
+							20);
+					actMonitor.setTaskName(CoreText.CommitOperation_PerformingCommit);
 					addUntracked();
 					commit();
+					actMonitor.worked(10);
 				} else if (commitWorkingDirChanges) {
 					// TODO commit -a
 				} else {
@@ -198,37 +197,34 @@ public class CommitOperation implements IEGitOperation {
 			}
 
 		};
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, monitor);
+		ResourcesPlugin.getWorkspace().run(action, monitor);
 	}
 
 	private void addUntracked() throws CoreException {
-		if (notTracked == null || notTracked.size() == 0) {
+		if (notTracked == null || notTracked.size() == 0)
 			return;
-		}
-		try (Git git = new Git(repo)) {
-			AddCommand addCommand = git.add();
-			boolean fileAdded = false;
-			for (String path : notTracked)
-				if (commitFileList.contains(path)) {
-					addCommand.addFilepattern(path);
-					fileAdded = true;
-				}
-			if (fileAdded) {
-				addCommand.call();
+		AddCommand addCommand = new Git(repo).add();
+		boolean fileAdded = false;
+		for (String path : notTracked)
+			if (commitFileList.contains(path)) {
+				addCommand.addFilepattern(path);
+				fileAdded = true;
 			}
-		} catch (GitAPIException e) {
-			throw new CoreException(Activator.error(e.getMessage(), e));
-		}
+		if (fileAdded)
+			try {
+				addCommand.call();
+			} catch (Exception e) {
+				throw new CoreException(Activator.error(e.getMessage(), e));
+			}
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
-		return RuleUtil.getRule(repo);
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 
 	private void commit() throws TeamException {
-		try (Git git = new Git(repo)) {
+		Git git = new Git(repo);
+		try {
 			CommitCommand commitCommand = git.commit();
 			setAuthorAndCommitter(commitCommand);
 			commitCommand.setAmend(amending)
@@ -277,7 +273,9 @@ public class CommitOperation implements IEGitOperation {
 
 	// TODO: can the commit message be change by the user in case of a merge commit?
 	private void commitAll() throws TeamException {
-		try (Git git = new Git(repo)) {
+
+		Git git = new Git(repo);
+		try {
 			CommitCommand commitCommand = git.commit();
 			setAuthorAndCommitter(commitCommand);
 			commit = commitCommand.setAll(true).setMessage(message)
@@ -303,23 +301,7 @@ public class CommitOperation implements IEGitOperation {
 					NLS.bind(CoreText.CommitOperation_errorParsingPersonIdent,
 							committer));
 
-		PersonIdent authorIdent;
-		if (repo.getRepositoryState().equals(
-				RepositoryState.CHERRY_PICKING_RESOLVED)) {
-			try (RevWalk rw = new RevWalk(repo)) {
-				ObjectId cherryPickHead = repo.readCherryPickHead();
-				authorIdent = rw.parseCommit(cherryPickHead)
-						.getAuthorIdent();
-			} catch (IOException e) {
-				Activator.logError(
-						CoreText.CommitOperation_ParseCherryPickCommitFailed,
-						e);
-				throw new IllegalStateException(e);
-			}
-		} else {
-			authorIdent = new PersonIdent(enteredAuthor, commitDate, timeZone);
-		}
-
+		PersonIdent authorIdent = new PersonIdent(enteredAuthor, commitDate, timeZone);
 		final PersonIdent committerIdent = new PersonIdent(enteredCommitter, commitDate, timeZone);
 
 		if (amending) {

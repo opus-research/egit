@@ -12,9 +12,9 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import java.util.List;
 
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.FileTreeContentProvider.Mode;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -73,14 +73,12 @@ public class NonDeletedFilesTree extends TreeViewer {
 		final Menu menu = new Menu(dropDownBar);
 		dropDownItem.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				menu.dispose();
 			}
 		});
 		dropDownItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Rectangle b = dropDownItem.getBounds();
 				Point p = dropDownItem.getParent().toDisplay(

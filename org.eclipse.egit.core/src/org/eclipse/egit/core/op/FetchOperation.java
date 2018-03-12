@@ -12,8 +12,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.JGitInternalException;
@@ -93,13 +94,6 @@ public class FetchOperation {
 	}
 
 	/**
-	 * @return the operation's credentials provider
-	 */
-	public CredentialsProvider getCredentialsProvider() {
-		return credentialsProvider;
-	}
-
-	/**
 	 * @param tagOpt
 	 */
 	public void setTagOpt(TagOpt tagOpt) {
@@ -114,28 +108,28 @@ public class FetchOperation {
 		if (operationResult != null)
 			throw new IllegalStateException(CoreText.OperationAlreadyExecuted);
 
+		IProgressMonitor actMonitor = monitor;
+		if (actMonitor == null)
+			actMonitor = new NullProgressMonitor();
 		EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(
-				monitor);
-		try (Git git = new Git(repository)) {
-			FetchCommand command;
-			if (rc == null)
-				command = git.fetch().setRemote(uri.toPrivateString())
-						.setRefSpecs(specs);
-			else
-				command = git.fetch().setRemote(rc.getName());
-			command.setCredentialsProvider(credentialsProvider)
-					.setTimeout(timeout).setDryRun(dryRun)
-					.setProgressMonitor(gitMonitor);
-			if (tagOpt != null)
-				command.setTagOpt(tagOpt);
-			try {
-				operationResult = command.call();
-			} catch (JGitInternalException e) {
-				throw new InvocationTargetException(
-						e.getCause() != null ? e.getCause() : e);
-			} catch (Exception e) {
-				throw new InvocationTargetException(e);
-			}
+				actMonitor);
+		FetchCommand command;
+		if (rc == null)
+			command = new Git(repository).fetch().setRemote(
+					uri.toPrivateString()).setRefSpecs(specs);
+		else
+			command = new Git(repository).fetch().setRemote(rc.getName());
+		command.setCredentialsProvider(credentialsProvider).setTimeout(timeout)
+				.setDryRun(dryRun).setProgressMonitor(gitMonitor);
+		if (tagOpt != null)
+			command.setTagOpt(tagOpt);
+		try {
+			operationResult = command.call();
+		} catch (JGitInternalException e) {
+			throw new InvocationTargetException(e.getCause() != null ? e
+					.getCause() : e);
+		} catch (Exception e) {
+			throw new InvocationTargetException(e);
 		}
 	}
 

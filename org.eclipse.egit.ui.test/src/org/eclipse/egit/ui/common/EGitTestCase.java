@@ -11,16 +11,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.common;
 
-import static org.junit.Assert.fail;
-
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
@@ -42,18 +38,6 @@ public abstract class EGitTestCase {
 		} finally {
 			welcomePageClosed = true;
 		}
-	}
-
-	@Before
-	public void activateShell() {
-		SWTBotShell[] shells = bot.shells();
-		for (SWTBotShell shell : shells) {
-			if (Eclipse.isEclipseShell(shell)) {
-				shell.activate();
-				return;
-			}
-		}
-		fail("No active Eclipse shell found!");
 	}
 
 	@After

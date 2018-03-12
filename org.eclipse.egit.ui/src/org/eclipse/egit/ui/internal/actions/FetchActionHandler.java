@@ -15,7 +15,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.fetch.FetchWizard;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.WizardDialog;
@@ -27,7 +27,6 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class FetchActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(true, event);
 		if (repository == null)
@@ -50,8 +49,7 @@ public class FetchActionHandler extends RepositoryActionHandler {
 		return null;
 	}
 
-	@Override
 	public boolean isEnabled() {
-		return selectionMapsToSingleRepository();
+		return getRepository() != null;
 	}
 }

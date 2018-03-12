@@ -18,7 +18,6 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class ConfigureFetchActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		Repository repository = getRepository(true, event);
 		if (repository != null)
@@ -29,10 +28,9 @@ public class ConfigureFetchActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		Repository repository = getRepository();
-		return repository != null
+		return getRepository() != null
 				&& SimpleConfigureFetchDialog
-						.getConfiguredRemote(repository) != null;
+						.getConfiguredRemote(getRepository()) != null;
 	}
 
 }

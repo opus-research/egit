@@ -10,8 +10,6 @@ package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 
-import java.util.Collection;
-
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.synchronize.ThreeWayDiffEntry.ChangeType;
 import org.eclipse.egit.core.synchronize.ThreeWayDiffEntry.Direction;
@@ -53,12 +51,6 @@ class GitSyncInfo extends SyncInfo {
 		if (obj == null)
 			return IN_SYNC;
 
-		if (obj.getDiffEntry().isTree()) {
-			// Check that we do have at least one descendant that is a file
-			if (!hasNonSyncFile(obj)) {
-				return IN_SYNC;
-			}
-		}
 		int direction;
 		Direction gitDirection = obj.getDiffEntry().getDirection();
 		if (gitDirection == Direction.INCOMING)
@@ -78,29 +70,6 @@ class GitSyncInfo extends SyncInfo {
 			return direction | DELETION;
 
 		return IN_SYNC;
-	}
-
-	private boolean hasNonSyncFile(GitSyncObjectCache obj) {
-		Collection<GitSyncObjectCache> children = obj.members();
-		if (children == null) {
-			return false;
-		}
-		for (GitSyncObjectCache child : children) {
-			if (!child.getDiffEntry().isTree()) {
-				if (child.getDiffEntry()
-						.getChangeType() != ThreeWayDiffEntry.ChangeType.IN_SYNC) {
-					return true;
-				}
-			}
-		}
-		for (GitSyncObjectCache child : children) {
-			if (child.getDiffEntry().isTree()) {
-				if (hasNonSyncFile(child)) {
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	@Override

@@ -7,7 +7,6 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Stephan Hackstedt <stephan.hackstedt@googlemail.com> - Bug 477695
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -16,7 +15,6 @@ import java.util.Collection;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -42,12 +40,9 @@ abstract class BaseOperation implements IEGitOperation {
 	 */
 	protected void preExecute(IProgressMonitor monitor) throws CoreException {
 		synchronized (this) {
-			if (preTasks != null) {
-				SubMonitor progress = SubMonitor.convert(monitor,
-						preTasks.size());
+			if (preTasks != null)
 				for (PreExecuteTask task : preTasks)
-					task.preExecute(repository, progress.newChild(1));
-			}
+					task.preExecute(repository, monitor);
 		}
 	}
 
@@ -59,12 +54,9 @@ abstract class BaseOperation implements IEGitOperation {
 	 */
 	protected void postExecute(IProgressMonitor monitor) throws CoreException {
 		synchronized (this) {
-			if (postTasks != null) {
-				SubMonitor progress = SubMonitor.convert(monitor,
-						postTasks.size());
+			if (postTasks != null)
 				for (PostExecuteTask task : postTasks)
-					task.postExecute(repository, progress.newChild(1));
-			}
+					task.postExecute(repository, monitor);
 		}
 	}
 

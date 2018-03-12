@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2012, 2014 GitHub Inc and others.
+ *  Copyright (c) 2012 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -10,13 +10,12 @@
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.StashCreateCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -36,15 +35,13 @@ public class StashCreateOperation implements IEGitOperation {
 
 	private RevCommit commit;
 
-	private final boolean includeUntracked;
-
 	/**
 	 * Create operation for repository
 	 *
 	 * @param repository
 	 */
 	public StashCreateOperation(final Repository repository) {
-		this(repository, null, false);
+		this(repository, null);
 	}
 
 	/**
@@ -53,23 +50,9 @@ public class StashCreateOperation implements IEGitOperation {
 	 * @param repository
 	 * @param message
 	 */
-	public StashCreateOperation(final Repository repository,
-			final String message) {
-		this(repository, message, false);
-	}
-
-	/**
-	 * Create operation for repository
-	 *
-	 * @param repository
-	 * @param message
-	 * @param includeUntracked
-	 */
-	public StashCreateOperation(final Repository repository,
-			final String message, final boolean includeUntracked) {
+	public StashCreateOperation(final Repository repository, final String message) {
 		this.repository = repository;
 		this.message = message;
-		this.includeUntracked = includeUntracked;
 	}
 
 	/**
@@ -81,17 +64,16 @@ public class StashCreateOperation implements IEGitOperation {
 		return commit;
 	}
 
-	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
 				try {
 					StashCreateCommand command = Git.wrap(repository).stashCreate();
-					if (message != null)
+					if (message != null) {
+						command.setIndexMessage(message);
 						command.setWorkingDirectoryMessage(message);
-					command.setIncludeUntracked(includeUntracked);
+					}
 					commit = command.call();
 				} catch (JGitInternalException e) {
 					throw new TeamException(e.getLocalizedMessage(),
@@ -100,18 +82,17 @@ public class StashCreateOperation implements IEGitOperation {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				} finally {
-					if (commit != null) {
+					if (commit != null)
 						repository.notifyIndexChanged();
-					}
+					pm.done();
 				}
 			}
 		};
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, monitor);
+		ResourcesPlugin.getWorkspace().run(action,
+				monitor != null ? monitor : new NullProgressMonitor());
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
-		return RuleUtil.getRule(repository);
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 }

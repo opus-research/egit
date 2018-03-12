@@ -20,8 +20,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.ILogListener;
 import org.eclipse.core.runtime.IStatus;
@@ -82,7 +86,24 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		testUtils.addFileToProject(project, "folder1/file1.txt", "Hello world");
 
 		repository1.connect(project);
-		repository1.trackAllFiles(project);
+
+		project.accept(new IResourceVisitor() {
+
+			public boolean visit(IResource resource) throws CoreException {
+				if (resource instanceof IFile) {
+					try {
+						repository1
+								.track(EFS.getStore(resource.getLocationURI())
+										.toLocalFile(0, null));
+					} catch (Exception e) {
+						throw new CoreException(Activator.error(e.getMessage(),
+								e));
+					}
+				}
+				return true;
+			}
+		});
+
 		repository1.commit("Initial commit");
 
 		// let's get rid of the project
@@ -148,7 +169,7 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		assertEquals(Status.OK, getStatus(pop.getOperationResult()));
 
 		try {
-			// assert that we cannot run this again
+			// assert that we can not run this again
 			pop.run(null);
 			fail("Expected Exception not thrown");
 		} catch (IllegalStateException e) {
@@ -217,7 +238,6 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		private boolean loggedSomething = false;
 		private boolean loggedException = false;
 
-		@Override
 		public void logging(IStatus status, String plugin) {
 			loggedSomething = true;
 			loggedException = status.getException() != null;
@@ -320,7 +340,7 @@ public class PushOperationTest extends DualRepositoryTestCase {
 
 	private PushOperation createPushOperation() throws Exception {
 		// set up push from repository1 to repository2
-		// we cannot re-use the RemoteRefUpdate!!!
+		// we can not re-use the RemoteRefUpdate!!!
 		PushOperationSpecification spec = new PushOperationSpecification();
 		// the remote is repo2
 		URIish remote = new URIish("file:///"
