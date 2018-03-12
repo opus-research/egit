@@ -33,7 +33,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FS;
 import org.osgi.service.prefs.BackingStoreException;
 
@@ -119,12 +118,10 @@ public class RepositoryUtil {
 
 			Map<String, Date> tagMap = new HashMap<String, Date>();
 			try {
-				RevWalk rw = new RevWalk(repository);
 				Map<String, Ref> tags = repository.getRefDatabase().getRefs(
 						Constants.R_TAGS);
 				for (Ref tagRef : tags.values()) {
-					Tag tag = rw.parseTag(repository.resolve(tagRef.getName()))
-							.asTag(rw);
+					Tag tag = repository.mapTag(tagRef.getName());
 					if (tag.getObjId().name().equals(commitId)) {
 						Date timestamp;
 						if (tag.getTagger() != null) {
