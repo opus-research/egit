@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -29,11 +28,8 @@ import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.bindings.Trigger;
-import org.eclipse.jface.bindings.TriggerSequence;
 import org.eclipse.jface.bindings.keys.KeyStroke;
-import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.ControlDecoration;
@@ -43,12 +39,10 @@ import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
@@ -64,14 +58,10 @@ import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.graphics.FontMetrics;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Resource;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -233,7 +223,8 @@ public class UIUtils {
 	/**
 	 * Adds a "previously used values" content proposal handler to a text field.
 	 * <p>
-	 * The list will be limited to 10 values.
+	 * The keyboard shortcut will be "M1+SPACE" and the list will be limited to
+	 * 10 values.
 	 *
 	 * @param textField
 	 *            the text field
@@ -244,16 +235,17 @@ public class UIUtils {
 	 */
 	public static IPreviousValueProposalHandler addPreviousValuesContentProposalToText(
 			final Text textField, final String preferenceKey) {
-		KeyStroke stroke = UIUtils
-				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke == null)
+		KeyStroke stroke;
+		try {
+			stroke = KeyStroke.getInstance("M1+SPACE"); //$NON-NLS-1$
+			addBulbDecorator(textField, NLS.bind(
+					UIText.UIUtils_PressShortcutMessage, stroke.format()));
+		} catch (ParseException e1) {
+			Activator.handleError(e1.getMessage(), e1, false);
+			stroke = null;
 			addBulbDecorator(textField,
 					UIText.UIUtils_StartTypingForPreviousValuesMessage);
-		else
-			addBulbDecorator(
-					textField,
-					NLS.bind(UIText.UIUtils_PressShortcutMessage,
-							stroke.format()));
+		}
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 
@@ -390,16 +382,17 @@ public class UIUtils {
 	 */
 	public static final void addRefContentProposalToText(final Text textField,
 			final Repository repository, final IRefListProvider refListProvider) {
-		KeyStroke stroke = UIUtils
-				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke == null)
-			addBulbDecorator(textField,
+		KeyStroke stroke;
+		try {
+			stroke = KeyStroke.getInstance("M1+SPACE"); //$NON-NLS-1$
+			UIUtils.addBulbDecorator(textField, NLS.bind(
+					UIText.UIUtils_PressShortcutMessage, stroke.format()));
+		} catch (ParseException e1) {
+			Activator.handleError(e1.getMessage(), e1, false);
+			stroke = null;
+			UIUtils.addBulbDecorator(textField,
 					UIText.UIUtils_StartTypingForPreviousValuesMessage);
-		else
-			addBulbDecorator(
-					textField,
-					NLS.bind(UIText.UIUtils_PressShortcutMessage,
-							stroke.format()));
+		}
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			public IContentProposal[] getProposals(String contents, int position) {
@@ -721,34 +714,26 @@ public class UIUtils {
 	 */
 	public static StyleRange[] getHyperlinkDetectorStyleRanges(
 			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
-		HashSet<StyleRange> styleRangeList = new HashSet<StyleRange>();
+		List<StyleRange> styleRangeList = new ArrayList<StyleRange>();
 		if (hyperlinkDetectors != null && hyperlinkDetectors.length > 0) {
-			IDocument doc = textViewer.getDocument();
-			for (int line = 0; line < doc.getNumberOfLines(); line++) {
-				try {
-					IRegion region = doc.getLineInformation(line);
-					for (IHyperlinkDetector hyperLinkDetector : hyperlinkDetectors) {
-						IHyperlink[] hyperlinks = hyperLinkDetector
-								.detectHyperlinks(textViewer, region, true);
-						if (hyperlinks != null) {
-							for (IHyperlink hyperlink : hyperlinks) {
-								StyleRange hyperlinkStyleRange = new StyleRange(
-										hyperlink.getHyperlinkRegion()
-												.getOffset(), hyperlink
-												.getHyperlinkRegion()
-												.getLength(), Display
-												.getDefault().getSystemColor(
-														SWT.COLOR_BLUE),
-										Display.getDefault().getSystemColor(
-												SWT.COLOR_WHITE));
-								hyperlinkStyleRange.underline = true;
-								styleRangeList.add(hyperlinkStyleRange);
-							}
+			for (int i = 0; i < textViewer.getTextWidget().getText().length(); i++) {
+				IRegion region = new Region(i, 0);
+				for (IHyperlinkDetector hyperLinkDetector : hyperlinkDetectors) {
+					IHyperlink[] hyperlinks = hyperLinkDetector
+							.detectHyperlinks(textViewer, region, true);
+					if (hyperlinks != null) {
+						for (IHyperlink hyperlink : hyperlinks) {
+							StyleRange hyperlinkStyleRange = new StyleRange(
+									hyperlink.getHyperlinkRegion().getOffset(),
+									hyperlink.getHyperlinkRegion().getLength(),
+									Display.getDefault().getSystemColor(
+											SWT.COLOR_BLUE), Display
+											.getDefault().getSystemColor(
+													SWT.COLOR_WHITE));
+							hyperlinkStyleRange.underline = true;
+							styleRangeList.add(hyperlinkStyleRange);
 						}
 					}
-				} catch (BadLocationException e) {
-					Activator.logError(e.getMessage(), e);
-					break;
 				}
 			}
 		}
@@ -768,51 +753,5 @@ public class UIUtils {
 		}
 
 		return UIText.UIUtils_ShowInMenuLabel;
-	}
-
-	/**
-	 * Look up best active binding's keystroke for the given command
-	 *
-	 * @param commandId
-	 *            The identifier of the command for which the best active
-	 *            binding's keystroke should be retrieved; must not be null.
-	 * @return {@code KeyStroke} for the best active binding for the specified
-	 *         commandId or {@code null} if no binding is defined or if the
-	 *         binding service returns a {@code TriggerSequence} containing more
-	 *         than one {@code Trigger}.
-	 */
-	public static KeyStroke getKeystrokeOfBestActiveBindingFor(String commandId) {
-		IBindingService bindingService = (IBindingService) PlatformUI
-				.getWorkbench().getAdapter(IBindingService.class);
-		TriggerSequence ts = bindingService.getBestActiveBindingFor(commandId);
-		if (ts == null)
-			return null;
-
-		Trigger[] triggers = ts.getTriggers();
-		if (triggers.length == 1 && triggers[0] instanceof KeyStroke)
-			return (KeyStroke) triggers[0];
-		else
-			return null;
-	}
-
-	/**
-	 * Copy from {@link org.eclipse.jface.dialogs.DialogPage} with changes to
-	 * accommodate the lack of a Dialog context.
-	 *
-	 * @param button
-	 *            the button to set the <code>GridData</code>
-	 */
-	public static void setButtonLayoutData(Button button) {
-		GC gc = new GC(button);
-		gc.setFont(JFaceResources.getDialogFont());
-		FontMetrics fontMetrics = gc.getFontMetrics();
-		gc.dispose();
-
-		GridData data = new GridData(GridData.HORIZONTAL_ALIGN_FILL);
-		int widthHint = Dialog.convertHorizontalDLUsToPixels(fontMetrics,
-				IDialogConstants.BUTTON_WIDTH);
-		Point minSize = button.computeSize(SWT.DEFAULT, SWT.DEFAULT, true);
-		data.widthHint = Math.max(widthHint, minSize.x);
-		button.setLayoutData(data);
 	}
 }

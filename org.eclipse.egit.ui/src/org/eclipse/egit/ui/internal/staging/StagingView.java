@@ -65,7 +65,6 @@ import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
-import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -108,6 +107,7 @@ import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.dircache.DirCacheEntry;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -759,10 +759,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			public void updateChangeIdToggleSelection(boolean selection) {
 				addChangeIdAction.setChecked(selection);
 			}
-
-			public void statusUpdated() {
-				updateMessage();
-			}
 		};
 		commitMessageComponent = new CommitMessageComponent(listener);
 		commitMessageComponent.attachControls(commitMessageText, authorText,
@@ -791,6 +787,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 				commitButton.setToolTipText(null);
 			}
 		});
+
+		ModifyListener modifyListener = new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				updateMessage();
+			}
+		};
+		authorText.addModifyListener(modifyListener);
+		committerText.addModifyListener(modifyListener);
 
 		// react on selection changes
 		IWorkbenchPartSite site = getSite();
@@ -1236,7 +1240,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			warningLabel.showMessage(message);
 			needsRedraw = true;
 		} else {
-			needsRedraw = warningLabel.getVisible();
+			needsRedraw = warningLabel.isVisible();
 			warningLabel.hideMessage();
 		}
 		// Without this explicit redraw, the ControlDecoration of the
@@ -2079,7 +2083,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		String chIdLine = "Change-Id: I" + ObjectId.zeroId().name(); //$NON-NLS-1$
 
-		if (GerritUtil.getCreateChangeId(currentRepository.getConfig())
+		if (currentRepository.getConfig().getBoolean(
+				ConfigConstants.CONFIG_GERRIT_SECTION,
+				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false)
 				&& commitMessageComponent.getCreateChangeId()) {
 			if (message.trim().equals(chIdLine))
 				return false;
