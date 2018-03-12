@@ -83,15 +83,11 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	@Before
 	public void setupViews() {
-		Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.ALWAYS_USE_STAGING_VIEW, false);
 		TestUtil.showExplorerView();
 	}
 
 	@After
 	public void closeSynchronizeView() {
-		Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.ALWAYS_USE_STAGING_VIEW, true);
 		TestUtil.hideView(ISynchronizeView.VIEW_ID);
 	}
 
@@ -132,8 +128,8 @@ public abstract class AbstractSynchronizeViewTest extends
 	protected void changeFilesInProject() throws Exception {
 		SWTBot packageExlBot = bot.viewById(JavaUI.ID_PACKAGES).bot();
 		SWTBotTreeItem coreTreeItem = selectProject(PROJ1, packageExlBot.tree());
-		SWTBotTreeItem rootNode = TestUtil.expandAndWait(coreTreeItem);
-		rootNode = TestUtil.expandAndWait(rootNode.getNode(0)).select();
+		SWTBotTreeItem rootNode = coreTreeItem.expand().getNode(0)
+				.expand().select();
 		rootNode.getNode(0).select().doubleClick();
 
 		SWTBotEditor corePomEditor = bot.editorByTitle(FILE1);

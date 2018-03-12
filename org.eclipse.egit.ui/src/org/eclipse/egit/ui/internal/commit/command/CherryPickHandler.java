@@ -173,7 +173,7 @@ public class CherryPickHandler extends SelectionHandler {
 							IDialogConstants.CANCEL_LABEL }, 0);
 			setShellStyle(getShellStyle() | SWT.RESIZE);
 
-			List<RepositoryCommit> repoCommits = new ArrayList<>();
+			List<RepositoryCommit> repoCommits = new ArrayList<RepositoryCommit>();
 			for (RevCommit commit : revCommits)
 				repoCommits.add(new RepositoryCommit(repository, commit));
 			this.commits = repoCommits.toArray(new RepositoryCommit[0]);

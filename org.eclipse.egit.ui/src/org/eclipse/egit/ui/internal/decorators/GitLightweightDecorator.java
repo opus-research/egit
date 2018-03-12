@@ -479,7 +479,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 				break;
 			}
 
-			Map<String, String> bindings = new HashMap<>();
+			Map<String, String> bindings = new HashMap<String, String>();
 			bindings.put(BINDING_RESOURCE_NAME, resource.getName());
 			bindings.put(BINDING_REPOSITORY_NAME, resource.getRepositoryName());
 			bindings.put(BINDING_BRANCH_NAME, resource.getBranch());

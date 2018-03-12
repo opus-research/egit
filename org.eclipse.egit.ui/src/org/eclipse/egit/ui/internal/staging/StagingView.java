@@ -73,9 +73,9 @@ import org.eclipse.egit.ui.internal.commands.shared.ContinueRebaseCommand;
 import org.eclipse.egit.ui.internal.commands.shared.SkipRebaseCommand;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitJob;
-import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
+import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
@@ -129,8 +129,6 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
@@ -139,6 +137,8 @@ import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -158,8 +158,6 @@ import org.eclipse.swt.dnd.DropTargetAdapter;
 import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.FileTransfer;
 import org.eclipse.swt.dnd.Transfer;
-import org.eclipse.swt.events.ControlEvent;
-import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
@@ -239,7 +237,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private Form form;
 
-	private SashForm mainSashForm;
+	private SashForm horizontalSashForm;
 
 	private Section stagedSection;
 
@@ -296,9 +294,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private Presentation presentation = Presentation.LIST;
 
-	private Set<IPath> pathsToExpandInStaged = new HashSet<>();
+	private Set<IPath> pathsToExpandInStaged = new HashSet<IPath>();
 
-	private Set<IPath> pathsToExpandInUnstaged = new HashSet<>();
+	private Set<IPath> pathsToExpandInUnstaged = new HashSet<IPath>();
 
 	/**
 	 * Presentation mode of the staged/unstaged files.
@@ -362,7 +360,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 
 			if (FileTransfer.getInstance().isSupportedType(event.dataType)) {
-				List<String> files = new ArrayList<>();
+				List<String> files = new ArrayList<String>();
 				for (Object selected : selection.toList())
 					if (selected instanceof StagingEntry) {
 						StagingEntry entry = (StagingEntry) selected;
@@ -612,7 +610,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	@Override
-	public void createPartControl(final Composite parent) {
+	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
 
 		toolkit = new FormToolkit(parent.getDisplay());
@@ -631,44 +629,21 @@ public class StagingView extends ViewPart implements IShowInSource {
 		});
 
 		form = toolkit.createForm(parent);
-		parent.addControlListener(new ControlListener() {
 
-			private int[] defaultWeights = { 1, 1 };
-
-			@Override
-			public void controlResized(ControlEvent e) {
-				org.eclipse.swt.graphics.Rectangle b = parent.getBounds();
-				int oldOrientation = mainSashForm.getOrientation();
-				if ((oldOrientation == SWT.HORIZONTAL)
-						&& (b.height > b.width)) {
-					mainSashForm.setOrientation(SWT.VERTICAL);
-					mainSashForm.setWeights(defaultWeights);
-				} else if ((oldOrientation == SWT.VERTICAL)
-						&& (b.height <= b.width)) {
-					mainSashForm.setOrientation(SWT.HORIZONTAL);
-					mainSashForm.setWeights(defaultWeights);
-				}
-			}
-
-			@Override
-			public void controlMoved(ControlEvent e) {
-				// ignore
-			}
-		});
 		form.setImage(getImage(UIIcons.REPOSITORY));
 		form.setText(UIText.StagingView_NoSelectionTitle);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(form);
 		toolkit.decorateFormHeading(form);
 		GridLayoutFactory.swtDefaults().applyTo(form.getBody());
 
-		mainSashForm = new SashForm(form.getBody(), SWT.HORIZONTAL);
-		saveSashFormWeightsOnDisposal(mainSashForm,
+		horizontalSashForm = new SashForm(form.getBody(), SWT.NONE);
+		saveSashFormWeightsOnDisposal(horizontalSashForm,
 				HORIZONTAL_SASH_FORM_WEIGHT);
-		toolkit.adapt(mainSashForm, true, true);
+		toolkit.adapt(horizontalSashForm, true, true);
 		GridDataFactory.fillDefaults().grab(true, true)
-				.applyTo(mainSashForm);
+				.applyTo(horizontalSashForm);
 
-		stagingSashForm = new SashForm(mainSashForm,
+		stagingSashForm = new SashForm(horizontalSashForm,
 				getStagingFormOrientation());
 		saveSashFormWeightsOnDisposal(stagingSashForm,
 				STAGING_SASH_FORM_WEIGHT);
@@ -735,7 +710,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		enableAutoExpand(unstagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
 
-		Composite rebaseAndCommitComposite = toolkit.createComposite(mainSashForm);
+		Composite rebaseAndCommitComposite = toolkit.createComposite(horizontalSashForm);
 		rebaseAndCommitComposite.setLayout(GridLayoutFactory.fillDefaults().create());
 
 		rebaseSection = toolkit.createSection(rebaseAndCommitComposite,
@@ -964,7 +939,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		this.commitAndPushButton = toolkit.createButton(commitButtonsContainer,
 				UIText.StagingView_CommitAndPush, SWT.PUSH);
-		commitAndPushButton.setImage(getImage(UIIcons.PUSH));
 		commitAndPushButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1091,8 +1065,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			public void updateChangeIdToggleSelection(boolean selection) {
 				addChangeIdAction.setChecked(selection);
 				commitAndPushButton
-						.setImage(getImage(
-								selection ? UIIcons.GERRIT : UIIcons.PUSH));
+						.setImage(selection ? getImage(UIIcons.GERRIT) : null);
 			}
 
 			@Override
@@ -1257,7 +1230,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void restoreSashFormWeights() {
-		restoreSashFormWeights(mainSashForm,
+		restoreSashFormWeights(horizontalSashForm,
 				HORIZONTAL_SASH_FORM_WEIGHT);
 		restoreSashFormWeights(stagingSashForm,
 				STAGING_SASH_FORM_WEIGHT);
@@ -1519,7 +1492,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private ShowInContext getShowInContext(TreeViewer treeViewer) {
 		IStructuredSelection selection = (IStructuredSelection) treeViewer.getSelection();
-		List<Object> elements = new ArrayList<>();
+		List<Object> elements = new ArrayList<Object>();
 		for (Object selectedElement : selection.toList()) {
 			if (selectedElement instanceof StagingEntry) {
 				StagingEntry entry = (StagingEntry) selectedElement;
@@ -2008,7 +1981,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				if (selection.isEmpty())
 					return;
 
-				List<StagingEntry> stagingEntryList = new ArrayList<>();
+				List<StagingEntry> stagingEntryList = new ArrayList<StagingEntry>();
 
 				boolean submoduleSelected = false;
 				boolean folderSelected = false;
@@ -2347,7 +2320,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private static List<IPath> getSelectedPaths(IStructuredSelection selection) {
-		List<IPath> paths = new ArrayList<>();
+		List<IPath> paths = new ArrayList<IPath>();
 		Iterator iterator = selection.iterator();
 		while (iterator.hasNext()) {
 			StagingEntry stagingEntry = (StagingEntry) iterator.next();
@@ -2507,8 +2480,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		StagingViewContentProvider contentProvider = getContentProvider(unstagedViewer);
 		final Git git = new Git(currentRepository);
 		Iterator iterator = selection.iterator();
-		final List<String> addPaths = new ArrayList<>();
-		final List<String> rmPaths = new ArrayList<>();
+		final List<String> addPaths = new ArrayList<String>();
+		final List<String> rmPaths = new ArrayList<String>();
 		resetPathsToExpand();
 		while (iterator.hasNext()) {
 			Object element = iterator.next();
@@ -2657,7 +2630,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private List<String> processUnstageSelection(IStructuredSelection selection) {
-		List<String> paths = new ArrayList<>();
+		List<String> paths = new ArrayList<String>();
 		resetPathsToExpand();
 		for (Object element : selection.toList()) {
 			if (element instanceof StagingEntry) {
@@ -2690,8 +2663,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void resetPathsToExpand() {
-		pathsToExpandInStaged = new HashSet<>();
-		pathsToExpandInUnstaged = new HashSet<>();
+		pathsToExpandInStaged = new HashSet<IPath>();
+		pathsToExpandInUnstaged = new HashSet<IPath>();
 	}
 
 	private static void addExpandedPathsBelowFolder(StagingFolderEntry folder,
@@ -3017,14 +2990,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (getPresentation() == Presentation.LIST)
 			return;
 
-		Set<IPath> paths = new HashSet<>(additionalPaths);
+		Set<IPath> paths = new HashSet<IPath>(additionalPaths);
 		// Instead of just expanding the previous elements directly, also expand
 		// all parent paths. This makes it work in case of "re-folding" of
 		// compact tree.
 		for (Object element : previous)
 			if (element instanceof StagingFolderEntry)
 				addPathAndParentPaths(((StagingFolderEntry) element).getPath(), paths);
-		List<StagingFolderEntry> expand = new ArrayList<>();
+		List<StagingFolderEntry> expand = new ArrayList<StagingFolderEntry>();
 
 		calculateNodesToExpand(paths, stagedContentProvider.getElements(null),
 				expand);
@@ -3205,7 +3178,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private Collection<String> getStagedFileNames() {
 		StagingViewContentProvider stagedContentProvider = getContentProvider(stagedViewer);
 		StagingEntry[] entries = stagedContentProvider.getStagingEntries();
-		List<String> files = new ArrayList<>();
+		List<String> files = new ArrayList<String>();
 		for (StagingEntry entry : entries)
 			files.add(entry.getPath());
 		return files;
@@ -3304,12 +3277,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	@Override
 	public void setFocus() {
-		Tree tree = unstagedViewer.getTree();
-		if (tree.getItemCount() > 0) {
-			unstagedViewer.getControl().setFocus();
-			return;
-		}
-		commitMessageText.setFocus();
+		unstagedViewer.getControl().setFocus();
 	}
 
 	@Override

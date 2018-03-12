@@ -338,7 +338,7 @@ class PushResultTable {
 			return;
 		}
 
-		final List<RefUpdateElement> results = new ArrayList<>();
+		final List<RefUpdateElement> results = new ArrayList<RefUpdateElement>();
 
 		for (URIish uri : result.getURIs())
 			if (result.isSuccessfulConnection(uri))

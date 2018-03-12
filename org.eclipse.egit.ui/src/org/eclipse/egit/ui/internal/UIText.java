@@ -3207,9 +3207,6 @@ public class UIText extends NLS {
 	public static String CommittingPreferencePage_BlockCommitCombo;
 
 	/** */
-	public static String CommittingPreferencePage_AlwaysUseStagingView;
-
-	/** */
 	public static String DateFormatPreferencePage_title;
 
 	/** */

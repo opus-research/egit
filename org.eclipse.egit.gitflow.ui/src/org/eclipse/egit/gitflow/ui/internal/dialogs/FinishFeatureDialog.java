@@ -59,7 +59,6 @@ public class FinishFeatureDialog extends TitleAreaDialog {
 	public void create() {
 		super.create();
 		setTitle(UIText.FinishFeatureDialog_title);
-		getShell().setText(UIText.FinishFeatureDialog_title);
 		setMessage(NLS.bind(
 				UIText.FinishFeatureDialog_setParameterForFinishing,
 				featureBranch), IMessageProvider.INFORMATION);

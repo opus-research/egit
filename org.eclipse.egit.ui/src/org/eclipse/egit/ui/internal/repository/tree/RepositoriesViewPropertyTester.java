@@ -66,22 +66,28 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 		}
 
 		if (property.equals("isRefCheckedOut")) { //$NON-NLS-1$
-			if (node instanceof BranchHierarchyNode) {
-				try {
-					for (Ref ref : ((BranchHierarchyNode) node)
-							.getChildRefsRecursive()) {
-						if (isRefCheckedOut(repository, ref)) {
-							return true;
-						}
-					}
-				} catch (IOException e) {
-					return false;
-				}
-			}
 			if (!(node.getObject() instanceof Ref))
 				return false;
 			Ref ref = (Ref) node.getObject();
-			return isRefCheckedOut(repository, ref);
+			try {
+				if (ref.getName().startsWith(Constants.R_REFS)) {
+					return ref.getName().equals(repository.getFullBranch());
+				} else if (ref.getName().equals(Constants.HEAD)) {
+					return true;
+				} else {
+					String leafname = ref.getLeaf().getName();
+					if (leafname.startsWith(Constants.R_REFS)
+							&& leafname.equals(repository.getFullBranch())) {
+						return true;
+					} else {
+						ObjectId objectId = ref.getLeaf().getObjectId();
+						return objectId != null && objectId
+								.equals(repository.resolve(Constants.HEAD));
+					}
+				}
+			} catch (IOException e) {
+				return false;
+			}
 		}
 		if (property.equals("isLocalBranch")) { //$NON-NLS-1$
 			if (!(node.getObject() instanceof Ref))
@@ -144,28 +150,6 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 					&& parent.getType() == RepositoryTreeNodeType.SUBMODULES;
 		}
 		return false;
-	}
-
-	private boolean isRefCheckedOut(Repository repository, Ref ref) {
-		try {
-			if (ref.getName().startsWith(Constants.R_REFS)) {
-				return ref.getName().equals(repository.getFullBranch());
-			} else if (ref.getName().equals(Constants.HEAD)) {
-				return true;
-			} else {
-				String leafname = ref.getLeaf().getName();
-				if (leafname.startsWith(Constants.R_REFS)
-						&& leafname.equals(repository.getFullBranch())) {
-					return true;
-				} else {
-					ObjectId objectId = ref.getLeaf().getObjectId();
-					return objectId != null && objectId
-							.equals(repository.resolve(Constants.HEAD));
-				}
-			}
-		} catch (IOException e) {
-			return false;
-		}
 	}
 
 	private boolean containsHead(Repository repository) {

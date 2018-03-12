@@ -186,13 +186,13 @@ public class PushOperationUI {
 			// to add the default push RefSpec here
 			spec = new PushOperationSpecification();
 
-			List<URIish> urisToPush = new ArrayList<>();
+			List<URIish> urisToPush = new ArrayList<URIish>();
 			for (URIish uri : config.getPushURIs())
 				urisToPush.add(uri);
 			if (urisToPush.isEmpty() && !config.getURIs().isEmpty())
 				urisToPush.add(config.getURIs().get(0));
 
-			List<RefSpec> pushRefSpecs = new ArrayList<>();
+			List<RefSpec> pushRefSpecs = new ArrayList<RefSpec>();
 			pushRefSpecs.addAll(config.getPushRefSpecs());
 
 			for (URIish uri : urisToPush) {
