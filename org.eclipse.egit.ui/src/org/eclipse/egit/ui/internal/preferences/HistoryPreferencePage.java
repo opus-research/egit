@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2014, Gregor Dschung <gregor.dschung@andrena.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -84,9 +83,6 @@ public class HistoryPreferencePage extends FieldEditorPreferencePage implements
 		addField(new IntegerFieldEditor(UIPreferences.HISTORY_MAX_NUM_COMMITS,
 				UIText.ResourceHistory_MaxNumCommitsInList,
 				showGroup));
-		addField(new IntegerFieldEditor(
-				UIPreferences.HISTORY_MAX_NUM_FILES_PER_COMMITS,
-				UIText.ResourceHistory_MaxNumFilesPerCommit, showGroup));
 		addField(new IntegerFieldEditor(UIPreferences.HISTORY_MAX_TAG_LENGTH,
 				UIText.HistoryPreferencePage_MaxTagLength,
 				showGroup));
