@@ -2923,12 +2923,6 @@ public class UIText extends NLS {
 	public static String CreateTagDialog_NewTag;
 
 	/** */
-	public static String CleanDialog_HeaderMessage;
-
-	/** */
-	public static String CleanDialog_TitleMessage;
-
-	/** */
 	public static String CommitCombo_showSuggestedCommits;
 
 	/** */
