@@ -23,6 +23,7 @@ import java.util.Set;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
@@ -86,7 +87,8 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public boolean isSupervised(IResource res) throws TeamException {
 		return IResource.FILE == res.getType()
-				&& gsds.contains(res.getProject()) && !isIgnoredHint(res);
+				&& gsds.contains(res.getProject()) && !isIgnoredHint(res)
+				&& shouldBeIncluded(res);
 	}
 
 	/**
@@ -97,7 +99,7 @@ public class GitResourceVariantTreeSubscriber extends
 	 */
 	@Override
 	public IResource[] members(IResource res) throws TeamException {
-		if (res.getType() == IResource.FILE)
+		if(res.getType() == IResource.FILE || !shouldBeIncluded(res))
 			return new IResource[0];
 
 		GitSynchronizeData gsd = gsds.getData(res.getProject());
@@ -187,12 +189,30 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	protected SyncInfo getSyncInfo(IResource local, IResourceVariant base,
 			IResourceVariant remote) throws TeamException {
+		GitSynchronizeData gsd = gsds.getData(local.getProject());
 
-		Repository repo = gsds.getData(local.getProject()).getRepository();
-		SyncInfo info = new GitSyncInfo(local, base, remote,
-				getResourceComparator(), cache.get(repo), repo);
+		SyncInfo info;
+		if (gsd.shouldIncludeLocal())
+			info = new SyncInfo(local, base, remote, getResourceComparator());
+		else
+			info = new GitSyncInfo(local, base, remote, getResourceComparator(), gsd);
 
 		info.init();
 		return info;
 	}
+
+	private boolean shouldBeIncluded(IResource res) {
+		Set<IContainer> includedPaths = gsds.getData(res.getProject())
+				.getIncludedPaths();
+		if (includedPaths == null)
+			return true;
+
+		IPath path = res.getLocation();
+		for (IContainer container : includedPaths)
+			if (container.getLocation().isPrefixOf(path))
+				return true;
+
+		return false;
+	}
+
 }

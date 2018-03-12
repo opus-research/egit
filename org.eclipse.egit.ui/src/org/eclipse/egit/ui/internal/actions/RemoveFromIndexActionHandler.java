@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,48 +17,54 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.AddToIndexOperation;
+import org.eclipse.egit.core.op.RemoveFromIndexOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
-
+import org.eclipse.jgit.lib.Repository;
 
 /**
- * Action for adding a resource to the git index
+ * Action for removing resource from the git index
  *
  * @see AddToIndexOperation
- *
  */
-public class AddToIndexActionHandler extends RepositoryActionHandler {
+public class RemoveFromIndexActionHandler extends RepositoryActionHandler {
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final IResource[] sel = getSelectedResources(event);
 		if (sel.length == 0)
 			return null;
-		final AddToIndexOperation operation = new AddToIndexOperation(sel);
-		String jobname = UIText.AddToIndexAction_addingFiles;
-		Job job = new Job(jobname) {
+
+		Repository repo = getRepository();
+		final RemoveFromIndexOperation removeOperation = new RemoveFromIndexOperation(
+				repo, sel);
+		Job job = new Job(UIText.RemoveFromIndexAction_removingFiles) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				try {
-					operation.execute(monitor);
+					removeOperation.execute(monitor);
 				} catch (CoreException e) {
 					return Activator.createErrorStatus(e.getStatus()
 							.getMessage(), e);
+				} finally {
+					monitor.done();
 				}
+
 				return Status.OK_STATUS;
 			}
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.ADD_TO_INDEX.equals(family))
+				if (JobFamilies.REMOVE_FROM_INDEX.equals(family))
 					return true;
 
 				return super.belongsTo(family);
 			}
 		};
 		job.setUser(true);
-		job.setRule(operation.getSchedulingRule());
+		job.setRule(removeOperation.getSchedulingRule());
 		job.schedule();
+
 		return null;
 	}
 

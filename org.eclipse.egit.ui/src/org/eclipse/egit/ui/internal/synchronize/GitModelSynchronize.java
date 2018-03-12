@@ -71,7 +71,7 @@ public class GitModelSynchronize {
 
 		boolean launchFetch = Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH);
-		if (launchFetch) {
+		if (launchFetch || gsdSet.forceFetch()) {
 			Job fetchJob = new SynchronizeFetchJob(gsdSet);
 			fetchJob.setUser(true);
 			fetchJob.addJobChangeListener(new JobChangeAdapter() {

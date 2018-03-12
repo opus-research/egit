@@ -19,12 +19,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -53,7 +55,11 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 	public IResource[] roots() {
 		Set<IResource> roots = new HashSet<IResource>();
 		for (GitSynchronizeData gsd : gsds)
-			roots.addAll(gsd.getProjects());
+			if (gsd.getPathFilter() == null)
+				roots.addAll(gsd.getProjects());
+			else
+				for (IContainer container : gsd.getIncludedPaths())
+					roots.add(container.getProject());
 
 		return roots.toArray(new IResource[roots.size()]);
 	}
@@ -114,7 +120,7 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 		return variant;
 	}
 
-	protected abstract ObjectId getObjectId(ThreeWayDiffEntry diffEntry);
+	protected abstract ObjectId getObjectId(DiffEntry diffEntry);
 
 	protected abstract ObjectId getObjectId(GitSynchronizeData gsd);
 
