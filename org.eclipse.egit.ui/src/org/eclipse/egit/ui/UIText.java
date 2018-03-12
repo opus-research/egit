@@ -4617,12 +4617,6 @@ public class UIText extends NLS {
 	/** */
 	public static String CloneFailureDialog_checkList;
 
-	/** */
-	public static String GarbageCollectCommand_jobTitle;
-
-	/** */
-	public static String GarbageCollectCommand_failed;
-
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
