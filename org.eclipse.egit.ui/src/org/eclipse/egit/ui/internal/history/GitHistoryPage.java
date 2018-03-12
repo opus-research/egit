@@ -17,10 +17,8 @@ package org.eclipse.egit.ui.internal.history;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -65,7 +63,6 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.events.ListenerHandle;
@@ -79,7 +76,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revplot.PlotWalk;
 import org.eclipse.jgit.revwalk.FollowFilter;
-import org.eclipse.jgit.revwalk.RenameCallback;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevObject;
@@ -99,8 +95,6 @@ import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.MenuDetectEvent;
-import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
@@ -651,9 +645,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private boolean currentFollowRenames;
 
-	/** Tracks the file names that are to be highlighted in the diff file viewer */
-	private Set<String> fileViewerInterestingPaths;
-
 	// react on changes to the relative date preference
 	private final IPropertyChangeListener listener = new IPropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent event) {
@@ -926,13 +917,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		actions = new GitHistoryPageActions(this);
 		setupToolBar();
 		setupViewMenu();
-
-		graph.getControl().addMenuDetectListener(new MenuDetectListener() {
-			public void menuDetected(MenuDetectEvent e) {
-				popupMgr.add(actions.showFilesAction);
-				popupMgr.add(actions.showCommentAction);
-			}
-		});
 	}
 
 	private void setupToolBar() {
@@ -1484,8 +1468,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					graph.setInput(highlightFlag, list, asArray, input, true);
 					if (toSelect != null)
 						graph.selectCommit(toSelect);
-					if (getFollowRenames())
-						updateInterestingPathsOfFileViewer();
 					if (trace)
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.HISTORYVIEW.getLocation(),
@@ -1503,10 +1485,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		if (trace)
 			GitTraceLocation.getTrace().traceExit(
 					GitTraceLocation.HISTORYVIEW.getLocation());
-	}
-
-	private void updateInterestingPathsOfFileViewer() {
-		fileViewer.setInterestingPaths(fileViewerInterestingPaths);
 	}
 
 	private void setWarningText(String warning) {
@@ -1760,7 +1738,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	private TreeWalk setupFileViewer(RevWalk walk, Repository db, List<FilterPath> paths) {
 		final TreeWalk fileWalker = createFileWalker(walk, db, paths);
 		fileViewer.setTreeWalk(db, fileWalker);
-		fileViewer.setInterestingPaths(fileViewerInterestingPaths);
 		fileViewer.refresh();
 		fileViewer.addSelectionChangedListener(commentViewer);
 		return fileWalker;
@@ -1779,7 +1756,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			for (FilterPath filterPath : paths)
 				selectedPaths.add(filterPath.getPath());
 
-			fileViewerInterestingPaths = new HashSet<String>(selectedPaths);
 			TreeFilter followFilter = createFollowFilterFor(selectedPaths);
 			walk.setTreeFilter(followFilter);
 		} else if (paths.size() > 0) {
@@ -1790,11 +1766,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 			walk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
 					.createFromStrings(stringPaths), TreeFilter.ANY_DIFF));
-			fileViewerInterestingPaths = new HashSet<String>(stringPaths);
 		} else {
 			pathFilters = null;
 			walk.setTreeFilter(TreeFilter.ALL);
-			fileViewerInterestingPaths = null;
 		}
 		return fileWalker;
 	}
@@ -1811,26 +1785,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		List<TreeFilter> followFilters = new ArrayList<TreeFilter>(paths.size());
 		for (String path : paths)
-			followFilters.add(createFollowFilter(path));
+			followFilters.add(FollowFilter.create(path));
 
 		if (followFilters.size() == 1)
 			return followFilters.get(0);
 
 		return OrTreeFilter.create(followFilters);
-	}
-
-	private FollowFilter createFollowFilter(String path) {
-		FollowFilter followFilter = FollowFilter.create(path);
-		followFilter.setRenameCallback(new RenameCallback() {
-			@Override
-			public void renamed(DiffEntry entry) {
-				if (fileViewerInterestingPaths != null) {
-					fileViewerInterestingPaths.add(entry.getOldPath());
-					fileViewerInterestingPaths.add(entry.getNewPath());
-				}
-			}
-		});
-		return followFilter;
 	}
 
 	/**
