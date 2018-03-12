@@ -454,8 +454,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if (!commitMessageComponent.isAmending()
-						&& userEnteredCommitMessage())
+				if (userEnteredCommmitMessage())
 					saveCommitMessageComponentState();
 				else
 					deleteCommitMessageComponentState();
@@ -500,6 +499,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.applyTo(unstagedViewer.getControl());
 		unstagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
+		unstagedViewer.getTree().setLinesVisible(true);
 		unstagedViewer.setLabelProvider(createLabelProvider(unstagedViewer));
 		unstagedViewer.setContentProvider(createStagingContentProvider(true));
 		unstagedViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
@@ -673,7 +673,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 			@Override
 			protected IHandlerService getHandlerService() {
-				return CommonUtils.getService(getSite(), IHandlerService.class);
+				return (IHandlerService) getSite().getService(IHandlerService.class);
 			}
 		};
 		commitMessageText.setData(FormToolkit.KEY_DRAW_BORDER,
@@ -763,6 +763,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.applyTo(stagedViewer.getControl());
 		stagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
+		stagedViewer.getTree().setLinesVisible(true);
 		stagedViewer.setLabelProvider(createLabelProvider(stagedViewer));
 		stagedViewer.setContentProvider(createStagingContentProvider(false));
 		stagedViewer.addDragSupport(
@@ -877,7 +878,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		// react on selection changes
 		IWorkbenchPartSite site = getSite();
-		ISelectionService srv = CommonUtils.getService(site, ISelectionService.class);
+		ISelectionService srv = (ISelectionService) site
+				.getService(ISelectionService.class);
 		srv.addPostSelectionListener(selectionChangedListener);
 
 		// Use current selection to populate staging view
@@ -1348,6 +1350,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private TreeViewer createTree(Composite composite) {
 		Tree tree = toolkit.createTree(composite, SWT.FULL_SELECTION
 				| SWT.MULTI);
+		tree.setLinesVisible(true);
 		TreeViewer treeViewer = new TreeViewer(tree);
 		return treeViewer;
 	}
@@ -2065,14 +2068,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			amendPreviousCommitAction.setChecked(isAmending);
 			amendPreviousCommitAction.run();
 		}
-	}
 
-	/**
-	 * @param message
-	 *            commit message to set for current repository
-	 */
-	public void setCommitMessage(String message) {
-		commitMessageText.setText(message);
 	}
 
 	/**
@@ -2232,8 +2228,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
 		if (repositoryChanged)
-			if (commitMessageComponent.isAmending()
-					|| userEnteredCommitMessage())
+			if (userEnteredCommmitMessage())
 				saveCommitMessageComponentState();
 			else
 				deleteCommitMessageComponentState();
@@ -2251,16 +2246,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadInitialState(helper);
 			else
 				loadExistingState(helper, oldState);
-		} else { // repository did not change
-			if (!commitMessageComponent.isAmending()
-					&& userEnteredCommitMessage()) {
+		} else // repository did not change
+			if (userEnteredCommmitMessage()) {
 				if (!commitMessageComponent.getHeadCommit().equals(
 						helper.getPreviousCommit()))
 					addHeadChangedWarning(commitMessageComponent
 							.getCommitMessage());
 			} else
 				loadInitialState(helper);
-		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
 		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
@@ -2322,7 +2315,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		commitMessageComponent.enableListeners(true);
 	}
 
-	private boolean userEnteredCommitMessage() {
+	private boolean userEnteredCommmitMessage() {
 		if (commitMessageComponent.getRepository() == null)
 			return false;
 		String message = commitMessageComponent.getCommitMessage().replace(
@@ -2441,7 +2434,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 		});
 
-		IWorkbenchSiteProgressService service = CommonUtils.getService(getSite(), IWorkbenchSiteProgressService.class);
+		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) getSite()
+				.getService(IWorkbenchSiteProgressService.class);
 		if (service != null)
 			service.schedule(commitJob, 0, true);
 		else
@@ -2471,7 +2465,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	public void dispose() {
 		super.dispose();
 
-		ISelectionService srv = CommonUtils.getService(getSite(), ISelectionService.class);
+		ISelectionService srv = (ISelectionService) getSite().getService(
+				ISelectionService.class);
 		srv.removePostSelectionListener(selectionChangedListener);
 
 		if(cacheEntry != null)

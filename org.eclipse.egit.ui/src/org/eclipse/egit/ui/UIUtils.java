@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.VariablesPlugin;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -886,7 +885,8 @@ public class UIUtils {
 	 */
 	public static void notifySelectionChangedWithCurrentSelection(
 			ISelectionListener selectionListener, IServiceLocator serviceLocator) {
-		IHandlerService handlerService = CommonUtils.getService(serviceLocator, IHandlerService.class);
+		IHandlerService handlerService = (IHandlerService) serviceLocator
+				.getService(IHandlerService.class);
 		IEvaluationContext state = handlerService.getCurrentState();
 		// This seems to be the most reliable way to get the active part, it
 		// also returns a part when it is called while creating a view that is
