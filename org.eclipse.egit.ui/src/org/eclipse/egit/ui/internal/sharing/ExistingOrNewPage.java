@@ -772,7 +772,7 @@ class ExistingOrNewPage extends WizardPage {
 		}
 	}
 
-	public Repository getSelectedRepository() {
+	public Repository getSelectedRepsoitory() {
 		return selectedRepository;
 	}
 }
