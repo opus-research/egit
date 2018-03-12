@@ -36,11 +36,7 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		// the current branch by reading the configuration and use the other
 		// super constructor
 		super(parentShell, repo);
-		shouldShowLocalBranches(true);
-		shouldShowRemoteBranches(true);
-		shouldShowTags(true);
-		shouldShowReferences(false);
-		shouldSelectCurrentRef(false);
+		setRootsToShow(true, true, true, false);
 	}
 
 	@Override

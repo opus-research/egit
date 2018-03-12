@@ -34,13 +34,7 @@ public class RebaseTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	public RebaseTargetSelectionDialog(Shell parentShell, Repository repo) {
 		super(parentShell, repo);
 		// local and remote branches only
-		shouldShowLocalBranches(true);
-		shouldShowRemoteBranches(true);
-		shouldShowTags(false);
-		shouldShowReferences(false);
-		shouldSelectCurrentRef(false);
-		shouldExpandLocalBranchesNode(false);
-		shouldExpandRemoteBranchesNode(true);
+		setRootsToShow(true, true, false, false);
 	}
 
 	@Override
