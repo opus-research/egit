@@ -9,7 +9,6 @@
 package org.eclipse.egit.gitflow.op;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.jgit.lib.Repository;
@@ -24,9 +23,7 @@ public class HotfixStartOperationTest extends AbstractGitFlowOperationTest {
 		new InitOperation(repository).execute(null);
 		GitFlowRepository gfRepo = new GitFlowRepository(repository);
 
-		HotfixStartOperation hotfixStartOperation = new HotfixStartOperation(gfRepo, MY_HOTFIX);
-		assertNull(hotfixStartOperation.getSchedulingRule());
-		hotfixStartOperation.execute(null);
+		new HotfixStartOperation(gfRepo, MY_HOTFIX).execute(null);
 
 		assertEquals(gfRepo.getConfig().getFullHotfixBranchName(MY_HOTFIX),
 				repository.getFullBranch());
