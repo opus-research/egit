@@ -30,7 +30,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -117,13 +116,13 @@ public class GitCreatePatchWizard extends Wizard {
 		String pageTitle = UIText.GitCreatePatchWizard_SelectLocationTitle;
 		String pageDescription = UIText.GitCreatePatchWizard_SelectLocationDescription;
 
-		locationPage = new LocationPage(pageTitle, pageTitle, UIIcons.WIZBAN_CREATE_PATCH);
+		locationPage = new LocationPage(pageTitle, pageTitle, null);
 		locationPage.setDescription(pageDescription);
 		addPage(locationPage);
 
 		pageTitle = UIText.GitCreatePatchWizard_SelectOptionsTitle;
 		pageDescription = UIText.GitCreatePatchWizard_SelectOptionsDescription;
-		optionsPage = new OptionsPage(pageTitle, pageTitle, UIIcons.WIZBAN_CREATE_PATCH);
+		optionsPage = new OptionsPage(pageTitle, pageTitle, null);
 		optionsPage.setDescription(pageDescription);
 		addPage(optionsPage);
 	}
