@@ -187,6 +187,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 		bot.button("Cancel").click();
 	}
 
+	@SuppressWarnings("boxing")
 	@Test
 	public void canCloneARemoteRepo() throws Exception {
 		File destRepo = new File(ResourcesPlugin.getWorkspace()
@@ -243,7 +244,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 				.nextToRemoteBranches(r.getUri());
 		remoteBranches.assertRemoteBranches(SampleTestRepository.FIX, Constants.MASTER);
 		WorkingCopyPage workingCopy = remoteBranches.nextToWorkingCopy();
-		workingCopy.assertWorkingCopyExists();
+		workingCopy.assertWorkingCopyExists(r.getUri());
 	}
 
 	@Test

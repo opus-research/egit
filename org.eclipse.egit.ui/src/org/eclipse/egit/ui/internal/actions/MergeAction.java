@@ -20,6 +20,6 @@ public class MergeAction extends RepositoryAction {
 	 *
 	 */
 	public MergeAction() {
-		super(ActionCommands.MERGE_ACTION, new MergeActionHandler());
+		super(ActionCommands.MERGE_ACTION);
 	}
 }
