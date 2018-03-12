@@ -23,7 +23,6 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.MergeTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -47,7 +46,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 
 		if (!canMerge(repository, event))
 			return null;
-		BasicConfigurationDialog.show(repository);
+
 		MergeTargetSelectionDialog mergeTargetSelectionDialog = new MergeTargetSelectionDialog(
 				getShell(event), repository);
 		if (mergeTargetSelectionDialog.open() == IDialogConstants.OK_ID) {
@@ -73,7 +72,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 				@Override
 				public void done(IJobChangeEvent cevent) {
 					IStatus result = cevent.getJob().getResult();
-					if (result.getSeverity() == IStatus.CANCEL)
+					if (result.getSeverity() == IStatus.CANCEL) {
 						Display.getDefault().asyncExec(new Runnable() {
 							public void run() {
 								// don't use getShell(event) here since
@@ -88,10 +87,10 @@ public class MergeActionHandler extends RepositoryActionHandler {
 												UIText.MergeAction_MergeCanceledMessage);
 							}
 						});
-					else if (!result.isOK())
+					} else if (!result.isOK()) {
 						Activator.handleError(result.getMessage(), result
 								.getException(), true);
-					else
+					} else {
 						Display.getDefault().asyncExec(new Runnable() {
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
@@ -100,6 +99,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 										.getResult()).open();
 							}
 						});
+					}
 				}
 			});
 			job.schedule();
@@ -111,7 +111,6 @@ public class MergeActionHandler extends RepositoryActionHandler {
 	public boolean isEnabled() {
 		Repository repo = getRepository();
 		return repo != null
-				&& repo.getRepositoryState() == RepositoryState.SAFE
-				&& isLocalBranchCheckedout(repo);
+				&& repo.getRepositoryState() == RepositoryState.SAFE;
 	}
 }

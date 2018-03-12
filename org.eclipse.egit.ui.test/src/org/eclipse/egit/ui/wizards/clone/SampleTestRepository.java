@@ -22,8 +22,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.Daemon;
-import org.eclipse.jgit.transport.DaemonClient;
-import org.eclipse.jgit.transport.resolver.FileResolver;
 import org.eclipse.jgit.util.FileUtils;
 
 /**
@@ -154,12 +152,10 @@ public class SampleTestRepository {
 
 	private void serve() throws IOException {
 		d = new Daemon();
-		FileResolver<DaemonClient> resolver = new FileResolver<DaemonClient>();
-		resolver.exportRepository(REPO_NAME, src.getRepository());
-		d.setRepositoryResolver(resolver);
+		d.exportRepository(REPO_NAME, src.getRepository());
 		d.start();
 		uri = "git://localhost:" + d.getAddress().getPort() + "/" + REPO_NAME
-				+ Constants.DOT_GIT_EXT;
+				+ Constants.DOT_GIT;
 	}
 
 	private void serveHttp() throws Exception{

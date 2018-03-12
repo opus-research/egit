@@ -7,8 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Dariusz Luksza (dariusz@luksza.org) - disable command when HEAD cannot be
- *    										resolved
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -85,10 +83,4 @@ public class ShowInHistoryCommand extends
 		});
 		return null;
 	}
-
-	@Override
-	public void setEnabled(Object evaluationContext) {
-		enableWhenRepositoryHaveHead(evaluationContext);
-	}
-
 }

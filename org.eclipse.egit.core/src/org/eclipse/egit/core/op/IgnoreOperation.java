@@ -13,10 +13,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,13 +35,9 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.treewalk.FileTreeIterator;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.WorkingTreeIterator;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.Team;
 
 /**
  * IgnoreOperation adds resources to a .gitignore file
@@ -64,8 +57,7 @@ public class IgnoreOperation implements IEGitOperation {
 	 * @param resources
 	 */
 	public IgnoreOperation(IResource[] resources) {
-		this.resources = new IResource[resources.length];
-		System.arraycopy(resources, 0, this.resources, 0, resources.length);
+		this.resources = resources;
 		gitignoreOutsideWSChanged = false;
 		schedulingRule = calcSchedulingRule();
 	}
@@ -82,8 +74,10 @@ public class IgnoreOperation implements IEGitOperation {
 				// NB This does the same thing in
 				// DecoratableResourceAdapter, but neither currently
 				// consult .gitignore
-				if (!isIgnored(resource))
+
+				if (!Team.isIgnoredHint(resource)) {
 					addIgnore(monitor, resource);
+				}
 				monitor.worked(1);
 			}
 			monitor.done();
@@ -93,25 +87,6 @@ public class IgnoreOperation implements IEGitOperation {
 			throw new CoreException(Activator.error(
 					CoreText.IgnoreOperation_error, e));
 		}
-	}
-
-	private boolean isIgnored(IResource resource) throws IOException {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-		Repository repository = mapping.getRepository();
-		String path = mapping.getRepoRelativePath(resource);
-		TreeWalk walk = new TreeWalk(repository);
-		walk.addTree(new FileTreeIterator(repository));
-		walk.setFilter(PathFilter.create(path));
-		while (walk.next()) {
-			WorkingTreeIterator workingTreeIterator = walk.getTree(0,
-					WorkingTreeIterator.class);
-			if (walk.getPathString().equals(path)) {
-				return workingTreeIterator.isEntryIgnored();
-			}
-			if (workingTreeIterator.getEntryFileMode().equals(FileMode.TREE))
-				walk.enterSubtree();
-		}
-		return false;
 	}
 
 	/**
@@ -128,9 +103,10 @@ public class IgnoreOperation implements IEGitOperation {
 	}
 
 	private void addIgnore(IProgressMonitor monitor, IResource resource)
-			throws UnsupportedEncodingException, CoreException, IOException {
+			throws UnsupportedEncodingException, CoreException {
 		IContainer container = resource.getParent();
 		String entry = "/" + resource.getName() + "\n"; //$NON-NLS-1$  //$NON-NLS-2$
+		ByteArrayInputStream entryBytes = asStream(entry);
 
 		if (container instanceof IWorkspaceRoot) {
 			Repository repository = RepositoryMapping.getMapping(
@@ -156,9 +132,7 @@ public class IgnoreOperation implements IEGitOperation {
 		} else {
 			IFile gitignore = container.getFile(new Path(
 					Constants.GITIGNORE_FILENAME));
-			entry = getEntry(gitignore.getLocation().toFile(), entry);
 			IProgressMonitor subMonitor = new SubProgressMonitor(monitor, 1);
-			ByteArrayInputStream entryBytes = asStream(entry);
 			if (gitignore.exists())
 				gitignore.appendContents(entryBytes, true, true, subMonitor);
 			else
@@ -166,35 +140,9 @@ public class IgnoreOperation implements IEGitOperation {
 		}
 	}
 
-	private boolean prependNewline(File file) throws IOException {
-		boolean prepend = false;
-		long length = file.length();
-		if (length > 0) {
-			RandomAccessFile raf = new RandomAccessFile(file, "r"); //$NON-NLS-1$
-			try {
-				// Read the last byte and see if it is a newline
-				ByteBuffer buffer = ByteBuffer.allocate(1);
-				FileChannel channel = raf.getChannel();
-				channel.position(length - 1);
-				if (channel.read(buffer) > 0) {
-					buffer.rewind();
-					prepend = buffer.get() != '\n';
-				}
-			} finally {
-				raf.close();
-			}
-		}
-		return prepend;
-	}
-
-	private String getEntry(File file, String entry) throws IOException {
-		return prependNewline(file) ? "\n" + entry : entry; //$NON-NLS-1$
-	}
-
 	private void updateGitIgnore(File gitIgnore, String entry)
 			throws CoreException {
 		try {
-			String ignoreLine = entry;
 			if (!gitIgnore.exists())
 				if (!gitIgnore.createNewFile()) {
 					String error = NLS.bind(
@@ -202,12 +150,10 @@ public class IgnoreOperation implements IEGitOperation {
 							gitIgnore.getAbsolutePath());
 					throw new CoreException(Activator.error(error, null));
 				}
-			else
-				ignoreLine = getEntry(gitIgnore, ignoreLine);
 
 			FileOutputStream os = new FileOutputStream(gitIgnore, true);
 			try {
-				os.write(ignoreLine.getBytes());
+				os.write(entry.getBytes());
 			} finally {
 				os.close();
 			}

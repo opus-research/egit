@@ -1,5 +1,4 @@
 /*******************************************************************************
-
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
@@ -9,115 +8,119 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
+import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
+import static org.eclipse.jgit.lib.ObjectId.zeroId;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.egit.core.Activator;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.TreeWalk;
 
 /**
  * Representation of Git tree's in Git ChangeSet model
  */
-public class GitModelTree extends GitModelObjectContainer {
+public class GitModelTree extends GitModelCommit {
 
-	private final int kind;
+	private final String name;
 
-	/**
-	 * Absolute repository path
-	 */
-	protected final IPath path;
+	private final ObjectId baseId;
 
-	final Map<String, GitModelObject> cachedTreeMap = new HashMap<String, GitModelObject>();
+	private final ObjectId remoteId;
+
+	private final ObjectId ancestorId;
+
+	private IPath location;
 
 	/**
 	 * @param parent
-	 *            parent object
-	 * @param fullPath
-	 *            absolute object path
-	 * @param kind
-	 *            type of change
+	 *            parent of this tree
+	 * @param commit
+	 *            commit associated with this tree
+	 * @param ancestorId
+	 *            id of common ancestor tree for this on
+	 * @param baseId
+	 *            id of base tree
+	 * @param remoteId
+	 *            this tree id
+	 * @param name
+	 *            name resource associated with this tree
+	 * @throws IOException
 	 */
-	public GitModelTree(GitModelObjectContainer parent, IPath fullPath,
-			int kind) {
-		super(parent);
-		this.kind = kind;
-		this.path = fullPath;
+	public GitModelTree(GitModelObjectContainer parent, RevCommit commit,
+			ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, String name)
+			throws IOException {
+		// only direction is important for us, therefore we mask rest of bits in kind
+		super(parent, commit, parent.getKind() & (LEFT | RIGHT));
+		this.name = name;
+		this.baseId = baseId;
+		this.remoteId = remoteId;
+		this.ancestorId = ancestorId;
 	}
 
 	@Override
 	public String getName() {
-		return path.lastSegment();
+		return name;
+	}
+
+	/**
+	 * Return id of tree that should be used as a base variant in
+	 * three-way-compare.
+	 *
+	 * @return base id
+	 */
+	public ObjectId getBaseId() {
+		return baseId;
+	}
+
+	/**
+	 * Returns id of tree that should be used as a remote in three-way-compare
+	 *
+	 * @return object id
+	 */
+	public ObjectId getRemoteId() {
+		return remoteId;
 	}
 
 	@Override
 	public IPath getLocation() {
-		return path;
+		if (location == null)
+			location = getParent().getLocation().append(name);
+
+		return location;
 	}
 
-	@Override
-	public int getKind() {
-		return kind;
-	}
+	protected GitModelObject[] getChildrenImpl() {
+		TreeWalk tw = createTreeWalk();
+		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
-	@Override
-	public int repositoryHashCode() {
-		return getParent().repositoryHashCode();
-	}
+		try {
+			int remoteNth = tw.addTree(remoteId);
 
-	@Override
-	public GitModelObject[] getChildren() {
-		Collection<GitModelObject> values = cachedTreeMap.values();
+			int baseNth = -1;
+			if (!baseId.equals(zeroId()))
+				baseNth = tw.addTree(baseId);
 
-		return values.toArray(new GitModelObject[values.size()]);
-	}
+			int ancestorNth = -1;
+			if (!ancestorId.equals(zeroId()))
+				ancestorNth = tw.addTree(ancestorId);
 
-	@Override
-	public boolean isContainer() {
-		return true;
-	}
+			while (tw.next()) {
+				GitModelObject obj = getModelObject(tw, ancestorNth, baseNth,
+						remoteNth);
+				if (obj != null)
+					result.add(obj);
+			}
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+		}
 
-	@Override
-	public void dispose() {
-		for (GitModelObject value : cachedTreeMap.values())
-			value.dispose();
-
-		cachedTreeMap.clear();
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((getParent() == null) ? 0 : getParent().hashCode());
-		result = prime * result + ((path == null) ? 0 : path.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		GitModelTree other = (GitModelTree) obj;
-		if (getParent() == null) {
-			if (other.getParent() != null)
-				return false;
-		} else if (!getParent().equals(other.getParent()))
-			return false;
-		if (path == null) {
-			if (other.path != null)
-				return false;
-		} else if (!path.equals(other.path))
-			return false;
-		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "ModelTree[location=" + getLocation() + "]"; //$NON-NLS-1$ //$NON-NLS-2$
+		return result.toArray(new GitModelObject[result.size()]);
 	}
 
 }

@@ -29,26 +29,17 @@ public class HistoryViewCommands {
 	/** "Compare with each other" */
 	public static final String COMPARE_VERSIONS = "org.eclipse.egit.ui.history.CompareVersions"; //$NON-NLS-1$
 
-	/** "Compare in Tree Compare" */
-	public static final String COMPARE_VERSIONS_IN_TREE = "org.eclipse.egit.ui.history.CompareVersionsInTree"; //$NON-NLS-1$
-
 	/** "Compare with working tree" */
 	public static final String COMPARE_WITH_TREE = "org.eclipse.egit.ui.history.CompareWithWorkingTree"; //$NON-NLS-1$
 
 	/** "Create Branch" */
 	public static final String CREATE_BRANCH = "org.eclipse.egit.ui.history.CreateBranch"; //$NON-NLS-1$
 
-	/** "Delete Branch" */
-	public static final String DELETE_BRANCH = "org.eclipse.egit.ui.history.DeleteBranch"; //$NON-NLS-1$
-
 	/** "Create Patch" */
 	public static final String CREATE_PATCH = "org.eclipse.egit.ui.history.CreatePatch"; //$NON-NLS-1$
 
 	/** "Create Tag" */
 	public static final String CREATE_TAG = "org.eclipse.egit.ui.history.CreateTag"; //$NON-NLS-1$
-
-	/** "Push Commit" */
-	public static final String PUSH_COMMIT = "org.eclipse.egit.ui.history.PushCommit"; //$NON-NLS-1$
 
 	/** "Open" */
 	public static final String OPEN = "org.eclipse.egit.ui.history.ShowVersions"; //$NON-NLS-1$
@@ -73,16 +64,4 @@ public class HistoryViewCommands {
 
 	/** "cherry-pick" a commit */
 	public static final String CHERRYPICK = "org.eclipse.egit.ui.history.CherryPick"; //$NON-NLS-1$
-
-	/** revert a commit */
-	public static final String REVERT = "org.eclipse.egit.ui.history.Revert"; //$NON-NLS-1$
-
-	/** merge with branch/tag/commit */
-	public static final String MERGE = "org.eclipse.egit.ui.history.Merge"; //$NON-NLS-1$
-
-	/** rebase on top of commit */
-	public static final String REBASECURRENT = "org.eclipse.egit.ui.RebaseCurrent"; //$NON-NLS-1$
-
-	/** Open in Commit Viewer */
-	public static final String OPEN_IN_COMMIT_VIEWER = "org.eclipse.egit.ui.history.OpenInCommitViewerCommand"; //$NON-NLS-1$
 }

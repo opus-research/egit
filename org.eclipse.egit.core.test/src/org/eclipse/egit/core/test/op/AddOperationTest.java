@@ -164,8 +164,6 @@ public class AddOperationTest extends GitTestCase {
 				"sub/a.txt", "some text");
 		IFile file2 = testUtils.addFileToProject(project.getProject(),
 				"sub/b.txt", "some text");
-		// TODO use setDerived(boolean isDerived, IProgressMonitor monitor)
-		// when minimal supported Eclipse version is 3.6
 		file2.setDerived(true);
 
 		resources.add(project.getProject().getFolder("sub"));
@@ -183,8 +181,6 @@ public class AddOperationTest extends GitTestCase {
 				"sub/a.txt", "some text");
 		IFile file2 = testUtils.addFileToProject(project.getProject(),
 				"sub/b.txt", "some text");
-		// TODO use setDerived(boolean isDerived, IProgressMonitor monitor)
-		// when minimal supported Eclipse version is 3.6
 		file2.setDerived(true);
 
 		resources.add(project.getProject());

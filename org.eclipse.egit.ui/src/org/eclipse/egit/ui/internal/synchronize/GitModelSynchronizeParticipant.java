@@ -11,26 +11,19 @@ package org.eclipse.egit.ui.internal.synchronize;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
-import org.eclipse.compare.CompareNavigator;
 import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.synchronize.GitSubscriberMergeContext;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
-import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.util.IPropertyChangeListener;
-import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -45,11 +38,6 @@ import org.eclipse.team.ui.synchronize.ModelSynchronizeParticipant;
 public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant {
 
 	/**
-	 * Key value for obtaining {@link GitSynchronizeDataSet} from {@link ISynchronizePageConfiguration}
-	 */
-	public static final String SYNCHRONIZATION_DATA = "GIT_SYNCHRONIZE_DATA_SET"; //$NON-NLS-1$
-
-	/**
 	 * Id of model compare participant
 	 */
 	public static final String ID = "org.eclipse.egit.ui.modelCompareParticipant"; //$NON-NLS-1$
@@ -58,8 +46,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 	 * Id of model synchronization participant
 	 */
 	public static final String VIEWER_ID = "org.eclipse.egit.ui.compareSynchronization"; //$NON-NLS-1$
-
-	private static final String P_NAVIGATOR = "org.eclipse.team.ui.P_NAVIGATOR"; //$NON-NLS-1$
 
 	private static final String WORKSPACE_MODEL_PROVIDER_ID = "org.eclipse.core.resources.modelProvider"; //$NON-NLS-1$
 
@@ -85,84 +71,44 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 	}
 
 	protected void initializeConfiguration(
-			final ISynchronizePageConfiguration configuration) {
+			ISynchronizePageConfiguration configuration) {
 		configuration.setProperty(ISynchronizePageConfiguration.P_VIEWER_ID,
 				VIEWER_ID);
-		String modelProvider = WORKSPACE_MODEL_PROVIDER_ID;
-		final IPreferenceStore preferenceStore = Activator.getDefault()
-				.getPreferenceStore();
-		if (!gsds.containsFolderLevelSynchronizationRequest()) {
-			if (preferenceStore
-					.getBoolean(UIPreferences.SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL)) {
-				modelProvider = GitChangeSetModelProvider.ID;
-			} else {
-				String lastSelectedModel = preferenceStore.getString(UIPreferences.SYNC_VIEW_LAST_SELECTED_MODEL);
-				if (!"".equals(lastSelectedModel)) //$NON-NLS-1$
-					modelProvider = lastSelectedModel;
-			}
-		}
-
 		configuration.setProperty(
 				ModelSynchronizeParticipant.P_VISIBLE_MODEL_PROVIDER,
-				modelProvider);
-
-		configuration.setProperty(SYNCHRONIZATION_DATA, gsds);
-
+				GitChangeSetModelProvider.ID);
 		super.initializeConfiguration(configuration);
-
-		configuration.addActionContribution(new GitActionContributor());
-
-		configuration.addPropertyChangeListener(new IPropertyChangeListener() {
-
-			public void propertyChange(PropertyChangeEvent event) {
-				String property = event.getProperty();
-				if (property.equals(
-						ModelSynchronizeParticipant.P_VISIBLE_MODEL_PROVIDER)) {
-					String newValue = (String) event.getNewValue();
-					preferenceStore.setValue(
-							UIPreferences.SYNC_VIEW_LAST_SELECTED_MODEL,
-							newValue);
-				} else if (property.equals(P_NAVIGATOR)) {
-					Object oldNavigator = configuration
-							.getProperty(P_NAVIGATOR);
-					if (!(oldNavigator instanceof GitTreeCompareNavigator))
-						configuration.setProperty(P_NAVIGATOR,
-								new GitTreeCompareNavigator(
-										(CompareNavigator) oldNavigator));
-				}
-			}
-		});
 	}
 
 	@Override
 	public ModelProvider[] getEnabledModelProviders() {
+		List<ModelProvider> providers = new ArrayList<ModelProvider>();
 		ModelProvider[] avaliableProviders = super.getEnabledModelProviders();
+		if (!includeResourceModelProvider()) {
+			for (ModelProvider provider : avaliableProviders)
+				if (provider.getId().equals(WORKSPACE_MODEL_PROVIDER_ID)) {
+					providers.add(provider);
+					break;
+				}
 
-		for (ModelProvider provider : avaliableProviders)
-			if (provider.getId().equals(GitChangeSetModelProvider.ID))
-				return avaliableProviders;
+			providers.add(GitChangeSetModelProvider.getProvider());
+		} else {
+			boolean addGitProvider = true;
 
-		int capacity = avaliableProviders.length + 1;
-		ArrayList<ModelProvider> providers = new ArrayList<ModelProvider>(
-				capacity);
-		providers.add(GitChangeSetModelProvider.getProvider());
+			for (ModelProvider provider : avaliableProviders) {
+				String providerId = provider.getId();
+				providers.add(provider);
+
+				if (addGitProvider
+						&& providerId.equals(GitChangeSetModelProvider.ID))
+					addGitProvider = false;
+			}
+
+			if (addGitProvider)
+				providers.add(GitChangeSetModelProvider.getProvider());
+		}
 
 		return providers.toArray(new ModelProvider[providers.size()]);
-	}
-
-	@Override
-	public boolean hasCompareInputFor(Object object) {
-		if (object instanceof GitModelBlob || object instanceof IFile)
-			return true;
-		// in Java Workspace model Java source files are passed as type
-		// CompilationUnit which can be adapted to IResource
-		if (object instanceof IAdaptable) {
-			IResource res = (IResource) ((IAdaptable) object)
-					.getAdapter(IResource.class);
-			if (res != null && res.getType() == IResource.FILE)
-				return true;
-		}
-		return super.hasCompareInputFor(object);
 	}
 
 	@Override
@@ -176,6 +122,15 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		}
 
 		return super.asCompareInput(object);
+	}
+
+	private boolean includeResourceModelProvider() {
+		GitSubscriberMergeContext context = (GitSubscriberMergeContext) getContext();
+		for (GitSynchronizeData gsd : context.getSyncData())
+			if (!gsd.shouldIncludeLocal())
+				return false;
+
+		return true;
 	}
 
 	private ICompareInput getFileFromGit(GitSynchronizeData gsd, IPath location) {

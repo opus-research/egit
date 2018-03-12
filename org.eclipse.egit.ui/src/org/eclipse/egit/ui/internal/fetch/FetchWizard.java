@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
- * Copyright (C) 2010, 2011, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,25 +13,36 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
+import org.eclipse.jgit.errors.NotSupportedException;
+import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.transport.FetchResult;
+import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Wizard allowing user to specify all needed data to fetch from another
@@ -82,58 +93,42 @@ public class FetchWizard extends Wizard {
 	}
 
 	@Override
-	public boolean canFinish() {
-		if (getContainer().getCurrentPage() == repoPage) {
-			RepositorySelection sel = repoPage.getSelection();
-			if (sel.isConfigSelected()) {
-				RemoteConfig config = sel.getConfig();
-				return !config.getURIs().isEmpty()
-						&& !config.getFetchRefSpecs().isEmpty();
-			}
-		}
-		return super.canFinish();
-	}
-
-	@Override
 	public boolean performFinish() {
-		boolean calledFromRepoPage = false;
-		if (getContainer().getCurrentPage()==repoPage)
-			calledFromRepoPage = true;
 		if (repoPage.getSelection().isConfigSelected()
 				&& refSpecPage.isSaveRequested())
 			saveConfig();
 		if (repoPage.getStoreInSecureStore()) {
-			if (!SecureStoreUtils.storeCredentials(repoPage.getCredentials(),
-					repoPage.getSelection().getURI()))
+			if (!SecureStoreUtils.storeCredentials(repoPage
+					.getCredentials(), repoPage.getSelection().getURI()))
 				return false;
 		}
 
-		final FetchOperationUI op;
-		int timeout = Activator.getDefault().getPreferenceStore().getInt(
-				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
+		final Transport transport;
 		final RepositorySelection repoSelection = repoPage.getSelection();
-
-		if (calledFromRepoPage)
-			op = new FetchOperationUI(localDb, repoSelection.getConfig(),
-					timeout, false);
-		else if (repoSelection.isConfigSelected())
-			op = new FetchOperationUI(localDb, repoSelection.getConfig()
-					.getURIs().get(0), refSpecPage.getRefSpecs(), timeout,
-					false);
-		else
-			op = new FetchOperationUI(localDb, repoSelection.getURI(false),
-					refSpecPage.getRefSpecs(), timeout, false);
-
+		try {
+			if (repoSelection.isConfigSelected())
+				transport = Transport.open(localDb, repoSelection.getConfig());
+			else
+				transport = Transport.open(localDb, repoSelection.getURI(false));
+		} catch (final NotSupportedException e) {
+			ErrorDialog.openError(getShell(),
+					UIText.FetchWizard_transportNotSupportedTitle,
+					UIText.FetchWizard_transportNotSupportedMessage,
+					new Status(IStatus.ERROR, org.eclipse.egit.ui.Activator
+							.getPluginId(), e.getMessage(), e));
+			return false;
+		}
 		UserPasswordCredentials credentials = repoPage.getCredentials();
 		if (credentials != null)
-			op.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
+			transport.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
 					credentials.getUser(), credentials.getPassword()));
 
-		// even if a RemoteConfig is selected, we need to make sure to
-		// add the RefSpecs from the RefSpec page into the FetchOperation
-		if (!calledFromRepoPage)
-			op.setTagOpt(refSpecPage.getTagOpt());
-		op.start();
+		transport.setTagOpt(refSpecPage.getTagOpt());
+
+		final Job fetchJob = new FetchJob(transport, refSpecPage.getRefSpecs(),
+				getSourceString());
+		fetchJob.setUser(true);
+		fetchJob.schedule();
 
 		repoPage.saveUriInPrefs();
 
@@ -171,5 +166,52 @@ public class FetchWizard extends Wizard {
 		if (repoSelection.isConfigSelected())
 			return repoSelection.getConfigName();
 		return repoSelection.getURI(false).toString();
+	}
+
+	private class FetchJob extends Job {
+		private final Transport transport;
+
+		private final List<RefSpec> refSpecs;
+
+		private final String sourceString;
+
+		public FetchJob(final Transport transport,
+				final List<RefSpec> refSpecs, final String sourceString) {
+			super(NLS.bind(UIText.FetchWizard_jobName, sourceString));
+			this.transport = transport;
+			this.refSpecs = refSpecs;
+			this.sourceString = sourceString;
+		}
+
+		@Override
+		protected IStatus run(IProgressMonitor actMonitor) {
+			IProgressMonitor monitor = actMonitor;
+			if (monitor == null)
+				monitor = new NullProgressMonitor();
+			final FetchResult result;
+			try {
+				result = transport.fetch(new EclipseGitProgressTransformer(
+						monitor), refSpecs);
+			} catch (final NotSupportedException e) {
+				return new Status(IStatus.ERROR, Activator.getPluginId(),
+						UIText.FetchWizard_fetchNotSupported, e);
+			} catch (final TransportException e) {
+				if (monitor.isCanceled())
+					return Status.CANCEL_STATUS;
+				return new Status(IStatus.ERROR, Activator.getPluginId(),
+						UIText.FetchWizard_transportError, e);
+			}
+
+			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				public void run() {
+					final Shell shell = PlatformUI.getWorkbench()
+							.getActiveWorkbenchWindow().getShell();
+					final Dialog dialog = new FetchResultDialog(shell, localDb,
+							result, sourceString);
+					dialog.open();
+				}
+			});
+			return Status.OK_STATUS;
+		}
 	}
 }

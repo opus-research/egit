@@ -22,9 +22,7 @@ import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
-import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -32,6 +30,7 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -57,8 +56,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		childRepositoryFile = createChildRepository(repositoryFile);
 		perspective = bot.activePerspective();
 		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
-		RepositoriesViewLabelProvider provider = GitRepositoriesViewTestUtils
-				.createLabelProvider();
+		RepositoriesViewLabelProvider provider = new RepositoriesViewLabelProvider();
 		Repository repo = lookupRepository(childRepositoryFile);
 		REMOTE_BRANCHES = provider.getText(new RemoteTrackingNode(
 				new RepositoryNode(null, repo), repo));
@@ -90,16 +88,12 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		SWTBotShell fetchDialog = openFetchDialog();
 		fetchDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
 		fetchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-
-		String uri = lookupRepository(childRepositoryFile).getConfig()
-				.getString(ConfigConstants.CONFIG_REMOTE_SECTION, "origin",
-						ConfigConstants.CONFIG_KEY_URL);
 		SWTBotShell confirm = bot.shell(NLS.bind(
-				UIText.FetchResultDialog_title, uri));
-		SWTBotTree tree = confirm.bot().tree();
-		String branch = tree.getAllItems()[0].getText();
-		assertTrue("Wrong result",
-				branch.contains(previousCommit.substring(0, 7)));
+				UIText.FetchResultDialog_title, "origin"));
+		SWTBotTable table = confirm.bot().table();
+		String branch = table.getTableItem(0).getText(2);
+		assertTrue("Wrong result", previousCommit.startsWith(branch.substring(
+				0, 7)));
 
 		confirm.close();
 
@@ -109,8 +103,8 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		fetchDialog = openFetchDialog();
 		fetchDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
 		fetchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-		confirm = bot.shell(NLS.bind(UIText.FetchResultDialog_title, uri));
-		int count = confirm.bot().tree().rowCount();
+		confirm = bot.shell(NLS.bind(UIText.FetchResultDialog_title, "origin"));
+		int count = confirm.bot().table().rowCount();
 
 		confirm.close();
 
@@ -135,10 +129,8 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String menuString = util.getPluginLocalizedValue("FetchAction_label");
-		String submenuString = util
-				.getPluginLocalizedValue("RemoteSubMenu.label");
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
-				submenuString, menuString);
+				menuString);
 		SWTBotShell dialog = bot.shell(UIText.FetchWizard_windowTitleDefault);
 		return dialog;
 	}
@@ -152,8 +144,8 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 				menuString);
 		Repository repo = lookupRepository(childRepositoryFile);
 		SWTBotShell dialog = bot.shell(NLS.bind(
-				UIText.MergeTargetSelectionDialog_TitleMergeWithBranch,
-				repo.getBranch()));
+				UIText.MergeTargetSelectionDialog_TitleMerge, repo
+						.getDirectory().toString()));
 		return dialog;
 	}
 }

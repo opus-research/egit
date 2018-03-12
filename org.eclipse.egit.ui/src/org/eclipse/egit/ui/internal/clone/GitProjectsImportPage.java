@@ -15,6 +15,7 @@
 package org.eclipse.egit.ui.internal.clone;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,24 +25,36 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.internal.util.ProjectUtil;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IColorProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -54,9 +67,12 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.IWorkingSet;
+import org.eclipse.ui.IWorkingSetManager;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.actions.WorkspaceModifyOperation;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.dialogs.WorkingSetGroup;
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * The GitWizardProjectsImportPage is the page that allows the user to import
@@ -65,8 +81,11 @@ import org.eclipse.ui.dialogs.WorkingSetGroup;
  */
 public class GitProjectsImportPage extends WizardPage {
 
-	private final class ProjectLabelProvider extends GitLabelProvider implements
+	private final class ProjectLabelProvider extends LabelProvider implements
 			IColorProvider {
+		public String getText(Object element) {
+			return ((ProjectRecord) element).getProjectLabel();
+		}
 
 		public Color getForeground(Object element) {
 			if (isProjectInWorkspace(((ProjectRecord) element).getProjectName()))
@@ -255,7 +274,11 @@ public class GitProjectsImportPage extends WizardPage {
 		selectAll.setText(UIText.WizardProjectsImportPage_selectAll);
 		selectAll.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				selectAllNewProjects();
+				for (TreeItem item : projectsList.getTree().getItems()) {
+					ProjectRecord record = (ProjectRecord) item.getData();
+					if (!isProjectInWorkspace(record.getProjectName()))
+						projectsList.setChecked(item.getData(), true);
+				}
 				enableSelectAllButtons();
 				setPageComplete(true);
 			}
@@ -276,14 +299,7 @@ public class GitProjectsImportPage extends WizardPage {
 		});
 		Dialog.applyDialogFont(deselectAll);
 		setButtonLayoutData(deselectAll);
-	}
 
-	private void selectAllNewProjects() {
-		for (TreeItem item : projectsList.getTree().getItems()) {
-			ProjectRecord record = (ProjectRecord) item.getData();
-			if (!isProjectInWorkspace(record.getProjectName()))
-				projectsList.setChecked(item.getData(), true);
-		}
 	}
 
 	/**
@@ -390,7 +406,6 @@ public class GitProjectsImportPage extends WizardPage {
 		} else {
 			setMessage(UIText.WizardProjectsImportPage_ImportProjectsDescription);
 		}
-		selectAllNewProjects();
 		enableSelectAllButtons();
 		checkPageComplete();
 	}
@@ -414,9 +429,170 @@ public class GitProjectsImportPage extends WizardPage {
 	 * @return boolean <code>true</code> if the operation was completed.
 	 */
 	private boolean collectProjectFilesFromDirectory(Collection<File> files,
-			File directory, Set<String> visistedDirs, IProgressMonitor monitor) {
-		return ProjectUtil.findProjectFiles(files, directory, visistedDirs,
-				monitor);
+			File directory, Set<String> visistedDirs,
+			IProgressMonitor monitor) {
+
+		Set<String> directoriesVisited;
+
+		if (monitor.isCanceled()) {
+			return false;
+		}
+		monitor.subTask(NLS.bind(
+				UIText.WizardProjectsImportPage_CheckingMessage, directory
+						.getPath()));
+		File[] contents = directory.listFiles();
+		if (contents == null)
+			return false;
+
+		// Initialize recursion guard for recursive symbolic links
+		if (visistedDirs == null) {
+			directoriesVisited = new HashSet<String>();
+			try {
+				directoriesVisited.add(directory.getCanonicalPath());
+			} catch (IOException exception) {
+				StatusManager.getManager().handle(
+						new Status(IStatus.ERROR, Activator.getPluginId(),
+								exception.getLocalizedMessage(), exception));
+			}
+		} else {
+			directoriesVisited = visistedDirs;
+		}
+
+		// first look for project description files
+		final String dotProject = IProjectDescription.DESCRIPTION_FILE_NAME;
+		for (int i = 0; i < contents.length; i++) {
+			File file = contents[i];
+			if (file.isFile() && file.getName().equals(dotProject)) {
+				files.add(file);
+				// don't search sub-directories since we can't have nested
+				// projects
+				return true;
+			}
+		}
+		// no project description found, so recurse into sub-directories
+		for (int i = 0; i < contents.length; i++) {
+			if (contents[i].isDirectory()) {
+				if (!contents[i].getName().equals(METADATA_FOLDER)) {
+					try {
+						String canonicalPath = contents[i].getCanonicalPath();
+						if (!directoriesVisited.add(canonicalPath)) {
+							// already been here --> do not recurse
+							continue;
+						}
+					} catch (IOException exception) {
+						StatusManager.getManager().handle(
+								new Status(IStatus.ERROR, Activator
+										.getPluginId(), exception
+										.getLocalizedMessage(), exception));
+
+					}
+					collectProjectFilesFromDirectory(files, contents[i],
+							directoriesVisited, monitor);
+				}
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Create the selected projects
+	 *
+	 * @return boolean <code>true</code> if all project creations were
+	 *         successful.
+	 */
+	boolean createProjects() {
+		final Set<ProjectRecord> selected = getCheckedProjects();
+		WorkspaceModifyOperation op = new WorkspaceModifyOperation() {
+			protected void execute(IProgressMonitor monitor)
+					throws InvocationTargetException, InterruptedException {
+				try {
+					monitor.beginTask("", selected.size()); //$NON-NLS-1$
+					if (monitor.isCanceled()) {
+						throw new OperationCanceledException();
+					}
+					for (ProjectRecord projectRecord : selected) {
+						createExistingProject(projectRecord,
+								new SubProgressMonitor(monitor, 1));
+					}
+				} finally {
+					monitor.done();
+				}
+			}
+		};
+		// run the new project creation operation
+		try {
+			getContainer().run(true, true, op);
+		} catch (InterruptedException e) {
+			return false;
+		} catch (InvocationTargetException e) {
+			// one of the steps resulted in a core exception
+			Throwable t = e.getTargetException();
+			Activator.handleError(UIText.WizardProjectImportPage_errorMessage,
+					t, true);
+			return false;
+		}
+		addProjectsToWorkingSet(selected);
+		return true;
+	}
+
+	private void addProjectsToWorkingSet(Set<ProjectRecord> selected) {
+		IWorkingSetManager workingSetManager = PlatformUI.getWorkbench()
+				.getWorkingSetManager();
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		for (ProjectRecord projectRecord : selected) {
+			IWorkingSet[] selectedWorkingSets = workingSetGroup
+					.getSelectedWorkingSets();
+			String projectName = projectRecord.getProjectName();
+			IProject project = root.getProject(projectName);
+			workingSetManager.addToWorkingSets(project, selectedWorkingSets);
+		}
+	}
+
+	/**
+	 * Create the project described in record. If it is successful return true.
+	 *
+	 * @param record
+	 * @param monitor
+	 * @return boolean <code>true</code> if successful
+	 * @throws InvocationTargetException
+	 * @throws InterruptedException
+	 */
+	private boolean createExistingProject(final ProjectRecord record,
+			IProgressMonitor monitor) throws InvocationTargetException,
+			InterruptedException {
+		String projectName = record.getProjectName();
+		final IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		final IProject project = workspace.getRoot().getProject(projectName);
+		if (record.description == null) {
+			// error case
+			record.description = workspace.newProjectDescription(projectName);
+			IPath locationPath = new Path(record.projectSystemFile
+					.getAbsolutePath());
+
+			// If it is under the root use the default location
+			if (Platform.getLocation().isPrefixOf(locationPath)) {
+				record.description.setLocation(null);
+			} else {
+				record.description.setLocation(locationPath);
+			}
+		} else {
+			record.description.setName(projectName);
+		}
+
+		try {
+			monitor.beginTask(
+					UIText.WizardProjectsImportPage_CreateProjectsTask, 100);
+			project.create(record.description, new SubProgressMonitor(monitor,
+					30));
+			project.open(IResource.BACKGROUND_REFRESH, new SubProgressMonitor(
+					monitor, 50));
+		} catch (CoreException e) {
+			throw new InvocationTargetException(e);
+		} finally {
+			monitor.done();
+		}
+
+		return true;
 	}
 
 	/**
@@ -486,19 +662,12 @@ public class GitProjectsImportPage extends WizardPage {
 	/**
 	 * @return All the currently checked projects in the projectsList tree
 	 */
-	public Set<ProjectRecord> getCheckedProjects() {
+	private Set<ProjectRecord> getCheckedProjects() {
 		HashSet<ProjectRecord> ret = new HashSet<ProjectRecord>();
 		for (Object selected : projectsList.getCheckedElements())
 			ret.add((ProjectRecord) selected);
 
 		return ret;
-	}
-
-	/**
-	 * @return the selected working sets (may be empty)
-	 */
-	public IWorkingSet[] getSelectedWorkingSets() {
-		return workingSetGroup.getSelectedWorkingSets();
 	}
 
 	private void checkPageComplete() {

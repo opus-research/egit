@@ -26,14 +26,6 @@ import org.eclipse.team.core.history.IFileHistoryProvider;
  * The Team provider class for a Git repository.
  */
 public class GitProvider extends RepositoryProvider {
-
-	/**
-	 * Id of repository provider
-	 *
-	 * @see #getID()
-	 */
-	public static final String ID = "org.eclipse.egit.core.GitProvider"; //$NON-NLS-1$
-
 	private GitProjectData data;
 
 	private GitMoveDeleteHook hook;
@@ -43,7 +35,7 @@ public class GitProvider extends RepositoryProvider {
 	private final IResourceRuleFactory resourceRuleFactory = new GitResourceRuleFactory();
 
 	public String getID() {
-		return ID;
+		return getClass().getName();
 	}
 
 	public void configureProject() throws CoreException {

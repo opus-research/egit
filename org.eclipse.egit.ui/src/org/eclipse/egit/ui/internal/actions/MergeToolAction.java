@@ -9,7 +9,8 @@
 package org.eclipse.egit.ui.internal.actions;
 
 /**
- * Action for invoking a merge editor for resources with merge conflicts
+ * Action for displaying fetch wizard - allowing selection of specifications for
+ * fetch, and fetching objects/refs from another repository.
  */
 public class MergeToolAction extends RepositoryAction {
 	/**

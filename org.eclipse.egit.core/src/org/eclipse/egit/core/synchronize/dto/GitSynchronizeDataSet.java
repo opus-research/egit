@@ -21,30 +21,15 @@ import org.eclipse.core.resources.IProject;
  */
 public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 
-	private boolean containsFolderLevelSynchronizationRequest = false;
-
-	private final Set<GitSynchronizeData> gsdSet;
+	private final Set<GitSynchronizeData> gsd;
 
 	private final Map<String, GitSynchronizeData> projectMapping;
-
-	private final boolean forceFetch;
 
 	/**
 	 * Constructs GitSynchronizeDataSet.
 	 */
 	public GitSynchronizeDataSet() {
-		this(false);
-	}
-
-	/**
-	 * Constructs GitSynchronizeDataSet.
-	 *
-	 * @param forceFetch
-	 *            {@code true} for forcing fetch action before synchronization
-	 */
-	public GitSynchronizeDataSet(boolean forceFetch) {
-		this.forceFetch = forceFetch;
-		gsdSet = new HashSet<GitSynchronizeData>();
+		gsd = new HashSet<GitSynchronizeData>();
 		projectMapping = new HashMap<String, GitSynchronizeData>();
 	}
 
@@ -62,11 +47,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 * @param data
 	 */
 	public void add(GitSynchronizeData data) {
-		gsdSet.add(data);
-		if (data.getIncludedPaths() != null
-				&& data.getIncludedPaths().size() > 0)
-			containsFolderLevelSynchronizationRequest = true;
-
+		gsd.add(data);
 		for (IProject proj : data.getProjects()) {
 			projectMapping.put(proj.getName(), data);
 		}
@@ -81,20 +62,11 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	}
 
 	/**
-	 * @return {@code true} when at least one {@link GitSynchronizeData} is
-	 *         configured to include changes only for particular folder,
-	 *         {@code false} otherwise
-	 */
-	public boolean containsFolderLevelSynchronizationRequest() {
-		return containsFolderLevelSynchronizationRequest;
-	}
-
-	/**
 	 * @return number of {@link GitSynchronizeData} that are included in this
 	 *         set
 	 */
 	public int size() {
-		return gsdSet.size();
+		return gsd.size();
 	}
 
 	/**
@@ -114,7 +86,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	}
 
 	public Iterator<GitSynchronizeData> iterator() {
-		return gsdSet.iterator();
+		return gsd.iterator();
 	}
 
 	/**
@@ -122,40 +94,17 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 */
 	public IProject[] getAllProjects() {
 		Set<IProject> resource = new HashSet<IProject>();
-		for (GitSynchronizeData data : gsdSet) {
+		for (GitSynchronizeData data : gsd) {
 			resource.addAll(data.getProjects());
 		}
 		return resource.toArray(new IProject[resource.size()]);
-	}
-
-
-	/**
-	 * @return {@code true} when fetch action should be forced before
-	 *         synchronization, {@code false} otherwise.
-	 */
-	public boolean forceFetch() {
-		return forceFetch;
-	}
-
-
-	/**
-	 * Disposes all nested resources
-	 */
-	public void dispose() {
-		if (projectMapping != null)
-			projectMapping.clear();
-
-		if (gsdSet != null)
-			for (GitSynchronizeData gsd : gsdSet)
-				gsd.dispose();
-
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 
-		for (GitSynchronizeData data : gsdSet) {
+		for (GitSynchronizeData data : gsd) {
 			builder.append(data.getRepository().getWorkTree());
 			builder.append(" "); //$NON-NLS-1$
 		}

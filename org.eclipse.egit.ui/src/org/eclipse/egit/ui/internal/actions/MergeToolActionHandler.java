@@ -53,8 +53,6 @@ public class MergeToolActionHandler extends RepositoryActionHandler {
 		switch (repos[0].getRepositoryState()) {
 		case MERGING:
 			// fall through
-		case CHERRY_PICKING:
-			// fall through
 		case REBASING:
 			// fall through
 		case REBASING_INTERACTIVE:

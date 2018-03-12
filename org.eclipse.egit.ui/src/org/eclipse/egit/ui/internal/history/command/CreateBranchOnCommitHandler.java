@@ -22,14 +22,14 @@ import org.eclipse.ui.handlers.HandlerUtil;
 /**
  * Create a branch based on a commit.
  */
-public class CreateBranchOnCommitHandler extends AbstractHistoryCommandHandler {
+public class CreateBranchOnCommitHandler extends AbstractHistoryCommanndHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		PlotCommit commit = (PlotCommit) getSelection(getPage()).getFirstElement();
 		Repository repo = getRepository(event);
 
 		WizardDialog dlg = new WizardDialog(
 				HandlerUtil.getActiveShellChecked(event),
-				new CreateBranchWizard(repo, commit.name()));
+				new CreateBranchWizard(repo, commit));
 		dlg.setHelpAvailable(false);
 		dlg.open();
 		return null;

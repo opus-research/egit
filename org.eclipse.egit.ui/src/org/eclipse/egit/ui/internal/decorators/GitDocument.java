@@ -10,15 +10,14 @@ package org.eclipse.egit.ui.internal.decorators;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.WeakHashMap;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.GitProvider;
-import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jgit.events.ListenerHandle;
@@ -47,8 +46,6 @@ class GitDocument extends Document implements RefsChangedListener {
 
 	private ListenerHandle myRefsChangedHandle;
 
-	private boolean disposed;
-
 	static Map<GitDocument, Repository> doc2repo = new WeakHashMap<GitDocument, Repository>();
 
 	static GitDocument create(final IResource resource) throws IOException {
@@ -70,9 +67,7 @@ class GitDocument extends Document implements RefsChangedListener {
 
 	private GitDocument(IResource resource) {
 		this.resource = resource;
-		synchronized (doc2repo) {
-			doc2repo.put(this, getRepository());
-		}
+		GitDocument.doc2repo.put(this, getRepository());
 	}
 
 	private void setResolved(final AnyObjectId commit, final AnyObjectId tree,
@@ -98,11 +93,6 @@ class GitDocument extends Document implements RefsChangedListener {
 		if (GitTraceLocation.QUICKDIFF.isActive())
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.QUICKDIFF.getLocation(), resource);
-
-		// Do not populate if already disposed
-		if (disposed)
-			return;
-
 		TreeWalk tw = null;
 		RevWalk rw = null;
 		try {
@@ -112,10 +102,6 @@ class GitDocument extends Document implements RefsChangedListener {
 				return;
 			}
 			final String gitPath = mapping.getRepoRelativePath(resource);
-			if (gitPath == null) {
-				setResolved(null, null, null, ""); //$NON-NLS-1$
-				return;
-			}
 			final Repository repository = mapping.getRepository();
 			String baseline = GitQuickDiffProvider.baseline.get(repository);
 			if (baseline == null)
@@ -130,12 +116,9 @@ class GitDocument extends Document implements RefsChangedListener {
 					return;
 				}
 			} else {
-				if (repository.getRef(Constants.HEAD) == null) {
-					// Complain only if not an unborn branch
-					String msg = NLS.bind(UIText.GitDocument_errorResolveQuickdiff,
-							new Object[] { baseline, resource, repository });
-					Activator.logError(msg, new Throwable());
-				}
+				String msg = NLS.bind(UIText.GitDocument_errorResolveQuickdiff,
+						new Object[] { baseline, resource, repository });
+				Activator.logError(msg, new Throwable());
 				setResolved(null, null, null, ""); //$NON-NLS-1$
 				return;
 			}
@@ -161,22 +144,12 @@ class GitDocument extends Document implements RefsChangedListener {
 			}
 
 			tw = TreeWalk.forPath(repository, gitPath, treeId);
-			if (tw == null) {
-				if (GitTraceLocation.QUICKDIFF.isActive())
-					GitTraceLocation
-							.getTrace()
-							.trace(
-									GitTraceLocation.QUICKDIFF.getLocation(),
-									"(GitDocument) resource " + resource + " not found in " + treeId + " in " + repository + ", baseline=" + baseline); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-				setResolved(null, null, null, ""); //$NON-NLS-1$
-				return;
-			}
 			ObjectId id = tw.getObjectId(0);
 			if (id.equals(ObjectId.zeroId())) {
 				setResolved(null, null, null, ""); //$NON-NLS-1$
 				String msg = NLS
 						.bind(UIText.GitDocument_errorLoadTree, new Object[] {
-								treeId.getName(), baseline, resource, repository });
+								treeId, baseline, resource, repository });
 				Activator.logError(msg, new Throwable());
 				setResolved(null, null, null, ""); //$NON-NLS-1$
 				return;
@@ -189,7 +162,7 @@ class GitDocument extends Document implements RefsChangedListener {
 				ObjectLoader loader = repository.open(id, Constants.OBJ_BLOB);
 				byte[] bytes = loader.getBytes();
 				String charset;
-				charset = CompareCoreUtils.getResourceEncoding(resource);
+				charset = CompareUtils.getResourceEncoding(resource);
 				// Finally we could consider validating the content with respect
 				// to the content. We don't do that here.
 				String s = new String(bytes, charset);
@@ -197,7 +170,8 @@ class GitDocument extends Document implements RefsChangedListener {
 				if (GitTraceLocation.QUICKDIFF.isActive())
 					GitTraceLocation
 							.getTrace()
-							.trace(GitTraceLocation.QUICKDIFF.getLocation(),
+							.trace(
+									GitTraceLocation.QUICKDIFF.getLocation(),
 									"(GitDocument) has reference doc, size=" + s.length() + " bytes"); //$NON-NLS-1$ //$NON-NLS-2$
 			} else {
 				if (GitTraceLocation.QUICKDIFF.isActive())
@@ -222,26 +196,20 @@ class GitDocument extends Document implements RefsChangedListener {
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.QUICKDIFF.getLocation(),
 					"(GitDocument) dispose: " + resource); //$NON-NLS-1$
-		synchronized (doc2repo) {
-			doc2repo.remove(this);
-		}
+		doc2repo.remove(this);
+
 		if (myRefsChangedHandle != null) {
 			myRefsChangedHandle.remove();
 			myRefsChangedHandle = null;
 		}
-		disposed = true;
 	}
 
 	public void onRefsChanged(final RefsChangedEvent e) {
-		Activator.getDefault().getWorkbench().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				try {
-					populate();
-				} catch (Exception e1) {
-					Activator.logError(UIText.GitDocument_errorRefreshQuickdiff, e1);
-				}
-			}
-		});
+		try {
+			populate();
+		} catch (IOException e1) {
+			Activator.logError(UIText.GitDocument_errorRefreshQuickdiff, e1);
+		}
 	}
 
 	private Repository getRepository() {
@@ -258,12 +226,10 @@ class GitDocument extends Document implements RefsChangedListener {
 	 * @throws IOException
 	 */
 	static void refreshRelevant(final Repository repository) throws IOException {
-		final Entry[] docs;
-		synchronized (doc2repo) {
-			docs = doc2repo.entrySet().toArray(new Entry[doc2repo.size()]);
+		for (Map.Entry<GitDocument, Repository> i : doc2repo.entrySet()) {
+			if (i.getValue() == repository) {
+				i.getKey().populate();
+			}
 		}
-		for (Entry doc : docs)
-			if (doc.getValue() == repository)
-				((GitDocument) doc.getKey()).populate();
 	}
 }

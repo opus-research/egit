@@ -16,19 +16,19 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>0.11.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.core.test</artifactId>
   <packaging>eclipse-test-plugin</packaging>
 
-  <name>EGit Core Test Plug-in</name>
+  <name>Test Plug-in (Incubation)</name>
 
   <build>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.tycho</groupId>
-        <artifactId>tycho-surefire-plugin</artifactId>
+        <groupId>org.sonatype.tycho</groupId>
+        <artifactId>maven-osgi-test-plugin</artifactId>
         <version>${tycho-version}</version>
         <configuration>
           <excludes>
@@ -38,6 +38,14 @@
           <useUIHarness>false</useUIHarness>
           <useUIThread>false</useUIThread>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

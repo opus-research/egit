@@ -22,6 +22,8 @@ import java.util.HashMap;
 import javax.crypto.spec.PBEKeySpec;
 
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.egit.core.test.TestUtils;
+import org.eclipse.equinox.security.storage.EncodingUtils;
 import org.eclipse.equinox.security.storage.ISecurePreferences;
 import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
 import org.eclipse.equinox.security.storage.provider.IProviderHints;
@@ -34,6 +36,8 @@ import org.junit.Test;
 public class EGitSecureStoreTest {
 
 	ISecurePreferences secureStoreForTest;
+
+	TestUtils testUtils = new TestUtils();
 
 	EGitSecureStore store;
 
@@ -55,8 +59,8 @@ public class EGitSecureStoreTest {
 				"agitter", "letmein");
 		store.putCredentials(uri, credentials);
 
-		ISecurePreferences node = secureStoreForTest.node(EGitSecureStore
-				.calcNodePath(uri).toString());
+		ISecurePreferences node = secureStoreForTest.node("/GIT/"
+				+ EncodingUtils.encodeSlashes(uri.toString()));
 		assertEquals("agitter", node.get("user", null));
 		assertTrue(node.isEncrypted("password"));
 		assertEquals("letmein", node.get("password", null));
@@ -85,14 +89,14 @@ public class EGitSecureStoreTest {
 	@Test
 	public void testPutUserAndPasswordURIContainingUserAndPass()
 			throws Exception {
-		URIish uri = new URIish(
-				"http://user:pass@testRepo.example.com/testrepo");
 		UserPasswordCredentials credentials = new UserPasswordCredentials(
 				"agitter", "letmein");
-		store.putCredentials(uri, credentials);
+		store.putCredentials(new URIish(
+				"http://user:pass@testRepo.example.com/testrepo"), credentials);
 
-		ISecurePreferences node = secureStoreForTest.node(EGitSecureStore
-				.calcNodePath(uri).toString());
+		ISecurePreferences node = secureStoreForTest.node("/GIT/"
+				+ EncodingUtils
+						.encodeSlashes("http://testRepo.example.com/testrepo"));
 		assertEquals("agitter", node.get("user", null));
 		assertTrue(node.isEncrypted("password"));
 		assertEquals("letmein", node.get("password", null));
@@ -128,61 +132,6 @@ public class EGitSecureStoreTest {
 		store.putCredentials(uri, credentials);
 		store.clearCredentials(uri);
 		assertEquals(null, store.getCredentials(uri));
-	}
-
-	@Test
-	public void testEnsureDefaultPortHttp() throws Exception {
-		URIish uri = new URIish("http://testRepo.example.com/testrepo");
-		UserPasswordCredentials credentials = new UserPasswordCredentials(
-				"agitter", "letmein");
-		store.putCredentials(uri, credentials);
-		URIish uri2 = new URIish("http://testRepo.example.com:80/testrepo");
-		assertEquals(credentials.getUser(), store.getCredentials(uri2).getUser());
-		assertEquals(credentials.getPassword(), store.getCredentials(uri2).getPassword());
-	}
-
-	@Test
-	public void testEnsureDefaultPortHttps() throws Exception {
-		URIish uri = new URIish("https://testRepo.example.com/testrepo");
-		UserPasswordCredentials credentials = new UserPasswordCredentials(
-				"agitter", "letmein");
-		store.putCredentials(uri, credentials);
-		URIish uri2 = new URIish("https://testRepo.example.com:443/testrepo");
-		assertEquals(credentials.getUser(), store.getCredentials(uri2).getUser());
-		assertEquals(credentials.getPassword(), store.getCredentials(uri2).getPassword());
-	}
-
-	@Test
-	public void testEnsureDefaultPortSftp() throws Exception {
-		URIish uri = new URIish("sftp://testRepo.example.com/testrepo");
-		UserPasswordCredentials credentials = new UserPasswordCredentials(
-				"agitter", "letmein");
-		store.putCredentials(uri, credentials);
-		URIish uri2 = new URIish("sftp://testRepo.example.com:22/testrepo");
-		assertEquals(credentials.getUser(), store.getCredentials(uri2).getUser());
-		assertEquals(credentials.getPassword(), store.getCredentials(uri2).getPassword());
-	}
-
-	@Test
-	public void testEnsureDefaultPortFtp() throws Exception {
-		URIish uri = new URIish("ftp://testRepo.example.com/testrepo");
-		UserPasswordCredentials credentials = new UserPasswordCredentials(
-				"agitter", "letmein");
-		store.putCredentials(uri, credentials);
-		URIish uri2 = new URIish("ftp://testRepo.example.com:21/testrepo");
-		assertEquals(credentials.getUser(), store.getCredentials(uri2).getUser());
-		assertEquals(credentials.getPassword(), store.getCredentials(uri2).getPassword());
-	}
-
-	@Test
-	public void testEnsureDefaultPortSsh() throws Exception {
-		URIish uri = new URIish("ssh://agitter@testRepo.example.com/testrepo");
-		UserPasswordCredentials credentials = new UserPasswordCredentials(
-				"agitter", "letmein");
-		store.putCredentials(uri, credentials);
-		URIish uri2 = new URIish("ssh://testRepo.example.com:22/testrepo");
-		assertEquals(credentials.getUser(), store.getCredentials(uri2).getUser());
-		assertEquals(credentials.getPassword(), store.getCredentials(uri2).getPassword());
 	}
 
 	@Test

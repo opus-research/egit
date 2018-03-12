@@ -11,33 +11,27 @@ package org.eclipse.egit.ui.common;
 
 import static org.eclipse.swtbot.swt.finder.SWTBotAssert.assertEnabled;
 import static org.eclipse.swtbot.swt.finder.SWTBotAssert.assertNotEnabled;
-import static org.eclipse.swtbot.swt.finder.matchers.WidgetMatcherFactory.allOf;
-import static org.eclipse.swtbot.swt.finder.matchers.WidgetMatcherFactory.widgetOfType;
-import static org.eclipse.swtbot.swt.finder.matchers.WidgetMatcherFactory.withText;
 import static org.eclipse.swtbot.swt.finder.waits.Conditions.widgetIsEnabled;
-import static org.eclipse.swtbot.swt.finder.waits.Conditions.waitForWidget;
 
-import org.eclipse.swt.widgets.Text;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 
 public class RepoRemoteBranchesPage {
 	private static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
 
 	public void assertRemoteBranches(String... branches) {
-		SWTBotTree tree = bot.tree();
-		bot.waitUntil(widgetIsEnabled(tree), 20000);
+		SWTBotTable table = bot.table();
+		bot.waitUntil(widgetIsEnabled(table), 20000);
 		for (String branch : branches) {
-			tree.getTreeItem(branch);
+			table.getTableItem(branch);
 		}
 	}
 
 	public void selectBranches(String... branches) {
-		SWTBotTree tree = bot.tree();
-		bot.waitUntil(widgetIsEnabled(tree));
+		SWTBotTable table = bot.table();
+		bot.waitUntil(widgetIsEnabled(table));
 		for (String branch : branches) {
-			tree.getTreeItem(branch).check();
+			table.getTableItem(branch).check();
 		}
 	}
 
@@ -47,21 +41,18 @@ public class RepoRemoteBranchesPage {
 	}
 
 	public void deselectAllBranches() {
-		SWTBotTree tree = bot.tree();
+		SWTBotTable table = bot.table();
 
-		bot.waitUntil(widgetIsEnabled(tree), 60000);
+		bot.waitUntil(widgetIsEnabled(table));
 
-		SWTBotTreeItem[] items = tree.getAllItems();
-		for (int i = 0; i < items.length; i++) {
-			items[i].uncheck();
+		int rowCount = table.rowCount();
+		for (int i = 0; i < rowCount; i++) {
+			table.getTableItem(i).uncheck();
 		}
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void assertErrorMessage(String errorMessage) {
-		bot.waitUntil(
-				waitForWidget(allOf(widgetOfType(Text.class), withText(" "
-						+ errorMessage))), 20000);
+		bot.text(" " + errorMessage);
 	}
 
 	public void assertNextIsDisabled() {

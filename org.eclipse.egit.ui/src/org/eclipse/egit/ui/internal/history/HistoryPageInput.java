@@ -11,31 +11,21 @@
 package org.eclipse.egit.ui.internal.history;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * Input for the {@link GitHistoryPage}
  **/
 public class HistoryPageInput {
-	private final List<IResource> list;
+	private final IResource[] list;
 
-	private final List<File> files;
+	private final File[] files;
 
 	private final Repository repo;
 
 	private final Object singleFile;
-
-	private final Object singleItem;
 
 	/**
 	 * @param repository
@@ -46,17 +36,12 @@ public class HistoryPageInput {
 	public HistoryPageInput(final Repository repository,
 			final IResource[] resourceItems) {
 		this.repo = repository;
-		list = Arrays.asList(resourceItems);
-		if (resourceItems.length == 1) {
-			singleItem = resourceItems[0];
-			if (resourceItems[0].getType() == IResource.FILE)
-				singleFile = resourceItems[0];
-			else
-				singleFile = null;
-		} else {
-			singleItem = null;
+		list = resourceItems;
+		if (resourceItems.length == 1
+				&& resourceItems[0].getType() == IResource.FILE)
+			singleFile = resourceItems[0];
+		else
 			singleFile = null;
-		}
 		files = null;
 	}
 
@@ -69,14 +54,11 @@ public class HistoryPageInput {
 	public HistoryPageInput(final Repository repository, final File[] fileItems) {
 		this.repo = repository;
 		list = null;
-		if (fileItems.length == 1) {
-			singleItem = fileItems[0];
-			singleFile = Boolean.valueOf(fileItems[0].isFile());
-		} else {
-			singleItem = null;
+		if (fileItems.length == 1 && fileItems[0].isFile())
+			singleFile = fileItems[0];
+		else
 			singleFile = null;
-		}
-		files = Arrays.asList(fileItems);
+		files = fileItems;
 	}
 
 	/**
@@ -87,7 +69,6 @@ public class HistoryPageInput {
 		this.repo = repository;
 		list = null;
 		singleFile = null;
-		singleItem = null;
 		files = null;
 	}
 
@@ -102,14 +83,14 @@ public class HistoryPageInput {
 	 * @return the list provided to our constructor
 	 */
 	public IResource[] getItems() {
-		return list == null ? null : list.toArray(new IResource[list.size()]);
+		return list;
 	}
 
 	/**
 	 * @return the list provided to our constructor
 	 */
 	public File[] getFileList() {
-		return files == null ? null : files.toArray(new File[files.size()]);
+		return files;
 	}
 
 	/**
@@ -121,35 +102,10 @@ public class HistoryPageInput {
 	}
 
 	/**
-	 * @return the single Item, either a {@link IResource} or {@link File}, or
-	 *         <code>null</code>
-	 */
-	public Object getSingleItem() {
-		return singleItem;
-	}
-
-	/**
 	 * @return <code>true</code> if this represents a single file (either as
 	 *         {@link IResource} or as {@link File})
 	 */
 	public boolean isSingleFile() {
 		return singleFile != null;
-	}
-
-	/**
-	 * @return the HEAD Ref
-	 */
-	public Ref getHead() {
-		try {
-			Ref h = repo.getRef(Constants.HEAD);
-			if (h != null && h.isSymbolic())
-				return h;
-			return null;
-		} catch (IOException e) {
-			throw new IllegalStateException(NLS.bind(
-					UIText.GitHistoryPage_errorParsingHead, Activator
-							.getDefault().getRepositoryUtil()
-							.getRepositoryName(repo)), e);
-		}
 	}
 }

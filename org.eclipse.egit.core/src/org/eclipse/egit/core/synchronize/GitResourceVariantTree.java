@@ -11,25 +11,30 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
-import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 
+import java.io.IOException;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
+import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
+import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.variants.IResourceVariant;
@@ -38,47 +43,27 @@ import org.eclipse.team.core.variants.ResourceVariantTree;
 
 abstract class GitResourceVariantTree extends ResourceVariantTree {
 
-	private final GitSyncCache gitCache;
-
 	private final GitSynchronizeDataSet gsds;
 
-	private final Map<IResource, IResourceVariant> cache = new WeakHashMap<IResource, IResourceVariant>();
-
-
 	GitResourceVariantTree(ResourceVariantByteStore store,
-			GitSyncCache gitCache, GitSynchronizeDataSet gsds) {
+			GitSynchronizeDataSet gsds) {
 		super(store);
 		this.gsds = gsds;
-		this.gitCache = gitCache;
 	}
 
 	public IResource[] roots() {
 		Set<IResource> roots = new HashSet<IResource>();
 		for (GitSynchronizeData gsd : gsds)
-			if (gsd.getPathFilter() == null)
-				roots.addAll(gsd.getProjects());
-			else
-				for (IContainer container : gsd.getIncludedPaths())
-					roots.add(container.getProject());
+			roots.addAll(gsd.getProjects());
 
 		return roots.toArray(new IResource[roots.size()]);
-	}
-
-	/**
-	 * Disposes all nested resources
-	 */
-	public void dispose() {
-		if (gsds != null)
-			gsds.dispose();
-
-		cache.clear();
 	}
 
 	@Override
 	protected IResourceVariant fetchVariant(IResource resource, int depth,
 			IProgressMonitor monitor) throws TeamException {
 		SubMonitor subMonitor = SubMonitor.convert(monitor);
-		if (resource == null || isNonWorkspace(resource)) {
+		if (resource == null || resource.getLocation() == null) {
 			subMonitor.done();
 			return null;
 		}
@@ -87,63 +72,76 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 				CoreText.GitResourceVariantTree_fetchingVariant,
 				resource.getName()), IProgressMonitor.UNKNOWN);
 		try {
-			return fetchVariant(resource);
+			return fetchVariant(resource, subMonitor);
 		} finally {
 			subMonitor.done();
 		}
 	}
 
-	private IResourceVariant fetchVariant(IResource resource) {
-		if (gitCache == null)
-			return null;
-
-		if (cache.containsKey(resource))
-			return cache.get(resource);
-
+	private IResourceVariant fetchVariant(IResource resource,
+			IProgressMonitor monitor) throws TeamException {
 		GitSynchronizeData gsd = gsds.getData(resource.getProject());
 		if (gsd == null)
 			return null;
 
 		Repository repo = gsd.getRepository();
 		String path = getPath(resource, repo);
-
-		GitSyncObjectCache syncCache = gitCache.get(repo);
-		GitSyncObjectCache cachedData = syncCache.get(path);
-		if (cachedData == null)
+		RevCommit revCommit = getRevCommit(gsd);
+		if (revCommit == null)
 			return null;
 
-		IResourceVariant variant = null;
-		ObjectId objectId = getObjectId(cachedData.getDiffEntry());
-		if (!objectId.equals(zeroId())) {
-			if (resource.getType() == IResource.FILE)
-				variant = new GitRemoteFile(repo, getCommitId(gsd), objectId,
-						path);
-			else
-				variant = new GitRemoteFolder(repo, cachedData,
-						getCommitId(gsd), objectId, path);
+		if (path.length() == 0)
+			return handleRepositoryRoot(resource, repo, revCommit);
 
-			cache.put(resource, variant);
+		try {
+			if (monitor.isCanceled())
+				throw new OperationCanceledException();
+
+			TreeWalk tw = initializeTreeWalk(repo, path);
+
+			int nth = tw.addTree(revCommit.getTree());
+			if (resource.getType() == IResource.FILE) {
+				tw.setRecursive(true);
+				if (tw.next() && !tw.getObjectId(nth).equals(zeroId()))
+					return new GitBlobResourceVariant(repo, revCommit,
+							tw.getObjectId(nth), path);
+			} else {
+				while (tw.next() && !path.equals(tw.getPathString())) {
+					if (monitor.isCanceled())
+						throw new OperationCanceledException();
+
+					if (tw.isSubtree())
+						tw.enterSubtree();
+				}
+
+				ObjectId objectId = tw.getObjectId(nth);
+				if (!objectId.equals(zeroId()))
+					return new GitFolderResourceVariant(repo, revCommit, objectId, path);
+			}
+		} catch (IOException e) {
+			throw new TeamException(
+					NLS.bind(
+							CoreText.GitResourceVariantTree_couldNotFindResourceVariant,
+							resource), e);
 		}
 
-		return variant;
+		return null;
 	}
-
-	protected abstract ObjectId getObjectId(ThreeWayDiffEntry diffEntry);
-
-	protected abstract RevCommit getCommitId(GitSynchronizeData gsd);
 
 	@Override
 	protected IResourceVariant[] fetchMembers(IResourceVariant variant,
 			IProgressMonitor progress) throws TeamException {
-		if (variant == null || !(variant instanceof GitRemoteFolder))
+		if (variant == null || !(variant instanceof GitFolderResourceVariant))
 			return new IResourceVariant[0];
 
-		GitRemoteFolder gitVariant = (GitRemoteFolder) variant;
+		GitFolderResourceVariant gitVariant = (GitFolderResourceVariant) variant;
 
 		try {
-			return gitVariant.members(progress);
-		} finally {
-			progress.done();
+			return gitVariant.getMembers(progress);
+		} catch (IOException e) {
+			throw new TeamException(NLS.bind(
+					CoreText.GitResourceVariantTree_couldNotFetchMembers,
+					gitVariant), e);
 		}
 	}
 
@@ -152,8 +150,45 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 		return fetchVariant(resource, 0, null);
 	}
 
+	/**
+	 *
+	 * @param gsd
+	 * @return instance of {@link RevTree} for given {@link GitSynchronizeData}
+	 *         or <code>null</code> if rev tree was not found
+	 * @throws TeamException
+	 */
+	protected abstract RevCommit getRevCommit(GitSynchronizeData gsd)
+			throws TeamException;
+
+	private IResourceVariant handleRepositoryRoot(final IResource resource,
+			Repository repo, RevCommit revCommit) throws TeamException {
+		try {
+			return new GitFolderResourceVariant(repo, revCommit,
+					revCommit.getTree(), resource.getLocation().toString());
+		} catch (IOException e) {
+			throw new TeamException(
+					NLS.bind(
+							CoreText.GitResourceVariantTree_couldNotFindResourceVariant,
+							resource), e);
+		}
+	}
+
+	private TreeWalk initializeTreeWalk(Repository repo, String path)
+			throws CorruptObjectException {
+		TreeWalk tw = new TreeWalk(repo);
+		tw.reset();
+		int ignoreNth = tw.addTree(new FileTreeIterator(repo));
+
+		TreeFilter pathFilter = PathFilter.create(path);
+		TreeFilter ignoreFilter = new NotIgnoredFilter(ignoreNth);
+		tw.setFilter(AndTreeFilter.create(pathFilter, ignoreFilter));
+
+		return tw;
+	}
+
 	private String getPath(final IResource resource, Repository repo) {
-		return stripWorkDir(repo.getWorkTree(), resource.getLocation().toFile());
+		return Repository.stripWorkDir(repo.getWorkTree(), resource
+				.getLocation().toFile());
 	}
 
 }

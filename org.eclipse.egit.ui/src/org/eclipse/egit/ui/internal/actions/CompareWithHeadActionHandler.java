@@ -20,86 +20,62 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
-import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
-import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Compares the working tree content of a file with the version of the file in
  * the HEAD commit.
  */
 public class CompareWithHeadActionHandler extends RepositoryActionHandler {
+
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final Repository repository = getRepository(true, event);
-		// assert all resources map to the same repository
-		if (repository == null)
-			return null;
-		final IResource[] resources = getSelectedResources(event);
+		final IResource resource = getSelectedResources(event)[0];
+		final RepositoryMapping mapping = RepositoryMapping.getMapping(resource
+				.getProject());
+		final Repository repository = mapping.getRepository();
+		final String gitPath = mapping.getRepoRelativePath(resource);
 
-		if (resources.length == 1 && resources[0] instanceof IFile) {
-			final IFile baseFile = (IFile) resources[0];
-			final String gitPath = RepositoryMapping.getMapping(
-					baseFile.getProject()).getRepoRelativePath(baseFile);
-			final ITypedElement base = SaveableCompareEditorInput
-					.createFileElement(baseFile);
+		final IFile baseFile = (IFile) resource;
+		final ITypedElement base = SaveableCompareEditorInput
+				.createFileElement(baseFile);
 
-			ITypedElement next;
-			try {
-				Ref head = repository.getRef(Constants.HEAD);
-				RevWalk rw = new RevWalk(repository);
-				RevCommit commit = rw.parseCommit(head.getObjectId());
-				rw.markStart(commit);
-				rw.setTreeFilter(AndTreeFilter.create(
-						PathFilter.create(gitPath), TreeFilter.ANY_DIFF));
-				RevCommit latestFileCommit = rw.next();
-				// Fall back to HEAD
-				if (latestFileCommit == null)
-					latestFileCommit = commit;
+		ITypedElement next;
+		try {
+			Ref head = repository.getRef(Constants.HEAD);
+			RevWalk rw = new RevWalk(repository);
+			RevCommit commit = rw.parseCommit(head.getObjectId());
 
-				next = CompareUtils.getFileRevisionTypedElement(gitPath,
-						latestFileCommit, repository);
-			} catch (IOException e) {
-				Activator.handleError(e.getMessage(), e, true);
-				return null;
-			}
-
-			final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-					base, next, null);
-			CompareUI.openCompareEditor(in);
-			return null;
-
-		} else {
-			CompareTreeView view;
-			try {
-				view = (CompareTreeView) PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow().getActivePage().showView(
-								CompareTreeView.ID);
-				try {
-					view.setInput(resources, repository.resolve(Constants.HEAD)
-							.name());
-				} catch (IOException e) {
-					Activator.handleError(e.getMessage(), e, true);
-					return null;
-				}
-			} catch (PartInitException e) {
-				Activator.handleError(e.getMessage(), e, true);
-				return null;
-			}
+			next = CompareUtils.getFileRevisionTypedElement(gitPath, commit,
+					repository);
+		} catch (IOException e) {
+			Activator.handleError(e.getMessage(), e, true);
 			return null;
 		}
+
+		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
+				base, next, null);
+		CompareUI.openCompareEditor(in);
+		return null;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		return getRepository() != null;
+		final IResource[] selectedResources = getSelectedResources();
+		if (selectedResources.length != 1)
+			return false;
+
+		final IResource resource = selectedResources[0];
+		if (!(resource instanceof IFile)) {
+			return false;
+		}
+		final RepositoryMapping mapping = RepositoryMapping.getMapping(resource
+				.getProject());
+		return mapping != null;
 	}
+
 }

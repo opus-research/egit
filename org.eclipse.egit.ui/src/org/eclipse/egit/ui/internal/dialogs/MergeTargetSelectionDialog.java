@@ -12,12 +12,12 @@
 package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 
@@ -32,9 +32,10 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public MergeTargetSelectionDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo, getMergeTarget(repo), SHOW_LOCAL_BRANCHES
-				| SHOW_REMOTE_BRANCHES | SHOW_TAGS | EXPAND_LOCAL_BRANCHES_NODE
-				| getSelectSetting(repo));
+		// TODO perhaps we can mark the default merge branch for
+		// the current branch by reading the configuration and use the other
+		// super constructor
+		super(parentShell, repo);
 	}
 
 	@Override
@@ -46,24 +47,13 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 	@Override
 	protected String getMessageText() {
-		String branch = getCurrentBranch();
-		if (branch != null)
-			return MessageFormat.format(
-					UIText.MergeTargetSelectionDialog_SelectRefWithBranch,
-					branch);
-		else
-			return UIText.MergeTargetSelectionDialog_SelectRef;
+		return UIText.MergeTargetSelectionDialog_SelectRef;
 	}
 
 	@Override
 	protected String getTitle() {
-		String branch = getCurrentBranch();
-		if (branch != null)
-			return MessageFormat.format(
-					UIText.MergeTargetSelectionDialog_TitleMergeWithBranch,
-					branch);
-		else
-			return UIText.MergeTargetSelectionDialog_TitleMerge;
+		return NLS.bind(UIText.MergeTargetSelectionDialog_TitleMerge, repo
+				.getDirectory().toString());
 	}
 
 	@Override

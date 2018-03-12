@@ -4,7 +4,6 @@
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (c) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
- * Copyright (c) 2012, IBM Corporation
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,34 +24,29 @@ import java.util.List;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
-import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
-import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
+import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
-import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
-import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -64,9 +58,8 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.dialogs.PatternFilter;
-import org.eclipse.ui.progress.WorkbenchJob;
 
 class SourceBranchPage extends WizardPage {
 
@@ -84,7 +77,7 @@ class SourceBranchPage extends WizardPage {
 
 	private Button unselectB;
 
-	private CachedCheckboxTreeViewer refsViewer;
+	private CheckboxTableViewer refsViewer;
 
 	private UserPasswordCredentials credentials;
 
@@ -128,56 +121,10 @@ class SourceBranchPage extends WizardPage {
 		label = new Label(panel, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-		FilteredCheckboxTree fTree = new FilteredCheckboxTree(panel, null,
-				SWT.NONE, new PatternFilter()) {
-			/*
-			 * Overridden to check page when refreshing is done.
-			 */
-			protected WorkbenchJob doCreateRefreshJob() {
-				WorkbenchJob refreshJob = super.doCreateRefreshJob();
-				refreshJob.addJobChangeListener(new JobChangeAdapter() {
-					public void done(IJobChangeEvent event) {
-						if (event.getResult().isOK()) {
-							getDisplay().asyncExec(new Runnable() {
-								public void run() {
-									checkPage();
-								}
-							});
-						}
-					}
-				});
-				return refreshJob;
-			}
-		};
-		refsViewer = fTree.getCheckboxTreeViewer();
-
-		ITreeContentProvider provider = new ITreeContentProvider() {
-
-			public void inputChanged(Viewer arg0, Object arg1, Object arg2) {
-				// nothing
-			}
-
-			public void dispose() {
-				// nothing
-			}
-
-			public Object[] getElements(Object input) {
-				return ((List) input).toArray();
-			}
-
-			public boolean hasChildren(Object element) {
-				return false;
-			}
-
-			public Object getParent(Object element) {
-				return null;
-			}
-
-			public Object[] getChildren(Object parentElement) {
-				return null;
-			}
-		};
-		refsViewer.setContentProvider(provider);
+		Table refsTable = new Table(panel, SWT.CHECK | SWT.V_SCROLL | SWT.BORDER);
+		refsTable.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		refsViewer = new CheckboxTableViewer(refsTable);
+		refsViewer.setContentProvider(ArrayContentProvider.getInstance());
 		refsViewer.setLabelProvider(new LabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -316,9 +263,8 @@ class SourceBranchPage extends WizardPage {
 			listRemoteOp = new ListRemoteOperation(db, uri, timeout);
 			if (credentials != null)
 				listRemoteOp
-						.setCredentialsProvider(new EGitCredentialsProvider(
-								credentials.getUser(), credentials
-										.getPassword()));
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
+								credentials.getUser(), credentials.getPassword()));
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
@@ -327,12 +273,12 @@ class SourceBranchPage extends WizardPage {
 			});
 		} catch (InvocationTargetException e) {
 			Throwable why = e.getCause();
-			transportError(why);
+			transportError(why.getMessage());
 			ErrorDialog.openError(getShell(),
 					UIText.SourceBranchPage_transportError,
 					UIText.SourceBranchPage_cannotListBranches, new Status(
 							IStatus.ERROR, Activator.getPluginId(), 0, why
-									.getMessage(), why));
+									.getMessage(), why.getCause()));
 			return;
 		} catch (IOException e) {
 			transportError(UIText.SourceBranchPage_cannotCreateTemp);
@@ -344,20 +290,15 @@ class SourceBranchPage extends WizardPage {
 
 		final Ref idHEAD = listRemoteOp.getRemoteRef(Constants.HEAD);
 		head = null;
-		boolean headIsMaster = false;
-		final String masterBranchRef = Constants.R_HEADS + Constants.MASTER;
 		for (final Ref r : listRemoteOp.getRemoteRefs()) {
 			final String n = r.getName();
 			if (!n.startsWith(Constants.R_HEADS))
 				continue;
 			availableRefs.add(r);
-			if (idHEAD == null || headIsMaster)
+			if (idHEAD == null || head != null)
 				continue;
-			if (r.getObjectId().equals(idHEAD.getObjectId())) {
-				headIsMaster = masterBranchRef.equals(r.getName());
-				if (head == null || headIsMaster)
-					head = r;
-			}
+			if (r.getObjectId().equals(idHEAD.getObjectId()))
+				head = r;
 		}
 		Collections.sort(availableRefs, new Comparator<Ref>() {
 			public int compare(final Ref o1, final Ref o2) {
@@ -376,18 +317,8 @@ class SourceBranchPage extends WizardPage {
 		checkForEmptyRepo();
 	}
 
-	private void transportError(final Throwable why) {
-		Throwable cause = why.getCause();
-		if (why instanceof TransportException && cause != null)
-			transportError(NLS.bind(
-					UIText.SourceBranchPage_CompositeTransportErrorMessage,
-					why.getMessage(), cause.getMessage()));
-		else
-			transportError(why.getMessage());
-	}
-
 	private void transportError(final String msg) {
-			transportError = msg;
-			checkPage();
+		transportError = msg;
+		checkPage();
 	}
 }

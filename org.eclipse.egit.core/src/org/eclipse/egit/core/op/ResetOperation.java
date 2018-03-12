@@ -118,14 +118,12 @@ public class ResetOperation implements IEGitOperation {
 
 		IProject[] validProjects = null;
 		if (type == ResetType.HARD)
-			validProjects = ProjectUtil.getValidOpenProjects(repository);
+			validProjects = ProjectUtil.getValidProjects(repository);
 		boolean merging = false;
 		if (repository.getRepositoryState().equals(RepositoryState.MERGING)
 				|| repository.getRepositoryState().equals(
 						RepositoryState.MERGING_RESOLVED))
 			merging = true;
-		final boolean cherryPicking = repository.getRepositoryState().equals(RepositoryState.CHERRY_PICKING)
-			|| repository.getRepositoryState().equals(RepositoryState.CHERRY_PICKING_RESOLVED);
 
 		mapObjects();
 		monitor.worked(1);
@@ -139,8 +137,6 @@ public class ResetOperation implements IEGitOperation {
 			monitor.worked(1);
 			if (merging)
 				resetMerge();
-			if (cherryPicking)
-				resetCherryPick();
 			monitor.worked(1);
 			// only refresh if working tree changes
 			ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
@@ -154,8 +150,6 @@ public class ResetOperation implements IEGitOperation {
 			monitor.worked(2);
 			if (merging)
 				resetMerge();
-			if (cherryPicking)
-				resetCherryPick();
 			monitor.worked(1);
 			break;
 
@@ -172,15 +166,6 @@ public class ResetOperation implements IEGitOperation {
 			repository.writeMergeCommitMsg(null);
 		} catch (IOException e) {
 			throw new TeamException(CoreText.ResetOperation_resetMergeFailed, e);
-		}
-	}
-
-	private void resetCherryPick() throws CoreException {
-		try {
-			repository.writeCherryPickHead(null);
-			repository.writeMergeCommitMsg(null);
-		} catch (IOException e) {
-			throw new TeamException(CoreText.ResetOperation_resetCherryPickFailed, e);
 		}
 	}
 
@@ -212,7 +197,8 @@ public class ResetOperation implements IEGitOperation {
 				name = name.substring(11);
 			if (name.startsWith("refs/remotes/"))  //$NON-NLS-1$
 				name = name.substring(13);
-			String message = name + ": updating " + Constants.HEAD; //$NON-NLS-1$
+			String message = "reset --" //$NON-NLS-1$
+					+ type.toString().toLowerCase() + " " + name; //$NON-NLS-1$
 			ru.setRefLogMessage(message, false);
 			if (ru.forceUpdate() == RefUpdate.Result.LOCK_FAILURE)
 				throw new TeamException(NLS.bind(

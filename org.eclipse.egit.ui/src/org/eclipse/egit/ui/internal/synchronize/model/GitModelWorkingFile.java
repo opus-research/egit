@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,39 +8,26 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
-import org.eclipse.jgit.lib.Repository;
+import java.io.IOException;
 
-/**
- * Representation of working file in Git Change Set model
- */
-public class GitModelWorkingFile extends GitModelBlob {
+import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
+import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
+import org.eclipse.egit.ui.internal.synchronize.compare.GitLocalCompareInput;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.revwalk.RevCommit;
 
-	GitModelWorkingFile(GitModelObjectContainer parent, Repository repo,
-			Change change, IPath path) {
-		super(parent, repo, change, path);
+class GitModelWorkingFile extends GitModelBlob {
+
+	public GitModelWorkingFile(GitModelObjectContainer parent,
+			RevCommit commit, ObjectId repoId, String name) throws IOException {
+		super(parent, commit, repoId, repoId, null, name);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-
-		if (obj == null)
-			return false;
-
-		if (obj.getClass() != getClass())
-			return false;
-
-		GitModelWorkingFile objBlob = (GitModelWorkingFile) obj;
-
-		return hashCode() == objBlob.hashCode();
-	}
-
-	@Override
-	public int hashCode() {
-		return super.hashCode() + 41;
+	protected GitCompareInput getCompareInput(ComparisonDataSource baseData,
+			ComparisonDataSource remoteData, ComparisonDataSource ancestorData) {
+		return new GitLocalCompareInput(getRepository(), ancestorData,
+				baseData, remoteData, gitPath);
 	}
 
 }

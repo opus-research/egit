@@ -10,23 +10,28 @@ package org.eclipse.egit.ui.internal.history.command;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.egit.ui.internal.history.GitCreatePatchWizard;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
-import org.eclipse.egit.ui.internal.patch.PatchOperationUI;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Create a patch based on a commit.
  */
-public class CreatePatchHandler extends AbstractHistoryCommandHandler {
+public class CreatePatchHandler extends AbstractHistoryCommanndHandler {
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IStructuredSelection selection = getSelection(getPage());
 		if (selection.size() == 1) {
 			RevCommit commit = (RevCommit) selection.getFirstElement();
-			Repository repo = getRepository(event);
-			PatchOperationUI.createPatch(getPart(event), commit, repo).start();
+            Repository repo = getRepository(event);
+			TreeWalk fileWalker = new TreeWalk(repo);
+			fileWalker.setRecursive(true);
+			fileWalker.setFilter(TreeFilter.ANY_DIFF);
+			GitCreatePatchWizard.run(getPart(event), commit, fileWalker, repo);
 		}
 		return null;
 	}

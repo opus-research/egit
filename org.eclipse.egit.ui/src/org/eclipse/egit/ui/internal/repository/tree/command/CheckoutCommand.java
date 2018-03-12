@@ -12,10 +12,23 @@ package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRunnable;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.op.BranchOperation;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * Implements "Checkout"
@@ -29,9 +42,49 @@ public class CheckoutCommand extends
 
 		final Ref ref = (Ref) node.getObject();
 		Repository repo = node.getRepository();
+		String refName = ref.getLeaf().getName();
+		final BranchOperation op;
+		if (refName.startsWith(Constants.R_REFS))
+			op = new BranchOperation(repo, ref.getName());
+		else
+			op = new BranchOperation(repo, ref.getLeaf().getObjectId());
 
-		BranchOperationUI op = BranchOperationUI.checkout(repo, ref.getName());
-		op.start();
+		// for the sake of UI responsiveness, let's start a job
+		Job job = new Job(NLS.bind(UIText.RepositoriesView_CheckingOutMessage,
+				ref.getName())) {
+
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
+
+					public void run(IProgressMonitor myMonitor)
+							throws CoreException {
+						op.execute(myMonitor);
+					}
+				};
+
+				try {
+					ResourcesPlugin.getWorkspace().run(wsr,
+							ResourcesPlugin.getWorkspace().getRoot(),
+							IWorkspace.AVOID_UPDATE, monitor);
+				} catch (CoreException e1) {
+					return new Status(IStatus.ERROR, Activator.getPluginId(),
+							e1.getMessage(), e1);
+				}
+
+				return Status.OK_STATUS;
+			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				if (family.equals(JobFamilies.CHECKOUT))
+					return true;
+				return super.belongsTo(family);
+			}
+		};
+
+		job.setUser(true);
+		job.schedule();
 
 		return null;
 	}

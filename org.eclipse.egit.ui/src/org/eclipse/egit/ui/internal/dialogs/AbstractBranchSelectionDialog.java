@@ -4,8 +4,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,8 +12,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import static org.eclipse.egit.ui.internal.CommonUtils.STRING_ASCENDING_COMPARATOR;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +19,6 @@ import java.util.List;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
-import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
@@ -31,24 +26,21 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
-import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.FilteredTree;
@@ -63,51 +55,6 @@ import org.eclipse.ui.dialogs.PatternFilter;
  * {@link #createCustomArea(Composite)}.
  */
 public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
-
-	/**
-	 * Get the target merge ref name for the currently checkout branch
-	 *
-	 * @param repo
-	 * @return ref node
-	 */
-	protected static String getMergeTarget(Repository repo) {
-		String branch;
-		try {
-			branch = repo.getBranch();
-		} catch (IOException e) {
-			return null;
-		}
-		if (branch == null)
-			return null;
-
-		String merge = repo.getConfig().getString(
-				ConfigConstants.CONFIG_BRANCH_SECTION, branch,
-				ConfigConstants.CONFIG_KEY_MERGE);
-		if (merge == null)
-			return null;
-
-		String remote = repo.getConfig().getString(
-				ConfigConstants.CONFIG_BRANCH_SECTION, branch,
-				ConfigConstants.CONFIG_KEY_REMOTE);
-		if (remote == null)
-			return null;
-
-		if (".".equals(remote)) //$NON-NLS-1$
-			return merge;
-		else
-			return Constants.R_REMOTES + remote + "/" //$NON-NLS-1$
-					+ Repository.shortenRefName(merge);
-	}
-
-	/**
-	 * Get the target merge ref name for the currently checkout branch
-	 *
-	 * @param repo
-	 * @return ref node
-	 */
-	protected static int getSelectSetting(Repository repo) {
-		return getMergeTarget(repo) != null ? SELECT_CURRENT_REF : 0;
-	}
 
 	/** The {@link Repository} used in the constructor */
 	protected final Repository repo;
@@ -125,37 +72,11 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 
 	private final RepositoryTreeNode<Repository> tags;
 
-	private final RepositoryTreeNode<Repository> references;
+	private boolean showLocalBranches = true;
 
-	/** Determinate does local branches should be show or not */
-	protected static final int SHOW_LOCAL_BRANCHES = 1 << 1;
+	private boolean showRemoteBranches = true;
 
-	/** Determinate does remote branches should be show or not */
-	protected static final int SHOW_REMOTE_BRANCHES = 1 << 2;
-
-	/** Determinate does tags should be show or not */
-	protected static final int SHOW_TAGS = 1 << 3;
-
-	/** Determinate does references shout be show or not */
-	protected static final int SHOW_REFERENCES = 1 << 4;
-
-	/** Determinate does current should be selected or not */
-	protected static final int SELECT_CURRENT_REF = 1 << 5;
-
-	/** Determinate does local branches should be expanded or not */
-	protected static final int EXPAND_LOCAL_BRANCHES_NODE = 1 << 6;
-
-	/** Determinate does remote branches should be expanded or not */
-	protected static final int EXPAND_REMOTE_BRANCHES_NODE = 1 << 7;
-
-	/**
-	 * Will allow select multiple branches. The implementer must override
-	 * {@link AbstractBranchSelectionDialog#refNameFromDialog()} to be able to
-	 * obtain list of selected branches
-	 */
-	protected static final int ALLOW_MULTISELECTION = 1 << 8;
-
-	private final int settings;
+	private boolean showTags = true;
 
 	/**
 	 * Construct a dialog to select a branch.
@@ -165,19 +86,10 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	 * @param parentShell
 	 * @param repository
 	 *            the {@link Repository}
-	 * @param settings
-	 *            configuration options of this dialog like
-	 *            {@link AbstractBranchSelectionDialog#SHOW_LOCAL_BRANCHES},
-	 *            {@link AbstractBranchSelectionDialog#SHOW_REMOTE_BRANCHES},
-	 *            {@link AbstractBranchSelectionDialog#SHOW_TAGS},
-	 *            {@link AbstractBranchSelectionDialog#SHOW_REFERENCES},
-	 *            {@link AbstractBranchSelectionDialog#SELECT_CURRENT_REF},
-	 *            {@link AbstractBranchSelectionDialog#EXPAND_LOCAL_BRANCHES_NODE},
-	 *            {@link AbstractBranchSelectionDialog#EXPAND_REMOTE_BRANCHES_NODE}
 	 */
 	public AbstractBranchSelectionDialog(Shell parentShell,
-			Repository repository, int settings) {
-		this(parentShell, repository, null, settings);
+			Repository repository) {
+		this(parentShell, repository, null);
 		setHelpAvailable(false);
 	}
 
@@ -189,25 +101,14 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	 *            the {@link Repository}
 	 * @param refToMark
 	 *            the name of the {@link Ref} to mark initially
-	 * @param settings
-	 *            configuration options of this dialog like
-	 *            {@link AbstractBranchSelectionDialog#SHOW_LOCAL_BRANCHES},
-	 *            {@link AbstractBranchSelectionDialog#SHOW_REMOTE_BRANCHES},
-	 *            {@link AbstractBranchSelectionDialog#SHOW_TAGS},
-	 *            {@link AbstractBranchSelectionDialog#SHOW_REFERENCES},
-	 *            {@link AbstractBranchSelectionDialog#SELECT_CURRENT_REF},
-	 *            {@link AbstractBranchSelectionDialog#EXPAND_LOCAL_BRANCHES_NODE},
-	 *            {@link AbstractBranchSelectionDialog#EXPAND_REMOTE_BRANCHES_NODE}
 	 */
 	public AbstractBranchSelectionDialog(Shell parentShell,
-			Repository repository, String refToMark, int settings) {
+			Repository repository, String refToMark) {
 		super(parentShell);
 		this.repo = repository;
-		this.settings = settings;
 		localBranches = new LocalNode(null, this.repo);
 		remoteBranches = new RemoteTrackingNode(null, this.repo);
 		tags = new TagsNode(null, this.repo);
-		references = new AdditionalRefsNode(null, this.repo);
 		this.refToMark = refToMark;
 		setHelpAvailable(false);
 	}
@@ -246,22 +147,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	@Override
 	protected final Composite createDialogArea(Composite base) {
 		Composite parent = (Composite) super.createDialogArea(base);
-		Composite composite = new Composite(parent, SWT.NONE);
+		parent.setLayout(GridLayoutFactory.fillDefaults().create());
 
-		GridLayout layout = new GridLayout();
-		layout.marginHeight = convertVerticalDLUsToPixels(IDialogConstants.VERTICAL_MARGIN);
-		layout.marginWidth = convertHorizontalDLUsToPixels(IDialogConstants.HORIZONTAL_MARGIN);
-		layout.verticalSpacing = convertVerticalDLUsToPixels(IDialogConstants.VERTICAL_SPACING);
-		layout.horizontalSpacing = convertHorizontalDLUsToPixels(IDialogConstants.HORIZONTAL_SPACING);
-		composite.setLayout(layout);
-		composite.setLayoutData(GridDataFactory.fillDefaults().create());
-
-		int selectionModel = -1;
-		if ((settings & ALLOW_MULTISELECTION) != 0)
-			selectionModel = SWT.MULTI;
-		else
-			selectionModel = SWT.SINGLE;
-		FilteredTree tree = new FilteredTree(composite, selectionModel | SWT.BORDER,
+		FilteredTree tree = new FilteredTree(parent, SWT.SINGLE | SWT.BORDER,
 				new PatternFilter(), true);
 		branchTree = tree.getViewer();
 		branchTree.setLabelProvider(new RepositoriesViewLabelProvider());
@@ -278,35 +166,32 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		});
 
 		// double-click support
-		branchTree.addDoubleClickListener(new IDoubleClickListener() {
-			public void doubleClick(DoubleClickEvent event) {
+		branchTree.addOpenListener(new IOpenListener() {
+
+			public void open(OpenEvent event) {
 				RepositoryTreeNode node = (RepositoryTreeNode) ((IStructuredSelection) branchTree
 						.getSelection()).getFirstElement();
 				if (node == null)
 					return;
-				final RepositoryTreeNodeType type = node.getType();
-				if (type != RepositoryTreeNodeType.REF
-						&& type != RepositoryTreeNodeType.TAG
-						&& type != RepositoryTreeNodeType.ADDITIONALREF)
-					branchTree.setExpandedState(node,
-							!branchTree.getExpandedState(node));
+				if (node.getType() != RepositoryTreeNodeType.REF
+						&& node.getType() != RepositoryTreeNodeType.TAG)
+					branchTree.setExpandedState(node, !branchTree
+							.getExpandedState(node));
 				else if (getButton(Window.OK).isEnabled())
-					buttonPressed(OK);
+					okPressed();
+
 			}
 		});
 
-		branchTree.setComparator(new ViewerComparator(
-				STRING_ASCENDING_COMPARATOR));
-
-		createCustomArea(composite);
+		createCustomArea(parent);
 
 		setTitle(getTitle());
 		setMessage(getMessageText());
 		getShell().setText(getWindowTitle());
 
-		applyDialogFont(composite);
+		applyDialogFont(parent);
 
-		return composite;
+		return parent;
 	}
 
 	/**
@@ -317,40 +202,30 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	public void create() {
 		super.create();
 
-		// Initially disable OK button, as the required user inputs may not be
-		// complete after the dialog is first shown. If automatic selections
-		// happen after this (making the user inputs complete), the button will
-		// be enabled.
-		getButton(Window.OK).setEnabled(false);
-
 		List<RepositoryTreeNode> roots = new ArrayList<RepositoryTreeNode>();
-		if ((settings & SHOW_LOCAL_BRANCHES) != 0)
+		if (showLocalBranches)
 			roots.add(localBranches);
-		if ((settings & SHOW_REMOTE_BRANCHES) != 0)
+		if (showRemoteBranches)
 			roots.add(remoteBranches);
-		if ((settings & SHOW_TAGS) != 0)
+		if (showTags)
 			roots.add(tags);
-		if ((settings & SHOW_REFERENCES) != 0)
-			roots.add(references);
 
 		branchTree.setInput(roots);
 
 		try {
-			if ((settings & SELECT_CURRENT_REF) != 0)
-				if (refToMark != null)
-					markRef(refToMark);
-				else {
-					// initially, we mark the current head if it can be determined
-					String fullBranch = repo.getFullBranch();
-					markRef(fullBranch);
-				}
-			if ((settings & EXPAND_LOCAL_BRANCHES_NODE) != 0)
-				// if we can't determine a branch, we just expand local
-				// branches
-				branchTree.expandToLevel(localBranches, 1);
-			if ((settings & EXPAND_REMOTE_BRANCHES_NODE) != 0)
-				// minor UX improvement to always expand remote branches node
-				branchTree.expandToLevel(remoteBranches, 1);
+			if (refToMark != null) {
+				if (!markRef(refToMark))
+					// if we can't determine a branch, we just expand local
+					// branches
+					branchTree.expandToLevel(localBranches, 1);
+			} else {
+				// initially, we mark the current head if it can be determined
+				String fullBranch = repo.getFullBranch();
+				if (!markRef(fullBranch))
+					// if we can't determine a branch, we just expand local
+					// branches
+					branchTree.expandToLevel(localBranches, 1);
+			}
 		} catch (IOException e) {
 			// ignore
 		}
@@ -372,32 +247,22 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		RepositoryTreeNode node;
 		try {
 			if (refName.startsWith(Constants.R_HEADS)) {
-				Ref ref = repo.getRef(refName);
-				if (ref == null)
-					return false;
-				node = new RefNode(localBranches, repo, ref);
-			} else if (refName.startsWith(Constants.R_REMOTES)) {
-				Ref ref = repo.getRef(refName);
-				if (ref == null)
-					return false;
-				node = new RefNode(remoteBranches, repo, ref);
+				Ref ref = this.repo.getRef(refName);
+				node = new RefNode(localBranches, this.repo, ref);
 			} else {
 				String mappedRef = Activator.getDefault().getRepositoryUtil()
-						.mapCommitToRef(repo, refName, false);
+						.mapCommitToRef(this.repo, refName, false);
 				if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_REMOTES)) {
-					Ref ref = repo.getRef(mappedRef);
-					if (ref == null)
-						return false;
-					node = new RefNode(remoteBranches, repo, ref);
+					Ref ref = this.repo.getRef(mappedRef);
+					node = new RefNode(remoteBranches, this.repo, ref);
 				} else if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_TAGS)) {
-					Ref ref = repo.getRef(mappedRef);
-					if (ref == null)
-						return false;
-					node = new TagNode(tags, repo, ref);
-				} else
+					Ref ref = this.repo.getRef(mappedRef);
+					node = new TagNode(tags, this.repo, ref);
+				} else {
 					return false;
+				}
 			}
 		} catch (IOException e) {
 			return false;
@@ -432,9 +297,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 			return null;
 		RepositoryTreeNode node = (RepositoryTreeNode) sel.getFirstElement();
 		if (node.getType() == RepositoryTreeNodeType.REF
-				|| node.getType() == RepositoryTreeNodeType.TAG
-				|| node.getType() == RepositoryTreeNodeType.ADDITIONALREF)
+				|| node.getType() == RepositoryTreeNodeType.TAG) {
 			return ((Ref) node.getObject()).getName();
+		}
 		return null;
 	}
 
@@ -448,8 +313,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 			return null;
 		RepositoryTreeNode node = (RepositoryTreeNode) sel.getFirstElement();
 		if (node.getType() == RepositoryTreeNodeType.REF
-				|| node.getType() == RepositoryTreeNodeType.TAG)
+				|| node.getType() == RepositoryTreeNodeType.TAG) {
 			return ((Ref) node.getObject());
+		}
 		return null;
 	}
 
@@ -468,15 +334,14 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	}
 
 	/**
-	 * Get short name of current branch
-	 *
-	 * @return branch name
+	 * @param showLocalBranches show/hide the local branches root
+	 * @param showRemoteBranches show/hide the remote branches root
+	 * @param showTags show/hide the tag root
 	 */
-	protected String getCurrentBranch() {
-		try {
-			return repo.getBranch();
-		} catch (IOException e) {
-			return null;
-		}
+	protected void setRootsToShow(boolean showLocalBranches,
+			boolean showRemoteBranches, boolean showTags) {
+		this.showLocalBranches = showLocalBranches;
+		this.showRemoteBranches = showRemoteBranches;
+		this.showTags = showTags;
 	}
 }

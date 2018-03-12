@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -20,7 +19,6 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.push.PushWizard;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -46,19 +44,13 @@ public class PushActionHandler extends RepositoryActionHandler {
 			return null;
 		}
 		WizardDialog dlg = new WizardDialog(getShell(event), pushWizard);
-		dlg.setHelpAvailable(true);
+		dlg.setHelpAvailable(false);
 		dlg.open();
 		return null;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		try {
-			return getRepository() != null
-					&& getRepository().getRef(Constants.HEAD).getObjectId() != null;
-		} catch (IOException e) {
-			Activator.handleError(e.getMessage(), e, false);
-			return false;
-		}
+		return getRepository() != null;
 	}
 }

@@ -8,33 +8,45 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
+import static org.eclipse.jgit.lib.FileMode.MISSING;
+import static org.eclipse.jgit.lib.FileMode.TREE;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import org.eclipse.compare.structuremergeviewer.Differencer;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.jgit.dircache.DirCache;
+import org.eclipse.jgit.dircache.DirCacheEntry;
+import org.eclipse.jgit.dircache.DirCacheIterator;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
 
 /**
  * Git cache representation in EGit Change Set
  */
 public class GitModelCache extends GitModelObjectContainer {
 
-	private final Path location;
+	/**
+	 * NTH of {@link DirCacheIterator}
+	 */
+	protected int dirCacheIteratorNth;
 
 	private final FileModelFactory fileFactory;
 
 	private final Map<String, GitModelCacheTree> cacheTreeMap;
 
-	private final Repository repo;
+	private static final int BASE_NTH = 0;
 
-	private final Map<String, Change> cache;
+	private static final int REMOTE_NTH = 1;
 
 	/**
 	 * This interface enables creating proper instance of {@link GitModelBlob}
@@ -46,26 +58,22 @@ public class GitModelCache extends GitModelObjectContainer {
 		 * Creates proper instance of {@link GitModelBlob} for cache and working
 		 * tree model representation
 		 *
-		 * @param objParent
+		 * @param parent
 		 *            parent object
-		 * @param repo
-		 *            repository associated with file that will be created
-		 * @param change
-		 *            change associated with file that will be created
-		 * @param fullPath
-		 *            absolute path
+		 * @param commit
+		 *            last {@link RevCommit} in repository
+		 * @param repoId
+		 *            {@link ObjectId} of blob in repository
+		 * @param cacheId
+		 *            {@link ObjectId} of blob in cache
+		 * @param name
+		 *            of blob
 		 * @return instance of {@link GitModelBlob}
+		 * @throws IOException
 		 */
-		GitModelBlob createFileModel(GitModelObjectContainer objParent,
-				Repository repo, Change change, IPath fullPath);
-
-		/**
-		 * Distinguish working tree from changed/staged tree
-		 *
-		 * @return {@code true} when this tree is working tree, {@code false}
-		 *         when it is a cached tree
-		 */
-		boolean isWorkingTree();
+		GitModelBlob createFileModel(GitModelObjectContainer parent,
+				RevCommit commit, ObjectId repoId, ObjectId cacheId, String name)
+				throws IOException;
 	}
 
 	/**
@@ -73,46 +81,35 @@ public class GitModelCache extends GitModelObjectContainer {
 	 *
 	 * @param parent
 	 *            parent object
-	 *
-	 * @param repo
-	 *            repository associated with this object
-	 * @param cache
-	 *            cache containing all changed objects
+	 * @param baseCommit
+	 *            last {@link RevCommit} in repository
+	 * @throws IOException
 	 */
-	public GitModelCache(GitModelRepository parent, Repository repo,
-			Map<String, Change> cache) {
-		this(parent, repo, cache, new FileModelFactory() {
-			public GitModelBlob createFileModel(
-					GitModelObjectContainer objParent, Repository nestedRepo,
-					Change change, IPath path) {
-				return new GitModelCacheFile(objParent, nestedRepo, change,
-						path);
-			}
+	public GitModelCache(GitModelObject parent, RevCommit baseCommit)
+			throws IOException {
+		this(parent, baseCommit, new FileModelFactory() {
 
-			public boolean isWorkingTree() {
-				return false;
+			public GitModelBlob createFileModel(
+					GitModelObjectContainer modelParent, RevCommit commit,
+					ObjectId repoId, ObjectId cacheId, String name)
+					throws IOException {
+				return new GitModelCacheFile(modelParent, commit, repoId,
+						cacheId, name);
 			}
 		});
 	}
 
 	/**
 	 * @param parent
-	 *            parent object
-	 * @param repo
-	 *            repository associated with this object
-	 * @param cache
-	 *            list of changes associated with this object
+	 * @param baseCommit
 	 * @param fileFactory
-	 *            leaf instance factory
+	 * @throws IOException
 	 */
-	protected GitModelCache(GitModelRepository parent, Repository repo, Map<String, Change> cache,
-			FileModelFactory fileFactory) {
-		super(parent);
-		this.repo = repo;
-		this.cache = cache;
+	protected GitModelCache(GitModelObject parent, RevCommit baseCommit,
+			FileModelFactory fileFactory) throws IOException {
+		super(parent, baseCommit, RIGHT);
 		this.fileFactory = fileFactory;
 		cacheTreeMap = new HashMap<String, GitModelCacheTree>();
-		location = new Path(repo.getWorkTree().toString());
 	}
 
 	@Override
@@ -120,88 +117,97 @@ public class GitModelCache extends GitModelObjectContainer {
 		return UIText.GitModelIndex_index;
 	}
 
-	@Override
-	public GitModelObject[] getChildren() {
+	protected GitModelObject[] getChildrenImpl() {
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
-		for (Entry<String, Change> cacheEntry : cache.entrySet()) {
-			GitModelObject entry = extractFromCache(cacheEntry.getValue(), cacheEntry.getKey());
-			if (entry == null)
-				continue;
+		try {
+			TreeWalk tw = createAndConfigureTreeWalk();
 
-			result.add(entry);
+			while (tw.next()) {
+				GitModelObject entry = extractFromCache(tw);
+				if (entry == null)
+					continue;
+
+				result.add(entry);
+			}
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
 		}
 
 		return result.toArray(new GitModelObject[result.size()]);
 	}
 
-	@Override
-	public int getKind() {
-		return Differencer.CHANGE | Differencer.RIGHT;
+	/**
+	 * Creates and configures {@link TreeWalk} instance for
+	 * {@link GitModelCache#getChildrenImpl()} method. It is IMPORTANT to add
+	 * tree that will be used as a base as first, remote tree should be added as
+	 * second; {@link GitModelCache#dirCacheIteratorNth} should be set with
+	 * value of NTH that corresponds with {@link DirCacheIterator}.
+	 *
+	 * @return configured instance of TreeW
+	 * @throws IOException
+	 */
+	protected TreeWalk createAndConfigureTreeWalk() throws IOException {
+		TreeWalk tw = createTreeWalk();
+		tw.setRecursive(true);
+
+		Repository repo = getRepository();
+		DirCache index = repo.readDirCache();
+		ObjectId headId = repo.getRef(Constants.HEAD).getObjectId();
+		tw.addTree(new RevWalk(repo).parseTree(headId));
+		tw.addTree(new DirCacheIterator(index));
+		dirCacheIteratorNth = 1;
+
+		return tw;
 	}
 
-	@Override
-	public int repositoryHashCode() {
-		return repo.getWorkTree().hashCode();
-	}
+	private GitModelObject extractFromCache(TreeWalk tw) throws IOException {
+		DirCacheIterator cacheIterator = tw.getTree(dirCacheIteratorNth,
+				DirCacheIterator.class);
+		if (cacheIterator == null)
+			return null;
 
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
+		DirCacheEntry cacheEntry = cacheIterator.getDirCacheEntry();
+		if (cacheEntry == null)
+			return null;
 
-		if (obj instanceof GitModelCache
-				&& !(obj instanceof GitModelWorkingTree)) {
-			GitModelCache left = (GitModelCache) obj;
-			return left.getParent().equals(getParent());
+		if (shouldIncludeEntry(tw)) {
+			String path = new String(tw.getRawPath());
+			ObjectId repoId = tw.getObjectId(BASE_NTH);
+			ObjectId cacheId = tw.getObjectId(REMOTE_NTH);
+
+			if (path.split("/").length > 1) //$NON-NLS-1$
+				return handleCacheTree(repoId, cacheId, path);
+
+			return fileFactory.createFileModel(this, baseCommit, repoId,
+					cacheId, path);
 		}
 
-		return false;
+		return null;
 	}
 
-	@Override
-	public int hashCode() {
-		return repositoryHashCode();
+	private boolean shouldIncludeEntry(TreeWalk tw) {
+		final int mHead = tw.getRawMode(BASE_NTH);
+		final int mCache = tw.getRawMode(REMOTE_NTH);
+
+		return mHead == MISSING.getBits() // initial add to cache
+				|| mCache == MISSING.getBits() // removed from cache
+				|| (mHead != mCache || (mCache != TREE.getBits() && !tw
+						.idEqual(BASE_NTH, REMOTE_NTH))); // modified
 	}
 
-	@Override
-	public IPath getLocation() {
-		return location;
-	}
-
-	@Override
-	public String toString() {
-		return "ModelCache"; //$NON-NLS-1$
-	}
-
-	@Override
-	public void dispose() {
-		for (GitModelTree modelTree : cacheTreeMap.values())
-			modelTree.dispose();
-
-		cache.clear();
-		cacheTreeMap.clear();
-	}
-
-	private GitModelObject extractFromCache(Change change, String path) {
-		if (path.contains("/")) //$NON-NLS-1$
-			return handleCacheTree(change, path);
-
-		return fileFactory.createFileModel(this, repo, change,
-				location.append(path));
-	}
-
-	private GitModelObject handleCacheTree(Change change, String path) {
-		int firstSlash = path.indexOf("/");//$NON-NLS-1$
-		String pathKey = path.substring(0, firstSlash);
+	private GitModelObject handleCacheTree(ObjectId repoId, ObjectId cacheId,
+			String path) throws IOException {
+		String pathKey = path.split("/")[0]; //$NON-NLS-1$
 		GitModelCacheTree cacheTree = cacheTreeMap.get(pathKey);
 		if (cacheTree == null) {
-			IPath newPath = location.append(pathKey);
-			cacheTree = new GitModelCacheTree(this, repo, newPath, fileFactory);
+			cacheTree = new GitModelCacheTree(this, baseCommit, repoId,
+					cacheId, pathKey, fileFactory);
 			cacheTreeMap.put(pathKey, cacheTree);
 		}
 
-		cacheTree.addChild(change, path.substring(firstSlash + 1));
+		cacheTree.addChild(repoId, cacheId,
+				path.substring(path.indexOf('/') + 1));
 
 		return cacheTree;
 	}

@@ -12,8 +12,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.project;
 
-import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
@@ -21,7 +19,6 @@ import java.util.Properties;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.GitProvider;
@@ -29,22 +26,16 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.RepositoryProvider;
 
 /**
- * This class provides means to map resources, projects and repositories
+ * This class keeps track
  */
 public class RepositoryMapping {
 	static boolean isInitialKey(final String key) {
 		return key.endsWith(".gitdir");  //$NON-NLS-1$
 	}
 
-	private final String containerPathString;
+	private final String containerPath;
 
-	private IPath containerPath;
-
-	private final String gitDirPathString;
-
-	private IPath gitDirPath;
-
-	private IPath gitDirAbsolutePath;
+	private final String gitdirPath;
 
 	private Repository db;
 
@@ -61,8 +52,8 @@ public class RepositoryMapping {
 	public RepositoryMapping(final Properties p, final String initialKey) {
 		final int dot = initialKey.lastIndexOf('.');
 
-		containerPathString = initialKey.substring(0, dot);
-		gitDirPathString = p.getProperty(initialKey);
+		containerPath = initialKey.substring(0, dot);
+		gitdirPath = p.getProperty(initialKey);
 	}
 
 	/**
@@ -80,18 +71,16 @@ public class RepositoryMapping {
 		final IPath gLocParent = gLoc.removeLastSegments(1);
 
 		container = mappedContainer;
-		containerPathString = container.getProjectRelativePath()
-				.toPortableString();
+		containerPath = container.getProjectRelativePath().toPortableString();
 
 		if (cLoc.isPrefixOf(gLoc)) {
 			int matchingSegments = gLoc.matchingFirstSegments(cLoc);
 			IPath remainder = gLoc.removeFirstSegments(matchingSegments);
 			String device = remainder.getDevice();
 			if (device == null)
-				gitDirPathString = remainder.toPortableString();
+				gitdirPath = remainder.toPortableString();
 			else
-				gitDirPathString = remainder.toPortableString().substring(
-						device.length());
+				gitdirPath = remainder.toPortableString().substring(device.length());
 		} else if (gLocParent.isPrefixOf(cLoc)) {
 			int cnt = cLoc.segmentCount() - cLoc.matchingFirstSegments(gLocParent);
 			StringBuilder p = new StringBuilder("");  //$NON-NLS-1$
@@ -99,9 +88,9 @@ public class RepositoryMapping {
 				p.append("../");  //$NON-NLS-1$
 			}
 			p.append(gLoc.segment(gLoc.segmentCount() - 1));
-			gitDirPathString = p.toString();
+			gitdirPath = p.toString();
 		} else {
-			gitDirPathString = gLoc.toPortableString();
+			gitdirPath = gLoc.toPortableString();
 		}
 	}
 
@@ -109,15 +98,11 @@ public class RepositoryMapping {
 	 * @return the container path corresponding to git repository
 	 */
 	public IPath getContainerPath() {
-		if (containerPath == null)
-			containerPath = Path.fromPortableString(containerPathString);
-		return containerPath;
+		return Path.fromPortableString(containerPath);
 	}
 
 	IPath getGitDirPath() {
-		if (gitDirPath == null)
-			gitDirPath = Path.fromPortableString(gitDirPathString);
-		return gitDirPath;
+		return Path.fromPortableString(gitdirPath);
 	}
 
 	/**
@@ -174,13 +159,13 @@ public class RepositoryMapping {
 	}
 
 	synchronized void store(final Properties p) {
-		p.setProperty(containerPathString + ".gitdir", gitDirPathString); //$NON-NLS-1$
+		p.setProperty(containerPath + ".gitdir", gitdirPath);  //$NON-NLS-1$
 	}
 
 	public String toString() {
 		return "RepositoryMapping[" //$NON-NLS-1$
-				+ containerPathString + " -> " //$NON-NLS-1$
-				+ gitDirPathString + "]"; //$NON-NLS-1$
+				+ containerPath + " -> " //$NON-NLS-1$
+				+ gitdirPath + "]"; //$NON-NLS-1$
 	}
 
 	/**
@@ -197,13 +182,13 @@ public class RepositoryMapping {
 		final int pfxLen = workdirPrefix.length();
 		IPath location = rsrc.getLocation();
 		if (location == null)
-			location = rsrc.getFullPath();
+			return null;
 		final String p = location.toString();
 		final int pLen = p.length();
 		if (pLen > pfxLen)
 			return p.substring(pfxLen);
-		if (pLen == pfxLen - 1)
-			return ""; //$NON-NLS-1$
+		else if (p.length() == pfxLen - 1)
+			return "";  //$NON-NLS-1$
 		return null;
 	}
 
@@ -215,10 +200,7 @@ public class RepositoryMapping {
 	 *         or null for non GitProvider.
 	 */
 	public static RepositoryMapping getMapping(final IResource resource) {
-		if (isNonWorkspace(resource))
-			return getMappingForNonWorkspaceResource(resource);
-
-		IProject project = resource.getProject();
+		final IProject project = resource.getProject();
 		if (project == null)
 			return null;
 
@@ -233,62 +215,16 @@ public class RepositoryMapping {
 	}
 
 	/**
-	 * Finds a RepositoryMapping related to a given repository
-	 *
-	 * @param repository
-	 * @return a RepositoryMapping related to repository. Null if no
-	 *         RepositoryMapping exists.
-	 */
-	public static RepositoryMapping findRepositoryMapping(Repository repository) {
-		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects();
-		for (IProject project : projects) {
-			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-			if (mapping != null && mapping.getRepository() == repository)
-				return mapping;
-		}
-		return null;
-	}
-
-	/**
 	 * @return the name of the .git directory
 	 */
 	public String getGitDir() {
-		return gitDirPathString;
+		return gitdirPath;
 	}
 
 	/**
 	 * @return The GIT DIR absolute path
 	 */
-	public synchronized IPath getGitDirAbsolutePath() {
-		if (gitDirAbsolutePath == null)
-			gitDirAbsolutePath = container.getLocation()
-					.append(getGitDirPath());
-		return gitDirAbsolutePath;
+	public IPath getGitDirAbsolutePath() {
+		return container.getLocation().append(getGitDirPath());
 	}
-
-	private static RepositoryMapping getMappingForNonWorkspaceResource(
-			final IResource resource) {
-		IPath fullPath = resource.getFullPath().removeLastSegments(1);
-		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects();
-
-		for (IProject project : projects) {
-			if (isNonWorkspace(project))
-				continue;
-			RepositoryMapping mapping = getMapping(project);
-			if (mapping == null)
-				continue;
-
-			Path workingTree = new Path(mapping.getWorkTree().toString());
-			IPath relative = fullPath.makeRelativeTo(workingTree);
-			String firstSegment = relative.segment(0);
-
-			if (firstSegment == null || !"..".equals(firstSegment)) //$NON-NLS-1$
-				return mapping;
-		}
-
-		return null;
-	}
-
 }
