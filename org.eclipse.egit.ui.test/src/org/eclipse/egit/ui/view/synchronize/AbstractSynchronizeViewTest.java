@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -266,7 +266,7 @@ public abstract class AbstractSynchronizeViewTest extends
 		waitForNodeWithText(rootTree, fileName).doubleClick();
 
 		SWTBotEditor editor = bot
-				.editor(new ComapreEditorTitleMatcher(fileName));
+				.editor(new CompareEditorTitleMatcher(fileName));
 
 		return editor;
 	}
@@ -345,7 +345,7 @@ public abstract class AbstractSynchronizeViewTest extends
 		waitForNodeWithText(folderNode, fileName).doubleClick();
 
 		SWTBotEditor editor = bot
-				.editor(new ComapreEditorTitleMatcher(fileName));
+				.editor(new CompareEditorTitleMatcher(fileName));
 		// Ensure that both StyledText widgets are enabled
 		SWTBotStyledText styledText = editor.toTextEditor().getStyledText();
 		bot.waitUntil(Conditions.widgetIsEnabled(styledText));

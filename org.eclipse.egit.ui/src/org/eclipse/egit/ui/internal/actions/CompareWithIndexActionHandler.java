@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2009, Yann Simon <yann.simon.fr@gmail.com>
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +9,8 @@
  *******************************************************************************/
 
 package org.eclipse.egit.ui.internal.actions;
+
+import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
 
 import java.io.IOException;
 
@@ -21,6 +24,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
+import org.eclipse.egit.ui.internal.synchronize.compare.LocalNonWorkspaceTypedElement;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
@@ -41,10 +45,7 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 
 		if (resources.length == 1 && resources[0] instanceof IFile) {
 			final IFile baseFile = (IFile) resources[0];
-
-			final ITypedElement base = SaveableCompareEditorInput
-					.createFileElement(baseFile);
-
+			final ITypedElement base = getBaseTypeElement(baseFile);
 			final ITypedElement next;
 			try {
 				next = CompareUtils.getHeadTypedElement(baseFile);
@@ -77,4 +78,16 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 	public boolean isEnabled() {
 		return getRepository() != null;
 	}
+
+	private ITypedElement getBaseTypeElement(final IFile baseFile) {
+		final ITypedElement base;
+		if (isNonWorkspace(baseFile)) {
+			String path = baseFile.getFullPath().toOSString();
+			base = new LocalNonWorkspaceTypedElement(path);
+		} else
+			base = SaveableCompareEditorInput
+			.createFileElement(baseFile);
+		return base;
+	}
+
 }

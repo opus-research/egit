@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org> amd others
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org> and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.action;
 
+import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 import static org.eclipse.ui.PlatformUI.getWorkbench;
 
 import java.io.IOException;
@@ -22,10 +23,12 @@ import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.synchronize.compare.LocalNonWorkspaceTypedElement;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
+import org.eclipse.egit.ui.internal.synchronize.model.GitModelCacheFile;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelWorkingFile;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.internal.ui.synchronize.actions.OpenInCompareAction;
 import org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration;
 import org.eclipse.team.ui.synchronize.ISynchronizePageSite;
@@ -75,16 +78,19 @@ public class GitOpenInCompareAction extends Action {
 		}
 	}
 
-	private void handleGitObjectComparison(GitModelBlob obj, boolean reseEditor) {
+	private void handleGitObjectComparison(GitModelBlob obj, boolean reuseEditor) {
 		ITypedElement left;
 		ITypedElement right;
+		IFile file = (IFile) obj.getResource();
 		if (obj instanceof GitModelWorkingFile) {
-			IFile file = (IFile) obj.getResource();
 			if (file.getLocation() == null)
 				left = new LocalNonWorkspaceTypedElement(file.getFullPath().toString());
 			else
 				left= SaveableCompareEditorInput.createFileElement(file);
 			right = getCachedFileElement(file);
+		} else if (obj instanceof GitModelCacheFile) {
+			left = getCachedFileElement(file);
+			right = getHeadFileElement(obj);
 		} else {
 			oldAction.run();
 			return;
@@ -94,7 +100,7 @@ public class GitOpenInCompareAction extends Action {
 				left, right, null);
 
 		IWorkbenchPage page = getWorkbenchPage(conf.getSite());
-		OpenInCompareAction.openCompareEditor(in, page, reseEditor);
+		OpenInCompareAction.openCompareEditor(in, page, reuseEditor);
 	}
 
 	private static IWorkbenchPage getWorkbenchPage(ISynchronizePageSite site) {
@@ -115,6 +121,13 @@ public class GitOpenInCompareAction extends Action {
 		} catch (IOException e) {
 			return null;
 		}
+	}
+
+	private ITypedElement getHeadFileElement(GitModelBlob blob) {
+		Repository repo = blob.getRepository();
+		String gitPath = stripWorkDir(repo.getWorkTree(), blob.getLocation().toFile());
+
+		return CompareUtils.getFileRevisionTypedElement(gitPath, blob.getBaseCommit(), repo);
 	}
 
 }
