@@ -1313,12 +1313,6 @@ public class UIText extends NLS {
 	public static String PullResultDialog_NothingToFetchFromLocal;
 
 	/** */
-	public static String PullResultDialog_RebaseStatusLabel;
-
-	/** */
-	public static String PullResultDialog_RebaseStoppedMessage;
-
-	/** */
 	public static String PushAction_wrongURIDescription;
 
 	/** */
@@ -1730,37 +1724,7 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_CreatingBranchMessage;
 
 	/** */
-	public static String CreateBranchPage_LocalBranchWarningText;
-
-	/** */
-	public static String CreateBranchPage_LocalBranchWarningTooltip;
-
-	/** */
-	public static String CreateBranchPage_MergeRadioButton;
-
-	/** */
 	public static String CreateBranchPage_MissingSourceMessage;
-
-	/** */
-	public static String CreateBranchPage_NoneRadioButton;
-
-	/** */
-	public static String CreateBranchPage_PullMergeTooltip;
-
-	/** */
-	public static String CreateBranchPage_PullNoneTooltip;
-
-	/** */
-	public static String CreateBranchPage_PullRebaseTooltip;
-
-	/** */
-	public static String CreateBranchPage_PullStrategyGroupHeader;
-
-	/** */
-	public static String CreateBranchPage_PullStrategyTooltip;
-
-	/** */
-	public static String CreateBranchPage_RebaseRadioButton;
 
 	/** */
 	public static String CreateBranchPage_SourceBranchLabel;
@@ -1887,12 +1851,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchAction_wrongURIMessage;
-
-	/** */
-	public static String FetchConfiguredRemoteAction_NoSpecsDefinedMessage;
-
-	/** */
-	public static String FetchConfiguredRemoteAction_NoUrisDefinedMessage;
 
 	/** */
 	public static String FetchOperationUI_FetchJobName;
@@ -2830,6 +2788,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_PleaseEnterNameMessage;
+
+	/** */
+	public static String GitMergeEditorInput_CalculatingDiffTaskName;
+
+	/** */
+	public static String GitMergeEditorInput_CheckingResourcesTaskName;
 
 	/** */
 	public static String GitMergeEditorInput_MergeEditorTitle;
