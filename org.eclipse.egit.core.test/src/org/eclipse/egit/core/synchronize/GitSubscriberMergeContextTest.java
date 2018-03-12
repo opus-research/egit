@@ -370,10 +370,17 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 		setContentsAndCommit(testRepo, iFile1, branchChanges + initialContent1,
 				"branch commit");
 		iFile2.delete(true, new NullProgressMonitor());
+		testUtils.waitForJobs(500, 5000, null);
+		assertFalse(iFile2.exists());
+
 		testRepo.addAndCommit(iProject, file2, "branch commit - deleted file2."
 				+ SAMPLE_FILE_EXTENSION);
 
 		testRepo.checkoutBranch(MASTER);
+		iProject.refreshLocal(IResource.DEPTH_INFINITE,
+				new NullProgressMonitor());
+		testUtils.waitForJobs(500, 5000, null);
+		assertTrue(iFile2.exists());
 
 		final String masterChanges = "some changes\n";
 		setContentsAndCommit(testRepo, iFile1, initialContent1 + masterChanges,
@@ -385,6 +392,8 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 		IMergeContext mergeContext = prepareModelContext(repo, iFile1, MASTER,
 				BRANCH);
 		IDiff node = mergeContext.getDiffTree().getDiff(iFile1);
+		assertNotNull(node);
+		node = mergeContext.getDiffTree().getDiff(iFile2);
 		assertNotNull(node);
 
 		IResourceMappingMerger merger = createMerger();
