@@ -139,7 +139,7 @@ public class CommitHelper {
 				}
 			}
 		} catch (FileNotFoundException e) {
-			return NLS.bind(UIText.CommitHelper_couldNotFindMergeMsg, Constants.MERGE_MSG);
+			throw new IllegalStateException(e);
 		}
 	}
 
@@ -214,13 +214,6 @@ public class CommitHelper {
 	 */
 	public RevCommit getPreviousCommit() {
 		return previousCommit;
-	}
-
-	/**
-	 * @return true if amending is allowed
-	 */
-	public boolean amendAllowed() {
-		return previousCommit != null && repository.getRepositoryState().canAmend();
 	}
 
 	/**

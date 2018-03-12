@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -50,8 +49,6 @@ public class StagingEntry implements IAdaptable {
 
 	private String path;
 
-	private boolean submodule;
-
 	/**
 	 *
 	 * @param repository TODO
@@ -65,31 +62,10 @@ public class StagingEntry implements IAdaptable {
 	}
 
 	/**
-	 * @param submodule
-	 */
-	public void setSubmodule(final boolean submodule) {
-		this.submodule = submodule;
-	}
-
-	/**
-	 * @return true if submodule, false otherwise
-	 */
-	public boolean isSubmodule() {
-		return submodule;
-	}
-
-	/**
 	 * @return the full path for this node
 	 */
 	public String getPath() {
 		return path;
-	}
-
-	/**
-	 * @return the repository for this node
-	 */
-	public Repository getRepository() {
-		return repository;
 	}
 
 	/**
@@ -104,8 +80,6 @@ public class StagingEntry implements IAdaptable {
 			IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
 			IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 			IResource resource = root.getFileForLocation(absolutePath);
-			if (resource == null)
-				resource = root.getFile(absolutePath);
 			return resource;
 		}
 		return null;
