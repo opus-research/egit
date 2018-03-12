@@ -3479,6 +3479,15 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
+	public static String CommitResultLabelProvider_SectionAuthor;
+
+	/** */
+	public static String CommitResultLabelProvider_SectionMessage;
+
+	/** */
+	public static String CommitResultLabelProvider_SectionRepository;
+
+	/** */
 	public static String CommitSearchQuery_Label;
 
 	/** */
@@ -3507,9 +3516,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitSelectionDialog_WindowTitle;
-
-	/** */
-	public static String CommitUI_commitFailed;
 
 	/** */
 	public static String EgitUiEditorUtils_openFailed;
