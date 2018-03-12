@@ -1704,20 +1704,6 @@
                   property="GitSelection.projectsSingleRepository">
             </test>
          </activeWhen>
-      </handler>     
-      <handler
-            commandId="org.eclipse.ui.file.refresh">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.RefreshCommand">
-         </class>
-         <activeWhen>
-             <with
-                   variable="activePartId">
-                <equals
-                        value="org.eclipse.egit.ui.RepositoriesView">
-                </equals>
-             </with>
-          </activeWhen>
       </handler>
       <handler
             commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote">
@@ -3835,9 +3821,7 @@
                visible="true">
          </separator>
          <command
-               commandId="org.eclipse.ui.file.refresh"
-               icon="icons/obj16/refresh.gif"
-               disabledIcon="icons/obj16/refresh.gif"
+               commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
                style="push">
          </command>
          <command
@@ -3882,8 +3866,8 @@
                visible="true">
          </separator>
          <command
-               commandId="org.eclipse.ui.file.refresh"
-               icon="icons/obj16/refresh.gif"
+               commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
+               label="%RepoViewRefreshViewMenu.label"
                style="push">
          </command>
          <command
@@ -4837,6 +4821,12 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RefreshCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewRefresh"
+            name="%RefreshCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RemoveCommand"
             id="org.eclipse.egit.ui.RepositoriesViewRemove"
             name="%RemoveRepositoryCommand">
@@ -5033,6 +5023,10 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewClone"
             icon="icons/obj16/cloneGit.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
+            icon="icons/obj16/refresh.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
