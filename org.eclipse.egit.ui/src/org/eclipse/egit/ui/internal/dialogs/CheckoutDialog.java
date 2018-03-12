@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2013 SAP AG and others.
+ * Copyright (c) 2011 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -20,7 +20,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
-import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.jface.dialogs.InputDialog;
@@ -96,7 +95,6 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 						.startsWith(Constants.R_REMOTES));
 
 		// handle multiple selection
-		Button okButton = getButton(Window.OK);
 		if (((TreeSelection) branchTree.getSelection()).size() > 1) {
 			TreeSelection selection = (TreeSelection) branchTree
 					.getSelection();
@@ -107,7 +105,7 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 			renameButton.setEnabled(false);
 			newButton.setEnabled(false);
 		} else {
-			okButton.setEnabled(branchSelected || tagSelected);
+			getButton(Window.OK).setEnabled(branchSelected || tagSelected);
 
 			// we don't support rename on tags
 			renameButton.setEnabled(branchSelected && !tagSelected);
@@ -117,12 +115,8 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 			newButton.setEnabled(true);
 		}
 
-		if (BranchOperationUI.checkoutWillShowQuestionDialog(refName))
-			okButton.setText(UIText.CheckoutDialog_OkCheckoutWithQuestion);
-		else
-			okButton.setText(UIText.CheckoutDialog_OkCheckout);
-
-		okButton.setEnabled(refName != null && !refName.equals(currentBranch));
+		getButton(Window.OK).setEnabled(
+				refName != null && !refName.equals(currentBranch));
 	}
 
 	@Override

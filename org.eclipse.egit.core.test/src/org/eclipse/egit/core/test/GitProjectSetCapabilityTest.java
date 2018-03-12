@@ -14,14 +14,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -59,7 +56,6 @@ public class GitProjectSetCapabilityTest {
 
 	@After
 	public void tearDown() throws Exception {
-		ResourcesPlugin.getWorkspace().getRoot().delete(IResource.FORCE, null);
 		Activator.getDefault().getRepositoryCache().clear();
 		for (IProject project : createdProjects)
 			if (project.exists())
@@ -262,34 +258,6 @@ public class GitProjectSetCapabilityTest {
 				root.getLocation().append("existingbutdifferent/repo/project"), imported.getLocation());
 	}
 
-	@Test
-	public void testImportFromRepoWithUrlOnlyDifferingInUserName()
-			throws Exception {
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IPath reposPath = root.getLocation().append("repos");
-		pathsToClean.add(reposPath.toFile());
-
-		IPath repoPath = reposPath.append("repo");
-		IProject project = createProject(repoPath, "project");
-		project.delete(false, true, null);
-		String url = createUrl(repoPath, "ssh", "userName");
-		File repoDir = createRepository(repoPath, url, "master");
-
-		RepositoryUtil util = Activator.getDefault().getRepositoryUtil();
-		util.addConfiguredRepository(repoDir);
-
-		String reference = createProjectReference(repoPath, "ssh", /* no user */
-				null, "master", "project");
-
-		addToWorkspace(new String[] { reference });
-
-		IProject imported = root.getProject("project");
-		assertEquals(
-				"Expected imported project to be from already existing repository. User name must be ignored in URL.",
-				root.getLocation().append("repos/repo/project"),
-				imported.getLocation());
-	}
-
 	private IProject createProject(String name) throws CoreException {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject p = root.getProject(name);
@@ -341,22 +309,8 @@ public class GitProjectSetCapabilityTest {
 		return "1.0," + createUrl(repoPath) + "," + branch + "," + projectPath;
 	}
 
-	private static String createProjectReference(IPath repoPath,
-			String protocol, String user, String branch, String projectPath)
-			throws Exception {
-		return "1.0," + createUrl(repoPath, protocol, user) + "," + branch
-				+ "," + projectPath;
-	}
-
 	private static String createUrl(IPath repoPath) {
 		return repoPath.toFile().toURI().toString();
-	}
-
-	private static String createUrl(IPath repoPath, String protocol, String user)
-			throws URISyntaxException {
-		URI uri = new URI(protocol, user, "localhost", 42, repoPath
-				.setDevice(null).makeAbsolute().toString(), null, null);
-		return uri.toString();
 	}
 
 	private void addToWorkspace(String[] references) throws TeamException {

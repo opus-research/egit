@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -32,13 +31,11 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.FileChecker;
 import org.eclipse.egit.core.internal.FileChecker.CheckResult;
 import org.eclipse.egit.core.internal.FileChecker.CheckResultEntry;
+import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.commands.shared.AbortRebaseCommand;
-import org.eclipse.egit.ui.internal.commands.shared.AbstractRebaseCommandHandler;
-import org.eclipse.egit.ui.internal.commands.shared.SkipRebaseCommand;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.egit.ui.internal.merge.GitMergeEditorInput;
 import org.eclipse.egit.ui.internal.merge.MergeModeDialog;
@@ -50,6 +47,7 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.window.Window;
+import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.RebaseResult.Status;
 import org.eclipse.jgit.dircache.DirCache;
@@ -551,27 +549,33 @@ public class RebaseResultDialog extends MessageDialog {
 				}
 				CompareUI.openCompareEditor(input);
 				return;
-			} else if (skipCommitButton.getSelection()) {
+			} else if (skipCommitButton.getSelection())
 				// skip the rebase
-				SkipRebaseCommand skipCommand = new SkipRebaseCommand();
-				execute(skipCommand);
-			} else if (abortRebaseButton.getSelection()) {
+				try {
+					final RebaseOperation op = new RebaseOperation(repo,
+							Operation.SKIP);
+					op.execute(null);
+
+					show(op.getResult(), repo);
+				} catch (CoreException e) {
+					Activator.handleError(e.getMessage(), e, true);
+				}
+			else if (abortRebaseButton.getSelection())
 				// abort the rebase
-				AbortRebaseCommand abortCommand = new AbortRebaseCommand();
-				execute(abortCommand);
-			} else if (doNothingButton.getSelection()) {
+				try {
+					final RebaseOperation op = new RebaseOperation(repo,
+							Operation.ABORT);
+					op.execute(null);
+
+					show(op.getResult(), repo);
+				} catch (CoreException e) {
+					Activator.handleError(e.getMessage(), e, true);
+				}
+			else if (doNothingButton.getSelection()) {
 				// nothing
 			}
 		}
 		super.buttonPressed(buttonId);
-	}
-
-	private void execute(AbstractRebaseCommandHandler command) {
-		try {
-			command.execute(repo);
-		} catch (ExecutionException e) {
-			Activator.showError(e.getMessage(), e);
-		}
 	}
 
 	private void createToggleButton(Composite parent) {
