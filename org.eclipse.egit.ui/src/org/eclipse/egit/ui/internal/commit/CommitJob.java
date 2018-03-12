@@ -56,8 +56,6 @@ public class CommitJob extends Job {
 
 	private boolean pushUpstream;
 
-	private boolean commitSucceeded;
-
 	/**
 	 * @param repository
 	 *            the repository to commit to
@@ -93,13 +91,6 @@ public class CommitJob extends Job {
 		return this;
 	}
 
-	/**
-	 * @return {@code true} if commit was successful
-	 */
-	public boolean isCommitSucceeded() {
-		return commitSucceeded;
-	}
-
 	@Override
 	protected IStatus run(IProgressMonitor monitor) {
 		RevCommit commit = null;
@@ -128,7 +119,6 @@ public class CommitJob extends Job {
 		}
 
 		if (commit != null) {
-			commitSucceeded = true;
 			if (openCommitEditor)
 				openCommitEditor(commit);
 			if (pushUpstream)
