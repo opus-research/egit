@@ -16,6 +16,7 @@ package org.eclipse.egit.core.op;
 import java.io.IOException;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -27,6 +28,7 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
@@ -58,6 +60,8 @@ public class MergeOperation implements IEGitOperation {
 	private boolean squash;
 
 	private FastForwardMode fastForwardMode;
+
+	private boolean commit = true;
 
 	private MergeResult mergeResult;
 
@@ -99,6 +103,15 @@ public class MergeOperation implements IEGitOperation {
 		this.fastForwardMode = ffmode;
 	}
 
+	/**
+	 * @param commit
+	 *            set the commit option
+	 * @since 3.1
+	 */
+	public void setCommit(boolean commit) {
+		this.commit = commit;
+	}
+
 	public void execute(IProgressMonitor m) throws CoreException {
 		if (mergeResult != null)
 			throw new CoreException(new Status(IStatus.ERROR, Activator
@@ -123,11 +136,12 @@ public class MergeOperation implements IEGitOperation {
 								.getFastForwardMode(repository);
 					Ref ref = repository.getRef(refName);
 					if (ref != null)
-						merge = git.merge().include(ref).setFastForward(ffmode);
+						merge = git.merge().include(ref).setFastForward(ffmode)
+								.setCommit(commit);
 					else
 						merge = git.merge()
 								.include(ObjectId.fromString(refName))
-								.setFastForward(ffmode);
+								.setFastForward(ffmode).setCommit(commit);
 				} catch (IOException e) {
 					throw new TeamException(CoreText.MergeOperation_InternalError, e);
 				}
@@ -157,7 +171,8 @@ public class MergeOperation implements IEGitOperation {
 			}
 		};
 		// lock workspace to protect working tree changes
-		ResourcesPlugin.getWorkspace().run(action, monitor);
+		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
+				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
 	/**
@@ -169,6 +184,6 @@ public class MergeOperation implements IEGitOperation {
 	}
 
 	public ISchedulingRule getSchedulingRule() {
-		return ResourcesPlugin.getWorkspace().getRoot();
+		return RuleUtil.getRule(repository);
 	}
 }

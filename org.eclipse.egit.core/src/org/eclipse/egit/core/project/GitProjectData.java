@@ -51,6 +51,7 @@ import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
+import org.eclipse.team.core.TeamException;
 
 /**
  * This class keeps information about how a project is mapped to
@@ -191,7 +192,9 @@ public class GitProjectData {
 
 	/**
 	 * @param p
-	 * @return {@link GitProjectData} for the specified project
+	 * @return {@link GitProjectData} for the specified project, or null if the
+	 *         Git provider is not associated with the project or an exception
+	 *         occurred
 	 */
 	public synchronized static GitProjectData get(final IProject p) {
 		try {
@@ -484,16 +487,14 @@ public class GitProjectData {
 		}
 
 		if (c == null) {
-			logGoneMappedResource(m);
-			m.clear();
+			logAndUnmapGoneMappedResource(m);
 			return;
 		}
 		m.setContainer(c);
 
-		git = c.getLocation().append(m.getGitDirPath()).toFile();
+		git = m.getGitDirAbsolutePath().toFile();
 		if (!git.isDirectory() || !new File(git, "config").isFile()) { //$NON-NLS-1$
-			logGoneMappedResource(m);
-			m.clear();
+			logAndUnmapGoneMappedResource(m);
 			return;
 		}
 
@@ -501,8 +502,7 @@ public class GitProjectData {
 			m.setRepository(Activator.getDefault().getRepositoryCache()
 					.lookupRepository(git));
 		} catch (IOException ioe) {
-			logGoneMappedResource(m);
-			m.clear();
+			logAndUnmapGoneMappedResource(m);
 			return;
 		}
 
@@ -525,10 +525,16 @@ public class GitProjectData {
 		}
 	}
 
-	private void logGoneMappedResource(final RepositoryMapping m) {
+	private void logAndUnmapGoneMappedResource(final RepositoryMapping m) {
 		Activator.logError(MessageFormat.format(
 				CoreText.GitProjectData_mappedResourceGone, m.toString()),
 				new FileNotFoundException(m.getContainerPath().toString()));
+		m.clear();
+		try {
+			RepositoryProvider.unmap(getProject());
+		} catch (TeamException e) {
+			Activator.logError(CoreText.GitProjectData_UnmappingGoneResourceFailed, e);
+		}
 	}
 
 	private void protect(IResource resource) {

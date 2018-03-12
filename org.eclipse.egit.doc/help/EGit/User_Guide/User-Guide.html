@@ -31,7 +31,7 @@
 			<a href="../../EGit/Git_For_Eclipse_Users/Git-For-Eclipse-Users.html" title="EGit/Git For Eclipse Users">Git for Eclipse Users</a> first. More background and details can be found in the on-line book 
 			<a href="http://progit.org/book/" target="egit_external">Pro Git</a>.
 		</p>
-		<p>If there you are coming from CVS, you can find common CVS workflows for Git 
+		<p>If you are coming from CVS, you can find common CVS workflows for Git 
 			<a href="http://wiki.eclipse.org/Platform-releng/Git_Workflows" title="Platform-releng/Git Workflows" target="egit_external">Platform-releng/Git Workflows</a>.
 		</p>
 		<h2 id="Basic_Tutorial:_Adding_a_project_to_version_control">Basic Tutorial: Adding a project to version control</h2>
@@ -75,6 +75,9 @@
 				<br/>
 			</li>
 		</ol>
+		<p>Note that if you use 
+			<a href="http://www.cygwin.com/" target="egit_external">Cygwin</a>, you should already have <code>HOME</code> set. For example, if you installed Cygwin to <code>C:\cygwin</code> and your username is Fred, then Cygwin should have already set <code>HOME</code> to <code>C:\cygwin\home\Fred</code> (or something similar). You can verify this by entering <code>echo %HOME%</code> in the Windows command prompt, or <code>echo $HOME</code> in the Cygwin shell.
+		</p>
 		<p>EGit needs this path for looking up the user configuration (.gitconfig). <code>HOME</code> should point to your home directory e.g. <code>C:\Users\Tom</code>. 
 			<b>Ensure correct case!</b> E.g. <code>C:\users</code> instead of <code>C:\Users</code> may cause problems!
 		</p>
@@ -172,9 +175,6 @@
 				<b>Filters...</b> from the View Menu and you will be presented with the Java Element Filters dialog. Unselect the top entry to display files that begin with . (period) such as <code>.gitignore</code>.
 			</li>
 		</ul>
-		<p>
-			<img border="0" src="images/Filters.png"/>
-		</p>
 		<ul>
 			<li>Click 
 				<b>Team &gt; Commit</b> in the project context menu

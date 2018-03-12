@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,9 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -37,8 +38,8 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.DialogSettings;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -58,6 +59,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
@@ -127,19 +129,8 @@ public class GitCreatePatchWizard extends Wizard {
 		this.db = db;
 		this.resources = resources;
 
-		setDialogSettings(getOrCreateSection(Activator.getDefault().getDialogSettings(), "GitCreatePatchWizard")); //$NON-NLS-1$
-	}
-
-	/*
-	 * Copy of org.eclipse.jface.dialogs.DialogSettings.getOrCreateSection(IDialogSettings, String)
-	 * which is not available in 3.5.
-	 */
-	private static IDialogSettings getOrCreateSection(IDialogSettings settings,
-			String sectionName) {
-		IDialogSettings section = settings.getSection(sectionName);
-		if (section == null)
-			section = settings.addNewSection(sectionName);
-		return section;
+		setDialogSettings(DialogSettings.getOrCreateSection(Activator
+				.getDefault().getDialogSettings(), "GitCreatePatchWizard")); //$NON-NLS-1$
 	}
 
 	@Override
@@ -248,7 +239,8 @@ public class GitCreatePatchWizard extends Wizard {
 
 	private void writeToFile(final File file, String content)
 			throws IOException {
-		Writer output = new BufferedWriter(new FileWriter(file));
+		Writer output = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(file), RawParseUtils.UTF8_CHARSET));
 		try {
 			// FileWriter always assumes default encoding is
 			// OK!

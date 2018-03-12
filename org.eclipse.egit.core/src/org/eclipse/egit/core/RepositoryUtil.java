@@ -12,6 +12,7 @@ package org.eclipse.egit.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -128,8 +129,12 @@ public class RepositoryUtil {
 							CheckoutEntry checkoutEntry = entry.parseCheckout();
 							if (checkoutEntry != null) {
 								Ref ref = repository.getRef(checkoutEntry.getToBranch());
-								if (ref != null)
+								if (ref != null) {
+									if (ref.getObjectId().getName()
+											.equals(commitId))
+										return checkoutEntry.getToBranch();
 									ref = repository.peel(ref);
+								}
 								if (ref != null) {
 									ObjectId id = ref.getPeeledObjectId();
 									if (id != null && id.getName().equals(commitId))
@@ -267,29 +272,29 @@ public class RepositoryUtil {
 	/**
 	 * Return a cached UI "name" for a Repository
 	 * <p>
-	 * This uses the name of the parent of the repository's directory.
+	 * This uses the name of the working directory. In case of a bare
+	 * repository, the repository directory name is used.
 	 *
 	 * @param repository
 	 * @return the name
 	 */
 	public String getRepositoryName(final Repository repository) {
-		File gitDir = repository.getDirectory();
-		if (gitDir == null)
+		File dir;
+		// Use working directory name for non-bare repositories
+		if (!repository.isBare())
+			dir = repository.getWorkTree();
+		else
+			dir = repository.getDirectory();
+
+		if (dir == null)
 			return ""; //$NON-NLS-1$
 
-		// Use parent file for non-bare repositories
-		if (!repository.isBare()) {
-			gitDir = gitDir.getParentFile();
-			if (gitDir == null)
-				return ""; //$NON-NLS-1$
-		}
-
 		synchronized (repositoryNameCache) {
-			final String path = gitDir.getPath().toString();
+			final String path = dir.getPath().toString();
 			String name = repositoryNameCache.get(path);
 			if (name != null)
 				return name;
-			name = gitDir.getName();
+			name = dir.getName();
 			repositoryNameCache.put(path, name);
 			return name;
 		}
@@ -347,7 +352,9 @@ public class RepositoryUtil {
 		synchronized (prefs) {
 
 			if (!FileKey.isGitRepository(repositoryDir, FS.DETECTED))
-				throw new IllegalArgumentException();
+				throw new IllegalArgumentException(MessageFormat.format(
+						CoreText.RepositoryUtil_DirectoryIsNotGitDirectory,
+						repositoryDir));
 
 			String dirString = getPath(repositoryDir);
 
@@ -535,5 +542,23 @@ public class RepositoryUtil {
 		} catch (IOException e) {
 			return null;
 		}
+	}
+
+	/**
+	 * Checks if given repository is in the 'detached HEAD' state.
+	 *
+	 * @param repository
+	 *            the repository to check
+	 * @return <code>true</code> if the repository is in the 'detached HEAD'
+	 *         state, <code>false</code> if it's not or an error occurred
+	 * @since 3.2
+	 */
+	public static boolean isDetachedHead(Repository repository) {
+		try {
+			return ObjectId.isId(repository.getFullBranch());
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+		}
+		return false;
 	}
 }
