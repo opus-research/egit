@@ -81,8 +81,6 @@ public class ResourceStatePropertyTester extends PropertyTester {
 		if (collection.size() == 1 && first instanceof ITextSelection) {
 			selection = SelectionUtils
 					.getStructuredSelection((ITextSelection) first);
-		} else if (receiver instanceof IStructuredSelection) {
-			selection = (IStructuredSelection) receiver;
 		} else {
 			selection = new StructuredSelection(new ArrayList<>(collection));
 		}
