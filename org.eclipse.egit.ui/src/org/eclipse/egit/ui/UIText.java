@@ -978,6 +978,9 @@ public class UIText extends NLS {
 	public static String CompareTreeView_AnalyzingRepositoryTaskText;
 
 	/** */
+	public static String CompareTreeView_ExpandAllTooltip;
+
+	/** */
 	public static String CompareTreeView_CollapseAllTooltip;
 
 	/** */
@@ -1863,6 +1866,9 @@ public class UIText extends NLS {
 	public static String CommitDialog_Commit;
 
 	/** */
+	public static String CommitDialog_CommitAndPush;
+
+	/** */
 	public static String CommitDialog_CommitChanges;
 
 	/** */
@@ -1968,28 +1974,10 @@ public class UIText extends NLS {
 	public static String CommitDialog_Title;
 
 	/** */
-	public static String CommitDialog_PushSectionTitle;
-
-	/** */
-	public static String CommitDialog_PushUpstream;
-
-	/** */
 	public static String ConfigurationChecker_gitPrefixWarningMessage;
 
 	/** */
-	public static String ConfigurationChecker_gitPrefixWarningTitle;
-
-	/** */
-	public static String ConfigurationChecker_checkHomeDirectory;
-
-	/** */
 	public static String ConfigurationChecker_checkConfiguration;
-
-	/** */
-	public static String ConfigurationChecker_doNotShowAgain;
-
-	/** */
-	public static String ConfigurationChecker_doNotShowGitPrefixWarningAgain;
 
 	/** */
 	public static String ConfigurationChecker_homeNotSet;
@@ -3078,6 +3066,9 @@ public class UIText extends NLS {
 	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
 
 	/** */
+	public static String DialogsPreferencePage_HideWarningGroupHeader;
+
+	/** */
 	public static String DialogsPreferencePage_HomeDirWarning;
 
 	/** */
@@ -3749,6 +3740,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitSynchronizeWizard_synchronize;
+
+	/** */
+	public static String GitChangeSetModelProviderLabel;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_title;
@@ -4462,6 +4456,9 @@ public class UIText extends NLS {
 	public static String StagingView_CommitMessage;
 
 	/** */
+	public static String StagingView_CommitAndPush;
+
+	/** */
 	public static String StagingView_Committer;
 
 	/** */
@@ -4529,6 +4526,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_StageItemMenuLabel;
+
+	/** */
+	public static String StagingView_IgnoreItemMenuLabel;
 
 	/** */
 	public static String StagingView_DeleteItemMenuLabel;
