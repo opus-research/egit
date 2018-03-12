@@ -1,22 +1,16 @@
 /*******************************************************************************
- * Copyright (c) 2010, SAP AG
+ * Copyright (C) 2011, Benjamin Muskalla <benjamin.muskalla@tasktop.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Stefan Lay (SAP AG) - initial implementation
- *    Benjamin Muskalla (Tasktop Technologies) - extract into operation
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
-import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.core.runtime.CoreException;
@@ -26,10 +20,7 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.egit.core.internal.CompareCoreUtils;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
@@ -45,7 +36,7 @@ public class CreatePatchOperation implements IEGitOperation {
 	private boolean useGitFormat = true;
 
 	// the encoding for the currently processed file
-	 private String currentEncoding = null;
+	// private String currentEncoding = null;
 
 	private String patchContent;
 
@@ -81,13 +72,7 @@ public class CreatePatchOperation implements IEGitOperation {
 					@Override
 					public synchronized void write(byte[] b, int off, int len) {
 						super.write(b, off, len);
-						if (currentEncoding == null)
-							sb.append(toString());
-						else try {
-							sb.append(toString(currentEncoding));
-						} catch (UnsupportedEncodingException e) {
-							sb.append(toString());
-						}
+						sb.append(toString());
 						reset();
 					}
 				});
@@ -108,16 +93,7 @@ public class CreatePatchOperation implements IEGitOperation {
 
 		try {
 			diffFmt.setRepository(repository);
-			List<DiffEntry> diffs = diffFmt.scan(parents[0].getId(), commit.getId());
-			for (DiffEntry ent : diffs) {
-				String path;
-				if (ChangeType.DELETE.equals(ent.getChangeType()))
-					path = ent.getOldPath();
-				else
-					path = ent.getNewPath();
-				currentEncoding = CompareCoreUtils.getResourceEncoding(repository, path);
-				diffFmt.format(ent);
-			}
+			diffFmt.format(parents[0].getId(), commit.getId());
 		} catch (IOException e) {
 			Activator.logError("Patch file could not be written", e); //$NON-NLS-1$
 		}
@@ -129,7 +105,7 @@ public class CreatePatchOperation implements IEGitOperation {
 	}
 
 	/**
-	 * Retrieves the content of the requested patch
+	 * Retrieves the contents of the requested patch
 	 *
 	 * @return the content of the patch
 	 */

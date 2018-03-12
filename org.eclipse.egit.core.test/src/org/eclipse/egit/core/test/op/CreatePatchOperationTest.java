@@ -1,13 +1,10 @@
 /*******************************************************************************
- * Copyright (c) 2011, Tasktop Technologies
+ * Copyright (C) 2011, Benjamin Muskalla <benjamin.muskalla@tasktop.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Benjamin Muskalla (Tasktop Technologies) - initial implementation
  *******************************************************************************/
 package org.eclipse.egit.core.test.op;
 
@@ -27,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class CreatePatchOperationTest extends GitTestCase {
+
 
 	private static final String SIMPLE_GIT_PATCH_CONTENT = "From 6dcd097c7d39e9ba0b31a380981d3fb46017d6c2 Sat, 23 Jul 2011 20:33:24 -0330\n"
 			+ "From: J. Git <j.git@egit.org>\n"
