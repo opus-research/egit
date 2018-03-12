@@ -23,6 +23,7 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
@@ -30,6 +31,7 @@ import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
 
@@ -49,7 +51,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 	 *            the project to connect to the Git team provider.
 	 */
 	public ConnectProviderOperation(final IProject proj) {
-		this(proj, new File(".git"));
+		this(proj, new File(Constants.DOT_GIT));
 	}
 
 	/**
@@ -91,8 +93,8 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 				Activator.trace("Locating repository for " + project); //$NON-NLS-1$
 				Collection<RepositoryMapping> repos = new RepositoryFinder(
 						project).find(new SubProgressMonitor(m, 40));
-				Iterator<RepositoryMapping> mi = repos.iterator();
-				RepositoryMapping actualMapping = mi.hasNext() ? mi.next() : null;
+				File suggestedRepo = projects.get(project);
+				RepositoryMapping actualMapping= findActualRepository(repos, suggestedRepo);
 				if (actualMapping != null) {
 					GitProjectData projectData = new GitProjectData(project);
 					try {
@@ -121,5 +123,22 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 		} finally {
 			m.done();
 		}
+	}
+
+	/**
+	 * @param repos
+	 *            available repositories
+	 * @param suggestedRepo
+	 *            relative path to git repository
+	 * @return a repository mapping which corresponds to a suggested repository
+	 *         location, <code>null</code> otherwise
+	 */
+	private RepositoryMapping findActualRepository(
+			Collection<RepositoryMapping> repos, File suggestedRepo) {
+		for (RepositoryMapping rm : repos) {
+			if (Path.fromOSString(rm.getGitDir()).equals(Path.fromOSString(suggestedRepo.getPath())))
+				return rm;
+		}
+		return null;
 	}
 }
