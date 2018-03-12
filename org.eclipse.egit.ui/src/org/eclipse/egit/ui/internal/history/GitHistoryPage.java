@@ -138,6 +138,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	/** Fill comment */
 	private IAction fillCommentAction;
 
+	/** Compare mode toggle */
+	private BooleanPrefAction compareModeAction;
+
+	/** Show all branches toggle */
+	private BooleanPrefAction showAllBranchesAction;
+
 	/** An error text to be shown instead of the control */
 	private StyledText errorText;
 
@@ -357,7 +363,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		showAllResourceVersionsAction
 				.setChecked(showAllFilter == showAllResourceVersionsAction.filter);
 
-		BooleanPrefAction compareModeAction = new BooleanPrefAction(
+		compareModeAction = new BooleanPrefAction(
 				UIPreferences.RESOURCEHISTORY_COMPARE_MODE,
 				UIText.GitHistoryPage_CompareModeMenuLabel) {
 			@Override
@@ -370,7 +376,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
 		compareModeAction.setToolTipText(UIText.GitHistoryPage_compareMode);
 
-		BooleanPrefAction showAllBranchesAction = new BooleanPrefAction(
+		showAllBranchesAction = new BooleanPrefAction(
 				UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES,
 				UIText.GitHistoryPage_ShowAllBranchesMenuLabel) {
 
@@ -522,11 +528,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				refschangedRunnable = new Runnable() {
 					public void run() {
 						if (!getControl().isDisposed()) {
-							if (GitTraceLocation.HISTORYVIEW.isActive())
+							// TODO is this the right location?
+							if (GitTraceLocation.UI.isActive())
 								GitTraceLocation
 										.getTrace()
 										.trace(
-												GitTraceLocation.HISTORYVIEW
+												GitTraceLocation.UI
 														.getLocation(),
 												"Executing async repository changed event"); //$NON-NLS-1$
 							refschangedRunnable = null;
@@ -761,8 +768,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			revInfoSplit.setMaximizedControl(commentViewer.getControl());
 		} else if (!showComment && showFiles) {
 			graphDetailSplit.setMaximizedControl(null);
-			// the parent of the control!
-			revInfoSplit.setMaximizedControl(fileViewer.getControl().getParent());
+			revInfoSplit.setMaximizedControl(fileViewer.getControl());
 		} else if (!showComment && !showFiles) {
 			graphDetailSplit.setMaximizedControl(graph.getControl());
 		}
@@ -863,9 +869,15 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				UIText.ResourceHistory_toggleRevComment) {
 			void apply(final boolean value) {
 				layout();
+			}
+
+			@Override
+			public void run() {
+				super.run();
 				wrapCommentAction.setEnabled(isChecked());
 				fillCommentAction.setEnabled(isChecked());
 			}
+
 		};
 		actionsToDispose.add(a);
 		return a;
@@ -1222,25 +1234,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		return true;
 	}
 
-	/**
-	 * @param message
-	 *            the message to display instead of the control
-	 */
-	public void setErrorMessage(final String message) {
-		getHistoryPageSite().getShell().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				StackLayout layout = (StackLayout) getControl().getParent()
-						.getLayout();
-				if (message != null) {
-					errorText.setText(message);
-					layout.topControl = errorText;
-				} else {
-					errorText.setText(""); //$NON-NLS-1$
-					layout.topControl = getControl();
-				}
-				getControl().getParent().layout();
-			}
-		});
+	private void setErrorMessage(String message) {
+		StackLayout layout = (StackLayout) getControl().getParent().getLayout();
+		if (message != null) {
+			errorText.setText(message);
+			layout.topControl = errorText;
+		} else {
+			errorText.setText(""); //$NON-NLS-1$
+			layout.topControl = getControl();
+		}
+		getControl().getParent().layout();
 	}
 
 	/**
@@ -1482,6 +1485,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					Activator.handleError(e.getMessage(), e, false);
 				}
 			}
+			apply(isChecked());
 		}
 
 		abstract void apply(boolean value);
