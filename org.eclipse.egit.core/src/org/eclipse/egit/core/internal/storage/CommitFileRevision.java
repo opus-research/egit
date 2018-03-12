@@ -18,8 +18,8 @@ import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitTag;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -47,17 +47,17 @@ class CommitFileRevision extends GitFileRevision {
 	private ObjectId blobId;
 
 	CommitFileRevision(final Repository repo, final RevCommit rc,
-			final String path) {
-		this(repo, rc, path, null);
+			final String fileName) {
+		this(repo, rc, fileName, null);
 	}
 
 	CommitFileRevision(final Repository repo, final RevCommit rc,
-			final String path, final ObjectId blob) {
-		super(path);
+			final String fileName, final ObjectId blob) {
+		super(fileName);
 		db = repo;
 		commit = rc;
 		author = rc.getAuthorIdent();
-		this.path = path;
+		path = fileName;
 		blobId = blob;
 	}
 

@@ -21,8 +21,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseCommand;
@@ -137,19 +137,5 @@ public class RebaseOperation implements IEGitOperation {
 	 */
 	public RebaseResult getResult() {
 		return result;
-	}
-
-	/**
-	 * @return the {@link Repository}
-	 */
-	public final Repository getRepository() {
-		return repository;
-	}
-
-	/**
-	 * @return the {@link Operation} if it has been set, otherwise null
-	 */
-	public final Operation getOperation() {
-		return operation;
 	}
 }

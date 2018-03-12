@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2013 SAP AG and others.
+ * Copyright (c) 2011 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,19 +12,13 @@
 package org.eclipse.egit.ui.internal;
 
 import java.lang.reflect.Method;
-import java.net.URISyntaxException;
-import java.util.List;
 
 import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.RemoteConfig;
 
 /**
  * Resource-based property tester.
@@ -102,31 +96,9 @@ public class ResourcePropertyTester extends PropertyTester {
 		if ("isShared".equals(property)) //$NON-NLS-1$
 			return repository != null;
 		if (repository != null) {
-			if ("hasGerritConfiguration".equals(property)) //$NON-NLS-1$
-				return hasGerritConfiguration(repository);
-
-			RepositoryState state = repository.getRepositoryState();
-
-			if ("canAbortRebase".equals(property)) //$NON-NLS-1$
-				switch (state) {
-				case REBASING_INTERACTIVE:
-					return true;
-				case REBASING_REBASING:
-					return true;
-				default:
-					return false;
-				}
-
-			if ("canContinueRebase".equals(property)) //$NON-NLS-1$
-				switch (state) {
-				case REBASING_INTERACTIVE:
-					return true;
-				default:
-					return false;
-				}
-
 			// isSTATE checks repository state where STATE is the CamelCase version
 			// of the RepositoryState enum values.
+			RepositoryState state = repository.getRepositoryState();
 			if (property.length() > 3 && property.startsWith("is")) { //$NON-NLS-1$
 				// e.g. isCherryPickingResolved => CHERRY_PICKING_RESOLVED
 				String lookFor = property.substring(2,3) + property.substring(3).replaceAll("([A-Z])","_$1").toUpperCase();  //$NON-NLS-1$//$NON-NLS-2$
@@ -143,31 +115,6 @@ public class ResourcePropertyTester extends PropertyTester {
 			} catch (Exception e) {
 				// ignore
 			}
-		}
-		return false;
-	}
-
-	/**
-	 * @param repository
-	 * @return {@code true} if repository has been configured for Gerrit
-	 */
-	public static boolean hasGerritConfiguration(Repository repository) {
-		Config config = repository.getConfig();
-		if (GerritUtil.getCreateChangeId(config))
-			return true;
-		try {
-			List<RemoteConfig> remoteConfigs = RemoteConfig.getAllRemoteConfigs(config);
-			for (RemoteConfig remoteConfig : remoteConfigs) {
-				for (RefSpec pushSpec : remoteConfig.getPushRefSpecs()) {
-					boolean gerritPushRef = pushSpec.getDestination().startsWith(
-							GerritUtil.REFS_FOR);
-					if (gerritPushRef)
-						return true;
-				}
-			}
-		} catch (URISyntaxException e) {
-			// Assume it doesn't contain Gerrit configuration
-			return false;
 		}
 		return false;
 	}

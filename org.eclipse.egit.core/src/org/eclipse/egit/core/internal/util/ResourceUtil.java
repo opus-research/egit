@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, 2013 Laurent Goubet <laurent.goubet@obeo.fr>
+ * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *
  * All rights reserved. This program and the accompanying materials
@@ -13,7 +13,6 @@ package org.eclipse.egit.core.internal.util;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -32,7 +31,6 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceMappingContext;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -59,7 +57,8 @@ public class ResourceUtil {
 		IFile file = getFileForLocationURI(root, uri);
 		if (file != null)
 			return file;
-		return getContainerForLocationURI(root, uri);
+		IContainer[] containers = root.findContainersForLocationURI(uri);
+		return getExistingResourceWithShortestPath(containers);
 	}
 
 	/**
@@ -74,20 +73,6 @@ public class ResourceUtil {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		URI uri = URIUtil.toURI(location);
 		return getFileForLocationURI(root, uri);
-	}
-
-	/**
-	 * Return the corresponding container if it exists.
-	 * <p>
-	 * The returned container will be relative to the most nested non-closed project.
-	 *
-	 * @param location
-	 * @return the container, or null
-	 */
-	public static IContainer getContainerForLocation(IPath location) {
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		URI uri = URIUtil.toURI(location);
-		return getContainerForLocationURI(root, uri);
 	}
 
 	/**
@@ -120,7 +105,7 @@ public class ResourceUtil {
 	 *         occurring repository
 	 */
 	public static Map<Repository, Collection<String>> splitResourcesByRepository(
-			Collection<IResource> resources) {
+			IResource[] resources) {
 		Map<Repository, Collection<String>> result = new HashMap<Repository, Collection<String>>();
 		for (IResource resource : resources) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
@@ -131,17 +116,6 @@ public class ResourceUtil {
 			addPathToMap(repositoryMapping, path, result);
 		}
 		return result;
-	}
-
-	/**
-	 * @see #splitResourcesByRepository(Collection)
-	 * @param resources
-	 * @return a map containing a list of repository relative paths for each
-	 *         occurring repository
-	 */
-	public static Map<Repository, Collection<String>> splitResourcesByRepository(
-			IResource[] resources) {
-		return splitResourcesByRepository(Arrays.asList(resources));
 	}
 
 	/**
@@ -185,12 +159,6 @@ public class ResourceUtil {
 		return getExistingResourceWithShortestPath(files);
 	}
 
-	private static IContainer getContainerForLocationURI(IWorkspaceRoot root,
-			URI uri) {
-		IContainer[] containers = root.findContainersForLocationURI(uri);
-		return getExistingResourceWithShortestPath(containers);
-	}
-
 	private static <T extends IResource> T getExistingResourceWithShortestPath(
 			T[] resources) {
 		int shortestPathSegmentCount = Integer.MAX_VALUE;
@@ -223,16 +191,15 @@ public class ResourceUtil {
 
 	/**
 	 * This will query all model providers for those that are enabled on the
-	 * given resource and list all mappings available for that resource.
+	 * given file and list all mappings available for that file.
 	 *
-	 * @param resource
-	 *            The resource for which we need the associated resource
-	 *            mappings.
+	 * @param file
+	 *            The file for which we need the associated resource mappings.
 	 * @param context
 	 *            Context from which remote content could be retrieved.
 	 * @return All mappings available for that file.
 	 */
-	public static ResourceMapping[] getResourceMappings(IResource resource,
+	public static ResourceMapping[] getResourceMappings(IFile file,
 			ResourceMappingContext context) {
 		final IModelProviderDescriptor[] modelDescriptors = ModelProvider
 				.getModelProviderDescriptors();
@@ -241,12 +208,12 @@ public class ResourceUtil {
 		for (IModelProviderDescriptor candidate : modelDescriptors) {
 			try {
 				final IResource[] resources = candidate
-						.getMatchingResources(new IResource[] { resource, });
+						.getMatchingResources(new IResource[] { file, });
 				if (resources.length > 0) {
 					// get mappings from model provider if there are matching resources
 					final ModelProvider model = candidate.getModelProvider();
 					final ResourceMapping[] modelMappings = model.getMappings(
-							resource, context, new NullProgressMonitor());
+							file, context, null);
 					for (ResourceMapping mapping : modelMappings)
 						mappings.add(mapping);
 				}

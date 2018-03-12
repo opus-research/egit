@@ -118,10 +118,6 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 								.getURIs().isEmpty());
 			}
 		}
-		if (property.equals("canStash")) { //$NON-NLS-1$
-			Repository rep = node.getRepository();
-			return rep.getRepositoryState().canCommit();
-		}
 		if (property.equals("canMerge")) { //$NON-NLS-1$
 			Repository rep = node.getRepository();
 			if (rep.getRepositoryState() != RepositoryState.SAFE)
@@ -135,6 +131,24 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 				return false;
 			}
 		}
+
+		if (property.equals("canAbortRebase")) //$NON-NLS-1$
+			switch (node.getRepository().getRepositoryState()) {
+			case REBASING_INTERACTIVE:
+				return true;
+			case REBASING_REBASING:
+				return true;
+			default:
+				return false;
+			}
+
+		if (property.equals("canContinueRebase")) //$NON-NLS-1$
+			switch (node.getRepository().getRepositoryState()) {
+			case REBASING_INTERACTIVE:
+				return true;
+			default:
+				return false;
+			}
 
 		if ("isSubmodule".equals(property)) { //$NON-NLS-1$
 			RepositoryTreeNode<?> parent = node.getParent();

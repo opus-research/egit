@@ -17,11 +17,10 @@ import java.util.Random;
 import org.eclipse.jgit.junit.TestRepository;
 import org.eclipse.jgit.junit.http.SimpleHttpServer;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevBlob;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTag;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.transport.Daemon;
 import org.eclipse.jgit.transport.DaemonClient;
 import org.eclipse.jgit.transport.resolver.FileResolver;
@@ -63,7 +62,7 @@ public class SampleTestRepository {
 
 	private static final File trash = new File("target/trash");
 
-	private final TestRepository<Repository> src;
+	private final TestRepository<FileRepository> src;
 
 	private Daemon d;
 
@@ -89,7 +88,8 @@ public class SampleTestRepository {
 	 *
 	 * @param n
 	 *            hint how many random commits should be generated
-	 * @param serveHttp
+	 * @param
+	 * 			  serveHttp 
 	 *
 	 * @throws Exception
 	 */
@@ -103,14 +103,14 @@ public class SampleTestRepository {
 			serve();
 	}
 
-	private TestRepository<Repository> createRepository() throws Exception {
+	private TestRepository<FileRepository> createRepository() throws Exception {
 		String gitdirName = "test" + System.currentTimeMillis()
 				+ Constants.DOT_GIT;
 		File gitdir = new File(trash, gitdirName).getCanonicalFile();
-		Repository db = new RepositoryBuilder().setGitDir(gitdir).build();
+		FileRepository db = new FileRepository(gitdir);
 		assertFalse(gitdir.exists());
 		db.create();
-		return new TestRepository<Repository>(db);
+		return new TestRepository<FileRepository>(db);
 	}
 
 	private void generateSampleData(int n) throws Exception {

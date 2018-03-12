@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -17,7 +17,8 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
@@ -66,7 +67,8 @@ public class CreateRepositoryPage extends WizardPage {
 		Label directoryLabel = new Label(main, SWT.NONE);
 		directoryLabel.setText(UIText.CreateRepositoryPage_DirectoryLabel);
 		directoryText = new Text(main, SWT.BORDER);
-		directoryText.setText(UIUtils.getDefaultRepositoryDir());
+		directoryText.setText(Activator.getDefault().getPreferenceStore()
+				.getString(UIPreferences.DEFAULT_REPO_DIR));
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER)
 				.grab(true, false).applyTo(directoryText);
 		Button browseButton = new Button(main, SWT.PUSH);

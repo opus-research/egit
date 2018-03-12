@@ -19,10 +19,10 @@ import java.io.IOException;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog;
+import org.eclipse.egit.ui.internal.rebase.RebaseHelper;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -36,25 +36,13 @@ import org.eclipse.osgi.util.NLS;
  * Implements "Rebase" to the currently checked out {@link Ref}
  */
 public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
-
-	private Ref ref;
-
 	/** */
 	public RebaseCurrentRefCommand() {
-		super(UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
-				UIText.RebaseCurrentRefCommand_RebaseCanceledMessage);
+		super(null, null, null);
 	}
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		// we need the ref from the event in createRebaseOperation
-		ref = setRef(event);
-		if (ref == null)
-			return null;
-		return super.execute(event);
-	}
-
-	private Ref setRef(ExecutionEvent event) throws ExecutionException {
+		Ref ref;
 		ISelection currentSelection = getCurrentSelectionChecked(event);
 		if (currentSelection instanceof IStructuredSelection) {
 			IStructuredSelection selection = (IStructuredSelection) currentSelection;
@@ -69,9 +57,12 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 
 		BasicConfigurationDialog.show(repository);
 
-		String currentFullBranch = getFullBranch(repository);
-		if (ref != null && ref.getName().equals(currentFullBranch))
-			ref = null;
+		try {
+			if (ref != null && ref.getName().equals(repository.getFullBranch()))
+				ref = null;
+		} catch (IOException ignored) {
+			// Ignored
+		}
 
 		if (ref == null) {
 			RebaseTargetSelectionDialog rebaseTargetSelectionDialog = new RebaseTargetSelectionDialog(
@@ -87,9 +78,10 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 				return null;
 		}
 
-		jobname = NLS.bind(
-				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
-				Repository.shortenRefName(currentFullBranch), ref.getName());
+		String jobname = NLS.bind(
+				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName, ref
+						.getName());
+		RebaseHelper.runRebaseJob(repository, jobname, ref);
 		return null;
 	}
 
@@ -131,20 +123,4 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 		}
 	}
 
-	private String getFullBranch(Repository repository)
-			throws ExecutionException {
-		try {
-			return repository.getFullBranch();
-		} catch (IOException e) {
-			throw new ExecutionException(
-					UIText.RebaseCurrentRefCommand_ErrorGettingCurrentBranchMessage,
-					e);
-		}
-	}
-
-	@Override
-	protected RebaseOperation createRebaseOperation(Repository repository)
-			throws ExecutionException {
-		return new RebaseOperation(repository, ref);
-	}
 }

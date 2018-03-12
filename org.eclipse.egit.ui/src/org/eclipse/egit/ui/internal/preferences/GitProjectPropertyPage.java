@@ -18,7 +18,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
@@ -36,6 +35,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
@@ -186,7 +186,9 @@ public class GitProjectPropertyPage extends PropertyPage {
 
 	private Text createText(Composite parent) {
 		GridData data = new GridData();
-		Text text = UIUtils.createSelectableLabel(parent, SWT.LEFT);
+		Text text = new Text(parent, SWT.LEFT | SWT.READ_ONLY);
+		text.setBackground(Display.getDefault().getSystemColor(
+				SWT.COLOR_WIDGET_BACKGROUND));
 		data.horizontalSpan = 1;
 		data.horizontalAlignment = GridData.FILL;
 		text.setLayoutData(data);

@@ -3,8 +3,6 @@
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
- * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,9 +30,6 @@ public class UIIcons {
 
 	/** Decoration for resource removed from the index but not commit. */
 	public final static ImageDescriptor OVR_STAGED_REMOVE;
-
-	/** Decoration for resource that was removed and added with another name */
-	public static final ImageDescriptor OVR_STAGED_RENAME;
 
 	/** Decoration for resource not being tracked by Git */
 	public final static ImageDescriptor OVR_UNTRACKED;
@@ -81,8 +76,6 @@ public class UIIcons {
 	public final static ImageDescriptor ELCL16_REFRESH;
 	/** Linked with icon */
 	public final static ImageDescriptor ELCL16_SYNCED;
-	/** Filter icon */
-	public final static ImageDescriptor ELCL16_FILTER;
 
 	/** Enabled, checked, checkbox image */
 	public final static ImageDescriptor CHECKBOX_ENABLED_CHECKED;
@@ -126,9 +119,6 @@ public class UIIcons {
 
 	/** Repository tree node */
 	public final static ImageDescriptor REPOSITORY;
-
-	/** Gerrit Repository tree node */
-	public final static ImageDescriptor REPOSITORY_GERRIT;
 
 	/** New Repository button */
 	public final static ImageDescriptor NEW_REPOSITORY;
@@ -232,17 +222,8 @@ public class UIIcons {
 	/** Stash icon */
 	public final static ImageDescriptor STASH;
 
-	/** Search commit icon */
-	public final static ImageDescriptor SEARCH_COMMIT;
-
 	/** Hierarchy layout icon */
 	public final static ImageDescriptor HIERARCHY;
-
-	/** Flat presentation icon */
-	public final static ImageDescriptor FLAT;
-
-	/** Compact tree presentation icon */
-	public final static ImageDescriptor COMPACT;
 
 	/** base URL */
 	public final static URL base;
@@ -252,7 +233,6 @@ public class UIIcons {
 		OVR_STAGED = map("ovr/staged.gif"); //$NON-NLS-1$
 		OVR_STAGED_ADD = map("ovr/staged_added.gif"); //$NON-NLS-1$
 		OVR_STAGED_REMOVE = map("ovr/staged_removed.gif"); //$NON-NLS-1$
-		OVR_STAGED_RENAME = map("ovr/staged_renamed.gif"); //$NON-NLS-1$
 		OVR_UNTRACKED = map("ovr/untracked.gif"); //$NON-NLS-1$
 		OVR_CONFLICT = map("ovr/conflict.gif"); //$NON-NLS-1$
 		OVR_ASSUMEVALID = map("ovr/assume_valid.gif"); //$NON-NLS-1$
@@ -275,7 +255,6 @@ public class UIIcons {
 		ELCL16_CLEAR = map("elcl16/clear.gif"); //$NON-NLS-1$
 		ELCL16_REFRESH = map("elcl16/refresh.gif"); //$NON-NLS-1$
 		ELCL16_SYNCED = map("elcl16/synced.gif"); //$NON-NLS-1$
-		ELCL16_FILTER = map("elcl16/filter_ps.gif"); //$NON-NLS-1$
 		ELCL16_ID = map("elcl16/sha1.gif"); //$NON-NLS-1$
 		CHECKBOX_ENABLED_CHECKED = map("checkboxes/enabled_checked.gif"); //$NON-NLS-1$
 		CHECKBOX_ENABLED_UNCHECKED = map("checkboxes/enabled_unchecked.gif"); //$NON-NLS-1$
@@ -288,7 +267,6 @@ public class UIIcons {
 		PUSH = map("obj16/push.gif"); //$NON-NLS-1$
 		PULL = map("obj16/pull.gif"); //$NON-NLS-1$
 		REPOSITORY = map("obj16/repository_rep.gif"); //$NON-NLS-1$
-		REPOSITORY_GERRIT = map("obj16/repository_gerrit.gif"); //$NON-NLS-1$
 		NEW_REPOSITORY = map("etool16/newlocation_wiz.gif"); //$NON-NLS-1$
 		REMOTE_REPOSITORY = map("obj16/remote_entry_tbl.gif"); //$NON-NLS-1$
 		REMOTE_SPEC = map("obj16/remotespec.gif"); //$NON-NLS-1$
@@ -325,10 +303,7 @@ public class UIIcons {
 		SUBMODULES = map("obj16/submodules.gif"); //$NON-NLS-1$
 		CLEAN = map("obj16/clean_obj.gif"); //$NON-NLS-1$
 		STASH = map("obj16/stash.png"); //$NON-NLS-1$
-		SEARCH_COMMIT = map("obj16/search-commit.gif"); //$NON-NLS-1$
 		HIERARCHY = map("elcl16/hierarchicalLayout.gif"); //$NON-NLS-1$
-		FLAT = map("elcl16/flatLayout.gif"); //$NON-NLS-1$
-		COMPACT = map("elcl16/compactLayout.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

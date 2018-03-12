@@ -64,7 +64,7 @@ public class ToggleableWarningLabel extends Composite {
 	 * Hide the warning label.
 	 */
 	public void hideMessage() {
-		if (getVisible())
+		if (isVisible())
 			changeVisibility(false);
 	}
 
