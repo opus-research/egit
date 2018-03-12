@@ -110,12 +110,11 @@ class CommitFileDiffViewer extends TableViewer {
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				final FileDiff d = (FileDiff) iss.getFirstElement();
-				if (compareMode) {
-					if (d.getBlobs().length <= 2)
+				if (walker != null && d.getBlobs().length <= 2)
+					if (compareMode)
 						showTwoWayFileDiff(d);
-				}
-				else
-					openFileInEditor(d);
+					else
+						openFileInEditor(d);
 			}
 		});
 
@@ -158,7 +157,7 @@ class CommitFileDiffViewer extends TableViewer {
 					d.getChange().equals(ChangeType.DELETE)?
 							d.getCommit().getParent(0) : d.getCommit(),
 					db, d.getChange().equals(ChangeType.DELETE)?
-							d.getBlobs()[0] : d.getBlobs()[d.getBlobs().length - 1]);
+							d.getBlobs()[0] : d.getBlobs()[1]);
 			if (rev != null)
 				EgitUiEditorUtils.openEditor(page, rev,
 						new NullProgressMonitor());
