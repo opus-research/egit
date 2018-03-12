@@ -105,7 +105,7 @@ class CommitMessageViewer extends TextViewer implements
 	private static final Cursor SYS_LINK_CURSOR = PlatformUI.getWorkbench()
 			.getDisplay().getSystemCursor(SWT.CURSOR_HAND);
 
-	private static final DateFormat fmt = new SimpleDateFormat(
+	private final DateFormat fmt = new SimpleDateFormat(
 			"yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
 
 	private final Cursor sys_normalCursor;
@@ -398,11 +398,6 @@ class CommitMessageViewer extends TextViewer implements
 		if (trace)
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation());
-		if (commit.getParentCount() != 1) {
-			d.append(UIText.CommitMessageViewer_CanNotRenderDiffMessage);
-			return;
-		}
-
 		try {
 			monitor.beginTask(UIText.CommitMessageViewer_BuildDiffListTaskName,
 					currentDiffs.size());
@@ -808,9 +803,9 @@ class CommitMessageViewer extends TextViewer implements
 					- matcher.start(), null, null, SWT.ITALIC));
 		}
 
-		// build the asynchronously to ensure UI
+		// build the list of file diffs asynchronously to ensure UI
 		// responsiveness
-		if (!currentDiffs.isEmpty())
+		if (!currentDiffs.isEmpty() && commit.getParentCount() == 1)
 			buildDiffs(d, styles, monitor, trace);
 
 		if (trace)

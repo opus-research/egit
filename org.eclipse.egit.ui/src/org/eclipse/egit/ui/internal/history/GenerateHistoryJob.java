@@ -76,10 +76,8 @@ class GenerateHistoryJob extends Job {
 					if (incomplete || oldsz == allCommits.size())
 						break;
 
-					monitor
-							.setTaskName(NLS
-									.bind(
-											"Found {0} commits", Integer.valueOf(allCommits.size()))); //$NON-NLS-1$
+					monitor.setTaskName(NLS
+							.bind("Found {0} commits", Integer.valueOf(allCommits.size()))); //$NON-NLS-1$
 					final long now = System.currentTimeMillis();
 					if (now - lastUpdateAt < 2000 && lastUpdateCnt > 0)
 						continue;
