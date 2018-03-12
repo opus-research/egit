@@ -19,7 +19,6 @@ import org.eclipse.jsch.ui.UserInfoPrompter;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import com.jcraft.jsch.UserInfo;
 
 class EclipseSshSessionFactory extends JschConfigSessionFactory {
 	private final IJSchService provider;
@@ -58,9 +57,8 @@ class EclipseSshSessionFactory extends JschConfigSessionFactory {
 
 	@Override
 	protected void configure(final OpenSshConfig.Host hc, final Session session) {
-		UserInfo userInfo = session.getUserInfo();
-		if (!hc.isBatchMode()
-				&& (userInfo == null || userInfo.getPassword() == null))
+		if (!hc.isBatchMode() && session.getUserInfo() == null) {
 			new UserInfoPrompter(session);
+		}
 	}
 }
