@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2011, IBM Corporation
- * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,9 +22,6 @@ import org.eclipse.jgit.util.GitDateFormatter;
 import org.eclipse.jgit.util.GitDateFormatter.Format;
 import org.eclipse.swt.graphics.Image;
 
-/**
- * A Label Provider for Commits
- */
 class GraphLabelProvider extends BaseLabelProvider implements
 		ITableLabelProvider {
 	private GitDateFormatter dateFormatter;
@@ -40,10 +36,7 @@ class GraphLabelProvider extends BaseLabelProvider implements
 
 	private Format format = Format.LOCALE;
 
-	/**
-	 * Default constructor
-	 */
-	public GraphLabelProvider() {
+	GraphLabelProvider() {
 	}
 
 	public String getColumnText(final Object element, final int columnIndex) {
