@@ -179,12 +179,8 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 		return new Comparator<RepositoryCommit>() {
 
 			public int compare(RepositoryCommit o1, RepositoryCommit o2) {
-				int compare = o1.getRepositoryName().compareToIgnoreCase(
-						o2.getRepositoryName());
-				if (compare == 0)
-					compare = o1.getRevCommit().name()
-							.compareTo(o2.getRevCommit().name());
-				return compare;
+				return o1.getRevCommit().name()
+						.compareTo(o2.getRevCommit().name());
 			}
 		};
 	}
