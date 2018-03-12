@@ -37,7 +37,7 @@ public class StagingViewContentProvider implements
 
 	public void inputChanged(Viewer viewer, Object oldInput,
 			Object newInput) {
-		if (newInput != null && newInput instanceof StagingViewUpdate) {
+		if (newInput != null) {
 			StagingViewUpdate update = (StagingViewUpdate)newInput;
 
 			if (update.repository == null || update.indexDiff == null)
@@ -49,7 +49,7 @@ public class StagingViewContentProvider implements
 				}
 			});
 
-			if (update.changedResources != null && update.changedResources.size() != 0) {
+			if (update.changedResources != null) {
 				nodes.addAll(Arrays.asList(content));
 				for (String res : update.changedResources)
 					for (StagingEntry entry : content)

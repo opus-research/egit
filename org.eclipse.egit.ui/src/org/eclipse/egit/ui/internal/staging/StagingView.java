@@ -11,7 +11,6 @@ package org.eclipse.egit.ui.internal.staging;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -171,8 +170,6 @@ public class StagingView extends ViewPart {
 	private final List<ListenerHandle> myListeners = new LinkedList<ListenerHandle>();
 
 	private ISelectionListener selectionChangedListener;
-
-	private IResourceChangeListener resourceChangeListener;
 
 	private Repository currentRepository;
 
@@ -412,7 +409,7 @@ public class StagingView extends ViewPart {
 		else
 			preferenceStore.setDefault(UIPreferences.STAGING_VIEW_SYNC_SELECTION, true);
 
-		resourceChangeListener = new IResourceChangeListener() {
+		IResourceChangeListener resourceChangeListener = new IResourceChangeListener() {
 			public void resourceChanged(IResourceChangeEvent event) {
 				final Collection<String> resourcesToUpdate = new HashSet<String>();
 
@@ -925,9 +922,10 @@ public class StagingView extends ViewPart {
 			public void run() {
 				if (form.isDisposed())
 					return;
-				StagingViewUpdate update = new StagingViewUpdate(repository, indexDiff, Collections.<String> emptyList());
-				unstagedTableViewer.setInput(update);
-				stagedTableViewer.setInput(update);
+				unstagedTableViewer.setInput(new Object[] { repository,
+						indexDiff });
+				stagedTableViewer
+						.setInput(new Object[] { repository, indexDiff });
 				commitAction.setEnabled(repository.getRepositoryState()
 						.canCommit());
 				form.setText(StagingView.getRepositoryName(repository));
@@ -1144,7 +1142,6 @@ public class StagingView extends ViewPart {
 		ISelectionService srv = (ISelectionService) getSite().getService(
 				ISelectionService.class);
 		srv.removePostSelectionListener(selectionChangedListener);
-		ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
 
 		removeListeners();
 	}
