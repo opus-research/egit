@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.view.repositories;
 
-import static org.eclipse.swtbot.swt.finder.waits.Conditions.widgetIsEnabled;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -306,7 +305,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.textInGroup(UIText.RepositorySelectionPage_groupLocation, 0)
 				.setText(repositoryFile.getPath());
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
-		bot.waitUntil(widgetIsEnabled(shell.bot().tree()), 60000);
+		waitInUI();
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		waitInUI();
 		// for some reason textWithLabel doesn't work; 0 is path text
