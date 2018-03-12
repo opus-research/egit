@@ -25,7 +25,6 @@ import org.eclipse.egit.core.op.PushOperation;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jgit.lib.Repository;
@@ -106,9 +105,8 @@ public class PushConfiguredRemoteAction {
 			for (final URIish uri : pushURIs)
 				spec.addURIRefUpdates(uri,
 						ConfirmationPage.copyUpdates(updates));
-			int timeout = Activator.getDefault().getPreferenceStore().getInt(
-					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-			op = new PushOperation(repository, spec, dryRun, config, timeout);
+
+			op = new PushOperation(repository, spec, dryRun, config);
 
 		} catch (URISyntaxException e) {
 			pushException = e;

@@ -27,7 +27,6 @@ import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelP
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -99,21 +98,17 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements ISty
 				} else if (refName.startsWith(Constants.R_TAGS)) {
 					// tag: HEAD would be on the commit id to which the tag is
 					// pointing
-					ObjectId id = node.getRepository().resolve(refName);
-					if (id == null)
-						return image;
 					RevWalk rw = new RevWalk(node.getRepository());
-					RevTag tag = rw.parseTag(id);
+					RevTag tag = rw.parseTag(node.getRepository().resolve(
+							refName));
 					compareString = tag.getObject().name();
 
 				} else if (refName.startsWith(Constants.R_REMOTES)) {
 					// remote branch: HEAD would be on the commit id to which
 					// the branch is pointing
-					ObjectId id = node.getRepository().resolve(refName);
-					if (id == null)
-						return image;
 					RevWalk rw = new RevWalk(node.getRepository());
-					RevCommit commit = rw.parseCommit(id);
+					RevCommit commit = rw.parseCommit(node.getRepository()
+							.resolve(refName));
 					compareString = commit.getId().name();
 				} else {
 					// some other symbolic reference

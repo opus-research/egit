@@ -69,7 +69,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		final File workdir = new File(testDirectory, "Cloned");
 
 		CloneOperation op = new CloneOperation(uri, true, null, workdir,
-				"refs/heads/master", "origin", 0);
+				"refs/heads/master", "origin");
 		op.run(null);
 
 		clonedRepositoryFile = new File(workdir, Constants.DOT_GIT);

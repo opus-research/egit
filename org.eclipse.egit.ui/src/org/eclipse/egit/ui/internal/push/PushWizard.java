@@ -24,7 +24,6 @@ import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
@@ -197,9 +196,7 @@ public class PushWizard extends Wizard {
 					spec.addURIRefUpdates(uri, ConfirmationPage
 							.copyUpdates(updates));
 			}
-			int timeout = Activator.getDefault().getPreferenceStore().getInt(
-					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-			return new PushOperation(localDb, spec, false, config, timeout);
+			return new PushOperation(localDb, spec, false, config);
 		} catch (final IOException e) {
 			ErrorDialog.openError(getShell(),
 					UIText.PushWizard_cantPrepareUpdatesTitle,

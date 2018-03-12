@@ -2294,12 +2294,6 @@ public class UIText extends NLS {
 	public static String NewRepositoryWizard_WizardTitle;
 
 	/** */
-	public static String RemoteConnectionPreferencePage_TimeoutLabel;
-
-	/** */
-	public static String RemoteConnectionPreferencePage_ZeroValueTooltip;
-
-	/** */
 	public static String RemoteSelectionCombo_sourceName;
 
 	/** */
