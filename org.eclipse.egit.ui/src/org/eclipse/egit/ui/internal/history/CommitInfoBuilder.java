@@ -167,33 +167,30 @@ public class CommitInfoBuilder {
 			d.append(LF);
 		}
 
-		if(Activator.getDefault().getPreferenceStore().getBoolean(
-				UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE)) {
-			try (RevWalk rw = new RevWalk(db)) {
-				List<Ref> branches = getBranches(commit, allRefs, db);
-				if (!branches.isEmpty()) {
-					d.append(UIText.CommitMessageViewer_branches);
-					d.append(": "); //$NON-NLS-1$
-					int count = 0;
-					for (Iterator<Ref> i = branches.iterator(); i.hasNext();) {
-						Ref head = i.next();
-						RevCommit p;
-						p = rw.parseCommit(head.getObjectId());
-						addLink(d, formatHeadRef(head), styles, p);
-						if (i.hasNext()) {
-							if (count++ <= MAXBRANCHES) {
-								d.append(", "); //$NON-NLS-1$
-							} else {
-								d.append(NLS.bind(UIText.CommitMessageViewer_MoreBranches, Integer.valueOf(branches.size() - MAXBRANCHES)));
-								break;
-							}
+		try {
+			List<Ref> branches = getBranches(commit, allRefs, db);
+			if (!branches.isEmpty()) {
+				d.append(UIText.CommitMessageViewer_branches);
+				d.append(": "); //$NON-NLS-1$
+				int count = 0;
+				for (Iterator<Ref> i = branches.iterator(); i.hasNext();) {
+					Ref head = i.next();
+					RevCommit p;
+					p = new RevWalk(db).parseCommit(head.getObjectId());
+					addLink(d, formatHeadRef(head), styles, p);
+					if (i.hasNext()) {
+						if (count++ <= MAXBRANCHES) {
+							d.append(", "); //$NON-NLS-1$
+						} else {
+							d.append(NLS.bind(UIText.CommitMessageViewer_MoreBranches, Integer.valueOf(branches.size() - MAXBRANCHES)));
+							break;
 						}
 					}
-					d.append(LF);
 				}
-			} catch (IOException e) {
-				Activator.logError(e.getMessage(), e);
+				d.append(LF);
 			}
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
 		}
 
 		String tagsString = getTagsString();
@@ -206,13 +203,13 @@ public class CommitInfoBuilder {
 
 		if (Activator.getDefault().getPreferenceStore().getBoolean(
 				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE)) {
-			try (RevWalk rw = new RevWalk(db)) {
+			try {
 				monitor.setTaskName(UIText.CommitMessageViewer_GettingPreviousTagTaskName);
 				Ref followingTag = getNextTag(false, monitor);
 				if (followingTag != null) {
 					d.append(UIText.CommitMessageViewer_follows);
 					d.append(": "); //$NON-NLS-1$
-					RevCommit p = rw.parseCommit(followingTag
+					RevCommit p = new RevWalk(db).parseCommit(followingTag
 							.getObjectId());
 					addLink(d, formatTagRef(followingTag), styles, p);
 					d.append(LF);
@@ -221,13 +218,13 @@ public class CommitInfoBuilder {
 				Activator.logError(e.getMessage(), e);
 			}
 
-			try (RevWalk rw = new RevWalk(db)) {
+			try {
 				monitor.setTaskName(UIText.CommitMessageViewer_GettingNextTagTaskName);
 				Ref precedingTag = getNextTag(true, monitor);
 				if (precedingTag != null) {
 					d.append(UIText.CommitMessageViewer_precedes);
 					d.append(": "); //$NON-NLS-1$
-					RevCommit p = rw.parseCommit(precedingTag
+					RevCommit p = new RevWalk(db).parseCommit(precedingTag
 							.getObjectId());
 					addLink(d, formatTagRef(precedingTag), styles, p);
 					d.append(LF);
@@ -296,9 +293,12 @@ public class CommitInfoBuilder {
 			Collection<Ref> allRefs, Repository db)
 			throws MissingObjectException, IncorrectObjectTypeException,
 			IOException {
-		try (RevWalk revWalk = new RevWalk(db)) {
+		RevWalk revWalk = new RevWalk(db);
+		try {
 			revWalk.setRetainBody(false);
 			return RevWalkUtils.findBranchesReachableFrom(commit, revWalk, allRefs);
+		} finally {
+			revWalk.dispose();
 		}
 	}
 
@@ -372,48 +372,43 @@ public class CommitInfoBuilder {
 			throws IOException, OperationCanceledException {
 		if (monitor.isCanceled())
 			throw new OperationCanceledException();
-		try (RevWalk revWalk = new RevWalk(db)) {
-			revWalk.setRetainBody(false);
-			Map<String, Ref> tagsMap = db.getTags();
-			Ref tagRef = null;
+		RevWalk revWalk = new RevWalk(db);
+		revWalk.setRetainBody(false);
+		Map<String, Ref> tagsMap = db.getTags();
+		Ref tagRef = null;
 
-			for (Ref ref : tagsMap.values()) {
+		for (Ref ref : tagsMap.values()) {
+			if (monitor.isCanceled())
+				throw new OperationCanceledException();
+			// both RevCommits must be allocated using same RevWalk instance,
+			// otherwise isMergedInto returns wrong result!
+			RevCommit current = revWalk.parseCommit(commit);
+			// tags can point to any object, we only want tags pointing at
+			// commits
+			RevObject any = revWalk.peel(revWalk.parseAny(ref.getObjectId()));
+			if (!(any instanceof RevCommit))
+				continue;
+			RevCommit newTag = (RevCommit) any;
+			if (newTag.getId().equals(commit))
+				continue;
+
+			// check if newTag matches our criteria
+			if (isMergedInto(revWalk, newTag, current, searchDescendant)) {
 				if (monitor.isCanceled())
 					throw new OperationCanceledException();
-				// both RevCommits must be allocated using same RevWalk
-				// instance,
-				// otherwise isMergedInto returns wrong result!
-				RevCommit current = revWalk.parseCommit(commit);
-				// tags can point to any object, we only want tags pointing at
-				// commits
-				RevObject any = revWalk
-						.peel(revWalk.parseAny(ref.getObjectId()));
-				if (!(any instanceof RevCommit))
-					continue;
-				RevCommit newTag = (RevCommit) any;
-				if (newTag.getId().equals(commit))
-					continue;
+				if (tagRef != null) {
+					RevCommit oldTag = revWalk
+							.parseCommit(tagRef.getObjectId());
 
-				// check if newTag matches our criteria
-				if (isMergedInto(revWalk, newTag, current, searchDescendant)) {
-					if (monitor.isCanceled())
-						throw new OperationCanceledException();
-					if (tagRef != null) {
-						RevCommit oldTag = revWalk
-								.parseCommit(tagRef.getObjectId());
-
-						// both oldTag and newTag satisfy search criteria, so
-						// taking
-						// the closest one
-						if (isMergedInto(revWalk, oldTag, newTag,
-								searchDescendant))
-							tagRef = ref;
-					} else
+					// both oldTag and newTag satisfy search criteria, so taking
+					// the closest one
+					if (isMergedInto(revWalk, oldTag, newTag, searchDescendant))
 						tagRef = ref;
-				}
+				} else
+					tagRef = ref;
 			}
-			return tagRef;
 		}
+		return tagRef;
 	}
 
 	/**

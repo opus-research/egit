@@ -256,8 +256,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		BooleanPrefAction showTagSequenceAction;
 
-		BooleanPrefAction showBranchSequenceAction;
-
 		BooleanPrefAction wrapCommentAction;
 
 		BooleanPrefAction fillCommentAction;
@@ -310,7 +308,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			createShowEmailAddressesAction();
 			createShowNotesAction();
 			createShowTagSequenceAction();
-			createShowBranchSequenceAction();
 			createWrapCommentAction();
 			createFillCommentAction();
 			createFollowRenamesAction();
@@ -520,20 +517,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			};
 			showTagSequenceAction.apply(showTagSequenceAction.isChecked());
 			actionsToDispose.add(showTagSequenceAction);
-		}
-
-		private void createShowBranchSequenceAction() {
-			showBranchSequenceAction = new BooleanPrefAction(
-					UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE,
-					UIText.ResourceHistory_ShowBranchSequence) {
-				@Override
-				void apply(boolean value) {
-					// nothing, just set the Preference
-				}
-			};
-			showBranchSequenceAction
-					.apply(showBranchSequenceAction.isChecked());
-			actionsToDispose.add(showBranchSequenceAction);
 		}
 
 		private void createWrapCommentAction() {
@@ -1127,7 +1110,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		IMenuManager showInMessageManager = new MenuManager(
 				UIText.GitHistoryPage_InRevisionCommentSubMenuLabel);
 		showSubMenuMgr.add(showInMessageManager);
-		showInMessageManager.add(actions.showBranchSequenceAction);
 		showInMessageManager.add(actions.showTagSequenceAction);
 		showInMessageManager.add(actions.wrapCommentAction);
 		showInMessageManager.add(actions.fillCommentAction);
@@ -1421,7 +1403,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showHead(Repository repo) {
-		try (RevWalk rw = new RevWalk(repo)) {
+		RevWalk rw = new RevWalk(repo);
+		try {
 			ObjectId head = repo.resolve(Constants.HEAD);
 			if (head == null)
 				return;
@@ -1433,7 +1416,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showRef(Ref ref, Repository repo) {
-		try (RevWalk rw = new RevWalk(repo)) {
+		RevWalk rw = new RevWalk(repo);
+		try {
 			RevCommit c = rw.parseCommit(ref.getLeaf().getObjectId());
 			graph.selectCommit(c);
 		} catch (IOException e) {
@@ -1442,7 +1426,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void showTag(Ref ref, Repository repo) {
-		try (RevWalk rw = new RevWalk(repo)) {
+		RevWalk rw = new RevWalk(repo);
+		try {
 			RevCommit c = null;
 			RevObject any = rw.parseAny(ref.getLeaf().getObjectId());
 			if (any instanceof RevCommit)
