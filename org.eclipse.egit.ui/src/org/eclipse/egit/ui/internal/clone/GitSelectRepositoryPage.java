@@ -24,7 +24,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
-import org.eclipse.egit.ui.internal.repository.RepositorySearchDialog;
+import org.eclipse.egit.ui.internal.repository.RepositorySearchWizard;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.Dialog;
@@ -62,8 +62,6 @@ public class GitSelectRepositoryPage extends WizardPage {
 	private TreeViewer tv;
 
 	private Button addRepo;
-
-	private Button cloneRepo;
 
 	private IPreferenceChangeListener configChangeListener;
 
@@ -120,27 +118,6 @@ public class GitSelectRepositoryPage extends WizardPage {
 		GridLayoutFactory.fillDefaults().numColumns(1).applyTo(tb);
 		GridDataFactory.fillDefaults().grab(false, true).applyTo(tb);
 
-		cloneRepo = new Button(tb, SWT.PUSH);
-		cloneRepo.setText(UIText.GitSelectRepositoryPage_CloneButton);
-		cloneRepo.setToolTipText(UIText.GitSelectRepositoryPage_CloneTooltip);
-
-		GridDataFactory.fillDefaults().grab(false, false).align(SWT.FILL,
-				SWT.BEGINNING).applyTo(cloneRepo);
-
-		cloneRepo.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent event) {
-				GitCloneWizard cloneWizard = new GitCloneWizard();
-				cloneWizard.setCallerRunsCloneOperation(true);
-				WizardDialog dlg = new WizardDialog(getShell(), cloneWizard);
-				dlg.setHelpAvailable(true);
-				if (dlg.open() == Window.OK)
-					cloneWizard.runCloneOperation(getContainer());
-				checkPage();
-			}
-
-		});
-
 		addRepo = new Button(tb, SWT.PUSH);
 		GridDataFactory.fillDefaults().grab(true, false).align(SWT.FILL,
 				SWT.BEGINNING).applyTo(addRepo);
@@ -150,13 +127,13 @@ public class GitSelectRepositoryPage extends WizardPage {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-
 				List<String> configuredDirs = util.getConfiguredRepositories();
-				RepositorySearchDialog dlg = new RepositorySearchDialog(
-						getShell(), configuredDirs);
-				if (dlg.open() == Window.OK && dlg.getDirectories().size() > 0) {
-
-					Set<String> dirs = dlg.getDirectories();
+				RepositorySearchWizard wizard = new RepositorySearchWizard(
+						configuredDirs);
+				WizardDialog dlg = new WizardDialog(getShell(), wizard);
+				if (dlg.open() == Window.OK
+						&& !wizard.getDirectories().isEmpty()) {
+					Set<String> dirs = wizard.getDirectories();
 					for (String dir : dirs)
 						util.addConfiguredRepository(new File(dir));
 					checkPage();
