@@ -19,9 +19,11 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,14 +32,12 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -70,13 +70,13 @@ public class CommitActionHandler extends RepositoryActionHandler {
 
 	private Map<Repository, IndexDiff> indexDiffs;
 
-	private Set<IFile> notIndexed;
+	private ArrayList<IFile> notIndexed;
 
-	private Set<IFile> indexChanges;
+	private ArrayList<IFile> indexChanges;
 
-	private Set<IFile> notTracked;
+	private ArrayList<IFile> notTracked;
 
-	private Set<IFile> files;
+	private ArrayList<IFile> files;
 
 	private RevCommit previousCommit;
 
@@ -168,7 +168,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		CommitDialog commitDialog = new CommitDialog(getShell(event));
 		commitDialog.setAmending(amending);
 		commitDialog.setAmendAllowed(amendAllowed);
-		commitDialog.setFiles(files, indexDiffs);
+		commitDialog.setFileList(files, indexDiffs);
 		commitDialog.setPreselectedFiles(getSelectedFiles(event));
 		commitDialog.setAuthor(author);
 		commitDialog.setCommitter(committer);
@@ -237,10 +237,10 @@ public class CommitActionHandler extends RepositoryActionHandler {
 	}
 
 	private void resetState() {
-		files = new LinkedHashSet<IFile>();
-		notIndexed = new LinkedHashSet<IFile>();
-		indexChanges = new LinkedHashSet<IFile>();
-		notTracked = new LinkedHashSet<IFile>();
+		files = new ArrayList<IFile>();
+		notIndexed = new ArrayList<IFile>();
+		indexChanges = new ArrayList<IFile>();
+		notTracked = new ArrayList<IFile>();
 		amending = false;
 		previousCommit = null;
 		indexDiffs = new HashMap<Repository, IndexDiff>();
@@ -258,9 +258,9 @@ public class CommitActionHandler extends RepositoryActionHandler {
 	 *         the user's selection
 	 * @throws ExecutionException
 	 */
-	private Set<IFile> getSelectedFiles(ExecutionEvent event)
+	private Collection<IFile> getSelectedFiles(ExecutionEvent event)
 			throws ExecutionException {
-		Set<IFile> preselectionCandidates = new LinkedHashSet<IFile>();
+		List<IFile> preselectionCandidates = new ArrayList<IFile>();
 		// get the resources the user selected
 		IResource[] selectedResources = getSelectedResources(event);
 		// iterate through all the files that may be committed
@@ -314,25 +314,17 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		}
 
 		monitor.beginTask(UIText.CommitActionHandler_calculatingChanges,
-				repositories.size() * 1000);
+				repositories.size());
 		for (Map.Entry<Repository, HashSet<IProject>> entry : repositories
 				.entrySet()) {
 			Repository repository = entry.getKey();
-			EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(monitor);
+			monitor.subTask(NLS.bind(UIText.CommitActionHandler_repository,
+					repository.getDirectory().getPath()));
 			HashSet<IProject> projects = entry.getValue();
-			CountingVisitor counter = new CountingVisitor();
-			for (IProject p : projects) {
-				try {
-					p.accept(counter);
-				} catch (CoreException e) {
-					// ignore
-				}
-			}
+
 			IndexDiff indexDiff = new IndexDiff(repository, Constants.HEAD,
 					IteratorService.createInitialIterator(repository));
-			indexDiff.diff(jgitMonitor, counter.count, 0, NLS.bind(
-					UIText.CommitActionHandler_repository, repository
-							.getDirectory().getPath()));
+			indexDiff.diff();
 			indexDiffs.put(repository, indexDiff);
 
 			for (IProject project : projects) {
@@ -345,20 +337,14 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			}
 			if (monitor.isCanceled())
 				throw new OperationCanceledException();
+			monitor.worked(1);
 		}
 		monitor.done();
 	}
 
-	static class CountingVisitor implements IResourceVisitor {
-		int count;
-		public boolean visit(IResource resource) throws CoreException {
-			count++;
-			return true;
-		}
-	}
 
 	private void includeList(IProject project, Set<String> added,
-			Set<IFile> category) {
+			ArrayList<IFile> category) {
 		String repoRelativePath = RepositoryMapping.getMapping(project)
 				.getRepoRelativePath(project);
 		if (repoRelativePath.length() > 0) {

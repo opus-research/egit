@@ -21,6 +21,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -50,6 +51,8 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 	private GitCreateGeneralProjectPage myCreateGeneralProjectPage;
 
 	private GitProjectsImportPage myProjectsImportPage;
+
+	private GitShareProjectsPage mySharePage;
 
 	/**
 	 * @param repository
@@ -87,6 +90,8 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 			}
 		};
 		addPage(myProjectsImportPage);
+		mySharePage = new GitShareProjectsPage();
+		addPage(mySharePage);
 	}
 
 	@Override
@@ -98,7 +103,11 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 			case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
 				return myProjectsImportPage;
 			case GitSelectWizardPage.NEW_WIZARD:
-				return null;
+				if (mySelectionPage.getActionSelection() != GitSelectWizardPage.ACTION_DIALOG_SHARE)
+					return null;
+				else
+					return mySharePage;
+
 			case GitSelectWizardPage.GENERAL_WIZARD:
 				return myCreateGeneralProjectPage;
 
@@ -108,20 +117,30 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 
 		} else if (page == myCreateGeneralProjectPage
 				|| page == myProjectsImportPage) {
-			return null;
+
+			if (mySelectionPage.getActionSelection() != GitSelectWizardPage.ACTION_DIALOG_SHARE)
+				return null;
+			else
+				return mySharePage;
 		}
 		return super.getNextPage(page);
 	}
 
 	@Override
 	public boolean canFinish() {
+
+		boolean showSharePage = mySelectionPage.getActionSelection() == GitSelectWizardPage.ACTION_DIALOG_SHARE;
+		boolean showShareComplete = !showSharePage
+				|| mySharePage.isPageComplete();
+
 		switch (mySelectionPage.getWizardSelection()) {
 		case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
-			return myProjectsImportPage.isPageComplete();
+			return myProjectsImportPage.isPageComplete() && showShareComplete;
 		case GitSelectWizardPage.NEW_WIZARD:
-			return true;
+			return showShareComplete;
 		case GitSelectWizardPage.GENERAL_WIZARD:
-			return myCreateGeneralProjectPage.isPageComplete();
+			return myCreateGeneralProjectPage.isPageComplete()
+					&& showShareComplete;
 		}
 		return super.canFinish();
 
@@ -131,10 +150,52 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 	public boolean performFinish() {
 
 		try {
+
+			final int actionSelection = mySelectionPage.getActionSelection();
+
+			final IProject[] projectsToShare;
+			if (actionSelection == GitSelectWizardPage.ACTION_DIALOG_SHARE)
+				projectsToShare = mySharePage.getSelectedProjects();
+			else
+				projectsToShare = null;
+
 			getContainer().run(true, true, new IRunnableWithProgress() {
+
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
+
+					if (actionSelection != GitSelectWizardPage.ACTION_DIALOG_SHARE) {
+						// in case of the share page, the import is done by the
+						// share page itself
+						// TODO this currently must be run in the UI Thread due
+						// to access to
+						// SWT widgets
 						importProjects();
+					}
+
+					if (actionSelection != GitSelectWizardPage.ACTION_NO_SHARE) {
+
+						// TODO scheduling rule?
+						IProject[] projects;
+						if (projectsToShare == null)
+							projects = getAddedProjects();
+						else
+							projects = projectsToShare;
+						for (IProject prj : projects) {
+							if (monitor.isCanceled())
+								throw new InterruptedException();
+							//
+							ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
+									prj, myRepository.getDirectory());
+							try {
+								connectProviderOperation.execute(monitor);
+							} catch (CoreException e) {
+								throw new InvocationTargetException(e);
+							}
+						}
+
+					}
+
 				}
 			});
 		} catch (InvocationTargetException e) {
