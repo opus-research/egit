@@ -22,12 +22,6 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_filterText;
 
 	/** */
-	public static String AbstractHitoryViewCommandHandler_CanNotGetCommitMessage;
-
-	/** */
-	public static String AbstractHitoryViewCommandHandler_NoRepositoryMessage;
-
-	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
