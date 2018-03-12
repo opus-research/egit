@@ -2034,14 +2034,7 @@ public class UIText extends NLS {
 	/** */
 	public static String CommitCombo_showSuggestedCommits;
 
-	/**
-	 * Do not in-line this into the static initializer as the
-	 * "Find Broken Externalized Strings" tool will not be
-	 * able to find the corresponding bundle file.
-	 */
-	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.uitext"; //$NON-NLS-1$
-
 	static {
-		initializeMessages(BUNDLE_NAME, UIText.class);
+		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$
 	}
 }
