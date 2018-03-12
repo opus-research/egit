@@ -45,7 +45,6 @@ import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.IHandlerService;
-import org.eclipse.ui.ide.ResourceUtil;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 
@@ -59,8 +58,8 @@ class GitActionContributor extends SynchronizePageActionGroup {
 		IStructuredSelection selection = (IStructuredSelection) getContext()
 				.getSelection();
 		Object element = selection.getFirstElement();
-		IResource resource = ResourceUtil.getResource(element);
-		if (resource != null) {
+
+		if (element instanceof IResource) {
 			// add standard git action for 'workspace' models
 			menu.appendToGroup(GIT_ACTIONS, createItem(COMMIT_ACTION));
 			menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
