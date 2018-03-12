@@ -1156,6 +1156,9 @@ public class UIText extends NLS {
 	public static String CloneDestinationPage_browseButton;
 
 	/** */
+	public static String CloneDestinationPage_cloneSubmodulesButton;
+
+	/** */
 	public static String CloneDestinationPage_DefaultRepoFolderTooltip;
 
 	/** */
@@ -2540,9 +2543,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CheckoutDialog_Delete;
-
-	/** */
-	public static String CommitDialogPreferencePage_commitMessageHistory;
 
 	/** */
 	public static String CommitDialogPreferencePage_title;
