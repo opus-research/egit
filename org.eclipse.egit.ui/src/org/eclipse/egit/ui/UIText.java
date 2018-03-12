@@ -2048,6 +2048,9 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_deselectAll;
 
 	/** */
+	public static String GitBranchSubscriberParticipant_git;
+
+	/** */
 	public static String RemoteSelectionCombo_remoteName;
 
 	/** */
