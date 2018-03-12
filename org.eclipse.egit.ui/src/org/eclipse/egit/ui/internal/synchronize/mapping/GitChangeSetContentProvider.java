@@ -116,7 +116,4 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 		super.refresh();
 	}
 
-	protected boolean isVisible(ISynchronizationContext context, Object object) {
-		return true;
-	}
 }
