@@ -48,20 +48,14 @@ public class PushBranchActionHandler extends RepositoryActionHandler {
 	@Override
 	public boolean isEnabled() {
 		Repository repository = getRepository();
-		if (repository == null) {
-			return false;
-		}
-		if (getBranchRef(repository) == null) {
-			return false;
-		}
-		return true;
+		return repository != null;
 	}
 
 	private Ref getBranchRef(Repository repository) {
 		try {
 			String fullBranch = repository.getFullBranch();
 			if (fullBranch != null && fullBranch.startsWith(Constants.R_HEADS))
-				return repository.exactRef(fullBranch);
+				return repository.getRef(fullBranch);
 		} catch (IOException e) {
 			Activator.handleError(e.getLocalizedMessage(), e, false);
 		}

@@ -504,13 +504,12 @@ public class TestRepository {
 	 * Connect a project to this repository
 	 *
 	 * @param project
-	 * @throws Exception
+	 * @throws CoreException
 	 */
-	public void connect(IProject project) throws Exception {
+	public void connect(IProject project) throws CoreException {
 		ConnectProviderOperation op = new ConnectProviderOperation(project,
 				this.getRepository().getDirectory());
 		op.execute(null);
-		TestUtils.waitForJobs(50, 5000, null);
 	}
 
 	/**
