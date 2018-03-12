@@ -523,6 +523,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_ShowAdditionalRefsMenuLabel;
+
+	/** */
 	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
 
 	/** */
@@ -1660,6 +1663,12 @@ public class UIText extends NLS {
 	public static String HistoryPreferencePage_MaxTagLength;
 
 	/** */
+	public static String HistoryPreferencePage_toggleAdditionalRefs;
+
+	/** */
+	public static String HistoryPreferencePage_toggleAllBranches;
+
+	/** */
 	public static String PullOperationUI_ConnectionProblem;
 
 	/** */
@@ -2071,6 +2080,9 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_parent;
 
 	/** */
+	public static String CommitMessageViewer_SelectOneCommitMessage;
+
+	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
@@ -2347,6 +2359,12 @@ public class UIText extends NLS {
 	public static String FetchDestinationPage_TrackingBranchNotFoundMessage;
 
 	/** */
+	public static String FetchGerritChangePage_ActivateAdditionalRefsButton;
+
+	/** */
+	public static String FetchGerritChangePage_ActivateAdditionalRefsTooltip;
+
+	/** */
 	public static String FetchGerritChangePage_AfterFetchGroup;
 
 	/** */
@@ -2570,6 +2588,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchResultDialog_buttonReset;
+
+	/** */
+	public static String BranchResultDialog_buttonStash;
 
 	/** */
 	public static String BranchResultDialog_CheckoutConflictsMessage;
@@ -3495,6 +3516,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
+
+	/** */
+	public static String CommitFileDiffViewer_SelectOneCommitMessage;
 
 	/** */
 	public static String CommitFileDiffViewer_ShowAnnotationsMenuLabel;
