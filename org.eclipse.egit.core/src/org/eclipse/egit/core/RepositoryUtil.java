@@ -495,8 +495,7 @@ public class RepositoryUtil {
 					walk.enterSubtree();
 			}
 		}
-		// path not found by tree iterator
-		return true;
+		return false;
 	}
 
 	/**
