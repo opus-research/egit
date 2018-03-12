@@ -56,10 +56,6 @@ public class FetchGerritChangeWizard extends Wizard {
 
 	@Override
 	public boolean performFinish() {
-		try {
-			return page.doFetch();
-		} catch (Exception e) {
-			return false;
-		}
+		return page.doFetch();
 	}
 }
