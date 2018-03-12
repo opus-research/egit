@@ -47,7 +47,6 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -327,12 +326,12 @@ class SourceBranchPage extends WizardPage {
 			});
 		} catch (InvocationTargetException e) {
 			Throwable why = e.getCause();
-			transportError(why);
+			transportError(why.getMessage());
 			ErrorDialog.openError(getShell(),
 					UIText.SourceBranchPage_transportError,
 					UIText.SourceBranchPage_cannotListBranches, new Status(
 							IStatus.ERROR, Activator.getPluginId(), 0, why
-									.getMessage(), why));
+									.getMessage(), why.getCause()));
 			return;
 		} catch (IOException e) {
 			transportError(UIText.SourceBranchPage_cannotCreateTemp);
@@ -376,18 +375,8 @@ class SourceBranchPage extends WizardPage {
 		checkForEmptyRepo();
 	}
 
-	private void transportError(final Throwable why) {
-		Throwable cause = why.getCause();
-		if (why instanceof TransportException && cause != null)
-			transportError(NLS.bind(
-					UIText.SourceBranchPage_CompositeTransportErrorMessage,
-					why.getMessage(), cause.getMessage()));
-		else
-			transportError(why.getMessage());
-	}
-
 	private void transportError(final String msg) {
-			transportError = msg;
-			checkPage();
+		transportError = msg;
+		checkPage();
 	}
 }

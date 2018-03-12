@@ -33,7 +33,6 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -74,8 +73,7 @@ public class DiscardChangesOperation implements IEGitOperation {
 		this.files = new IResource[files.length];
 		System.arraycopy(files, 0, this.files, 0, files.length);
 		this.revision = revision;
-		schedulingRule = MultiRule.combine(calcRefreshRule(files),
-				RuleUtil.getRuleForRepositories(files));
+		schedulingRule = calcRefreshRule(files);
 	}
 
 	/*
