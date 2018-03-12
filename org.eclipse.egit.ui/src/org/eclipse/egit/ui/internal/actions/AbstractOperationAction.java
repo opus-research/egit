@@ -40,27 +40,32 @@ public abstract class AbstractOperationAction implements IObjectActionDelegate {
 
 	private IWorkspaceRunnable op;
 
-	private List selection;
-
 	public void selectionChanged(final IAction act, final ISelection sel) {
+		// work performed in setActivePart
+	}
+
+	public void setActivePart(final IAction act, final IWorkbenchPart part) {
+		wp = part;
+		ISelection sel = part.getSite().getPage().getSelection();
+		final List selection;
 		if (sel instanceof IStructuredSelection && !sel.isEmpty()) {
 			selection = ((IStructuredSelection) sel).toList();
 		} else {
 			selection = Collections.EMPTY_LIST;
 		}
-	}
-
-	public void setActivePart(final IAction act, final IWorkbenchPart part) {
-		wp = part;
+		op = createOperation(act, selection);
+		act.setEnabled(op != null && wp != null);
 	}
 
 	/**
 	 * Instantiate an operation on an action on provided objects.
-	 * @param selection
 	 *
+	 * @param act
+	 * @param selection
 	 * @return a {@link IWorkspaceRunnable} for invoking this operation later on
 	 */
-	protected abstract IWorkspaceRunnable createOperation(final List selection);
+	protected abstract IWorkspaceRunnable createOperation(final IAction act,
+			final List selection);
 
 	/**
 	 * A method to invoke when the operation is finished.
@@ -70,7 +75,6 @@ public abstract class AbstractOperationAction implements IObjectActionDelegate {
 	}
 
 	public void run(final IAction act) {
-		op = createOperation(selection);
 		if (op != null) {
 			try {
 				try {
@@ -99,6 +103,7 @@ public abstract class AbstractOperationAction implements IObjectActionDelegate {
 
 				if (e instanceof CoreException) {
 					status = ((CoreException) e).getStatus();
+					e = status.getException();
 				} else {
 					status = new Status(IStatus.ERROR, Activator.getPluginId(),
 							1, msg, e);

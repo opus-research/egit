@@ -20,8 +20,6 @@ import java.util.regex.Pattern;
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.jface.text.DefaultTextDoubleClickStrategy;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
@@ -40,7 +38,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
@@ -76,18 +73,12 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 	private DiffFormatter diffFmt = new DiffFormatter();
 
-	private static final String SPACE = " "; //$NON-NLS-1$
-
-	private static final String LF = "\n"; //$NON-NLS-1$
-
-	private static final String EMPTY = ""; //$NON-NLS-1$
-
 	CommitMessageViewer(final Composite parent) {
 		super(parent, SWT.H_SCROLL | SWT.V_SCROLL | SWT.READ_ONLY);
 		fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
 
 		final StyledText t = getTextWidget();
-		t.setFont(UIUtils.getFont(UIPreferences.THEME_CommitMessageFont));
+		t.setFont(Activator.getFont(UIPreferences.THEME_CommitMessageFont));
 
 		sys_linkColor = t.getDisplay().getSystemColor(SWT.COLOR_BLUE);
 		sys_darkgray = t.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY);
@@ -167,57 +158,52 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 		final StringBuilder d = new StringBuilder();
 		final ArrayList<StyleRange> styles = new ArrayList<StyleRange>();
 
-		d.append(UIText.CommitMessageViewer_commit);
-		d.append(SPACE);
+		d.append("commit ");
 		d.append(commit.getId().name());
-		d.append(LF);
+		d.append("\n"); //$NON-NLS-1$
 
 		if (author != null) {
-			d.append(UIText.CommitMessageViewer_author);
-			d.append(": ");  //$NON-NLS-1$
+			d.append("Author: ");
 			d.append(author.getName());
 			d.append(" <"); //$NON-NLS-1$
 			d.append(author.getEmailAddress());
 			d.append("> "); //$NON-NLS-1$
 			d.append(fmt.format(author.getWhen()));
-			d.append(LF);
+			d.append("\n"); //$NON-NLS-1$
 		}
 
 		if (committer != null) {
-			d.append(UIText.CommitMessageViewer_committer);
-			d.append(": ");  //$NON-NLS-1$
+			d.append("Committer: ");
 			d.append(committer.getName());
 			d.append(" <"); //$NON-NLS-1$
 			d.append(committer.getEmailAddress());
 			d.append("> "); //$NON-NLS-1$
 			d.append(fmt.format(committer.getWhen()));
-			d.append(LF);
+			d.append("\n"); //$NON-NLS-1$
 		}
 
 		for (int i = 0; i < commit.getParentCount(); i++) {
 			final RevCommit p = commit.getParent(i);
-			d.append(UIText.CommitMessageViewer_parent);
-			d.append(": ");  //$NON-NLS-1$
+			d.append("Parent: ");
 			addLink(d, styles, p);
 			d.append(" ("); //$NON-NLS-1$
 			d.append(p.getShortMessage());
 			d.append(")"); //$NON-NLS-1$
-			d.append(LF);
+			d.append("\n"); //$NON-NLS-1$
 		}
 
 		for (int i = 0; i < commit.getChildCount(); i++) {
 			final RevCommit p = commit.getChild(i);
-			d.append(UIText.CommitMessageViewer_child);
-			d.append(":  ");  //$NON-NLS-1$
+			d.append("Child:  ");
 			addLink(d, styles, p);
 			d.append(" ("); //$NON-NLS-1$
 			d.append(p.getShortMessage());
 			d.append(")"); //$NON-NLS-1$
-			d.append(LF);
+			d.append("\n"); //$NON-NLS-1$
 		}
 
 		makeGrayText(d, styles);
-		d.append(LF);
+		d.append("\n"); //$NON-NLS-1$
 		String msg = commit.getFullMessage();
 		Pattern p = Pattern.compile("\n([A-Z](?:[A-Za-z]+-)+by: [^\n]+)"); //$NON-NLS-1$
 		if (fill) {
@@ -231,7 +217,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 		int h0 = d.length();
 		d.append(msg);
 
-		d.append(LF);
+		d.append("\n"); //$NON-NLS-1$
 
 		addDiff(d);
 
@@ -291,9 +277,8 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 					outputDiff(d, diff);
 			}
 		} catch (IOException e) {
-			Activator.handleError(NLS.bind(
-					UIText.CommitMessageViewer_errorGettingFileDifference,
-					commit.getId()), e, false);
+			Activator.error("Can't get file difference of "
+					+ commit.getId() + ".", e);
 		}
 	}
 
@@ -304,20 +289,18 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 		FileMode mode1 = fileDiff.modes[0];
 		FileMode mode2 = fileDiff.modes[1];
 
-		d.append(formatPathLine(path)).append(LF);
+		d.append(formatPathLine(path)).append("\n"); //$NON-NLS-1$
 		if (id1.equals(ObjectId.zeroId())) {
-			d.append(UIText.CommitMessageViewer_newFileMode
-					+ SPACE
-					+ mode2).append(LF);
+			d.append("new file mode " + mode2).append("\n"); //$NON-NLS-2$
 		} else if (id2.equals(ObjectId.zeroId())) {
-			d.append(UIText.CommitMessageViewer_deletedFileMode + SPACE + mode1).append(LF);
+			d.append("deleted file mode " + mode1).append("\n"); //$NON-NLS-2$
 		} else if (!mode1.equals(mode2)) {
-			d.append(UIText.CommitMessageViewer_oldMode + SPACE + mode1);
-			d.append(UIText.CommitMessageViewer_newMode + SPACE + mode2).append(LF);
+			d.append("old mode " + mode1);
+			d.append("new mode " + mode2).append("\n"); //$NON-NLS-2$
 		}
-		d.append(UIText.CommitMessageViewer_index).append(SPACE).append(id1.abbreviate(db, 7).name()).
+		d.append("index ").append(id1.abbreviate(db, 7).name()).
 			append("..").append(id2.abbreviate(db, 7).name()). //$NON-NLS-1$
-			append (mode1.equals(mode2) ? SPACE + mode1 : EMPTY). append(LF);
+			append (mode1.equals(mode2) ? " " + mode1 : ""). append("\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		RawText a = getRawText(id1);
 		RawText b = getRawText(id2);
@@ -330,7 +313,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 			}
 		 } , a, b, diff.getEdits());
-		d.append(LF);
+		d.append("\n"); //$NON-NLS-1$
 	}
 
 	private String formatPathLine(String path) {
@@ -341,7 +324,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 		int i = 0;
 		for (; i < n/2; i++)
 			d.append("-"); //$NON-NLS-1$
-		d.append(SPACE).append(path).append(SPACE);
+		d.append(" ").append(path).append(" "); //$NON-NLS-1$ //$NON-NLS-2$
 		for (; i < n - 1; i++)
 			d.append("-"); //$NON-NLS-1$
 		return d.toString();
@@ -392,5 +375,4 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 		}
 
 	}
-
 }

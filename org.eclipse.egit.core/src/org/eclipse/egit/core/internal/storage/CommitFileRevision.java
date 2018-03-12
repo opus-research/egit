@@ -71,7 +71,7 @@ class CommitFileRevision extends GitFileRevision {
 			throws CoreException {
 		if (blobId == null)
 			blobId = locateBlobObjectId();
-		return new CommitBlobStorage(db, path, blobId, commit);
+		return new BlobStorage(db, path, blobId);
 	}
 
 	public long getTimestamp() {

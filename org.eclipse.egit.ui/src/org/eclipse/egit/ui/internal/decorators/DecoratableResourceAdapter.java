@@ -38,7 +38,6 @@ import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
@@ -98,7 +97,8 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 					.getName();
 		else
 			repositoryName = ""; //$NON-NLS-1$
-		branch = getShortBranch();
+		// TODO: Add option to shorten branch name to 6 chars if it's a SHA
+		branch = repository.getBranch();
 
 		TreeWalk treeWalk = createThreeWayTreeWalk();
 		if (treeWalk == null)
@@ -116,16 +116,6 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			extractContainerProperties(treeWalk);
 			break;
 		}
-	}
-
-	private String getShortBranch() throws IOException {
-		String branch = repository.getBranch();
-		Ref head = repository.getRef(Constants.HEAD);
-		if (head == null)
-			return branch;
-		if (!head.isSymbolic())
-			return branch.substring(0, 6);
-		return branch;
 	}
 
 	private void extractResourceProperties(TreeWalk treeWalk) {

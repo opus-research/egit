@@ -29,7 +29,7 @@ import org.eclipse.osgi.util.NLS;
 
 /** Accesses a blob from Git. */
 class BlobStorage implements IStorage {
-	protected final Repository db;
+	private final Repository db;
 
 	private final String path;
 
