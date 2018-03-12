@@ -13,7 +13,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui.internal;
+package org.eclipse.egit.ui;
 
 import org.eclipse.osgi.util.NLS;
 
@@ -3465,18 +3465,6 @@ public class UIText extends NLS {
 	public static String MergeTargetSelectionDialog_TitleMergeWithBranch;
 
 	/** */
-	public static String MergeTargetSelectionDialog_FastForwardGroup;
-
-	/** */
-	public static String MergeTargetSelectionDialog_FastForwardButton;
-
-	/** */
-	public static String MergeTargetSelectionDialog_NoFastForwardButton;
-
-	/** */
-	public static String MergeTargetSelectionDialog_OnlyFastForwardButton;
-
-	/** */
 	public static String MergeTargetSelectionDialog_MergeTypeGroup;
 
 	/** */
@@ -3866,12 +3854,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitTraceConfigurationDialog_TraceFileLocationLabel;
-
-	/** */
-	public static String ImportProjectsWrongSelection;
-
-	/** */
-	public static String ImportProjectsSelectionInRepositoryRequired;
 
 	/** */
 	public static String LocalFileRevision_CurrentVersion;

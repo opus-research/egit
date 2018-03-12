@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2004, 2013 IBM Corporation and others.
+ * Copyright (c) 2004, 2008 IBM Corporation and others.
  * Copyright (C) 2007, Martin Oberhuber (martin.oberhuber@windriver.com)
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2009, Mykola Nikishov <mn@mn.com.ua>
@@ -29,10 +29,10 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -292,13 +292,10 @@ public class GitProjectsImportPage extends WizardPage {
 
 	private void createOptionsArea(Composite workArea) {
 		Composite optionsGroup = new Composite(workArea, SWT.NONE);
-		GridLayout layout = new GridLayout();
-		layout.marginBottom = 2 * layout.marginHeight;
-		layout.marginHeight = 0;
-		optionsGroup.setLayout(layout);
+		optionsGroup.setLayout(new GridLayout());
 		optionsGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-		nestedProjectsCheckbox = new Button(optionsGroup, SWT.CHECK);
+		nestedProjectsCheckbox = new Button(workArea, SWT.CHECK);
 		nestedProjectsCheckbox
 				.setText(UIText.GitProjectsImportPage_SearchForNestedProjects);
 		nestedProjectsCheckbox.setLayoutData(new GridData(
