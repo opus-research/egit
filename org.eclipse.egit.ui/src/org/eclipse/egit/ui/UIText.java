@@ -538,9 +538,6 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_FastForward;
 
 	/** */
-	public static String RebaseResultDialog_Failed;
-
-	/** */
 	public static String RebaseResultDialog_NextSteps;
 
 	/** */
