@@ -334,8 +334,6 @@ public class RefSpecDialog extends TitleAreaDialog {
 						result.add(ref);
 					}
 			}
-		} catch (RuntimeException e) {
-			throw e;
 		} catch (Exception e) {
 			Activator.handleError(e.getMessage(), e, true);
 			return result;

@@ -44,14 +44,14 @@ public class CheckoutCommitHandler extends AbstractHistoryCommandHandler {
 		List<RefNode> nodes = getRefNodes(commit, repo, Constants.R_HEADS);
 
 		if (nodes.isEmpty())
-			op = BranchOperationUI.checkout(repo, commit.name());
+			op = new BranchOperationUI(repo, commit.getId());
 		else if (nodes.size() == 1)
-			op = BranchOperationUI.checkout(repo, nodes.get(0).getObject().getName());
+			op = new BranchOperationUI(repo, nodes.get(0).getObject().getName());
 		else {
 			BranchMessageDialog dlg = new BranchMessageDialog(HandlerUtil
 					.getActiveShellChecked(event), nodes);
 			if (dlg.open() == Window.OK) {
-				op = BranchOperationUI.checkout(repo, dlg.getSelectedNode()
+				op = new BranchOperationUI(repo, dlg.getSelectedNode()
 						.getObject().getName());
 			} else {
 				op = null;
