@@ -154,7 +154,7 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 
 	/** {@inheritDoc} */
 	@Override
-	public synchronized boolean isDirty() {
+	public boolean isDirty() {
 		return fDirty || (sharedDocumentAdapter != null && sharedDocumentAdapter.hasBufferedContents());
 	}
 

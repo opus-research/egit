@@ -10,7 +10,6 @@ package org.eclipse.egit.core.op;
 
 import java.io.IOException;
 
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -19,9 +18,8 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -129,12 +127,11 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 			}
 		};
 		// lock workspace to protect working tree changes
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, monitor);
+		ResourcesPlugin.getWorkspace().run(action, monitor);
 	}
 
 	public ISchedulingRule getSchedulingRule() {
-		return RuleUtil.getRule(repository);
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 
 	/**

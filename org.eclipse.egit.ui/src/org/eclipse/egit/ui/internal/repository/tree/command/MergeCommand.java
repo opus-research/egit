@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -17,7 +17,6 @@ import java.io.IOException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -76,30 +75,22 @@ public class MergeCommand extends
 			targetRef = null;
 
 		final String refName;
-		final MergeOperation op;
-
-		if (targetRef != null) {
+		if (targetRef != null)
 			refName = targetRef;
-			op = new MergeOperation(repository, refName);
-		} else {
+		else {
 			MergeTargetSelectionDialog mergeTargetSelectionDialog = new MergeTargetSelectionDialog(
 					getShell(event), repository);
-			if (mergeTargetSelectionDialog.open() != IDialogConstants.OK_ID)
+			if (mergeTargetSelectionDialog.open() == IDialogConstants.OK_ID)
+				refName = mergeTargetSelectionDialog.getRefName();
+			else
 				return null;
-
-			refName = mergeTargetSelectionDialog.getRefName();
-			op = new MergeOperation(repository, refName);
-			op.setSquash(mergeTargetSelectionDialog.isMergeSquash());
-			op.setFastForwardMode(mergeTargetSelectionDialog
-					.getFastForwardMode());
-			op.setCommit(mergeTargetSelectionDialog.isCommit());
 		}
 
 		String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
-		Job job = new WorkspaceJob(jobname) {
-
+		final MergeOperation op = new MergeOperation(repository, refName);
+		Job job = new Job(jobname) {
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					op.execute(monitor);
 				} catch (final CoreException e) {

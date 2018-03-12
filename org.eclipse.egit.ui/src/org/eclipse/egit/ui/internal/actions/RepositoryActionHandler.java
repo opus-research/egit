@@ -38,7 +38,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
@@ -50,15 +49,18 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.diff.DiffConfig;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffEntry.ChangeType;
+import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.NullProgressMonitor;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.FollowFilter;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
@@ -512,14 +514,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	}
 
 	/**
-	 * @return the locations in the selection
-	 */
-	protected IPath[] getSelectedLocations() {
-		IStructuredSelection selection = getSelection();
-		return getSelectedLocations(selection);
-	}
-
-	/**
 	 * @return true if all selected items map to the same repository, false otherwise.
 	 */
 	protected boolean selectionMapsToSingleRepository() {
@@ -677,12 +671,30 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	protected String getPreviousPath(Repository repository,
 			ObjectReader reader, RevCommit headCommit,
 			RevCommit previousCommit, String path) throws IOException {
-		DiffEntry diffEntry = CompareCoreUtils.getChangeDiffEntry(repository, path,
-				headCommit, previousCommit, reader);
-		if (diffEntry != null)
-			return diffEntry.getOldPath();
-		else
+		TreeWalk walk = new TreeWalk(reader);
+		walk.setRecursive(true);
+		walk.addTree(previousCommit.getTree());
+		walk.addTree(headCommit.getTree());
+
+		List<DiffEntry> entries = DiffEntry.scan(walk);
+		if (entries.size() < 2)
 			return path;
+
+		for (DiffEntry diff : entries)
+			if (diff.getChangeType() == ChangeType.MODIFY
+					&& path.equals(diff.getNewPath()))
+				return path;
+
+		RenameDetector detector = new RenameDetector(repository);
+		detector.addAll(entries);
+		List<DiffEntry> renames = detector.compute(walk.getObjectReader(),
+				NullProgressMonitor.INSTANCE);
+		for (DiffEntry diff : renames)
+			if (diff.getChangeType() == ChangeType.RENAME
+					&& path.equals(diff.getNewPath()))
+				return diff.getOldPath();
+
+		return path;
 	}
 
 	protected List<PreviousCommit> findPreviousCommits() throws IOException {
@@ -692,8 +704,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		String path = RepositoryMapping.getMapping(resource.getProject())
 				.getRepoRelativePath(resource);
 		RevWalk rw = new RevWalk(repository);
-		rw.sort(RevSort.COMMIT_TIME_DESC, true);
-		rw.sort(RevSort.BOUNDARY, true);
 		try {
 			if (path.length() > 0) {
 				DiffConfig diffConfig = repository.getConfig().get(

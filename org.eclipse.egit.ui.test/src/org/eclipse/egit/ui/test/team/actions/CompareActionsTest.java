@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2013 SAP AG and others.
+ * Copyright (c) 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -14,9 +14,7 @@ package org.eclipse.egit.ui.test.team.actions;
 
 import static org.eclipse.jface.dialogs.MessageDialogWithToggle.NEVER;
 import static org.eclipse.team.internal.ui.IPreferenceIds.SYNCHRONIZING_COMPLETE_PERSPECTIVE;
-import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -25,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.ui.Activator;
@@ -48,6 +47,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.util.RawParseUtils;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
@@ -56,7 +56,9 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
 import org.eclipse.team.ui.synchronize.ISynchronizeManager;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -65,15 +67,21 @@ import org.junit.runner.RunWith;
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class CompareActionsTest extends LocalRepositoryTestCase {
-	private File repositoryFile;
+	private static File repositoryFile;
 
+	private static SWTBotPerspective perspective;
+
+	// private static String LOCAL_BRANCHES;
+	//
 	private static String TAGS;
 	private static ObjectId commitOfTag;
 
-	@Before
-	public void setup() throws Exception {
+	@BeforeClass
+	public static void setup() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		Repository repo = lookupRepository(repositoryFile);
+		perspective = bot.activePerspective();
+		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
 
 		disablePerspectiveSwitchPrompt();
 
@@ -94,6 +102,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		// null, repo), repo));
 		TAGS = provider.getText(new TagsNode(new RepositoryNode(null, repo),
 				repo));
+		waitInUI();
 	}
 
 	@SuppressWarnings("restriction")
@@ -103,6 +112,20 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 				.setValue(SYNCHRONIZING_COMPLETE_PERSPECTIVE, NEVER);
 		Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, false);
+	}
+
+	@AfterClass
+	public static void shutdown() {
+		perspective.activate();
+	}
+
+	@Before
+	public void prepare() throws Exception {
+		Repository repo = lookupRepository(repositoryFile);
+		if (!repo.getBranch().equals("master")) {
+			BranchOperation bop = new BranchOperation(repo, "refs/heads/master");
+			bop.execute(null);
+		}
 	}
 
 	@Test
@@ -161,8 +184,8 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 		// use the tag -> should have a change
 		dialog = openCompareWithDialog(compareWithRefActionLabel, dialogTitle);
-		SWTBotTreeItem tags = dialog.bot().tree().getTreeItem(TAGS).expand();
-		TestUtil.getChildNode(tags, "SomeTag").select();
+		dialog.bot().tree().getTreeItem(TAGS).expand().getNode("SomeTag")
+				.select();
 
 		jobJoiner = JobJoiner.startListening(
 				ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, 60,
@@ -194,7 +217,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		Ref newBranch = git.checkout().setCreateBranch(true)
 				.setStartPoint(commitOfTag.name()).setName("toMerge").call();
 		ByteArrayInputStream bis = new ByteArrayInputStream(
-				"Modified".getBytes("UTF-8"));
+				"Modified".getBytes());
 		ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ1)
 				.getFolder(FOLDER).getFile(FILE2)
 				.setContents(bis, false, false, null);
@@ -218,13 +241,14 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		clickCompareWith(compareWithIndexActionLabel);
 
 		// compare with index should not have any changes
-		assertTreeCompareNoChange();
+		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 		// change test file -> should have one change
 		setTestFileContent("Hello there");
 
 		clickCompareWith(compareWithIndexActionLabel);
 
-		assertTreeCompareChanges(1);
+		waitUntilCompareTreeViewTreeHasNodeCount(1);
 
 		// add to index -> no more changes
 		new Git(lookupRepository(repositoryFile)).add().addFilepattern(
@@ -232,7 +256,8 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 		clickCompareWith(compareWithIndexActionLabel);
 
-		assertTreeCompareNoChange();
+		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 
 		// reset -> there should be no more changes
 		ResetOperation rop = new ResetOperation(
@@ -242,7 +267,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 		clickCompareWith(compareWithIndexActionLabel);
 
-		assertTreeCompareNoChange();
+		waitUntilCompareTreeViewTreeHasNodeCount(0);
 	}
 
 	@Test
@@ -303,15 +328,15 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 	}
 
 	private SWTBotTree selectProjectItem() {
-		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
+		SWTBotTree projectExplorerTree = bot.viewById(
+				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		return projectExplorerTree;
 	}
 
-	private SWTBotTree waitUntilCompareTreeViewTreeHasNodeCount(int nodeCount) {
+	private void waitUntilCompareTreeViewTreeHasNodeCount(int nodeCount) {
 		SWTBotTree tree = bot.viewById(CompareTreeView.ID).bot().tree();
 		bot.waitUntil(Conditions.treeHasRows(tree, nodeCount), 10000);
-		return tree;
 	}
 
 	/**
@@ -355,18 +380,4 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		assertTrue(level2Children[0].getText().contains(FILE1));
 	}
 
-	private void assertTreeCompareNoChange() {
-		SWTBotTree tree = waitUntilCompareTreeViewTreeHasNodeCount(1);
-		SWTBotTreeItem[] items = tree.getAllItems();
-		assertEquals(1, items.length);
-		assertEquals(UIText.CompareTreeView_NoDifferencesFoundMessage,
-				items[0].getText());
-	}
-
-	private void assertTreeCompareChanges(int nodeCount) {
-		SWTBotTree tree = waitUntilCompareTreeViewTreeHasNodeCount(nodeCount);
-		SWTBotTreeItem[] items = tree.getAllItems();
-		assertThat(items[0].getText(),
-				not(UIText.CompareTreeView_NoDifferencesFoundMessage));
-	}
 }

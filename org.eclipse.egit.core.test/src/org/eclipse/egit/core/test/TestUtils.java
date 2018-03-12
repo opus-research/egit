@@ -146,7 +146,7 @@ public class TestUtils {
 	 *            the contents
 	 * @return the file
 	 * @throws CoreException
-	 *             if the file cannot be created
+	 *             if the file can not be created
 	 * @throws UnsupportedEncodingException
 	 */
 	public IFile addFileToProject(IProject project, String path, String content) throws CoreException, UnsupportedEncodingException {
@@ -278,14 +278,14 @@ public class TestUtils {
 			String path = treeWalk.getPathString();
 			assertTrue(expectedfiles.containsKey(path));
 			ObjectId objectId = treeWalk.getObjectId(0);
-			byte[] expectedContent = expectedfiles.get(path).getBytes("UTF-8");
+			byte[] expectedContent = expectedfiles.get(path).getBytes();
 			byte[] repoContent = treeWalk.getObjectReader().open(objectId)
 					.getBytes();
 			if (!Arrays.equals(repoContent, expectedContent)) {
 				fail("File " + path + " has repository content "
-						+ new String(repoContent, "UTF-8")
+						+ new String(repoContent)
 						+ " instead of expected content "
-						+ new String(expectedContent, "UTF-8"));
+						+ new String(expectedContent));
 			}
 			expectedfiles.remove(path);
 		}

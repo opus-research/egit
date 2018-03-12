@@ -17,9 +17,8 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,9 +36,8 @@ import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
+import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.actions.ResetMenu;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -72,7 +70,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FileUtils;
-import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -599,19 +596,10 @@ class CommitGraphTable {
 		}
 
 		private String getHoverText(Ref r) {
-			StringBuilder sb = new StringBuilder();
 			String name = r.getName();
-			sb.append(name);
-			if (r.isSymbolic()) {
-				sb.append(": "); //$NON-NLS-1$
-				sb.append(r.getLeaf().getName());
-			}
-			String description = GitLabelProvider.getRefDescription(r);
-			if (description != null) {
-				sb.append("\n"); //$NON-NLS-1$
-				sb.append(description);
-			}
-			return sb.toString();
+			if (r.isSymbolic())
+				name += ": " + r.getLeaf().getName(); //$NON-NLS-1$
+			return name;
 		}
 	}
 
@@ -703,8 +691,7 @@ class CommitGraphTable {
 
 		private void writeToFile(final String fileName, String content)
 				throws IOException {
-			Writer output = new BufferedWriter(new OutputStreamWriter(
-					new FileOutputStream(fileName), RawParseUtils.UTF8_CHARSET));
+			Writer output = new BufferedWriter(new FileWriter(fileName));
 			try {
 				output.write(content);
 			} finally {
@@ -778,16 +765,14 @@ class CommitGraphTable {
 
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (!input.getRepository().isBare()) {
-					if (hasMultipleRefNodes()) {
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHECKOUT,
-								UIText.GitHistoryPage_CheckoutMenuLabel2));
-					} else {
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHECKOUT,
-								UIText.GitHistoryPage_CheckoutMenuLabel));
-					}
+				if (hasMultipleRefNodes()) {
+					popupMgr.add(getCommandContributionItem(
+							HistoryViewCommands.CHECKOUT,
+							UIText.GitHistoryPage_CheckoutMenuLabel2));
+				} else {
+					popupMgr.add(getCommandContributionItem(
+							HistoryViewCommands.CHECKOUT,
+							UIText.GitHistoryPage_CheckoutMenuLabel));
 				}
 
 				popupMgr.add(getCommandContributionItem(
@@ -822,13 +807,29 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.REBASECURRENT,
 						UIText.GitHistoryPage_rebaseMenuItem));
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.REBASE_INTERACTIVE_CURRENT,
-						UIText.GitHistoryPage_rebaseInteractiveMenuItem));
 				popupMgr.add(new Separator());
 
-				MenuManager resetManager = ResetMenu.createMenu(site);
+				MenuManager resetManager = new MenuManager(
+						UIText.GitHistoryPage_ResetMenuLabel, UIIcons.RESET,
+						"Reset"); //$NON-NLS-1$
+
 				popupMgr.add(resetManager);
+
+				Map<String, String> parameters = new HashMap<String, String>();
+				parameters.put(HistoryViewCommands.RESET_MODE, "Soft"); //$NON-NLS-1$
+				resetManager.add(getCommandContributionItem(
+						HistoryViewCommands.RESET,
+						UIText.GitHistoryPage_ResetSoftMenuLabel, parameters));
+				parameters = new HashMap<String, String>();
+				parameters.put(HistoryViewCommands.RESET_MODE, "Mixed"); //$NON-NLS-1$
+				resetManager.add(getCommandContributionItem(
+						HistoryViewCommands.RESET,
+						UIText.GitHistoryPage_ResetMixedMenuLabel, parameters));
+				parameters = new HashMap<String, String>();
+				parameters.put(HistoryViewCommands.RESET_MODE, "Hard"); //$NON-NLS-1$
+				resetManager.add(getCommandContributionItem(
+						HistoryViewCommands.RESET,
+						UIText.GitHistoryPage_ResetHardMenuLabel, parameters));
 			} else if (selectionSize == 2) {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.COMPARE_VERSIONS,
@@ -863,27 +864,6 @@ class CommitGraphTable {
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_ResetBaselineToParentOfHeadMenuLabel,
 					parameters));
-
-			popupMgr.add(new Separator());
-
-			MenuManager modifyManager = new MenuManager(
-					UIText.GitHistoryPage_ModifyMenuLabel, null, "Modify"); //$NON-NLS-1$
-
-			popupMgr.add(modifyManager);
-
-			if (selectionSize == 1) {
-				modifyManager.add(getCommandContributionItem(
-						HistoryViewCommands.REWORD,
-						UIText.GitHistoryPage_rewordMenuItem));
-				modifyManager.add(getCommandContributionItem(
-						HistoryViewCommands.EDIT,
-						UIText.GitHistoryPage_editMenuItem));
-			}
-
-			if (selectionSize >= 2)
-				modifyManager.add(getCommandContributionItem(
-						HistoryViewCommands.SQUASH,
-						UIText.GitHistoryPage_squashMenuItem));
 
 			// copy and such after additions
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));

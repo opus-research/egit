@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2014 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.SelectUriWizard;
 import org.eclipse.jface.dialogs.Dialog;
@@ -151,8 +152,10 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		if (branch == null)
 			return null;
 
-		String remoteName = null;
-		if (!ObjectId.isId(branch))
+		String remoteName;
+		if (ObjectId.isId(branch))
+			remoteName = Constants.DEFAULT_REMOTE_NAME;
+		else
 			remoteName = repository.getConfig().getString(
 					ConfigConstants.CONFIG_BRANCH_SECTION, branch,
 					ConfigConstants.CONFIG_REMOTE_SECTION);
@@ -167,22 +170,12 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		}
 
 		RemoteConfig configuredConfig = null;
-		RemoteConfig defaultConfig = null;
 		for (RemoteConfig config : allRemotes) {
 			if (remoteName != null && config.getName().equals(remoteName))
 				configuredConfig = config;
-			if (config.getName().equals(Constants.DEFAULT_REMOTE_NAME))
-				defaultConfig = config;
 		}
 
-		if (configuredConfig != null)
-			return configuredConfig;
-
-		if (defaultConfig != null)
-			if (!defaultConfig.getPushRefSpecs().isEmpty())
-				return defaultConfig;
-
-		return null;
+		return configuredConfig;
 	}
 
 	/**
@@ -576,8 +569,13 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 							public void run(IProgressMonitor monitor)
 									throws InvocationTargetException,
 									InterruptedException {
+								int timeout = Activator
+										.getDefault()
+										.getPreferenceStore()
+										.getInt(
+												UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 								PushOperationUI op = new PushOperationUI(
-										repository, config, true);
+										repository, config, timeout, true);
 								try {
 									PushOperationResult result = op
 											.execute(monitor);
@@ -623,9 +621,13 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 								public void run(IProgressMonitor monitor)
 										throws InvocationTargetException,
 										InterruptedException {
+									int timeout = Activator
+											.getDefault()
+											.getPreferenceStore()
+											.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 									PushOperationUI op = new PushOperationUI(
 											repository, config.getName(),
-											false);
+											timeout, false);
 									op.start();
 								}
 							});

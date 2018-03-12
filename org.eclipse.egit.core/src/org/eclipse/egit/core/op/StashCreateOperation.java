@@ -10,14 +10,12 @@
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.StashCreateCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -88,12 +86,11 @@ public class StashCreateOperation implements IEGitOperation {
 				}
 			}
 		};
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE,
+		ResourcesPlugin.getWorkspace().run(action,
 				monitor != null ? monitor : new NullProgressMonitor());
 	}
 
 	public ISchedulingRule getSchedulingRule() {
-		return RuleUtil.getRule(repository);
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 }

@@ -261,7 +261,6 @@ class ExistingOrNewPage extends WizardPage {
 			TableItem item = children[i];
 			IProject data = (IProject) item.getData();
 			RepositoryFinder repositoryFinder = new RepositoryFinder(data);
-			repositoryFinder.setFindInChildren(false);
 			try {
 				Collection<RepositoryMapping> find = repositoryFinder
 						.find(new NullProgressMonitor());
@@ -319,7 +318,6 @@ class ExistingOrNewPage extends WizardPage {
 		boolean allProjectsInExistingRepos = true;
 		for (IProject project : myWizard.projects) {
 			RepositoryFinder repositoryFinder = new RepositoryFinder(project);
-			repositoryFinder.setFindInChildren(false);
 			try {
 				Collection<RepositoryMapping> mappings;
 				mappings = repositoryFinder.find(new NullProgressMonitor());
@@ -339,8 +337,8 @@ class ExistingOrNewPage extends WizardPage {
 					updateProjectTreeItem(treeItem, project);
 					treeItem.setText(1, project.getLocation().toOSString());
 					fillTreeItemWithGitDirectory(m, treeItem, false);
-					treeItem.setData(new ProjectAndRepo(project, m
-							.getGitDirAbsolutePath().toOSString()));
+					treeItem.setData(new ProjectAndRepo(project, treeItem
+							.getText(2)));
 					treeItem.setChecked(true);
 				}
 
@@ -353,16 +351,15 @@ class ExistingOrNewPage extends WizardPage {
 					TreeItem treeItem2 = new TreeItem(treeItem, SWT.NONE);
 					updateProjectTreeItem(treeItem2, project);
 					fillTreeItemWithGitDirectory(m, treeItem2, true);
-					treeItem2.setData(new ProjectAndRepo(project, m
-							.getGitDirAbsolutePath().toOSString()));
+					treeItem2.setData(new ProjectAndRepo(project, treeItem2
+							.getText(2)));
 					while (mi.hasNext()) { // fill in additional mappings
 						m = mi.next();
 						treeItem2 = new TreeItem(treeItem, SWT.NONE);
 						updateProjectTreeItem(treeItem2, project);
 						fillTreeItemWithGitDirectory(m, treeItem2, true);
 						treeItem2.setData(new ProjectAndRepo(m.getContainer()
-								.getProject(), m.getGitDirAbsolutePath()
-								.toOSString()));
+								.getProject(), treeItem2.getText(2)));
 					}
 					treeItem.setExpanded(true);
 					allProjectsInExistingRepos = false;
@@ -502,7 +499,10 @@ class ExistingOrNewPage extends WizardPage {
 			treeItem.setText(2,
 					UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
 		else {
-			IPath relativePath = new Path(m.getGitDir());
+			IPath container = m.getContainerPath();
+			if (!container.isEmpty())
+				container = Path.fromOSString("."); //$NON-NLS-1$
+			IPath relativePath = container.append(m.getGitDir());
 			if (isAlternative) {
 				IPath withoutLastSegment = relativePath.removeLastSegments(1);
 				IPath path;

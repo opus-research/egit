@@ -42,12 +42,12 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * SWTBot Tests for the Git Repositories View (repository handling)
+ * SWTBot Tests for the Git Repositories View (repsitory handling)
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class GitRepositoriesViewRepoHandlingTest extends
@@ -55,10 +55,10 @@ public class GitRepositoriesViewRepoHandlingTest extends
 
 	private static final String REMOVE_REPOSITORY_CONTEXT_MENU_LABEL = "RepoViewRemove.label";
 
-	private File repositoryFile;
+	private static File repositoryFile;
 
-	@Before
-	public void before() throws Exception {
+	@BeforeClass
+	public static void beforeClass() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 	}
 
@@ -317,7 +317,10 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotShell shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle);
 		IPath newPath = new Path(getTestDirectory().getPath());
 		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
-				.setText(newPath.append("NewRepository").toOSString());
+				.setText(newPath.toOSString());
+		shell.bot()
+				.textWithLabel(UIText.CreateRepositoryPage_RepositoryNameLabel)
+				.setText("NewRepository");
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
 		File repoFile = new File(newPath.append("NewRepository").toFile(),
@@ -331,14 +334,16 @@ public class GitRepositoriesViewRepoHandlingTest extends
 						myUtil.getPluginLocalizedValue("RepoViewCreateRepository.tooltip"))
 				.click();
 		shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle);
-		newPath = new Path(getTestDirectory().getPath()).append("bare").append(
-				"NewBareRepository");
+		newPath = new Path(getTestDirectory().getPath()).append("bare");
+		shell.bot()
+				.textWithLabel(UIText.CreateRepositoryPage_RepositoryNameLabel)
+				.setText("NewBareRepository");
 		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
 				.setText(newPath.toOSString());
 		shell.bot().checkBox(UIText.CreateRepositoryPage_BareCheckbox).select();
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
-		repoFile = newPath.toFile();
+		repoFile = newPath.append("NewBareRepository").toFile();
 		myRepoViewUtil.getRootItem(getOrOpenView().bot().tree(), repoFile);
 		assertTrue(myRepoViewUtil.lookupRepository(repoFile).isBare());
 	}

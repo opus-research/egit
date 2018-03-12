@@ -19,7 +19,6 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.resources.mapping.RemoteResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceMappingContext;
@@ -103,12 +102,12 @@ public class GitModelSynchronize {
 			}
 		} while (includedResources.addAll(newResources));
 
-		if (dstRev.equals(GitFileRevision.INDEX)) {
+		if (dstRev == GitFileRevision.INDEX) {
 			final IResource[] resourcesArray = includedResources
 					.toArray(new IResource[includedResources.size()]);
 			openGitTreeCompare(resourcesArray, srcRev,
 					CompareTreeView.INDEX_VERSION, includeLocal);
-		} else if (srcRev.equals(GitFileRevision.INDEX)) {
+		} else if (srcRev == GitFileRevision.INDEX) {
 			// Even git tree compare cannot handle index as source...
 			// Synchronize using the local data for now.
 			final ResourceMapping[] mappings = allMappings
@@ -241,11 +240,9 @@ public class GitModelSynchronize {
 		final GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
 				gsdSet);
 
-		Job syncJob = new WorkspaceJob(
-				UIText.GitModelSynchonize_fetchGitDataJobName) {
-
+		Job syncJob = new Job(UIText.GitModelSynchonize_fetchGitDataJobName) {
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				subscriber.init(monitor);
 
 				return Status.OK_STATUS;

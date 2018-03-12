@@ -11,7 +11,6 @@
  *****************************************************************************/
 package org.eclipse.egit.ui.internal.stash;
 
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -20,7 +19,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.StashCreateOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -50,8 +48,6 @@ public class StashCreateUI {
 	 * @return true if a stash create operation was triggered
 	 */
 	public boolean createStash(Shell shell) {
-		if (!UIUtils.saveAllEditors(repo))
-			return false;
 		InputDialog commitMessageDialog = new InputDialog(shell,
 				UIText.StashCreateCommand_titleEnterCommitMessage,
 				UIText.StashCreateCommand_messageEnterCommitMessage,
@@ -63,10 +59,9 @@ public class StashCreateUI {
 			message = null;
 
 		final StashCreateOperation op = new StashCreateOperation(repo, message);
-		Job job = new WorkspaceJob(UIText.StashCreateCommand_jobTitle) {
-
+		Job job = new Job(UIText.StashCreateCommand_jobTitle) {
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				monitor.beginTask("", 1); //$NON-NLS-1$
 				try {
 					op.execute(monitor);

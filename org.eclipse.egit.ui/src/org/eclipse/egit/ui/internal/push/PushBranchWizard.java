@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (c) 2013 Robin Stocker <robin@nibor.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -16,6 +16,8 @@ import java.util.Set;
 
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
@@ -142,8 +144,7 @@ public class PushBranchWizard extends Wizard {
 	private List<RefSpec> getRefSpecs() {
 		String src = refToPush.getName();
 		String dst = Constants.R_HEADS + pushBranchPage.getBranchName();
-		RefSpec refSpec = new RefSpec().setSourceDestination(src, dst)
-				.setForceUpdate(pushBranchPage.isForceUpdateSelected());
+		RefSpec refSpec = new RefSpec(src + ":" + dst); //$NON-NLS-1$
 		return Arrays.asList(refSpec);
 	}
 
@@ -199,12 +200,11 @@ public class PushBranchWizard extends Wizard {
 				.deriveSpecification(confirmationPage
 						.isRequireUnchangedSelected());
 
+		int timeout = Activator.getDefault().getPreferenceStore()
+				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		PushOperationUI pushOperationUI = new PushOperationUI(repository,
-				pushSpec, false);
+				pushSpec, timeout, false);
 		pushOperationUI.setCredentialsProvider(new EGitCredentialsProvider());
-		pushOperationUI.setShowConfigureButton(false);
-		if (confirmationPage.isShowOnlyIfChangedSelected())
-			pushOperationUI.setExpectedResult(result);
 		pushOperationUI.start();
 	}
 

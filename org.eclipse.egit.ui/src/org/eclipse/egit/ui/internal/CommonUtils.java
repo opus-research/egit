@@ -2,7 +2,6 @@
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
- * Copyright (C) 2013, Michael Keppler <michael.keppler@gmx.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -39,15 +38,14 @@ public class CommonUtils {
 
 	/**
 	 * Instance of comparator that sorts strings in ascending alphabetical and
-	 * numerous order (also known as natural order), case insensitive.
-	 * 
-	 * The comparator is guaranteed to return a non-zero value if
-	 * string1.equals(String2) returns false
+	 * numerous order (also known as natural order).
 	 */
 	public static final Comparator<String> STRING_ASCENDING_COMPARATOR = new Comparator<String>() {
 		public int compare(String o1, String o2) {
-			if (o1.length() == 0 || o2.length() == 0)
-				return o1.length() - o2.length();
+			if (o1.length() == 0)
+				return -1;
+			if (o2.length() == 0)
+				return 1;
 
 			LinkedList<String> o1Parts = splitIntoDigitAndNonDigitParts(o1);
 			LinkedList<String> o2Parts = splitIntoDigitAndNonDigitParts(o2);
@@ -67,22 +65,16 @@ public class CommonUtils {
 					o2Part = stripLeadingZeros(o2Part);
 					result = o1Part.length() - o2Part.length();
 					if (result == 0)
-						result = o1Part.compareToIgnoreCase(o2Part);
+						result = o1Part.compareTo(o2Part);
 				} else {
-					result = o1Part.compareToIgnoreCase(o2Part);
+					result = o1Part.compareTo(o2Part);
 				}
 
 				if (result != 0)
 					return result;
 			}
 
-			if (o2PartsIterator.hasNext())
-				return -1;
-			else {
-				// strings are equal (in the Object.equals() sense)
-				// or only differ in case and/or leading zeros
-				return o1.compareTo(o2);
-			}
+			return -1;
 		}
 	};
 
