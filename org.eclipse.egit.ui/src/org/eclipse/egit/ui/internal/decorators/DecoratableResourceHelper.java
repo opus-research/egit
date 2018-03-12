@@ -26,7 +26,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 
 /**
@@ -147,20 +146,15 @@ class DecoratableResourceHelper {
 	static DecoratableResource decorateResource(
 			final DecoratableResource decoratableResource,
 			final TreeWalk treeWalk) throws IOException {
-		final WorkingTreeIterator workingTreeIterator = treeWalk.getTree(
-				T_WORKSPACE, WorkingTreeIterator.class);
-		if (workingTreeIterator == null)
-			return null;
-		if (!(workingTreeIterator instanceof ContainerTreeIterator))
-			return null;
-		final ContainerTreeIterator workspaceIterator = (ContainerTreeIterator) workingTreeIterator;
-		final ResourceEntry resourceEntry = workspaceIterator
-				.getResourceEntry();
+		final ContainerTreeIterator workspaceIterator = treeWalk.getTree(
+				T_WORKSPACE, ContainerTreeIterator.class);
+		final ResourceEntry resourceEntry = workspaceIterator != null ? workspaceIterator
+				.getResourceEntry() : null;
 
 		if (resourceEntry == null)
 			return null;
 
-		if (workspaceIterator.isEntryIgnored()) {
+		if (workspaceIterator != null && workspaceIterator.isEntryIgnored()) {
 			decoratableResource.ignored = true;
 			return decoratableResource;
 		}
