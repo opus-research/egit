@@ -143,10 +143,9 @@ public class TagActionHandler extends RepositoryActionHandler {
 			throws ExecutionException {
 		Collection<Ref> revTags = repo.getTags().values();
 		List<Tag> tags = new ArrayList<Tag>();
-		RevWalk walk = new RevWalk(repo);
 		for (Ref ref : revTags) {
 			try {
-				Tag tag = walk.parseTag(repo.resolve(ref.getName())).asTag(walk);
+				Tag tag = repo.mapTag(ref.getName());
 				tags.add(tag);
 			} catch (IOException e) {
 				ErrorDialog.openError(getShell(event),

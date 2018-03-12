@@ -136,7 +136,6 @@ class CommitGraphTable {
 		return !table.getSelection().isEmpty();
 	}
 
-	@SuppressWarnings("unchecked")
 	void doCopy() {
 		final ISelection s = table.getSelection();
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
