@@ -1435,14 +1435,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			}
 			if (repo == null) {
 				repo = AdapterUtils.adapt(o, Repository.class);
-				if (repo != null) {
-					File file = AdapterUtils.adapt(o, File.class);
-					if (file == null) {
-						input = new HistoryPageInput(repo);
-					} else {
-						input = new HistoryPageInput(repo, new File[] { file });
-					}
-				}
+				if (repo != null)
+					input = new HistoryPageInput(repo);
 			}
 			selection = AdapterUtils.adapt(o, RevCommit.class);
 
