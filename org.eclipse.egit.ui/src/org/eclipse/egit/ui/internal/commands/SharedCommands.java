@@ -8,21 +8,12 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *******************************************************************************/
-package org.eclipse.egit.ui.test.team.actions;
+package org.eclipse.egit.ui.internal.commands;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
-
-@RunWith(Suite.class)
-@SuiteClasses( { BranchAndResetActionTest.class, //
-		TagActionTest.class, //
-		CommitActionTest.class, //
-		PushActionTest.class, //
-		FetchAndMergeActionTest.class, //
-		DisconnectConnectTest.class, //
-		ShowInTest.class //
-})
-public class AllTeamActionTests {
-	// nothing
+/**
+ * Shared command IDs
+ */
+public class SharedCommands {
+	/** "Checkout" command id */
+	public static final String CHECKOUT = "org.eclipse.egit.ui.CheckoutCommand"; //$NON-NLS-1$
 }
