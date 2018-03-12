@@ -13,17 +13,13 @@ package org.eclipse.egit.ui.internal.repository.tree.command;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
-import org.eclipse.egit.ui.internal.repository.NewRepositoryWizard;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jface.wizard.WizardDialog;
 
 /**
- * Implements "Create Repository"
+ * Deletes a Repository
  */
-public class CreateRepositoryCommand extends
-		RepositoriesViewCommandHandler<RepositoryTreeNode> implements IHandler {
+public class DeleteCommand extends RemoveCommand implements IHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		new WizardDialog(getShell(event), new NewRepositoryWizard()).open();
+		super.removeRepository(event, true);
 		return null;
 	}
 }
