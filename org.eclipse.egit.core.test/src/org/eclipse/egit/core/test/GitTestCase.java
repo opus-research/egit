@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -28,8 +29,6 @@ import org.junit.Before;
 
 public abstract class GitTestCase {
 
-	protected final TestUtils testUtils = new TestUtils();
-
 	protected TestProject project;
 
 	protected File gitDir;
@@ -44,17 +43,17 @@ public abstract class GitTestCase {
 		project = new TestProject(true);
 		gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), Constants.DOT_GIT);
-		testUtils.deleteRecursive(gitDir);
+		TestUtils.rmrf(gitDir);
 	}
 
 	@After
 	public void tearDown() throws Exception {
 		project.dispose();
-		testUtils.deleteRecursive(gitDir);
+		TestUtils.rmrf(gitDir);
 	}
 
-	protected ObjectId createFile(Repository repository, IProject actProject, String name, String content) throws IOException {
-		File file = new File(actProject.getProject().getLocation().toFile(), name);
+	protected ObjectId createFile(Repository repository, IProject project, String name, String content) throws IOException {
+		File file = new File(project.getProject().getLocation().toFile(), name);
 		FileWriter fileWriter = new FileWriter(file);
 		fileWriter.write(content);
 		fileWriter.close();
@@ -62,8 +61,8 @@ public abstract class GitTestCase {
 		return objectWriter.writeBlob(file);
 	}
 
-	protected ObjectId createFileCorruptShort(Repository repository, IProject actProject, String name, String content) throws IOException {
-		ObjectId id = createFile(repository, actProject, name, content);
+	protected ObjectId createFileCorruptShort(Repository repository, IProject project, String name, String content) throws IOException {
+		ObjectId id = createFile(repository, project, name, content);
 		File file = new File(repository.getDirectory(), "objects/" + id.name().substring(0,2) + "/" + id.name().substring(2));
 		byte[] readFully = IO.readFully(file);
 		file.delete();
@@ -79,6 +78,19 @@ public abstract class GitTestCase {
 		ObjectWriter objectWriter = new ObjectWriter(repository);
 		Tree tree = new Tree(repository);
 		return objectWriter.writeTree(tree);
+	}
+
+	protected String slurpAndClose(InputStream inputStream) throws IOException {
+		StringBuilder stringBuilder = new StringBuilder();
+		try {
+			int ch;
+			while ((ch = inputStream.read()) != -1) {
+				stringBuilder.append((char)ch);
+			}
+		} finally {
+			inputStream.close();
+		}
+		return stringBuilder.toString();
 	}
 
 }
