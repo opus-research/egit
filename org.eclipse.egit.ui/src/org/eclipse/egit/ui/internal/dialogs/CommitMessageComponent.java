@@ -309,8 +309,7 @@ public class CommitMessageComponent {
 		CommitMessageComponentState state = new CommitMessageComponentState();
 		state.setAmend(isAmending());
 		state.setAuthor(getAuthor());
-		// store text with platform specific line endings
-		state.setCommitMessage(commitText.getText());
+		state.setCommitMessage(getCommitMessage());
 		state.setCommitter(getCommitter());
 		state.setHeadCommit(getHeadCommit());
 		return state;
