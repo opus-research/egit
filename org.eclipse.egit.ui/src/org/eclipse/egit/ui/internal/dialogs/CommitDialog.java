@@ -36,7 +36,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
@@ -1352,13 +1351,12 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private void compare(CommitItem commitItem) {
 		IFile file = findFile(commitItem.path);
-		if (file == null || RepositoryProvider.getProvider(file.getProject(),
-				GitProvider.ID) == null) {
-			CompareUtils.compareHeadWithWorkingTree(repository,
-					commitItem.path);
-		} else {
+		if (file == null
+				|| RepositoryProvider.getProvider(file.getProject()) == null)
+			CompareUtils
+					.compareHeadWithWorkingTree(repository, commitItem.path);
+		else
 			CompareUtils.compareHeadWithWorkspace(repository, file);
-		}
 	}
 
 	private IFile findFile(String path) {

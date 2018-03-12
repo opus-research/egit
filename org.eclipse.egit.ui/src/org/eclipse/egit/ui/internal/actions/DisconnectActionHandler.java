@@ -35,14 +35,12 @@ public class DisconnectActionHandler extends RepositoryActionHandler {
 		IProject[] selectedProjects = getProjectsForSelectedResources();
 		List<IProject> projects = new ArrayList<IProject>(selectedProjects.length);
 		for (IProject project : selectedProjects) {
-			if (project.isOpen() && RepositoryProvider.getProvider(project,
-					GitProvider.ID) != null) {
+			if (project.isOpen()
+					&& RepositoryProvider.getProvider(project) instanceof GitProvider)
 				projects.add(project);
-			}
 		}
-		if (projects.isEmpty()) {
+		if (projects.isEmpty())
 			return null;
-		}
 		JobUtil.scheduleUserJob(new DisconnectProviderOperation(projects),
 				UIText.Disconnect_disconnect,
 				JobFamilies.DISCONNECT, new JobChangeAdapter() {
