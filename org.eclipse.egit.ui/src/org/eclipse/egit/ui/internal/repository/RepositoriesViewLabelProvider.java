@@ -179,9 +179,12 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 					ObjectId id = node.getRepository().resolve(refName);
 					if (id == null)
 						return image;
-					try (RevWalk rw = new RevWalk(node.getRepository())) {
+					RevWalk rw = new RevWalk(node.getRepository());
+					try {
 						RevCommit commit = rw.parseCommit(id);
 						compareString = commit.getId().name();
+					} finally {
+						rw.release();
 					}
 				} else if (refName.equals(Constants.HEAD))
 					return getDecoratedImage(image);
@@ -248,11 +251,14 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 			id = ref.getObjectId();
 		if (id == null)
 			return null;
-		try (RevWalk walk = new RevWalk(node.getRepository())) {
-			walk.setRetainBody(true);
+		RevWalk walk = new RevWalk(node.getRepository());
+		walk.setRetainBody(true);
+		try {
 			return walk.parseCommit(id);
 		} catch (IOException ignored) {
 			return null;
+		} finally {
+			walk.release();
 		}
 	}
 
@@ -294,14 +300,17 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 						StyledString.DECORATIONS_STYLER);
 			string.append(']', StyledString.DECORATIONS_STYLER);
 			if (verboseBranchMode && head.getObjectId() != null) {
+				RevWalk walk = new RevWalk(repository);
 				RevCommit commit;
-				try (RevWalk walk = new RevWalk(repository)) {
+				try {
 					commit = walk.parseCommit(head.getObjectId());
 					string.append(' ');
 					string.append(commit.getShortMessage(),
 							StyledString.QUALIFIER_STYLER);
 				} catch (IOException ignored) {
 					// Ignored
+				} finally {
+					walk.release();
 				}
 			}
 		}

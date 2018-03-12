@@ -5048,9 +5048,6 @@ public class UIText extends NLS {
 	public static String StagingView_Refresh;
 
 	/** */
-	public static String StagingView_GetRepo;
-
-	/** */
 	public static String StagingView_ReplaceWith;
 
 	/** */

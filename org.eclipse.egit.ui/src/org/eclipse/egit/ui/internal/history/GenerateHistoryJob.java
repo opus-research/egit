@@ -185,7 +185,7 @@ class GenerateHistoryJob extends Job {
 	}
 
 	private void dispose() {
-		walk.close();
+		walk.release();
 		Display.getDefault().asyncExec(new Runnable() {
 
 			public void run() {
