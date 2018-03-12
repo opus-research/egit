@@ -112,11 +112,12 @@ public class GitResourceVariantTreeSubscriber extends
 
 	@Override
 	public IResource[] roots() {
-		if (roots == null)
-			roots = gsds.getAllProjects();
-		IResource[] result = new IResource[roots.length];
-		System.arraycopy(roots, 0, result, 0, roots.length);
-		return result;
+		if (roots != null) {
+			return roots;
+		}
+
+		roots = gsds.getAllProjects();
+		return roots;
 	}
 
 	/**
