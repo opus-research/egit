@@ -2623,9 +2623,6 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_bindingBranchName;
 
 	/** */
-	public static String DecoratorPreferencesPage_bindingBranchStatus;
-
-	/** */
 	public static String DecoratorPreferencesPage_bindingDirtyFlag;
 
 	/** */
