@@ -74,7 +74,6 @@ import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.navigator.CommonNavigator;
 import org.eclipse.ui.navigator.CommonViewer;
-import org.eclipse.ui.part.IPage;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
@@ -455,11 +454,11 @@ public class RepositoriesView extends CommonNavigator {
 						IViewPart part = PlatformUI.getWorkbench()
 								.getActiveWorkbenchWindow().getActivePage()
 								.findView(IPageLayout.ID_PROP_SHEET);
-						if (part instanceof PropertySheet) {
+						if (part != null) {
 							PropertySheet sheet = (PropertySheet) part;
-							IPage page = sheet.getCurrentPage();
-							if (page instanceof PropertySheetPage)
-								((PropertySheetPage) page).refresh();
+							PropertySheetPage page = (PropertySheetPage) sheet
+									.getCurrentPage();
+							page.refresh();
 						}
 						if (traceActive)
 							GitTraceLocation
