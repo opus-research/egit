@@ -57,8 +57,7 @@ class EclipseSshSessionFactory extends SshConfigSessionFactory {
 
 	@Override
 	protected void configure(final OpenSshConfig.Host hc, final Session session) {
-		if (!hc.isBatchMode() && session.getUserInfo() == null) {
+		if (!hc.isBatchMode())
 			new UserInfoPrompter(session);
-		}
 	}
 }
