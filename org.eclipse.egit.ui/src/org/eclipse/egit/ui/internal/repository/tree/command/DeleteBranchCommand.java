@@ -99,7 +99,6 @@ public class DeleteBranchCommand extends
 								throws InvocationTargetException,
 								InterruptedException {
 							try {
-								monitor.beginTask(UIText.DeleteBranchCommand_DeletingBranchesProgress, nodes.size());
 								for (RefNode refNode : nodes) {
 									int result = deleteBranch(refNode, refNode
 											.getObject(), false);
@@ -111,8 +110,7 @@ public class DeleteBranchCommand extends
 																null));
 									} else if (result == DeleteBranchOperation.REJECTED_UNMERGED) {
 										unmergedNodes.add(refNode);
-									} else
-										monitor.worked(1);
+									}
 								}
 								if (!unmergedNodes.isEmpty()) {
 									MessageDialog messageDialog = new BranchMessageDialog(
@@ -121,14 +119,11 @@ public class DeleteBranchCommand extends
 										for (RefNode node : unmergedNodes) {
 											deleteBranch(node,
 													node.getObject(), true);
-											monitor.worked(1);
 										}
 									}
 								}
 							} catch (CoreException ex) {
 								throw new InvocationTargetException(ex);
-							} finally {
-								monitor.done();
 							}
 						}
 					});

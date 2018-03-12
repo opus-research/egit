@@ -148,21 +148,6 @@
                label="%DiscardChangesAction_label"
                menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
-               id="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
-               label="%ReplaceWithRefAction_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadAction"
-               id="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadAction"
-               label="%ReplaceWithHeadAction_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitAction"
-               id="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitAction"
-               label="%ReplaceWithCommitAction_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
-         <action
                class="org.eclipse.egit.ui.internal.actions.ApplyPatchAction"
                definitionId="org.eclipse.egit.ui.team.ApplyPatch"
                enablesFor="*"
@@ -491,66 +476,6 @@
             %Theme_CommitMessageEditorFont_description
          </description>
       </fontDefinition>
-      <colorDefinition
-            categoryId="org.eclipse.egit.ui.GitTheme"
-            id="org.eclipse.egit.ui.DiffHunkBackgroundColor"
-            isEditable="true"
-            label="%Theme_DiffHunkBackgroundColor_label"
-            value="234,242,245">
-         <description>
-            %Theme_DiffHunkBackgroundColor_description
-         </description>
-      </colorDefinition>
-      <colorDefinition
-            categoryId="org.eclipse.egit.ui.GitTheme"
-            id="org.eclipse.egit.ui.DiffHunkForegroundColor"
-            isEditable="true"
-            label="%Theme_DiffHunkForegroundColor_label"
-            value="153,153,153">
-         <description>
-            %Theme_DiffHunkForegroundColor_description
-         </description>
-      </colorDefinition>
-      <colorDefinition
-            categoryId="org.eclipse.egit.ui.GitTheme"
-            id="org.eclipse.egit.ui.DiffAddBackgroundColor"
-            isEditable="true"
-            label="%Theme_DiffAddBackgroundColor_label"
-            value="221,255,221">
-         <description>
-            %Theme_DiffAddBackgroundColor_description
-         </description>
-      </colorDefinition>
-      <colorDefinition
-            categoryId="org.eclipse.egit.ui.GitTheme"
-            id="org.eclipse.egit.ui.DiffAddForegroundColor"
-            isEditable="true"
-            label="%Theme_DiffAddForegroundColor_label"
-            value="COLOR_BLACK">
-         <description>
-            %Theme_DiffAddForegroundColor_description
-         </description>
-      </colorDefinition>
-      <colorDefinition
-            categoryId="org.eclipse.egit.ui.GitTheme"
-            id="org.eclipse.egit.ui.DiffRemoveBackgroundColor"
-            isEditable="true"
-            label="%Theme_DiffRemoveBackgroundColor_label"
-            value="255,221,221">
-         <description>
-            %Theme_DiffRemoveBackgroundColor_description
-         </description>
-      </colorDefinition>
-      <colorDefinition
-            categoryId="org.eclipse.egit.ui.GitTheme"
-            id="org.eclipse.egit.ui.DiffRemoveForegroundColor"
-            isEditable="true"
-            label="%Theme_DiffRemoveForegroundColor_label"
-            value="COLOR_BLACK">
-         <description>
-            %Theme_DiffRemoveForegroundColor_description
-         </description>
-      </colorDefinition>
    </extension>
 
 <!-- ********** QuickDiff text editor support ************** -->
@@ -1570,7 +1495,7 @@
          </separator>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
-               icon="icons/obj16/new_tag_obj.gif"
+               icon="icons/obj16/tags.gif"
                label="%RepoViewCreateTag.label"
                style="push">
             <visibleWhen
@@ -2329,11 +2254,6 @@
                style="toggle"
                tooltip="%RepoViewHierarchicalBranchRepresenation.tooltip">
          </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesToggleBranchCommit"
-               style="toggle"
-               tooltip="%RepoViewBranchCommit.tooltip">
-         </command>
       </menuContribution>
       <menuContribution
             locationURI="menu:org.eclipse.egit.ui.RepositoriesView">
@@ -2373,11 +2293,6 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
                label="%HierarchyLayout.label"
-               style="toggle">
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesToggleBranchCommit"
-               label="%BranchCommit.label"
                style="toggle">
          </command>
       </menuContribution>
@@ -2866,16 +2781,6 @@
                id="org.eclipse.ui.commands.toggleState">
          </state>
       </command>
-       <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand"
-            id="org.eclipse.egit.ui.RepositoriesToggleBranchCommit"
-            name="%ToggleBranchCommitCommand.name">
-         <state
-               class="org.eclipse.ui.handlers.RegistryToggleState:false"
-               id="org.eclipse.ui.commands.toggleState">
-         </state>
-      </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.commands.shared.RebaseCurrentRefCommand"
@@ -2921,7 +2826,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
-            icon="icons/obj16/new_tag_obj.gif">
+            icon="icons/obj16/version_rep.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.ShowRepositoriesView"
@@ -2949,7 +2854,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.CreateTag"
-            icon="icons/obj16/new_tag_obj.gif">
+            icon="icons/obj16/version_rep.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.CheckoutCommand"
@@ -2990,10 +2895,6 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
             icon="icons/elcl16/hierarchicalLayout.gif">
-      </image>
-       <image
-            commandId="org.eclipse.egit.ui.RepositoriesToggleBranchCommit"
-            icon="icons/obj16/changelog_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewRemove"
@@ -3089,7 +2990,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Tag"
-            icon="icons/obj16/new_tag_obj.gif">
+            icon="icons/obj16/tags.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.AssumeUnchanged"
@@ -3258,24 +3159,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.actions.DiscardChangesActionHandler"
             id="org.eclipse.egit.ui.team.Discard"
             name="%ReplaceWithIndexCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadActionHandler"
-            id="org.eclipse.egit.ui.team.ReplaceWithHead"
-            name="%ReplaceWithHeadCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitActionHandler"
-            id="org.eclipse.egit.ui.team.ReplaceWithCommit"
-            name="%ReplaceWithCommitCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithRefActionHandler"
-            id="org.eclipse.egit.ui.team.ReplaceWithRef"
-            name="%ReplaceWithRefCommand.name">
       </command>
             <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -3483,11 +3366,6 @@
             id="org.eclipse.egit.ui.RebaseCurrent"
             name="%RebaseCurrentCommand.name">
       </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.OpenInCommitViewerHandler"
-            id="org.eclipse.egit.ui.history.OpenInCommitViewerCommand"
-            name="%OpenInCommitViewerCommand.name">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.newWizards">
@@ -3528,22 +3406,5 @@
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
-   </extension>
-   <extension
-         point="org.eclipse.ui.editors">
-      <editor
-            class="org.eclipse.egit.ui.internal.commit.CommitEditor"
-            default="false"
-            icon="icons/obj16/changelog_obj.gif"
-            id="org.eclipse.egit.ui.commitEditor"
-            name="%CommitEditor.name">
-      </editor>
-   </extension>
-   <extension
-         point="org.eclipse.ui.elementFactories">
-      <factory
-            class="org.eclipse.egit.ui.internal.commit.CommitEditorInputFactory"
-            id="org.eclipse.egit.ui.internal.commit.CommitEditorInputFactory">
-      </factory>
    </extension>
 </plugin>
