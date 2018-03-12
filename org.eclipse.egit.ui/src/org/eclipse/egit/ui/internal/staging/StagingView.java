@@ -11,7 +11,6 @@ package org.eclipse.egit.ui.internal.staging;
 import static org.eclipse.egit.ui.internal.CommonUtils.runCommand;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,7 +49,6 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
@@ -122,7 +120,6 @@ import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
-import org.eclipse.jgit.lib.BranchTrackingStatus;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -457,7 +454,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if (userEnteredCommmitMessage())
+				if (!commitMessageComponent.isAmending()
+						&& userEnteredCommitMessage())
 					saveCommitMessageComponentState();
 				else
 					deleteCommitMessageComponentState();
@@ -2235,7 +2233,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
 		if (repositoryChanged)
-			if (userEnteredCommmitMessage())
+			if (commitMessageComponent.isAmending()
+					|| userEnteredCommitMessage())
 				saveCommitMessageComponentState();
 			else
 				deleteCommitMessageComponentState();
@@ -2253,14 +2252,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadInitialState(helper);
 			else
 				loadExistingState(helper, oldState);
-		} else // repository did not change
-			if (userEnteredCommmitMessage()) {
+		} else { // repository did not change
+			if (!commitMessageComponent.isAmending()
+					&& userEnteredCommitMessage()) {
 				if (!commitMessageComponent.getHeadCommit().equals(
 						helper.getPreviousCommit()))
 					addHeadChangedWarning(commitMessageComponent
 							.getCommitMessage());
 			} else
 				loadInitialState(helper);
+		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
 		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
@@ -2322,7 +2323,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		commitMessageComponent.enableListeners(true);
 	}
 
-	private boolean userEnteredCommmitMessage() {
+	private boolean userEnteredCommitMessage() {
 		if (commitMessageComponent.getRepository() == null)
 			return false;
 		String message = commitMessageComponent.getCommitMessage().replace(
@@ -2377,55 +2378,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private static String getRepositoryName(Repository repository) {
-		RepositoryUtil repositoryUtil = Activator.getDefault()
-				.getRepositoryUtil();
-
-		StringBuilder sb = new StringBuilder();
-		sb.append(repositoryUtil.getRepositoryName(repository));
-
-		appendRepositoryDecoration(sb, repository, repositoryUtil);
-
+		String repoName = Activator.getDefault().getRepositoryUtil()
+				.getRepositoryName(repository);
 		RepositoryState state = repository.getRepositoryState();
-		if (state != RepositoryState.SAFE) {
-			sb.append('|');
-			sb.append(state.getDescription());
-		}
-
-		return sb.toString();
-	}
-
-	private static StringBuilder appendRepositoryDecoration(StringBuilder sb,
-			Repository repository, RepositoryUtil repositoryUtil) {
-
-		try {
-			String branchName = repository.getBranch();
-
-			String statusString = null;
-
-			BranchTrackingStatus trackingStatus = BranchTrackingStatus.of(
-					repository, branchName);
-			if (trackingStatus != null)
-				statusString = GitLabelProvider
-						.formatBranchTrackingStatus(trackingStatus);
-
-			String shortBranchName = repositoryUtil.getShortBranch(repository);
-
-			sb.append(' ');
-			sb.append('[');
-			sb.append(shortBranchName);
-
-			if (statusString != null && statusString.length() > 0) {
-				sb.append(' ');
-				sb.append(statusString);
-			}
-
-			sb.append(']');
-		} catch (IOException e) {
-			// suppress exception
-			// if we can not compute branch info, just do not append it and
-			// continue normally
-		}
-		return sb;
+		if (state != RepositoryState.SAFE)
+			return repoName + '|' + state.getDescription();
+		else
+			return repoName;
 	}
 
 	private Collection<String> getStagedFileNames() {
