@@ -78,11 +78,7 @@ public class TestRepository {
 		tmpRepository.close();
 		// use repository instance from RepositoryCache!
 		repository = Activator.getDefault().getRepositoryCache().lookupRepository(gitDir);
-		try {
-			workdirPrefix = repository.getWorkTree().getCanonicalPath();
-		} catch (IOException err) {
-			workdirPrefix = repository.getWorkTree().getAbsolutePath();
-		}
+		workdirPrefix = repository.getWorkTree().getAbsolutePath();
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/")) //$NON-NLS-1$
 			workdirPrefix += "/"; //$NON-NLS-1$
@@ -96,11 +92,7 @@ public class TestRepository {
 	 */
 	public TestRepository(Repository repository) throws IOException {
 		this.repository = repository;
-		try {
-			workdirPrefix = repository.getWorkTree().getCanonicalPath();
-		} catch (IOException err) {
-			workdirPrefix = repository.getWorkTree().getAbsolutePath();
-		}
+		workdirPrefix = repository.getWorkTree().getAbsolutePath();
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/")) //$NON-NLS-1$
 			workdirPrefix += "/"; //$NON-NLS-1$
@@ -437,16 +429,10 @@ public class TestRepository {
 	 */
 	public boolean inHead(String path) throws IOException {
 		ObjectId headId = repository.resolve(Constants.HEAD);
-		RevWalk rw = new RevWalk(repository);
-		TreeWalk tw = null;
-		try {
-			tw = TreeWalk.forPath(repository, path, rw.parseTree(headId));
+		try (RevWalk rw = new RevWalk(repository);
+				TreeWalk tw = TreeWalk.forPath(repository, path,
+						rw.parseTree(headId))) {
 			return tw != null;
-		} finally {
-			rw.release();
-			rw.dispose();
-			if (tw != null)
-				tw.release();
 		}
 	}
 
@@ -460,10 +446,14 @@ public class TestRepository {
 			return true;
 
 		Ref ref = repository.getRef(Constants.HEAD);
-		RevCommit c = new RevWalk(repository).parseCommit(ref.getObjectId());
-		TreeWalk tw = TreeWalk.forPath(repository, getRepoRelativePath(absolutePath), c.getTree());
+		try (RevWalk rw = new RevWalk(repository)) {
+			RevCommit c = rw.parseCommit(ref.getObjectId());
 
-		return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
+			try (TreeWalk tw = TreeWalk.forPath(repository,
+					getRepoRelativePath(absolutePath), c.getTree())) {
+				return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
+			}
+		}
 	}
 
 	public long lastModifiedInIndex(String path) throws IOException {

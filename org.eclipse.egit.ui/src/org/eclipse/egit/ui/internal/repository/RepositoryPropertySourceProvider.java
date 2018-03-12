@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2012 SAP AG.
+ * Copyright (c) 2010, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.action.IToolBarManager;
@@ -67,6 +68,7 @@ public class RepositoryPropertySourceProvider implements
 
 		disposeListener = new DisposeListener() {
 
+			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				removeListener();
 			}
@@ -80,6 +82,7 @@ public class RepositoryPropertySourceProvider implements
 			handle.remove();
 	}
 
+	@Override
 	public IPropertySource getPropertySource(Object object) {
 
 		if (object == lastObject)
@@ -94,11 +97,13 @@ public class RepositoryPropertySourceProvider implements
 		RepositoryTreeNode node = (RepositoryTreeNode) object;
 		listenerHandle = node.getRepository().getListenerList()
 				.addConfigChangedListener(new ConfigChangedListener() {
+					@Override
 					public void onConfigChanged(ConfigChangedEvent event) {
 						// force a refresh of the page
 						lastObject = null;
 						myPage.getSite().getShell().getDisplay().asyncExec(new Runnable() {
 
+							@Override
 							public void run() {
 								myPage.setPropertySourceProvider(RepositoryPropertySourceProvider.this);
 							}
@@ -127,7 +132,7 @@ public class RepositoryPropertySourceProvider implements
 			Ref ref = (Ref) node.getObject();
 			if (ref.getName().startsWith(Constants.R_HEADS) || ref.getName().startsWith(Constants.R_REMOTES)){
 				checkChangeType(SourceType.BRANCH);
-				Repository repository = (Repository) node.getAdapter(Repository.class);
+				Repository repository = CommonUtils.getAdapter(node, Repository.class);
 				lastRepositorySource =  new BranchPropertySource(repository, ref.getName(), myPage);
 				return lastRepositorySource;
 			}

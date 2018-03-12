@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2012 Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2011, 2014 Jens Baumgart <jens.baumgart@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.IndexDiff;
 
 /**
@@ -43,7 +45,29 @@ public class IndexDiffData {
 
 	private final Set<String> ignored;
 
+	private final Set<String> symlinks;
+
+	private final Set<String> submodules;
+
 	private final Collection<IResource> changedResources;
+
+	/**
+	 * Empty, immutable data
+	 */
+	public IndexDiffData() {
+		added = Collections.emptySet();
+		changed = Collections.emptySet();
+		removed = Collections.emptySet();
+		missing = Collections.emptySet();
+		modified = Collections.emptySet();
+		untracked = Collections.emptySet();
+		untrackedFolders = Collections.emptySet();
+		conflicts = Collections.emptySet();
+		ignored = Collections.emptySet();
+		symlinks = Collections.emptySet();
+		submodules = Collections.emptySet();
+		changedResources = Collections.emptySet();
+	}
 
 	/**
 	 * @param indexDiff
@@ -66,7 +90,11 @@ public class IndexDiffData {
 				.getConflicting()));
 		ignored = Collections.unmodifiableSet(new HashSet<String>(indexDiff
 				.getIgnoredNotInIndex()));
-		changedResources = null;
+		symlinks = Collections.unmodifiableSet(new HashSet<String>(indexDiff
+				.getPathsWithIndexMode(FileMode.SYMLINK)));
+		submodules = Collections.unmodifiableSet(new HashSet<String>(indexDiff
+				.getPathsWithIndexMode(FileMode.GITLINK)));
+		changedResources = Collections.emptySet();
 	}
 
 	private Set<String> getUntrackedFolders(IndexDiff indexDiff) {
@@ -100,6 +128,8 @@ public class IndexDiffData {
 		Set<String> modified2 = new HashSet<String>(baseDiff.getModified());
 		Set<String> untracked2 = new HashSet<String>(baseDiff.getUntracked());
 		Set<String> conflicts2 = new HashSet<String>(baseDiff.getConflicting());
+		Set<String> symlinks2 = new HashSet<String>(baseDiff.getSymlinks());
+		Set<String> submodules2 = new HashSet<String>(baseDiff.getSubmodules());
 
 		mergeList(added2, changedFiles, diffForChangedFiles.getAdded());
 		mergeList(changed2, changedFiles, diffForChangedFiles.getChanged());
@@ -107,6 +137,10 @@ public class IndexDiffData {
 		mergeList(missing2, changedFiles, diffForChangedFiles.getMissing());
 		mergeList(modified2, changedFiles, diffForChangedFiles.getModified());
 		mergeList(untracked2, changedFiles, diffForChangedFiles.getUntracked());
+		mergeList(symlinks2, changedFiles,
+				diffForChangedFiles.getPathsWithIndexMode(FileMode.SYMLINK));
+		mergeList(submodules2, changedFiles,
+				diffForChangedFiles.getPathsWithIndexMode(FileMode.GITLINK));
 		Set<String> untrackedFolders2 = mergeUntrackedFolders(
 				baseDiff.getUntrackedFolders(), changedFiles,
 				getUntrackedFolders(diffForChangedFiles));
@@ -124,6 +158,8 @@ public class IndexDiffData {
 		untrackedFolders = Collections.unmodifiableSet(untrackedFolders2);
 		conflicts = Collections.unmodifiableSet(conflicts2);
 		ignored = Collections.unmodifiableSet(ignored2);
+		symlinks = Collections.unmodifiableSet(symlinks2);
+		submodules = Collections.unmodifiableSet(submodules2);
 	}
 
 	private void mergeList(Set<String> baseList,
@@ -160,28 +196,54 @@ public class IndexDiffData {
 		return false;
 	}
 
-	private static Set<String> mergeIgnored(Set<String> oldIgnoredPaths,
+	/**
+	 * THIS METHOD IS PROTECTED FOR TESTS ONLY
+	 *
+	 * @param oldIgnoredPaths
+	 * @param changedPaths
+	 * @param newIgnoredPaths
+	 * @return never null
+	 */
+	protected static Set<String> mergeIgnored(Set<String> oldIgnoredPaths,
 			Collection<String> changedPaths, Set<String> newIgnoredPaths) {
 		Set<String> merged = new HashSet<String>();
 		for (String oldIgnoredPath : oldIgnoredPaths) {
 			boolean changed = isAnyPrefixOf(oldIgnoredPath, changedPaths);
-			if (!changed)
+			if (!changed) {
 				merged.add(oldIgnoredPath);
+			}
 		}
 		merged.addAll(newIgnoredPaths);
 		return merged;
 	}
 
-	private static boolean isAnyPrefixOf(String pathToCheck, Collection<String> possiblePrefixes) {
-		for (String possiblePrefix : possiblePrefixes)
-			if (pathToCheck.startsWith(possiblePrefix) || possiblePrefix.equals(pathToCheck + '/'))
+	/**
+	 * THIS METHOD IS PROTECTED FOR TESTS ONLY
+	 *
+	 * @param pathToCheck
+	 * @param possiblePrefixes
+	 * @return true if given path starts with any of given prefixes (possibly
+	 *         followed by slash)
+	 */
+	protected static boolean isAnyPrefixOf(String pathToCheck,
+			Collection<String> possiblePrefixes) {
+		for (String possiblePrefix : possiblePrefixes) {
+			if (pathToCheck.startsWith(possiblePrefix)) {
 				return true;
+			}
+			if (possiblePrefix.length() == pathToCheck.length() + 1
+					&& possiblePrefix.charAt(possiblePrefix.length() - 1) == '/'
+					&& possiblePrefix.startsWith(pathToCheck)) {
+				return true;
+			}
+		}
 		return false;
 	}
 
 	/**
 	 * @return list of files added to the index, not in the tree
 	 */
+	@NonNull
 	public Set<String> getAdded() {
 		return Collections.unmodifiableSet(added);
 	}
@@ -189,6 +251,7 @@ public class IndexDiffData {
 	/**
 	 * @return list of files changed from tree to index
 	 */
+	@NonNull
 	public Set<String> getChanged() {
 		return changed;
 	}
@@ -196,6 +259,7 @@ public class IndexDiffData {
 	/**
 	 * @return list of files removed from index, but in tree
 	 */
+	@NonNull
 	public Set<String> getRemoved() {
 		return removed;
 	}
@@ -203,6 +267,7 @@ public class IndexDiffData {
 	/**
 	 * @return list of files in index, but not filesystem
 	 */
+	@NonNull
 	public Set<String> getMissing() {
 		return missing;
 	}
@@ -210,6 +275,7 @@ public class IndexDiffData {
 	/**
 	 * @return list of files modified on disk relative to the index
 	 */
+	@NonNull
 	public Set<String> getModified() {
 		return modified;
 	}
@@ -217,6 +283,7 @@ public class IndexDiffData {
 	/**
 	 * @return list of files that are not ignored, and not in the index.
 	 */
+	@NonNull
 	public Set<String> getUntracked() {
 		return untracked;
 	}
@@ -225,6 +292,7 @@ public class IndexDiffData {
 	 * @return list of folders containing only untracked files/folders
 	 * The folder paths end with /
 	 */
+	@NonNull
 	public Set<String> getUntrackedFolders() {
 		return untrackedFolders;
 	}
@@ -232,6 +300,7 @@ public class IndexDiffData {
 	/**
 	 * @return list of files that are in conflict
 	 */
+	@NonNull
 	public Set<String> getConflicting() {
 		return conflicts;
 	}
@@ -240,13 +309,31 @@ public class IndexDiffData {
 	 * @see IndexDiff#getIgnoredNotInIndex()
 	 * @return list of files that are ignored
 	 */
+	@NonNull
 	public Set<String> getIgnoredNotInIndex() {
 		return ignored;
 	}
 
 	/**
+	 * @return list of files that are symlinks
+	 */
+	@NonNull
+	public Set<String> getSymlinks() {
+		return symlinks;
+	}
+
+	/**
+	 * @return list of files that are submodules
+	 */
+	@NonNull
+	public Set<String> getSubmodules() {
+		return submodules;
+	}
+
+	/**
 	 * @return the changed files
 	 */
+	@NonNull
 	public Collection<IResource> getChangedResources() {
 		return changedResources;
 	}
@@ -263,6 +350,8 @@ public class IndexDiffData {
 		dumpList(builder, "untrackedFolders", untrackedFolders); //$NON-NLS-1$
 		dumpList(builder, "conflicts", conflicts); //$NON-NLS-1$
 		dumpList(builder, "ignored", ignored); //$NON-NLS-1$
+		dumpList(builder, "symlinks", symlinks); //$NON-NLS-1$
+		dumpList(builder, "submodules", submodules); //$NON-NLS-1$
 		dumpResourceList(builder,
 				"changedResources", changedResources); //$NON-NLS-1$
 		return builder.toString();

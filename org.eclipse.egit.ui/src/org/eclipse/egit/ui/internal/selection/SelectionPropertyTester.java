@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2014 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (C) 2014, 2015 Robin Stocker <robin@nibor.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.eclipse.core.expressions.PropertyTester;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
@@ -29,40 +31,25 @@ import org.eclipse.ui.IWorkingSet;
  */
 public class SelectionPropertyTester extends PropertyTester {
 
+	@Override
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
 		Collection<?> collection = (Collection<?>) receiver;
+		if (collection.isEmpty())
+			return false;
 		if ("projectSingleRepository".equals(property)) { //$NON-NLS-1$
 			if (collection.size() != 1)
 				return false;
 
 			Repository repository = getRepositoryOfProjects(collection, true);
-			if (repository == null)
-				return false;
-
-			for (Object arg : args) {
-				String s = (String) arg;
-				if (!ResourcePropertyTester.testRepositoryState(repository, s))
-					return false;
-			}
-			return true;
+			return testRepositoryProperties(repository, args);
 
 		} else if ("projectsWithRepositories".equals(property)) { //$NON-NLS-1$
 			Repository repository = getRepositoryOfProjects(collection, false);
 			return repository != null;
 
 		} else if ("resourcesSingleRepository".equals(property)) { //$NON-NLS-1$
-			if (collection.isEmpty())
-				return false;
-
-			Object firstElement = collection.iterator().next();
-			IStructuredSelection selection;
-			if (collection.size() == 1 && firstElement instanceof ITextSelection) {
-				selection = SelectionUtils.getStructuredSelection((ITextSelection) firstElement);
-			} else {
-				selection = new StructuredSelection(new ArrayList<Object>(
-						collection));
-			}
+			IStructuredSelection selection = getStructuredSelection(collection);
 
 			// It may seem like we could just use SelectionUtils.getRepository
 			// here. The problem: It would also return a repository for a node
@@ -70,9 +57,55 @@ public class SelectionPropertyTester extends PropertyTester {
 			IResource[] resources = SelectionUtils
 					.getSelectedResources(selection);
 			Repository repository = getRepositoryOfResources(resources);
-			return repository != null;
+			return testRepositoryProperties(repository, args);
+
+		} else if ("fileOrFolderInRepository".equals(property)) { //$NON-NLS-1$
+			if (collection.size() != 1)
+				return false;
+
+			IStructuredSelection selection = getStructuredSelection(collection);
+			if (selection.size() != 1)
+				return false;
+
+			Object firstElement = selection.getFirstElement();
+			IResource resource = AdapterUtils.adapt(firstElement,
+					IResource.class);
+			if (resource instanceof IFile || resource instanceof IFolder) {
+				RepositoryMapping m = RepositoryMapping.getMapping(resource);
+				if (m != null)
+					return testRepositoryProperties(m.getRepository(), args);
+			}
+		} else if ("resourcesAllInRepository".equals(property)) { //$NON-NLS-1$
+			IStructuredSelection selection = getStructuredSelection(collection);
+
+			IResource[] resources = SelectionUtils
+					.getSelectedResources(selection);
+			return haveRepositories(resources);
 		}
 		return false;
+	}
+
+	private static IStructuredSelection getStructuredSelection(
+			Collection<?> collection) {
+		Object firstElement = collection.iterator().next();
+		if (collection.size() == 1 && firstElement instanceof ITextSelection)
+			return SelectionUtils
+					.getStructuredSelection((ITextSelection) firstElement);
+		else
+			return new StructuredSelection(new ArrayList<Object>(collection));
+	}
+
+	private static boolean testRepositoryProperties(Repository repository,
+			Object[] properties) {
+		if (repository == null)
+			return false;
+
+		for (Object arg : properties) {
+			String s = (String) arg;
+			if (!ResourcePropertyTester.testRepositoryState(repository, s))
+				return false;
+		}
+		return true;
 	}
 
 	/**
@@ -126,6 +159,22 @@ public class SelectionPropertyTester extends PropertyTester {
 				repo = r;
 		}
 		return repo;
+	}
+
+	/**
+	 * @param resources
+	 *            the resources
+	 * @return {@code true} when all {@code resources} map to a repository,
+	 *         {@code false} otherwise.
+	 */
+	private static boolean haveRepositories(IResource[] resources) {
+		for (IResource resource : resources) {
+			Repository r = getRepositoryOfMapping(resource);
+			if (r == null) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static Repository getRepositoryOfProject(Object object) {

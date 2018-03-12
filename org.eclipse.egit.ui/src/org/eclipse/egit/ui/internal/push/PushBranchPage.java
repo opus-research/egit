@@ -9,9 +9,11 @@ package org.eclipse.egit.ui.internal.push;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -159,9 +161,18 @@ public class PushBranchPage extends WizardPage {
 		return forceUpdateSelected;
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		try {
 			this.remoteConfigs = RemoteConfig.getAllRemoteConfigs(repository.getConfig());
+			Collections.sort(remoteConfigs, new Comparator<RemoteConfig>() {
+
+				@Override
+				public int compare(RemoteConfig first, RemoteConfig second) {
+					return String.CASE_INSENSITIVE_ORDER.compare(
+							first.getName(), second.getName());
+				}
+			});
 		} catch (URISyntaxException e) {
 			this.remoteConfigs = new ArrayList<RemoteConfig>();
 			handleError(e);
@@ -192,7 +203,7 @@ public class PushBranchPage extends WizardPage {
 			branchIconLabel
 					.setLayoutData(new RowData(branchIcon.getBounds().width,
 							branchIcon.getBounds().height));
-			branchIconLabel.setBackgroundImage(branchIcon);
+			branchIconLabel.setImage(branchIcon);
 			Label localBranchLabel = new Label(sourceComposite, SWT.NONE);
 			localBranchLabel.setText(Repository.shortenRefName(this.ref
 					.getName()));
@@ -201,20 +212,19 @@ public class PushBranchPage extends WizardPage {
 			spacer.setLayoutData(new RowData(3, SWT.DEFAULT));
 		}
 
-		Image commitIcon = UIIcons.COMMIT.createImage();
+		Image commitIcon = UIIcons.CHANGESET.createImage();
 		this.disposables.add(commitIcon);
 		Label commitIconLabel = new Label(sourceComposite, SWT.NONE);
-		commitIconLabel.setBackgroundImage(commitIcon);
+		commitIconLabel.setImage(commitIcon);
 		commitIconLabel.setLayoutData(new RowData(commitIcon.getBounds().width,
 				commitIcon.getBounds().height));
 
 		Label commit = new Label(sourceComposite, SWT.NONE);
-		RevWalk revWalk = new RevWalk(repository);
 		StringBuilder commitBuilder = new StringBuilder(this.commitToPush
 				.abbreviate(7).name());
 		StringBuilder commitTooltipBuilder = new StringBuilder(
 				this.commitToPush.getName());
-		try {
+		try (RevWalk revWalk = new RevWalk(repository)) {
 			RevCommit revCommit = revWalk.parseCommit(this.commitToPush);
 			commitBuilder.append("  "); //$NON-NLS-1$
 			commitBuilder.append(Utils.shortenText(revCommit.getShortMessage(),
@@ -253,6 +263,7 @@ public class PushBranchPage extends WizardPage {
 		setRemoteConfigs();
 		remoteSelectionCombo
 				.addRemoteSelectionListener(new IRemoteSelectionListener() {
+					@Override
 					public void remoteSelected(RemoteConfig rc) {
 						remoteConfig = rc;
 						setRefAssist(rc);
@@ -282,6 +293,7 @@ public class PushBranchPage extends WizardPage {
 		UIUtils.addRefContentProposalToText(remoteBranchNameText,
 				this.repository, new IRefListProvider() {
 
+					@Override
 					public List<Ref> getRefList() {
 						if (PushBranchPage.this.assist != null) {
 							return PushBranchPage.this.assist
@@ -299,6 +311,7 @@ public class PushBranchPage extends WizardPage {
 							.indent(SWT.DEFAULT, 20).create());
 			upstreamConfigComponent
 					.addUpstreamConfigSelectionListener(new UpstreamConfigSelectionListener() {
+						@Override
 						public void upstreamConfigSelected(
 								UpstreamConfig newUpstreamConfig) {
 							upstreamConfig = newUpstreamConfig;
@@ -314,6 +327,7 @@ public class PushBranchPage extends WizardPage {
 		forceUpdateButton.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).span(3, 1).create());
 		forceUpdateButton.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				forceUpdateSelected = forceUpdateButton.getSelection();
 			}
@@ -347,6 +361,7 @@ public class PushBranchPage extends WizardPage {
 
 		// Add listener now to avoid setText above to already trigger it.
 		remoteBranchNameText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -411,7 +426,9 @@ public class PushBranchPage extends WizardPage {
 			}
 			String branchName = remoteBranchNameText.getText();
 			if (branchName.length() == 0) {
-				setErrorMessage(UIText.PushBranchPage_ChooseBranchNameError);
+				setErrorMessage(MessageFormat.format(
+						UIText.PushBranchPage_ChooseBranchNameError,
+						remoteConfig.getName()));
 				return;
 			}
 			if (!Repository.isValidRefName(Constants.R_HEADS + branchName)) {
@@ -448,7 +465,7 @@ public class PushBranchPage extends WizardPage {
 	}
 
 	private String getSuggestedBranchName() {
-		if (ref != null) {
+		if (ref != null && !ref.getName().startsWith(Constants.R_REMOTES)) {
 			StoredConfig config = repository.getConfig();
 			String branchName = Repository.shortenRefName(ref.getName());
 
