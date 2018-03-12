@@ -296,12 +296,6 @@ public class CoreText extends NLS {
 	/** */
 	public static String GitSubscriberMergeContext_FailedRefreshSyncView;
 
-	/** */
-	public static String GitProjectData_repositoryChangedJobName;
-
-	/** */
-	public static String GitProjectData_repositoryChangedTaksName;
-
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
 	}
