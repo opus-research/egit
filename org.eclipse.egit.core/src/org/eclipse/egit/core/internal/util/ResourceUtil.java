@@ -65,9 +65,6 @@ public class ResourceUtil {
 	 * The method splits the given resources by their repository. For each
 	 * occurring repository a list is built containing the repository relative
 	 * paths of the related resources.
-	 * <p>
-	 * When one of the passed resources corresponds to the working directory,
-	 * <code>""</code> will be returned as part of the collection.
 	 *
 	 * @param resources
 	 * @return a map containing a list of repository relative paths for each
@@ -88,12 +85,9 @@ public class ResourceUtil {
 	}
 
 	/**
-	 * The method splits the given paths by their repository. For each occurring
-	 * repository a list is built containing the repository relative paths of
-	 * the related resources.
-	 * <p>
-	 * When one of the passed paths corresponds to the working directory,
-	 * <code>""</code> will be returned as part of the collection.
+	 * The method splits the given paths by their repository. For each
+	 * occurring repository a list is built containing the repository relative
+	 * paths of the related resources.
 	 *
 	 * @param paths
 	 * @return a map containing a list of repository relative paths for each
@@ -125,7 +119,7 @@ public class ResourceUtil {
 
 	private static void addPathToMap(RepositoryMapping repositoryMapping,
 			String path, Map<Repository, Collection<String>> result) {
-		if (path != null) {
+		if (path != null && path.length() > 0) {
 			Repository repository = repositoryMapping.getRepository();
 			Collection<String> resourcesList = result.get(repository);
 			if (resourcesList == null) {
