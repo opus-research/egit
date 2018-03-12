@@ -190,7 +190,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		String dialogTitle = NLS.bind(UIText.FetchResultDialog_title,
 				destinationString);
 
-		fetchFromOrigin(tree);
+		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
+				"origin").expand().getNode(0).select();
+		ContextMenuHelper.clickContextMenu(tree, myUtil
+				.getPluginLocalizedValue("SimpleFetchCommand"));
 
 		SWTBotShell confirm = bot.shell(dialogTitle);
 		assertEquals("Wrong result table row count", 0, confirm.bot().table()
@@ -217,8 +220,12 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		refreshAndWait();
 
-		fetchFromOrigin(tree);
+		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
+				"origin").expand().getNode(0).select();
+		ContextMenuHelper.clickContextMenu(tree, myUtil
+				.getPluginLocalizedValue("SimpleFetchCommand"));
 
+		TestUtil.joinJobs(JobFamilies.FETCH);
 		confirm = bot.shell(dialogTitle);
 		SWTBotTable table = confirm.bot().table();
 		boolean found = false;
@@ -230,19 +237,13 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		assertTrue(found);
 		confirm.close();
 
-		fetchFromOrigin(tree);
-
-		confirm = bot.shell(dialogTitle);
-		assertEquals("Wrong result table row count", 0, confirm.bot().table()
-				.rowCount());
-	}
-
-	private void fetchFromOrigin(SWTBotTree tree) throws Exception,
-			InterruptedException {
 		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
 				"origin").expand().getNode(0).select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimpleFetchCommand"));
-		TestUtil.joinJobs(JobFamilies.FETCH);
+
+		confirm = bot.shell(dialogTitle);
+		assertEquals("Wrong result table row count", 0, confirm.bot().table()
+				.rowCount());
 	}
 }
