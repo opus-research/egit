@@ -5,7 +5,6 @@
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -793,9 +792,6 @@ public class UIText extends NLS {
 	public static String ReplaceTargetSelectionDialog_ReplaceTitle;
 
 	/** */
-	public static String ReplaceTargetSelectionDialog_ReplaceTitleEmptyPath;
-
-	/** */
 	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
 
 	/** */
@@ -982,9 +978,6 @@ public class UIText extends NLS {
 	public static String CompareTreeView_AnalyzingRepositoryTaskText;
 
 	/** */
-	public static String CompareTreeView_ExpandAllTooltip;
-
-	/** */
 	public static String CompareTreeView_CollapseAllTooltip;
 
 	/** */
@@ -1016,6 +1009,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareTreeView_WorkspaceVersionText;
+
+	/** */
+	public static String CompareTreeView_ShowIn_label;
 
 	/** */
 	public static String CompareUtils_errorGettingEncoding;
@@ -2165,9 +2161,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
-
-	/** */
-	public static String CompareUtils_errorCommonAncestor;
 
 	/** */
 	public static String ConfirmationPage_cantConnectToAnyTitle;
@@ -3490,9 +3483,6 @@ public class UIText extends NLS {
 	public static String UIUtils_StartTypingForPreviousValuesMessage;
 
 	/** */
-	public static String UIUtils_ShowInMenuLabel;
-
-	/** */
 	public static String UnmergedBranchDialog_Message;
 
 	/** */
@@ -3749,9 +3739,6 @@ public class UIText extends NLS {
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
-	public static String GitChangeSetModelProviderLabel;
-
-	/** */
 	public static String GitBranchSynchronizeWizardPage_title;
 
 	/** */
@@ -3810,9 +3797,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LocalFileRevision_currentVersionTag;
-
-	/** */
-	public static String LocalNonWorkspaceTypedElement_errorWritingContents;
 
 	/** */
 	public static String LoginDialog_changeCredentials;
@@ -4464,9 +4448,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_CommitMessage;
-
-	/** */
-	public static String StagingView_CommitAndPush;
 
 	/** */
 	public static String StagingView_Committer;

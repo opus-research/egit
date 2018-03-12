@@ -799,8 +799,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 	}
 
-	private class ChangeSetPreview extends Preview implements
-			ITreeContentProvider {
+	private class ChangeSetPreview extends Preview
+			implements Observer, ITreeContentProvider {
 
 		public ChangeSetPreview(Composite composite) {
 			super(composite);

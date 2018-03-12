@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -71,7 +71,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-@SuppressWarnings("restriction")
 public abstract class AbstractSynchronizeViewTest extends
 		LocalRepositoryTestCase {
 
@@ -84,8 +83,6 @@ public abstract class AbstractSynchronizeViewTest extends
 	protected static final String EMPTY_REPOSITORY = "EmptyRepository";
 
 	static File repositoryFile;
-
-	protected static File childRepositoryFile;
 
 	@Before public void setupViews() {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
@@ -108,7 +105,7 @@ public abstract class AbstractSynchronizeViewTest extends
 		repositoryFile = createProjectAndCommitToRepository();
 		createAndCommitDotGitignore();
 
-		childRepositoryFile = createChildRepository(repositoryFile);
+		createChildRepository(repositoryFile);
 		Activator.getDefault().getRepositoryUtil()
 				.addConfiguredRepository(repositoryFile);
 
@@ -347,10 +344,10 @@ public abstract class AbstractSynchronizeViewTest extends
 	protected void commit(String projectName) throws InterruptedException {
 		showDialog(projectName, "Team", CommitAction_commit);
 
-		SWTBot shellBot = bot.shell(CommitDialog_CommitChanges).bot();
-		shellBot.styledText(0).setText(TEST_COMMIT_MSG);
-		shellBot.toolbarButtonWithTooltip(CommitDialog_SelectAll).click();
-		shellBot.button(CommitDialog_Commit).click();
+		bot.shell(CommitDialog_CommitChanges).bot().activeShell();
+		bot.styledText(0).setText(TEST_COMMIT_MSG);
+		bot.toolbarButtonWithTooltip(CommitDialog_SelectAll).click();
+		bot.button(CommitDialog_Commit).click();
 		TestUtil.joinJobs(JobFamilies.COMMIT);
 	}
 
@@ -369,6 +366,7 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	private static void showDialog(String projectName, String... cmd) {
 		SWTBot packageExplorerBot = bot.viewByTitle("Package Explorer").bot();
+		packageExplorerBot.activeShell();
 		SWTBotTree tree = packageExplorerBot.tree();
 
 		// EGit decorates the project node shown in the package explorer. The
