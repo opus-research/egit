@@ -16,9 +16,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.mapping.RemoteResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
@@ -29,7 +26,6 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.team.ui.TeamUI;
@@ -64,26 +60,40 @@ public class GitModelSynchronize {
 	 */
 	public static final void launch(final GitSynchronizeDataSet gsdSet,
 			IResource[] resources) {
-		final ResourceMapping[] mappings = getSelectedResourceMappings(resources);
+		ResourceMapping[] mappings = getSelectedResourceMappings(resources);
 
+		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
+				gsdSet);
+		RemoteResourceMappingContext remoteContext = new GitSubscriberResourceMappingContext(
+				gsdSet);
+		SubscriberScopeManager manager = new SubscriberScopeManager(
+				subscriber.getName(), mappings, subscriber, remoteContext, true);
+		GitSubscriberMergeContext context = new GitSubscriberMergeContext(
+				subscriber, manager, gsdSet);
+		final GitModelSynchronizeParticipant participant = new GitModelSynchronizeParticipant(
+				context);
+
+		TeamUI.getSynchronizeManager().addSynchronizeParticipants(
+				new ISynchronizeParticipant[] { participant });
 		final IWorkbenchWindow window = PlatformUI.getWorkbench()
 				.getActiveWorkbenchWindow();
 
 		boolean launchFetch = Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH);
-		if (launchFetch) {
+		if (launchFetch || gsdSet.forceFetch()) {
 			Job fetchJob = new SynchronizeFetchJob(gsdSet);
 			fetchJob.setUser(true);
+
 			fetchJob.addJobChangeListener(new JobChangeAdapter() {
 				@Override
 				public void done(IJobChangeEvent event) {
-					fireSynchronizeAction(window, gsdSet, mappings);
+					fireSynchronizeAction(participant, window);
 				}
 			});
 
 			fetchJob.schedule();
 		} else {
-			fireSynchronizeAction(window, gsdSet, mappings);
+			fireSynchronizeAction(participant, window);
 		}
 	}
 
@@ -147,46 +157,13 @@ public class GitModelSynchronize {
 		return false;
 	}
 
-	private static void fireSynchronizeAction(final IWorkbenchWindow window,
-			final GitSynchronizeDataSet gsdSet, final ResourceMapping[] mappings) {
-		final GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
-				gsdSet);
+	private static void fireSynchronizeAction(
+			GitModelSynchronizeParticipant participant, IWorkbenchWindow window) {
+		IWorkbenchPart activePart = null;
+		if (window != null)
+			activePart = window.getActivePage().getActivePart();
 
-		Job syncJob = new Job(UIText.GitModelSynchonize_fetchGitDataJobName) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				subscriber.init(monitor);
-
-				return Status.OK_STATUS;
-			}
-		};
-
-		syncJob.addJobChangeListener(new JobChangeAdapter() {
-			@Override
-			public void done(IJobChangeEvent event) {
-				RemoteResourceMappingContext remoteContext = new GitSubscriberResourceMappingContext(subscriber,
-						gsdSet);
-				SubscriberScopeManager manager = new SubscriberScopeManager(
-						subscriber.getName(), mappings, subscriber,
-						remoteContext, true);
-				GitSubscriberMergeContext context = new GitSubscriberMergeContext(
-						subscriber, manager, gsdSet);
-				final GitModelSynchronizeParticipant participant = new GitModelSynchronizeParticipant(
-						context);
-
-				TeamUI.getSynchronizeManager().addSynchronizeParticipants(
-						new ISynchronizeParticipant[] { participant });
-
-				IWorkbenchPart activePart = null;
-				if (window != null)
-					activePart = window.getActivePage().getActivePart();
-
-				participant.run(activePart);
-			}
-		});
-
-		syncJob.setUser(true);
-		syncJob.schedule();
+		participant.run(activePart);
 	}
 
 	private GitModelSynchronize() {

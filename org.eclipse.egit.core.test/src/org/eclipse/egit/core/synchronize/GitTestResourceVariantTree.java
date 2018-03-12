@@ -10,9 +10,8 @@ package org.eclipse.egit.core.synchronize;
 
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.variants.ResourceVariantByteStore;
 
 /**
@@ -23,21 +22,13 @@ import org.eclipse.team.core.variants.ResourceVariantByteStore;
 class GitTestResourceVariantTree extends GitResourceVariantTree {
 
 	GitTestResourceVariantTree(GitSynchronizeDataSet data,
-			GitSyncCache cache, ResourceVariantByteStore store) {
-		super(store, cache, data);
+			ResourceVariantByteStore store) {
+		super(store, data);
 	}
 
 	@Override
-	protected ObjectId getObjectId(DiffEntry diffEntry) {
-		return null;
-	}
-	@Override
-	protected ObjectId getObjectId(GitSynchronizeData gsd) {
-		return null;
-	}
-
-	@Override
-	protected RevCommit getCommitId(GitSynchronizeData gsd) {
+	protected RevCommit getRevCommit(GitSynchronizeData gsd)
+			throws TeamException {
 		return null;
 	}
 

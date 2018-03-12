@@ -240,6 +240,9 @@ public class CoreText extends NLS {
 	public static String AddToIndexOperation_failed;
 
 	/** */
+	public static String RemoveFromIndexOperation_failed;
+
+	/** */
 	public static String BranchOperation_performingBranch;
 
 	/** */
@@ -294,10 +297,10 @@ public class CoreText extends NLS {
 	public static String GitSubscriberMergeContext_FailedRefreshSyncView;
 
 	/** */
-	public static String GitResourceVariantTreeSubscriber_fetchTaskName;
+	public static String GitProjectData_repositoryChangedJobName;
 
 	/** */
-	public static String GitSyncObjectCache_noData;
+	public static String GitProjectData_repositoryChangedTaskName;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);

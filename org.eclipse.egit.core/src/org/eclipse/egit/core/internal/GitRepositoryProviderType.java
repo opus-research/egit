@@ -12,7 +12,6 @@ package org.eclipse.egit.core.internal;
 
 import java.io.IOException;
 
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
@@ -41,10 +40,7 @@ public class GitRepositoryProviderType extends RepositoryProviderType {
 			// do nothing
 		}
 
-		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(set);
-		subscriber.init(new NullProgressMonitor());
-
-		return subscriber;
+		return new GitResourceVariantTreeSubscriber(set);
 	}
 
 }

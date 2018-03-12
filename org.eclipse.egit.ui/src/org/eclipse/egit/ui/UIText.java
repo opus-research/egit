@@ -97,6 +97,9 @@ public class UIText extends NLS {
 	public static String AddToIndexCommand_addingFilesFailed;
 
 	/** */
+	public static String RemoveFromIndexAction_removingFiles;
+
+	/** */
 	public static String BlameInformationControl_Author;
 
 	/** */
@@ -569,6 +572,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitProjectPropertyPage_LabelWorkdir;
+
+	/** */
+	public static String GitProjectPropertyPage_UnableToGetCommit;
 
 	/** */
 	public static String GitProjectPropertyPage_ValueEmptyRepository;
@@ -2257,13 +2263,7 @@ public class UIText extends NLS {
 	public static String FetchResultDialog_title;
 
 	/** */
-	public static String FetchResultTable_collapseAll;
-
-	/** */
 	public static String FetchResultTable_counterCommits;
-
-	/** */
-	public static String FetchResultTable_expandAll;
 
 	/** */
 	public static String FetchResultTable_statusDetailCouldntLock;
@@ -2938,6 +2938,9 @@ public class UIText extends NLS {
 	public static String MultiPullResultDialog_OkStatus;
 
 	/** */
+	public static String MultiPullResultDialog_FailedStatus;
+
+	/** */
 	public static String MultiPullResultDialog_OverallStatusColumnHeader;
 
 	/** */
@@ -2963,6 +2966,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIIcons_errorLoadingPluginImage;
+
+	/** */
+	public static String UIUtils_CollapseAll;
+
+	/** */
+	public static String UIUtils_ExpandAll;
 
 	/** */
 	public static String UIUtils_PressShortcutMessage;
@@ -3186,6 +3195,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
+
+	/** */
+	public static String GitBranchSynchronizeWizardPage_fetchChangesFromRemote;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
@@ -3803,6 +3815,9 @@ public class UIText extends NLS {
 	public static String GitActionContributor_Pull;
 
 	/** */
+	public static String GitLabelProvider_UnableToRetrieveLabel;
+
+	/** */
 	public static String GitVariableResolver_InternalError;
 
 	/** */
@@ -3816,6 +3831,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_UnstagedChanges;
+
+	/** */
+	public static String StagingView_ShowFileNamesFirst;
 
 	/** */
 	public static String StagingView_StagedChanges;
@@ -3858,6 +3876,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_OpenNewCommits;
+
+	/** */
+	public static String StagingView_ColumnLayout;
 
 	/** */
 	public static String StagingView_IndexDiffReload;
@@ -3906,9 +3927,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
-
-	/** */
-	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
