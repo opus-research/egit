@@ -13,7 +13,6 @@ package org.eclipse.egit.ui.internal.repository.tree;
 import java.io.File;
 
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 
 /**
  * Represents a File in the working directory tree
@@ -30,7 +29,7 @@ public class FileNode extends RepositoryTreeNode<File> {
 	 * @param file
 	 *            the file
 	 */
-	public FileNode(RepositoryTreeNode parent, FileRepository repository, File file) {
+	public FileNode(RepositoryTreeNode parent, Repository repository, File file) {
 		super(parent, RepositoryTreeNodeType.FILE, repository, file);
 	}
 

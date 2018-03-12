@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.internal.repository.tree;
 
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 
 /**
  * Represents the "Local Branches" node
@@ -26,7 +25,7 @@ public class LocalBranchesNode extends RepositoryTreeNode<Repository> {
 	 * @param repository
 	 *            the {@link Repository}
 	 */
-	public LocalBranchesNode(RepositoryTreeNode parent, FileRepository repository) {
+	public LocalBranchesNode(RepositoryTreeNode parent, Repository repository) {
 		super(parent, RepositoryTreeNodeType.LOCALBRANCHES, repository,
 				repository);
 	}
