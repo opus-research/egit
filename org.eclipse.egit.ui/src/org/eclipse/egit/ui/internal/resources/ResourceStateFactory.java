@@ -44,7 +44,6 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class ResourceStateFactory {
 
-	@NonNull
 	private static final ResourceStateFactory INSTANCE = new ResourceStateFactory();
 
 	/**
@@ -52,7 +51,6 @@ public class ResourceStateFactory {
 	 *
 	 * @return the factory singleton
 	 */
-	@NonNull
 	public static ResourceStateFactory getInstance() {
 		return INSTANCE;
 	}
@@ -109,8 +107,7 @@ public class ResourceStateFactory {
 	}
 
 	/**
-	 * Computes an {@link IResourceState} for the given {@link IResource} from
-	 * the given {@link IndexDiffData}.
+	 * Computes an {@link IResourceState} for the given {@link IResource}.
 	 *
 	 * @param indexDiffData
 	 *            to compute the state from

@@ -34,7 +34,6 @@ public class ResourceState implements IResourceState {
 	/**
 	 * Staged state of the resource
 	 */
-	@NonNull
 	private Staged staged = Staged.NOT_STAGED;
 
 	/**
