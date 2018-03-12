@@ -4386,15 +4386,10 @@
                   <iterate
                         ifEmpty="false"
                         operator="or">
-                     <and>
-                        <adapt
-                              type="org.eclipse.core.resources.IResource">
-                        </adapt>
-                        <test
-                              property="GitResource.hasUnstagedChanges">
-                        </test>
-                     </and>
-                  </iterate>
+                     <test
+                           property="GitResource.hasUnstagedChanges">
+                     </test>
+                   </iterate>
                </and>
             </visibleWhen>
          </command>
@@ -4411,14 +4406,9 @@
                   <iterate
                         ifEmpty="false"
                         operator="or">
-                     <and>
-                        <adapt
-                              type="org.eclipse.core.resources.IResource">
-                        </adapt>
-                        <test
-                              property="GitResource.isStaged">
-                        </test>
-                     </and>
+                     <test
+                           property="GitResource.isStaged">
+                     </test>
                   </iterate>
                </and>
             </visibleWhen>
@@ -4436,16 +4426,11 @@
                   <iterate
                         ifEmpty="false"
                         operator="or">
-                     <and>
-                        <adapt
-                              type="org.eclipse.core.resources.IResource">
-                        </adapt>
-                        <not>
-                           <test
-                                 property="GitResource.isIgnored">
-                           </test>
-                        </not>
-                     </and>
+                     <not>
+                        <test
+                              property="GitResource.isIgnored">
+                        </test>
+                     </not>
                   </iterate>
                </and>
             </visibleWhen>
