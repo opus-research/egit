@@ -17,9 +17,6 @@ import org.eclipse.osgi.util.NLS;
 public class CoreText extends NLS {
 
 	/** */
-	public static String Activator_ReconfigureWindowCacheError;
-
-	/** */
 	public static String AssumeUnchangedOperation_adding;
 
 	/** */

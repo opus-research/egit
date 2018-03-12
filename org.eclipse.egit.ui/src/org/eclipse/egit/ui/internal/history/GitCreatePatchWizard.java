@@ -455,7 +455,7 @@ public class GitCreatePatchWizard extends Wizard {
 	 *
 	 * A wizard Page used to specify options of the created patch
 	 */
-	public static class OptionsPage extends WizardPage {
+	public class OptionsPage extends WizardPage {
 
 		private Button gitFormat;
 
