@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -20,6 +20,7 @@ import org.eclipse.core.commands.NotEnabledException;
 import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
@@ -57,6 +58,8 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.IHandlerService;
 
@@ -71,7 +74,7 @@ public class UIUtils {
 	private static final char[] VALUE_HELP_ACTIVATIONCHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123457890*@ <>".toCharArray(); //$NON-NLS-1$
 
 	/**
-	 * the keystroke which provides the submit action, see {@link #isSubmitKeyEvent(KeyEvent)}
+	 * A keystroke for a "submit" action, see {@link #isSubmitKeyEvent(KeyEvent)}
 	 */
 	public static final KeyStroke SUBMIT_KEY_STROKE = KeyStroke.getInstance(SWT.MOD1, SWT.CR);
 
@@ -620,13 +623,29 @@ public class UIUtils {
 	}
 
 	/**
-	 * Determine if the key event represents a "submit" action (Ctrl+Enter or
-	 * Command+Enter).
+	 * Determine if the key event represents a "submit" action
+	 * (&lt;modifier&gt;+Enter).
 	 *
 	 * @param event
 	 * @return true, if it means submit, false otherwise
 	 */
 	public static boolean isSubmitKeyEvent(KeyEvent event) {
-		return event.stateMask == SUBMIT_KEY_STROKE.getModifierKeys() && event.keyCode == SUBMIT_KEY_STROKE.getNaturalKey();
+		return (event.stateMask & SWT.MODIFIER_MASK) != 0
+				&& event.keyCode == SUBMIT_KEY_STROKE.getNaturalKey();
 	}
+
+	/**
+	 * Prompt for saving all dirty editors for resources in the working
+	 * directory of the specified repository.
+	 *
+	 * @param repository
+	 * @return true, if the user opted to continue, false otherwise
+	 * @see IWorkbench#saveAllEditors(boolean)
+	 */
+	public static boolean saveAllEditors(Repository repository) {
+		IWorkbench workbench = PlatformUI.getWorkbench();
+		IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
+		return workbench.saveAll(window, window, new RepositorySaveableFilter(repository), true);
+	}
+
 }
