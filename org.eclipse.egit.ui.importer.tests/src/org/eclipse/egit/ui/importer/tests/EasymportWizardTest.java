@@ -148,6 +148,7 @@ public class EasymportWizardTest {
 			bot.text().setText(tmpDir.toString());
 			bot.button("Next >").click();
 			waitForNextEnabled(180); // Time to clone repo, up to 3 minutes
+			bot.button("Next >").click();
 			bot.button("Finish").click();
 
 			bot.shell("Nested Projects");
