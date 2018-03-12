@@ -40,12 +40,11 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.ConfigurationChecker;
-import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
+import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.MenuManager;
@@ -366,7 +365,6 @@ public class RepositoriesView extends CommonNavigator {
 
 	@Override
 	protected CommonViewer createCommonViewer(Composite aParent) {
-		ConfigurationChecker.checkConfiguration();
 		CommonViewer viewer = super.createCommonViewer(aParent);
 		// handle the double-click event for tags and branches
 		viewer.addDoubleClickListener(new IDoubleClickListener() {
@@ -611,7 +609,10 @@ public class RepositoriesView extends CommonNavigator {
 				if (needsNewInput)
 					initRepositoriesAndListeners();
 
-				Display.getDefault().asyncExec(new Runnable() {
+				if (!UIUtils.isUsable(tv))
+					return Status.CANCEL_STATUS;
+				PlatformUI.getWorkbench().getDisplay()
+						.asyncExec(new Runnable() {
 					public void run() {
 						if (!UIUtils.isUsable(tv))
 							return;

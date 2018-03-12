@@ -156,6 +156,9 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
+	public static String RepositoryUtil_noHead;
+
+	/** */
 	public static String RemoteRefUpdateCantBeReused;
 
 	/** */
@@ -244,6 +247,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CreatePatchOperation_patchFileCouldNotBeWritten;
+
+	/** */
+	public static String IndexDiffCacheEntry_refreshingProjects;
 
 	/** */
 	public static String IndexDiffCacheEntry_reindexing;
