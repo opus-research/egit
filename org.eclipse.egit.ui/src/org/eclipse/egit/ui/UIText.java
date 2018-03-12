@@ -1466,9 +1466,6 @@ public class UIText extends NLS {
 	public static String ConfigurationEditorComponent_NewValueButton;
 
 	/** */
-	public static String ConfigurationEditorComponent_NoConfigLocationKnown;
-
-	/** */
 	public static String ConfigurationEditorComponent_NoEntrySelectedMessage;
 
 	/** */
@@ -1479,9 +1476,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_OpenEditorTooltip;
-
-	/** */
-	public static String ConfigurationEditorComponent_ReadOnlyLocationFormat;
 
 	/** */
 	public static String ConfigurationEditorComponent_RemoveAllButton;
