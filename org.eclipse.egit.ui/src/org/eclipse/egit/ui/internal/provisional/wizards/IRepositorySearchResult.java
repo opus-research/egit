@@ -26,4 +26,5 @@ public interface IRepositorySearchResult {
 	 * @return an object encapsulating info about a git repository
 	 */
 	public GitRepositoryInfo getGitRepositoryInfo();
+
 }
