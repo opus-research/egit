@@ -58,6 +58,9 @@ public class CoreText extends NLS {
 	public static String CommitFileRevision_pathNotIn;
 
 	/** */
+	public static String CommitOperation_ParseCherryPickCommitFailed;
+
+	/** */
 	public static String CommitOperation_PerformingCommit;
 
 	/** */
@@ -166,7 +169,13 @@ public class CoreText extends NLS {
 	public static String GitProjectData_saveFailed;
 
 	/** */
+	public static String RebaseInteractivePlan_WriteRebaseTodoFailed;
+
+	/** */
 	public static String RepositoryFinder_finding;
+
+	/** */
+	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
 
 	/** */
 	public static String RepositoryUtil_noHead;
@@ -359,6 +368,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitProjectData_repositoryChangedTaskName;
+
+	/** */
+	public static String GitProjectData_UnmappingGoneResourceFailed;
 
 	/** */
 	public static String GitResourceVariantTreeSubscriber_fetchTaskName;

@@ -16,13 +16,17 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>3.1.0-SNAPSHOT</version>
+    <version>3.3.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.core.test</artifactId>
   <packaging>eclipse-test-plugin</packaging>
 
   <name>EGit Core Test Plug-in</name>
+
+  <properties>
+    <coretest.vmparams></coretest.vmparams>
+  </properties>
 
   <build>
     <plugins>
@@ -35,6 +39,7 @@
             <!-- test mojo matches TestProject be default and treats it as PojoTest -->
             <exclude>**/Test*.class</exclude>
           </excludes>
+          <argLine>${test.vmparams} ${coretest.vmparams}</argLine>
           <useUIHarness>false</useUIHarness>
           <useUIThread>false</useUIThread>
         </configuration>

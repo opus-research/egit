@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,12 +12,15 @@ package org.eclipse.egit.ui.test;
 
 import static org.eclipse.swtbot.eclipse.finder.waits.Conditions.waitForView;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,8 +46,10 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.service.localization.BundleLocalization;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
@@ -52,6 +57,10 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
 import org.eclipse.ui.IViewReference;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.osgi.framework.BundleContext;
@@ -163,9 +172,10 @@ public class TestUtil {
 	 */
 	public static void appendFileContent(File file, String content, boolean append)
 			throws IOException {
-		FileWriter fw = null;
+		Writer fw = null;
 		try {
-			fw = new FileWriter(file, append);
+			fw = new OutputStreamWriter(new FileOutputStream(file, append),
+					"UTF-8");
 			fw.append(content);
 		} finally {
 			if (fw != null)
@@ -373,14 +383,14 @@ public class TestUtil {
 			String path = treeWalk.getPathString();
 			assertTrue(expectedfiles.containsKey(path));
 			ObjectId objectId = treeWalk.getObjectId(0);
-			byte[] expectedContent = expectedfiles.get(path).getBytes();
+			byte[] expectedContent = expectedfiles.get(path).getBytes("UTF-8");
 			byte[] repoContent = treeWalk.getObjectReader().open(objectId)
 					.getBytes();
 			if (!Arrays.equals(repoContent, expectedContent))
 				fail("File " + path + " has repository content "
-						+ new String(repoContent)
+						+ new String(repoContent, "UTF-8")
 						+ " instead of expected content "
-						+ new String(expectedContent));
+						+ new String(expectedContent, "UTF-8"));
 			expectedfiles.remove(path);
 		}
 		if (expectedfiles.size() > 0) {
@@ -427,13 +437,16 @@ public class TestUtil {
 	}
 
 	/**
-	 * Retrieves a child node with the given childNodeText.
-	 * Nodes with dirty marker are also found (without specifying > in childNodeText)
+	 * Retrieves a child node with the given childNodeText. Nodes with dirty
+	 * marker are also found (without specifying > in childNodeText), as well as
+	 * nodes with trailing text.
+	 *
 	 * @param node
 	 * @param childNodeText
-	 * @return  child node
+	 * @return child node
 	 */
-	public SWTBotTreeItem getChildNode(SWTBotTreeItem node, String childNodeText) {
+	public static SWTBotTreeItem getChildNode(SWTBotTreeItem node,
+			String childNodeText) {
 		for (SWTBotTreeItem item : node.getItems()) {
 			String itemText = item.getText();
 			StringTokenizer tok = new StringTokenizer(itemText, " ");
@@ -441,7 +454,8 @@ public class TestUtil {
 			// may be a dirty marker
 			if (name.equals(">"))
 				name = tok.nextToken();
-			if (childNodeText.equals(name))
+			if (childNodeText.equals(name)
+					|| name.startsWith(childNodeText + " "))
 				return item;
 		}
 		return null;
@@ -502,4 +516,34 @@ public class TestUtil {
 		});
 	}
 
+	public static SWTBotView showView(final String viewId) {
+		Display.getDefault().syncExec(new Runnable() {
+			public void run() {
+				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow();
+				IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
+				try {
+					workbenchPage.showView(viewId);
+				} catch (PartInitException e) {
+					throw new RuntimeException("Showing view with ID " + viewId
+							+ " failed.", e);
+				}
+			}
+		});
+
+		SWTWorkbenchBot bot = new SWTWorkbenchBot();
+		SWTBotView viewbot = bot.viewById(viewId);
+		assertNotNull("View with ID " + viewId + " not found via SWTBot.",
+				viewbot);
+		return viewbot;
+	}
+
+	public static SWTBotView showExplorerView() {
+		return showView("org.eclipse.jdt.ui.PackageExplorer");
+	}
+
+	public static SWTBotTree getExplorerTree() {
+		SWTBotView view = showExplorerView();
+		return view.bot().tree();
+	}
 }
