@@ -44,7 +44,6 @@ public class PullWizard extends Wizard {
 	public PullWizard(final Repository repo) {
 		this.repository = repo;
 		setWindowTitle(UIText.PullWizardPage_PageTitle);
-		setNeedsProgressMonitor(true);
 	}
 
 	@Override
