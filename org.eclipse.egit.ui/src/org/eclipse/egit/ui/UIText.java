@@ -445,6 +445,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_OpenMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_PreferencesLink;
+
+	/** */
 	public static String GitHistoryPage_ProjectType;
 
 	/** */
@@ -667,6 +670,18 @@ public class UIText extends NLS {
 	public static String RebaseTargetSelectionDialog_RebaseTitle;
 
 	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceButton;
+
+	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceMessage;
+
+	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceTitle;
+
+	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
+
+	/** */
 	public static String RepositoryPropertySource_EditConfigButton;
 
 	/** */
@@ -790,6 +805,24 @@ public class UIText extends NLS {
 	public static String CherryPickHandler_CherryPickConflictsTitle;
 
 	/** */
+	public static String CherryPickHandler_CherryPickFailedMessage;
+
+	/** */
+	public static String CherryPickHandler_CouldNotDeleteFile;
+
+	/** */
+	public static String CherryPickHandler_ErrorMsgTemplate;
+
+	/** */
+	public static String CherryPickHandler_IndexDirty;
+
+	/** */
+	public static String CherryPickHandler_unknown;
+
+	/** */
+	public static String CherryPickHandler_WorktreeDirty;
+
+	/** */
 	public static String CherryPickOperation_Failed;
 
 	/** */
@@ -869,6 +902,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoryAction_multiRepoSelectionTitle;
+
+	/** */
+	public static String RepositoryCommit_UserAndDate;
 
 	/** */
 	public static String RepositorySearchDialog_browse;
@@ -2041,6 +2077,9 @@ public class UIText extends NLS {
 	public static String PushResultTable_columnMode;
 
 	/** */
+	public static String PushResultTable_MesasgeText;
+
+	/** */
 	public static String PushResultTable_statusUnexpected;
 
 	/** */
@@ -2218,13 +2257,13 @@ public class UIText extends NLS {
 	public static String FetchResultDialog_title;
 
 	/** */
-	public static String FetchResultTable_columnDst;
+	public static String FetchResultTable_collapseAll;
 
 	/** */
-	public static String FetchResultTable_columnSrc;
+	public static String FetchResultTable_counterCommits;
 
 	/** */
-	public static String FetchResultTable_columnStatus;
+	public static String FetchResultTable_expandAll;
 
 	/** */
 	public static String FetchResultTable_statusDetailCouldntLock;
@@ -2779,9 +2818,6 @@ public class UIText extends NLS {
 	public static String GitImportWizard_WizardTitle;
 
 	/** */
-	public static String GitScopeOperation_GitScopeManager;
-
-	/** */
 	public static String GitSelectRepositoryPage_AddButton;
 
 	/** */
@@ -3047,13 +3083,13 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_calculatingChanges;
 
 	/** */
-	public static String CommitActionHandler_errorBuildingScope;
-
-	/** */
-	public static String CommitActionHandler_lookingChanges;
-
-	/** */
 	public static String CommitActionHandler_repository;
+
+	/** */
+	public static String CommitEditor_couldNotShowRepository;
+
+	/** */
+	public static String CommitEditor_showGitRepo;
 
 	/** */
 	public static String CommitEditor_TitleHeader;
@@ -3297,6 +3333,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefreshPreferencesPage_RefreshWhenIndexChange;
+
+	/** */
+	public static String RefUpdateElement_CommitCountDecoration;
+
+	/** */
+	public static String RefUpdateElement_CommitRangeDecoration;
+
+	/** */
+	public static String RefUpdateElement_UrisDecoration;
 
 	/** */
 	public static String RemoteSelectionCombo_destinationName;
@@ -3830,6 +3875,9 @@ public class UIText extends NLS {
 	public static String StagingView_exceptionMessage;
 
 	/** */
+	public static String StagingView_UnstageItemMenuLabel;
+
+	/** */
 	public static String SynchronizeWithMenu_custom;
 
 	/** */
@@ -3846,6 +3894,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SynchronizeFetchJob_FetchFailedMessage;
+
+	/** */
+	public static String EGitCredentialsProvider_question;
+
+	/** */
+	public static String EGitCredentialsProvider_information;
+
+	/** */
+	public static String CustomPromptDialog_provide_information_for;
+
+	/** */
+	public static String CustomPromptDialog_information_about;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
