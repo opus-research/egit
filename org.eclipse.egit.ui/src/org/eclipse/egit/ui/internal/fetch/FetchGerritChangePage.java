@@ -32,7 +32,6 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
-import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
@@ -44,11 +43,7 @@ import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.api.CheckoutCommand;
-import org.eclipse.jgit.api.CheckoutResult;
-import org.eclipse.jgit.api.CheckoutResult.Status;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
@@ -75,7 +70,6 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 /**
@@ -150,17 +144,15 @@ public class FetchGerritChangePage extends WizardPage {
 		Clipboard clipboard = new Clipboard(parent.getDisplay());
 		String clipText = (String) clipboard.getContents(TextTransfer
 				.getInstance());
+		final String pattern = "git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"; //$NON-NLS-1$
+		Matcher matcher = Pattern.compile(pattern).matcher(clipText);
 		String defaultUri = null;
 		String defaultCommand = null;
 		String defaultChange = null;
-		if (clipText != null) {
-			final String pattern = "git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"; //$NON-NLS-1$
-			Matcher matcher = Pattern.compile(pattern).matcher(clipText);
-			if (matcher.matches()) {
-				defaultUri = matcher.group(1);
-				defaultChange = matcher.group(2);
-				defaultCommand = matcher.group(3);
-			}
+		if (matcher.matches()) {
+			defaultUri = matcher.group(1);
+			defaultChange = matcher.group(2);
+			defaultCommand = matcher.group(3);
 		}
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(2, false));
@@ -193,6 +185,7 @@ public class FetchGerritChangePage extends WizardPage {
 		createBranch = new Button(checkoutGroup, SWT.RADIO);
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(createBranch);
 		createBranch.setText(UIText.FetchGerritChangePage_LocalBranchRadio);
+		createBranch.setSelection(true);
 		createBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -260,9 +253,6 @@ public class FetchGerritChangePage extends WizardPage {
 
 		if ("checkout".equals(defaultCommand)) //$NON-NLS-1$
 			checkout.setSelection(true);
-		else
-			createBranch.setSelection(true);
-
 		warningAdditionalRefNotActive = new Composite(main, SWT.NONE);
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false)
 				.exclude(true).applyTo(warningAdditionalRefNotActive);
@@ -317,7 +307,7 @@ public class FetchGerritChangePage extends WizardPage {
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
 		setControl(main);
-		checkPage();
+		setPageComplete(false);
 	}
 
 
@@ -534,30 +524,8 @@ public class FetchGerritChangePage extends WizardPage {
 									CreateLocalBranchOperation bop = new CreateLocalBranchOperation(
 											repository, textForBranch, commit);
 									bop.execute(monitor);
-									CheckoutCommand co = new Git(repository)
-											.checkout();
-									try {
-										co.setName(textForBranch).call();
-									} catch (CheckoutConflictException e) {
-										final CheckoutResult result = co
-												.getResult();
-
-										if (result.getStatus() == Status.CONFLICTS) {
-											final Shell shell = getWizard()
-													.getContainer().getShell();
-
-											shell.getDisplay().asyncExec(
-													new Runnable() {
-														public void run() {
-															new CheckoutConflictDialog(
-																	shell,
-																	repository,
-																	result.getConflictList())
-																	.open();
-														}
-													});
-										}
-									}
+									new Git(repository).checkout()
+											.setName(textForBranch).call();
 									monitor.worked(1);
 								}
 								if (doCheckout || doCreateTag) {
@@ -624,8 +592,9 @@ public class FetchGerritChangePage extends WizardPage {
 				String patternString = contents;
 				// ignore spaces in the beginning
 				while (patternString.length() > 0
-						&& patternString.charAt(0) == ' ')
+						&& patternString.charAt(0) == ' ') {
 					patternString = patternString.substring(1);
+				}
 
 				// we quote the string as it may contain spaces
 				// and other stuff colliding with the Pattern
@@ -634,8 +603,9 @@ public class FetchGerritChangePage extends WizardPage {
 				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
 
 				// make sure we add a (logical) * at the end
-				if (!patternString.endsWith(".*")) //$NON-NLS-1$
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
 					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
 
 				// let's compile a case-insensitive pattern (assumes ASCII only)
 				Pattern pattern;
