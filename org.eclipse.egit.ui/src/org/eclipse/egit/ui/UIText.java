@@ -3596,9 +3596,6 @@ public class UIText extends NLS {
 	public static String RevertFailureDialog_Message;
 
 	/** */
-	public static String RevertFailureDialog_MessageNoFiles;
-
-	/** */
 	public static String RevertFailureDialog_ReasonChangesInIndex;
 
 	/** */
