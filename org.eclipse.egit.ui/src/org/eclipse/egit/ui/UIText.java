@@ -3500,12 +3500,6 @@ public class UIText extends NLS {
 	public static String CommitEditorInput_ToolTip;
 
 	/** */
-	public static String CommitEditorPage_JobName;
-
-	/** */
-	public static String CommitEditorPage_SectionBranchesEmpty;
-
-	/** */
 	public static String CommitEditorPage_LabelAuthor;
 
 	/** */
@@ -3522,9 +3516,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitEditorPage_SectionFiles;
-
-	/** */
-	public static String CommitEditorPage_SectionFilesEmpty;
 
 	/** */
 	public static String CommitEditorPage_SectionMessage;
