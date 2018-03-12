@@ -413,11 +413,6 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		newLabel(g, UIText.RepositorySelectionPage_promptPassword + ":"); //$NON-NLS-1$
 		passText = new Text(g, SWT.BORDER | SWT.PASSWORD);
 		passText.setLayoutData(createFieldGridData());
-		passText.addModifyListener(new ModifyListener() {
-			public void modifyText(final ModifyEvent e) {
-				setURI(uri.setPass(nullString(passText.getText())));
-			}
-		});
 		return g;
 	}
 
@@ -592,11 +587,8 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			}
 
 			try {
-				@SuppressWarnings("hiding")
-				URIish uri = new URIish(uriText.getText());
-				uri = uri.setPass(nullString(passText.getText()));
-
-				String proto = uri.getScheme();
+				final URIish finalURI = new URIish(uriText.getText());
+				String proto = finalURI.getScheme();
 				if (proto == null && scheme.getSelectionIndex() >= 0)
 					proto = scheme.getItem(scheme.getSelectionIndex());
 
@@ -607,7 +599,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 					return;
 				}
 
-				if (isFile(uri)) {
+				if (isFile(finalURI)) {
 					String badField = null;
 					if (uri.getHost() != null)
 						badField = UIText.RepositorySelectionPage_promptHost;
@@ -631,7 +623,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 						return;
 					}
 
-					selectionComplete(uri, null);
+					selectionComplete(finalURI, null);
 					return;
 				}
 
@@ -642,7 +634,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 					return;
 				}
 
-				if (isGIT(uri)) {
+				if (isGIT(finalURI)) {
 					String badField = null;
 					if (uri.getUser() != null)
 						badField = UIText.RepositorySelectionPage_promptUser;
@@ -657,7 +649,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 					}
 				}
 
-				selectionComplete(uri, null);
+				selectionComplete(finalURI, null);
 				return;
 			} catch (URISyntaxException e) {
 				selectionIncomplete(e.getReason());
