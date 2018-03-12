@@ -17,6 +17,9 @@ public class ActionCommands {
 	/** Add to index action command id */
 	public static final String ADD_TO_INDEX = "org.eclipse.egit.ui.team.AddToIndex"; //$NON-NLS-1$
 
+	/** Remove from index action command id */
+	public static final String REMOVE_FROM_INDEX = "org.eclipse.egit.ui.team.RemoveFromIndex"; //$NON-NLS-1$
+
 	/** "Apply patch" action command id */
 	public static final String APPLY_PATCH = "org.eclipse.egit.ui.team.ApplyPatch"; //$NON-NLS-1$
 
@@ -28,6 +31,9 @@ public class ActionCommands {
 
 	/** "Compare with head" action command id */
 	public static final String COMPARE_WITH_HEAD_ACTION = "org.eclipse.egit.ui.team.CompareWithHead"; //$NON-NLS-1$
+
+	/** "Compare index with head" action command id */
+	public static final String COMPARE_INDEX_WITH_HEAD_ACTION = "org.eclipse.egit.ui.team.CompareIndexWithHead"; //$NON-NLS-1$
 
 	/** "Compare with index" action command id */
 	public static final String COMPARE_WITH_INDEX_ACTION = "org.eclipse.egit.ui.team.CompareWithIndex"; //$NON-NLS-1$
@@ -92,6 +98,9 @@ public class ActionCommands {
 	/** "Reset" action command id */
 	public static final String RESET_ACTION = "org.eclipse.egit.ui.team.Reset"; //$NON-NLS-1$
 
+	/** "Rebase" action command id */
+	public static final String REBASE_ACTION = "org.eclipse.egit.ui.team.Rebase"; //$NON-NLS-1$
+
 	/** "Show History" action command id */
 	public static final String SHOW_HISTORY = "org.eclipse.egit.ui.team.ShowHistory"; //$NON-NLS-1$
 
@@ -100,6 +109,9 @@ public class ActionCommands {
 
 	/** "Synchronize with" action command id */
 	public static final String SYNC_WITH_ACTION = "org.eclipse.egit.ui.team.SyncWith"; //$NON-NLS-1$
+
+	/** "Synchronize workspace" action command id */
+	public static final String SYNC_WORKSPACE_ACTION = "org.eclipse.egit.ui.team.SyncWorkspace"; //$NON-NLS-1$
 
 	/** "Tag" action command id */
 	public static final String TAG_ACTION = "org.eclipse.egit.ui.team.Tag"; //$NON-NLS-1$
@@ -115,4 +127,7 @@ public class ActionCommands {
 
 	/** "Merge Tool" action command id */
 	public static final String MERGE_TOOL_ACTION = "org.eclipse.egit.ui.team.MergeTool"; //$NON-NLS-1$
+
+	/** "Show Blame Annotations" action command id */
+	public static final String SHOW_BLAME_ACTION = "org.eclipse.egit.ui.team.ShowBlameAnnotations"; //$NON-NLS-1$
 }
