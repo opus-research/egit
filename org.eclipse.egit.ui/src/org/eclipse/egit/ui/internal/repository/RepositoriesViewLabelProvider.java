@@ -21,8 +21,8 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
-import org.eclipse.jface.viewers.ColumnViewer;
 import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.graphics.Image;
@@ -45,7 +45,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 	 *
 	 * @param viewer
 	 */
-	public RepositoriesViewLabelProvider(final ColumnViewer viewer) {
+	RepositoriesViewLabelProvider(final TreeViewer viewer) {
 
 		viewer.setLabelProvider(this);
 		// we could implement some hover here to display additional information
@@ -224,7 +224,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 			// shorten the name
 			String refName = node.getRepository().shortenRefName(ref.getName());
 			try {
-				String branch = node.getRepository().getBranch();
+				String branch = node.getBranch();
 				if (refName.equals(branch)) {
 					return getDecoratedImage(image);
 				}

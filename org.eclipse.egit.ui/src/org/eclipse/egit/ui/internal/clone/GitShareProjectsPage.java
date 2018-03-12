@@ -150,7 +150,7 @@ public class GitShareProjectsPage extends WizardPage {
 		if (visible) {
 			// when this becomes visible, we have to ask the wizard to import
 			// the projects
-			final ProjectCreator wiz = (ProjectCreator) getWizard();
+			final GitCreateProjectViaWizardWizard wiz = (GitCreateProjectViaWizardWizard) getWizard();
 			// TODO scheduling rule
 			try {
 				getContainer().run(false, true, new IRunnableWithProgress() {
@@ -167,8 +167,7 @@ public class GitShareProjectsPage extends WizardPage {
 				Activator.handleError(e.getCause().getMessage(), e.getCause(),
 						true);
 			} catch (InterruptedException e) {
-				Activator.handleError(
-						UIText.GitShareProjectsPage_AbortedMessage, e, true);
+				Activator.handleError(UIText.GitShareProjectsPage_AbortedMessage, e, true);
 			}
 
 			setProjects(wiz.getAddedProjects());
@@ -230,17 +229,13 @@ public class GitShareProjectsPage extends WizardPage {
 			for (Object obj : selected) {
 				IProject prj = (IProject) obj;
 				if (getRepository(prj) == null) {
-					setErrorMessage(NLS
-							.bind(
-									UIText.GitShareProjectsPage_NoRepoForProjectMessage,
-									prj.getName()));
+					setErrorMessage(NLS.bind(
+							UIText.GitShareProjectsPage_NoRepoForProjectMessage, prj.getName()));
 					return;
 				}
 				if (RepositoryProvider.getProvider(prj) != null)
-					setErrorMessage(NLS
-							.bind(
-									UIText.GitShareProjectsPage_ProjectAlreadySharedMessage,
-									prj.getName()));
+					setErrorMessage(NLS.bind(UIText.GitShareProjectsPage_ProjectAlreadySharedMessage, prj
+							.getName()));
 			}
 
 		} finally {
