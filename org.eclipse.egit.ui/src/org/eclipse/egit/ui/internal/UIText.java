@@ -430,6 +430,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_showAllBranches;
 
 	/** */
+	public static String GitHistoryPage_squashMenuItem;
+
+	/** */
 	public static String GitHistoryPage_CheckoutMenuLabel;
 
 	/** */
@@ -494,6 +497,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_notContainedInCommits;
+
+	/** */
+	public static String GitHistoryPage_ModifyMenuLabel;
 
 	/** */
 	public static String GitHistoryPage_MultiResourcesType;
@@ -746,6 +752,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseInteractiveView_HeadingStatus;
+
+	/** */
+	public static String RebaseInteractiveView_HeadingAuthor;
+
+	/** */
+	public static String RebaseInteractiveView_HeadingAuthorDate;
+
+	/** */
+	public static String RebaseInteractiveView_HeadingCommitter;
+
+	/** */
+	public static String RebaseInteractiveView_HeadingCommitDate;
 
 	/** */
 	public static String RebaseInteractiveView_NoSelection;
@@ -1037,6 +1055,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CleanRepositoryPage_message;
+
+	/** */
+	public static String CleanRepositoryPage_SelectFilesToClean;
 
 	/** */
 	public static String CleanRepositoryPage_title;
@@ -1903,6 +1924,9 @@ public class UIText extends NLS {
 	public static String HistoryPreferencePage_MaxTagLength;
 
 	/** */
+	public static String HistoryPreferencePage_toggleShortenAtStart;
+
+	/** */
 	public static String HistoryPreferencePage_ShowGroupLabel;
 
 	/** */
@@ -1967,6 +1991,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushBranchPage_ChooseRemoteError;
+
+	/** */
+	public static String PushBranchPage_ForceUpdateButton;
 
 	/** */
 	public static String PushBranchPage_InvalidBranchNameError;
@@ -2747,6 +2774,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchResultTable_statusRejected;
+
+	/** */
+	public static String FetchResultTable_statusPruned;
 
 	/** */
 	public static String FetchResultTable_statusUpToDate;
@@ -4530,6 +4560,24 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SkipRebaseCommand_JobName;
+
+	/** */
+	public static String SquashHandler_CommitsNotOnCurrentBranch;
+
+	/** */
+	public static String SquashHandler_Error_Title;
+
+	/** */
+	public static String SquashHandler_ErrorCheckingIfCommitsAreOnCurrentBranch;
+
+	/** */
+	public static String SquashHandler_InternalError;
+
+	/** */
+	public static String SquashHandler_JobName;
+
+	/** */
+	public static String SquashHandler_MessageFromCommitX;
 
 	/** */
 	public static String SwitchToMenu_NewBranchMenuLabel;

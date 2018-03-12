@@ -32,6 +32,7 @@ import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -177,8 +178,9 @@ public class BranchSelectionAndEditDialog extends
 							ConfigConstants.CONFIG_WORKFLOW_SECTION, null,
 							ConfigConstants.CONFIG_KEY_DEFBRANCHSTARTPOINT);
 					try {
-						if (repo.getRef(sourceRef) != null) {
-							base = sourceRef;
+						Ref ref = repo.getRef(sourceRef);
+						if (ref != null) {
+							base = ref.getName();
 						}
 					} catch (IOException e1) {
 						// base = null;
