@@ -381,21 +381,15 @@ public class CommitFileDiffViewer extends TableViewer {
 	 * @see IShowInSource#getShowInContext()
 	 */
 	public ShowInContext getShowInContext() {
-		if (db.isBare())
-			return null;
-		IPath workTreePath = new Path(db.getWorkTree().getAbsolutePath());
 		IStructuredSelection selection = (IStructuredSelection) getSelection();
-		List<Object> elements = new ArrayList<Object>();
-		for (Object selectedElement : selection.toList()) {
-			FileDiff fileDiff = (FileDiff) selectedElement;
-			IPath path = workTreePath.append(fileDiff.getPath());
-			IFile file = ResourceUtil.getFileForLocation(path);
+		List<IFile> files = new ArrayList<IFile>();
+		for (Object element : selection.toList()) {
+			FileDiff fileDiff = (FileDiff) element;
+			IFile file = ResourceUtil.getFileForLocation(db, fileDiff.getPath());
 			if (file != null)
-				elements.add(file);
-			else
-				elements.add(path);
+				files.add(file);
 		}
-		return new ShowInContext(null, new StructuredSelection(elements));
+		return new ShowInContext(null, new StructuredSelection(files));
 	}
 
 	private void openFileInEditor(String filePath) {

@@ -481,27 +481,26 @@ public class RepositoriesView extends CommonNavigator {
 	}
 
 	/**
-	 * @see #showPaths(List)
+	 * @see #showResources(List)
 	 * @param resource
 	 */
 	private void showResource(final IResource resource) {
-		IPath location = resource.getLocation();
-		if (location != null)
-			showPaths(Arrays.asList(location));
+		showResources(Arrays.asList(resource));
 	}
 
 	/**
-	 * Opens the tree and marks the working directory files or folders that
-	 * represent the passed paths if possible.
+	 * Opens the tree and marks the working directory files or folders that points
+	 * to a resources if possible
 	 *
-	 * @param paths
-	 *            the paths to show
+	 * @param resources
+	 *            the resources to show
 	 */
-	private void showPaths(final List<IPath> paths) {
+	private void showResources(final List<IResource> resources) {
 		final List<RepositoryTreeNode> nodesToShow = new ArrayList<RepositoryTreeNode>();
 
-		Map<Repository, Collection<String>> pathsByRepo = ResourceUtil.splitPathsByRepository(paths);
-		for (Map.Entry<Repository, Collection<String>> entry : pathsByRepo.entrySet()) {
+		IResource[] r = resources.toArray(new IResource[resources.size()]);
+		Map<Repository, Collection<String>> resourcesByRepo = ResourceUtil.splitResourcesByRepository(r);
+		for (Map.Entry<Repository, Collection<String>> entry : resourcesByRepo.entrySet()) {
 			Repository repository = entry.getKey();
 			try {
 				boolean added = repositoryUtil.addConfiguredRepository(repository.getDirectory());
@@ -694,19 +693,15 @@ public class RepositoriesView extends CommonNavigator {
 		ISelection selection = context.getSelection();
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ss = (IStructuredSelection) selection;
-			List<IPath> paths = new ArrayList<IPath>();
+			List<IResource> resources = new ArrayList<IResource>();
 			for (Iterator it = ss.iterator(); it.hasNext();) {
 				Object element = it.next();
 				IResource resource = AdapterUtils.adapt(element, IResource.class);
-				if (resource != null) {
-					IPath location = resource.getLocation();
-					if (location != null)
-						paths.add(location);
-				} else if (element instanceof IPath)
-					paths.add((IPath) element);
+				if (resource != null)
+					resources.add(resource);
 			}
-			if (!paths.isEmpty()) {
-				showPaths(paths);
+			if (!resources.isEmpty()) {
+				showResources(resources);
 				return true;
 			}
 		}
