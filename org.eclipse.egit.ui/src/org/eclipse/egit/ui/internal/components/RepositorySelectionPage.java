@@ -20,18 +20,17 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import org.eclipse.egit.core.securestorage.EGitSecureStore;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
+import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.IRemoteSelectionListener;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.SelectionType;
 import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
-import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -603,8 +602,9 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			}
 		});
 
-		newLabel(g, UIText.RepositorySelectionPage_storeInSecureStore);
 		storeCheckbox = new Button(g, SWT.CHECK);
+		storeCheckbox
+				.setText(UIText.RepositorySelectionPage_storeInSecureStore);
 		storeCheckbox.setSelection(storeInSecureStore);
 		storeCheckbox.addSelectionListener(new SelectionListener() {
 			public void widgetSelected(SelectionEvent e) {
@@ -637,7 +637,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					setURI(uri.setScheme(nullString(scheme.getItem(idx))));
 					scheme.setToolTipText(Protocol.values()[idx].getTooltip());
 				}
-				updateGroups();
+				updateAuthGroup();
 			}
 		});
 
@@ -818,7 +818,8 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 				if (Protocol.HTTP.handles(finalURI)
 						|| Protocol.HTTPS.handles(finalURI)) {
-					UserPasswordCredentials credentials = getSecureStoreCredentials(finalURI);
+					UserPasswordCredentials credentials = SecureStoreUtils
+							.getCredentials(finalURI);
 					if (credentials != null) {
 						String u = credentials.getUser();
 						String p = credentials.getPassword();
@@ -877,15 +878,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		storeCheckbox.setSelection(store);
 	}
 
-	private UserPasswordCredentials getSecureStoreCredentials(
-			final URIish finalURI) throws StorageException {
-		EGitSecureStore secureStore = org.eclipse.egit.core.Activator
-				.getDefault().getSecureStore();
-		UserPasswordCredentials credentials = secureStore
-				.getCredentials(finalURI);
-		return credentials;
-	}
-
 	private String unamp(String s) {
 		return s.replace("&", EMPTY_STRING); //$NON-NLS-1$
 	}
@@ -913,26 +905,17 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	private void updateRemoteAndURIPanels() {
 		UIUtils.setEnabledRecursively(uriPanel, isURISelected());
 		if (uriPanel.getEnabled())
-			updateGroups();
+			updateAuthGroup();
 		if (configuredRemotes != null)
 			UIUtils.setEnabledRecursively(remotePanel, !isURISelected());
 	}
 
-	private void updateGroups() {
+	private void updateAuthGroup() {
 		Protocol p = getProtocol();
 		if (p != null) {
 			hostText.setEnabled(p.hasHost());
-			if (!p.hasHost())
-				hostText.setText(EMPTY_STRING);
 			portText.setEnabled(p.hasPort());
-			if (!p.hasPort())
-				portText.setText(EMPTY_STRING);
-
 			UIUtils.setEnabledRecursively(authGroup, p.canAuthenticate());
-			if (!p.canAuthenticate()) {
-				userText.setText(EMPTY_STRING);
-				passText.setText(EMPTY_STRING);
-			}
 		}
 	}
 
@@ -1011,7 +994,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 				scheme.notifyListeners(SWT.Selection, new Event());
 			}
 
-			updateGroups();
+			updateAuthGroup();
 			uri = u;
 		} catch (URISyntaxException err) {
 			// leave uriText as it is, but clean up underlying uri and

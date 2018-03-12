@@ -362,6 +362,37 @@
             </iterate>
          </and>
       </definition>
+      <definition
+            id="org.eclipse.egit.ui.repositoryTreePathNode">
+         <and>
+            <count
+                  value="1">
+            </count>
+            <iterate>
+               <or>
+                  <instanceof
+                        value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                  </instanceof>
+                  <instanceof
+                        value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
+                  </instanceof>
+                  <instanceof
+                        value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
+                  </instanceof>
+                  <and>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode">
+                     </instanceof>
+                     <not>
+                        <test
+                              property="GitRepository.isBare">
+                        </test>
+                     </not>
+                  </and>
+               </or>
+            </iterate>
+         </and>
+      </definition>
    </extension>
 
    <extension point="org.eclipse.ui.preferencePages">
@@ -785,6 +816,16 @@
            style="push"
            toolbarPath="Normal/additions"
            tooltip="%BranchAction_tooltip">
+         </action>
+         <action
+           class="org.eclipse.egit.ui.internal.actions.StashToolbarAction"
+           definitionId="org.eclipse.egit.ui.team.stash.create"
+           icon="icons/obj16/stash.png"
+           id="org.eclipse.egit.ui.actionstash"
+           label="%StashToolbarAction_label"
+           style="pulldown"
+           toolbarPath="Normal/additions"
+           tooltip="%StashToolbarAction_tooltip">
          </action>
          <action
            class="org.eclipse.egit.ui.internal.actions.CommitAction"
@@ -1643,6 +1684,17 @@
          </activeWhen>
       </handler>
       <handler
+            commandId="org.eclipse.egit.ui.RepositoriesViewCopyPath">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.CopyPathCommand">
+         </class>
+         <activeWhen>
+            <reference
+                  definitionId="org.eclipse.egit.ui.repositoryTreePathNode">
+            </reference>
+         </activeWhen>
+      </handler>
+      <handler
             commandId="org.eclipse.ui.edit.rename">
          <class
                class="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand">
@@ -1747,42 +1799,6 @@
                               value="org.eclipse.egit.ui.internal.repository.tree.SubmodulesNode">
                         </instanceof>
                      </or>
-                  </iterate>
-               </and>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.team.stash.create">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.StashCreateCommand">
-         </class>
-         <activeWhen>
-             <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <not>
-                           <test
-                                 property="GitRepository.isSubmodule">
-                           </test>
-                        </not>
-                        <not>
-                           <test
-                                 property="GitRepository.isBare">
-                           </test>
-                        </not>
-                        <test
-                              property="GitRepository.canStash">
-                        </test>
-                        <test
-                              property="GitRepository.containsHead">
-                        </test>
-                     </and>
                   </iterate>
                </and>
          </activeWhen>
@@ -2897,10 +2913,12 @@
                </and>
             </visibleWhen>
          </command>
-         <command
-               commandId="org.eclipse.egit.ui.team.stash.create"
-               label="%StashCreateCommand.label"
-               style="push">
+         <menu
+               label="%StashesMenu.label">
+            <dynamic
+                  class="org.eclipse.egit.ui.internal.actions.StashesMenu"
+                  id="org.eclipse.egit.ui.stashedChanges">
+            </dynamic>
             <visibleWhen
                   checkEnabled="false">
                <and>
@@ -2932,7 +2950,7 @@
                   </iterate>
                </and>
             </visibleWhen>
-         </command>
+         </menu>
          <command
                commandId="org.eclipse.egit.ui.team.stash.apply"
                label="%StashApplyCommand.label"
@@ -3080,11 +3098,10 @@
                </and>
             </visibleWhen>
          </command>
-         <command
-               commandId="org.eclipse.egit.ui.team.PushBranch"
-               label="%PushBranchAction.label"
-               style="push">
-            <visibleWhen
+         <dynamic
+                  class="org.eclipse.egit.ui.internal.actions.PushMenu"
+                  id="org.eclipse.egit.ui.repository.tree.popup.Push">
+			<visibleWhen
                   checkEnabled="false">
                <and>
                   <count
@@ -3099,7 +3116,7 @@
                   </iterate>
                </and>
             </visibleWhen>
-         </command>
+         </dynamic>
          <command
                commandId="org.eclipse.egit.ui.team.Pull"
                icon="icons/obj16/pull.gif"
@@ -3647,34 +3664,9 @@
                style="push">
             <visibleWhen
                   checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
-                        </instanceof>
-                        <and>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode">
-                           </instanceof>
-                           <not>
-                              <test
-                                    property="GitRepository.isBare">
-                              </test>
-                           </not>
-                        </and>
-                     </or>
-                  </iterate>
-               </and>
+                  <reference
+                        definitionId="org.eclipse.egit.ui.repositoryTreePathNode">
+                  </reference>
             </visibleWhen>
          </command>
          <command
@@ -3807,6 +3799,19 @@
                   name="group1"
                   visible="true">
             </separator>
+            <menu
+                  label="%StashesMenu.label">
+               <dynamic
+                     class="org.eclipse.egit.ui.internal.actions.StashesMenu"
+                     id="org.eclipse.egit.ui.stashedChanges">
+               </dynamic>
+               <visibleWhen
+                     checkEnabled="false">
+                  <reference
+                        definitionId="org.eclipse.egit.ui.gitProject">
+                  </reference>
+               </visibleWhen>
+            </menu>
             <command
                   commandId="org.eclipse.egit.ui.team.SimplePush"
                   label="%PushToUpstreamAction.label"
@@ -3830,17 +3835,16 @@
                   </reference>
                </visibleWhen>
             </command>
-            <command
-                  commandId="org.eclipse.egit.ui.team.PushBranch"
-                  label="%PushBranchAction.label"
-                  style="push">
+            <dynamic
+                  class="org.eclipse.egit.ui.internal.actions.PushMenu"
+                  id="org.eclipse.egit.ui.team.popup.Push">
                <visibleWhen
                      checkEnabled="false">
                   <reference
                         definitionId="org.eclipse.egit.ui.gitProject">
                   </reference>
                </visibleWhen>
-            </command>
+            </dynamic>
             <separator
                   name="org.eclipse.egit.ui.remoteSeparator"
                   visible="true">
@@ -4321,7 +4325,6 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CopyPathCommand"
             id="org.eclipse.egit.ui.RepositoriesViewCopyPath"
             name="%CopyPathCommand">
       </command>
@@ -4511,7 +4514,7 @@
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.stash.create"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.StashCreateCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.StashCreateHandler"
             name="%StashCreateCommand.name">
       </command>
       <command
@@ -4576,6 +4579,18 @@
       <image
             commandId="org.eclipse.egit.ui.commit.CherryPick"
             icon="icons/obj16/cherry-pick.png">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.stash.apply"
+            icon="icons/obj16/stash-apply.png">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.commit.StashApply"
+            icon="icons/obj16/stash-apply.png">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.commit.StashDrop"
+            icon="icons/obj16/delete_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.Squash"
@@ -5345,6 +5360,16 @@
             id="org.eclipse.egit.ui.history.ShowBlame"
             name="%ShowBlameCommand.name">
       </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.commit.command.StashApplyHandler"
+            id="org.eclipse.egit.ui.commit.StashApply"
+            name="%StashApplyCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.commit.command.StashDropHandler"
+            id="org.eclipse.egit.ui.commit.StashDrop"
+            name="%StashDropCommand.name">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.newWizards">
@@ -5561,5 +5586,16 @@
               refid="org.eclipse.e4.ui.css.theme.e4_dark">
         </themeid>
      </stylesheet>
+  </extension>
+  <extension point="org.eclipse.core.contenttype.contentTypes">
+    <file-association
+        content-type="org.eclipse.core.runtime.text"
+        file-names=".gitignore"/>
+    <content-type
+        id="org.eclipse.egit.contenttype.gitignore"
+        base-type="org.eclipse.core.runtime.text"
+        file-names=".gitignore"
+        priority="normal"
+        name="%GitIgnoreContentTypeName"/>
   </extension>
 </plugin>
