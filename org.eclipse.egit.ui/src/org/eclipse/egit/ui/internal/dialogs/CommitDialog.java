@@ -162,7 +162,7 @@ public class CommitDialog extends Dialog {
 				IDialogConstants.CANCEL_LABEL, false);
 	}
 
-	CommitMessageArea commitText;
+	Text commitText;
 	Text authorText;
 	Text committerText;
 	Button amendingButton;
@@ -191,19 +191,19 @@ public class CommitDialog extends Dialog {
 		label.setText(UIText.CommitDialog_CommitMessage);
 		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
 
-		commitText = new CommitMessageArea(container, commitMessage);
+		commitText = new Text(container, SWT.MULTI | SWT.BORDER | SWT.V_SCROLL);
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
 				.hint(600, 200).create());
 
 		// allow to commit with ctrl-enter
-		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
-			public void keyPressed(KeyEvent event) {
-				if (event.keyCode == SWT.CR
-						&& (event.stateMask & SWT.CONTROL) > 0) {
+		commitText.addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent arg0) {
+				if (arg0.keyCode == SWT.CR
+						&& (arg0.stateMask & SWT.CONTROL) > 0) {
 					okPressed();
-				} else if (event.keyCode == SWT.TAB
-						&& (event.stateMask & SWT.SHIFT) == 0) {
-					event.doit = false;
+				} else if (arg0.keyCode == SWT.TAB
+						&& (arg0.stateMask & SWT.SHIFT) == 0) {
+					arg0.doit = false;
 					commitText.traverse(SWT.TRAVERSE_TAB_NEXT);
 				}
 			}
@@ -346,16 +346,19 @@ public class CommitDialog extends Dialog {
 
 		showUntrackedButton.setSelection(showUntracked);
 
-		showUntrackedButton.addSelectionListener(new SelectionAdapter() {
+		showUntrackedButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
 				showUntracked = showUntrackedButton.getSelection();
 				filesViewer.refresh(true);
 			}
 
+			public void widgetDefaultSelected(SelectionEvent e) {
+				// Empty
+			}
 		});
 
-		commitText.getTextWidget().addModifyListener(new ModifyListener() {
+		commitText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				updateSignedOffButton();
 				updateChangeIdButton();
