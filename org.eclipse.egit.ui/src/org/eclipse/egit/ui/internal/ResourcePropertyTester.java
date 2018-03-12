@@ -7,11 +7,8 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Dariusz Luksza <dariusz@luksza.org> - add 'isSafe' implementation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
-
-import static org.eclipse.jgit.lib.RepositoryState.SAFE;
 
 import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.core.resources.IResource;
@@ -31,14 +28,6 @@ public class ResourcePropertyTester extends PropertyTester {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(res
 					.getProject());
 			return mapping != null && mapping.getRepository() != null;
-		} else if ("isSafe".equals(property)) { //$NON-NLS-1$
-			RepositoryMapping mapping = RepositoryMapping.getMapping(res
-					.getProject());
-			return mapping != null
-					&& SAFE == mapping.getRepository().getRepositoryState();
-		} else if ("isContainer".equals(property)) { //$NON-NLS-1$
-			int type = res.getType();
-			return type == IResource.FOLDER || type == IResource.PROJECT;
 		}
 		return false;
 	}

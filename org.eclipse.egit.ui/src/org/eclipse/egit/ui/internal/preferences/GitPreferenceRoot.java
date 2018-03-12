@@ -10,8 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
-import java.io.File;
-
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -65,6 +63,16 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
 
+		Group initialGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		initialGroup.setText(UIText.GitPreferenceRoot_InitialConfiguration);
+		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
+				.applyTo(initialGroup);
+		addField(new BooleanFieldEditor(
+				UIPreferences.SHOW_INITIAL_CONFIG_DIALOG,
+				UIText.GitPreferenceRoot_ShowInitialConfigDialogCheckbox,
+				initialGroup));
+		updateMargins(initialGroup);
+
 		Group cloningGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		cloningGroup.setText(UIText.GitPreferenceRoot_CloningRepoGroupHeader);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
@@ -72,31 +80,43 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		DirectoryFieldEditor editor = new DirectoryFieldEditor(
 				UIPreferences.DEFAULT_REPO_DIR,
 				UIText.GitPreferenceRoot_DefaultRepoFolderLabel, cloningGroup) {
-			@Override
-			protected boolean doCheckState() {
-				String fileName = getTextControl().getText();
-				fileName = fileName.trim();
-				if (fileName.length() == 0 && isEmptyStringAllowed()) {
-					return true;
-				}
-				File file = new File(fileName);
-				// other than the super implementation, we don't
-				// require the file to exist
-				return !file.exists() || file.isDirectory();
-			}
 
 			@Override
 			protected void createControl(Composite parent) {
 				// setting validate strategy using the setter method is too late
-				super.setValidateStrategy(StringFieldEditor.VALIDATE_ON_KEY_STROKE);
+				super
+						.setValidateStrategy(StringFieldEditor.VALIDATE_ON_KEY_STROKE);
 				super.createControl(parent);
 			}
+
 		};
 		updateMargins(cloningGroup);
 		editor.setEmptyStringAllowed(false);
 		editor.getLabelControl(cloningGroup).setToolTipText(
 				UIText.GitPreferenceRoot_DefaultRepoFolderTooltip);
 		addField(editor);
+
+		Group historyGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		historyGroup.setText(UIText.GitPreferenceRoot_HistoryGroupHeader);
+		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
+				.applyTo(historyGroup);
+
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
+				UIText.ResourceHistory_toggleCommentWrap, historyGroup));
+
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_REV_COMMENT,
+				UIText.ResourceHistory_toggleRevComment, historyGroup));
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_REV_DETAIL,
+				UIText.ResourceHistory_toggleRevDetail, historyGroup));
+		addField(new IntegerFieldEditor(UIPreferences.HISTORY_MAX_NUM_COMMITS,
+				UIText.ResourceHistory_MaxNumCommitsInList, historyGroup));
+		addField(new BooleanFieldEditor(
+				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
+				UIText.ResourceHistory_ShowTagSequence, historyGroup));
+		updateMargins(historyGroup);
 
 		Group remoteConnectionsGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
@@ -139,21 +159,14 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		addField(mergeMode);
 		updateMargins(mergeGroup);
 
-		Group blameGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		Group confirmGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(blameGroup);
-		blameGroup.setText(UIText.GitPreferenceRoot_BlameGroupHeader);
-		addField(new BooleanFieldEditor(UIPreferences.BLAME_IGNORE_WHITESPACE,
-				UIText.GitPreferenceRoot_BlameIgnoreWhitespaceLabel, blameGroup));
-		updateMargins(blameGroup);
-
-		Group secureGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
-		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(secureGroup);
-		secureGroup.setText(UIText.GitPreferenceRoot_SecureStoreGroupLabel);
-		addField(new BooleanFieldEditor(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE,
-				UIText.GitPreferenceRoot_SecureStoreUseByDefault, secureGroup));
-		updateMargins(secureGroup);
+				.applyTo(confirmGroup);
+		confirmGroup.setText(UIText.GitPreferenceRoot_HideConfirmationGroup);
+		addField(new BooleanFieldEditor(UIPreferences.REBASE_HIDE_CONFIRM,
+				UIText.GitPreferenceRoot_HideRebaseConfirmationField,
+				confirmGroup));
+		updateMargins(confirmGroup);
 	}
 
 	private void updateMargins(Group group) {

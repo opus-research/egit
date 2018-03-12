@@ -13,11 +13,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,8 +23,6 @@ import org.eclipse.core.commands.Parameterization;
 import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.egit.core.op.CreatePatchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
@@ -53,18 +46,12 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.util.FileUtils;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.DND;
-import org.eclipse.swt.dnd.DragSourceAdapter;
-import org.eclipse.swt.dnd.DragSourceEvent;
-import org.eclipse.swt.dnd.FileTransfer;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
@@ -147,10 +134,6 @@ class CommitGraphTable {
 
 	MenuListener menuListener;
 
-	private RevCommit commitToShow;
-
-	private GraphLabelProvider graphLabelProvider;
-
 	CommitGraphTable(Composite parent) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
@@ -178,10 +161,7 @@ class CommitGraphTable {
 				((SWTCommit) element).widget = item;
 			}
 		};
-
-		graphLabelProvider = new GraphLabelProvider();
-
-		table.setLabelProvider(graphLabelProvider);
+		table.setLabelProvider(new GraphLabelProvider());
 		table.setContentProvider(new GraphContentProvider());
 		renderer = new SWTPlotRenderer(rawTable.getDisplay());
 
@@ -194,16 +174,8 @@ class CommitGraphTable {
 
 		copy = createStandardAction(ActionFactory.COPY);
 
-		table.setUseHashlookup(true);
-
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
 			public void selectionChanged(SelectionChangedEvent event) {
-				ISelection s = event.getSelection();
-				if (s.isEmpty() || !(s instanceof IStructuredSelection))
-					return;
-				final IStructuredSelection iss = (IStructuredSelection) s;
-				commitToShow = (PlotCommit<?>) iss.getFirstElement();
-
 				copy.setEnabled(canDoCopy());
 			}
 		});
@@ -262,7 +234,7 @@ class CommitGraphTable {
 		table.getTable().addMouseMoveListener(new MouseMoveListener() {
 			public void mouseMove(MouseEvent e) {
 				synchronized (this) {
-					if (hoverShell == null || hoverShell.isDisposed())
+					if (hoverShell == null)
 						return;
 					hoverShell.setVisible(false);
 					hoverShell.dispose();
@@ -270,26 +242,11 @@ class CommitGraphTable {
 				}
 			}
 		});
-
-		table.getTable().addDisposeListener(new DisposeListener() {
-
-			public void widgetDisposed(DisposeEvent e) {
-				if (allCommits != null)
-					allCommits.dispose();
-				if (renderer != null)
-					renderer.dispose();
-			}
-		});
-
-		Transfer[] transferTypes = new Transfer[] {TextTransfer.getInstance(), FileTransfer.getInstance()};
-		table.addDragSupport(DND.DROP_DEFAULT | DND.DROP_COPY, transferTypes,
-				new CommitDragSourceListener());
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
 			final MenuManager menuMgr) {
 		this(parent);
-
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
 			public void focusLost(FocusEvent e) {
@@ -355,19 +312,14 @@ class CommitGraphTable {
 		return table.getControl();
 	}
 
-	void selectCommitStored(final RevCommit c) {
-		commitToShow = c;
-		selectCommit(c);
-	}
-
 	void selectCommit(final RevCommit c) {
 		if (c instanceof PlotCommit) {
-			table.setSelection(new StructuredSelection(c), true);
-		} else if (commitsMap != null) {
+			table.setSelection(new StructuredSelection(c));
+			table.reveal(c);
+		} else {
 			PlotCommit swtCommit = commitsMap.get(c.getId().name());
-			if (swtCommit != null) {
-				table.setSelection(new StructuredSelection(swtCommit), true);
-			}
+			table.setSelection(new StructuredSelection(swtCommit));
+			table.reveal(swtCommit);
 		}
 	}
 
@@ -377,10 +329,6 @@ class CommitGraphTable {
 
 	void removeSelectionChangedListener(final ISelectionChangedListener l) {
 		table.removePostSelectionChangedListener(l);
-	}
-
-	boolean setRelativeDate(boolean booleanValue) {
-		return graphLabelProvider.setRelativeDate(booleanValue);
 	}
 
 	private boolean canDoCopy() {
@@ -402,8 +350,6 @@ class CommitGraphTable {
 			r.append(d.getId().name());
 		}
 
-		if (clipboard == null || clipboard.isDisposed())
-			return;
 		clipboard.setContents(new Object[] { r.toString() },
 				new Transfer[] { TextTransfer.getInstance() }, DND.CLIPBOARD);
 	}
@@ -417,13 +363,12 @@ class CommitGraphTable {
 		table.setInput(asArray);
 		if (asArray != null && asArray.length > 0) {
 			if (oldList != list) {
+				selectCommit(asArray[0]);
 				initCommitsMap();
 			}
 		} else {
 			table.getTable().deselectAll();
 		}
-		if (commitToShow != null)
-			selectCommit(commitToShow);
 	}
 
 	void setHistoryPageInput(HistoryPageInput input) {
@@ -434,13 +379,8 @@ class CommitGraphTable {
 
 	private void initCommitsMap() {
 		commitsMap = new HashMap<String, PlotCommit>();
-		// ensure that filling (GenerateHistoryJob) and reading (here)
-		// the commit list is thread safe
-		synchronized (allCommits) {
-			for (PlotCommit commit : allCommits)
-				if (commit != null)
-					commitsMap.put(commit.getId().name(), commit);
-		}
+		for (PlotCommit commit : allCommits)
+			commitsMap.put(commit.getId().name(), commit);
 	}
 
 	private void createColumns(final Table rawTable, final TableLayout layout) {
@@ -500,7 +440,7 @@ class CommitGraphTable {
 			event.gc.setFont(nFont);
 
 		if (event.index == 0) {
-			renderer.paint(event, input == null ? null : input.getHead());
+			renderer.paint(event, input.getHead());
 			return;
 		}
 
@@ -555,96 +495,6 @@ class CommitGraphTable {
 			}
 		};
 		return action;
-	}
-
-	private final class CommitDragSourceListener extends DragSourceAdapter {
-		@Override
-		public void dragStart(DragSourceEvent event) {
-			RevCommit commit = getSelectedCommit();
-			event.doit = commit.getParentCount() == 1;
-		}
-
-		public void dragSetData(DragSourceEvent event) {
-			boolean isFileTransfer = FileTransfer.getInstance()
-					.isSupportedType(event.dataType);
-			boolean isTextTransfer = TextTransfer.getInstance()
-					.isSupportedType(event.dataType);
-			if (isFileTransfer || isTextTransfer) {
-				RevCommit commit = getSelectedCommit();
-				String patchContent = createPatch(commit);
-				if (isTextTransfer) {
-					event.data = patchContent;
-					return;
-				} else {
-					File patchFile = null;
-					try {
-						patchFile = createTempFile(commit);
-						writeToFile(patchFile.getAbsolutePath(), patchContent);
-						event.data = new String[] { patchFile.getAbsolutePath() };
-					} catch (IOException e) {
-						Activator.logError(NLS.bind(
-								UIText.CommitGraphTable_UnableToWritePatch,
-								commit.getId().name()), e);
-					} finally {
-						if (patchFile != null) {
-							patchFile.deleteOnExit();
-						}
-					}
-				}
-			}
-		}
-
-		private File createTempFile(RevCommit commit) throws IOException {
-			String tmpDir = System.getProperty("java.io.tmpdir"); //$NON-NLS-1$
-			String patchName = "egit-patch" + commit.getId().name(); //$NON-NLS-1$
-			File patchDir = new File(tmpDir, patchName);
-			int counter = 1;
-			while(patchDir.exists()) {
-				patchDir = new File(tmpDir, patchName + "_" + counter); //$NON-NLS-1$
-				counter++;
-			}
-			FileUtils.mkdir(patchDir);
-			patchDir.deleteOnExit();
-			File patchFile;
-			String suggestedFileName = CreatePatchOperation
-					.suggestFileName(commit);
-			patchFile = new File(patchDir, suggestedFileName);
-			return patchFile;
-		}
-
-		private String createPatch(RevCommit commit) {
-			Repository repository = input.getRepository();
-			CreatePatchOperation operation = new CreatePatchOperation(
-					repository, commit);
-			operation.useGitFormat(true);
-			operation.setContextLines(CreatePatchOperation.DEFAULT_CONTEXT_LINES);
-			try {
-				operation.execute(null);
-			} catch (CoreException e) {
-				Activator.logError(NLS.bind(
-						UIText.CommitGraphTable_UnableToCreatePatch, commit
-								.getId().name()), e);
-			}
-			String patchContent = operation.getPatchContent();
-			return patchContent;
-		}
-
-		private RevCommit getSelectedCommit() {
-			IStructuredSelection selection = (IStructuredSelection) table
-					.getSelection();
-			RevCommit commit = (RevCommit) selection.getFirstElement();
-			return commit;
-		}
-
-		private void writeToFile(final String fileName, String content)
-				throws IOException {
-			Writer output = new BufferedWriter(new FileWriter(fileName));
-			try {
-				output.write(content);
-			} finally {
-				output.close();
-			}
-		}
 	}
 
 	private final static class MenuListener implements MenuDetectListener {
@@ -787,9 +637,6 @@ class CommitGraphTable {
 			// copy and such after additions
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
-			popupMgr.add(getCommandContributionItem(
-					HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
-					UIText.CommitGraphTable_OpenCommitLabel));
 			popupMgr.add(new Separator());
 		}
 

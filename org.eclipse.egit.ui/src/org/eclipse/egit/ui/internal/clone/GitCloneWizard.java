@@ -1,4 +1,4 @@
-/*******************************************************************************
+﻿/*******************************************************************************
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
@@ -25,12 +25,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CloneOperation;
-import org.eclipse.egit.core.op.ConfigureFetchAfterCloneTask;
-import org.eclipse.egit.core.op.ConfigurePushAfterCloneTask;
-import org.eclipse.egit.core.op.SetChangeIdTask;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -41,7 +37,6 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.Wizard;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
@@ -53,6 +48,11 @@ import org.eclipse.osgi.util.NLS;
  */
 public class GitCloneWizard extends Wizard {
 
+	/**
+	 * Job family of the Clone Repository job.
+	 */
+	public static final Object CLONE_JOB_FAMILY = new Object();
+
 	private static final String HELP_CONTEXT = "org.eclipse.egit.ui.GitCloneWizard"; //$NON-NLS-1$
 
 	private RepositorySelectionPage cloneSource;
@@ -60,8 +60,6 @@ public class GitCloneWizard extends Wizard {
 	private SourceBranchPage validSource;
 
 	private CloneDestinationPage cloneDestination;
-
-	private GerritConfigurationPage gerritConfiguration;
 
 	private String alreadyClonedInto;
 
@@ -73,21 +71,10 @@ public class GitCloneWizard extends Wizard {
 	 * The default constructor
 	 */
 	public GitCloneWizard() {
-		this(null);
-	}
-
-	/**
-	 * Construct Clone Wizard
-	 *
-	 * @param presetURI
-	 *            the clone URI to prepopulate the URI field of the clone wizard
-	 *            with.
-	 */
-	public GitCloneWizard(String presetURI) {
 		setWindowTitle(UIText.GitCloneWizard_title);
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
-		cloneSource = new RepositorySelectionPage(true, presetURI);
+		cloneSource = new RepositorySelectionPage(true, null);
 		cloneSource.setHelpContext(HELP_CONTEXT);
 		validSource = new SourceBranchPage() {
 
@@ -112,16 +99,6 @@ public class GitCloneWizard extends Wizard {
 			}
 		};
 		cloneDestination.setHelpContext(HELP_CONTEXT);
-		gerritConfiguration = new GerritConfigurationPage() {
-
-			@Override
-			public void setVisible(boolean visible) {
-				if (visible)
-					setSelection(cloneSource.getSelection());
-				super.setVisible(visible);
-			}
-		};
-		gerritConfiguration.setHelpContext(HELP_CONTEXT);
 	}
 
 	/**
@@ -157,13 +134,11 @@ public class GitCloneWizard extends Wizard {
 		addPage(cloneSource);
 		addPage(validSource);
 		addPage(cloneDestination);
-		addPage(gerritConfiguration);
 	}
 
 	@Override
 	public boolean canFinish() {
-		return cloneDestination.isPageComplete() &&
-			gerritConfiguration.isPageComplete();
+		return cloneDestination.isPageComplete();
 	}
 
 	@Override
@@ -197,11 +172,9 @@ public class GitCloneWizard extends Wizard {
 		final Ref ref = cloneDestination.getInitialBranch();
 		final String remoteName = cloneDestination.getRemote();
 
-		boolean created = workdir.exists();
-		if (!created)
-			created = workdir.mkdirs();
+		workdir.mkdirs();
 
-		if (!created || !workdir.isDirectory()) {
+		if (!workdir.isDirectory()) {
 			final String errorMessage = NLS.bind(
 					UIText.GitCloneWizard_errorCannotCreate, workdir.getPath());
 			ErrorDialog.openError(getShell(), getWindowTitle(),
@@ -214,10 +187,7 @@ public class GitCloneWizard extends Wizard {
 		int timeout = Activator.getDefault().getPreferenceStore().getInt(
 				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		final CloneOperation op = new CloneOperation(uri, allSelected,
-				selectedBranches, workdir, ref != null ? ref.getName() : null,
-				remoteName, timeout);
-		if (gerritConfiguration.configureGerrit())
-			doGerritConfiguration(remoteName, op);
+				selectedBranches, workdir, ref, remoteName, timeout);
 		UserPasswordCredentials credentials = cloneSource.getCredentials();
 		if (credentials != null)
 			op.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
@@ -231,21 +201,6 @@ public class GitCloneWizard extends Wizard {
 		else
 			cloneOperation = op;
 		return true;
-	}
-
-	private void doGerritConfiguration(final String remoteName,
-			final CloneOperation op) {
-		String gerritBranch = gerritConfiguration.getBranch();
-		URIish pushURI = gerritConfiguration.getURI();
-		String notesRef = Constants.R_NOTES + "review"; //$NON-NLS-1$
-		op.addPostCloneTask(new ConfigureFetchAfterCloneTask(remoteName,
-				notesRef + ":" + notesRef)); //$NON-NLS-1$
-		if (gerritBranch != null && gerritBranch.length() > 0) {
-			ConfigurePushAfterCloneTask push = new ConfigurePushAfterCloneTask(remoteName,
-					"HEAD:refs/for/" + gerritBranch, pushURI); //$NON-NLS-1$
-			op.addPostCloneTask(push);
-		}
-		op.addPostCloneTask(new SetChangeIdTask(true));
 	}
 
 	/**
@@ -287,9 +242,7 @@ public class GitCloneWizard extends Wizard {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.CLONE))
-					return true;
-				return super.belongsTo(family);
+				return CLONE_JOB_FAMILY.equals(family);
 			}
 		};
 		job.setUser(true);

@@ -13,8 +13,6 @@ package org.eclipse.egit.ui.internal.preferences;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -195,11 +193,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				ok = false;
 			}
 		}
-		// Use array since calling save updates the dirty state which updates
-		// the set of dirty repositories that is being iterated over
-		final Repository[] repos = dirtyRepositories
-				.toArray(new Repository[dirtyRepositories.size()]);
-		for (Repository repository : repos) {
+		for (Repository repository : dirtyRepositories) {
 			ConfigurationEditorComponent editor = repoConfigEditors.get(repository);
 			try {
 				editor.save();
@@ -243,19 +237,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 					continue;
 				}
 			}
-			sortRepositoriesByName();
 		}
-	}
-
-	private void sortRepositoriesByName() {
-		Collections.sort(repositories, new Comparator<Repository>() {
-
-			public int compare(Repository repo1, Repository repo2) {
-				String repo1Name = repo1.getDirectory().getParentFile().getName();
-				String repo2Name = repo2.getDirectory().getParentFile().getName();
-				return repo1Name.compareTo(repo2Name);
-			}
-		});
 	}
 
 	private String[] getRepositoryComboItems() {

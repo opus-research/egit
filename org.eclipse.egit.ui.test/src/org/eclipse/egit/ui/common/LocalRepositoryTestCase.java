@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.StringTokenizer;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -47,6 +48,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
@@ -134,24 +136,16 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (testDirectory.exists())
 			FileUtils.delete(testDirectory, FileUtils.RECURSIVE
 					| FileUtils.RETRY);
-		if (!testDirectory.exists())
-			FileUtils.mkdir(testDirectory, true);
+		testDirectory.mkdir();
 		// we don't want to clone into <user_home> but into our test directory
 		File repoRoot = new File(testDirectory, "RepositoryRoot");
-		if (!repoRoot.exists())
-			FileUtils.mkdir(repoRoot, true);
+		repoRoot.mkdir();
 		// make sure the default directory for Repos is not the user home
 		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 		// suppress the configuration dialog
 		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, false);
-		// suppress the detached head warning dialog
-		org.eclipse.egit.ui.Activator
-				.getDefault()
-				.getPreferenceStore()
-				.setValue(UIPreferences.SHOW_DETACHED_HEAD_WARNING,
-						false);
 	}
 
 	@AfterClass
@@ -196,6 +190,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		File gitDir = new File(new File(testDirectory, repoName),
 				Constants.DOT_GIT);
+		gitDir.mkdir();
 		Repository myRepository = new FileRepository(gitDir);
 		myRepository.create();
 
@@ -310,7 +305,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		myRepository.getConfig().save();
 		// and push
-		PushOperationUI pa = new PushOperationUI(myRepository, "push", 0, false);
+		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
+		PushOperationUI pa = new PushOperationUI(myRepository, config, 0, false);
 		pa.execute(null);
 
 		try {
@@ -334,8 +330,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		Repository myRepository = lookupRepository(repositoryDir);
 		URIish uri = new URIish("file:///" + myRepository.getDirectory());
 		File workdir = new File(testDirectory, CHILDREPO);
+		Ref master = myRepository.getRef("refs/heads/master");
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir,
-				"refs/heads/master", "origin", 0);
+				master, "origin", 0);
 		clop.run(null);
 		return new File(workdir, Constants.DOT_GIT);
 	}
@@ -485,7 +482,17 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	 */
 	protected SWTBotTreeItem getProjectItem(SWTBotTree projectExplorerTree,
 			String project) {
-		return new TestUtil().getProjectItem(projectExplorerTree, project);
+		for (SWTBotTreeItem item : projectExplorerTree.getAllItems()) {
+			String itemText = item.getText();
+			StringTokenizer tok = new StringTokenizer(itemText, " ");
+			String name = tok.nextToken();
+			// may be a dirty marker
+			if (name.equals(">"))
+				name = tok.nextToken();
+			if (project.equals(name))
+				return item;
+		}
+		return null;
 	}
 
 	protected void pressAltAndChar(SWTBotShell shell, char charToPress) {

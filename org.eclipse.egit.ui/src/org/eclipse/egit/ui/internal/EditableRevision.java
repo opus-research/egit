@@ -114,14 +114,6 @@ public class EditableRevision extends FileRevisionTypedElement implements
 		super(fileRevision);
 	}
 
-	/**
-	 * @param fileRevision
-	 * @param encoding the file encoding
-	 */
-	public EditableRevision(IFileRevision fileRevision, String encoding) {
-		super(fileRevision, encoding);
-	}
-
 	public boolean isEditable() {
 		return true;
 	}
@@ -139,12 +131,7 @@ public class EditableRevision extends FileRevisionTypedElement implements
 	}
 
 	public void setContent(byte[] newContent) {
-		if (newContent != null) {
-			modifiedContent = new byte[newContent.length];
-			System.arraycopy(newContent, 0, modifiedContent, 0,
-					newContent.length);
-		} else
-			modifiedContent = null;
+		modifiedContent = newContent;
 		fireContentChanged();
 	}
 

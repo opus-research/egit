@@ -18,8 +18,8 @@ import java.io.File;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.ResetOperation;
-import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.core.op.TagOperation;
+import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
@@ -28,7 +28,6 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
@@ -76,8 +75,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		top.execute(null);
 		touchAndSubmit(null);
 
-		RepositoriesViewLabelProvider provider = GitRepositoriesViewTestUtils
-				.createLabelProvider();
+		RepositoriesViewLabelProvider provider = new RepositoriesViewLabelProvider();
 		// LOCAL_BRANCHES = provider.getText(new LocalNode(new RepositoryNode(
 		// null, repo), repo));
 		TAGS = provider.getText(new TagsNode(new RepositoryNode(null, repo),
@@ -108,7 +106,6 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 				dialogTitle);
 		// use the default (the last commit) -> no changes
 		assertEquals(3, dialog.bot().table().rowCount());
-		dialog.bot().table().select(0);
 		dialog.bot().button(IDialogConstants.OK_LABEL).click();
 		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
 				.getAllItems().length);
@@ -124,14 +121,12 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		String compareWithRefActionLabel = util
 				.getPluginLocalizedValue("CompareWithBranchOrTagAction.label");
 		String dialogTitle = UIText.CompareTargetSelectionDialog_WindowTitle;
-
 		SWTBotShell dialog = openCompareWithDialog(compareWithRefActionLabel,
 				dialogTitle);
 		// use the default (the last commit) -> no changes
 		dialog.bot().button(UIText.CompareTargetSelectionDialog_CompareButton)
 				.click();
 		waitUntilCompareTreeViewTreeHasNodeCount(0);
-
 		// use the tag -> should have a change
 		dialog = openCompareWithDialog(compareWithRefActionLabel, dialogTitle);
 		dialog.bot().tree().getTreeItem(TAGS).expand().getNode("SomeTag")

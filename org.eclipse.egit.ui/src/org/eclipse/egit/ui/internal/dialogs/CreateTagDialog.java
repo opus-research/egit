@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
@@ -38,6 +37,9 @@ import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.resource.LocalResourceManager;
+import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.ISelection;
@@ -131,10 +133,14 @@ public class CreateTagDialog extends TitleAreaDialog {
 
 		private final Image IMG_LIGHTTAG;
 
+		private final ResourceManager fImageCache;
+
 		private TagLabelProvider() {
-			IMG_TAG = UIIcons.TAG.createImage();
-			IMG_LIGHTTAG = SWTUtils.getDecoratedImage(IMG_TAG,
-					UIIcons.OVR_LIGHTTAG);
+			fImageCache = new LocalResourceManager(
+					JFaceResources.getResources());
+			IMG_TAG = fImageCache.createImage(UIIcons.TAG);
+			IMG_LIGHTTAG = SWTUtils.getDecoratedImage(
+					fImageCache.createImage(UIIcons.TAG), UIIcons.OVR_LIGHTTAG);
 		}
 
 		public Image getColumnImage(Object element, int columnIndex) {
@@ -158,8 +164,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 		}
 
 		public void dispose() {
-			IMG_TAG.dispose();
-			IMG_LIGHTTAG.dispose();
+			fImageCache.dispose();
 			super.dispose();
 		}
 	}
@@ -285,13 +290,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 		super.create();
 		// start a job that fills the tag list lazily
 		Job job = new Job(UIText.CreateTagDialog_GetTagJobName) {
-			@Override
-			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.FILL_TAG_LIST))
-					return true;
-				return super.belongsTo(family);
-			}
-
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 
@@ -514,10 +512,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 					}
 					for (RevCommit revCommit : commits)
 						commitCombo.add(revCommit);
-
-					// Set combo selection if a tag is selected
-					if (tag != null)
-						commitCombo.setSelectedElement(tag.getObject());
 				}
 				composite.layout(true);
 			}

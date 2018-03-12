@@ -13,24 +13,19 @@ package org.eclipse.egit.core.synchronize;
 
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.variants.SessionResourceVariantByteStore;
 
 class GitRemoteResourceVariantTree extends GitResourceVariantTree {
 
-	GitRemoteResourceVariantTree(GitSyncCache cache, GitSynchronizeDataSet data) {
-		super(new SessionResourceVariantByteStore(), cache, data);
+	GitRemoteResourceVariantTree(GitSynchronizeDataSet data) {
+		super(new SessionResourceVariantByteStore(), data);
 	}
 
 	@Override
-	protected ObjectId getObjectId(ThreeWayDiffEntry diffEntry) {
-		return diffEntry.getRemoteId().toObjectId();
-	}
-
-	@Override
-	protected RevCommit getCommitId(GitSynchronizeData gsd) {
-		return gsd.getSrcRevCommit();
+	protected RevCommit getRevCommit(GitSynchronizeData gsd) throws TeamException {
+		return gsd.getDstRevCommit();
 	}
 
 }
