@@ -65,6 +65,7 @@ import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
+import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -84,7 +85,6 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.LocalSelectionTransfer;
-import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jface.viewers.ContentViewer;
 import org.eclipse.jface.viewers.DecoratingLabelProvider;
 import org.eclipse.jface.viewers.IBaseLabelProvider;
@@ -94,10 +94,8 @@ import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.ITreeViewerListener;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jface.viewers.TreeExpansionEvent;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
@@ -110,7 +108,6 @@ import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.dircache.DirCacheEntry;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -506,7 +503,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
 
 		commitMessageSection = toolkit.createSection(
 				horizontalSashForm, ExpandableComposite.TITLE_BAR);
@@ -718,7 +714,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		addListenerToDisableAutoExpandOnCollapse(stagedViewer);
 
 		selectionChangedListener = new ISelectionListener() {
 			public void selectionChanged(IWorkbenchPart part,
@@ -844,7 +839,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				unstagedViewer.expandAll();
-				enableAutoExpand(unstagedViewer);
 			}
 		};
 		unstagedExpandAllAction.setImageDescriptor(UIIcons.EXPAND_ALL);
@@ -853,7 +847,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				unstagedViewer.collapseAll();
-				disableAutoExpand(unstagedViewer);
 			}
 		};
 		unstagedCollapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
@@ -877,7 +870,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				stagedViewer.expandAll();
-				enableAutoExpand(stagedViewer);
 			}
 		};
 		stagedExpandAllAction.setImageDescriptor(UIIcons.EXPAND_ALL);
@@ -886,7 +878,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				stagedViewer.collapseAll();
-				disableAutoExpand(stagedViewer);
 			}
 		};
 		stagedCollapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
@@ -908,27 +899,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		layout.marginLeft = 0;
 		layout.marginRight = 0;
 		return layout;
-	}
-
-	private static void addListenerToDisableAutoExpandOnCollapse(
-			TreeViewer treeViewer) {
-		treeViewer.addTreeListener(new ITreeViewerListener() {
-			public void treeCollapsed(TreeExpansionEvent event) {
-				disableAutoExpand(event.getTreeViewer());
-			}
-
-			public void treeExpanded(TreeExpansionEvent event) {
-				// Nothing to do
-			}
-		});
-	}
-
-	private static void enableAutoExpand(AbstractTreeViewer treeViewer) {
-		treeViewer.setAutoExpandLevel(AbstractTreeViewer.ALL_LEVELS);
-	}
-
-	private static void disableAutoExpand(AbstractTreeViewer treeViewer) {
-		treeViewer.setAutoExpandLevel(0);
 	}
 
 	/**
@@ -1999,10 +1969,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private void expandPreviousExpandedAndPaths(Object[] previous,
 			TreeViewer viewer, Set<IPath> additionalPaths) {
-		// Auto-expand is on, so don't change expanded items
-		if (viewer.getAutoExpandLevel() == AbstractTreeViewer.ALL_LEVELS)
-			return;
-
 		Set<IPath> paths = new HashSet<IPath>(additionalPaths);
 		// Instead of just expanding the previous elements directly, also expand
 		// all parent paths. This makes it work in case of "re-folding" of
@@ -2117,9 +2083,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		String chIdLine = "Change-Id: I" + ObjectId.zeroId().name(); //$NON-NLS-1$
 
-		if (currentRepository.getConfig().getBoolean(
-				ConfigConstants.CONFIG_GERRIT_SECTION,
-				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false)
+		if (GerritUtil.getCreateChangeId(currentRepository.getConfig())
 				&& commitMessageComponent.getCreateChangeId()) {
 			if (message.trim().equals(chIdLine))
 				return false;
