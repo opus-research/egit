@@ -163,8 +163,6 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case FETCH:
 			// fall through
-		case BRANCHHIERARCHY:
-			// fall through
 		case ERROR:
 			result = prime * result
 					+ ((myObject == null) ? 0 : myObject.hashCode());
@@ -234,9 +232,6 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case REMOTEBRANCHES:
 			// fall through
-		case BRANCHHIERARCHY:
-			return myObject.toString().compareTo(
-					otherNode.getObject().toString());
 		case REMOTES:
 			// fall through
 		case SYMBOLICREFS:
@@ -321,8 +316,6 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		case FETCH:
 			// fall through
 		case PUSH:
-			// fall through
-		case BRANCHHIERARCHY:
 			// fall through
 		case TAGS:
 			return myObject.equals(otherObject);

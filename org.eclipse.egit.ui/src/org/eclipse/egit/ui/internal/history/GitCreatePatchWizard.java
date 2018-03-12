@@ -11,12 +11,11 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.reflect.InvocationTargetException;
@@ -134,22 +133,18 @@ public class GitCreatePatchWizard extends Wizard {
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor) {
 					final StringBuilder sb = new StringBuilder();
-					final DiffFormatter diffFmt = new DiffFormatter(
-							new BufferedOutputStream(new ByteArrayOutputStream() {
+					DiffFormatter diffFmt = new DiffFormatter(new OutputStream() {
 
 						@Override
-						public synchronized void write(byte[] b, int off, int len) {
-							super.write(b, off, len);
-							sb.append(toString());
-							reset();
-						}
+						public void write(int c) throws IOException {
+							sb.append((char) c);
 
-					}));
+						}
+					});
 					try {
 						FileDiff[] diffs = FileDiff.compute(walker, commit);
 						for (FileDiff diff : diffs) {
 							diff.outputDiff(sb, db, diffFmt, isGit);
-							diffFmt.flush();
 						}
 
 						if (isFile) {

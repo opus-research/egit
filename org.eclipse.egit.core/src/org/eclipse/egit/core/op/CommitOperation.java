@@ -30,12 +30,12 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.api.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
-import org.eclipse.jgit.api.errors.JGitInternalException;
-import org.eclipse.jgit.api.errors.NoHeadException;
-import org.eclipse.jgit.api.errors.NoMessageException;
-import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
+import org.eclipse.jgit.api.JGitInternalException;
+import org.eclipse.jgit.api.NoHeadException;
+import org.eclipse.jgit.api.NoMessageException;
+import org.eclipse.jgit.api.WrongRepositoryStateException;
 import org.eclipse.jgit.errors.UnmergedPathException;
 import org.eclipse.jgit.lib.CommitBuilder;
 import org.eclipse.jgit.lib.Constants;
@@ -50,7 +50,6 @@ import org.eclipse.jgit.lib.TreeEntry;
 import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.ChangeIdUtil;
-import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 
@@ -122,8 +121,8 @@ public class CommitOperation implements IEGitOperation {
 			public void run(IProgressMonitor monitor) throws CoreException {
 				final Date commitDate = new Date();
 				final TimeZone timeZone = TimeZone.getDefault();
-				final PersonIdent authorIdent = RawParseUtils.parsePersonIdent(author);
-				final PersonIdent committerIdent = RawParseUtils.parsePersonIdent(committer);
+				final PersonIdent authorIdent = new PersonIdent(author);
+				final PersonIdent committerIdent = new PersonIdent(committer);
 				if (commitAll) {
 					for (Repository repo : repos) {
 						Git git = new Git(repo);
@@ -286,8 +285,8 @@ public class CommitOperation implements IEGitOperation {
 		final Date commitDate = new Date();
 		final TimeZone timeZone = TimeZone.getDefault();
 
-		final PersonIdent authorIdent = RawParseUtils.parsePersonIdent(author);
-		final PersonIdent committerIdent = RawParseUtils.parsePersonIdent(committer);
+		final PersonIdent authorIdent = new PersonIdent(author);
+		final PersonIdent committerIdent = new PersonIdent(committer);
 
 		for (java.util.Map.Entry<Repository, Tree> entry : treeMap.entrySet()) {
 			Tree tree = entry.getValue();
