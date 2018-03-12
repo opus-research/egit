@@ -308,7 +308,7 @@ public class RepositoryMapping {
 	 *         determined.
 	 */
 	@Nullable
-	public String getRepoRelativePath(@NonNull IPath location) {
+	public synchronized String getRepoRelativePath(@NonNull IPath location) {
 		if (workdirPrefix == null) {
 			return null;
 		}
