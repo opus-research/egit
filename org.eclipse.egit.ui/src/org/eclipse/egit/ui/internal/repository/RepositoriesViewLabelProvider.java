@@ -287,11 +287,11 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 				string.append(
 						Repository.shortenRefName(head.getLeaf().getName()),
 						StyledString.DECORATIONS_STYLER);
-			else if (head.getObjectId() != null)
+			else
 				string.append(head.getObjectId().abbreviate(7).name(),
 						StyledString.DECORATIONS_STYLER);
 			string.append(']', StyledString.DECORATIONS_STYLER);
-			if (verboseBranchMode && head.getObjectId() != null) {
+			if (verboseBranchMode) {
 				RevWalk walk = new RevWalk(repository);
 				RevCommit commit;
 				try {
