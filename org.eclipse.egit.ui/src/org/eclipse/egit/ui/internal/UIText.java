@@ -43,12 +43,6 @@ public class UIText extends NLS {
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
-	public static String AbstractRebaseCommandHandler_cleanupDialog_text;
-
-	/** */
-	public static String AbstractRebaseCommandHandler_cleanupDialog_title;
-
-	/** */
 	public static String AbstractReflogCommandHandler_NoInput;
 
 	/** */
