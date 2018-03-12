@@ -42,8 +42,7 @@ public class GitModelTree extends GitModelCommit {
 	 *            parent of this tree
 	 * @param commit
 	 *            commit associated with this tree
-	 * @param ancestorCommit
-	 *            common ancestor commit associated with this tree
+	 * @param ancestorCommit TODO
 	 * @param ancestorId
 	 *            id of common ancestor tree for this on
 	 * @param baseId
@@ -95,16 +94,6 @@ public class GitModelTree extends GitModelCommit {
 			location = getParent().getLocation().append(name);
 
 		return location;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		return super.equals(obj);
-	}
-
-	@Override
-	public int hashCode() {
-		return super.hashCode();
 	}
 
 	protected GitModelObject[] getChildrenImpl() {
