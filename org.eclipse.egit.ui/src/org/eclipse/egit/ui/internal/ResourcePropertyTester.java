@@ -58,7 +58,7 @@ public class ResourcePropertyTester extends PropertyTester {
 
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
-		boolean value = internalTest(receiver, property, args, expectedValue);
+		boolean value = internalTest(receiver, property);
 		boolean trace = GitTraceLocation.PROPERTIESTESTER.isActive();
 		if (trace)
 			GitTraceLocation
@@ -68,8 +68,7 @@ public class ResourcePropertyTester extends PropertyTester {
 		return value;
 	}
 
-	private boolean internalTest(Object receiver, String property, Object[] args,
-			Object expectedValue) {
+	private boolean internalTest(Object receiver, String property) {
 		if (!(receiver instanceof IResource))
 			return false;
 		IResource res = (IResource) receiver;
@@ -90,7 +89,8 @@ public class ResourcePropertyTester extends PropertyTester {
 	/**
 	 * @param repository
 	 * @param property
-	 * @return true of the repository is in an appropriate state. See {@link ResourcePropertyTester}
+	 * @return true if the repository is in an appropriate state. See
+	 *         {@link ResourcePropertyTester}
 	 */
 	public static boolean testRepositoryState(Repository repository, String property) {
 		if ("isShared".equals(property)) //$NON-NLS-1$
@@ -107,9 +107,9 @@ public class ResourcePropertyTester extends PropertyTester {
 			}
 			// invokes test methods of RepositoryState, canCommit etc
 			try {
-				Method method = RepositoryState.class.getMethod(property, (Class[])null);
+				Method method = RepositoryState.class.getMethod(property);
 				if (method.getReturnType() == boolean.class) {
-					Boolean ret = (Boolean) method.invoke(state, (Object[])null);
+					Boolean ret = (Boolean) method.invoke(state);
 					return ret.booleanValue();
 				}
 			} catch (Exception e) {
