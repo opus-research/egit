@@ -96,18 +96,6 @@ public class PushOperationResult {
 	}
 
 	/**
-	 * @return true if connection was successful for all repository (URI), false
-	 *         otherwise.
-	 */
-	public boolean isSuccessfulConnectionForAllURI() {
-		for (final URIish uri : getURIs()) {
-			if (!isSuccessfulConnection(uri))
-				return false;
-		}
-		return true;
-	}
-
-	/**
 	 * @param uri
 	 *            remote repository URI.
 	 * @return push result for this repository (URI) or null if operation ended
@@ -134,18 +122,14 @@ public class PushOperationResult {
 		final StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (final URIish uri : getURIs()) {
-			if (first){
+			if (first)
 				first = false;
-			}
-			else {
-				sb.append(", "); //$NON-NLS-1$
-			}
+			else
+				sb.append(", ");  //$NON-NLS-1$
 			sb.append(uri);
-			if (getErrorMessage(uri) != null) {
-				sb.append(" ("); //$NON-NLS-1$
-				sb.append(getErrorMessage(uri));
-				sb.append(")"); //$NON-NLS-1$
-			}
+			sb.append(" (");  //$NON-NLS-1$
+			sb.append(getErrorMessage(uri));
+			sb.append(")"); //$NON-NLS-1$
 		}
 		return sb.toString();
 	}
