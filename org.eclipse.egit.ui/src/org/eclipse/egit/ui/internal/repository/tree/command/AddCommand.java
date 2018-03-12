@@ -14,10 +14,9 @@ import java.io.File;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.internal.repository.RepositorySearchWizard;
+import org.eclipse.egit.ui.internal.repository.RepositorySearchDialog;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jface.wizard.WizardDialog;
 
 /**
  * "Adds" repositories
@@ -25,11 +24,10 @@ import org.eclipse.jface.wizard.WizardDialog;
 public class AddCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		RepositorySearchWizard wizard = new RepositorySearchWizard(
+		RepositorySearchDialog sd = new RepositorySearchDialog(getShell(event),
 				util.getConfiguredRepositories());
-		WizardDialog dialog = new WizardDialog(getShell(event), wizard);
-		if (dialog.open() == Window.OK)
-			for (String dir : wizard.getDirectories())
+		if (sd.open() == Window.OK)
+			for (String dir : sd.getDirectories())
 				util.addConfiguredRepository(new File(dir));
 		return null;
 	}

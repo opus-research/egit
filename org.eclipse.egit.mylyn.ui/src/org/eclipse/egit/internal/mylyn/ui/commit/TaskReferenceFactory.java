@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.internal.mylyn.ui.commit;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -47,9 +46,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 
 	@SuppressWarnings({ "rawtypes" })
 	public Class[] getAdapterList() {
-		final Class[] c = new Class[ADAPTER_TYPES.length];
-		System.arraycopy(ADAPTER_TYPES, 0, c, 0, c.length);
-		return c;
+		return ADAPTER_TYPES;
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -81,7 +78,6 @@ public class TaskReferenceFactory implements IAdapterFactory {
 
 			String repoUrl = null;
 			String message = null;
-			long timestamp = 0;
 
 			// try to get repository url and commit message
 			try {
@@ -89,11 +85,8 @@ public class TaskReferenceFactory implements IAdapterFactory {
 				if (revCommit != null) {
 					repoUrl = getRepoUrl(r);
 					message = revCommit.getFullMessage();
-					timestamp = (long)revCommit.getCommitTime() * 1000;
 				}
-			} catch (IOException e) {
-				continue;
-			} catch (RuntimeException e) {
+			} catch (Exception e) {
 				continue;
 			}
 
@@ -107,7 +100,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 					taskRepositoryUrl = repository.getRepositoryUrl();
 			}
 
-			return new LinkedTaskInfo(taskRepositoryUrl, null, null, message, timestamp);
+			return new LinkedTaskInfo(taskRepositoryUrl, null, null, message);
 		}
 
 		return null;
