@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2013 SAP AG and others.
+ * Copyright (c) 2011, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,6 +8,7 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Dariusz Luksza <dariusz@luksza.org> - add 'isSafe' implementation
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - isIgnored, isStaged, hasUnstagedChanges
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
@@ -17,8 +18,8 @@ import java.util.List;
 
 import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.gerrit.GerritUtil;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.resources.IResourceState;
 import org.eclipse.egit.ui.internal.resources.IResourceState.Staged;
@@ -79,7 +80,8 @@ public class ResourcePropertyTester extends PropertyTester {
 	@Override
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
-		boolean value = internalTest(receiver, property);
+		boolean value = internalTest(
+				AdapterUtils.adapt(receiver, IResource.class), property);
 		boolean trace = GitTraceLocation.PROPERTIESTESTER.isActive();
 		if (trace)
 			GitTraceLocation
@@ -103,28 +105,14 @@ public class ResourcePropertyTester extends PropertyTester {
 		if (mapping != null) {
 			Repository repository = mapping.getRepository();
 			if ("isStaged".equals(property)) { //$NON-NLS-1$
-				IndexDiffData indexDiffData = ResourceStateFactory.getInstance()
-						.getIndexDiffDataOrNull(res);
-				if (indexDiffData != null) {
-					return ResourceStateFactory.getInstance()
-							.get(indexDiffData, res)
-							.staged() != Staged.NOT_STAGED;
-				}
+				return ResourceStateFactory.getInstance().get(res)
+						.staged() != Staged.NOT_STAGED;
 			} else if ("isIgnored".equals(property)) { //$NON-NLS-1$
-				IndexDiffData indexDiffData = ResourceStateFactory.getInstance()
-						.getIndexDiffDataOrNull(res);
-				if (indexDiffData != null) {
-					return ResourceStateFactory.getInstance()
-							.get(indexDiffData, res).isIgnored();
-				}
+				return ResourceStateFactory.getInstance().get(res).isIgnored();
 			} else if ("hasUnstagedChanges".equals(property)) { //$NON-NLS-1$
-				IndexDiffData indexDiffData = ResourceStateFactory.getInstance()
-						.getIndexDiffDataOrNull(res);
-				if (indexDiffData != null) {
-					IResourceState state = ResourceStateFactory.getInstance()
-							.get(indexDiffData, res);
-					return !state.isTracked() || state.isDirty();
-				}
+				IResourceState state = ResourceStateFactory.getInstance()
+						.get(res);
+				return !state.isTracked() || state.isDirty();
 			} else {
 				return testRepositoryState(repository, property);
 			}
