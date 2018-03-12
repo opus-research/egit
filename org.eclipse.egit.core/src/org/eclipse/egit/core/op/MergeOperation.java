@@ -112,11 +112,9 @@ public class MergeOperation implements IEGitOperation {
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
 				}
-				finally {
-					ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
-							mymonitor, 1));
-					mymonitor.done();
-				}
+				ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
+						mymonitor, 1));
+				mymonitor.done();
 			}
 		};
 		// lock workspace to protect working tree changes

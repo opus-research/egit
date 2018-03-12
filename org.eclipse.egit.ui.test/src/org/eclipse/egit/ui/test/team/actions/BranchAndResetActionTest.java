@@ -29,10 +29,11 @@ import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.Tag;
+import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -65,11 +66,11 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		perspective = bot.activePerspective();
 		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
 
-		Tag tag = new Tag(repo);
+		TagBuilder tag = new TagBuilder();
 		tag.setTag("SomeTag");
 		tag.setTagger(new PersonIdent(TestUtil.TESTAUTHOR));
 		tag.setMessage("I'm just a little tag");
-		tag.setObjId(repo.resolve(repo.getFullBranch()));
+		tag.setObjectId(repo.resolve(repo.getFullBranch()), Constants.OBJ_COMMIT);
 		TagOperation top = new TagOperation(repo, tag, false);
 		top.execute(null);
 		touchAndSubmit(null);
