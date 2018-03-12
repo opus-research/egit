@@ -17,7 +17,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositoryServerProvider;
 import org.eclipse.jface.wizard.WizardPage;
@@ -39,8 +38,9 @@ public class GitCloneSourceProviderExtension {
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
 		IConfigurationElement[] config = registry
 				.getConfigurationElementsFor(CLONE_SOURCE_PROVIDER_ID);
-		if (config.length > 0)
+		if (config.length > 0) {
 			addCloneSourceProvider(cloneSourceProvider, config, 0);
+		}
 
 		return cloneSourceProvider;
 	}
@@ -79,16 +79,16 @@ public class GitCloneSourceProviderExtension {
 	public static class CloneSourceProvider {
 
 		/**
-		 * The constant provider used for local repositories
+		 * The constant provider for used for local repositories
 		 */
 		public static final CloneSourceProvider LOCAL = new CloneSourceProvider(
-				UIText.GitCloneSourceProviderExtension_Local, null, null, true);
+				"Local", null, null, true); //$NON-NLS-1$
 
-		private final String label;
+		private String label;
 
-		private final IConfigurationElement repositoryServerProviderElement;
+		private IConfigurationElement repositoryServerProviderElement;
 
-		private final IConfigurationElement repositorySearchPageELement;
+		private IConfigurationElement repositorySearchPageELement;
 
 		private boolean hasFixLocation = false;
 
@@ -104,16 +104,16 @@ public class GitCloneSourceProviderExtension {
 
 		/**
 		 * @return label the human readable name of a type of servers which
-		 *         contain repositories
+		 *         contains repositories
 		 */
 		public String getLabel() {
 			return label;
 		}
 
 		/**
-		 * @return a class which provides a list of servers which host git
+		 * @return a class which Provides a list of servers which host git
 		 *         repositories. This class is newly created on each invocation
-		 *         of this method. Clients are responsible to cache this
+		 *         of this method. A client is responsible of caching this
 		 *         class.
 		 * @throws CoreException
 		 */
@@ -124,16 +124,16 @@ public class GitCloneSourceProviderExtension {
 			Object object = repositoryServerProviderElement
 					.createExecutableExtension("class"); //$NON-NLS-1$
 			IRepositoryServerProvider provider = null;
-			if (object instanceof IRepositoryServerProvider)
+			if (object instanceof IRepositoryServerProvider) {
 				provider = (IRepositoryServerProvider) object;
+			}
 			return provider;
 		}
 
 		/**
-		 * @return A wizard page which can return information of a git
+		 * @return A wizard page which can can return information of a git
 		 *         repository. This class is newly created on each invocation of
-		 *         this method. Clients are responsible to cache this
-		 *         class.
+		 *         this method. A client is responsible of caching this class.
 		 * @throws CoreException
 		 */
 		public WizardPage getRepositorySearchPage() throws CoreException {
@@ -143,8 +143,9 @@ public class GitCloneSourceProviderExtension {
 					.createExecutableExtension("class"); //$NON-NLS-1$
 			WizardPage page = null;
 			if (object instanceof WizardPage
-					&& object instanceof IRepositorySearchResult)
+					&& object instanceof IRepositorySearchResult) {
 				page = (WizardPage) object;
+			}
 			return page;
 		}
 

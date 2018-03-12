@@ -26,9 +26,9 @@ import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
  */
 public class RepositoryServerInfo {
 
-	private final String label;
+	private String label;
 
-	private final URI uri;
+	private URI uri;
 
 	private UserPasswordCredentials credentials;
 
@@ -61,15 +61,15 @@ public class RepositoryServerInfo {
 	}
 
 	/**
-	 * @param user the user name needed to log in
-	 * @param password  the password needed to log in
+	 * @param user the user name needed for log in
+	 * @param password  the password needed for log in
 	 */
 	public void setCredentials(String user, String password) {
 		credentials = new UserPasswordCredentials(user, password);
 	}
 
 	/**
-	 * @return the credentials needed to log in
+	 * @return the credentials needed for log in
 	 */
 	public UserPasswordCredentials getCredentials() {
 		return credentials;

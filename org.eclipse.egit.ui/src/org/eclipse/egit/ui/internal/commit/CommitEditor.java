@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,9 +7,10 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Added context menu to the Commit Editor's header text
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
+
+import java.text.MessageFormat;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -142,7 +143,8 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	protected void createHeaderContents(IManagedForm headerForm) {
 		RepositoryCommit commit = getCommit();
 		ScrolledForm form = headerForm.getForm();
-		new HeaderText(form.getForm(), commit.getRevCommit().name());
+		new HeaderText(form.getForm(), MessageFormat.format(
+				UIText.CommitEditor_TitleHeader, commit.getRevCommit().name()));
 		form.setToolTipText(commit.getRevCommit().name());
 		getToolkit().decorateFormHeading(form.getForm());
 
