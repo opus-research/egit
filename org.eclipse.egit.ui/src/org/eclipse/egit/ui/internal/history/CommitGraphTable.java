@@ -380,8 +380,8 @@ class CommitGraphTable {
 		table.removePostSelectionChangedListener(l);
 	}
 
-	void setRelativeDate(boolean booleanValue) {
-		graphLabelProvider.setRelativeDate(booleanValue);
+	boolean setRelativeDate(boolean booleanValue) {
+		return graphLabelProvider.setRelativeDate(booleanValue);
 	}
 
 	private boolean canDoCopy() {
