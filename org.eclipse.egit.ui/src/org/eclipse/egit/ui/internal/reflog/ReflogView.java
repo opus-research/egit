@@ -301,19 +301,10 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 				repository = repoNode.getRepository();
 			}
 
-			showReflogFor(repository);
-		}
-	}
-
-	/**
-	 * Defines the repository for the reflog to show.
-	 *
-	 * @param repository
-	 */
-	public void showReflogFor(Repository repository) {
-		if (repository != null) {
-			refLogTableTreeViewer.setInput(repository);
-			form.setText(getRepositoryName(repository));
+			if (repository != null) {
+				refLogTableTreeViewer.setInput(repository);
+				form.setText(getRepositoryName(repository));
+			}
 		}
 	}
 
