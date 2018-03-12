@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -36,37 +35,28 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
-import org.eclipse.egit.ui.internal.push.PushOperationUI;
-import org.eclipse.egit.ui.internal.push.PushWizard;
-import org.eclipse.egit.ui.internal.push.SimpleConfigurePushDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
@@ -121,15 +111,14 @@ public class CommitUI  {
 		this.preselectAll = preselectAll;
 	}
 
-	/**1
+	/**
 	 * Performs a commit
-	 * @return true if a commit operation was triggered
 	 */
-	public boolean commit() {
+	public void commit() {
 		// let's see if there is any dirty editor around and
 		// ask the user if they want to save or abort
 		if (!UIUtils.saveAllEditors(repo))
-			return false;
+			return;
 
 		BasicConfigurationDialog.show(new Repository[]{repo});
 
@@ -150,9 +139,9 @@ public class CommitUI  {
 		} catch (InvocationTargetException e) {
 			Activator.handleError(UIText.CommitAction_errorComputingDiffs, e.getCause(),
 					true);
-			return false;
+			return;
 		} catch (InterruptedException e) {
-			return false;
+			return;
 		}
 
 		CommitHelper commitHelper = new CommitHelper(repo);
@@ -162,7 +151,7 @@ public class CommitUI  {
 					shell,
 					UIText.CommitAction_cannotCommit,
 					commitHelper.getCannotCommitMessage());
-			return false;
+			return;
 		}
 		boolean amendAllowed = commitHelper.amendAllowed();
 		if (files.isEmpty()) {
@@ -171,13 +160,13 @@ public class CommitUI  {
 						UIText.CommitAction_noFilesToCommit,
 						UIText.CommitAction_amendCommit);
 				if (!result)
-					return false;
+					return;
 				amending = true;
 			} else {
 				MessageDialog.openWarning(shell,
 						UIText.CommitAction_noFilesToCommit,
 						UIText.CommitAction_amendNotPossible);
-				return false;
+				return;
 			}
 		}
 
@@ -193,7 +182,7 @@ public class CommitUI  {
 		commitDialog.setCommitMessage(commitHelper.getCommitMessage());
 
 		if (commitDialog.open() != IDialogConstants.OK_ID)
-			return false;
+			return;
 
 		final CommitOperation commitOperation;
 		try {
@@ -203,7 +192,7 @@ public class CommitUI  {
 					commitDialog.getCommitter(), commitDialog.getCommitMessage());
 		} catch (CoreException e1) {
 			Activator.handleError(UIText.CommitUI_commitFailed, e1, true);
-			return false;
+			return;
 		}
 		if (commitDialog.isAmending())
 			commitOperation.setAmending(true);
@@ -211,49 +200,8 @@ public class CommitUI  {
 		commitOperation.setCommitAll(commitHelper.isMergedResolved);
 		if (commitHelper.isMergedResolved)
 			commitOperation.setRepository(repo);
-		Job commitJob = createCommitJob(repo, commitOperation, false);
-		if (commitDialog.isPushEnabled())
-			pushWhenFinished(commitJob);
-
-		commitJob.schedule();
-
-		return true;
-	}
-
-	private void pushWhenFinished(Job commitJob) {
-		commitJob.addJobChangeListener(new JobChangeAdapter() {
-
-			@Override
-			public void done(IJobChangeEvent event) {
-				if (event.getResult().getSeverity() == IStatus.ERROR)
-					return;
-				RemoteConfig config = SimpleConfigurePushDialog
-						.getConfiguredRemote(repo);
-				if (config == null) {
-					Display.getDefault().syncExec(new Runnable() {
-
-						public void run() {
-							try {
-								WizardDialog wizardDialog = new WizardDialog(
-										shell, new PushWizard(repo));
-								wizardDialog.setHelpAvailable(true);
-								wizardDialog.open();
-							} catch (URISyntaxException e) {
-								Activator.handleError(NLS.bind(
-										UIText.CommitUI_pushFailedMessage, e),
-										e, true);
-							}
-						}
-					});
-				} else {
-					int timeout = Activator.getDefault().getPreferenceStore()
-							.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-					PushOperationUI op = new PushOperationUI(repo, config
-							.getName(), timeout, false);
-					op.start();
-				}
-			}
-		});
+		performCommit(repo, commitOperation, false);
+		return;
 	}
 
 	/**
@@ -263,12 +211,6 @@ public class CommitUI  {
 	 * @param openNewCommit
 	 */
 	public static void performCommit(final Repository repository,
-			final CommitOperation commitOperation, final boolean openNewCommit) {
-		Job job = createCommitJob(repository, commitOperation, openNewCommit);
-		job.schedule();
-	}
-
-	private static Job createCommitJob(final Repository repository,
 			final CommitOperation commitOperation, final boolean openNewCommit) {
 		String jobname = UIText.CommitAction_CommittingChanges;
 		Job job = new Job(jobname) {
@@ -307,7 +249,7 @@ public class CommitUI  {
 
 		};
 		job.setUser(true);
-		return job;
+		job.schedule();
 	}
 
 	private static void openCommit(final Repository repository,
