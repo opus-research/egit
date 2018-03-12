@@ -77,11 +77,9 @@ import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Layout;
 import org.eclipse.ui.ActiveShellExpression;
 import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
@@ -214,9 +212,6 @@ public class SpellcheckableMessageArea extends Composite {
 
 	private BidiSegmentListener hardWrapSegmentListener;
 
-	// XXX: workaround for https://bugs.eclipse.org/400727
-	private int brokenBidiPlatformTextWidth;
-
 	private ActionHandler quickFixActionHandler;
 
 	private ActionHandler contentAssistActionHandler;
@@ -263,8 +258,6 @@ public class SpellcheckableMessageArea extends Composite {
 		Point size = getTextWidget().computeSize(textWidth, textHeight);
 		getTextWidget().setSize(size);
 
-		computeBrokenBidiPlatformTextWidth(size.x);
-
 		getTextWidget().setEditable(!readOnly);
 
 		createMarginPainter();
@@ -276,9 +269,6 @@ public class SpellcheckableMessageArea extends Composite {
 					getDisplay().asyncExec(new Runnable() {
 						public void run() {
 							configureHardWrap();
-							if (brokenBidiPlatformTextWidth != -1) {
-								layout();
-							}
 						}
 					});
 				}
@@ -330,24 +320,6 @@ public class SpellcheckableMessageArea extends Composite {
 		});
 	}
 
-	private void computeBrokenBidiPlatformTextWidth(int textWidth) {
-		class BidiSegmentListenerTester implements BidiSegmentListener {
-			boolean called;
-
-			public void lineGetSegments(BidiSegmentEvent event) {
-				called = true;
-			}
-		}
-		BidiSegmentListenerTester tester = new BidiSegmentListenerTester();
-		StyledText textWidget = getTextWidget();
-		textWidget.addBidiSegmentListener(tester);
-		textWidget.setText(" "); //$NON-NLS-1$
-		textWidget.computeSize(SWT.DEFAULT, SWT.DEFAULT);
-		textWidget.removeBidiSegmentListener(tester);
-
-		brokenBidiPlatformTextWidth = tester.called ? -1 : textWidth;
-	}
-
 	private boolean isEditable(ISourceViewer viewer) {
 		return viewer != null && viewer.getTextWidget().getEditable();
 	}
@@ -355,7 +327,7 @@ public class SpellcheckableMessageArea extends Composite {
 	private void configureHardWrap() {
 		if (shouldHardWrap()) {
 			if (hardWrapSegmentListener == null) {
-				final StyledText textWidget = getTextWidget();
+				StyledText textWidget = getTextWidget();
 				hardWrapSegmentListener = new BidiSegmentListener() {
 					public void lineGetSegments(BidiSegmentEvent e) {
 						int[] segments = calculateWrapOffsets(e.lineText, MAX_LINE_WIDTH);
@@ -369,44 +341,12 @@ public class SpellcheckableMessageArea extends Composite {
 				};
 				textWidget.addBidiSegmentListener(hardWrapSegmentListener);
 				textWidget.setText(textWidget.getText()); // XXX: workaround for https://bugs.eclipse.org/384886
-
-				if (brokenBidiPlatformTextWidth != -1) {
-					Layout restrictedWidthLayout = new Layout() {
-						@Override
-						protected Point computeSize(Composite composite,
-								int wHint, int hHint, boolean flushCache) {
-							Point size = SpellcheckableMessageArea.this
-									.getSize();
-							Rectangle trim = SpellcheckableMessageArea.this
-									.computeTrim(0, 0, 0, 0);
-							size.x -= trim.width;
-							size.y -= trim.height;
-							if (size.x > brokenBidiPlatformTextWidth)
-								size.x = brokenBidiPlatformTextWidth;
-							return size;
-						}
-
-						@Override
-						protected void layout(Composite composite,
-								boolean flushCache) {
-							Point size = computeSize(composite, SWT.DEFAULT,
-									SWT.DEFAULT, flushCache);
-							textWidget.setBounds(0, 0, size.x, size.y);
-						}
-					};
-					setLayout(restrictedWidthLayout);
-				}
 			}
-
 		} else if (hardWrapSegmentListener != null) {
 			StyledText textWidget = getTextWidget();
 			textWidget.removeBidiSegmentListener(hardWrapSegmentListener);
 			textWidget.setText(textWidget.getText()); // XXX: workaround for https://bugs.eclipse.org/384886
 			hardWrapSegmentListener = null;
-
-			if (brokenBidiPlatformTextWidth != -1) {
-				setLayout(new FillLayout());
-			}
 		}
 	}
 
