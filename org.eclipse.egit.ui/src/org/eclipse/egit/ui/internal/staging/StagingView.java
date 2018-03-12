@@ -239,8 +239,6 @@ public class StagingView extends ViewPart {
 
 	private SashForm stagingSashForm;
 
-	private Job reloadJob;
-
 	@Override
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
@@ -1006,15 +1004,11 @@ public class StagingView extends ViewPart {
 		final String jobTitle = MessageFormat.format(UIText.StagingView_IndexDiffReload,
 				StagingView.getRepositoryName(repository));
 
-		if (reloadJob != null)
-			reloadJob.cancel();
-		reloadJob = new Job(jobTitle) {
+		Job job = new Job(jobTitle) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				IndexDiff indexDiff = doReload(repository, monitor, jobTitle);
 				results.set(indexDiff);
-				if (monitor.isCanceled())
-					return Status.CANCEL_STATUS;
 				return Status.OK_STATUS;
 			}
 
@@ -1027,18 +1021,16 @@ public class StagingView extends ViewPart {
 
 		};
 
-		reloadJob.setUser(false);
-		reloadJob.setRule(ResourcesPlugin.getWorkspace().getRoot());
+		job.setUser(false);
+		job.setRule(ResourcesPlugin.getWorkspace().getRoot());
 
-		reloadJob.addJobChangeListener(new JobChangeAdapter() {
+		job.addJobChangeListener(new JobChangeAdapter() {
 			public void done(final IJobChangeEvent event) {
 				asyncExec(new Runnable() {
 					public void run() {
 						if (form.isDisposed())
 							return;
-						if (!event.getResult().isOK()) {
-							return;
-						}
+
 						final IndexDiff indexDiff = results.get();
 						final StagingViewUpdate update = new StagingViewUpdate(currentRepository, indexDiff, null);
 						unstagedTableViewer.setInput(update);
@@ -1055,7 +1047,7 @@ public class StagingView extends ViewPart {
 			}
 		});
 
-		schedule(reloadJob);
+		schedule(job);
 	}
 
 	private void schedule(final Job j) {
