@@ -41,14 +41,15 @@ public class FileDiffContentProvider implements IStructuredContentProvider {
 	}
 
 	public Object[] getElements(final Object inputElement) {
-		if (diff == null && walk != null && commit != null)
+		if (diff == null && walk != null && commit != null) {
 			try {
 				diff = FileDiff.compute(walk, commit);
 			} catch (IOException err) {
 				Activator.handleError(NLS.bind(UIText.FileDiffContentProvider_errorGettingDifference,
 						commit.getId()), err, false);
 			}
-		return diff != null ? diff : new Object[0];
+		}
+		return diff;
 	}
 
 	public void dispose() {

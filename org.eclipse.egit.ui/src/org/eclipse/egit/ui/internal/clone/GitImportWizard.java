@@ -35,7 +35,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
-import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
 import org.eclipse.egit.ui.internal.provisional.wizards.NoRepositoryInfoException;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -58,15 +57,14 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 
 	private GitSelectWizardPage importWithDirectoriesPage = new GitSelectWizardPage(){
 		public void setVisible(boolean visible) {
-			if (existingRepo == null && visible && (cloneDestination.cloneSettingsChanged())) {
+			if (visible && (cloneDestination.cloneSettingsChanged())) {
 				setCallerRunsCloneOperation(true);
 				try {
-					final GitRepositoryInfo repositoryInfo = currentSearchResult.getGitRepositoryInfo();
-					performClone(repositoryInfo);
+					performClone(currentSearchResult.getGitRepositoryInfo());
 					importWithDirectoriesPage.getControl().getDisplay().asyncExec(new Runnable() {
 
 						public void run() {
-							runCloneOperation(getContainer(), repositoryInfo);
+							runCloneOperation(getContainer());
 							cloneDestination.saveSettingsForClonedRepo();
 						}});
 				} catch (URISyntaxException e) {
@@ -84,8 +82,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage() ;
 
 	private GitCreateGeneralProjectPage createGeneralProjectPage = new GitCreateGeneralProjectPage();
-
-	private Repository existingRepo;
 
 	/**
 	 * The default constructor
@@ -133,16 +129,14 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 
 	@Override
 	public IWizardPage getNextPage(IWizardPage page) {
-		if (page == selectRepoPage) {
-			existingRepo = selectRepoPage.getRepository();
+		if (page == selectRepoPage ) {
 			importWithDirectoriesPage.setRepository(selectRepoPage
 					.getRepository());
 			return importWithDirectoriesPage;
 		} else if (page == cloneDestination) {
-			existingRepo = null;
-			importWithDirectoriesPage.setRepository(getTargetRepository());
+			importWithDirectoriesPage.setRepository(getClonedRepository());
 			return importWithDirectoriesPage;
-		} else if (page == importWithDirectoriesPage)
+		} else if (page == importWithDirectoriesPage) {
 			switch (importWithDirectoriesPage.getWizardSelection()) {
 			case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
 				projectsImportPage.setProjectsList(importWithDirectoriesPage
@@ -156,29 +150,23 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 				return createGeneralProjectPage;
 
 			}
-		else if (page == createGeneralProjectPage
-				|| page == projectsImportPage)
+		} else if (page == createGeneralProjectPage
+				|| page == projectsImportPage) {
 			return null;
+		}
 		return super.getNextPage(page);
 	}
 
-	private Repository getTargetRepository() {
-		if (existingRepo != null)
-			return existingRepo;
-		else
-			try {
-				return org.eclipse.egit.core.Activator
-						.getDefault()
-						.getRepositoryCache()
-						.lookupRepository(
-								new File(cloneDestination.getDestinationFile(),
-										Constants.DOT_GIT));
-			} catch (IOException e) {
-				Activator
-						.error("Error looking up repository at " + cloneDestination.getDestinationFile(), e); //$NON-NLS-1$
-				return null;
-			}
+	private Repository getClonedRepository() {
+		 try {
+			return  org.eclipse.egit.core.Activator
+				.getDefault().getRepositoryCache().lookupRepository(new File(cloneDestination.getDestinationFile(), Constants.DOT_GIT));
+		} catch (IOException e) {
+			Activator.error("Error looking up repository at " + cloneDestination.getDestinationFile(), e); //$NON-NLS-1$
+			return null;
+		}
 	}
+
 
 	@Override
 	public boolean performFinish() {
@@ -231,7 +219,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					IWorkingSet[] workingSetArray = projectsImportPage
 							.getSelectedWorkingSets();
 					workingSets.addAll(Arrays.asList(workingSetArray));
-					repository[0] = getTargetRepository();
+					repository[0] = getClonedRepository();
 				}
 			});
 			ProjectUtils.createProjects(projectsToCreate, repository[0],
@@ -243,7 +231,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			final File[] repoDir = new File[1];
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 				public void run() {
-					repoDir[0] = getTargetRepository().getDirectory();
+					repoDir[0] = getClonedRepository().getDirectory();
 				}
 			});
 			final List<IProject> previousProjects = Arrays
@@ -260,12 +248,13 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 						throws CoreException {
 					IProject[] currentProjects = ResourcesPlugin.getWorkspace()
 							.getRoot().getProjects();
-					for (IProject current : currentProjects)
+					for (IProject current : currentProjects) {
 						if (!previousProjects.contains(current)) {
 							ConnectProviderOperation cpo = new ConnectProviderOperation(
 									current, repoDir[0]);
 							cpo.execute(actMonitor);
 						}
+					}
 				}
 			};
 			try {
@@ -287,7 +276,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					defaultLocation[0] = createGeneralProjectPage
 							.isDefaultLocation();
 					path[0] = importWithDirectoriesPage.getPath();
-					repoDir[0] = getTargetRepository().getDirectory();
+					repoDir[0] = getClonedRepository().getDirectory();
 				}
 			});
 			try {
