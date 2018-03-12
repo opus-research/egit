@@ -129,7 +129,6 @@ public class DiffViewer extends SourceViewer {
 			lineNumberRuler = new LineNumberRulerColumn();
 			((CompositeRuler) ruler).addDecorator(0, lineNumberRuler);
 		}
-		getTextWidget().setAlwaysShowScrollBars(false);
 		initListeners();
 		getControl().addDisposeListener(new DisposeListener() {
 

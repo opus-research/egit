@@ -369,7 +369,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			synchronized (lock) {
 				if (currentThreadIx < globalThreadIndex)
 					return;
-				stagingView.refreshViewersPreservingExpandedElements();
+				stagingView.refreshViewers();
 			}
 		}
 
@@ -576,7 +576,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		rebaseContinueButton.setImage(getImage(UIIcons.REBASE_CONTINUE));
 		buttonGridData.applyTo(rebaseContinueButton);
 
-		showControl(rebaseSection, false);
+		updateRebaseButtonVisibility(false);
 
 		commitMessageSection = toolkit.createSection(rebaseAndCommitComposite,
 				ExpandableComposite.TITLE_BAR);
@@ -1077,6 +1077,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void enableCommitWidgets(boolean enabled) {
+		if (!enabled) {
+			commitMessageText.setText(""); //$NON-NLS-1$
+			committerText.setText(""); //$NON-NLS-1$
+			authorText.setText(""); //$NON-NLS-1$
+		}
+
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		enableAuthorText(enabled);
@@ -1085,12 +1091,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		addChangeIdAction.setEnabled(enabled);
 		commitButton.setEnabled(enabled);
 		commitAndPushButton.setEnabled(enabled);
-
-		if (!enabled) {
-			commitMessageText.setText(""); //$NON-NLS-1$
-			committerText.setText(""); //$NON-NLS-1$
-			authorText.setText(""); //$NON-NLS-1$
-		}
 	}
 
 	private void enableAuthorText(boolean enabled) {
@@ -1203,7 +1203,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				final boolean enable = isChecked();
 				getLabelProvider(stagedViewer).setFileNameMode(enable);
 				getLabelProvider(unstagedViewer).setFileNameMode(enable);
-				refreshViewersPreservingExpandedElements();
+				refreshViewers();
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
 			}
@@ -1217,8 +1217,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		listPresentationAction = new Action(UIText.StagingView_List,
 				IAction.AS_RADIO_BUTTON) {
 			public void run() {
-				if (!isChecked())
-					return;
 				presentation = Presentation.LIST;
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_PRESENTATION,
@@ -1235,8 +1233,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		treePresentationAction = new Action(UIText.StagingView_Tree,
 				IAction.AS_RADIO_BUTTON) {
 			public void run() {
-				if (!isChecked())
-					return;
 				presentation = Presentation.TREE;
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_PRESENTATION,
@@ -1253,8 +1249,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		compactTreePresentationAction = new Action(UIText.StagingView_CompactTree,
 				IAction.AS_RADIO_BUTTON) {
 			public void run() {
-				if (!isChecked())
-					return;
 				presentation = Presentation.COMPACT_TREE;
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_PRESENTATION,
@@ -1549,37 +1543,21 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	/**
-	 * Refresh the unstaged and staged viewers without preserving expanded
-	 * elements
+	 * Refresh the unstaged and staged viewers
 	 */
 	public void refreshViewers() {
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				refreshViewersInternal();
-			}
-		});
-	}
-
-	/**
-	 * Refresh the unstaged and staged viewers, preserving expanded elements
-	 */
-	public void refreshViewersPreservingExpandedElements() {
 		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
 				Object[] unstagedExpanded = unstagedViewer
 						.getExpandedElements();
 				Object[] stagedExpanded = stagedViewer.getExpandedElements();
-				refreshViewersInternal();
+				unstagedViewer.refresh();
+				stagedViewer.refresh();
+				updateSectionText();
 				unstagedViewer.setExpandedElements(unstagedExpanded);
 				stagedViewer.setExpandedElements(stagedExpanded);
 			}
 		});
-	}
-
-	private void refreshViewersInternal() {
-		unstagedViewer.refresh();
-		stagedViewer.refresh();
-		updateSectionText();
 	}
 
 	private IContributionItem createShowInMenu() {
@@ -2016,13 +1994,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 				showControl(rebaseSection, isRebasing);
 				rebaseSection.getParent().layout(true);
 			}
-		});
-	}
 
-	private static void showControl(Control c, final boolean show) {
-		c.setVisible(show);
-		GridData g = (GridData) c.getLayoutData();
-		g.exclude = !show;
+			private void showControl(Control c, final boolean show) {
+				c.setVisible(show);
+				GridData g = (GridData) c.getLayoutData();
+				g.exclude = !show;
+			}
+		});
 	}
 
 	/**
@@ -2094,6 +2072,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 						pathsToExpandInUnstaged);
 				expandPreviousExpandedAndPaths(stagedExpanded, stagedViewer,
 						pathsToExpandInStaged);
+				enableCommitWidgets(indexDiffAvailable
+						&& indexDiff.getConflicting().isEmpty());
 				refreshAction.setEnabled(true);
 
 				updateRebaseButtonVisibility(repository.getRepositoryState()
@@ -2115,8 +2095,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 				form.setText(StagingView.getRepositoryName(repository));
 				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
-				enableCommitWidgets(indexDiffAvailable
-						&& indexDiff.getConflicting().isEmpty());
 				updateSectionText();
 			}
 		});
@@ -2142,10 +2120,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (viewer.getAutoExpandLevel() == AbstractTreeViewer.ALL_LEVELS)
 			return;
 
-		// No need to expand anything
-		if (getPresentation() == Presentation.LIST)
-			return;
-
 		Set<IPath> paths = new HashSet<IPath>(additionalPaths);
 		// Instead of just expanding the previous elements directly, also expand
 		// all parent paths. This makes it work in case of "re-folding" of
@@ -2153,29 +2127,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 		for (Object element : previous)
 			if (element instanceof StagingFolderEntry)
 				addPathAndParentPaths(((StagingFolderEntry) element).getPath(), paths);
-		List<StagingFolderEntry> expand = new ArrayList<StagingFolderEntry>();
+		List<Object> expand = new ArrayList<Object>();
 		StagingViewContentProvider stagedContentProvider = getContentProvider(viewer);
-		calculateNodesToExpand(paths, stagedContentProvider.getElements(null),
-				expand);
-		viewer.setExpandedElements(expand.toArray());
-	}
-
-	private void calculateNodesToExpand(Set<IPath> paths, Object[] elements,
-			List<StagingFolderEntry> result) {
-		if (elements == null)
-			return;
-
-		for (Object element : elements) {
-			if (element instanceof StagingFolderEntry) {
-				StagingFolderEntry folder = (StagingFolderEntry) element;
-				if (paths.contains(folder.getPath())) {
-					result.add(folder);
-					// Only recurs if folder matched (i.e. don't try to expand
-					// children of unexpanded parents)
-					calculateNodesToExpand(paths, folder.getChildren(), result);
-				}
-			}
+		for (StagingFolderEntry folder : stagedContentProvider
+				.getStagingFolderEntries()) {
+			if (paths.contains(folder.getPath()))
+				expand.add(folder);
 		}
+		viewer.setExpandedElements(expand.toArray());
 	}
 
 	private void clearCommitMessageToggles() {
