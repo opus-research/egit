@@ -35,7 +35,6 @@ public class DiscardChangesOperationTest extends DualRepositoryTestCase {
 	File workdir;
 
 	IProject project;
-	IProject project2;
 
 	String projectName = "DiscardChangesTest";
 
@@ -54,30 +53,31 @@ public class DiscardChangesOperationTest extends DualRepositoryTestCase {
 
 		repository1.connect(project);
 
-		trackAllFiles(project, repository1);
+		project.accept(new IResourceVisitor() {
+
+			public boolean visit(IResource resource) throws CoreException {
+				if (resource instanceof IFile) {
+					try {
+						repository1
+								.track(EFS.getStore(resource.getLocationURI())
+										.toLocalFile(0, null));
+					} catch (Exception e) {
+						throw new CoreException(Activator.error(e.getMessage(),
+								e));
+					}
+				}
+				return true;
+			}
+		});
 		repository1.commit("Initial commit");
-
-		File workdir2 = testUtils.createTempDir("Project2");
-		// Project location is at root of repository
-		project2 = testUtils.createProjectInLocalFileSystem(workdir2.getParentFile(), "Project2");
-		testUtils.addFileToProject(project2, "file.txt", "initial");
-		repository2 = new TestRepository(new File(workdir2, Constants.DOT_GIT));
-		repository2.connect(project2);
-
-		trackAllFiles(project2, repository2);
-		repository2.commit("Initial commit");
 	}
 
 	@After
 	public void tearDown() throws Exception {
 		project.close(null);
 		project.delete(false, false, null);
-		project2.close(null);
-		project2.delete(false, false, null);
 		repository1.dispose();
 		repository1 = null;
-		repository2.dispose();
-		repository2 = null;
 		testUtils.deleteTempDirs();
 	}
 
@@ -102,39 +102,6 @@ public class DiscardChangesOperationTest extends DualRepositoryTestCase {
 
 		contents = testUtils.slurpAndClose(file2.getContents());
 		assertEquals("Hello world 2", contents);
-	}
-
-	@Test
-	public void shouldWorkWhenProjectIsRootOfRepository() throws Exception {
-		IFile file = project2.getFile(new Path("file.txt"));
-		String contents = testUtils.slurpAndClose(file.getContents());
-		assertEquals("initial", contents);
-		setNewFileContent(file, "changed");
-
-		DiscardChangesOperation dcop = new DiscardChangesOperation(new IResource[] { project2 });
-		dcop.execute(new NullProgressMonitor());
-
-		String replacedContents = testUtils.slurpAndClose(file.getContents());
-		assertEquals("initial", replacedContents);
-	}
-
-	private static void trackAllFiles(IProject project, final TestRepository testRepository) throws CoreException {
-		project.accept(new IResourceVisitor() {
-
-			public boolean visit(IResource resource) throws CoreException {
-				if (resource instanceof IFile) {
-					try {
-						testRepository
-								.track(EFS.getStore(resource.getLocationURI())
-										.toLocalFile(0, null));
-					} catch (Exception e) {
-						throw new CoreException(Activator.error(e.getMessage(),
-								e));
-					}
-				}
-				return true;
-			}
-		});
 	}
 
 	private void setNewFileContent(IFile file, String content) throws Exception {
