@@ -23,8 +23,6 @@
   <packaging>eclipse-update-site</packaging>
 
   <name>Eclipse Git Plugin Update Site (Incubation)</name>
-  <!-- see http://issues.sonatype.org/browse/TYCHO-313 -->
-  <version>0.6.0</version>
 
   <dependencies>
     <dependency>
@@ -38,6 +36,9 @@
       <version>${jgit-version}</version>
     </dependency>
   </dependencies>
+
+  <!-- see http://issues.sonatype.org/browse/TYCHO-313 -->
+  <version>0.6.0</version>
 
   <build>
     <plugins>
