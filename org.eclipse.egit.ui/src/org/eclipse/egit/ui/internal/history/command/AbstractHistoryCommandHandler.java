@@ -328,15 +328,4 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 		final Repository repository = input.getRepository();
 		return repository;
 	}
-
-	/**
-	 * Get renamed path in commit
-	 *
-	 * @param path
-	 * @param commit
-	 * @return path respecting renames
-	 */
-	protected String getRenamedPath(final String path, final ObjectId commit) {
-		return getPage().getRenamedPath(path, commit);
-	}
 }
