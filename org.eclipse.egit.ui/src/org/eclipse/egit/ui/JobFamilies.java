@@ -103,4 +103,13 @@ public class JobFamilies {
 	 */
 	public static final Object REMOVE_FROM_INDEX = new Object();
 
+	/**
+	 * Cherry pick commit job
+	 */
+	public static final Object CHERRY_PICK = new Object();
+
+	/**
+	 * Revert commit job
+	 */
+	public static final Object REVERT_COMMIT = new Object();
 }
