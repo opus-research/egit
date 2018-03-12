@@ -570,10 +570,6 @@ public class RepositoriesView extends CommonNavigator {
 				}
 			}
 		}
-		if(context.getInput() instanceof IFileEditorInput) {
-			IFileEditorInput input = (IFileEditorInput) context.getInput();
-			showResource(input.getFile());
-		}
 		return false;
 	}
 
