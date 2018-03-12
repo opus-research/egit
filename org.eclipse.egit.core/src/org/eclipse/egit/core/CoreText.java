@@ -4,7 +4,6 @@
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  * Copyright (C) 2013, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -150,9 +149,7 @@ public class CoreText extends NLS {
 	/** */
 	public static String GitFileHistory_gitNotAttached;
 
-	/**
-	 * @since 3.0
-	 */
+	/** */
 	public static String GitFileHistory_invalidCommit;
 
 	/** */
@@ -290,9 +287,7 @@ public class CoreText extends NLS {
 	/** */
 	public static String IndexDiffCacheEntry_reindexing;
 
-	/**
-	 * @since 3.0
-	 */
+	/** */
 	public static String IndexDiffCacheEntry_reindexingIncrementally;
 
 	/** */
@@ -376,9 +371,7 @@ public class CoreText extends NLS {
 	/** */
 	public static String GitResourceVariantTree_fetchingVariant;
 
-	/**
-	 * @since 3.0
-	 */
+	/** */
 	public static String GitResourceVariantTreeSubscriber_CouldNotFindSourceVariant;
 
 	/** */
