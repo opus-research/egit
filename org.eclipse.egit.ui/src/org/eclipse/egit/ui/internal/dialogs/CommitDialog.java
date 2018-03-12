@@ -37,7 +37,6 @@ import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
 import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
@@ -89,8 +88,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.ToolBar;
-import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
 import org.eclipse.team.core.history.IFileHistoryProvider;
@@ -103,31 +100,6 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
  * selected portion of the tree are shown.
  */
 public class CommitDialog extends Dialog {
-
-	class CommitMessageArea extends SpellcheckableMessageArea {
-
-		public CommitMessageArea(Composite parent, String initialText) {
-			super(parent, initialText);
-		}
-
-		protected void configureToolbar(ToolBar toolbar) {
-			amendToolItem = new ToolItem(toolbar, SWT.CHECK);
-			amendToolItem.setImage(UIIcons.ELCL16_AMEND.createImage());
-			amendToolItem.setToolTipText("Amend previous commit"); //$NON-NLS-1$
-
-			// create a separator
-			new ToolItem(toolbar, SWT.SEPARATOR);
-
-			signedOffToolItem = new ToolItem(toolbar, SWT.CHECK);
-		    signedOffToolItem.setImage(UIIcons.ELCL16_AUTHOR.createImage());
-		    signedOffToolItem.setToolTipText("Add 'Signed-off-by'"); //$NON-NLS-1$
-
-		    changeIdToolItem = new ToolItem(toolbar, SWT.CHECK);
-		    changeIdToolItem.setImage(UIIcons.GERRIT.createImage());
-		    changeIdToolItem.setToolTipText("Generate 'Change-Id' for Gerrit"); //$NON-NLS-1$
-		}
-
-	}
 
 	static class CommitLabelProvider extends WorkbenchLabelProvider implements
 			ITableLabelProvider {
@@ -196,12 +168,12 @@ public class CommitDialog extends Dialog {
 				IDialogConstants.CANCEL_LABEL, false);
 	}
 
-	CommitMessageArea commitText;
+	SpellcheckableMessageArea commitText;
 	Text authorText;
 	Text committerText;
-	ToolItem amendToolItem;
-	ToolItem signedOffToolItem;
-	ToolItem changeIdToolItem;
+	Button amendingButton;
+	Button signedOffButton;
+	Button changeIdButton;
 	Button showUntrackedButton;
 
 	CheckboxTableViewer filesViewer;
@@ -221,7 +193,11 @@ public class CommitDialog extends Dialog {
 		GridLayout layout = new GridLayout(2, false);
 		container.setLayout(layout);
 
-		commitText = new CommitMessageArea(container, commitMessage);
+		Label label = new Label(container, SWT.LEFT);
+		label.setText(UIText.CommitDialog_CommitMessage);
+		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
+
+		commitText = new SpellcheckableMessageArea(container, commitMessage);
 		Point size = commitText.getTextWidget().getSize();
 		int minHeight = commitText.getTextWidget().getLineHeight() * 3;
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
@@ -257,7 +233,7 @@ public class CommitDialog extends Dialog {
 		committerText.addModifyListener(new ModifyListener() {
 			String oldCommitter = committerText.getText();
 			public void modifyText(ModifyEvent e) {
-				if (signedOffToolItem.getSelection()) {
+				if (signedOffButton.getSelection()) {
 					// the commit message is signed
 					// the signature must be updated
 					String newCommitter = committerText.getText();
@@ -285,20 +261,21 @@ public class CommitDialog extends Dialog {
 			}
 		});
 
+		amendingButton = new Button(container, SWT.CHECK);
 		if (amending) {
-			amendToolItem.setSelection(amending);
-			amendToolItem.setEnabled(false); // if already set, don't allow any changes
+			amendingButton.setSelection(amending);
+			amendingButton.setEnabled(false); // if already set, don't allow any changes
 			commitText.setText(previousCommitMessage);
 			authorText.setText(previousAuthor);
 			saveOriginalChangeId();
 		} else if (!amendAllowed) {
-			amendToolItem.setEnabled(false);
+			amendingButton.setEnabled(false);
 			originalChangeId = null;
 		}
-		amendToolItem.addSelectionListener(new SelectionListener() {
+		amendingButton.addSelectionListener(new SelectionListener() {
 			boolean alreadyAdded = false;
 			public void widgetSelected(SelectionEvent arg0) {
-				if (!amendToolItem.getSelection()) {
+				if (!amendingButton.getSelection()) {
 					originalChangeId = null;
 				}
 				else {
@@ -322,15 +299,18 @@ public class CommitDialog extends Dialog {
 			}
 		});
 
-		amendToolItem.setToolTipText(UIText.CommitDialog_AmendPreviousCommit);
+		amendingButton.setText(UIText.CommitDialog_AmendPreviousCommit);
+		amendingButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
 
-		signedOffToolItem.setSelection(signedOff);
-		signedOffToolItem.setToolTipText(UIText.CommitDialog_AddSOB);
+		signedOffButton = new Button(container, SWT.CHECK);
+		signedOffButton.setSelection(signedOff);
+		signedOffButton.setText(UIText.CommitDialog_AddSOB);
+		signedOffButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
 
-		signedOffToolItem.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent event) {
+		signedOffButton.addSelectionListener(new SelectionListener() {
+			public void widgetSelected(SelectionEvent arg0) {
 				String curText = commitText.getText();
-				if (signedOffToolItem.getSelection()) {
+				if (signedOffButton.getSelection()) {
 					// add signed off line
 					commitText.setText(signOff(curText));
 				} else {
@@ -341,10 +321,17 @@ public class CommitDialog extends Dialog {
 					commitText.setText(curText);
 				}
 			}
+
+			public void widgetDefaultSelected(SelectionEvent arg0) {
+				// Empty
+			}
 		});
 
-		changeIdToolItem.setToolTipText(UIText.CommitDialog_AddChangeIdTooltip);
-		changeIdToolItem.addSelectionListener(new SelectionListener() {
+		changeIdButton = new Button(container, SWT.CHECK);
+		changeIdButton.setText(UIText.CommitDialog_AddChangeIdLabel);
+		changeIdButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
+		changeIdButton.setToolTipText(UIText.CommitDialog_AddChangeIdTooltip);
+		changeIdButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
 				refreshChangeIdText();
@@ -379,12 +366,12 @@ public class CommitDialog extends Dialog {
 
 		commitText.getTextWidget().addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
-				updatesignedOffToolItem();
-				updatechangeIdToolItem();
+				updateSignedOffButton();
+				updateChangeIdButton();
 			}
 		});
-		updatesignedOffToolItem();
-		updatechangeIdToolItem();
+		updateSignedOffButton();
+		updateChangeIdButton();
 
 		Table resourcesTable = new Table(container, SWT.H_SCROLL | SWT.V_SCROLL
 				| SWT.FULL_SELECTION | SWT.MULTI | SWT.CHECK | SWT.BORDER);
@@ -411,8 +398,8 @@ public class CommitDialog extends Dialog {
 		filesViewer.setInput(items);
 		filesViewer.getTable().setMenu(getContextMenu());
 		if (!allowToChangeSelection) {
-			amendToolItem.setSelection(false);
-			amendToolItem.setEnabled(false);
+			amendingButton.setSelection(false);
+			amendingButton.setEnabled(false);
 			showUntrackedButton.setSelection(false);
 			showUntrackedButton.setEnabled(false);
 
@@ -468,22 +455,22 @@ public class CommitDialog extends Dialog {
 		return message.indexOf("\nChange-Id: I"); //$NON-NLS-1$
 	}
 
-	private void updatesignedOffToolItem() {
+	private void updateSignedOffButton() {
 		String curText = commitText.getText();
 		if (!curText.endsWith(Text.DELIMITER))
 			curText += Text.DELIMITER;
 
-		signedOffToolItem.setSelection(curText.indexOf(getSignedOff() + Text.DELIMITER) != -1);
+		signedOffButton.setSelection(curText.indexOf(getSignedOff() + Text.DELIMITER) != -1);
 	}
 
-	private void updatechangeIdToolItem() {
+	private void updateChangeIdButton() {
 		String curText = commitText.getText();
 		if (!curText.endsWith(Text.DELIMITER))
 			curText += Text.DELIMITER;
 
 		boolean hasId = curText.indexOf(Text.DELIMITER + "Change-Id: ") != -1; //$NON-NLS-1$
 		if (hasId) {
-			changeIdToolItem.setSelection(true);
+			changeIdButton.setSelection(true);
 			createChangeId = true;
 		}
 	}
@@ -782,8 +769,8 @@ public class CommitDialog extends Dialog {
 		commitMessage = commitText.getCommitMessage();
 		author = authorText.getText().trim();
 		committer = committerText.getText().trim();
-		signedOff = signedOffToolItem.getSelection();
-		amending = amendToolItem.getSelection();
+		signedOff = signedOffButton.getSelection();
+		amending = amendingButton.getSelection();
 
 		Object[] checkedElements = filesViewer.getCheckedElements();
 		selectedFiles.clear();
@@ -971,7 +958,7 @@ public class CommitDialog extends Dialog {
 	}
 
 	private void refreshChangeIdText() {
-		createChangeId = changeIdToolItem.getSelection();
+		createChangeId = changeIdButton.getSelection();
 		String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
 		if (createChangeId) {
 			String changedText = ChangeIdUtil.insertId(text,
