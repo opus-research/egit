@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
@@ -107,18 +108,6 @@ public class CreateBranchPage extends WizardPage {
 		// select the current branch in the drop down
 		if (myBaseBranch != null) {
 			this.branchCombo.setText(myBaseBranch.getName());
-		} else {
-			// TODO this only works for local branches; once we have a solution
-			// for accessing the correct information (we need this for the
-			// project label decoration, too), we should figure out if a remote
-			// branch is checked-out and set the text accordingly
-			String fullBranch;
-			try {
-				fullBranch = myRepository.getFullBranch();
-				this.branchCombo.setText(fullBranch);
-			} catch (IOException e1) {
-				// ignore
-			}
 		}
 
 		Label nameLabel = new Label(main, SWT.NONE);
@@ -159,13 +148,23 @@ public class CreateBranchPage extends WizardPage {
 
 		});
 
+		Dialog.applyDialogFont(main);
 		setControl(main);
 		nameText.setFocus();
+		if (myBaseBranch != null
+				&& myBaseBranch.getName().startsWith(Constants.R_REMOTES)) {
+			// additional convenience: the last part of the name is suggested
+			// as name for the local branch
+			nameText.setText(myBaseBranch.getName().substring(
+					myBaseBranch.getName().lastIndexOf('/') + 1));
+			checkPage();
+		} else {
+			// in any case, we will have to enter the name
+			setPageComplete(false);
+		}
 
-		// in any case, we will have to enter the name
-		setPageComplete(false);
-		if (this.myBaseBranch != null)
-			setMessage(UIText.CreateBranchPage_ChosseNameMessage);
+		if (this.myBaseBranch != null && this.nameText.getText().length() == 0)
+			setMessage(UIText.CreateBranchPage_ChooseNameMessage);
 		else
 			setMessage(UIText.CreateBranchPage_ChooseBranchAndNameMessage);
 	}

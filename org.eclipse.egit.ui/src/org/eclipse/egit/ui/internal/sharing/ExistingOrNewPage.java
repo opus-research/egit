@@ -26,8 +26,11 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
@@ -163,6 +166,8 @@ class ExistingOrNewPage extends WizardPage {
 							project.refreshLocal(IResource.DEPTH_ONE,
 									new NullProgressMonitor());
 					}
+					RepositoryUtil util = Activator.getDefault().getRepositoryUtil();
+					util.addConfiguredRepository(gitDir);
 				} catch (IOException e1) {
 					String msg = NLS
 							.bind(
@@ -212,6 +217,7 @@ class ExistingOrNewPage extends WizardPage {
 			}
 		});
 		updateCreateOptions();
+		Dialog.applyDialogFont(g);
 		setControl(g);
 	}
 
