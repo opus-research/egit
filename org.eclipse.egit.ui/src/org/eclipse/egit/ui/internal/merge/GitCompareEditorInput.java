@@ -121,7 +121,8 @@ public class GitCompareEditorInput extends CompareEditorInput {
 					IProgressMonitor.UNKNOWN);
 
 			for (IResource resource : resources) {
-				RepositoryMapping map = RepositoryMapping.getMapping(resource);
+				RepositoryMapping map = RepositoryMapping
+						.getMapping(resource.getProject());
 				if (map == null) {
 					throw new InvocationTargetException(
 							new IllegalStateException(
