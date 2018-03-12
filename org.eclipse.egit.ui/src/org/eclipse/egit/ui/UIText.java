@@ -79,6 +79,9 @@ public class UIText extends NLS {
 	public static String AddConfigEntryDialog_EnterValueMessage;
 
 	/** */
+	public static String AddConfigEntryDialog_EntryExistsMessage;
+
+	/** */
 	public static String AddConfigEntryDialog_KeyComponentsMessage;
 
 	/** */
@@ -1891,13 +1894,22 @@ public class UIText extends NLS {
 	public static String ConfigurationChecker_homeNotSet;
 
 	/** */
+	public static String ConfigurationEditorComponent_AddButton;
+
+	/** */
 	public static String ConfigurationEditorComponent_BrowseForPrefix;
 
 	/** */
 	public static String ConfigurationEditorComponent_CannotChangeGitPrefixError;
 
 	/** */
+	public static String ConfigurationEditorComponent_ChangeButton;
+
+	/** */
 	public static String ConfigurationEditorComponent_ConfigLocationLabel;
+
+	/** */
+	public static String ConfigurationEditorComponent_DeleteButton;
 
 	/** */
 	public static String ConfigurationEditorComponent_EmptyStringNotAllowed;
@@ -1912,7 +1924,7 @@ public class UIText extends NLS {
 	public static String ConfigurationEditorComponent_KeyColumnHeader;
 
 	/** */
-	public static String ConfigurationEditorComponent_AddButton;
+	public static String ConfigurationEditorComponent_NewValueButton;
 
 	/** */
 	public static String ConfigurationEditorComponent_NoConfigLocationKnown;
@@ -1933,10 +1945,10 @@ public class UIText extends NLS {
 	public static String ConfigurationEditorComponent_ReadOnlyLocationFormat;
 
 	/** */
-	public static String ConfigurationEditorComponent_RemoveButton;
+	public static String ConfigurationEditorComponent_RemoveAllButton;
 
 	/** */
-	public static String ConfigurationEditorComponent_RemoveTooltip;
+	public static String ConfigurationEditorComponent_RemoveAllTooltip;
 
 	/** */
 	public static String ConfigurationEditorComponent_RemoveSectionMessage;
@@ -1955,6 +1967,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_ValueColumnHeader;
+
+	/** */
+	public static String ConfigurationEditorComponent_ValueLabel;
 
 	/** */
 	public static String ConfigurationEditorComponent_WrongNumberOfTokensMessage;
