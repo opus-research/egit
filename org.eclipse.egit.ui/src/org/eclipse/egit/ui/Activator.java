@@ -224,8 +224,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		setupProxy(context);
 		setupRepoChangeScanner();
 		setupRepoIndexRefresh();
-		if (PlatformUI.isWorkbenchRunning())
-			setupFocusHandling();
+		setupFocusHandling();
 		setupCredentialsProvider();
 		ConfigurationChecker.checkConfiguration();
 	}
@@ -236,8 +235,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 	static boolean isActive() {
 		final AtomicBoolean ret = new AtomicBoolean();
-		if (!PlatformUI.isWorkbenchRunning())
-			return false;
 		final Display display = PlatformUI.getWorkbench().getDisplay();
 		if (display.isDisposed())
 			return false;
