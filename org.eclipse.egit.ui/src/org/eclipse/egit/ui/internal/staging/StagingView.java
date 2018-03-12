@@ -2114,8 +2114,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				rebaseContinueButton.setEnabled(rebaseContinueEnabled);
 
 				form.setText(StagingView.getRepositoryName(repository));
-				updateCommitMessageComponent(repositoryChanged,
-						indexDiffAvailable);
+				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
 				enableCommitWidgets(indexDiffAvailable
 						&& indexDiff.getConflicting().isEmpty());
 				updateSectionText();
@@ -2186,19 +2185,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
-		if (repositoryChanged)
+		CommitHelper helper = new CommitHelper(currentRepository);
+		CommitMessageComponentState oldState = null;
+		if (repositoryChanged) {
 			if (userEnteredCommmitMessage())
 				saveCommitMessageComponentState();
 			else
 				deleteCommitMessageComponentState();
-		if (!indexDiffAvailable)
-			return; // only try to restore the stored repo commit message if
-					// indexDiff is ready
-
-		CommitHelper helper = new CommitHelper(currentRepository);
-		CommitMessageComponentState oldState = null;
-		if (repositoryChanged
-				|| commitMessageComponent.getRepository() != currentRepository) {
 			oldState = loadCommitMessageComponentState();
 			commitMessageComponent.setRepository(currentRepository);
 			if (oldState == null)
@@ -2215,7 +2208,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadInitialState(helper);
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
-		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
+		amendPreviousCommitAction.setEnabled(indexDiffAvailable && helper.amendAllowed());
 		updateMessage();
 	}
 
