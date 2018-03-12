@@ -514,9 +514,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_ShowAdditionalRefsMenuLabel;
-
-	/** */
 	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
 
 	/** */
