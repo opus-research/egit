@@ -9,6 +9,8 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 
 import org.eclipse.core.resources.IFolder;
@@ -37,6 +39,8 @@ public class TestProject {
 	public IJavaProject javaProject;
 
 	private IPackageFragmentRoot sourceFolder;
+	private String location;
+	private TestUtils testUtils = new TestUtils();
 
 	/**
 	 * @throws CoreException
@@ -46,18 +50,24 @@ public class TestProject {
 		this(false);
 	}
 
+	public TestProject(boolean remove) throws CoreException {
+		this(remove, "Project-1");
+	}
+
 	/**
 	 * @param remove
 	 *            should project be removed if already exists
+	 * @param projectName
 	 * @throws CoreException
 	 */
-	public TestProject(final boolean remove) throws CoreException {
+	public TestProject(final boolean remove, String projectName) throws CoreException {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		project = root.getProject("Project-1");
+		project = root.getProject(projectName);
 		if (remove)
 			project.delete(true, null);
 		project.create(null);
 		project.open(null);
+		location = project.getLocation().toOSString();
 		javaProject = JavaCore.create(project);
 		IFolder binFolder = createBinFolder();
 		setJavaNature();
@@ -101,9 +111,12 @@ public class TestProject {
 		return cu.getTypes()[0];
 	}
 
-	public void dispose() throws CoreException {
+	public void dispose() throws CoreException, IOException {
 		waitForIndexer();
-		project.delete(true, true, null);
+		if (project.exists())
+			project.delete(true, true, null);
+		else
+			testUtils.deleteRecursive(new File(location));
 	}
 
 	private IFolder createBinFolder() throws CoreException {

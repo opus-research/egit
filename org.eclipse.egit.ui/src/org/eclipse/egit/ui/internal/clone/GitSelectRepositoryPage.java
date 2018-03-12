@@ -11,20 +11,25 @@
 package org.eclipse.egit.ui.internal.clone;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.RepositorySearchDialog;
-import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
@@ -41,6 +46,8 @@ import org.eclipse.swt.widgets.Composite;
  */
 public class GitSelectRepositoryPage extends WizardPage {
 
+	private final RepositoryUtil util;
+
 	private TableViewer tv;
 
 	private Button addRepo;
@@ -54,6 +61,7 @@ public class GitSelectRepositoryPage extends WizardPage {
 		super(GitSelectRepositoryPage.class.getName());
 		setTitle(UIText.GitSelectRepositoryPage_PageTitle);
 		setMessage(UIText.GitSelectRepositoryPage_PageMessage);
+		util = Activator.getDefault().getRepositoryUtil();
 	}
 
 	/**
@@ -79,7 +87,7 @@ public class GitSelectRepositoryPage extends WizardPage {
 				| SWT.BORDER);
 		tv.setContentProvider(new RepositoriesViewContentProvider());
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tv.getTable());
-		new RepositoriesViewLabelProvider(tv);
+		tv.setLabelProvider(new RepositoriesViewLabelProvider());
 
 		Composite tb = new Composite(main, SWT.NONE);
 		GridLayoutFactory.fillDefaults().numColumns(1).applyTo(tb);
@@ -87,56 +95,63 @@ public class GitSelectRepositoryPage extends WizardPage {
 
 		cloneRepo = new Button(tb, SWT.PUSH);
 		cloneRepo.setText(UIText.GitSelectRepositoryPage_CloneButton);
-		cloneRepo
-				.setToolTipText(UIText.GitSelectRepositoryPage_CloneTooltip);
+		cloneRepo.setToolTipText(UIText.GitSelectRepositoryPage_CloneTooltip);
 
 		GridDataFactory.fillDefaults().grab(false, false).align(SWT.FILL,
 				SWT.BEGINNING).applyTo(cloneRepo);
 
 		cloneRepo.addSelectionListener(new SelectionAdapter() {
-
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				List<String> dirsBefore = util.getConfiguredRepositories();
 				WizardDialog dlg = new WizardDialog(getShell(),
 						new GitCloneWizard());
 
 				if (dlg.open() == Window.OK) {
-					try {
-						tv.setInput(RepositoriesView
-								.getRepositoriesFromDirs(null));
-						checkPage();
-					} catch (InterruptedException e1) {
-						// ignore
+					List<String> dirsAfter = util.getConfiguredRepositories();
+					if (!dirsBefore.containsAll(dirsAfter)) {
+						tv.setInput(dirsAfter);
+						for (String dir : dirsAfter) {
+							if (!dirsBefore.contains(dir)) {
+								try {
+									RepositoryNode node = new RepositoryNode(
+											null, new Repository(new File(dir)));
+									tv.setSelection(new StructuredSelection(
+											node));
+								} catch (IOException e1) {
+									Activator.handleError(e1.getMessage(), e1,
+											false);
+								}
+							}
+						}
 					}
+					checkPage();
 				}
 			}
-
 		});
 
 		addRepo = new Button(tb, SWT.PUSH);
 		GridDataFactory.fillDefaults().grab(true, false).align(SWT.FILL,
 				SWT.BEGINNING).applyTo(addRepo);
 		addRepo.setText(UIText.GitSelectRepositoryPage_AddButton);
-		addRepo
-				.setToolTipText(UIText.GitSelectRepositoryPage_AddTooltip);
+		addRepo.setToolTipText(UIText.GitSelectRepositoryPage_AddTooltip);
 		addRepo.addSelectionListener(new SelectionAdapter() {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				RepositorySearchDialog dlg = new RepositorySearchDialog(
-						getShell(), RepositoriesView.getDirs());
-				if (dlg.open() == Window.OK && dlg.getDirectories().size() > 0) {
-					try {
-						Set<String> dirs = dlg.getDirectories();
-						for (String dir : dirs)
-							RepositoriesView.addDir(new File(dir));
 
-						tv.setInput(RepositoriesView
-								.getRepositoriesFromDirs(null));
-						checkPage();
-					} catch (InterruptedException e1) {
-						// ignore
-					}
+				List<String> configuredDirs = util.getConfiguredRepositories();
+				RepositorySearchDialog dlg = new RepositorySearchDialog(
+						getShell(), configuredDirs);
+				if (dlg.open() == Window.OK && dlg.getDirectories().size() > 0) {
+
+					Set<String> dirs = dlg.getDirectories();
+					for (String dir : dirs)
+						util.addConfiguredRepository(new File(dir));
+
+					tv.setInput(util.getConfiguredRepositories());
+					checkPage();
+
 				}
 			}
 
@@ -149,15 +164,11 @@ public class GitSelectRepositoryPage extends WizardPage {
 			}
 		});
 
-		try {
-			tv.setInput(RepositoriesView.getRepositoriesFromDirs(null));
-		} catch (InterruptedException e) {
-			// ignore
-		}
+		tv.setInput(util.getConfiguredRepositories());
 
 		// we need to select at least a repository to become complete
 		setPageComplete(false);
-
+		Dialog.applyDialogFont(main);
 		setControl(main);
 
 	}

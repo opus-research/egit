@@ -12,10 +12,12 @@ package org.eclipse.egit.core.op;
 
 import java.io.IOException;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
@@ -68,7 +70,12 @@ public class BranchOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	public void execute(IProgressMonitor monitor) throws CoreException {
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 
 		if (!refName.startsWith(Constants.R_REFS))
 			throw new TeamException(NLS.bind(
@@ -77,6 +84,7 @@ public class BranchOperation implements IEGitOperation {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
 			public void run(IProgressMonitor monitor) throws CoreException {
+				IProject[] validProjects = ProjectUtil.getValidProjects(repository);
 				monitor.beginTask(NLS.bind(
 						CoreText.BranchOperation_performingBranch, refName), 6);
 				lookupRefs();
@@ -94,7 +102,7 @@ public class BranchOperation implements IEGitOperation {
 				updateHeadRef();
 				monitor.worked(1);
 
-				ProjectUtil.refreshProjects(repository, new SubProgressMonitor(
+				ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
 						monitor, 1));
 				monitor.worked(1);
 

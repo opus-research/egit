@@ -1,4 +1,4 @@
-/*******************************************************************************
+﻿/*******************************************************************************
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
@@ -23,10 +23,10 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
-import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -55,8 +55,26 @@ public class GitCloneWizard extends Wizard {
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
 		cloneSource = new RepositorySelectionPage(true, null);
-		validSource = new SourceBranchPage(cloneSource);
-		cloneDestination = new CloneDestinationPage(cloneSource, validSource);
+		validSource = new SourceBranchPage() {
+
+			@Override
+			public void setVisible(boolean visible) {
+				if (visible)
+					setSelection(cloneSource.getSelection());
+				super.setVisible(visible);
+			}
+
+		};
+		cloneDestination = new CloneDestinationPage() {
+			@Override
+			public void setVisible(boolean visible) {
+				if (visible)
+					setSelection(cloneSource.getSelection(), validSource
+							.getAvailableBranches(), validSource
+							.getSelectedBranches(), validSource.getHEAD());
+				super.setVisible(visible);
+			}
+		};
 	}
 
 	@Override
@@ -144,6 +162,9 @@ public class GitCloneWizard extends Wizard {
 
 		alreadyClonedInto = workdir.getPath();
 
+		final RepositoryUtil config = Activator.getDefault()
+				.getRepositoryUtil();
+
 		if (background) {
 			final Job job = new Job(NLS.bind(UIText.GitCloneWizard_jobName, uri
 					.toString())) {
@@ -151,8 +172,8 @@ public class GitCloneWizard extends Wizard {
 				protected IStatus run(final IProgressMonitor monitor) {
 					try {
 						op.run(monitor);
-						RepositorySelectionPage.saveUriInPrefs(uri.toString());
-						RepositoriesView.addDir(op.getGitDir());
+						cloneSource.saveUriInPrefs();
+						config.addConfiguredRepository(op.getGitDir());
 						return Status.OK_STATUS;
 					} catch (InterruptedException e) {
 						return Status.CANCEL_STATUS;
@@ -181,8 +202,8 @@ public class GitCloneWizard extends Wizard {
 					}
 				});
 
-				RepositorySelectionPage.saveUriInPrefs(uri.toString());
-				RepositoriesView.addDir(op.getGitDir());
+				cloneSource.saveUriInPrefs();
+				config.addConfiguredRepository(op.getGitDir());
 				return true;
 			} catch (InterruptedException e) {
 				MessageDialog.openInformation(getShell(),

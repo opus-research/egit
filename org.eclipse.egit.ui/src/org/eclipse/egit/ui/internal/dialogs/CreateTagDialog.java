@@ -11,6 +11,7 @@ package org.eclipse.egit.ui.internal.dialogs;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.jface.dialogs.Dialog;
@@ -19,6 +20,9 @@ import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.resource.LocalResourceManager;
+import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.resource.StringConverter;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -104,7 +108,7 @@ public class CreateTagDialog extends Dialog {
 
 	private final IInputValidator tagNameValidator;
 
-	class TagInputList extends LabelProvider implements IWorkbenchAdapter {
+	static class TagInputList extends LabelProvider implements IWorkbenchAdapter {
 
 		private final List<Tag> tagList;
 
@@ -139,15 +143,22 @@ public class CreateTagDialog extends Dialog {
 		}
 	}
 
-	class TagLabelProvider extends WorkbenchLabelProvider implements
+	static class TagLabelProvider extends WorkbenchLabelProvider implements
 			ITableLabelProvider {
 
+		private final ResourceManager fImageCache = new LocalResourceManager(JFaceResources
+				.getResources());
+
 		public Image getColumnImage(Object element, int columnIndex) {
-			return null;
+			return fImageCache.createImage(UIIcons.TAG);
 		}
 
 		public String getColumnText(Object element, int columnIndex) {
 			return ((Tag) element).getTag();
+		}
+
+		public void dispose() {
+			fImageCache.dispose();
 		}
 
 	}
@@ -237,7 +248,7 @@ public class CreateTagDialog extends Dialog {
 					UIText.CreateTagDialog_questionNewTagTitle, branchName));
 		}
 
-		newShell.setMinimumSize(703, 345);
+		newShell.setMinimumSize(600, 400);
 	}
 
 	@Override
@@ -324,7 +335,7 @@ public class CreateTagDialog extends Dialog {
 		GridData data = new GridData(GridData.GRAB_HORIZONTAL
 				| GridData.HORIZONTAL_ALIGN_FILL
 				| GridData.VERTICAL_ALIGN_CENTER);
-		data.widthHint = convertHorizontalDLUsToPixels(IDialogConstants.MINIMUM_MESSAGE_AREA_WIDTH);
+		data.widthHint = convertHorizontalDLUsToPixels(IDialogConstants.MINIMUM_MESSAGE_AREA_WIDTH/2);
 		label.setLayoutData(data);
 		label.setFont(left.getFont());
 
@@ -372,6 +383,12 @@ public class CreateTagDialog extends Dialog {
 					arg0.doit = false;
 					tagMessageText.traverse(SWT.TRAVERSE_TAB_NEXT);
 				}
+			}
+		});
+
+		tagMessageText.addModifyListener(new ModifyListener() {
+
+			public void modifyText(ModifyEvent e) {
 				validateInput();
 			}
 		});
@@ -417,7 +434,7 @@ public class CreateTagDialog extends Dialog {
 
 		commitCombo = new CommitCombo(advancedComposite, SWT.NORMAL);
 		commitCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
-				false).create());
+				false).hint(300, SWT.DEFAULT).create());
 
 		for (RevCommit revCommit : revCommits)
 			commitCombo.add(revCommit);
