@@ -184,9 +184,6 @@ public class UIText extends NLS {
 	public static String GitDocument_errorResolveQuickdiff;
 
 	/** */
-	public static String GitHistoryPage_compareMode;
-
-	/** */
 	public static String GitHistoryPage_CompareVersions;
 
 	/** */
