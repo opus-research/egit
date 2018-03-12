@@ -58,7 +58,7 @@ public class ResetAction extends RepositoryAction {
 					public void run(final IProgressMonitor monitor)
 					throws InvocationTargetException {
 						try {
-							new ResetOperation(repository, refName, type).execute(monitor);
+							new ResetOperation(repository, refName, type).run(monitor);
 							GitLightweightDecorator.refresh();
 						} catch (CoreException e) {
 							if (GitTraceLocation.UI.isActive())

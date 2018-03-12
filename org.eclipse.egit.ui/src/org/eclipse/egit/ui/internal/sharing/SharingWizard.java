@@ -65,7 +65,7 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 				public void run(final IProgressMonitor monitor)
 						throws InvocationTargetException {
 					try {
-						op.execute(monitor);
+						op.run(monitor);
 					} catch (CoreException ce) {
 						throw new InvocationTargetException(ce);
 					}
