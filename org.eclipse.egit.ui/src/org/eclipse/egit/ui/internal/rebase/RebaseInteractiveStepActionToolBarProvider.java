@@ -275,11 +275,10 @@ public class RebaseInteractiveStepActionToolBarProvider {
 				}
 			}
 
-			if (singleTypeSelected) {
+			if (singleTypeSelected)
 				unselectAllActionItemsExecpt(getItemFor(type));
-			} else {
+			else
 				unselectAllActionItemsExecpt(null);
-			}
 
 			enableMoveButtons(firstSelectedEntry, lastSelectedEntry);
 
