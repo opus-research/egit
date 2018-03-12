@@ -25,21 +25,18 @@
          <attribute name="point" type="string" use="required">
             <annotation>
                <documentation>
-                  
                </documentation>
             </annotation>
          </attribute>
          <attribute name="id" type="string">
             <annotation>
                <documentation>
-                  
                </documentation>
             </annotation>
          </attribute>
          <attribute name="name" type="string">
             <annotation>
                <documentation>
-                  
                </documentation>
                <appInfo>
                   <meta.attribute translatable="true"/>
@@ -69,17 +66,6 @@
                   If true there will be no ability to add different servers of this type.
 The provided repositoryImportPage has to know where to look for the repositories.
                </documentation>
-            </annotation>
-         </attribute>
-         <attribute name="icon" type="string">
-            <annotation>
-               <documentation>
-                  a relative path of an icon used to visually represent the clone source. 
-The path is relative to the location of the plugin.xml file of the contributing plug-in.
-               </documentation>
-               <appInfo>
-                  <meta.attribute kind="resource"/>
-               </appInfo>
             </annotation>
          </attribute>
       </complexType>
