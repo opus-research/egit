@@ -54,6 +54,9 @@ public class RepositoryCommit extends PlatformObject {
 		this.commit = commit;
 	}
 
+	/**
+	 * @see org.eclipse.core.runtime.PlatformObject#getAdapter(java.lang.Class)
+	 */
 	public Object getAdapter(Class adapter) {
 		if (Repository.class == adapter)
 			return repository;
@@ -79,10 +82,7 @@ public class RepositoryCommit extends PlatformObject {
 	 * @return repo name
 	 */
 	public String getRepositoryName() {
-		if (!repository.isBare())
-			return repository.getDirectory().getParentFile().getName();
-		else
-			return repository.getDirectory().getName();
+		return repository.getDirectory().getParentFile().getName();
 	}
 
 	/**
@@ -111,7 +111,7 @@ public class RepositoryCommit extends PlatformObject {
 	public FileDiff[] getDiffs() {
 		if (diffs == null) {
 			RevWalk revWalk = new RevWalk(repository);
-			TreeWalk treewalk = new TreeWalk(revWalk.getObjectReader());
+			TreeWalk treewalk = new TreeWalk(repository);
 			treewalk.setRecursive(true);
 			treewalk.setFilter(TreeFilter.ANY_DIFF);
 			try {
