@@ -383,12 +383,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 		@Override
 		public boolean equals(Object object) {
-			return super.equals(object) && targetCommit.equals(((ObjectLink)object).targetCommit);
-		}
-
-		@Override
-		public int hashCode() {
-			return super.hashCode() ^ targetCommit.hashCode();
+			return super.equals(object) && targetCommit.equals((RevCommit)object);
 		}
 	}
 
