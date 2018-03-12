@@ -67,15 +67,13 @@ public class GitLabelProvider extends LabelProvider implements
 		int ahead = status.getAheadCount();
 		int behind = status.getBehindCount();
 		if (ahead != 0) {
-			// UPWARDS ARROW
-			sb.append('\u2191');
+			sb.append('↑');
 			sb.append(ahead);
 		}
 		if (behind != 0) {
 			if (sb.length() != 0)
 				sb.append(' ');
-			// DOWNWARDS ARROW
-			sb.append('\u2193');
+			sb.append('↓');
 			sb.append(status.getBehindCount());
 		}
 		return sb.toString();
