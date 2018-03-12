@@ -18,8 +18,10 @@ import java.io.IOException;
 import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.egit.gitflow.Activator;
 import org.eclipse.egit.gitflow.GitFlowRepository;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
+import org.eclipse.egit.ui.internal.selection.RepositorySourceProvider;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.services.ISourceProviderService;
 
 /**
  * Testing Git Flow states.
@@ -42,8 +44,18 @@ public class RepositoryPropertyTester extends PropertyTester {
 	@Override
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
-
-		Repository repository = SelectionUtils.getCurrentRepository();
+		ISourceProviderService sps = PlatformUI.getWorkbench()
+				.getService(ISourceProviderService.class);
+		if (sps == null) {
+			return false;
+		}
+		RepositorySourceProvider sp = (RepositorySourceProvider) sps
+				.getSourceProvider(
+						RepositorySourceProvider.REPOSITORY_PROPERTY);
+		if (sp == null) {
+			return false;
+		}
+		Repository repository = sp.waitFor();
 		if (repository == null || repository.isBare()) {
 			return false;
 		}
