@@ -24,8 +24,6 @@ import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.util.FileUtils;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 
@@ -34,7 +32,6 @@ public abstract class GitCloneWizardTestBase extends LocalRepositoryTestCase {
 	protected static final int NUMBER_RANDOM_COMMITS = 100;
 	protected static SampleTestRepository r;
 	protected GitImportRepoWizard importWizard;
-	protected File destRepo;
 
 	@AfterClass
 	public static void tearDown() throws Exception {
@@ -90,12 +87,6 @@ public abstract class GitCloneWizardTestBase extends LocalRepositoryTestCase {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
 		importWizard = new GitImportRepoWizard();
-	}
-
-	@After
-	public void cleanup() throws Exception {
-		if (destRepo != null)
-			FileUtils.delete(destRepo, FileUtils.RECURSIVE | FileUtils.RETRY);
 	}
 
 }
