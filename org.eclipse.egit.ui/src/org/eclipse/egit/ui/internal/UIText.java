@@ -2388,12 +2388,6 @@ public class UIText extends NLS {
 	public static String PushResultDialog_ConfigureButton;
 
 	/** */
-	public static String PushResultDialog_label;
-
-	/** */
-	public static String PushResultDialog_title;
-
-	/** */
 	public static String PushResultTable_columnStatusRepo;
 
 	/** */
@@ -2485,6 +2479,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushToGerritWizard_Title;
+
+	/** */
+	public static String ResultDialog_title;
+
+	/** */
+	public static String ResultDialog_label;
 
 	/** */
 	public static String FetchAction_wrongURITitle;
@@ -3517,9 +3517,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeTargetSelectionDialog_MergeTypeCommitButton;
-
-	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeNoCommitButton;
 
 	/** */
 	public static String MergeTargetSelectionDialog_MergeTypeSquashButton;
@@ -4655,9 +4652,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_DeleteItemMenuLabel;
-
-	/** */
-	public static String StagingView_Find;
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
