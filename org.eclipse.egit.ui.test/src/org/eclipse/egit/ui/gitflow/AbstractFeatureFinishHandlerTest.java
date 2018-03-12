@@ -9,7 +9,6 @@
 package org.eclipse.egit.ui.gitflow;
 
 import static org.eclipse.swtbot.swt.finder.waits.Conditions.shellIsActive;
-import static org.junit.Assert.assertFalse;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.BranchOperation;
@@ -95,12 +94,7 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 		});
 
 		bot.waitUntil(shellIsActive(UIText.FeatureCheckoutHandler_selectFeature));
-		bot.text().setText("these are not the features you're looking for");
-		bot.sleep(300); // wait for filter to hit
-		assertFalse(bot.tree().hasItems());
-		bot.text().selectAll();
-		bot.text().typeText(featureName);
-		bot.tree().select(featureName);
+		bot.table().select(featureName);
 		bot.button("OK").click();
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));
 	}

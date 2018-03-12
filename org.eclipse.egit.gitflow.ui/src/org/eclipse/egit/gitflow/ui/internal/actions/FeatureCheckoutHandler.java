@@ -10,6 +10,7 @@ package org.eclipse.egit.gitflow.ui.internal.actions;
 
 import static org.eclipse.egit.gitflow.ui.Activator.error;
 import static org.eclipse.egit.gitflow.ui.internal.JobFamilies.GITFLOW_FAMILY;
+import static org.eclipse.jgit.lib.Constants.R_HEADS;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -28,13 +29,12 @@ import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.op.FeatureCheckoutOperation;
 import org.eclipse.egit.gitflow.ui.internal.JobFamilies;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
-import org.eclipse.egit.gitflow.ui.internal.dialogs.FeatureBranchSelectionDialog;
+import org.eclipse.egit.gitflow.ui.internal.dialogs.AbstractGitFlowBranchSelectionDialog;
 import org.eclipse.egit.ui.internal.branch.CleanupUncomittedChangesDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.widgets.Shell;
@@ -55,12 +55,15 @@ public class FeatureCheckoutHandler extends AbstractHandler {
 
 		final List<Ref> refs = gfRepo.getFeatureBranches();
 
-		FeatureBranchSelectionDialog dialog = new FeatureBranchSelectionDialog(
+		AbstractGitFlowBranchSelectionDialog<Ref> dialog = new AbstractGitFlowBranchSelectionDialog<Ref>(
 				HandlerUtil.getActiveShell(event), refs,
 				UIText.FeatureCheckoutHandler_selectFeature,
-				UIText.FeatureCheckoutHandler_localFeatures,
-				Constants.R_HEADS + gfRepo.getConfig().getFeaturePrefix());
-
+				UIText.FeatureCheckoutHandler_localFeatures) {
+			@Override
+			protected String getPrefix() {
+				return R_HEADS + gfRepo.getConfig().getFeaturePrefix();
+			}
+		};
 		if (dialog.open() != Window.OK) {
 			return null;
 		}

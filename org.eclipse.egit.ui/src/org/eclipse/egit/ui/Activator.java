@@ -4,7 +4,6 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2015, Philipp Bumann <bumannp@gmail.com>
- * Copyright (C) 2016, Dani Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -41,15 +40,11 @@ import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.ConfigurationChecker;
-import org.eclipse.egit.ui.internal.KnownHosts;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.egit.ui.internal.variables.GitTemplateVariableResolver;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.text.templates.ContextTypeRegistry;
 import org.eclipse.jface.text.templates.TemplateContextType;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -202,7 +197,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		return getTheme().getFontRegistry().getBold(id);
 	}
 
-	private ResourceManager resourceManager;
 	private RepositoryChangeScanner rcs;
 	private ResourceRefreshJob refreshJob;
 	private ListenerHandle refreshHandle;
@@ -226,8 +220,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	@Override
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
-		resourceManager = new LocalResourceManager(
-				JFaceResources.getResources());
+
 		// we want to be notified about debug options changes
 		Dictionary<String, String> props = new Hashtable<String, String>(4);
 		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle()
@@ -539,9 +532,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
-			if (!doReschedule)
-				return Status.OK_STATUS;
-
 			// The core plugin might have been stopped before we could cancel
 			// this job.
 			RepositoryCache repositoryCache = org.eclipse.egit.core.Activator
@@ -663,18 +653,9 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
 					"Jobs terminated"); //$NON-NLS-1$
-		if (resourceManager != null) {
-			resourceManager.dispose();
-			resourceManager = null;
-		}
+
 		super.stop(context);
 		plugin = null;
-	}
-
-	@Override
-	protected void saveDialogSettings() {
-		KnownHosts.store();
-		super.saveDialogSettings();
 	}
 
 	/**
@@ -721,15 +702,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 */
 	public RepositoryUtil getRepositoryUtil() {
 		return org.eclipse.egit.core.Activator.getDefault().getRepositoryUtil();
-	}
-
-	/**
-	 * Gets this plugin's {@link ResourceManager}.
-	 *
-	 * @return the {@link ResourceManager} of this plugin
-	 */
-	public ResourceManager getResourceManager() {
-		return resourceManager;
 	}
 
 	/**

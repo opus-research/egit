@@ -17,6 +17,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,8 +30,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
-import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -53,7 +52,6 @@ import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
@@ -87,9 +85,6 @@ public class GitProjectData {
 				} catch (IOException e) {
 					Activator.logError(e.getMessage(), e);
 				}
-				break;
-			case IResourceChangeEvent.POST_CHANGE:
-				update(event);
 				break;
 			default:
 				break;
@@ -253,93 +248,6 @@ public class GitProjectData {
 		cache(p, d);
 	}
 
-	/**
-	 * Update mappings of EGit-managed projects in response to new DOT_GIT
-	 * repositories appearing.
-	 *
-	 * @param event
-	 *            A {@link IResourceChangeEvent#POST_CHANGE} event
-	 */
-	public static void update(IResourceChangeEvent event) {
-		// If the project is EGit-managed, let's see if this added any DOT_GIT
-		// files or folders. If so, update the project's RepositoryMappings
-		// and then mark as team private, if anything added. We won't get
-		// deletions of DOT_GIT directories or files here, those are
-		// "protected" and the GitMoveDeleteHook will prevent their deletion --
-		// the project has to be disconnected first.
-		final Set<GitProjectData> modified = new HashSet<>();
-		try {
-			event.getDelta().accept(new IResourceDeltaVisitor() {
-				@Override
-				public boolean visit(IResourceDelta delta)
-						throws CoreException {
-					IResource resource = delta.getResource();
-					int type = resource.getType();
-					if (type == IResource.ROOT) {
-						return true;
-					} else if (type == IResource.PROJECT) {
-						return (delta.getKind() & (IResourceDelta.ADDED
-								| IResourceDelta.CHANGED)) != 0
-								&& ResourceUtil.isSharedWithGit(resource);
-					}
-					// Files & folders
-					if ((delta.getKind() & (IResourceDelta.ADDED
-							| IResourceDelta.CHANGED)) == 0
-							|| resource.isLinked()) {
-						return false;
-					}
-					IPath location = resource.getLocation();
-					if (location == null) {
-						return false;
-					}
-					if (!Constants.DOT_GIT.equals(resource.getName())) {
-						return type == IResource.FOLDER;
-					}
-					// A file or folder named .git
-					File gitCandidate = location.toFile().getParentFile();
-					File git = new FileRepositoryBuilder()
-							.addCeilingDirectory(gitCandidate)
-							.findGitDir(gitCandidate).getGitDir();
-					if (git == null) {
-						return false;
-					}
-					// Yes, indeed a valid git directory.
-					GitProjectData data = get(resource.getProject());
-					if (data == null) {
-						return false;
-					}
-					RepositoryMapping m = RepositoryMapping
-							.create(resource.getParent(), git);
-					// Is its working directory really here? If not,
-					// a submodule folder may have been copied.
-					try {
-						Repository r = Activator.getDefault()
-								.getRepositoryCache().lookupRepository(git);
-						if (m != null && r != null
-								&& gitCandidate.equals(r.getWorkTree())) {
-							data.mappings.put(m.getContainerPath(), m);
-							data.map(m);
-							modified.add(data);
-						}
-					} catch (IOException e) {
-						Activator.logError(e.getMessage(), e);
-					}
-					return false;
-				}
-			});
-		} catch (CoreException e) {
-			Activator.logError(e.getMessage(), e);
-		} finally {
-			for (GitProjectData data : modified) {
-				try {
-					data.store();
-				} catch (CoreException e) {
-					Activator.logError(e.getMessage(), e);
-				}
-			}
-		}
-	}
-
 	static void trace(final String m) {
 		// TODO is this the right location?
 		if (GitTraceLocation.CORE.isActive())
@@ -381,7 +289,7 @@ public class GitProjectData {
 
 	private final IProject project;
 
-	private final Map<IPath, RepositoryMapping> mappings = new HashMap<>();
+	private final Collection<RepositoryMapping> mappings = new ArrayList<RepositoryMapping>();
 
 	private final Set<IResource> protectedResources = new HashSet<IResource>();
 
@@ -409,9 +317,7 @@ public class GitProjectData {
 	 */
 	public void setRepositoryMappings(final Collection<RepositoryMapping> newMappings) {
 		mappings.clear();
-		for (RepositoryMapping mapping : newMappings) {
-			mappings.put(mapping.getContainerPath(), mapping);
-		}
+		mappings.addAll(newMappings);
 		remapAll();
 	}
 
@@ -421,7 +327,8 @@ public class GitProjectData {
 	 * @throws CoreException
 	 */
 	public void markTeamPrivateResources() throws CoreException {
-		for (final RepositoryMapping rm : mappings.values()) {
+		for (final Object rmObj : mappings) {
+			final RepositoryMapping rm = (RepositoryMapping)rmObj;
 			final IContainer c = rm.getContainer();
 			if (c == null)
 				continue; // Not fully mapped yet?
@@ -432,9 +339,6 @@ public class GitProjectData {
 					final Repository r = rm.getRepository();
 					final File dotGitDir = dotGit.getLocation().toFile()
 							.getCanonicalFile();
-					// TODO: .git *files* with gitdir: "redirect"
-					// TODO: check whether Repository.getDirectory() is
-					// canonicalized! If not, this check will fail anyway.
 					if (dotGitDir.equals(r.getDirectory())) {
 						trace("teamPrivate " + dotGit);  //$NON-NLS-1$
 						dotGit.setTeamPrivateMember(true);
@@ -444,17 +348,6 @@ public class GitProjectData {
 				}
 			}
 		}
-	}
-
-	/**
-	 * Determines whether the project this instance belongs to has any
-	 * submodules.
-	 *
-	 * @return {@code true} if the project has submodules; {@code false}
-	 *         otherwise.
-	 */
-	public boolean hasSubmodules() {
-		return !protectedResources.isEmpty();
 	}
 
 	/**
@@ -521,7 +414,7 @@ public class GitProjectData {
 			final FileOutputStream o = new FileOutputStream(tmp);
 			try {
 				final Properties p = new Properties();
-				for (final RepositoryMapping repoMapping : mappings.values()) {
+				for (final RepositoryMapping repoMapping : mappings) {
 					repoMapping.store(p);
 				}
 				p.store(o, "GitProjectData");  //$NON-NLS-1$
@@ -569,8 +462,7 @@ public class GitProjectData {
 			for (final Object keyObj : p.keySet()) {
 				final String key = keyObj.toString();
 				if (RepositoryMapping.isInitialKey(key)) {
-					RepositoryMapping mapping = new RepositoryMapping(p, key);
-					mappings.put(mapping.getContainerPath(), mapping);
+					mappings.add(new RepositoryMapping(p, key));
 				}
 			}
 		} finally {
@@ -583,7 +475,7 @@ public class GitProjectData {
 
 	private void remapAll() {
 		protectedResources.clear();
-		for (final RepositoryMapping repoMapping : mappings.values()) {
+		for (final RepositoryMapping repoMapping : mappings) {
 			map(repoMapping);
 		}
 	}
@@ -641,7 +533,7 @@ public class GitProjectData {
 		}
 
 		dotGit = c.findMember(Constants.DOT_GIT);
-		if (dotGit != null) {
+		if (dotGit != null && dotGit.getLocation().toFile().equals(git)) {
 			protect(dotGit);
 		}
 	}
@@ -657,16 +549,17 @@ public class GitProjectData {
 
 	private void protect(IResource resource) {
 		IResource c = resource;
-		try {
-			c.setTeamPrivateMember(true);
-		} catch (CoreException e) {
-			Activator.logError(MessageFormat.format(
-					CoreText.GitProjectData_FailedToMarkTeamPrivate,
-					c.getFullPath()), e);
-		}
 		while (c != null && !c.equals(getProject())) {
 			trace("protect " + c);  //$NON-NLS-1$
 			protectedResources.add(c);
+			try {
+				c.setTeamPrivateMember(true);
+			} catch (CoreException e) {
+				Activator.logError(MessageFormat.format(
+						CoreText.GitProjectData_FailedToMarkTeamPrivate,
+						c.getFullPath()),
+						e);
+			}
 			c = c.getParent();
 		}
 	}

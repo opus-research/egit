@@ -7,7 +7,6 @@
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2013, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2013, Gunnar Wagenknecht <gunnar@wagenknecht.org>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +18,7 @@ package org.eclipse.egit.core.project;
 import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Properties;
 
 import org.eclipse.core.resources.IContainer;
@@ -27,13 +27,15 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.RepositoryCache;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.annotations.Nullable;
-import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.submodule.SubmoduleWalk;
 
 /**
  * This class provides means to map resources, projects and repositories
@@ -59,15 +61,14 @@ public class RepositoryMapping {
 
 	private IContainer container;
 
+	private final RepositoryCache repositoryCache = org.eclipse.egit.core.Activator
+			.getDefault().getRepositoryCache();
+
 	/**
-	 * Construct a {@link RepositoryMapping} for a previously connected
-	 * container.
+	 * Construct a {@link RepositoryMapping} for a previously connected project.
 	 *
-	 * @param p
-	 *            {@link Properties} to read the git directory from. See also
-	 *            {@link GitProjectData}.
-	 * @param initialKey
-	 *            property key to use to read the git directory
+	 * @param p TODO
+	 * @param initialKey TODO
 	 */
 	public RepositoryMapping(@NonNull final Properties p,
 			@NonNull final String initialKey) {
@@ -78,14 +79,12 @@ public class RepositoryMapping {
 	}
 
 	/**
-	 * Construct a {@link RepositoryMapping} for previously unmapped container.
+	 * Construct a {@link RepositoryMapping} for previously unknown project.
 	 *
 	 * @param mappedContainer
-	 *            to create the mapping for
 	 * @param gitDir
-	 *            for the new mapping
-	 * @return a new RepositoryMapping for given container. Returns {@code null}
-	 *         if container does not exist or is not local.
+	 * @return a new RepositoryMapping for given container. Returns <code>null
+	 *         <code> if container does not exists.
 	 */
 	@Nullable
 	public static RepositoryMapping create(@NonNull IContainer mappedContainer,
@@ -97,27 +96,38 @@ public class RepositoryMapping {
 		return new RepositoryMapping(mappedContainer, location, gitDir);
 	}
 
-	private RepositoryMapping(final @NonNull IContainer mappedContainer,
-			final @NonNull IPath location, final @NonNull File gitDir) {
+	private RepositoryMapping(@NonNull
+	final IContainer mappedContainer, final @NonNull IPath location,
+			@NonNull final File gitDir) {
+		final IPath cLoc = location.removeTrailingSeparator();
+		final IPath gLoc = Path.fromOSString(gitDir.getAbsolutePath())
+				.removeTrailingSeparator();
+		final IPath gLocParent = gLoc.removeLastSegments(1);
+
 		container = mappedContainer;
 		containerPathString = container.getProjectRelativePath()
 				.toPortableString();
-		if (!gitDir.isAbsolute()) {
-			// It is relative to location, so we can set it right away.
-			gitDirPathString = Path.fromOSString(gitDir.getPath())
-					.removeTrailingSeparator().toPortableString();
-			return;
+
+		if (cLoc.isPrefixOf(gLoc)) {
+			int matchingSegments = gLoc.matchingFirstSegments(cLoc);
+			IPath remainder = gLoc.removeFirstSegments(matchingSegments);
+			String device = remainder.getDevice();
+			if (device == null)
+				gitDirPathString = remainder.toPortableString();
+			else
+				gitDirPathString = remainder.toPortableString().substring(
+						device.length());
+		} else if (gLocParent.isPrefixOf(cLoc)) {
+			int cnt = cLoc.segmentCount() - cLoc.matchingFirstSegments(gLocParent);
+			StringBuilder p = new StringBuilder("");  //$NON-NLS-1$
+			while (cnt-- > 0) {
+				p.append("../");  //$NON-NLS-1$
+			}
+			p.append(gLoc.segment(gLoc.segmentCount() - 1));
+			gitDirPathString = p.toString();
+		} else {
+			gitDirPathString = gLoc.toPortableString();
 		}
-		java.nio.file.Path gPath = gitDir.toPath();
-		java.nio.file.Path lPath = location.toFile().toPath();
-		// Require at least one common component for using a relative path
-		if (lPath.getNameCount() > 0 && gPath.getNameCount() > 0
-				&& gPath.getRoot().equals(lPath.getRoot())
-				&& gPath.getName(0).equals(lPath.getName(0))) {
-			gPath = lPath.relativize(gPath);
-		}
-		gitDirPathString = Path.fromOSString(gPath.toString())
-				.removeTrailingSeparator().toPortableString();
 	}
 
 	/**
@@ -172,18 +182,40 @@ public class RepositoryMapping {
 	 *         instance will always be taken from the {@link RepositoryCache}
 	 *         and the caller should not call close() on it.
 	 *
-	 * @deprecated Since 4.3. Use {@link #getMapping(IResource)} and then
-	 *             {@link #getRepository()} on the returned mapping instead; it
-	 *             will return a submodule repository if the resource is in one.
+	 *         TODO add support for multiple nesting levels of submodules
 	 */
-	@Deprecated
 	@Nullable
 	public synchronized Repository getSubmoduleRepository(@NonNull IResource res) {
-		RepositoryMapping mapping = getMapping(res);
-		if (mapping == null) {
+		IPath projectRelativePath = res.getProjectRelativePath();
+		if (projectRelativePath == null)
 			return null;
+
+		String projectRelativePathStr = res.getProjectRelativePath().toString();
+		try {
+			if (!db.isBare() && SubmoduleWalk.containsGitModulesFile(db)) {
+				SubmoduleWalk sw = SubmoduleWalk.forIndex(db);
+				while (sw.next()) {
+					if (projectRelativePathStr.startsWith(sw.getPath())) {
+						Repository subRepo = sw.getRepository();
+						if (subRepo == null)
+							return null;
+
+						Repository cachedRepo = null;
+						try {
+							cachedRepo = repositoryCache
+									.lookupRepository(subRepo.getDirectory());
+						} finally {
+							subRepo.close();
+						}
+						return cachedRepo;
+					}
+				}
+			}
+		} catch (IOException e) {
+			Activator.logWarning(
+					CoreText.RepositoryMapping_ExceptionSubmoduleWalk, e);
 		}
-		return mapping.getRepository();
+		return db;
 	}
 
 	synchronized void setRepository(final Repository r) {
@@ -299,7 +331,6 @@ public class RepositoryMapping {
 	 * determine a repository mapping.
 	 *
 	 * @param resource
-	 *            to find the mapping for
 	 * @return the RepositoryMapping for this resource, or null for non
 	 *         GitProvider.
 	 */
@@ -315,37 +346,18 @@ public class RepositoryMapping {
 			}
 			return getMapping(location);
 		}
-		return findMapping(resource);
+		return getMapping(resource.getProject());
 	}
 
 	/**
 	 * Get the repository mapping for a project.
 	 *
 	 * @param project
-	 *            to find the mapping for
 	 * @return the RepositoryMapping for this project, or null for non
 	 *         GitProvider.
 	 */
 	@Nullable
 	public static RepositoryMapping getMapping(@Nullable final IProject project) {
-		if (project == null) {
-			return null;
-		}
-		return findMapping(project);
-	}
-
-	/**
-	 * Get the repository mapping for a project.
-	 *
-	 * @param resource
-	 *            to find the mapping for
-	 * @return the RepositoryMapping for this project, or null for non
-	 *         GitProvider.
-	 */
-	@Nullable
-	private static RepositoryMapping findMapping(@NonNull
-	final IResource resource) {
-		final IProject project = resource.getProject();
 		if (project == null || isNonWorkspace(project)) {
 			return null;
 		}
@@ -364,7 +376,7 @@ public class RepositoryMapping {
 		if (data == null) {
 			return null;
 		}
-		return data.getRepositoryMapping(resource);
+		return data.getRepositoryMapping(project);
 	}
 
 	/**
@@ -418,12 +430,12 @@ public class RepositoryMapping {
 	@Nullable
 	public static RepositoryMapping findRepositoryMapping(
 			@NonNull Repository repository) {
-		for (IProject project : ProjectUtil.getProjectsUnderPath(
-				new Path(repository.getWorkTree().getAbsolutePath()))) {
+		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
+				.getProjects();
+		for (IProject project : projects) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-			if (mapping != null && mapping.getRepository() == repository) {
+			if (mapping != null && mapping.getRepository() == repository)
 				return mapping;
-			}
 		}
 		return null;
 	}
