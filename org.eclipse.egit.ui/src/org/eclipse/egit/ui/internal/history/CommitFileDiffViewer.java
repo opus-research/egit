@@ -22,6 +22,7 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -62,8 +63,6 @@ class CommitFileDiffViewer extends TableViewer {
 	private TreeWalk walker;
 
 	private Clipboard clipboard;
-
-	private boolean compareMode;
 
 	private StyledText noInputText;
 
@@ -110,11 +109,20 @@ class CommitFileDiffViewer extends TableViewer {
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				final FileDiff d = (FileDiff) iss.getFirstElement();
-				if (walker != null && d.getBlobs().length <= 2)
-					if (compareMode)
+				if (Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_COMPARE_MODE)) {
+					if (d.getBlobs().length <= 2)
 						showTwoWayFileDiff(d);
 					else
-						openFileInEditor(d);
+						MessageDialog
+								.openInformation(
+										PlatformUI.getWorkbench()
+												.getActiveWorkbenchWindow()
+												.getShell(),
+										UIText.CommitFileDiffViewer_CanNotOpenCompareEditorTitle,
+										UIText.CommitFileDiffViewer_MergeCommitMultiAncestorMessage);
+				}
+				else
+					openFileInEditor(d);
 			}
 		});
 
@@ -157,7 +165,7 @@ class CommitFileDiffViewer extends TableViewer {
 					d.getChange().equals(ChangeType.DELETE)?
 							d.getCommit().getParent(0) : d.getCommit(),
 					db, d.getChange().equals(ChangeType.DELETE)?
-							d.getBlobs()[0] : d.getBlobs()[1]);
+							d.getBlobs()[0] : d.getBlobs()[d.getBlobs().length - 1]);
 			if (rev != null)
 				EgitUiEditorUtils.openEditor(page, rev,
 						new NullProgressMonitor());
@@ -252,9 +260,5 @@ class CommitFileDiffViewer extends TableViewer {
 		path.setText(UIText.HistoryPage_pathnameColumn);
 		path.setWidth(250);
 		layout.addColumnData(new ColumnWeightData(20, true));
-	}
-
-	public void setCompareMode(boolean compareMode) {
-		this.compareMode = compareMode;
 	}
 }

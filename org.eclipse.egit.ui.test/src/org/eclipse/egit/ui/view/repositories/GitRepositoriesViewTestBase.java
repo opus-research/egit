@@ -27,12 +27,12 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
@@ -191,7 +191,7 @@ public abstract class GitRepositoriesViewTestBase extends
 				myRepository, "push");
 
 		pa.run(null, false);
-
+		TestUtil.joinJobs(JobFamilies.PUSH);
 		try {
 			// delete the stable branch again
 			RefUpdate op = myRepository.updateRef("refs/heads/stable");
@@ -268,8 +268,8 @@ public abstract class GitRepositoriesViewTestBase extends
 	protected void refreshAndWait() throws Exception {
 		RepositoriesView view = (RepositoriesView) getOrOpenView()
 				.getReference().getPart(false);
-		Job refreshJob = view.refresh();
-		refreshJob.join();
+		view.refresh();
+		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
 	}
 
 	@SuppressWarnings("boxing")

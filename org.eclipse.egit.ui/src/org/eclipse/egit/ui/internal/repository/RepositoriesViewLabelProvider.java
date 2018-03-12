@@ -23,10 +23,11 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -39,7 +40,8 @@ import org.eclipse.swt.graphics.Rectangle;
 /**
  * Label Provider for the Git Repositories View
  */
-public class RepositoriesViewLabelProvider extends LabelProvider implements IStyledLabelProvider {
+public class RepositoriesViewLabelProvider extends LabelProvider implements
+		IStyledLabelProvider {
 
 	/**
 	 * A map of regular images to their decorated counterpart.
@@ -79,11 +81,14 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements ISty
 
 		case TAG:
 			// fall through
+		case ADDITIONALREF:
+			// fall through
 		case REF:
 			// if the branch or tag is checked out,
 			// we want to decorate the corresponding
 			// node with a little check indicator
 			String refName = ((Ref) node.getObject()).getName();
+			Ref leaf = ((Ref) node.getObject()).getLeaf();
 
 			String branchName;
 			String compareString;
@@ -98,19 +103,33 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements ISty
 				} else if (refName.startsWith(Constants.R_TAGS)) {
 					// tag: HEAD would be on the commit id to which the tag is
 					// pointing
+					ObjectId id = node.getRepository().resolve(refName);
+					if (id == null)
+						return image;
 					RevWalk rw = new RevWalk(node.getRepository());
-					RevTag tag = rw.parseTag(node.getRepository().resolve(
-							refName));
+					RevTag tag = rw.parseTag(id);
 					compareString = tag.getObject().name();
 
 				} else if (refName.startsWith(Constants.R_REMOTES)) {
 					// remote branch: HEAD would be on the commit id to which
 					// the branch is pointing
+					ObjectId id = node.getRepository().resolve(refName);
+					if (id == null)
+						return image;
 					RevWalk rw = new RevWalk(node.getRepository());
-					RevCommit commit = rw.parseCommit(node.getRepository()
-							.resolve(refName));
+					RevCommit commit = rw.parseCommit(id);
 					compareString = commit.getId().name();
-				} else {
+				} else if (refName.equals(Constants.HEAD))
+					return getDecoratedImage(image);
+				else {
+					String leafname = leaf.getName();
+					if (leafname.startsWith(Constants.R_REFS)
+							&& leafname.equals(node.getRepository()
+									.getFullBranch()))
+						return getDecoratedImage(image);
+					else if (leaf.getObjectId().equals(
+							node.getRepository().resolve(Constants.HEAD)))
+						return getDecoratedImage(image);
 					// some other symbolic reference
 					return image;
 				}
@@ -162,28 +181,37 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements ISty
 
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
 
-		String label = getSimpleText(node);
-		if (label == null)
-			return new StyledString(element.toString());
-
-		StyledString text = new StyledString(label);
-
 		try {
 			switch (node.getType()) {
 			case REPO:
 				Repository repository = (Repository) node.getObject();
 				File directory = repository.getDirectory();
-				StyledString string = new StyledString(directory.getParentFile().getName());
-				string.append(" - " + directory.getAbsolutePath(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-				string.append(" [" + repository.getBranch() + "]", StyledString.DECORATIONS_STYLER);  //$NON-NLS-1$//$NON-NLS-2$
+				StyledString string = new StyledString(directory
+						.getParentFile().getName());
+				string
+						.append(
+								" - " + directory.getAbsolutePath(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
+				string
+						.append(
+								" [" + repository.getBranch() + "]", StyledString.DECORATIONS_STYLER); //$NON-NLS-1$//$NON-NLS-2$
 				return string;
-			case SYMBOLICREF:
+			case ADDITIONALREF:
 				Ref ref = (Ref) node.getObject();
 				// shorten the name
-				StyledString refName = new StyledString(node.getRepository().shortenRefName(ref.getName()));
+				StyledString refName = new StyledString(node.getRepository()
+						.shortenRefName(ref.getName()));
 				if (ref.isSymbolic()) {
 					refName.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-					refName.append(ref.getLeaf().getName(), StyledString.QUALIFIER_STYLER);
+					refName.append(ref.getLeaf().getName(),
+							StyledString.QUALIFIER_STYLER);
+					refName.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
+					refName.append(ObjectId.toString(ref.getLeaf()
+							.getObjectId()), StyledString.QUALIFIER_STYLER);
+				} else {
+					refName.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
+					refName.append(ObjectId.toString(ref.getObjectId()),
+							StyledString.QUALIFIER_STYLER);
+
 				}
 				return refName;
 			case WORKINGDIR:
@@ -210,15 +238,15 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements ISty
 				// fall through
 			case BRANCHES:
 				// fall through
-			case LOCALBRANCHES:
+			case LOCAL:
 				// fall through
-			case REMOTEBRANCHES:
+			case REMOTETRACKING:
 				// fall through
 			case BRANCHHIERARCHY:
 				// fall through
 			case TAGS:
 				// fall through;
-			case SYMBOLICREFS:
+			case ADDITIONALREFS:
 				// fall through
 			case REMOTES:
 				// fall through
@@ -228,15 +256,18 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements ISty
 				// fall through
 			case REF:
 				// fall through
-			case TAG:
-				// fall through
+			case TAG: {
+				String label = getSimpleText(node);
+				if (label != null)
+					return new StyledString(label);
+			}
 
 			}
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}
 
-		return text;
+		return null;
 
 	}
 
@@ -255,40 +286,46 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements ISty
 			return ((File) node.getObject()).getName();
 		case BRANCHES:
 			return UIText.RepositoriesView_Branches_Nodetext;
-		case LOCALBRANCHES:
-			return UIText.RepositoriesViewLabelProvider_LocalBranchesNodetext;
-		case REMOTEBRANCHES:
-			return UIText.RepositoriesViewLabelProvider_RemoteBrancheNodetext;
+		case LOCAL:
+			return UIText.RepositoriesViewLabelProvider_LocalNodetext;
+		case REMOTETRACKING:
+			return UIText.RepositoriesViewLabelProvider_RemoteTrackingNodetext;
 		case BRANCHHIERARCHY:
 			IPath fullPath = (IPath) node.getObject();
 			return fullPath.lastSegment();
 		case TAGS:
 			return UIText.RepositoriesViewLabelProvider_TagsNodeText;
-		case SYMBOLICREFS:
+		case ADDITIONALREFS:
 			return UIText.RepositoriesViewLabelProvider_SymbolicRefNodeText;
 		case REMOTES:
 			return UIText.RepositoriesView_RemotesNodeText;
-		case REMOTE:
-			// fall through
-		case ERROR:
-			return (String) node.getObject();
 		case REF:
 			// fall through
-		case TAG:
-			// fall through
-		case SYMBOLICREF:
+		case TAG: {
 			Ref ref = (Ref) node.getObject();
 			// shorten the name
 			String refName = node.getRepository().shortenRefName(ref.getName());
-			if (ref.isSymbolic()) {
-				refName = refName + " - " //$NON-NLS-1$
-				+ ref.getLeaf().getName();
-			}
 			if (node.getParent().getType() == RepositoryTreeNodeType.BRANCHHIERARCHY) {
 				int index = refName.lastIndexOf('/');
 				refName = refName.substring(index + 1);
 			}
 			return refName;
+		}
+		case ADDITIONALREF: {
+			Ref ref = (Ref) node.getObject();
+			// shorten the name
+			String refName = node.getRepository().shortenRefName(ref.getName());
+			if (ref.isSymbolic()) {
+				refName = refName
+						+ " - " //$NON-NLS-1$
+						+ ref.getLeaf().getName()
+						+ " - " + ObjectId.toString(ref.getLeaf().getObjectId()); //$NON-NLS-1$
+			} else {
+				refName = refName + " - " //$NON-NLS-1$
+						+ ObjectId.toString(ref.getObjectId());
+			}
+			return refName;
+		}
 		case WORKINGDIR:
 			if (node.getRepository().isBare())
 				return UIText.RepositoriesView_WorkingDir_treenode
@@ -297,9 +334,13 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements ISty
 			else
 				return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
 						+ node.getRepository().getWorkTree().getAbsolutePath();
+		case REMOTE:
+			// fall through
 		case PUSH:
 			// fall through
 		case FETCH:
+			// fall through
+		case ERROR:
 			return (String) node.getObject();
 
 		}

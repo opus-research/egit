@@ -42,7 +42,7 @@
          <action
                class="org.eclipse.egit.ui.internal.actions.FetchAction"
                definitionId="org.eclipse.egit.ui.team.Fetch"
-               icon="$nl$/icons/obj16/pull.gif"
+               icon="$nl$/icons/obj16/fetch.gif"
                id="org.eclipse.egit.ui.internal.actions.FetchAction"
                label="%FetchAction_label"
                menubarPath="team.main/group2"/>
@@ -84,6 +84,14 @@
                id="org.eclipse.egit.ui.internal.actions.BranchAction"
                label="%BranchAction_label"
                menubarPath="team.main/group5"/>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamConfigAction"
+               definitionId="org.eclipse.egit.ui.team.Pull"
+               icon="$nl$/icons/obj16/pull.gif"
+               id="org.eclipse.egit.ui.team.PullCurrentBranchAction"
+               label="%PullIntoCurrentBranchMenuLabel"
+               menubarPath="team.main/group2">
+         </action>
      </objectContribution>
      <objectContribution
             adaptable="true"
@@ -195,6 +203,20 @@
             </adapter>
          </factory>
          <factory
+               adaptableType="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter
+                  type="org.eclipse.team.ui.history.IHistoryPageSource">
+            </adapter>
+         </factory>
+         <factory
+               adaptableType="org.eclipse.egit.ui.internal.history.HistoryPageInput"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter
+                  type="org.eclipse.team.ui.history.IHistoryPageSource">
+            </adapter>
+         </factory>
+         <factory
 	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelRoot"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
@@ -282,14 +304,6 @@
             class="org.eclipse.egit.ui.internal.preferences.GitPreferenceRoot"
             id="org.eclipse.egit.ui.GitPreferences" />
 
-      <page name="%GitPreferences_HistoryPreferencePage_name"
-	    category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"
-	    id="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage" >
-	    <keywordReference
-		  id="org.eclipse.egit.ui.keyword.git">
-	    </keywordReference>
-	    </page>
       <page name="%GitPreferences_WindowCachePreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.WindowCachePreferencePage"
@@ -298,15 +312,6 @@
 		  id="org.eclipse.egit.ui.keyword.git">
 	    </keywordReference>
       </page>
-      <page name="%GitPreferences_RefreshPreferences_name"
-	    category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.RefreshPreferencesPage"
-	    id="org.eclipse.egit.ui.internal.preferences.RefreshPreferencesPage" >
-	    <keywordReference
-		  id="org.eclipse.egit.ui.keyword.git"/>
-	    <keywordReference
-		  id="org.eclipse.egit.ui.keyword.refresh"/>
-	    </page>
 	  <page name="%GitPreferences_DecoratorPreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.GitDecoratorPreferencePage"
@@ -611,6 +616,14 @@
          <commonSorter
                class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewSorter">
          </commonSorter>
+         <dropAssistant
+               class="org.eclipse.egit.ui.internal.repository.DropAdapterAssistant"
+               id="org.eclipse.egit.ui.repositoriesView.dropAssistant">
+            <possibleDropTargets>
+               <instanceof
+                     value="org.eclipse.core.resources.IWorkspaceRoot">
+               </instanceof></possibleDropTargets>
+         </dropAssistant>
       </navigatorContent>
       <actionProvider
             class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewActionProvider"
@@ -745,6 +758,9 @@
                            </instanceof>
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                           </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode">
                            </instanceof>
                         </or>
                         <not>
@@ -897,9 +913,6 @@
                   <iterate>
                      <or>
                         <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.LocalBranchesNode">
-                        </instanceof>
-                        <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
                         </instanceof>
                         <instanceof
@@ -907,6 +920,9 @@
                         </instanceof>
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode">
                         </instanceof>
                      </or>
                   </iterate>
@@ -1103,6 +1119,32 @@
          <separator
                name="SecondGroup">
          </separator>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
+               label="Show in History"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="+">
+                  </count>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewOpenInTextEditor"
                label="%RepoViewOpenInEditor.label"
@@ -1620,6 +1662,12 @@
                id="org.eclipse.ui.commands.toggleState">
          </state>
       </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ShowInHistoryCommand"
+            id="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
+            name="Show in History">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.commandImages">
@@ -1746,6 +1794,10 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewRemove"
             icon="icons/obj16/clear.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
+            icon="icons/obj16/history.gif">
       </image>
    </extension>
    <extension
@@ -1936,6 +1988,12 @@
             id="org.eclipse.egit.ui.team.ApplyPatch"
             name="%ApplyPatchCommand.name">
       </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.PullFromUpstreamActionHandler"
+            id="org.eclipse.egit.ui.team.Pull"
+            name="Pull">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">
@@ -2024,6 +2082,16 @@
             id="org.eclipse.egit.ui.history.CheckoutCommand"
             name="%CheckoutCommand.name">
       </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.OpenInTextEditorHandler"
+            id="org.eclipse.egit.ui.history.OpenInTextEditorCommand"
+            name="Open in Text Editor">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.CherryPickHandler"
+            id="org.eclipse.egit.ui.history.CherryPick"
+            name="%CherryPickCommand.name">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.newWizards">
@@ -2070,15 +2138,5 @@
             </iterate>
          </activeWhen>
       </handler>
-   </extension>
-   <extension
-         point="org.eclipse.ui.editors">
-      <editor
-            class="org.eclipse.egit.ui.internal.EgitErrorEditor"
-            default="false"
-            id="org.eclipse.egit.ui.errorEditor"
-            matchingStrategy="org.eclipse.egit.ui.internal.EgitErrorEditor"
-            name="%ErrorEditor.name">
-      </editor>
    </extension>
 </plugin>

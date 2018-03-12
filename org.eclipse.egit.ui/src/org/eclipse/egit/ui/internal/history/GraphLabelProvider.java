@@ -26,6 +26,8 @@ class GraphLabelProvider extends BaseLabelProvider implements
 
 	private PersonIdent lastAuthor;
 
+	private PersonIdent lastCommitter;
+
 	GraphLabelProvider() {
 		fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
 	}
@@ -34,14 +36,25 @@ class GraphLabelProvider extends BaseLabelProvider implements
 		final RevCommit c = (RevCommit) element;
 		if (columnIndex == 0)
 			return c.getShortMessage();
-
-		final PersonIdent author = authorOf(c);
-		if (author != null) {
-			switch (columnIndex) {
-			case 1:
-				return author.getName() + " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
-			case 2:
-				return fmt.format(author.getWhen());
+		if (columnIndex == 3)
+			return c.getId().getName();
+		if (columnIndex == 1 || columnIndex == 2) {
+			final PersonIdent author = authorOf(c);
+			if (author != null) {
+				switch (columnIndex) {
+				case 1:
+					return author.getName()
+							+ " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+				case 2:
+					return fmt.format(author.getWhen());
+				}
+			}
+		}
+		if (columnIndex == 4) {
+			final PersonIdent committer = committerOf(c);
+			if (committer != null) {
+				return committer.getName()
+						+ " <" + committer.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 
@@ -52,8 +65,18 @@ class GraphLabelProvider extends BaseLabelProvider implements
 		if (lastCommit != c) {
 			lastCommit = c;
 			lastAuthor = c.getAuthorIdent();
+			lastCommitter = c.getCommitterIdent();
 		}
 		return lastAuthor;
+	}
+
+	private PersonIdent committerOf(final RevCommit c) {
+		if (lastCommit != c) {
+			lastCommit = c;
+			lastAuthor = c.getAuthorIdent();
+			lastCommitter = c.getCommitterIdent();
+		}
+		return lastCommitter;
 	}
 
 	public Image getColumnImage(final Object element, final int columnIndex) {

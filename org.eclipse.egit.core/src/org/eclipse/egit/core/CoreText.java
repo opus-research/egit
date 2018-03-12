@@ -53,6 +53,9 @@ public class CoreText extends NLS {
 	public static String ConnectProviderOperation_ConnectingProject;
 
 	/** */
+	public static String DeleteBranchOperation_TaskName;
+
+	/** */
 	public static String DiscardChangesOperation_discardFailed;
 
 	/** */
@@ -155,6 +158,9 @@ public class CoreText extends NLS {
 	public static String RemoteRefUpdateCantBeReused;
 
 	/** */
+	public static String RenameBranchOperation_TaskName;
+
+	/** */
 	public static String ResetOperation_cantUpdate;
 
 	/** */
@@ -194,6 +200,12 @@ public class CoreText extends NLS {
 	public static String MergeOperation_ProgressMerge;
 
 	/** */
+	public static String CherryPickOperation_InternalError;
+
+	/** */
+	public static String CherryPickOperation_Failed;
+
+	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;
 
 	/** */
@@ -213,6 +225,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CloneOperation_writingIndex;
+
+	/** */
+	public static String CreateLocalBranchOperation_CreatingBranchMessage;
+
+	/** */
+	public static String CreateLocalBranchOperation_NoBranchMessage;
 
 	/** */
 	public static String IndexFileRevision_errorLookingUpPath;

@@ -83,11 +83,11 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 	 * <td>{@link String}</td>
 	 * </tr>
 	 * <tr>
-	 * <td>{@link RepositoryTreeNodeType#LOCALBRANCHES}</td>
+	 * <td>{@link RepositoryTreeNodeType#LOCAL}</td>
 	 * <td>{@link String}</td>
 	 * </tr>
 	 * <tr>
-	 * <td>{@link RepositoryTreeNodeType#REMOTEBRANCHES}</td>
+	 * <td>{@link RepositoryTreeNodeType#REMOTETRACKING}</td>
 	 * <td>{@link String}</td>
 	 * </tr>
 	 * <tr>
@@ -123,13 +123,13 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case REMOTES:
 			// fall through
-		case LOCALBRANCHES:
+		case LOCAL:
 			// fall through
-		case REMOTEBRANCHES:
+		case REMOTETRACKING:
 			// fall through
 		case BRANCHES:
 			// fall through
-		case SYMBOLICREFS:
+		case ADDITIONALREFS:
 			// fall through
 		case WORKINGDIR:
 			result = prime
@@ -141,7 +141,7 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case TAG:
 			// fall through
-		case SYMBOLICREF:
+		case ADDITIONALREF:
 			result = prime
 					* result
 					+ ((myObject == null) ? 0 : ((Ref) myObject).getName()
@@ -230,16 +230,16 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 
 		case BRANCHES:
 			// fall through
-		case LOCALBRANCHES:
+		case LOCAL:
 			// fall through
-		case REMOTEBRANCHES:
+		case REMOTETRACKING:
 			// fall through
 		case BRANCHHIERARCHY:
 			return myObject.toString().compareTo(
 					otherNode.getObject().toString());
 		case REMOTES:
 			// fall through
-		case SYMBOLICREFS:
+		case ADDITIONALREFS:
 			// fall through
 		case TAGS:
 			// fall through
@@ -262,7 +262,7 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 					((File) otherNode.getObject()).getName());
 		case TAG:
 			// fall through
-		case SYMBOLICREF:
+		case ADDITIONALREF:
 			// fall through
 		case REF:
 			return ((Ref) myObject).getName().compareTo(
@@ -293,11 +293,11 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case BRANCHES:
 			// fall through
-		case LOCALBRANCHES:
+		case LOCAL:
 			// fall through
-		case REMOTEBRANCHES:
+		case REMOTETRACKING:
 			// fall through
-		case SYMBOLICREFS:
+		case ADDITIONALREFS:
 			// fall through
 		case ERROR:
 			// fall through TODO fix this: Repository may be null
@@ -308,7 +308,7 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case TAG:
 			// fall through
-		case SYMBOLICREF:
+		case ADDITIONALREF:
 			return ((Ref) myObject).getName().equals(
 					((Ref) otherObject).getName());
 		case FOLDER:

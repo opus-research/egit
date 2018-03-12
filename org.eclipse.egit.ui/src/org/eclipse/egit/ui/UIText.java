@@ -25,6 +25,9 @@ public class UIText extends NLS {
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
+	public static String AbstractHistoryCommanndHandler_NoUniqueRepository;
+
+	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
@@ -148,19 +151,10 @@ public class UIText extends NLS {
 	public static String SharingWizard_failed;
 
 	/** */
-	public static String ShowVersionsHandler_ErrorOpeningFileTitle;
+	public static String GenerateHistoryJob_BuildingListMessage;
 
 	/** */
 	public static String GenerateHistoryJob_errorComputingHistory;
-
-	/** */
-	public static String EGitStatusPart_ShowErrorLogButton;
-
-	/** */
-	public static String EgitErrorEditor_Title;
-
-	/** */
-	public static String EgitErrorEditor_Tooltip;
 
 	/** */
 	public static String EgitUiUtils_CouldNotOpenEditorMessage;
@@ -265,6 +259,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_AllOfResourceTooltip;
 
 	/** */
+	public static String GitHistoryPage_cherryPickMenuItem;
+
+	/** */
 	public static String GitHistoryPage_compareMode;
 
 	/** */
@@ -275,6 +272,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_CompareModeMenuLabel;
+
+	/** */
+	public static String GitHistoryPage_CompareWithCurrentHeadMenu;
 
 	/** */
 	public static String GitHistoryPage_CompareWithEachOtherMenuLabel;
@@ -292,6 +292,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_CreateTagMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_DifferentRepositoriesMessage;
+
+	/** */
 	public static String GitHistoryPage_errorLookingUpPath;
 
 	/** */
@@ -302,6 +305,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_FileNotInCommit;
+
+	/** */
+	public static String GitHistoryPage_FileOrFolderPartOfGitDirMessage;
 
 	/** */
 	public static String GitHistoryPage_FileType;
@@ -328,6 +334,12 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_MultiResourcesType;
 
 	/** */
+	public static String GitHistoryPage_OpenInTextEditorLabel;
+
+	/** */
+	public static String GitHistoryPage_NoInputMessage;
+
+	/** */
 	public static String GitHistoryPage_OpenMenuLabel;
 
 	/** */
@@ -338,6 +350,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_RefreshMenuLabel;
+
+	/** */
+	public static String GitHistoryPage_RepositoryNamePattern;
 
 	/** */
 	public static String GitHistoryPage_ResetBaselineToHeadMenuLabel;
@@ -362,6 +377,24 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
+
+	/** */
+	public static String GitPreferenceRoot_CloningRepoGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_DefaultRepoFolderLabel;
+
+	/** */
+	public static String GitPreferenceRoot_DefaultRepoFolderTooltip;
+
+	/** */
+	public static String GitPreferenceRoot_HistoryGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_RemoteConnectionsGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -482,9 +515,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CheckoutHandler_SelectBranchTitle;
-
-	/** */
-	public static String CompareVersionsHandler_ErrorOpeningCompareEditorTitle;
 
 	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
@@ -674,6 +704,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CloneDestinationPage_browseButton;
+
+	/** */
+	public static String CloneDestinationPage_DefaultRepoFolderTooltip;
 
 	/** */
 	public static String CloneDestinationPage_errorNotEmptyDir;
@@ -1049,6 +1082,30 @@ public class UIText extends NLS {
 
 	/** */
 	public static String HistoryPreferencePage_title;
+
+	/** */
+	public static String PullCurrentBranchActionHandler_PullCanceledMessage;
+
+	/** */
+	public static String PullCurrentBranchActionHandler_PullCanceledTitle;
+
+	/** */
+	public static String PullCurrentBranchActionHandler_PullJobname;
+
+	/** */
+	public static String PullResultDialog_DialogTitle;
+
+	/** */
+	public static String PullResultDialog_FetchResultGroupHeader;
+
+	/** */
+	public static String PullResultDialog_MergeAlreadyUpToDateMessage;
+
+	/** */
+	public static String PullResultDialog_MergeResultGroupHeader;
+
+	/** */
+	public static String PullResultDialog_NothingToFetchFromLocal;
 
 	/** */
 	public static String PushAction_wrongURIDescription;
@@ -1645,6 +1702,12 @@ public class UIText extends NLS {
 	public static String FileRevisionEditorInput_NameAndRevisionTitle;
 
 	/** */
+	public static String FindToolbar_changeto_id;
+
+	/** */
+	public static String FindToolbar_idMenuItem;
+
+	/** */
 	public static String FindToolbar_NextTooltip;
 
 	/** */
@@ -1792,6 +1855,12 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_iconsShowAssumeValid;
 
 	/** */
+	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
+
+	/** */
+	public static String DeleteBranchCommand_UnmergedData;
+
+	/** */
 	public static String IgnoreActionHandler_addToGitignore;
 
 	/** */
@@ -1867,10 +1936,10 @@ public class UIText extends NLS {
 	public static String RepositoriesViewLabelProvider_BareRepositoryMessage;
 
 	/** */
-	public static String RepositoriesViewLabelProvider_LocalBranchesNodetext;
+	public static String RepositoriesViewLabelProvider_LocalNodetext;
 
 	/** */
-	public static String RepositoriesViewLabelProvider_RemoteBrancheNodetext;
+	public static String RepositoriesViewLabelProvider_RemoteTrackingNodetext;
 
 	/** */
 	public static String RepositoriesViewLabelProvider_SymbolicRefNodeText;
@@ -2203,6 +2272,12 @@ public class UIText extends NLS {
 	public static String CreateTagDialog_CreateTagOnCommitTitle;
 
 	/** */
+	public static String CreateTagDialog_GetTagJobName;
+
+	/** */
+	public static String CreateTagDialog_LoadingMessageText;
+
+	/** */
 	public static String CreateTagDialog_Message;
 
 	/** */
@@ -2237,10 +2312,22 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_repository;
 
 	/** */
+	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
+
+	/** */
+	public static String CommitFileDiffViewer_MergeCommitMultiAncestorMessage;
+
+	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
 
 	/** */
 	public static String CommitFileDiffViewer_SelectOneCommitMessage;
+
+	/** */
+	public static String CommitGraphTable_CommitId;
+
+	/** */
+	public static String CommitGraphTable_Committer;
 
 	/** */
 	public static String GitSynchronizeWizard_synchronize;
@@ -2307,6 +2394,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NewRepositoryWizard_WizardTitle;
+
+	/** */
+	public static String RemoteConnectionPreferencePage_TimeoutLabel;
+
+	/** */
+	public static String RemoteConnectionPreferencePage_ZeroValueTooltip;
 
 	/** */
 	public static String RemoteSelectionCombo_sourceName;

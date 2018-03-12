@@ -17,7 +17,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.egit.ui.Activator;
@@ -26,9 +25,7 @@ import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.IEditorDescriptor;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IEditorRegistry;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
@@ -64,37 +61,23 @@ public class EgitUiEditorUtils {
 	}
 
 	/**
-	 * Opens an error editor
+	 * Opens a text editor on a revision
 	 *
 	 * @param page
-	 *            the workbench page
-	 *
-	 * @param errorStatus
-	 *            the status describing the problem; severity is ignored
-	 * @param title
-	 *            an optional title for the editor, may be <code>null</code>
-	 * @param tooltip
-	 *            and optional tool tip for the editor, may be <code>null</code>
+	 *            the page
+	 * @param revision
+	 *            the revision
+	 * @param monitor
+	 *            a progress monitor, may be null
+	 * @throws CoreException
+	 *             upon failure
 	 */
-	public static void openErrorEditor(IWorkbenchPage page,
-			IStatus errorStatus, String title, String tooltip) {
-		IEditorReference[] refs = page.findEditors(null,
-				EgitErrorEditor.EDITOR_ID, IWorkbenchPage.MATCH_ID);
-		IEditorInput erorreditorinput = EgitErrorEditor.createInput(
-				errorStatus, title, tooltip);
-		// we only want to open the error editor once
-		try {
-			if (refs.length == 0)
-				IDE.openEditor(page, erorreditorinput,
-						EgitErrorEditor.EDITOR_ID, false);
-			else {
-				IEditorPart editor = refs[0].getEditor(true);
-				editor.init(editor.getEditorSite(), erorreditorinput);
-				editor.getEditorSite().getPage().bringToTop(editor);
-			}
-		} catch (PartInitException e) {
-			Activator.handleError(e.getMessage(), e, false);
-		}
+	public static void openTextEditor(IWorkbenchPage page,
+			IFileRevision revision, IProgressMonitor monitor)
+			throws CoreException {
+		FileRevisionEditorInput fileRevEditorInput = FileRevisionEditorInput
+				.createEditorInputFor(revision, monitor);
+		openEditor(page, fileRevEditorInput, "org.eclipse.ui.DefaultTextEditor"); //$NON-NLS-1$
 	}
 
 	/**
