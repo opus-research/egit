@@ -83,8 +83,6 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 	}
 
 	static class SWTLane extends PlotLane {
-		private static final long serialVersionUID = 1L;
-
 		Color color;
 		@Override
 		public boolean equals(Object o) {
