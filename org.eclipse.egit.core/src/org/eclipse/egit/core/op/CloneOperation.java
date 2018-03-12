@@ -23,7 +23,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
@@ -45,7 +44,7 @@ import org.eclipse.jgit.transport.URIish;
 /**
  * Clones a repository from a remote location to a local location.
  */
-public class CloneOperation implements IRunnableWithProgress {
+public class CloneOperation {
 	private final URIish uri;
 
 	private final boolean allSelected;
@@ -98,6 +97,13 @@ public class CloneOperation implements IRunnableWithProgress {
 		this.remoteName = remoteName;
 	}
 
+	/**
+	 * @param pm
+	 *            the monitor to be used for reporting progress and responding
+	 *            to cancellation. The monitor is never <code>null</code>
+	 * @throws InvocationTargetException
+	 * @throws InterruptedException
+	 */
 	public void run(final IProgressMonitor pm)
 			throws InvocationTargetException, InterruptedException {
 		final IProgressMonitor monitor;
@@ -144,7 +150,7 @@ public class CloneOperation implements IRunnableWithProgress {
 
 	private void doInit(final IProgressMonitor monitor)
 			throws URISyntaxException, IOException {
-		monitor.setTaskName(CoreText.CloneOperation_initializingRepository);
+		monitor.setTaskName("Initializing local repository");
 
 		local = new Repository(gitdir);
 		local.create();
@@ -159,8 +165,7 @@ public class CloneOperation implements IRunnableWithProgress {
 		final String dst = Constants.R_REMOTES + remoteConfig.getName();
 		RefSpec wcrs = new RefSpec();
 		wcrs = wcrs.setForceUpdate(true);
-		wcrs = wcrs.setSourceDestination(Constants.R_HEADS
-				+ "*", dst + "/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		wcrs = wcrs.setSourceDestination(Constants.R_HEADS + "*", dst + "/*");
 
 		if (allSelected) {
 			remoteConfig.addFetchRefSpec(wcrs);
@@ -171,8 +176,7 @@ public class CloneOperation implements IRunnableWithProgress {
 		}
 
 		// we're setting up for a clone with a checkout
-		local.getConfig().setBoolean(
-				"core", null, "bare", false); //$NON-NLS-1$ //$NON-NLS-2$
+		local.getConfig().setBoolean("core", null, "bare", false);
 
 		remoteConfig.update(local.getConfig());
 
@@ -182,9 +186,9 @@ public class CloneOperation implements IRunnableWithProgress {
 
 		// setup the default remote branch for branchName
 		local.getConfig().setString(RepositoryConfig.BRANCH_SECTION,
-				branchName, "remote", remoteName); //$NON-NLS-1$
+				branchName, "remote", remoteName);
 		local.getConfig().setString(RepositoryConfig.BRANCH_SECTION,
-				branchName, "merge", branch); //$NON-NLS-1$
+				branchName, "merge", branch);
 
 		local.getConfig().save();
 	}
@@ -216,10 +220,10 @@ public class CloneOperation implements IRunnableWithProgress {
 		u.setNewObjectId(mapCommit.getCommitId());
 		u.forceUpdate();
 
-		monitor.setTaskName(CoreText.CloneOperation_checkingOutFiles);
+		monitor.setTaskName("Checking out files");
 		co = new WorkDirCheckout(local, local.getWorkDir(), index, tree);
 		co.checkout();
-		monitor.setTaskName(CoreText.CloneOperation_writingIndex);
+		monitor.setTaskName("Writing index");
 		index.write();
 	}
 
