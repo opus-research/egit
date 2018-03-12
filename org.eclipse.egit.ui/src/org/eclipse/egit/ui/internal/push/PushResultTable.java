@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
- *
+ * Copyright (C) 2008, 2012 Marek Zawirski <marek.zawirski@gmail.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,24 +11,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.egit.core.op.PushOperationResult;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.WorkbenchStyledLabelProvider;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.IElementComparer;
-import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.StyledString;
@@ -51,6 +49,8 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.Tree;
+import org.eclipse.ui.OpenAndLinkWithEditorHelper;
+import org.eclipse.ui.model.IWorkbenchAdapter3;
 
 /**
  * Table displaying push operation results.
@@ -110,12 +110,8 @@ class PushResultTable {
 		final IStyledLabelProvider styleProvider = new WorkbenchStyledLabelProvider() {
 
 			public StyledString getStyledText(Object element) {
-				// TODO Replace with use of IWorkbenchAdapter3 when 3.6 is no
-				// longer supported
-				if (element instanceof RefUpdateElement)
-					return ((RefUpdateElement) element).getStyledText(element);
-				if (element instanceof RepositoryCommit)
-					return ((RepositoryCommit) element).getStyledText(element);
+				if (element instanceof IWorkbenchAdapter3)
+					return ((IWorkbenchAdapter3) element).getStyledText(element);
 
 				return super.getStyledText(element);
 			}
@@ -210,17 +206,28 @@ class PushResultTable {
 			}
 		});
 
-		treeViewer.addOpenListener(new IOpenListener() {
-
-			public void open(OpenEvent event) {
-				ISelection selection = event.getSelection();
+		new OpenAndLinkWithEditorHelper(treeViewer) {
+			@Override
+			protected void linkToEditor(ISelection selection) {
+				// Not supported
+			}
+			@Override
+			protected void open(ISelection selection, boolean activate) {
+				handleOpen(selection, OpenStrategy.activateOnOpen());
+			}
+			@Override
+			protected void activate(ISelection selection) {
+				handleOpen(selection, true);
+			}
+			private void handleOpen(ISelection selection, boolean activateOnOpen) {
 				if (selection instanceof IStructuredSelection)
 					for (Object element : ((IStructuredSelection) selection)
 							.toArray())
 						if (element instanceof RepositoryCommit)
-							CommitEditor.openQuiet((RepositoryCommit) element);
+							CommitEditor.openQuiet((RepositoryCommit) element, activateOnOpen);
 			}
-		});
+		};
+
 	}
 
 	private void addToolbar(Composite parent) {

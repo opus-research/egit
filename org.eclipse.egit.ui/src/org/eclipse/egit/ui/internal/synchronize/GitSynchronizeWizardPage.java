@@ -27,10 +27,10 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.JFacePreferences;
@@ -117,7 +117,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 		TreeViewerColumn projectsColumn = new TreeViewerColumn(treeViewer,
 				SWT.LEAD);
 		projectsColumn.getColumn().setText(
-				UIText.GitBranchSynchronizeWizardPage_repositories);
+				UIText.GitBranchSynchronizeWizardPage_repository);
 		projectsColumn.getColumn().setImage(repositoryImage);
 		projectsColumn.setLabelProvider(new StyledCellLabelProvider() {
 			@Override

@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2012 GitHub Inc.
+ *  Copyright (c) 2012, 2013 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
+ *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
  *****************************************************************************/
 package org.eclipse.egit.ui.submodule;
 
@@ -17,7 +18,7 @@ import java.io.File;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestBase;
@@ -26,7 +27,6 @@ import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -42,7 +42,7 @@ public class SubmoduleSyncTest extends GitRepositoriesViewTestBase {
 
 	private static final String SYNC_SUBMODULE_CONTEXT_MENU_LABEL = "SubmoduleSyncCommand.label";
 
-	private static File repositoryFile;
+	private File repositoryFile;
 
 	@Before
 	public void before() throws Exception {
@@ -60,7 +60,7 @@ public class SubmoduleSyncTest extends GitRepositoriesViewTestBase {
 		assertProjectExistence(PROJ1, true);
 		refreshAndWait();
 		assertHasRepo(repositoryFile);
-		FileRepository repo = lookupRepository(repositoryFile);
+		Repository repo = lookupRepository(repositoryFile);
 
 		SubmoduleAddCommand command = new SubmoduleAddCommand(repo);
 		String path = "sub";
@@ -70,6 +70,7 @@ public class SubmoduleSyncTest extends GitRepositoriesViewTestBase {
 		command.setURI(uri);
 		Repository subRepo = command.call();
 		assertNotNull(subRepo);
+		subRepo.close();
 
 		String newUri = "git://server/repo.git";
 		File modulesFile = new File(repo.getWorkTree(),
@@ -99,7 +100,7 @@ public class SubmoduleSyncTest extends GitRepositoriesViewTestBase {
 				.expandNode(
 						UIText.RepositoriesViewLabelProvider_SubmodulesNodeText)
 				.select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
+		ContextMenuHelper.clickContextMenuSync(tree, myUtil
 				.getPluginLocalizedValue(SYNC_SUBMODULE_CONTEXT_MENU_LABEL));
 		TestUtil.joinJobs(JobFamilies.SUBMODULE_SYNC);
 		refreshAndWait();

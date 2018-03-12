@@ -22,14 +22,13 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
-import org.eclipse.core.runtime.jobs.IJobChangeListener;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.PullOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.api.PullResult;
@@ -42,8 +41,7 @@ import org.eclipse.ui.PlatformUI;
 /**
  * UI wrapper for {@link PullOperation}
  */
-public class PullOperationUI extends JobChangeAdapter implements
-		IJobChangeListener {
+public class PullOperationUI extends JobChangeAdapter {
 	private static final IStatus NOT_TRIED_STATUS = new Status(IStatus.ERROR,
 			Activator.getPluginId(), UIText.PullOperationUI_NotTriedMessage);
 

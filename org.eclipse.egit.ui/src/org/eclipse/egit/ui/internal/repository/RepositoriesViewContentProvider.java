@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -34,7 +35,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode;
@@ -66,10 +67,14 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevObject;
+import org.eclipse.jgit.revwalk.RevTag;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -259,18 +264,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case TAGS: {
-			List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
-
-			try {
-				for (Entry<String, Ref> refEntry : repo.getRefDatabase()
-						.getRefs(Constants.R_TAGS).entrySet()) {
-					refs.add(new TagNode(node, repo, refEntry.getValue()));
-				}
-			} catch (IOException e) {
-				return handleException(e, node);
-			}
-
-			return refs.toArray();
+			return getTagsChildren(node, repo);
 		}
 
 		case ADDITIONALREFS: {
@@ -435,8 +429,17 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 						.getRepository());
 				while (walk.next()) {
 					Repository subRepo = walk.getRepository();
-					if (subRepo != null)
-						children.add(new RepositoryNode(node, subRepo));
+					if (subRepo != null) {
+						Repository cachedRepo = null;
+						try {
+							cachedRepo = repositoryCache
+								.lookupRepository(subRepo.getDirectory());
+						} finally {
+							subRepo.close();
+						}
+						if (cachedRepo != null)
+							children.add(new RepositoryNode(node, cachedRepo));
+					}
 				}
 			} catch (IOException e) {
 				handleException(e, node);
@@ -476,6 +479,45 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 	}
 
+	private Object[] getTagsChildren(RepositoryTreeNode parentNode,
+			Repository repo) {
+		List<RepositoryTreeNode<Ref>> nodes = new ArrayList<RepositoryTreeNode<Ref>>();
+
+		RevWalk walk = new RevWalk(repo);
+		walk.setRetainBody(true);
+		try {
+			Map<String, Ref> tagRefs = getRefs(repo, Constants.R_TAGS);
+			for (Ref tagRef : tagRefs.values()) {
+				ObjectId objectId = tagRef.getLeaf().getObjectId();
+				RevObject revObject = walk.parseAny(objectId);
+				RevObject peeledObject = walk.peel(revObject);
+				TagNode tagNode = createTagNode(parentNode, repo, tagRef,
+						revObject, peeledObject);
+				nodes.add(tagNode);
+			}
+		} catch (IOException e) {
+			return handleException(e, parentNode);
+		} finally {
+			walk.release();
+		}
+
+		return nodes.toArray();
+	}
+
+	private TagNode createTagNode(RepositoryTreeNode parentNode,
+			Repository repo, Ref ref, RevObject revObject,
+			RevObject peeledObject) {
+		boolean annotated = (revObject instanceof RevTag);
+		if (peeledObject instanceof RevCommit) {
+			RevCommit commit = (RevCommit) peeledObject;
+			String id = commit.getId().name();
+			String message = commit.getShortMessage();
+			return new TagNode(parentNode, repo, ref, annotated, id, message);
+		} else {
+			return new TagNode(parentNode, repo, ref, annotated, "", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+	}
+
 	private Object[] handleException(Exception e, RepositoryTreeNode parentNode) {
 		Activator.handleError(e.getMessage(), e, false);
 		// add a node indicating that there was an Exception
@@ -510,8 +552,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			return true;
 		case TAGS:
 			try {
-				return !repo.getRefDatabase().getRefs(Constants.R_TAGS)
-						.isEmpty();
+				return !getRefs(repo, Constants.R_TAGS).isEmpty();
 			} catch (IOException e) {
 				return true;
 			}

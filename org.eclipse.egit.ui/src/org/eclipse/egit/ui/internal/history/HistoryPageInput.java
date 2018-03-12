@@ -17,7 +17,7 @@ import java.util.List;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -69,9 +69,9 @@ public class HistoryPageInput {
 	public HistoryPageInput(final Repository repository, final File[] fileItems) {
 		this.repo = repository;
 		list = null;
-		if (fileItems.length == 1) {
+		if (fileItems.length == 1 && fileItems[0].isFile()) {
 			singleItem = fileItems[0];
-			singleFile = Boolean.valueOf(fileItems[0].isFile());
+			singleFile = fileItems[0];
 		} else {
 			singleItem = null;
 			singleFile = null;

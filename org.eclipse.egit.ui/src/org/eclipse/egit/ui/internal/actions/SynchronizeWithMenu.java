@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,15 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.internal.synchronize.GitSynchronizeWizard;
 import org.eclipse.jface.action.ContributionItem;
@@ -89,7 +88,7 @@ public class SynchronizeWithMenu extends ContributionItem implements
 		if (srv == null)
 			return;
 		final IResource selectedResource = getSelection();
-		if (selectedResource == null)
+		if (selectedResource == null || selectedResource.isLinked(IResource.CHECK_ANCESTORS))
 			return;
 
 		RepositoryMapping mapping = RepositoryMapping
@@ -148,9 +147,9 @@ public class SynchronizeWithMenu extends ContributionItem implements
 					try {
 						data = new GitSynchronizeData(repo, HEAD, name, true);
 						if (!(selectedResource instanceof IProject)) {
-							HashSet<IContainer> containers = new HashSet<IContainer>();
-							containers.add((IContainer) selectedResource);
-							data.setIncludedPaths(containers);
+							HashSet<IResource> resources = new HashSet<IResource>();
+							resources.add(selectedResource);
+							data.setIncludedResources(resources);
 						}
 
 						GitModelSynchronize.launch(data, new IResource[] { selectedResource });

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2007, IBM Corporation and others
+ * Copyright (C) 2007, 2013 IBM Corporation and others.
  * Copyright (C) 2007, Dave Watson <dwatson@mimvista.com>
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
@@ -33,9 +33,9 @@ import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ExceptionCollector;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -47,11 +47,12 @@ import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.TextProcessor;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.team.core.Team;
 import org.eclipse.team.internal.ui.Utils;
 import org.eclipse.team.ui.ISharedImages;
 import org.eclipse.team.ui.TeamImages;
@@ -85,11 +86,16 @@ public class GitLightweightDecorator extends LabelProvider implements
 			IStatus.ERROR, Activator.getDefault().getLog());
 
 	private static String[] fonts = new String[]  {
-		UIPreferences.THEME_UncommittedChangeFont};
+			UIPreferences.THEME_UncommittedChangeFont,
+			UIPreferences.THEME_IgnoredResourceFont };
 
 	private static String[] colors = new String[] {
 		UIPreferences.THEME_UncommittedChangeBackgroundColor,
-		UIPreferences.THEME_UncommittedChangeForegroundColor};
+			UIPreferences.THEME_UncommittedChangeForegroundColor,
+			UIPreferences.THEME_IgnoredResourceBackgroundColor,
+			UIPreferences.THEME_IgnoredResourceForegroundColor };
+
+	private static RGB defaultBackgroundRgb;
 
 	/**
 	 * Constructs a new Git resource decorator
@@ -115,7 +121,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @param actColors color ids to cache
 	 */
 	private void ensureFontAndColorsCreated(final String[] actFonts, final String[] actColors) {
-		Display.getDefault().syncExec(new Runnable() {
+		final Display display = Display.getDefault();
+		display.syncExec(new Runnable() {
 			public void run() {
 				ITheme theme  = PlatformUI.getWorkbench().getThemeManager().getCurrentTheme();
 				for (int i = 0; i < actColors.length; i++) {
@@ -125,6 +132,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 				for (int i = 0; i < actFonts.length; i++) {
 					theme.getFontRegistry().get(actFonts[i]);
 				}
+				defaultBackgroundRgb = display.getSystemColor(
+						SWT.COLOR_LIST_BACKGROUND).getRGB();
 			}
 		});
 	}
@@ -160,14 +169,13 @@ public class GitLightweightDecorator extends LabelProvider implements
 			return;
 
 		final IResource resource = getResource(element);
-		if (resource == null)
-			decorateResourceMapping(element, decoration);
-		else {
-			try {
+		try {
+			if (resource == null)
+				decorateResourceMapping(element, decoration);
+			else
 				decorateResource(resource, decoration);
-			} catch(CoreException e) {
-				handleException(resource, e);
-			}
+		} catch (CoreException e) {
+			handleException(resource, e);
 		}
 	}
 
@@ -209,11 +217,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 		if (mapping == null)
 			return null;
 
-		// Don't decorate ignored resources (e.g. bin folder content)
-		if (resource.getType() != IResource.PROJECT
-				&& Team.isIgnoredHint(resource))
-			return null;
-
 		// Cannot decorate linked resources
 		if (mapping.getRepoRelativePath(resource) == null)
 			return null;
@@ -230,12 +233,18 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 *
 	 * @param element the element for which the decoration was initially called
 	 * @param decoration the decoration
+	 * @throws CoreException
 	 */
-	private void decorateResourceMapping(Object element, IDecoration decoration) {
+	private void decorateResourceMapping(Object element, IDecoration decoration) throws CoreException {
 		@SuppressWarnings("restriction")
 		ResourceMapping mapping = Utils.getResourceMapping(element);
 
-		IDecoratableResource decoRes = new DecoratableResourceMapping(mapping);
+		IDecoratableResource decoRes;
+		try {
+			decoRes = new DecoratableResourceMapping(mapping);
+		} catch (IOException e) {
+			throw new CoreException(Activator.createErrorStatus(UIText.Decorator_exceptionMessage, e));
+		}
 
 		/*
 		 *  don't render question marks on working sets. !isTracked() can have two reasons:
@@ -287,7 +296,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		public static final String FOLDER_FORMAT_DEFAULT = "{dirty:>} {name}"; //$NON-NLS-1$
 
 		/** */
-		public static final String PROJECT_FORMAT_DEFAULT ="{dirty:>} {name} [{repository} {branch}{ branch_status}]";  //$NON-NLS-1$
+		public static final String PROJECT_FORMAT_DEFAULT = "{dirty:>} {name}  [{repository} {branch}{ branch_status}]"; //$NON-NLS-1$
 
 		private IPreferenceStore store;
 
@@ -364,31 +373,48 @@ public class GitLightweightDecorator extends LabelProvider implements
 		 */
 		public void decorate(IDecoration decoration,
 				IDecoratableResource resource) {
+			decorateFontAndColour(decoration, resource);
+
 			if (resource.isIgnored())
 				return;
 
 			decorateText(decoration, resource);
 			decorateIcons(decoration, resource);
-			decorateFontAndColour(decoration, resource);
 		}
 
 		private void decorateFontAndColour(IDecoration decoration,
 				IDecoratableResource resource) {
 			ITheme current = PlatformUI.getWorkbench().getThemeManager().getCurrentTheme();
 			if (resource.isIgnored()) {
-				return;
-			}
-			if (!resource.isTracked()
+				Color bc = current.getColorRegistry().get(
+						UIPreferences.THEME_IgnoredResourceBackgroundColor);
+				Color fc = current.getColorRegistry().get(
+						UIPreferences.THEME_IgnoredResourceForegroundColor);
+				Font f = current.getFontRegistry().get(
+						UIPreferences.THEME_IgnoredResourceFont);
+
+				setBackgroundColor(decoration, bc);
+				decoration.setForegroundColor(fc);
+				decoration.setFont(f);
+			} else if (!resource.isTracked()
 					|| resource.isDirty()
 					|| resource.staged() != Staged.NOT_STAGED) {
 				Color bc = current.getColorRegistry().get(UIPreferences.THEME_UncommittedChangeBackgroundColor);
 				Color fc = current.getColorRegistry().get(UIPreferences.THEME_UncommittedChangeForegroundColor);
 				Font f = current.getFontRegistry().get(UIPreferences.THEME_UncommittedChangeFont);
 
-				decoration.setBackgroundColor(bc);
+				setBackgroundColor(decoration, bc);
 				decoration.setForegroundColor(fc);
 				decoration.setFont(f);
 			}
+		}
+
+		private void setBackgroundColor(IDecoration decoration, Color color) {
+			// In case the color is not changed from the default, do not set the
+			// background because it paints over things from the theme such as
+			// alternating line colors (see bug 412183).
+			if (!color.getRGB().equals(defaultBackgroundRgb))
+				decoration.setBackgroundColor(color);
 		}
 
 		private void decorateText(IDecoration decoration,
@@ -403,6 +429,17 @@ public class GitLightweightDecorator extends LabelProvider implements
 			case DecoratableResourceMapping.RESOURCE_MAPPING:
 				format = store
 						.getString(UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
+				break;
+			case DecoratableResourceMapping.WORKING_SET:
+				// working sets will use the project formatting but only if the
+				// repo and branch is available
+				if (resource.getRepositoryName() != null
+						&& resource.getBranch() != null)
+					format = store
+							.getString(UIPreferences.DECORATOR_PROJECTTEXT_DECORATION);
+				else
+					format = store
+							.getString(UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
 				break;
 			case IResource.PROJECT:
 				format = store
@@ -597,7 +634,10 @@ public class GitLightweightDecorator extends LabelProvider implements
 			postLabelEvent();
 		} else if (prop.equals(UIPreferences.THEME_UncommittedChangeBackgroundColor)
 				|| prop.equals(UIPreferences.THEME_UncommittedChangeFont)
-				|| prop.equals(UIPreferences.THEME_UncommittedChangeForegroundColor)) {
+				|| prop.equals(UIPreferences.THEME_UncommittedChangeForegroundColor)
+				|| prop.equals(UIPreferences.THEME_IgnoredResourceFont)
+				|| prop.equals(UIPreferences.THEME_IgnoredResourceBackgroundColor)
+				|| prop.equals(UIPreferences.THEME_IgnoredResourceForegroundColor)) {
 			ensureFontAndColorsCreated(fonts, colors);
 			postLabelEvent(); // TODO do I really need this?
 		}

@@ -12,6 +12,7 @@ package org.eclipse.egit.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -23,20 +24,33 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.lib.CheckoutEntry;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.ReflogEntry;
+import org.eclipse.jgit.lib.ReflogReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.WorkingTreeIterator;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.util.FS;
 import org.osgi.service.prefs.BackingStoreException;
 
@@ -52,7 +66,7 @@ public class RepositoryUtil {
 
 	private final Map<String, String> repositoryNameCache = new HashMap<String, String>();
 
-	private final IEclipsePreferences prefs = new InstanceScope()
+	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
 
 	/**
@@ -104,6 +118,34 @@ public class RepositoryUtil {
 
 			if (!ObjectId.isId(commitId)) {
 				return null;
+			}
+
+			try {
+				ReflogReader reflogReader = repository.getReflogReader(Constants.HEAD);
+				if (reflogReader != null) {
+					List<ReflogEntry> lastEntry = reflogReader.getReverseEntries();
+					for (ReflogEntry entry : lastEntry) {
+						if (entry.getNewId().name().equals(commitId)) {
+							CheckoutEntry checkoutEntry = entry.parseCheckout();
+							if (checkoutEntry != null) {
+								Ref ref = repository.getRef(checkoutEntry.getToBranch());
+								if (ref != null) {
+									if (ref.getObjectId().getName()
+											.equals(commitId))
+										return checkoutEntry.getToBranch();
+									ref = repository.peel(ref);
+								}
+								if (ref != null) {
+									ObjectId id = ref.getPeeledObjectId();
+									if (id != null && id.getName().equals(commitId))
+										return checkoutEntry.getToBranch();
+								}
+							}
+						}
+					}
+				}
+			} catch (IOException e) {
+				// ignore here
 			}
 
 			Map<String, String> cacheEntry = commitMappingCache.get(repository
@@ -230,29 +272,29 @@ public class RepositoryUtil {
 	/**
 	 * Return a cached UI "name" for a Repository
 	 * <p>
-	 * This uses the name of the parent of the repository's directory.
+	 * This uses the name of the working directory. In case of a bare
+	 * repository, the repository directory name is used.
 	 *
 	 * @param repository
 	 * @return the name
 	 */
 	public String getRepositoryName(final Repository repository) {
-		File gitDir = repository.getDirectory();
-		if (gitDir == null)
+		File dir;
+		// Use working directory name for non-bare repositories
+		if (!repository.isBare())
+			dir = repository.getWorkTree();
+		else
+			dir = repository.getDirectory();
+
+		if (dir == null)
 			return ""; //$NON-NLS-1$
 
-		// Use parent file for non-bare repositories
-		if (!repository.isBare()) {
-			gitDir = gitDir.getParentFile();
-			if (gitDir == null)
-				return ""; //$NON-NLS-1$
-		}
-
 		synchronized (repositoryNameCache) {
-			final String path = gitDir.getPath().toString();
+			final String path = dir.getPath().toString();
 			String name = repositoryNameCache.get(path);
 			if (name != null)
 				return name;
-			name = gitDir.getName();
+			name = dir.getName();
 			repositoryNameCache.put(path, name);
 			return name;
 		}
@@ -310,7 +352,9 @@ public class RepositoryUtil {
 		synchronized (prefs) {
 
 			if (!FileKey.isGitRepository(repositoryDir, FS.DETECTED))
-				throw new IllegalArgumentException();
+				throw new IllegalArgumentException(MessageFormat.format(
+						CoreText.RepositoryUtil_DirectoryIsNotGitDirectory,
+						repositoryDir));
 
 			String dirString = getPath(repositoryDir);
 
@@ -384,5 +428,137 @@ public class RepositoryUtil {
 	 */
 	public boolean contains(final String repositoryDir) {
 		return getRepositories().contains(repositoryDir);
+	}
+
+	/**
+	 * Get short branch text for given repository
+	 *
+	 * @param repository
+	 * @return short branch text
+	 * @throws IOException
+	 */
+	public String getShortBranch(Repository repository) throws IOException {
+		Ref head = repository.getRef(Constants.HEAD);
+		if (head == null || head.getObjectId() == null)
+			return CoreText.RepositoryUtil_noHead;
+
+		if (head.isSymbolic())
+			return repository.getBranch();
+
+		String id = head.getObjectId().name();
+		String ref = mapCommitToRef(repository, id, false);
+		if (ref != null)
+			return Repository.shortenRefName(ref) + ' ' + id.substring(0, 7);
+		else
+			return id.substring(0, 7);
+	}
+
+	/**
+	 * Resolve HEAD and parse the commit. Returns null if HEAD does not exist or
+	 * could not be parsed.
+	 * <p>
+	 * Only use this if you don't already have to work with a RevWalk.
+	 *
+	 * @param repository
+	 * @return the commit or null if HEAD does not exist or could not be parsed.
+	 * @since 2.2
+	 */
+	public RevCommit parseHeadCommit(Repository repository) {
+		RevWalk walk = null;
+		try {
+			Ref head = repository.getRef(Constants.HEAD);
+			if (head == null || head.getObjectId() == null)
+				return null;
+
+			walk = new RevWalk(repository);
+			RevCommit commit = walk.parseCommit(head.getObjectId());
+			return commit;
+		} catch (IOException e) {
+			return null;
+		} finally {
+			if (walk != null)
+				walk.release();
+		}
+	}
+
+	/**
+	 * Checks if resource with given path is to be ignored.
+	 *
+	 * @param path
+	 *            Path to be checked
+	 * @return true if the path matches an ignore rule or no repository mapping
+	 *         could be found, false otherwise
+	 * @throws IOException
+	 * @since 2.3
+	 */
+	public static boolean isIgnored(IPath path) throws IOException {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
+		if (mapping == null)
+			return true; // Linked resources may not be mapped
+		Repository repository = mapping.getRepository();
+		String repoRelativePath = mapping.getRepoRelativePath(path);
+		TreeWalk walk = new TreeWalk(repository);
+		try {
+			walk.addTree(new FileTreeIterator(repository));
+			walk.setFilter(PathFilter.create(repoRelativePath));
+			while (walk.next()) {
+				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
+						WorkingTreeIterator.class);
+				if (walk.getPathString().equals(repoRelativePath))
+					return workingTreeIterator.isEntryIgnored();
+				if (workingTreeIterator.getEntryFileMode()
+						.equals(FileMode.TREE))
+					walk.enterSubtree();
+			}
+		} finally {
+			walk.release();
+		}
+		return false;
+	}
+
+	/**
+	 * Get the fast-forward setting for current branch on the given repository.
+	 *
+	 * @param repository
+	 *            the repository to check
+	 * @return the fast-forward mode for the current branch
+	 * @since 3.0
+	 */
+	public FastForwardMode getFastForwardMode(Repository repository) {
+		FastForwardMode ffmode = FastForwardMode.valueOf(repository.getConfig()
+				.getEnum(ConfigConstants.CONFIG_KEY_MERGE, null,
+						ConfigConstants.CONFIG_KEY_FF,
+						FastForwardMode.Merge.TRUE));
+		ffmode = repository.getConfig().getEnum(
+				ConfigConstants.CONFIG_BRANCH_SECTION,
+				getCurrentBranch(repository),
+				ConfigConstants.CONFIG_KEY_MERGEOPTIONS, ffmode);
+		return ffmode;
+	}
+
+	private String getCurrentBranch(Repository repository) {
+		try {
+			return repository.getBranch();
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Checks if given repository is in the 'detached HEAD' state.
+	 *
+	 * @param repository
+	 *            the repository to check
+	 * @return <code>true</code> if the repository is in the 'detached HEAD'
+	 *         state, <code>false</code> if it's not or an error occurred
+	 * @since 3.2
+	 */
+	public static boolean isDetachedHead(Repository repository) {
+		try {
+			return ObjectId.isId(repository.getFullBranch());
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+		}
+		return false;
 	}
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org> and others
+ * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,17 +19,20 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.eclipse.compare.ISharedDocumentAdapter;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.events.IndexChangedEvent;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
 import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
 
@@ -38,7 +41,7 @@ import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
  */
 public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 
-	private final String path;
+	private final IPath path;
 
 	private boolean exists;
 
@@ -55,17 +58,17 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 	/**
 	 * @param path absolute path to non-workspace file
 	 */
-	public LocalNonWorkspaceTypedElement(String path) {
-		super(ROOT.getFile(new Path(path)));
+	public LocalNonWorkspaceTypedElement(IPath path) {
+		super(ROOT.getFile(path));
 		this.path = path;
 
-		exists = new File(path).exists();
+		exists = path.toFile().exists();
 	}
 
 	@Override
 	public InputStream getContents() throws CoreException {
 		try {
-			return new FileInputStream(path);
+			return new FileInputStream(path.toFile());
 		} catch (FileNotFoundException e) {
 			Activator.error(e.getMessage(), e);
 		}
@@ -83,7 +86,7 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 	/** {@inheritDoc} */
 	@Override
 	public void update() {
-		exists = getResource().getFullPath().toFile().exists();
+		exists = path.toFile().exists();
 	}
 
 	/** {@inheritDoc} */
@@ -118,32 +121,32 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 			if (isConnected()) {
 				super.commit(monitor);
 			} else {
-				IResource resource = getResource();
-				if (resource instanceof IFile) {
-					FileOutputStream out = null;
-					File file = ((IFile) resource).getFullPath().toFile();
-					try {
-						if (!file.exists())
-							file.createNewFile();
-						out = new FileOutputStream(file);
-						out.write(getContent());
-						fDirty = false;
-					} catch (FileNotFoundException e) {
-						throw new CoreException(null);
-					} catch (IOException e) {
-						throw new CoreException(null);
-					} finally {
-						fireContentChanged();
-						RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-						if (mapping != null) {
-							mapping.getRepository().fireEvent(new IndexChangedEvent());
+				FileOutputStream out = null;
+				File file = path.toFile();
+				try {
+					if (!file.exists())
+						FileUtils.createNewFile(file);
+					out = new FileOutputStream(file);
+					out.write(getContent());
+					fDirty = false;
+				} catch (IOException e) {
+					throw new CoreException(
+							new Status(
+									IStatus.ERROR,
+									Activator.getPluginId(),
+									UIText.LocalNonWorkspaceTypedElement_errorWritingContents,
+									e));
+				} finally {
+					fireContentChanged();
+					RepositoryMapping mapping = RepositoryMapping.getMapping(path);
+					if (mapping != null)
+						mapping.getRepository().fireEvent(new IndexChangedEvent());
+					if (out != null)
+						try {
+							out.close();
+						} catch (IOException ex) {
+							// ignore
 						}
-						if (out != null)
-							try {
-								out.close();
-							} catch (IOException ex) {
-							}
-					}
 				}
 			}
 		}
@@ -151,7 +154,7 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 
 	/** {@inheritDoc} */
 	@Override
-	public boolean isDirty() {
+	public synchronized boolean isDirty() {
 		return fDirty || (sharedDocumentAdapter != null && sharedDocumentAdapter.hasBufferedContents());
 	}
 

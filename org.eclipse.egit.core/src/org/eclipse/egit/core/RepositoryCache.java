@@ -16,14 +16,16 @@ import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 /**
  * Central cache for Repository instances
@@ -46,13 +48,13 @@ public class RepositoryCache {
 	 */
 	public synchronized Repository lookupRepository(final File gitDir)
 			throws IOException {
+		prune(repositoryCache);
 		Reference<Repository> r = repositoryCache.get(gitDir);
 		Repository d = r != null ? r.get() : null;
 		if (d == null) {
-			d = new FileRepository(gitDir);
+			d = FileRepositoryBuilder.create(gitDir);
 			repositoryCache.put(gitDir, new WeakReference<Repository>(d));
 		}
-		prune(repositoryCache);
 		return d;
 	}
 
@@ -60,20 +62,75 @@ public class RepositoryCache {
 	 * @return all Repository instances contained in the cache
 	 */
 	public synchronized Repository[] getAllRepositories() {
-		List<Repository> result = new ArrayList<Repository>();
-		Collection<Reference<Repository>> values = repositoryCache.values();
-		for(Reference<Repository> ref:values) {
-			Repository repo = ref.get();
-			if(repo!=null)
-				result.add(repo);
+		prune(repositoryCache);
+		List<Repository> repositories = new ArrayList<Repository>();
+		for (Reference<Repository> reference : repositoryCache.values()) {
+			repositories.add(reference.get());
 		}
-		return result.toArray(new Repository[result.size()]);
+		return repositories.toArray(new Repository[repositories.size()]);
 	}
 
-	private static <K, V> void prune(Map<K, Reference<V>> map) {
-		for (final Iterator<Map.Entry<K, Reference<V>>> i = map.entrySet()
+	/**
+	 * Lookup the closest git repository with a working tree containing the
+	 * given resource. If there are repositories nested above in the file system
+	 * hierarchy we select the closest one above the given resource.
+	 *
+	 * @param resource
+	 *            the resource to find the repository for
+	 * @return the git repository which has the given resource in its working
+	 *         tree, or null if none found
+	 * @since 3.2
+	 */
+	public Repository getRepository(final IResource resource) {
+		IPath location = resource.getLocation();
+		if (location == null)
+			return null;
+		return getRepository(location);
+	}
+
+	/**
+	 * Lookup the closest git repository with a working tree containing the
+	 * given file location. If there are repositories nested above in the file
+	 * system hierarchy we select the closest one above the given location.
+	 *
+	 * @param location
+	 *            the file location to find the repository for
+	 * @return the git repository which has the given location in its working
+	 *         tree, or null if none found
+	 * @since 3.2
+	 */
+	public Repository getRepository(final IPath location) {
+		Repository[] repositories = org.eclipse.egit.core.Activator
+				.getDefault().getRepositoryCache().getAllRepositories();
+		Repository repository = null;
+		int largestSegmentCount = 0;
+		for (Repository r : repositories) {
+			if (!r.isBare()) {
+				try {
+					IPath repoPath = new Path(r.getWorkTree()
+							.getCanonicalPath());
+					if (location != null && repoPath.isPrefixOf(location)) {
+						if (repository == null
+								|| repoPath.segmentCount() > largestSegmentCount) {
+							repository = r;
+							largestSegmentCount = repoPath.segmentCount();
+						}
+					}
+				} catch (IOException e) {
+					Activator
+							.error("looking up working tree path of git repository failed", e); //$NON-NLS-1$
+				}
+			}
+		}
+		return repository;
+	}
+
+	private static void prune(Map<File, Reference<Repository>> map) {
+		for (final Iterator<Map.Entry<File, Reference<Repository>>> i = map.entrySet()
 				.iterator(); i.hasNext();) {
-			if (i.next().getValue().get() == null)
+			Repository repository = i.next().getValue().get();
+			if (repository == null
+					|| !repository.getDirectory().exists())
 				i.remove();
 		}
 	}

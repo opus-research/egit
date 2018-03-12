@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,9 +10,13 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.view.repositories;
 
+import static org.eclipse.swtbot.swt.finder.waits.Conditions.shellCloses;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -20,19 +24,19 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.utils.TableCollection;
@@ -44,7 +48,8 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.IWorkingSetManager;
 import org.eclipse.ui.PlatformUI;
-import org.junit.BeforeClass;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -66,10 +71,11 @@ import org.junit.runner.RunWith;
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
-	private static File repositoryFile;
+	private File repositoryFile;
 
-	@BeforeClass
-	public static void beforeClass() throws Exception {
+	@Before
+	public void beforeClass() throws Exception {
+		setVerboseBranchMode(false);
 		repositoryFile = createProjectAndCommitToRepository();
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				repositoryFile);
@@ -113,17 +119,23 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertTrue(bot.activeEditor().getTitle().equals(FILE1));
 		bot.activeEditor().close();
 		// open a branch (checkout)
-		item = myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile)
-				.expand().getNode("master").doubleClick();
-		refreshAndWait();
+		checkoutWithDoubleClick(tree, "master");
 		String contentMaster = getTestFileContent();
-		item = myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile)
-				.expand().getNode("stable").doubleClick();
-		refreshAndWait();
+		checkoutWithDoubleClick(tree, "stable");
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		String contentStable = getTestFileContent();
 		assertTrue("Content of master and stable should differ", !contentMaster
 				.equals(contentStable));
+	}
+
+	private void checkoutWithDoubleClick(SWTBotTree tree, String branch)
+			throws Exception {
+		myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile).expand()
+				.getNode(branch).doubleClick();
+		SWTBotShell shell = bot
+				.shell(UIText.RepositoriesView_CheckoutConfirmationTitle);
+		shell.bot().button(IDialogConstants.OK_LABEL).click();
+		refreshAndWait();
 	}
 
 	/**
@@ -195,9 +207,9 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		SWTBotTreeItem item = myRepoViewUtil.getRootItem(tree, repositoryFile);
 		item.select();
-		ContextMenuHelper.clickContextMenu(tree,
+		ContextMenuHelper.clickContextMenuSync(tree,
 				myUtil.getPluginLocalizedValue("ShowIn"),
-				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
+				"Properties");
 		SWTBotView propertieView = bot.viewById("org.eclipse.ui.views.PropertySheet");
 		assertTrue(propertieView.isActive());
 	}
@@ -240,14 +252,14 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals(Constants.DOT_GIT, wizardNode);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		shell.bot().label("Import Projects"); // wait for import projects page
-		assertTrue(shell.bot().tree().getAllItems().length == 0);
+		assertEquals(0, shell.bot().tree().getAllItems().length);
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// go to project with .project
 		shell.bot().tree().getAllItems()[0].getNode(PROJ1).select();
 		// next is 1
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		bot.button(UIText.WizardProjectsImportPage_deselectAll).click();
-		assertTrue(shell.bot().tree().getAllItems().length == 1);
+		assertEquals(1, shell.bot().tree().getAllItems().length);
 		assertTrue(!shell.bot().button(IDialogConstants.FINISH_LABEL)
 				.isEnabled());
 		shell.bot().button(UIText.WizardProjectsImportPage_selectAll).click();
@@ -282,7 +294,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals(PROJ2, wizardNode);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		shell.bot().text(" " + UIText.GitProjectsImportPage_NoProjectsMessage);
-		assertTrue(shell.bot().tree().getAllItems().length == 0);
+		assertEquals(0, shell.bot().tree().getAllItems().length);
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// import as general
 		shell.bot().radio(UIText.GitSelectWizardPage_ImportAsGeneralButton).click();
@@ -339,7 +351,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		shell.bot().text(UIText.WizardProjectsImportPage_ImportProjectsDescription);
 		shell.bot().tree().getAllItems()[0].check();
 		// add to working set
-		shell.bot().checkBox().select();
+		shell.bot().checkBox("Add project to working sets").select();
 		// create new working set
 		shell.bot().button("Select...").click();
 		SWTBotShell workingSetDialog = bot.shell("Select Working Sets");
@@ -394,51 +406,35 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	}
 
 	@Test
-	public void testLinkWithSelection() throws Exception {
+	public void testLinkWithSelectionNavigator() throws Exception {
 		deleteAllProjects();
 		shareProjects(repositoryFile);
-		SWTBotPerspective perspective = null;
-		try {
-			perspective = bot.activePerspective();
-			bot.perspectiveById("org.eclipse.ui.resourcePerspective")
-					.activate();
-			SWTBotTree tree = getOrOpenView().bot().tree();
-			myRepoViewUtil.getRootItem(tree, repositoryFile).select();
-			// the selection should be root
-			assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
+		SWTBotTree tree = getOrOpenView().bot().tree();
+		myRepoViewUtil.getRootItem(tree, repositoryFile).select();
+		// the selection should be root
+		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
 
-			SWTBotTree projectExplorerTree = bot.viewById(
-					"org.eclipse.ui.navigator.ProjectExplorer").bot().tree();
-			getProjectItem(projectExplorerTree, PROJ1).select();
+		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
+		getProjectItem(projectExplorerTree, PROJ1).select();
 
-			// the selection should be still be root
-			assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
+		// the selection should be still be root
+		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
 
-			// activate the link with selection
-			getOrOpenView().toolbarButton(
-					myUtil.getPluginLocalizedValue("LinkWithSelectionCommand"))
-					.click();
+		// activate the link with selection
+		toggleLinkWithSelection();
 
-			// the selection should be still be root
-			assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
+		// the selection should be still be root
+		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
 
-			// select again the project
-			projectExplorerTree = bot.viewById(
-					"org.eclipse.ui.navigator.ProjectExplorer").bot().tree();
-			getProjectItem(projectExplorerTree, PROJ1).select();
+		// select again the project
+		projectExplorerTree = TestUtil.getExplorerTree();
+		getProjectItem(projectExplorerTree, PROJ1).select();
 
-			// the selection should be project
-			assertTrue(tree.selection().get(0, 0).equals(PROJ1));
+		// the selection should be project
+		assertTrue(tree.selection().get(0, 0).equals(PROJ1));
 
-			// deactivate the link with selection
-			getOrOpenView().toolbarButton(
-					myUtil.getPluginLocalizedValue("LinkWithSelectionCommand"))
-					.click();
-
-		} finally {
-			if (perspective != null)
-				perspective.activate();
-		}
+		// deactivate the link with selection
+		toggleLinkWithSelection();
 	}
 
 	/**
@@ -447,93 +443,84 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	 * @throws Exception
 	 */
 	@Test
-	public void testLinkWithEditor() throws Exception {
+	@Ignore("'Link with Selection' does not activate editor on selection change (bug 409722).")
+	public void testLinkWithSelectionEditor() throws Exception {
 		deleteAllProjects();
 		shareProjects(repositoryFile);
-		SWTBotPerspective perspective = null;
-		try {
-			perspective = bot.activePerspective();
-			bot.perspectiveById("org.eclipse.ui.resourcePerspective")
-					.activate();
-			SWTBotTree tree = getOrOpenView().bot().tree();
-			myRepoViewUtil.getRootItem(tree, repositoryFile).select();
-			// the selection should be root
-			assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
+		SWTBotTree tree = getOrOpenView().bot().tree();
+		myRepoViewUtil.getRootItem(tree, repositoryFile).select();
+		// the selection should be root
+		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
 
-			SWTBotView view = bot
-					.viewById("org.eclipse.ui.navigator.ProjectExplorer");
-			SWTBotTree projectExplorerTree = view.bot().tree();
+		SWTBotView view = TestUtil.showExplorerView();
+		SWTBotTree projectExplorerTree = view.bot().tree();
 
-			SWTBotTreeItem item = getProjectItem(projectExplorerTree, PROJ1)
-					.expand().getNode(FOLDER).expand().getNode(FILE1);
-			view.show();
-			item.doubleClick();
+		SWTBotTreeItem item = getProjectItem(projectExplorerTree, PROJ1)
+				.expand().getNode(FOLDER).expand().getNode(FILE1);
+		view.show();
+		item.doubleClick();
 
-			item = getProjectItem(projectExplorerTree, PROJ1).expand().getNode(
-					FOLDER).expand().getNode(FILE2);
-			view.show();
-			item.doubleClick();
-			// now we should have two editors
+		item = getProjectItem(projectExplorerTree, PROJ1).expand()
+				.getNode(FOLDER).expand().getNode(FILE2);
+		view.show();
+		item.doubleClick();
+		// now we should have two editors
 
-			// the selection should be still be root
-			assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
+		// the selection should be still be root
+		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
 
-			// activate the link with selection
-			getOrOpenView().toolbarButton("Link with Editor").click();
-			bot.editorByTitle(FILE2).show();
-			// the selection should have changed to the latest editor
-			TestUtil.waitUntilTreeHasSelectedNodeWithText(bot, tree, FILE2, 10000);
+		// activate the link with selection
+		toggleLinkWithSelection();
 
-			bot.editorByTitle(FILE1).show();
-			// selection should have changed
-			TestUtil.waitUntilTreeHasSelectedNodeWithText(bot, tree, FILE1, 10000);
+		bot.editorByTitle(FILE2).show();
+		// the selection should have changed to the latest editor
+		TestUtil.waitUntilTreeHasSelectedNodeWithText(bot, tree, FILE2, 10000);
 
-			// deactivate the link with editor
-			getOrOpenView().toolbarButton("Link with Editor").click();
+		bot.editorByTitle(FILE1).show();
+		// selection should have changed
+		TestUtil.waitUntilTreeHasSelectedNodeWithText(bot, tree, FILE1, 10000);
 
-			bot.editorByTitle(FILE2).show();
-			// the selection should be still be test.txt
-			TestUtil.waitUntilTreeHasSelectedNodeWithText(bot, tree, FILE1, 10000);
+		// deactivate the link with editor
+		toggleLinkWithSelection();
 
-			bot.editorByTitle(FILE1).show();
+		bot.editorByTitle(FILE2).show();
+		// the selection should be still be test.txt
+		TestUtil.waitUntilTreeHasSelectedNodeWithText(bot, tree, FILE1, 10000);
 
-			myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
-					.getNode(PROJ1).expand().getNode(FOLDER).expand().getNode(
-							FILE2).select();
+		bot.editorByTitle(FILE1).show();
 
-			// the editor should still be test.txt
-			assertEquals(FILE1, bot.activeEditor().getTitle());
+		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
+				.getNode(PROJ1).expand().getNode(FOLDER).expand()
+				.getNode(FILE2).select();
 
-			// activate again
-			SWTBotView repoView = getOrOpenView();
-			repoView.toolbarButton("Link with Editor").click();
-			// make sure focus is here
-			// tried to remove this waitInUI but failed.
-			// tried setting focus, waiting for focus, joining RepositoriesView
-			// refresh job
-			waitInUI();
-			myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
-					.getNode(PROJ1).expand().getNode(FOLDER).expand().getNode(
-							FILE2).select();
-			TestUtil.waitUntilEditorIsActive(bot, bot.editorByTitle(FILE2), 10000);
+		// the editor should still be test.txt
+		assertEquals(FILE1, bot.activeEditor().getTitle());
 
-			myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
-					.getNode(PROJ1).expand().getNode(FOLDER).expand().getNode(
-							FILE1).select();
-			TestUtil.waitUntilEditorIsActive(bot, bot.editorByTitle(FILE1), 10000);
+		// activate again
+		toggleLinkWithSelection();
 
-			// deactivate the link with editor
-			getOrOpenView().toolbarButton("Link with Editor").click();
+		// make sure focus is here
+		// tried to remove this waitInUI but failed.
+		// tried setting focus, waiting for focus, joining RepositoriesView
+		// refresh job
+		waitInUI();
+		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
+				.getNode(PROJ1).expand().getNode(FOLDER).expand()
+				.getNode(FILE2).select();
+		TestUtil.waitUntilEditorIsActive(bot, bot.editorByTitle(FILE2), 10000);
 
-			myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
-					.getNode(PROJ1).expand().getNode(FOLDER).expand().getNode(
-							FILE2).select();
-			TestUtil.waitUntilEditorIsActive(bot, bot.editorByTitle(FILE1), 10000);
+		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
+				.getNode(PROJ1).expand().getNode(FOLDER).expand()
+				.getNode(FILE1).select();
+		TestUtil.waitUntilEditorIsActive(bot, bot.editorByTitle(FILE1), 10000);
 
-		} finally {
-			if (perspective != null)
-				perspective.activate();
-		}
+		// deactivate the link with editor
+		toggleLinkWithSelection();
+
+		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
+				.getNode(PROJ1).expand().getNode(FOLDER).expand()
+				.getNode(FILE2).select();
+		TestUtil.waitUntilEditorIsActive(bot, bot.editorByTitle(FILE1), 10000);
 	}
 
 	@Test
@@ -547,14 +534,12 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTreeItem masterNode = localBranchesItem.getNode("master");
 		masterNode.select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("RepoViewCheckout.label"));
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewCreateBranch.label"));
 		SWTBotShell createBranchShell = bot
 				.shell(UIText.CreateBranchWizard_NewBranchTitle);
 		createBranchShell.bot().textWithId("BranchName").setText("abc");
-		createBranchShell.bot().checkBox().deselect();
+		createBranchShell.bot()
+				.checkBox(UIText.CreateBranchPage_CheckoutButton).deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
 		// delete branch
@@ -588,20 +573,22 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell createBranchShell = bot
 				.shell(UIText.CreateBranchWizard_NewBranchTitle);
 		createBranchShell.bot().textWithId("BranchName").setText("abc");
-		createBranchShell.bot().checkBox().deselect();
+		createBranchShell.bot()
+				.checkBox(UIText.CreateBranchPage_CheckoutButton).deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		// create second branch (123)
 		ContextMenuHelper.clickContextMenu(tree, "Create Branch...");
 		createBranchShell = bot.shell(UIText.CreateBranchWizard_NewBranchTitle);
 		createBranchShell.bot().textWithId("BranchName").setText("123");
-		createBranchShell.bot().checkBox().deselect();
+		createBranchShell.bot()
+				.checkBox(UIText.CreateBranchPage_CheckoutButton).deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
 		localBranchesItem = myRepoViewUtil.getLocalBranchesItem(tree,
 				repositoryFile).expand();
 		// delete both
 		localBranchesItem.select("abc", "123");
-		ContextMenuHelper.clickContextMenu(tree, myUtil
+		ContextMenuHelper.clickContextMenuSync(tree, myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		refreshAndWait();
 
@@ -612,4 +599,62 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals("stable", items[1].getText());
 	}
 
+	@Test
+	public void testDeleteFileInProject() throws Exception {
+		SWTBotTree tree = getOrOpenView().bot().tree();
+		refreshAndWait();
+
+		IProject project1 = ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ1);
+		// Make sure that the refresh doesn't happen on delete and cause a timeout
+		project1.refreshLocal(IResource.DEPTH_INFINITE, null);
+
+		SWTBotTreeItem folder = findWorkdirNode(tree, PROJ1, FOLDER);
+		folder.getNode(FILE1).select();
+
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("RepoViewDeleteFile.label"));
+
+		SWTBotShell confirm = bot.shell("Delete Resources");
+		confirm.bot().button(IDialogConstants.OK_LABEL).click();
+		bot.waitUntil(shellCloses(confirm));
+		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
+
+		folder = findWorkdirNode(tree, PROJ1, FOLDER);
+		assertThat(folder.getNodes(), not(hasItem(FILE1)));
+		assertThat(folder.getNodes(), hasItem(FILE2));
+	}
+
+	@Test
+	public void testDeleteFileNotInProject() throws Exception {
+		SWTBotTree tree = getOrOpenView().bot().tree();
+		refreshAndWait();
+
+		SWTBotTreeItem folder = findWorkdirNode(tree, PROJ2, FOLDER);
+		folder.getNode(FILE1).select();
+
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("RepoViewDeleteFile.label"));
+
+		SWTBotShell confirm = bot.shell(UIText.DeleteResourcesOperationUI_confirmActionTitle);
+		confirm.bot().button(IDialogConstants.OK_LABEL).click();
+		bot.waitUntil(shellCloses(confirm));
+		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
+
+		folder = findWorkdirNode(tree, PROJ2, FOLDER);
+		assertThat(folder.getNodes(), not(hasItem(FILE1)));
+		assertThat(folder.getNodes(), hasItem(FILE2));
+	}
+
+	private void toggleLinkWithSelection() throws Exception {
+		getOrOpenView().toolbarButton(
+				myUtil.getPluginLocalizedValue("LinkWithSelectionCommand"))
+				.click();
+	}
+
+	private SWTBotTreeItem findWorkdirNode(SWTBotTree tree, String... nodes) throws Exception {
+		SWTBotTreeItem item = myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand();
+		for (String node : nodes)
+			item = item.getNode(node).expand();
+		return item;
+	}
 }

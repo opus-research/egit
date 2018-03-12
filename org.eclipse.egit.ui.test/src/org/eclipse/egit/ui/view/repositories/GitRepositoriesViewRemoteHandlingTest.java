@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2011 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -17,7 +17,7 @@ import java.io.File;
 import java.util.List;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Repository;
@@ -29,7 +29,7 @@ import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -40,12 +40,12 @@ import org.junit.runner.RunWith;
 public class GitRepositoriesViewRemoteHandlingTest extends
 		GitRepositoriesViewTestBase {
 
-	private static File repositoryFile;
+	private File repositoryFile;
 
-	private static File remoteRepositoryFile;
+	private File remoteRepositoryFile;
 
-	@BeforeClass
-	public static void beforeClass() throws Exception {
+	@Before
+	public void before() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
@@ -55,7 +55,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 	/**
 	 * Verify that remote configuration is shown correctly; also check error
 	 * node display
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -93,16 +93,16 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		assertEquals(2, testnodes.size());
 		List<String> test2nodes = remotesItem.getNode("test2").expand()
 				.getNodes();
-		assertTrue(test2nodes.size() == 2);
+		assertEquals(2, test2nodes.size());
 		// error node should be shown
 		remotesItem.getNode("test3").expand().getNodes();
-		assertTrue(remotesItem.getNode("test3").expand().getNodes().size() == 1);
+		assertEquals(1, remotesItem.getNode("test3").expand().getNodes().size());
 
 		// test the properties view on remote
 		remotesItem.getNode("test").select();
-		ContextMenuHelper.clickContextMenu(tree,
+		ContextMenuHelper.clickContextMenuSync(tree,
 				myUtil.getPluginLocalizedValue("ShowIn"),
-				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
+				"Properties");
 		waitInUI();
 		assertEquals("org.eclipse.ui.views.PropertySheet", bot.activeView()
 				.getReference().getId());
@@ -117,7 +117,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 
 	/**
 	 * Remote configuration scenarios
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -207,7 +207,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertTrue(children.size() == 2);
+		assertEquals(2, children.size());
 		item.getNode(0).select();
 		// we remove the fetch, the URI is copied into push
 		ContextMenuHelper.clickContextMenu(tree, myUtil
@@ -217,7 +217,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertTrue(children.size() == 1);
+		assertEquals(1, children.size());
 		item.getNode(0).select();
 		// now we also remove the push
 		ContextMenuHelper.clickContextMenu(tree, myUtil
@@ -227,7 +227,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertTrue(children.size() == 0);
+		assertEquals(0, children.size());
 
 		myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand().getNode(
 				"testRemote").select();
@@ -326,7 +326,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertTrue(children.size() == 1);
+		assertEquals(1, children.size());
 		item.select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewRemoveRemote.label"));
@@ -339,7 +339,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertTrue(children.size() == 1);
+		assertEquals(1, children.size());
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewRemoveRemote.label"));

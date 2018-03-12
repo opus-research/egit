@@ -1,8 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, Chris Aniszczyk <caniszczyk@gmail.com>
- * Copyright (c) 2011, Matthias Sohn <matthias.sohn@sap.com>
- * and others.
- *
+ * Copyright (c) 2011, 2012 Chris Aniszczyk <caniszczyk@gmail.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,6 +8,7 @@
  * Contributors:
  *   Chris Aniszczyk <caniszczyk@gmail.com> - initial implementation
  *   EclipseSource - Filtered Viewer
+ *   Robin Stocker <robin@nibor.org> - Show In support
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.reflog;
 
@@ -22,9 +20,9 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.reflog.ReflogViewContentProvider.ReflogInput;
@@ -39,14 +37,13 @@ import org.eclipse.jface.layout.TreeColumnLayout;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ColumnWeightData;
-import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
@@ -57,11 +54,11 @@ import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.ReflogEntry;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.storage.file.ReflogEntry;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
@@ -80,7 +77,9 @@ import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
+import org.eclipse.ui.OpenAndLinkWithEditorHelper;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.contexts.IContextService;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.forms.IFormColors;
@@ -89,13 +88,15 @@ import org.eclipse.ui.forms.events.HyperlinkEvent;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ImageHyperlink;
+import org.eclipse.ui.part.IShowInTarget;
+import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 
 /**
  * A view that shows reflog entries. The View includes a quick filter that
  * searches on both the commit hashes and commit messages.
  */
-public class ReflogView extends ViewPart implements RefsChangedListener {
+public class ReflogView extends ViewPart implements RefsChangedListener, IShowInTarget {
 
 	/**
 	 * View id
@@ -150,7 +151,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		final TreeColumnLayout layout = new TreeColumnLayout();
 
 		FilteredTree filteredTree = new FilteredTree(tableComposite, SWT.NONE
-				| SWT.BORDER, new PatternFilter(), true) {
+				| SWT.BORDER | SWT.FULL_SELECTION, new PatternFilter(), true) {
 			@Override
 			protected void createControl(Composite composite, int treeStyle) {
 				super.createControl(composite, treeStyle);
@@ -277,35 +278,45 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			}
 		});
 
-		refLogTableTreeViewer.addOpenListener(new IOpenListener() {
+		new OpenAndLinkWithEditorHelper(refLogTableTreeViewer) {
+			@Override
+			protected void linkToEditor(ISelection selection) {
+				// Not supported
 
-			public void open(OpenEvent event) {
-				IStructuredSelection selection = (IStructuredSelection) event
-						.getSelection();
-				if (selection.isEmpty())
-					return;
+			}
+			@Override
+			protected void open(ISelection sel, boolean activate) {
+				handleOpen(sel, OpenStrategy.activateOnOpen());
+			}
+			@Override
+			protected void activate(ISelection selection) {
+				handleOpen(selection, true);
+			}
+			private void handleOpen(ISelection selection, boolean activateOnOpen) {
+				if (selection instanceof IStructuredSelection)
+					if (selection.isEmpty())
+						return;
 				Repository repo = getRepository();
 				if (repo == null)
 					return;
 				RevWalk walk = new RevWalk(repo);
 				try {
-					for (Object element : selection.toArray()) {
+					for (Object element : ((IStructuredSelection)selection).toArray()) {
 						ReflogEntry entry = (ReflogEntry) element;
 						ObjectId id = entry.getNewId();
 						if (id == null || id.equals(ObjectId.zeroId()))
 							id = entry.getOldId();
 						if (id != null && !id.equals(ObjectId.zeroId()))
 							CommitEditor.openQuiet(new RepositoryCommit(repo,
-									walk.parseCommit(id)));
+									walk.parseCommit(id)), activateOnOpen);
 					}
 				} catch (IOException e) {
 					Activator.logError(UIText.ReflogView_ErrorOnOpenCommit, e);
 				} finally {
 					walk.release();
 				}
-
 			}
-		});
+		};
 
 		selectionChangedListener = new ISelectionListener() {
 			public void selectionChanged(IWorkbenchPart part,
@@ -326,12 +337,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		service.addPostSelectionListener(selectionChangedListener);
 
 		// Use current selection to populate reflog view
-		ISelection selection = service.getSelection();
-		if (selection != null && !selection.isEmpty()) {
-			IWorkbenchPart part = site.getPage().getActivePart();
-			if (part != null)
-				selectionChangedListener.selectionChanged(part, selection);
-		}
+		UIUtils.notifySelectionChangedWithCurrentSelection(
+				selectionChangedListener, site);
 
 		site.setSelectionProvider(refLogTableTreeViewer);
 
@@ -349,6 +356,15 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 	@Override
 	public void setFocus() {
 		refLogTableTreeViewer.getControl().setFocus();
+		activateContextService();
+	}
+
+	private void activateContextService() {
+		IContextService contextService = (IContextService) getSite()
+				.getService(IContextService.class);
+		if (contextService != null)
+			contextService.activateContext(VIEW_ID);
+
 	}
 
 	@Override
@@ -453,12 +469,27 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		return null;
 	}
 
+	public boolean show(ShowInContext context) {
+		ISelection selection = context.getSelection();
+		if (selection instanceof IStructuredSelection) {
+			IStructuredSelection structuredSelection = (IStructuredSelection) selection;
+			for (Object element : structuredSelection.toList()) {
+				if (element instanceof RepositoryTreeNode) {
+					RepositoryTreeNode node = (RepositoryTreeNode) element;
+					showReflogFor(node.getRepository());
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Defines the repository for the reflog to show.
 	 *
 	 * @param repository
 	 */
-	public void showReflogFor(Repository repository) {
+	private void showReflogFor(Repository repository) {
 		showReflogFor(repository, Constants.HEAD);
 	}
 

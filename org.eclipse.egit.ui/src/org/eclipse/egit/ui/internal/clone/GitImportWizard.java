@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2012 SAP AG.
+ * Copyright (c) 2010-2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -32,12 +32,13 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
 import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
 import org.eclipse.egit.ui.internal.provisional.wizards.NoRepositoryInfoException;
+import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.IWizardPage;
@@ -53,6 +54,7 @@ import org.eclipse.ui.actions.NewProjectAction;
  * A wizard which allows to optionally clone a repository and to import projects from a repository.
  */
 public class GitImportWizard extends AbstractGitCloneWizard implements IImportWizard {
+	private static final String GIT_IMPORT_SECTION = "GitImportWizard"; //$NON-NLS-1$
 
 	private GitSelectRepositoryPage selectRepoPage = new GitSelectRepositoryPage();
 
@@ -81,9 +83,21 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		}
 	};
 
-	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage() ;
+	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage() {
+		public void setVisible(boolean visible) {
+			if (visible)
+				setProjectsList(importWithDirectoriesPage.getPath());
+			super.setVisible(visible);
+		}
+	};
 
-	private GitCreateGeneralProjectPage createGeneralProjectPage = new GitCreateGeneralProjectPage();
+	private GitCreateGeneralProjectPage createGeneralProjectPage = new GitCreateGeneralProjectPage() {
+		public void setVisible(boolean visible) {
+			if (visible)
+				setPath(importWithDirectoriesPage.getPath());
+			super.setVisible(visible);
+		}
+	};
 
 	private Repository existingRepo;
 
@@ -105,6 +119,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		super(searchResult);
 		setWindowTitle(UIText.GitImportWizard_WizardTitle);
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
+		setDialogSettings(getImportWizardDialogSettings());
 	}
 
 	@Override
@@ -145,16 +160,11 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		} else if (page == importWithDirectoriesPage)
 			switch (importWithDirectoriesPage.getWizardSelection()) {
 			case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
-				projectsImportPage.setProjectsList(importWithDirectoriesPage
-						.getPath());
 				return projectsImportPage;
 			case GitSelectWizardPage.NEW_WIZARD:
 				return null;
 			case GitSelectWizardPage.GENERAL_WIZARD:
-				createGeneralProjectPage.setPath(importWithDirectoriesPage
-						.getPath());
 				return createGeneralProjectPage;
-
 			}
 		else if (page == createGeneralProjectPage
 				|| page == projectsImportPage)
@@ -232,6 +242,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 							.getSelectedWorkingSets();
 					workingSets.addAll(Arrays.asList(workingSetArray));
 					repository[0] = getTargetRepository();
+					projectsImportPage.saveWidgetValues();
 				}
 			});
 			ProjectUtils.createProjects(projectsToCreate, repository[0],
@@ -320,5 +331,15 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		}
 	}
 
+	static IDialogSettings getImportWizardDialogSettings() {
+		IDialogSettings settings = Activator.getDefault().getDialogSettings();
 
+		IDialogSettings wizardSettings = settings
+				.getSection(GitImportWizard.GIT_IMPORT_SECTION);
+		if (wizardSettings == null) {
+			wizardSettings = settings
+					.addNewSection(GitImportWizard.GIT_IMPORT_SECTION);
+		}
+		return wizardSettings;
+	}
 }

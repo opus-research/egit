@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +17,8 @@ import java.util.Map.Entry;
 import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Commit;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
@@ -40,14 +43,6 @@ public class GitChangeSetLabelProvider extends SynchronizationLabelProvider impl
 	/** */
 	public static final String BINDING_CHANGESET_DATE = "{date}"; //$NON-NLS-1$
 
-	/** */
-	public static final String DEFAULT_CHANGESET_FORMAT = String.format("[%s] (%s) %s", //$NON-NLS-1$
-			BINDING_CHANGESET_AUTHOR,
-			BINDING_CHANGESET_DATE,
-			BINDING_CHANGESET_SHORT_MESSAGE);
-
-	/** */
-	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";  //$NON-NLS-1$
 
 	private IPreferenceStore store = org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore();
 
@@ -74,6 +69,9 @@ public class GitChangeSetLabelProvider extends SynchronizationLabelProvider impl
 			string.append(format, StyledString.DECORATIONS_STYLER);
 			return string;
 		}
+
+		if (element instanceof GitChangeSetModelProvider)
+			return new StyledString(UIText.GitChangeSetModelProviderLabel);
 
 		return getDelegateLabelProvider().getStyledText(element);
 	}

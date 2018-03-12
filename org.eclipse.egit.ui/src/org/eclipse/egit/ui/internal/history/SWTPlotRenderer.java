@@ -10,19 +10,17 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revplot.AbstractPlotRenderer;
-import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Color;
@@ -74,8 +72,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private boolean enableAntialias = true;
 
-	private ResourceManager resources = new LocalResourceManager(
-			JFaceResources.getResources());
+	private final ResourceManager resources;
 
 	GC g;
 
@@ -89,21 +86,16 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private Ref headRef;
 
-	SWTPlotRenderer(final Display d) {
+	SWTPlotRenderer(final Display d, final ResourceManager resources) {
+		this.resources = resources;
 		sys_black = d.getSystemColor(SWT.COLOR_BLACK);
 		sys_gray = d.getSystemColor(SWT.COLOR_GRAY);
 		sys_white = d.getSystemColor(SWT.COLOR_WHITE);
-		commitDotFill = new Color(d, new RGB(220, 220, 220));
-		commitDotOutline = new Color(d, new RGB(110, 110, 110));
+
+		commitDotFill = resources.createColor(new RGB(220, 220, 220));
+		commitDotOutline = resources.createColor(new RGB(110, 110, 110));
 	}
 
-	void dispose() {
-		commitDotFill.dispose();
-		commitDotOutline.dispose();
-		resources.dispose();
-	}
-
-	@SuppressWarnings("unchecked")
 	void paint(final Event event, Ref actHeadRef) {
 		g = event.gc;
 
@@ -123,7 +115,14 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 			textHeight = g.stringExtent("/").y; //$NON-NLS-1$
 
 		final TableItem ti = (TableItem) event.item;
-		paintCommit((PlotCommit<SWTLane>) ti.getData(), event.height);
+		SWTCommit commit = (SWTCommit) ti.getData();
+		try {
+			commit.parseBody();
+		} catch (IOException e) {
+			Activator.error("Error parsing body", e); //$NON-NLS-1$
+			return;
+		}
+		paintCommit(commit , event.height);
 	}
 
 	protected void drawLine(final Color color, final int x1, final int y1,

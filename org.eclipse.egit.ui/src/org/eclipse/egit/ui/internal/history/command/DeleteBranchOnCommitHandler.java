@@ -19,20 +19,16 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.DeleteBranchOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.UnmergedBranchDialog;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
-import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Shell;
 
@@ -47,9 +43,11 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 		if (repository == null)
 			return null;
 
+		int totalBranchCount;
 		List<Ref> branchesOfCommit;
 		try {
-			branchesOfCommit = getBranchesOfCommit(page, repository);
+			totalBranchCount = getBranchesOfCommit(page, repository, false).size();
+			branchesOfCommit = getBranchesOfCommit(page, repository, true);
 		} catch (IOException e) {
 			throw new ExecutionException("Could not obtain current Branch", e); //$NON-NLS-1$
 		}
@@ -61,7 +59,12 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 		final Shell shell = getPart(event).getSite().getShell();
 
 		final List<Ref> branchesToDelete;
-		if (branchesOfCommit.size() > 1) {
+		// we will show the dialog if there are either multiple branches that might be
+		// deleted or if one of the branches is the current head (which we can't delete);
+		// in the latter case, we may show the dialog even if there is only one branch to
+		// delete instead of quietly deleting an unexpected one, for example a remote
+		// tracking branch
+		if (totalBranchCount > 1) {
 			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<Ref>(
 					shell,
 					branchesOfCommit,
@@ -126,39 +129,6 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 		return null;
 	}
 
-	private List<Ref> getBranchesOfCommit(GitHistoryPage page,
-			final Repository repo) throws IOException {
-		final List<Ref> branchesOfCommit = new ArrayList<Ref>();
-		IStructuredSelection selection = getSelection(page);
-		if (selection.isEmpty())
-			return branchesOfCommit;
-		PlotCommit commit = (PlotCommit) selection.getFirstElement();
-		String head = repo.getFullBranch();
-
-		int refCount = commit.getRefCount();
-		for (int i = 0; i < refCount; i++) {
-			Ref ref = commit.getRef(i);
-			String refName = ref.getName();
-			if (head != null && refName.equals(head))
-				continue;
-			if (refName.startsWith(Constants.R_HEADS)
-					|| refName.startsWith(Constants.R_REMOTES))
-				branchesOfCommit.add(ref);
-		}
-		return branchesOfCommit;
-	}
-
-	private Repository getRepository(GitHistoryPage page) {
-		if (page == null)
-			return null;
-		HistoryPageInput input = page.getInputInternal();
-		if (input == null)
-			return null;
-
-		final Repository repository = input.getRepository();
-		return repository;
-	}
-
 	private int deleteBranch(Repository repo, final Ref ref, boolean force)
 			throws CoreException {
 		DeleteBranchOperation dbop = new DeleteBranchOperation(repo, ref, force);
@@ -176,7 +146,7 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 
 		List<Ref> branchesOfCommit;
 		try {
-			branchesOfCommit = getBranchesOfCommit(page, repository);
+			branchesOfCommit = getBranchesOfCommit(page, repository, true);
 		} catch (IOException e) {
 			Activator.logError("Could not calculate Enablement", e); //$NON-NLS-1$
 			return false;

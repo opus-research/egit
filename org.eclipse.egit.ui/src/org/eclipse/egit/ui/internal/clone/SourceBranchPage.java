@@ -23,22 +23,20 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
+import org.eclipse.egit.ui.internal.dialogs.SourceBranchFailureDialog;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
@@ -51,7 +49,7 @@ import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -308,9 +306,10 @@ class SourceBranchPage extends WizardPage {
 			return;
 
 		final ListRemoteOperation listRemoteOp;
+		final URIish uri = newRepoSelection.getURI();
 		try {
-			final URIish uri = newRepoSelection.getURI();
-			final Repository db = new FileRepository(new File("/tmp")); //$NON-NLS-1$
+			final Repository db = FileRepositoryBuilder
+					.create(new File("/tmp")); //$NON-NLS-1$
 			int timeout = Activator.getDefault().getPreferenceStore().getInt(
 					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 			listRemoteOp = new ListRemoteOperation(db, uri, timeout);
@@ -328,11 +327,8 @@ class SourceBranchPage extends WizardPage {
 		} catch (InvocationTargetException e) {
 			Throwable why = e.getCause();
 			transportError(why);
-			ErrorDialog.openError(getShell(),
-					UIText.SourceBranchPage_transportError,
-					UIText.SourceBranchPage_cannotListBranches, new Status(
-							IStatus.ERROR, Activator.getPluginId(), 0, why
-									.getMessage(), why));
+			if (showDetailedFailureDialog())
+				SourceBranchFailureDialog.show(getShell(), uri);
 			return;
 		} catch (IOException e) {
 			transportError(UIText.SourceBranchPage_cannotCreateTemp);
@@ -377,17 +373,33 @@ class SourceBranchPage extends WizardPage {
 	}
 
 	private void transportError(final Throwable why) {
+		Activator.logError(why.getMessage(), why);
 		Throwable cause = why.getCause();
 		if (why instanceof TransportException && cause != null)
-			transportError(NLS.bind(
-					UIText.SourceBranchPage_CompositeTransportErrorMessage,
-					why.getMessage(), cause.getMessage()));
+			transportError(NLS.bind(getMessage(why), why.getMessage(),
+					cause.getMessage()));
 		else
 			transportError(why.getMessage());
+	}
+
+	private String getMessage(final Throwable why) {
+		if (why.getMessage().endsWith("Auth fail")) //$NON-NLS-1$
+			return UIText.SourceBranchPage_AuthFailMessage;
+		else
+			return UIText.SourceBranchPage_CompositeTransportErrorMessage;
 	}
 
 	private void transportError(final String msg) {
 			transportError = msg;
 			checkPage();
 	}
+
+	private boolean showDetailedFailureDialog() {
+		return Activator
+				.getDefault()
+				.getPreferenceStore()
+				.getBoolean(
+						UIPreferences.CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG);
+	}
+
 }

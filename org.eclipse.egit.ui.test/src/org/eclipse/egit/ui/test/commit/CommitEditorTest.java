@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011 GitHub Inc.
+ *  Copyright (c) 2011, 2013 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
@@ -36,7 +36,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -44,13 +44,12 @@ import org.junit.Test;
  */
 public class CommitEditorTest extends LocalRepositoryTestCase {
 
-	private static Repository repository;
+	private Repository repository;
 
-	private static RevCommit commit;
+	private RevCommit commit;
 
-	@BeforeClass
-	public static void setup() throws Exception {
-		closeWelcomePage();
+	@Before
+	public void setup() throws Exception {
 		File repoFile = createProjectAndCommitToRepository();
 		assertNotNull(repoFile);
 		repository = Activator.getDefault().getRepositoryCache()
@@ -114,7 +113,7 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		SWTBotTable table = commitEditor.bot().table(0);
 		assertTrue(table.rowCount() > 0);
 		table.select(0);
-		ContextMenuHelper.clickContextMenu(table,
+		ContextMenuHelper.clickContextMenuSync(table,
 				UIText.CommitFileDiffViewer_ShowAnnotationsMenuLabel);
 		TestUtil.joinJobs(JobFamilies.BLAME);
 		assertFalse(commitEditor.getReference().equals(

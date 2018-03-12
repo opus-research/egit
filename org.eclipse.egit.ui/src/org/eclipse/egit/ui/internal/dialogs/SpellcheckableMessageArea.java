@@ -1,7 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
- * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2011-2012, IBM Corporation
+ * Copyright (C) 2010, 2013 Benjamin Muskalla <bmuskalla@eclipsesource.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,9 +12,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,8 +23,8 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuListener;
@@ -50,6 +48,9 @@ import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.WhitespaceCharacterPainter;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistant;
+import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
+import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
+import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
 import org.eclipse.jface.text.quickassist.IQuickAssistProcessor;
 import org.eclipse.jface.text.reconciler.IReconciler;
@@ -64,20 +65,27 @@ import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jgit.util.IntList;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.BidiSegmentEvent;
+import org.eclipse.swt.custom.BidiSegmentListener;
+import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Layout;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.ActiveShellExpression;
 import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
@@ -99,6 +107,11 @@ import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
 public class SpellcheckableMessageArea extends Composite {
 
 	static final int MAX_LINE_WIDTH = 72;
+
+	private static final Cursor SYS_LINK_CURSOR = PlatformUI.getWorkbench()
+			.getDisplay().getSystemCursor(SWT.CURSOR_HAND);
+
+	private final Cursor sys_normalCursor;
 
 	private static class TextViewerAction extends Action implements IUpdate {
 
@@ -179,7 +192,7 @@ public class SpellcheckableMessageArea extends Composite {
 			}
 		}
 
-		private String getPreferenceKey() {
+		protected String getPreferenceKey() {
 			return preferenceKey;
 		}
 
@@ -204,11 +217,24 @@ public class SpellcheckableMessageArea extends Composite {
 		protected ITextViewer getTextViewer() {
 			return viewer;
 		}
+
+		protected IPreferenceStore getStore() {
+			return store;
+		}
 	}
 
 	private final SourceViewer sourceViewer;
 
-	private ModifyListener hardWrapModifyListener;
+	private TextSourceViewerConfiguration configuration;
+
+	private BidiSegmentListener hardWrapSegmentListener;
+
+	// XXX: workaround for https://bugs.eclipse.org/400727
+	private int brokenBidiPlatformTextWidth;
+
+	private ActionHandler quickFixActionHandler;
+
+	private ActionHandler contentAssistActionHandler;
 
 	/**
 	 * @param parent
@@ -242,40 +268,77 @@ public class SpellcheckableMessageArea extends Composite {
 
 		AnnotationModel annotationModel = new AnnotationModel();
 		sourceViewer = new SourceViewer(this, null, null, true, SWT.MULTI
-				| SWT.V_SCROLL | SWT.WRAP);
+				| SWT.V_SCROLL | SWT.H_SCROLL);
+		getTextWidget().setAlwaysShowScrollBars(false);
 		getTextWidget().setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
 
+		sys_normalCursor = sourceViewer.getTextWidget().getCursor();
 		int endSpacing = 2;
 		int textWidth = getCharWidth() * MAX_LINE_WIDTH + endSpacing;
 		int textHeight = getLineHeight() * 7;
 		Point size = getTextWidget().computeSize(textWidth, textHeight);
 		getTextWidget().setSize(size);
 
+		computeBrokenBidiPlatformTextWidth(size.x);
+
 		getTextWidget().setEditable(!readOnly);
 
 		createMarginPainter();
 
 		configureHardWrap();
+		final IPropertyChangeListener propertyChangeListener = new IPropertyChangeListener() {
+			public void propertyChange(PropertyChangeEvent event) {
+				if (UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE.equals(event.getProperty())) {
+					getDisplay().asyncExec(new Runnable() {
+						public void run() {
+							configureHardWrap();
+							if (brokenBidiPlatformTextWidth != -1) {
+								layout();
+							}
+						}
+					});
+				}
+			}
+		};
+		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(propertyChangeListener);
 
 		final SourceViewerDecorationSupport support = configureAnnotationPreferences();
 		if (isEditable(sourceViewer)) {
-			final IHandlerActivation handlerActivation = installQuickFixActionHandler();
-			getTextWidget().addDisposeListener(new DisposeListener() {
-
-				public void widgetDisposed(DisposeEvent e) {
-					getHandlerService().deactivateHandler(handlerActivation);
-				}
-			});
+			quickFixActionHandler = createQuickFixActionHandler(sourceViewer);
 		}
 
 		Document document = new Document(initialText);
 
-		sourceViewer.configure(new TextSourceViewerConfiguration(EditorsUI
+		configuration = new TextSourceViewerConfiguration(
+				EditorsUI
 				.getPreferenceStore()) {
+
+			public int getHyperlinkStateMask(ISourceViewer targetViewer) {
+				return SWT.NONE;
+			}
 
 			protected Map getHyperlinkDetectorTargets(ISourceViewer targetViewer) {
 				return getHyperlinkTargets();
+			}
+
+			@Override
+			public IHyperlinkPresenter getHyperlinkPresenter(
+					ISourceViewer targetViewer) {
+				return new MultipleHyperlinkPresenter(PlatformUI.getWorkbench()
+						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB()) {
+
+					@Override
+					public void hideHyperlinks() {
+						// We want links to always show.
+					}
+
+				};
+			}
+
+			public IHyperlinkDetector[] getHyperlinkDetectors(
+					ISourceViewer targetViewer) {
+				return getRegisteredHyperlinkDetectors(sourceViewer);
 			}
 
 			@Override
@@ -290,30 +353,47 @@ public class SpellcheckableMessageArea extends Composite {
 					return null;
 				IContentAssistant assistant = createContentAssistant(viewer);
 				// Add content assist proposal handler if assistant exists
-				if (assistant != null) {
-					final IHandlerActivation activation = installContentAssistActionHandler();
-					viewer.getTextWidget().addDisposeListener(
-							new DisposeListener() {
-
-								public void widgetDisposed(DisposeEvent e) {
-									getHandlerService().deactivateHandler(
-											activation);
-								}
-							});
-				}
+				if (assistant != null)
+					contentAssistActionHandler = createContentAssistActionHandler(sourceViewer);
 				return assistant;
 			}
 
-		});
+		};
+
+		sourceViewer.configure(configuration);
 		sourceViewer.setDocument(document, annotationModel);
+
+		for (StyleRange styleRange : UIUtils
+				.getHyperlinkDetectorStyleRanges(sourceViewer,
+						configuration.getHyperlinkDetectors(sourceViewer)))
+			sourceViewer.getTextWidget().setStyleRange(styleRange);
 
 		configureContextMenu();
 
 		getTextWidget().addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				support.uninstall();
+				Activator.getDefault().getPreferenceStore().removePropertyChangeListener(propertyChangeListener);
 			}
 		});
+	}
+
+	private void computeBrokenBidiPlatformTextWidth(int textWidth) {
+		class BidiSegmentListenerTester implements BidiSegmentListener {
+			boolean called;
+
+			public void lineGetSegments(BidiSegmentEvent event) {
+				called = true;
+			}
+		}
+		BidiSegmentListenerTester tester = new BidiSegmentListenerTester();
+		StyledText textWidget = getTextWidget();
+		textWidget.addBidiSegmentListener(tester);
+		textWidget.setText(" "); //$NON-NLS-1$
+		textWidget.computeSize(SWT.DEFAULT, SWT.DEFAULT);
+		textWidget.removeBidiSegmentListener(tester);
+
+		brokenBidiPlatformTextWidth = tester.called ? -1 : textWidth;
 	}
 
 	private boolean isEditable(ISourceViewer viewer) {
@@ -322,32 +402,58 @@ public class SpellcheckableMessageArea extends Composite {
 
 	private void configureHardWrap() {
 		if (shouldHardWrap()) {
-			if (hardWrapModifyListener == null) {
+			if (hardWrapSegmentListener == null) {
 				final StyledText textWidget = getTextWidget();
-
-				hardWrapModifyListener = new ModifyListener() {
-
-					private boolean active = true;
-
-					public void modifyText(ModifyEvent e) {
-						if (!active)
-							return;
-						String lineDelimiter = textWidget.getLineDelimiter();
-						List<WrapEdit> wrapEdits = calculateWrapEdits(
-								textWidget.getText(), MAX_LINE_WIDTH,
-								lineDelimiter);
-						// Prevent infinite loop because replaceTextRange causes a ModifyEvent
-						active = false;
-						for (WrapEdit wrapEdit : wrapEdits)
-							textWidget.replaceTextRange(wrapEdit.getStart(), wrapEdit.getLength(), lineDelimiter);
-						active = true;
+				hardWrapSegmentListener = new BidiSegmentListener() {
+					public void lineGetSegments(BidiSegmentEvent e) {
+						int[] segments = calculateWrapOffsets(e.lineText, MAX_LINE_WIDTH);
+						if (segments != null) {
+							char[] segmentsChars = new char[segments.length];
+							Arrays.fill(segmentsChars, '\n');
+							e.segments = segments;
+							e.segmentsChars = segmentsChars;
+						}
 					}
 				};
-				textWidget.addModifyListener(hardWrapModifyListener);
+				textWidget.addBidiSegmentListener(hardWrapSegmentListener);
+				textWidget.setText(textWidget.getText()); // XXX: workaround for https://bugs.eclipse.org/384886
+
+				if (brokenBidiPlatformTextWidth != -1) {
+					Layout restrictedWidthLayout = new Layout() {
+						@Override
+						protected Point computeSize(Composite composite,
+								int wHint, int hHint, boolean flushCache) {
+							Point size = SpellcheckableMessageArea.this
+									.getSize();
+							Rectangle trim = SpellcheckableMessageArea.this
+									.computeTrim(0, 0, 0, 0);
+							size.x -= trim.width;
+							size.y -= trim.height;
+							if (size.x > brokenBidiPlatformTextWidth)
+								size.x = brokenBidiPlatformTextWidth;
+							return size;
+						}
+
+						@Override
+						protected void layout(Composite composite,
+								boolean flushCache) {
+							Point size = computeSize(composite, SWT.DEFAULT,
+									SWT.DEFAULT, flushCache);
+							textWidget.setBounds(0, 0, size.x, size.y);
+						}
+					};
+					setLayout(restrictedWidthLayout);
+				}
 			}
-		} else if (hardWrapModifyListener != null) {
-			getTextWidget().removeModifyListener(hardWrapModifyListener);
-			hardWrapModifyListener = null;
+
+		} else if (hardWrapSegmentListener != null) {
+			StyledText textWidget = getTextWidget();
+			textWidget.removeBidiSegmentListener(hardWrapSegmentListener);
+			textWidget.setText(textWidget.getText()); // XXX: workaround for https://bugs.eclipse.org/384886
+			hardWrapSegmentListener = null;
+
+			if (brokenBidiPlatformTextWidth != -1)
+				setLayout(new FillLayout());
 		}
 	}
 
@@ -407,6 +513,38 @@ public class SpellcheckableMessageArea extends Composite {
 			private IPainter whitespaceCharPainter;
 
 			@Override
+			public void propertyChange(PropertyChangeEvent event) {
+				String property = event.getProperty();
+				if (property.equals(getPreferenceKey())
+						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_SPACES
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_SPACES
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_SPACES
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_IDEOGRAPHIC_SPACES
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_IDEOGRAPHIC_SPACES
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_IDEOGRAPHIC_SPACES
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_TABS
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_TABS
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_TABS
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_SHOW_CARRIAGE_RETURN
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_SHOW_LINE_FEED
+								.equals(property)
+						|| AbstractTextEditor.PREFERENCE_WHITESPACE_CHARACTER_ALPHA_VALUE
+								.equals(property)) {
+					synchronizeWithPreference();
+				}
+			}
+
+			@Override
 			protected void toggleState(boolean checked) {
 				if (checked)
 					installPainter();
@@ -421,7 +559,21 @@ public class SpellcheckableMessageArea extends Composite {
 				Assert.isTrue(whitespaceCharPainter == null);
 				ITextViewer v = getTextViewer();
 				if (v instanceof ITextViewerExtension2) {
-					whitespaceCharPainter = new WhitespaceCharacterPainter(v);
+					IPreferenceStore store = getStore();
+					whitespaceCharPainter = new WhitespaceCharacterPainter(
+							v,
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_SPACES),
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_SPACES),
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_SPACES),
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_IDEOGRAPHIC_SPACES),
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_IDEOGRAPHIC_SPACES),
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_IDEOGRAPHIC_SPACES),
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_TABS),
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_TABS),
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_TABS),
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_CARRIAGE_RETURN),
+							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LINE_FEED),
+							store.getInt(AbstractTextEditor.PREFERENCE_WHITESPACE_CHARACTER_ALPHA_VALUE));
 					((ITextViewerExtension2) v).addPainter(whitespaceCharPainter);
 				}
 			}
@@ -478,10 +630,14 @@ public class SpellcheckableMessageArea extends Composite {
 			private IHandlerActivation selectAllHandlerActivation;
 			private IHandlerActivation undoHandlerActivation;
 			private IHandlerActivation redoHandlerActivation;
+			private IHandlerActivation quickFixHandlerActivation;
+			private IHandlerActivation contentAssistHandlerActivation;
 
 			public void focusGained(FocusEvent e) {
-				IHandlerService service = (IHandlerService) PlatformUI
-						.getWorkbench().getService(IHandlerService.class);
+				IHandlerService service = getHandlerService();
+				if (service == null)
+					return;
+
 				if (cutAction != null) {
 					cutAction.update();
 					cutHandlerActivation = service.activateHandler(
@@ -514,10 +670,22 @@ public class SpellcheckableMessageArea extends Composite {
 							IWorkbenchCommandConstants.EDIT_REDO,
 							new ActionHandler(redoAction),
 							new ActiveShellExpression(getParent().getShell()));
+				if (quickFixActionHandler != null)
+					quickFixHandlerActivation = getHandlerService().activateHandler(
+							quickFixActionHandler.getAction().getActionDefinitionId(),
+							quickFixActionHandler,
+							new ActiveShellExpression(getParent().getShell()));
+				if (contentAssistActionHandler != null)
+					contentAssistHandlerActivation = getHandlerService().activateHandler(
+							contentAssistActionHandler.getAction().getActionDefinitionId(),
+							contentAssistActionHandler,
+							new ActiveShellExpression(getParent().getShell()));
 			}
 
 			public void focusLost(FocusEvent e) {
-				IHandlerService service = (IHandlerService) PlatformUI.getWorkbench().getService(IHandlerService.class);
+				IHandlerService service = getHandlerService();
+				if (service == null)
+					return;
 
 				if (cutHandlerActivation != null)
 					service.deactivateHandler(cutHandlerActivation);
@@ -536,6 +704,12 @@ public class SpellcheckableMessageArea extends Composite {
 
 				if (redoHandlerActivation != null)
 					service.deactivateHandler(redoHandlerActivation);
+
+				if (quickFixHandlerActivation != null)
+					service.deactivateHandler(quickFixHandlerActivation);
+
+				if (contentAssistHandlerActivation != null)
+					service.deactivateHandler(contentAssistHandlerActivation);
 			}
 
 		});
@@ -554,6 +728,14 @@ public class SpellcheckableMessageArea extends Composite {
 			sourceViewer.addTextListener(new ITextListener() {
 
 				public void textChanged(TextEvent event) {
+					textWidget.setStyleRanges(
+							new StyleRange[0]);
+					for (StyleRange styleRange : UIUtils
+							.getHyperlinkDetectorStyleRanges(
+									sourceViewer,
+									configuration
+											.getHyperlinkDetectors(sourceViewer)))
+						textWidget.setStyleRange(styleRange);
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)
@@ -561,11 +743,36 @@ public class SpellcheckableMessageArea extends Composite {
 				}
 			});
 
+		// set the cursor when hovering over a link
+		textWidget.addListener(SWT.MouseMove, new Listener() {
+			public void handleEvent(final Event e) {
+				StyleRange styleRange = getStyleRange(e.x, e.y);
+				if (styleRange != null && styleRange.underline)
+					textWidget.setCursor(SYS_LINK_CURSOR);
+				else
+					textWidget.setCursor(sys_normalCursor);
+			}
+		});
+
 		textWidget.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				showWhitespaceAction.dispose();
 			}
 		});
+	}
+
+	private StyleRange getStyleRange(final int x, final int y) {
+		final StyledText t = sourceViewer.getTextWidget();
+		final int offset;
+		try {
+			offset = t.getOffsetAtLocation(new Point(x, y));
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
+		if (offset < t.getCharCount())
+			return t.getStyleRangeAtOffset(offset);
+		else
+			return null;
 	}
 
 	private void addProposals(final SubMenuManager quickFixMenu) {
@@ -614,10 +821,18 @@ public class SpellcheckableMessageArea extends Composite {
 		};
 	}
 
-	private IHandlerService getHandlerService() {
-		final IHandlerService handlerService = (IHandlerService) PlatformUI
-		.getWorkbench().getService(IHandlerService.class);
-		return handlerService;
+	/**
+	 * Return <code>IHandlerService</code>. The default implementation uses the
+	 * workbench window's service locator. Subclasses may override to access the
+	 * service by using a local service locator.
+	 *
+	 * @return <code>IHandlerService</code> using the workbench window's service
+	 *         locator. Can be <code>null</code> if the service could not be
+	 *         found.
+	 */
+	protected IHandlerService getHandlerService() {
+		return (IHandlerService) PlatformUI.getWorkbench().getService(
+				IHandlerService.class);
 	}
 
 	private SourceViewerDecorationSupport configureAnnotationPreferences() {
@@ -673,24 +888,6 @@ public class SpellcheckableMessageArea extends Composite {
 		return sourceViewer.getTextWidget();
 	}
 
-	private IHandlerActivation installQuickFixActionHandler() {
-		ActionHandler handler = createQuickFixActionHandler(sourceViewer);
-		return addHandler(handler);
-	}
-
-	private IHandlerActivation installContentAssistActionHandler() {
-		ActionHandler handler = createContentAssistActionHandler(sourceViewer);
-		return addHandler(handler);
-	}
-
-	private IHandlerActivation addHandler(ActionHandler handler) {
-		ActiveShellExpression expression = new ActiveShellExpression(
-				sourceViewer.getTextWidget().getShell());
-		return getHandlerService().activateHandler(
-				handler.getAction().getActionDefinitionId(), handler,
-				expression);
-	}
-
 	private ActionHandler createQuickFixActionHandler(
 			final ITextOperationTarget textOperationTarget) {
 		Action quickFixAction = new Action() {
@@ -721,20 +918,41 @@ public class SpellcheckableMessageArea extends Composite {
 	}
 
 	/**
-	 * Return the commit message, converting platform-specific line endings.
+	 * Returns the commit message, converting platform-specific line endings to '\n'
+	 * and hard-wrapping lines if necessary.
 	 *
 	 * @return commit message
 	 */
 	public String getCommitMessage() {
 		String text = getText();
-		return Utils.normalizeLineEndings(text);
+		text = Utils.normalizeLineEndings(text);
+		if (shouldHardWrap())
+			text = hardWrap(text);
+		return text;
 	}
 
 	/**
-	 * Reconfigure this widget if a preference has changed.
+	 * Hard-wraps the given text.
+	 *
+	 * @param text the text to wrap, must use '\n' as line delimiter
+	 * @return the wrapped text
 	 */
-	public void reconfigure() {
-		configureHardWrap();
+	public static String hardWrap(String text) {
+		int[] wrapOffsets = calculateWrapOffsets(text, MAX_LINE_WIDTH);
+		if (wrapOffsets != null) {
+			StringBuilder builder = new StringBuilder(text.length() + wrapOffsets.length);
+			int prev = 0;
+			for (int cur : wrapOffsets) {
+				builder.append(text.substring(prev, cur));
+				for (int j = cur; j > prev && builder.charAt(builder.length() - 1) == ' '; j--)
+					builder.deleteCharAt(builder.length() - 1);
+				builder.append('\n');
+				prev = cur;
+			}
+			builder.append(text.substring(prev));
+			return builder.toString();
+		}
+		return text;
 	}
 
 	/**
@@ -796,93 +1014,62 @@ public class SpellcheckableMessageArea extends Composite {
 	}
 
 	/**
-	 * Calculate a list of {@link WrapEdit} which can be applied to the text to
-	 * get a new text that is wrapped at word boundaries. Existing line breaks
-	 * are left alone (text is not reflowed).
+	 * Calculates wrap offsets for the given line, so that resulting lines are
+	 * no longer than <code>maxLineLength</code> if possible.
 	 *
-	 * @param text
-	 *            the text to calculate the wrap edits for
+	 * @param line
+	 *            the line to wrap (can contain '\n', but no other line delimiters)
 	 * @param maxLineLength
 	 *            the maximum line length
-	 * @param lineDelimiter
-	 *            line delimiter used in text and for wrapping
-	 * @return a list of {@link WrapEdit} objects which specify how the text
-	 *         should be edited to obtain the wrapped text. Offsets of later
-	 *         edits are already adjusted for the fact that wrapping a line may
-	 *         shift the text backwards. So the list can just be iterated and
-	 *         each edit applied in order.
+	 * @return an array of offsets where hard-wraps should be inserted, or
+	 *         <code>null</code> if the line does not need to be wrapped
 	 */
-	public static List<WrapEdit> calculateWrapEdits(final String text, final int maxLineLength, final String lineDelimiter) {
-		List<WrapEdit> wrapEdits = new LinkedList<WrapEdit>();
+	public static int[] calculateWrapOffsets(final String line, final int maxLineLength) {
+		if (line.length() == 0)
+			return null;
 
-		int offset = 0;
-		int lineDelimiterLength = lineDelimiter.length();
-
-		String[] chunks = text.split(lineDelimiter, -1);
-		for (int chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-			String chunk = chunks[chunkIndex];
-
-			String[] words = chunk.split(" ", -1); //$NON-NLS-1$
-			int lineLength = 0;
-
-			for (int wordIndex = 0; wordIndex < words.length; wordIndex++) {
-				String word = words[wordIndex];
-
-				int wordLength = word.length();
-				int newLineLength = lineLength + wordLength + 1 /* the space */;
-				if (newLineLength > maxLineLength) {
-					/* don't break before a single long word */
-					if (lineLength != 0) {
-						wrapEdits.add(new WrapEdit(offset, 1));
-						/* adjust for the shifting of text after the edit is applied */
-						offset += lineDelimiterLength;
+		IntList wrapOffsets = new IntList();
+		int wordStart = 0;
+		int lineStart = 0;
+		boolean lastWasSpace = true;
+		boolean onlySpaces = true;
+		for (int i = 0; i < line.length(); i++) {
+			char ch = line.charAt(i);
+			if (ch == ' ') {
+				lastWasSpace = true;
+			} else if (ch == '\n') {
+				lineStart = i + 1;
+				wordStart = i + 1;
+				lastWasSpace = true;
+				onlySpaces = true;
+			} else { // a word character
+				if (lastWasSpace) {
+					lastWasSpace = false;
+					if (!onlySpaces) { // don't break line with <spaces><veryLongWord>
+						wordStart = i;
 					}
-					lineLength = 0;
-				} else if (wordIndex != 0) {
-					lineLength += 1;
-					offset += 1;
+				} else {
+					onlySpaces = false;
 				}
-				offset += wordLength;
-				lineLength += wordLength;
+				if (i >= lineStart + maxLineLength) {
+					if (wordStart != lineStart) { // don't break before a single long word
+						wrapOffsets.add(wordStart);
+						lineStart = wordStart;
+						onlySpaces = true;
+					}
+				}
 			}
-
-			if (chunkIndex != chunks.length - 1)
-				offset += lineDelimiterLength;
 		}
 
-		return wrapEdits;
-	}
-
-	/**
-	 * Edit for replacing a space with a line delimiter to wrap a long line.
-	 */
-	public static class WrapEdit {
-		private int start;
-		private int length;
-
-		/**
-		 * @param start see {@link #getStart()}
-		 * @param length see {@link #getLength()}
-		 */
-		public WrapEdit(int start, int length) {
-			this.start = start;
-			this.length = length;
-		}
-
-		/**
-		 * @return character offset of where the edit should be applied on the
-		 *         text
-		 */
-		public int getStart() {
-			return start;
-		}
-
-		/**
-		 * @return number of characters which should be replaced by the line
-		 *         delimiter
-		 */
-		public int getLength() {
-			return length;
+		int size = wrapOffsets.size();
+		if (size == 0) {
+			return null;
+		} else {
+			int[] result = new int[size];
+			for (int i = 0; i < size; i++) {
+				result[i] = wrapOffsets.get(i);
+			}
+			return result;
 		}
 	}
 }

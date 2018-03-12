@@ -14,19 +14,9 @@ import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.op.StashCreateOperation;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
-import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.egit.ui.internal.stash.StashCreateUI;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.handlers.HandlerUtil;
 
@@ -49,46 +39,11 @@ public class StashCreateCommand extends
 		if (repo == null)
 			return null;
 
-		final StashCreateOperation op = new StashCreateOperation(repo);
 		final Shell shell = HandlerUtil.getActiveShell(event);
-		Job job = new Job(UIText.StashCreateCommand_jobTitle) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				monitor.beginTask("", 1); //$NON-NLS-1$
-				try {
-					op.execute(monitor);
-					RevCommit commit = op.getCommit();
-					if (commit == null)
-						showNoChangesToStash(shell);
+		StashCreateUI stashCreateUI = new StashCreateUI(repo);
+		stashCreateUI.createStash(shell);
 
-				} catch (CoreException e) {
-					Activator
-							.logError(UIText.StashCreateCommand_stashFailed, e);
-				}
-				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (JobFamilies.STASH.equals(family))
-					return true;
-				return super.belongsTo(family);
-			}
-		};
-		job.setUser(true);
-		job.setRule(op.getSchedulingRule());
-		job.schedule();
 		return null;
 	}
 
-	private void showNoChangesToStash(final Shell shell) {
-		shell.getDisplay().asyncExec(new Runnable() {
-
-			public void run() {
-				MessageDialog.openInformation(shell,
-						UIText.StashCreateCommand_titleNoChanges,
-						UIText.StashCreateCommand_messageNoChanges);
-			}
-		});
-	}
 }

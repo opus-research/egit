@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2011 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,13 +11,15 @@
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Create Patch... dialog should not set file location - http://bugs.eclipse.org/361405
  *    Tomasz Zarna <Tomasz.Zarna@pl.ibm.com> - Allow to save patches in Workspace
  *    Tomasz Zarna <Tomasz.Zarna@pl.ibm.com> - Team > Create Patch... doesn't observe selection, bug 370332
+ *    Daniel Megert <daniel_megert@ch.ibm.com> - Create Patch wizard's options page should remember values - http://bugs.eclipse.org/377390
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -33,11 +35,11 @@ import org.eclipse.egit.core.op.CreatePatchOperation;
 import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.DialogSettings;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -57,6 +59,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
@@ -91,6 +94,10 @@ public class GitCreatePatchWizard extends Wizard {
 
 	private final static int INITIAL_HEIGHT = 150;
 
+	private static final String FORMAT_KEY = "GitCreatePatchWizard.OptionsPage.format"; //$NON-NLS-1$
+	private static final String CONTEXT_LINES_KEY = "GitCreatePatchWizard.OptionsPage.contextLines"; //$NON-NLS-1$
+
+
 	/**
 	 *
 	 * @param shell
@@ -122,19 +129,8 @@ public class GitCreatePatchWizard extends Wizard {
 		this.db = db;
 		this.resources = resources;
 
-		setDialogSettings(getOrCreateSection(Activator.getDefault().getDialogSettings(), "GitCreatePatchWizard")); //$NON-NLS-1$
-	}
-
-	/*
-	 * Copy of org.eclipse.jface.dialogs.DialogSettings.getOrCreateSection(IDialogSettings, String)
-	 * which is not available in 3.5.
-	 */
-	private static IDialogSettings getOrCreateSection(IDialogSettings settings,
-			String sectionName) {
-		IDialogSettings section = settings.getSection(sectionName);
-		if (section == null)
-			section = settings.addNewSection(sectionName);
-		return section;
+		setDialogSettings(DialogSettings.getOrCreateSection(Activator
+				.getDefault().getDialogSettings(), "GitCreatePatchWizard")); //$NON-NLS-1$
 	}
 
 	@Override
@@ -201,6 +197,10 @@ public class GitCreatePatchWizard extends Wizard {
 			Activator.logError("Patch file was not written", e); //$NON-NLS-1$
 			return false;
 		}
+
+		getDialogSettings().put(FORMAT_KEY, optionsPage.getSelectedHeaderFormat().name());
+		getDialogSettings().put(CONTEXT_LINES_KEY, optionsPage.contextLines.getText());
+
 		return true;
 	}
 
@@ -239,7 +239,8 @@ public class GitCreatePatchWizard extends Wizard {
 
 	private void writeToFile(final File file, String content)
 			throws IOException {
-		Writer output = new BufferedWriter(new FileWriter(file));
+		Writer output = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(file), RawParseUtils.UTF8_CHARSET));
 		try {
 			// FileWriter always assumes default encoding is
 			// OK!
@@ -327,13 +328,27 @@ public class GitCreatePatchWizard extends Wizard {
 							|| !((DiffHeaderFormat) element).isCommitRequired();
 				}
 			}});
-			formatCombo.setSelection(new StructuredSelection(DiffHeaderFormat.NONE));
+
+			String formatName = getDialogSettings().get(FORMAT_KEY);
+			DiffHeaderFormat selection = DiffHeaderFormat.NONE;
+			if (formatName != null)
+				try {
+					selection = DiffHeaderFormat.valueOf(formatName);
+				} catch (IllegalArgumentException ex) {
+					// Use default
+				}
+			formatCombo.setSelection(new StructuredSelection(selection));
+
 
 			contextLinesLabel = new Label(composite, SWT.NONE);
 			contextLinesLabel.setText(UIText.GitCreatePatchWizard_LinesOfContext);
 
+			String contextLineSetting = getDialogSettings().get(CONTEXT_LINES_KEY);
+			if (contextLineSetting == null)
+				contextLineSetting = String.valueOf(CreatePatchOperation.DEFAULT_CONTEXT_LINES);
 			contextLines = new Text(composite, SWT.BORDER | SWT.RIGHT);
-			contextLines.setText(String.valueOf(CreatePatchOperation.DEFAULT_CONTEXT_LINES));
+			contextLines.setText(contextLineSetting);
+			validatePage();
 			contextLines.addModifyListener(new ModifyListener() {
 
 				public void modifyText(ModifyEvent e) {
