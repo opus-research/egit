@@ -26,8 +26,9 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
-import org.eclipse.jgit.storage.file.FileBasedConfig;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.lib.FileBasedConfig;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.ui.IActionBars;
@@ -66,14 +67,14 @@ public class RepositoryPropertySource implements IPropertySource,
 
 	private final FileBasedConfig repositoryConfig;
 
-	private final FileBasedConfig effectiveConfig;
+	private final RepositoryConfig effectiveConfig;
 
 	/**
 	 * @param rep
 	 *            the repository
 	 * @param page
 	 */
-	public RepositoryPropertySource(FileRepository rep, PropertySheetPage page) {
+	public RepositoryPropertySource(Repository rep, PropertySheetPage page) {
 
 		myPage = page;
 

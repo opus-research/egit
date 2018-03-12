@@ -14,8 +14,6 @@ package org.eclipse.egit.ui.internal.repository;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.commands.Command;
@@ -49,12 +47,10 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
-import org.eclipse.jgit.events.IndexChangedEvent;
-import org.eclipse.jgit.events.IndexChangedListener;
-import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
+import org.eclipse.jgit.lib.IndexChangedEvent;
+import org.eclipse.jgit.lib.RefsChangedEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorInput;
@@ -103,11 +99,7 @@ public class RepositoriesView extends CommonNavigator {
 
 	private final Set<Repository> repositories = new HashSet<Repository>();
 
-	private final List<ListenerHandle> listenerHandlers = new LinkedList<ListenerHandle>();
-
-	private final IndexChangedListener indexChangedListener;
-
-	private final RefsChangedListener refsChangedListener;
+	private RepositoryListener repositoryListener;
 
 	private Job scheduledJob;
 
@@ -142,15 +134,13 @@ public class RepositoriesView extends CommonNavigator {
 			}
 		};
 
-		refsChangedListener = new RefsChangedListener() {
-			public void onRefsChanged(RefsChangedEvent event) {
+		repositoryListener = new RepositoryListener() {
+			public void refsChanged(RefsChangedEvent e) {
 				lastRepositoryChange = System.currentTimeMillis();
 				scheduleRefresh(DEFAULT_REFRESH_DELAY);
 			}
-		};
 
-		indexChangedListener = new IndexChangedListener() {
-			public void onIndexChanged(IndexChangedEvent event) {
+			public void indexChanged(IndexChangedEvent e) {
 				lastRepositoryChange = System.currentTimeMillis();
 				scheduleRefresh(DEFAULT_REFRESH_DELAY);
 			}
@@ -238,22 +228,17 @@ public class RepositoriesView extends CommonNavigator {
 				configurationListener);
 
 		// listen for repository changes
-		for (String dir : repositoryUtil.getConfiguredRepositories())
-			watchDirectory(dir);
-		return viewer;
-	}
-
-	private void watchDirectory(String dir) {
-		try {
-			Repository repo = repositoryCache.lookupRepository(new File(dir));
-			listenerHandlers.add(repo.getListenerList()
-					.addIndexChangedListener(indexChangedListener));
-			listenerHandlers.add(repo.getListenerList().addRefsChangedListener(
-					refsChangedListener));
-			repositories.add(repo);
-		} catch (IOException e) {
-			Activator.handleError(e.getMessage(), e, false);
+		for (String dir : repositoryUtil.getConfiguredRepositories()) {
+			try {
+				Repository repo = repositoryCache
+						.lookupRepository(new File(dir));
+				repo.addRepositoryChangedListener(repositoryListener);
+				repositories.add(repo);
+			} catch (IOException e) {
+				Activator.handleError(e.getMessage(), e, false);
+			}
 		}
+		return viewer;
 	}
 
 	@Override
@@ -402,8 +387,17 @@ public class RepositoriesView extends CommonNavigator {
 						unregisterRepositoryListener();
 						repositories.clear();
 						for (String dir : repositoryUtil
-								.getConfiguredRepositories())
-							watchDirectory(dir);
+								.getConfiguredRepositories()) {
+							try {
+								Repository repo = repositoryCache
+										.lookupRepository(new File(dir));
+								repo
+										.addRepositoryChangedListener(repositoryListener);
+								repositories.add(repo);
+							} catch (IOException e) {
+								Activator.handleError(e.getMessage(), e, false);
+							}
+						}
 					}
 				}
 
@@ -486,9 +480,8 @@ public class RepositoriesView extends CommonNavigator {
 	}
 
 	private void unregisterRepositoryListener() {
-		for (ListenerHandle lh : listenerHandlers)
-			lh.remove();
-		listenerHandlers.clear();
+		for (Repository repo : repositories)
+			repo.removeRepositoryChangedListener(repositoryListener);
 	}
 
 	public boolean show(ShowInContext context) {

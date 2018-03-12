@@ -24,14 +24,13 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.GitProvider;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
 import org.eclipse.jgit.lib.GitIndex.Entry;
-import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.team.core.RepositoryProvider;
 
 /**
  * This class keeps track
@@ -45,7 +44,7 @@ public class RepositoryMapping {
 
 	private final String gitdirPath;
 
-	private FileRepository db;
+	private Repository db;
 
 	private String workdirPrefix;
 
@@ -118,8 +117,8 @@ public class RepositoryMapping {
 	/**
 	 * @return the workdir file, i.e. where the files are checked out
 	 */
-	public File getWorkTree() {
-		return getRepository().getWorkTree();
+	public File getWorkDir() {
+		return getRepository().getWorkDir();
 	}
 
 	synchronized void clear() {
@@ -131,17 +130,17 @@ public class RepositoryMapping {
 	/**
 	 * @return a reference to the repository object handled by this mapping
 	 */
-	public synchronized FileRepository getRepository() {
+	public synchronized Repository getRepository() {
 		return db;
 	}
 
-	synchronized void setRepository(final FileRepository r) {
+	synchronized void setRepository(final Repository r) {
 		db = r;
 
 		try {
-			workdirPrefix = getWorkTree().getCanonicalPath();
+			workdirPrefix = getWorkDir().getCanonicalPath();
 		} catch (IOException err) {
-			workdirPrefix = getWorkTree().getAbsolutePath();
+			workdirPrefix = getWorkDir().getAbsolutePath();
 		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/"))  //$NON-NLS-1$
@@ -205,13 +204,13 @@ public class RepositoryMapping {
 		if (blob == null)
 			return true; // added in index
 		boolean hashesDiffer = !entry.getObjectId().equals(blob.getId());
-		return hashesDiffer || entry.isModified(getWorkTree());
+		return hashesDiffer || entry.isModified(getWorkDir());
 	}
 
 	/**
 	 * This method should only be called for resources that are actually in this
 	 * repository, so we can safely assume that their path prefix matches
-	 * {@link #getWorkTree()}. Testing that here is rather expensive so we don't
+	 * {@link #getWorkDir()}. Testing that here is rather expensive so we don't
 	 * bother.
 	 *
 	 * @param rsrc
