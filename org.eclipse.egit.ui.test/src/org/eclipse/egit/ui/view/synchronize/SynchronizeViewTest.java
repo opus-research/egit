@@ -37,7 +37,9 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.op.ResetOperation.ResetType;
@@ -56,6 +58,7 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
+import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -141,9 +144,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
-	@Test
-	@Ignore // failing rather often on Hudson
-	public void shouldOpenCompareEditorInGitChangeSet() throws Exception {
+	@Test public void shouldOpenCompareEditorInGitChangeSet() throws Exception {
 		// given
 		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
@@ -350,9 +351,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		assertEquals(1, workingTree.getNodes(name).size());
 	}
 
-	@Test
-	@Ignore // failing rather often on Hudson
-	public void shouldShowCompareEditorForNonWorkspaceFileFromSynchronization()
+	@Test public void shouldShowCompareEditorForNonWorkspaceFileFromSynchronization()
 			throws Exception {
 		// given
 		String content = "file content";
@@ -540,14 +539,14 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	}
 
 	private void launchSynchronization(String srcRepo, String srcRef,
-			String dstRepo, String dstRef, boolean includeLocal) throws InterruptedException{
+			String dstRepo, String dstRef, boolean includeLocal) {
 		launchSynchronization(REPO1, PROJ1, srcRepo, srcRef, dstRepo, dstRef,
 				includeLocal);
 	}
 
 	private void launchSynchronization(String repo, String projectName,
 			String srcRepo, String srcRef, String dstRepo, String dstRef,
-			boolean includeLocal) throws InterruptedException {
+			boolean includeLocal) {
 		showDialog(projectName, "Team", "Synchronize...");
 
 		bot.shell("Synchronize repository: " + repo + File.separator + ".git")
@@ -570,9 +569,43 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		if (dstRef != null)
 			bot.comboBox(3).setSelection(dstRef);
 
-		Job.getJobManager().join(ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, null);
+		// register synchronization finish hook
+		SynchronizeFinishHook sfh = new SynchronizeFinishHook();
+		Job.getJobManager().addJobChangeListener(sfh);
 
+		// fire action
 		bot.button(IDialogConstants.OK_LABEL).click();
+
+		try {
+			bot.waitUntil(sfh, 120000);
+		} finally {
+			Job.getJobManager().removeJobChangeListener(sfh);
+		}
+	}
+
+	private static class SynchronizeFinishHook extends JobChangeAdapter
+			implements ICondition {
+		private boolean state = false;
+
+		public void done(IJobChangeEvent event) {
+			if (event.getJob().belongsTo(
+					ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION))
+				state = true;
+		}
+
+		public boolean test() throws Exception {
+			return state;
+		}
+
+		public void init(SWTBot swtBot) {
+			// unused
+		}
+
+		public String getFailureMessage() {
+			// unused
+			return null;
+		}
+
 	}
 
 	private SWTBot setPresentationModel(String model) throws Exception {
