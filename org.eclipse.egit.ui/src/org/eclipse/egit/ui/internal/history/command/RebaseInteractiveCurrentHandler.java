@@ -16,11 +16,9 @@ import java.io.IOException;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.core.op.RebaseOperation;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commands.shared.AbstractRebaseCommandHandler;
 import org.eclipse.egit.ui.internal.rebase.RebaseInteracitveHandler;
-import org.eclipse.egit.ui.internal.rebase.RebaseInteractiveView;
 import org.eclipse.jgit.lib.BranchConfig;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectIdRef;
@@ -30,8 +28,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
  * Executes the Rebase (interactively) TODO: This is a copy of
@@ -64,21 +60,13 @@ public class RebaseInteractiveCurrentHandler extends AbstractHistoryCommandHandl
 		AbstractRebaseCommandHandler rebaseCurrentRef = new AbstractRebaseCommandHandler(
 				jobname, UIText.RebaseCurrentRefCommand_RebaseCanceledMessage) {
 			@Override
-			public RebaseOperation createRebaseOperation(ExecutionEvent event2)
-					throws ExecutionException {
-				return new RebaseOperation(repository, ref,
+			protected RebaseOperation createRebaseOperation(
+					Repository repository2) throws ExecutionException {
+				return new RebaseOperation(repository2, ref,
 						RebaseInteracitveHandler.INSTANCE);
 			}
 		};
-		rebaseCurrentRef.execute(event);
-		try {
-			RebaseInteractiveView rebaseInteractiveView = (RebaseInteractiveView) HandlerUtil
-					.getActiveWorkbenchWindowChecked(event).getActivePage()
-					.showView(RebaseInteractiveView.VIEW_ID);
-			rebaseInteractiveView.setInput(repository);
-		} catch (PartInitException e) {
-			Activator.showError(e.getMessage(), e);
-		}
+		rebaseCurrentRef.execute(repository);
 		return null;
 	}
 

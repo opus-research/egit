@@ -34,16 +34,17 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 
+
 	/**
 	 * @param event
 	 *            the {@link ExecutionEvent}
 	 * @return a {@link Repository} if all elements in the current selection map
 	 *         to the same {@link Repository}, otherwise null
 	 */
-	public static Repository extractRepository(ExecutionEvent event) {
+	public static Repository getRepository(ExecutionEvent event) {
 		ISelection selection = HandlerUtil.getCurrentSelection(event);
 		IEditorInput editorInput = getActiveEditorInput(event);
-		return extractRepository(selection, editorInput);
+		return getRepository(selection, editorInput);
 	}
 
 	/**
@@ -54,7 +55,7 @@ public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 	 * @return a {@link Repository} if all elements in the current selection map
 	 *         to the same {@link Repository}, otherwise null
 	 */
-	protected static Repository extractRepository(ISelection selection, IEditorInput editorInput) {
+	protected static Repository getRepository(ISelection selection, IEditorInput editorInput) {
 		if (selection == null || selection.isEmpty())
 			return null;
 		if (selection instanceof IStructuredSelection) {
