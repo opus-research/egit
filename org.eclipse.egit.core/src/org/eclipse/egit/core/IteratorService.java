@@ -31,18 +31,11 @@ public class IteratorService {
 	 * @param repository
 	 * @return <li>a {@link ContainerTreeIterator} if the work tree folder of
 	 *         the given repository resides in a project shared with Git <li>an
-	 *         {@link AdaptableFileTreeIterator} otherwise <li>{@code null} if the
-	 *         workspace is closed.
+	 *         {@link AdaptableFileTreeIterator} otherwise
 	 */
 	public static WorkingTreeIterator createInitialIterator(
 			Repository repository) {
-		IWorkspaceRoot root;
-		try {
-			root = ResourcesPlugin.getWorkspace().getRoot();
-		} catch (IllegalStateException e) {
-			// workspace is closed
-			return null;
-		}
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IContainer container = findContainer(root, repository.getWorkTree());
 		if (container != null)
 			return new ContainerTreeIterator(repository, container);
