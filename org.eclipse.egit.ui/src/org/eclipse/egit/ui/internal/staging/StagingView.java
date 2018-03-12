@@ -2068,9 +2068,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private static void showControl(Control c, final boolean show) {
-		if (c.isDisposed())
-			return;
-
 		c.setVisible(show);
 		GridData g = (GridData) c.getLayoutData();
 		g.exclude = !show;
