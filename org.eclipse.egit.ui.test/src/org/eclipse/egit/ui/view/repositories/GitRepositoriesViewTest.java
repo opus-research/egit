@@ -516,4 +516,3 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		}
 	}
 }
-
