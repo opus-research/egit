@@ -11,9 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.IOException;
-
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -25,6 +22,8 @@ import org.eclipse.swt.graphics.Image;
 class GraphLabelProvider extends BaseLabelProvider implements
 		ITableLabelProvider {
 	private GitDateFormatter dateFormatter;
+
+	private boolean showEmail;
 
 	private RevCommit lastCommit;
 
@@ -38,25 +37,22 @@ class GraphLabelProvider extends BaseLabelProvider implements
 	}
 
 	public String getColumnText(final Object element, final int columnIndex) {
-		final SWTCommit c = (SWTCommit) element;
-		try {
-			c.parseBody();
-		} catch (IOException e) {
-			Activator.error("Error parsing body", e); //$NON-NLS-1$
-			return ""; //$NON-NLS-1$
-		}
+		final RevCommit c = (RevCommit) element;
 		if (columnIndex == 0)
+			return c.getId().abbreviate(7).name();
+		if (columnIndex == 1)
 			return c.getShortMessage();
-		if (columnIndex == 3)
-			return c.getId().abbreviate(8).name() + "..."; //$NON-NLS-1$
-		if (columnIndex == 1 || columnIndex == 2) {
+		if (columnIndex == 2 || columnIndex == 3) {
 			final PersonIdent author = authorOf(c);
 			if (author != null)
 				switch (columnIndex) {
-				case 1:
-					return author.getName()
-							+ " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
 				case 2:
+					if (showEmail)
+						return author.getName()
+								+ " <" + author.getEmailAddress() + '>'; //$NON-NLS-1$
+					else
+						return author.getName();
+				case 3:
 					return getDateFormatter().formatDate(author);
 				}
 		}
@@ -65,8 +61,11 @@ class GraphLabelProvider extends BaseLabelProvider implements
 			if (committer != null)
 				switch (columnIndex) {
 				case 4:
-					return committer.getName()
-							+ " <" + committer.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+					if (showEmail)
+						return committer.getName()
+								+ " <" + committer.getEmailAddress() + '>'; //$NON-NLS-1$
+					else
+						return committer.getName();
 				case 5:
 					return getDateFormatter().formatDate(committer);
 				}
@@ -112,5 +111,12 @@ class GraphLabelProvider extends BaseLabelProvider implements
 			format = Format.RELATIVE;
 		else
 			format = Format.LOCALE;
+	}
+
+	/**
+	 * @param showEmail true to show e-mail addresses, false otherwise
+	 */
+	public void setShowEmailAddresses(boolean showEmail) {
+		this.showEmail = showEmail;
 	}
 }

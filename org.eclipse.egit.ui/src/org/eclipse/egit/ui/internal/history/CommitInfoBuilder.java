@@ -171,8 +171,7 @@ public class CommitInfoBuilder {
 		}
 
 		for (int i = 0; i < commit.getParentCount(); i++) {
-			final SWTCommit p = (SWTCommit)commit.getParent(i);
-			p.parseBody();
+			final RevCommit p = commit.getParent(i);
 			d.append(UIText.CommitMessageViewer_parent);
 			d.append(": "); //$NON-NLS-1$
 			addLink(d, styles, p);
@@ -183,8 +182,7 @@ public class CommitInfoBuilder {
 		}
 
 		for (int i = 0; i < commit.getChildCount(); i++) {
-			final SWTCommit p = (SWTCommit)commit.getChild(i);
-			p.parseBody();
+			final RevCommit p = commit.getChild(i);
 			d.append(UIText.CommitMessageViewer_child);
 			d.append(": "); //$NON-NLS-1$
 			addLink(d, styles, p);
@@ -194,7 +192,7 @@ public class CommitInfoBuilder {
 			d.append(LF);
 		}
 
-		List<Ref> branches = getBranches(allRefs);
+		List<Ref> branches = getBranches();
 		if (!branches.isEmpty()) {
 			d.append(UIText.CommitMessageViewer_branches);
 			d.append(": "); //$NON-NLS-1$
@@ -314,10 +312,10 @@ public class CommitInfoBuilder {
 		addLink(d, to.getId().name(), styles, to);
 	}
 
-	/*
+	/**
 	 * @return List of heads from those current commit is reachable
 	 */
-	private List<Ref> getBranches(Collection<Ref> allRefs) {
+	private List<Ref> getBranches() {
 		RevWalk revWalk = new RevWalk(db);
 		List<Ref> result = new ArrayList<Ref>();
 
