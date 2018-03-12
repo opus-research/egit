@@ -54,6 +54,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.core.mapping.ISynchronizationContext;
@@ -243,6 +244,10 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 					((ResourceDiffCompareInput) input).setLeft(newSource);
 				} catch (TeamException e) {
 					// Keep the input from super as-is
+					String error = NLS
+							.bind(UIText.GitModelSynchronizeParticipant_noCachedSourceVariant,
+									resource.getName());
+					Activator.logError(error, e);
 				}
 			}
 		}

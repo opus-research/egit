@@ -29,6 +29,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -37,6 +38,7 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.diff.IDiff;
 import org.eclipse.team.core.diff.ITwoWayDiff;
@@ -281,14 +283,15 @@ public class GitResourceVariantTreeSubscriber extends
 				if (info.getKind() != SyncInfo.IN_SYNC) {
 					IResourceVariant remote = info.getRemote();
 					IResource local = info.getLocal();
+
 					int kind;
-					if (remote == null) {
+					if (remote == null)
 						kind = IDiff.REMOVE;
-					} else if (!local.exists()) {
+					else if (!local.exists())
 						kind = IDiff.ADD;
-					} else {
+					else
 						kind = IDiff.CHANGE;
-					}
+
 					if (local.getType() == IResource.FILE) {
 						IFileRevision after = asFileState(remote);
 						IFileRevision before = getLocalFileRevision((IFile) local);
@@ -308,14 +311,15 @@ public class GitResourceVariantTreeSubscriber extends
 					|| direction == SyncInfo.CONFLICTING) {
 				IResourceVariant ancestor = info.getBase();
 				IResource local = info.getLocal();
+
 				int kind;
-				if (ancestor == null) {
+				if (ancestor == null)
 					kind = IDiff.ADD;
-				} else if (!local.exists()) {
+				else if (!local.exists())
 					kind = IDiff.REMOVE;
-				} else {
+				else
 					kind = IDiff.CHANGE;
-				}
+
 				if (local.getType() == IResource.FILE) {
 					IFileRevision before = asFileState(ancestor);
 					IFileRevision after = getLocalFileRevision((IFile) local);
@@ -346,7 +350,10 @@ public class GitResourceVariantTreeSubscriber extends
 			try {
 				return asFileState(getSourceTree().getResourceVariant(local));
 			} catch (TeamException e) {
-				// TODO log
+				String error = NLS
+						.bind(CoreText.GitResourceVariantTreeSubscriber_CouldNotFindSourceVariant,
+								local.getName());
+				Activator.logError(error, e);
 				// fall back to the working tree version
 				return new WorkspaceFileRevision(local);
 			}
@@ -362,14 +369,15 @@ public class GitResourceVariantTreeSubscriber extends
 					|| direction == SyncInfo.CONFLICTING) {
 				IResourceVariant ancestor = info.getBase();
 				IResourceVariant remote = info.getRemote();
+
 				int kind;
-				if (ancestor == null) {
+				if (ancestor == null)
 					kind = IDiff.ADD;
-				} else if (remote == null) {
+				else if (remote == null)
 					kind = IDiff.REMOVE;
-				} else {
+				else
 					kind = IDiff.CHANGE;
-				}
+
 				// For folders, we don't need file states
 				if (info.getLocal().getType() == IResource.FILE) {
 					IFileRevision before = asFileState(ancestor);
@@ -403,7 +411,7 @@ public class GitResourceVariantTreeSubscriber extends
 	/**
 	 * The default implementation of ResourceVariantFileRevision has no author,
 	 * comment, timestamp... or any information that could be provided by the
-	 * Gir resource variant. This implementation uses the variant's information.
+	 * Git resource variant. This implementation uses the variant's information.
 	 */
 	private class GitResourceVariantFileRevision extends
 			ResourceVariantFileRevision {

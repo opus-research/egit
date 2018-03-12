@@ -41,9 +41,8 @@ class GitLocalResourceVariant implements IResourceVariant {
 	}
 
 	public IStorage getStorage(IProgressMonitor monitor) throws TeamException {
-		if (resource.getType() == IResource.FILE) {
+		if (resource.getType() == IResource.FILE)
 			return (IFile) resource;
-		}
 		return null;
 	}
 
