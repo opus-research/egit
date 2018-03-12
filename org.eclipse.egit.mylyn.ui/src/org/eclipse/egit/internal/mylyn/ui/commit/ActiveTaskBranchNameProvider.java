@@ -15,6 +15,7 @@
 package org.eclipse.egit.internal.mylyn.ui.commit;
 
 import org.eclipse.egit.ui.IBranchNameProvider;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.mylyn.internal.tasks.ui.util.TasksUiInternal;
 import org.eclipse.mylyn.tasks.core.ITask;
 import org.eclipse.mylyn.tasks.ui.TasksUi;
@@ -52,12 +53,12 @@ public class ActiveTaskBranchNameProvider implements IBranchNameProvider {
 	}
 
 	private String normalizeBranchName(String name) {
-		String normalized = name.trim()
-				.replaceAll("\\s+", "_").replaceAll("[^\\w-]", ""); //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-		if (normalized.length() > 30)
-			normalized = normalized.substring(0, 30);
+		String normalized = Repository.normalizeBranchName(name);
+		if (normalized != null && normalized.length() > 30) {
+			normalized = Repository
+					.normalizeBranchName(normalized.substring(0, 30));
+		}
 		return normalized;
 	}
-
 }
 

@@ -9,7 +9,6 @@
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  * Copyright (C) 2015-2016 Thomas Wolf <thomas.wolf@paranor.ch>
- * Copyright (C) 2015-2017, Stefan Dirix <sdirix@eclipsesource.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -59,7 +58,6 @@ import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
@@ -1602,32 +1600,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	@Override
 	public boolean setInput(Object object) {
 		try {
-			Object useAsInput = object;
-
-			// Workaround for the limitation of GenericHistoryView to only
-			// forward the first part of a selection and adapting it
-			// immediately to IResource.
-			ISelection selection = getSite().getPage().getSelection();
-			if (selection instanceof IStructuredSelection) {
-				IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-				HistoryPageInput mostFittingInput = SelectionUtils
-						.getMostFittingInput(structuredSelection, object);
-				if (mostFittingInput != null) {
-					useAsInput = mostFittingInput;
-				}
-			}
-
 			// hide the warning text initially
 			setWarningText(null);
 			trace = GitTraceLocation.HISTORYVIEW.isActive();
 			if (trace)
 				GitTraceLocation.getTrace().traceEntry(
-						GitTraceLocation.HISTORYVIEW.getLocation(), useAsInput);
+						GitTraceLocation.HISTORYVIEW.getLocation(), object);
 
-			if (useAsInput == getInput())
+			if (object == getInput())
 				return true;
 			this.input = null;
-			return super.setInput(useAsInput);
+			return super.setInput(object);
 		} finally {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
