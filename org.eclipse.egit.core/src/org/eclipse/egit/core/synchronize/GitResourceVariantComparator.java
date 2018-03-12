@@ -99,11 +99,7 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 		GitResourceVariant gitRemote = (GitResourceVariant) remote;
 
 		boolean exists = gitBase.exists() && gitRemote.exists();
-		boolean equalType = !(gitBase.isContainer() ^ gitRemote.isContainer());
-		boolean equalSha1 = gitBase.getObjectId().getName()
-				.equals(gitRemote.getObjectId().getName());
-
-		return equalType && exists && equalSha1;
+		return exists && gitBase.getObjectId().equals(gitRemote.getObjectId());
 	}
 
 	public boolean isThreeWay() {

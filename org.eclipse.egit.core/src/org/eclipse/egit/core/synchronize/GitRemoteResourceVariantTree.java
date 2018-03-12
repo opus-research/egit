@@ -11,9 +11,15 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
+import java.io.IOException;
+
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.variants.SessionResourceVariantByteStore;
 
@@ -25,7 +31,22 @@ class GitRemoteResourceVariantTree extends GitResourceVariantTree {
 
 	@Override
 	protected RevCommit getRevCommit(GitSynchronizeData gsd) throws TeamException {
-		return gsd.getDstRevCommit();
+		RevCommit result;
+		Repository repo = gsd.getRepository();
+		RevWalk rw = new RevWalk(repo);
+		rw.setRevFilter(RevFilter.MERGE_BASE);
+
+		try {
+			Ref dstRef = repo.getRef(gsd.getDstRev());
+			if (dstRef == null)
+				result = null;
+			else
+				result = rw.parseCommit(dstRef.getObjectId());
+		} catch (IOException e) {
+			throw new TeamException("", e); //$NON-NLS-1$
+		}
+
+		return result != null ? result : null;
 	}
 
 }
