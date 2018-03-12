@@ -10,7 +10,9 @@
  *****************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
+import java.text.MessageFormat;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -19,51 +21,64 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.op.StashCreateOperation;
+import org.eclipse.egit.core.op.StashDropOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
+import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
- * Command to stash current changes in working directory and index
+ * Command to drop one or all stashed commits
  */
-public class StashCreateCommand extends
-		RepositoriesViewCommandHandler<RepositoryNode> {
-
-	/**
-	 * Command id
-	 */
-	public static final String ID = "org.eclipse.egit.ui.team.stash.create"; //$NON-NLS-1$
+public class StashDropCommand extends
+		RepositoriesViewCommandHandler<StashedCommitNode> {
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		List<RepositoryNode> nodes = getSelectedNodes(event);
+		List<StashedCommitNode> nodes = getSelectedNodes(event);
 		if (nodes.isEmpty())
 			return null;
-		Repository repo = nodes.get(0).getRepository();
+
+		StashedCommitNode node = nodes.get(0);
+		final Repository repo = node.getRepository();
 		if (repo == null)
 			return null;
+		final int index = node.getIndex();
+		if (index < 0)
+			return null;
+		final RevCommit commit = node.getObject();
+		if (commit == null)
+			return null;
 
-		final StashCreateOperation op = new StashCreateOperation(repo);
-		final Shell shell = HandlerUtil.getActiveShell(event);
-		Job job = new Job(UIText.StashCreateCommand_jobTitle) {
+		// Confirm deletion of selected tags
+		final AtomicBoolean confirmed = new AtomicBoolean();
+		final Shell shell = getActiveShell(event);
+		shell.getDisplay().syncExec(new Runnable() {
+
+			public void run() {
+				confirmed.set(MessageDialog.openConfirm(shell,
+						UIText.StashDropCommand_confirmTitle, MessageFormat
+								.format(UIText.StashDropCommand_confirmMessage,
+										Integer.toString(index))));
+			}
+		});
+		if (!confirmed.get())
+			return null;
+
+		final StashDropOperation op = new StashDropOperation(repo, index);
+		Job job = new Job(MessageFormat.format(
+				UIText.StashDropCommand_jobTitle, commit.name())) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				monitor.beginTask("", 1); //$NON-NLS-1$
 				try {
 					op.execute(monitor);
-					RevCommit commit = op.getCommit();
-					if (commit == null)
-						showNoChangesToStash(shell);
-
 				} catch (CoreException e) {
-					Activator
-							.logError(UIText.StashCreateCommand_stashFailed, e);
+					Activator.logError(MessageFormat.format(
+							UIText.StashDropCommand_dropFailed, commit.name()),
+							e);
 				}
 				return Status.OK_STATUS;
 			}
@@ -79,16 +94,5 @@ public class StashCreateCommand extends
 		job.setRule(op.getSchedulingRule());
 		job.schedule();
 		return null;
-	}
-
-	private void showNoChangesToStash(final Shell shell) {
-		shell.getDisplay().asyncExec(new Runnable() {
-
-			public void run() {
-				MessageDialog.openInformation(shell,
-						UIText.StashCreateCommand_titleNoChanges,
-						UIText.StashCreateCommand_messageNoChanges);
-			}
-		});
 	}
 }

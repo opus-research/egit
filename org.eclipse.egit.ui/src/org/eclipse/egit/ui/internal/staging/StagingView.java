@@ -86,6 +86,7 @@ import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.dircache.DirCacheEntry;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -727,103 +728,70 @@ public class StagingView extends ViewPart {
 						openSelectionInEditor(tableViewer.getSelection());
 					}
 				};
-				boolean addReplaceWithFileInGitIndex = false;
-				boolean addReplaceWithHeadRevision = false;
-				boolean addStage = false;
-				boolean addUnstage = false;
-				boolean addLaunchMergeTool = false;
 				openWorkingTreeVersion.setEnabled(!submoduleSelected);
 				menuMgr.add(openWorkingTreeVersion);
 
 				StagingEntry stagingEntry = (StagingEntry) selection.getFirstElement();
 				switch (stagingEntry.getState()) {
 				case ADDED:
-					addUnstage = true;
-					break;
 				case CHANGED:
-					addReplaceWithHeadRevision = true;
-					addUnstage = true;
-					break;
 				case REMOVED:
-					addReplaceWithHeadRevision = true;
-					addUnstage = true;
-					break;
-				case CONFLICTING:
-					addReplaceWithFileInGitIndex = true;
-					addReplaceWithHeadRevision = true;
-					addStage = true;
-					addLaunchMergeTool = true;
-					break;
-				case MISSING:
-				case MODIFIED:
-				case PARTIALLY_MODIFIED:
-				case UNTRACKED:
-					addReplaceWithFileInGitIndex = true;
-					addReplaceWithHeadRevision = true;
-					addStage = true;
-					break;
-				}
-				if (addStage)
-					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
-						@Override
-						public void run() {
-							stage((IStructuredSelection) tableViewer.getSelection());
-						}
-					});
-				if (addUnstage)
 					menuMgr.add(new Action(UIText.StagingView_UnstageItemMenuLabel) {
 						@Override
 						public void run() {
 							unstage((IStructuredSelection) tableViewer.getSelection());
 						}
 					});
-				boolean isNonResourceSelection = isNonResourceSelection(tableViewer.getSelection());
-				if (addReplaceWithFileInGitIndex)
-					if (isNonResourceSelection)
-						menuMgr.add(new ReplaceAction(UIText.StagingView_replaceWithFileInGitIndex, selection, false));
-					else
-						menuMgr.add(createItem(ActionCommands.DISCARD_CHANGES_ACTION, tableViewer));	// replace with index
-				if (addReplaceWithHeadRevision)
-					if (isNonResourceSelection)
-						menuMgr.add(new ReplaceAction(UIText.StagingView_replaceWithHeadRevision, selection, true));
-					else
-						menuMgr.add(createItem(ActionCommands.REPLACE_WITH_HEAD_ACTION, tableViewer));
-				if (addLaunchMergeTool)
+					break;
+
+				case CONFLICTING:
 					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION, tableViewer));
+					//$FALL-THROUGH$
+				case MISSING:
+				case MODIFIED:
+				case PARTIALLY_MODIFIED:
+				case UNTRACKED:
+				default:
+					boolean isNonResourceSelection = isNonResourceSelection(tableViewer.getSelection());
+					if (!isNonResourceSelection)
+						menuMgr.add(createItem(ActionCommands.DISCARD_CHANGES_ACTION, tableViewer));	// replace with index
+					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
+						@Override
+						public void run() {
+							stage((IStructuredSelection) tableViewer.getSelection());
+						}
+					});
+					if (!submoduleSelected && isNonResourceSelection)
+						addNonResourceActions(menuMgr, (IStructuredSelection) tableViewer.getSelection());
+				}
+			}
+
+
+		});
+
+	}
+
+	private void addNonResourceActions(IMenuManager menuMgr,
+			final IStructuredSelection selection) {
+		menuMgr.add(new Action(UIText.StagingView_replaceWithFileInGitIndex) {
+			@Override
+			public void run() {
+				boolean performAction = MessageDialog.openConfirm(form.getShell(),
+						UIText.DiscardChangesAction_confirmActionTitle,
+						UIText.DiscardChangesAction_confirmActionMessage);
+				if (!performAction)
+					return ;
+				String[] files = getSelectedFiles(selection);
+				replaceWithFileInGitIndex(files);
 			}
 		});
 
 	}
 
-	private class ReplaceAction extends Action {
-
-		IStructuredSelection selection;
-		private final boolean headRevision;
-
-		ReplaceAction(String text, IStructuredSelection selection, boolean headRevision) {
-			super(text);
-			this.selection = selection;
-			this.headRevision = headRevision;
-		}
-
-		@Override
-		public void run() {
-			boolean performAction = MessageDialog.openConfirm(form.getShell(),
-					UIText.DiscardChangesAction_confirmActionTitle,
-					UIText.DiscardChangesAction_confirmActionMessage);
-			if (!performAction)
-				return ;
-			String[] files = getSelectedFiles(selection);
-			replaceWith(files, headRevision);
-		}
-	}
-
-	private void replaceWith(String[] files, boolean headRevision) {
+	private void replaceWithFileInGitIndex(String[] files) {
 		if (files == null || files.length == 0)
 			return;
 		CheckoutCommand checkoutCommand = new Git(currentRepository).checkout();
-		if (headRevision)
-			checkoutCommand.setStartPoint(Constants.HEAD);
 		for (String path : files)
 			checkoutCommand.addPath(path);
 		try {
@@ -1231,9 +1199,33 @@ public class StagingView extends ViewPart {
 	private boolean userEnteredCommmitMessage() {
 		if (commitMessageComponent.getRepository() == null)
 			return false;
-		String message = commitMessageComponent.getCommitMessage();
+		String message = commitMessageComponent.getCommitMessage().replace(
+				UIText.StagingView_headCommitChanged, ""); //$NON-NLS-1$
 		if (message == null || message.trim().length() == 0)
 			return false;
+
+		String chIdLine = "Change-Id: I" + ObjectId.zeroId().name(); //$NON-NLS-1$
+
+		if (currentRepository.getConfig().getBoolean(
+				ConfigConstants.CONFIG_GERRIT_SECTION,
+				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false)
+				&& commitMessageComponent.getCreateChangeId()) {
+			if (message.trim().equals(chIdLine))
+				return false;
+
+			// change id was added automatically, but ther is more in the
+			// message; strip the id, and check for the signed-off-by tag
+			message = message.replace(chIdLine, ""); //$NON-NLS-1$
+		}
+
+		if (org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY)
+				&& commitMessageComponent.isSignedOff()
+				&& message.trim().equals(
+						Constants.SIGNED_OFF_BY_TAG
+								+ commitMessageComponent.getCommitter()))
+			return false;
+
 		return true;
 	}
 
