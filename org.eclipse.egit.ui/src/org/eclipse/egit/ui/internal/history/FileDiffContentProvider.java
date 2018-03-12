@@ -37,8 +37,8 @@ class FileDiffContentProvider implements IStructuredContentProvider {
 			try {
 				diff = FileDiff.compute(walk, commit);
 			} catch (IOException err) {
-				Activator.error(NLS.bind(UIText.FileDiffContentProvider_errorGettingDifference,
-						commit.getId()), err);
+				Activator.handleError(NLS.bind(UIText.FileDiffContentProvider_errorGettingDifference,
+						commit.getId()), err, false);
 			}
 		}
 		return diff;
