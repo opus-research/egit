@@ -97,7 +97,8 @@ public class RepositoriesViewActionProvider extends CommonActionProvider {
 					|| node.getType() == RepositoryTreeNodeType.FOLDER) {
 				copyAction.setEnabled(true);
 			} else if (node.getType() == RepositoryTreeNodeType.WORKINGDIR) {
-				boolean isBare = node.getRepository().isBare();
+				boolean isBare = node.getRepository().getConfig().getBoolean(
+						"core", "bare", false); //$NON-NLS-1$//$NON-NLS-2$
 				copyAction.setEnabled(!isBare);
 			} else {
 				copyAction.setEnabled(false);
