@@ -84,18 +84,18 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 				closeStream(remoteStream);
 			}
 		} else if (local instanceof IContainer) {
-			GitRemoteFolder gitVariant = (GitRemoteFolder) remote;
+			GitResourceVariant gitVariant = (GitResourceVariant) remote;
 			if (!remote.isContainer() || (local.exists() ^ gitVariant.exists()))
 				return false;
 
-			return local.getLocation().toString().equals(gitVariant.getCachePath());
+			return local.getLocation().equals(gitVariant.getLocation());
 		}
 		return false;
 	}
 
 	public boolean compare(IResourceVariant base, IResourceVariant remote) {
-		GitRemoteResource gitBase = (GitRemoteResource) base;
-		GitRemoteResource gitRemote = (GitRemoteResource) remote;
+		GitResourceVariant gitBase = (GitResourceVariant) base;
+		GitResourceVariant gitRemote = (GitResourceVariant) remote;
 
 		boolean exists = gitBase.exists() && gitRemote.exists();
 		boolean equalType = !(gitBase.isContainer() ^ gitRemote.isContainer());
