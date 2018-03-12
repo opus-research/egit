@@ -369,7 +369,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			if (mapping != null)
 				selectedRepo = mapping.getRepository();
 		}
-		if (selectedRepo == null && first instanceof IAdaptable) {
+		if (first instanceof IAdaptable) {
 			IResource adapted = (IResource) ((IAdaptable) ssel
 					.getFirstElement()).getAdapter(IResource.class);
 			if (adapted != null) {
@@ -378,8 +378,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 				if (mapping != null)
 					selectedRepo = mapping.getRepository();
 			}
-		}
-		if (selectedRepo == null && first instanceof RepositoryTreeNode) {
+		} else if (first instanceof RepositoryTreeNode) {
 			RepositoryTreeNode repoNode = (RepositoryTreeNode) ssel
 					.getFirstElement();
 			selectedRepo = repoNode.getRepository();
