@@ -124,6 +124,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 	 */
 	private TaskRepository getTaskRepositoryByGitRepoURL(final String repoUrl) {
 		try {
+
 			// replacing protocol name to avoid MalformedURIException
 			URI uri = repoUrl == null ? null : new URI(repoUrl.replaceFirst("\\w+://", "http://")); //$NON-NLS-1$ //$NON-NLS-2$
 			if (uri != null) {
