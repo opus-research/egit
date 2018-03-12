@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,7 +18,6 @@ import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.commands.IHandler;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -32,6 +31,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
@@ -58,7 +58,7 @@ import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
  * "Removes" one or several nodes
  */
 public class RemoveCommand extends
-		RepositoriesViewCommandHandler<RepositoryNode> implements IHandler {
+		RepositoriesViewCommandHandler<RepositoryNode> {
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		removeRepository(event, false);
 		return null;
@@ -164,6 +164,14 @@ public class RemoveCommand extends
 					}
 				}
 				return Status.OK_STATUS;
+			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				if (JobFamilies.REPOSITORY_DELETE.equals(family))
+					return true;
+				else
+					return super.belongsTo(family);
 			}
 		};
 

@@ -68,6 +68,7 @@ import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
@@ -156,12 +157,14 @@ import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.operations.UndoRedoActionGroup;
+import org.eclipse.ui.part.IShowInSource;
+import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 
 /**
  * A GitX style staging view with embedded commit dialog.
  */
-public class StagingView extends ViewPart {
+public class StagingView extends ViewPart implements IShowInSource {
 
 	/**
 	 * Staging view id
@@ -642,6 +645,29 @@ public class StagingView extends ViewPart {
 		site.setSelectionProvider(unstagedTableViewer);
 	}
 
+	public ShowInContext getShowInContext() {
+		if (stagedTableViewer != null && stagedTableViewer.getTable().isFocusControl())
+			return getShowInContext(stagedTableViewer);
+		else if (unstagedTableViewer != null && unstagedTableViewer.getTable().isFocusControl())
+			return getShowInContext(unstagedTableViewer);
+		else
+			return null;
+	}
+
+	private ShowInContext getShowInContext(TableViewer tableViewer) {
+		IStructuredSelection selection = (IStructuredSelection) tableViewer.getSelection();
+		List<IResource> resources = new ArrayList<IResource>();
+		for (Object element : selection.toList()) {
+			if (element instanceof StagingEntry) {
+				StagingEntry entry = (StagingEntry) element;
+				IFile file = entry.getFile();
+				if (file != null)
+					resources.add(file);
+			}
+		}
+		return new ShowInContext(null, new StructuredSelection(resources));
+	}
+
 	private int getStagingFormOrientation() {
 		boolean columnLayout = Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.STAGING_VIEW_COLUMN_LAYOUT);
@@ -934,9 +960,17 @@ public class StagingView extends ViewPart {
 					menuMgr.add(new DeleteAction(selection));
 				if (addLaunchMergeTool)
 					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION, tableViewer));
+
+				menuMgr.add(new Separator());
+				menuMgr.add(createShowInMenu());
 			}
 		});
 
+	}
+
+	private IContributionItem createShowInMenu() {
+		IWorkbenchWindow workbenchWindow = getSite().getWorkbenchWindow();
+		return UIUtils.createShowInMenu(workbenchWindow);
 	}
 
 	private class ReplaceAction extends Action {

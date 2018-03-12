@@ -1018,9 +1018,6 @@ public class UIText extends NLS {
 	public static String CompareTreeView_WorkspaceVersionText;
 
 	/** */
-	public static String CompareTreeView_ShowIn_label;
-
-	/** */
 	public static String CompareUtils_errorGettingEncoding;
 
 	/** */
@@ -2159,9 +2156,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
-
-	/** */
-	public static String CompareWithRefAction_errorOnSynchronize;
 
 	/** */
 	public static String CompareWithPreviousActionHandler_MessageRevisionNotFound;
@@ -3496,6 +3490,9 @@ public class UIText extends NLS {
 	public static String UIUtils_StartTypingForPreviousValuesMessage;
 
 	/** */
+	public static String UIUtils_ShowInMenuLabel;
+
+	/** */
 	public static String UnmergedBranchDialog_Message;
 
 	/** */
@@ -3813,6 +3810,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LocalFileRevision_currentVersionTag;
+
+	/** */
+	public static String LocalNonWorkspaceTypedElement_errorWritingContents;
 
 	/** */
 	public static String LoginDialog_changeCredentials;
