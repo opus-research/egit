@@ -64,7 +64,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			if (visible && (cloneDestination.cloneSettingsChanged())) {
 				setCallerRunsCloneOperation(true);
 				try {
-					performClone(currentSearchResult.getGitRepositoryInfo());
+					performClone(new URIish(currentSearchResult.getGitRepositoryInfo().getCloneUri()), getCredentials());
 					importWithDirectoriesPage.getControl().getDisplay().asyncExec(new Runnable() {
 
 						public void run() {
@@ -280,7 +280,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					defaultLocation[0] = createGeneralProjectPage
 							.isDefaultLocation();
 					path[0] = importWithDirectoriesPage.getPath();
-					repoDir[0] =  getClonedRepository().getDirectory();
+					repoDir[0] = getClonedRepository().getDirectory();
 				}
 			});
 			try {
