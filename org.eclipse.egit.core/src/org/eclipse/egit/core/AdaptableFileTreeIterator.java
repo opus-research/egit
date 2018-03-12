@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.eclipse.core.resources.IContainer;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -34,7 +33,6 @@ import org.eclipse.jgit.util.FS;
 public class AdaptableFileTreeIterator extends FileTreeIterator {
 
 	IWorkspaceRoot root;
-	private IProject[] allProjects;
 
 	/**
 	 * Create a new iterator to traverse the work tree of the given repository
@@ -53,7 +51,6 @@ public class AdaptableFileTreeIterator extends FileTreeIterator {
 			final IWorkspaceRoot workspaceRoot) {
 		super(repository);
 		root = workspaceRoot;
-		allProjects = root.getProjects();
 	}
 
 	/**
@@ -81,46 +78,10 @@ public class AdaptableFileTreeIterator extends FileTreeIterator {
 	public AbstractTreeIterator createSubtreeIterator(ObjectReader repo)
 			throws IncorrectObjectTypeException, IOException {
 		final File currentFile = ((FileEntry) current()).getFile();
-
-		/*
-		 * using root.findContainersForLocationURI() or
-		 * IteratorService.findContainer() (which uses the former call) is
-		 * really slow here. it makes up ~90% of the time when re-indexing a
-		 * large repository. Since we're only interested in containing projects
-		 * here, we do it on our own.
-		 */
-		IContainer container = findContainerFast(currentFile);
-			if (container != null)
-				return new ContainerTreeIterator(this, container);
+		IContainer container = IteratorService.findContainer(root, currentFile);
+		if (container != null)
+			return new ContainerTreeIterator(this, container);
 		return new AdaptableFileTreeIterator(this, currentFile, root);
-	}
-
-	private IContainer findContainerFast(File currentFile) {
-		String absFile = currentFile.getAbsolutePath();
-
-		for(IProject prj : allProjects) {
-			if(checkContainerMatch(prj, absFile))
-				return prj;
-		}
-
-		if(checkContainerMatch(root, absFile))
-			return root;
-
-		return null;
-	}
-
-	private boolean checkContainerMatch(IContainer container, String absFile) {
-		String absPrj = container.getLocation().toFile().getAbsolutePath();
-		if(absPrj.length() == absFile.length()) {
-			if(absPrj.equals(absFile))
-				return true;
-		} else if(absPrj.length() < absFile.length()) {
-			char sepChar = absFile.charAt(absPrj.length());
-			if(absFile.startsWith(absPrj) && (sepChar == '/' || sepChar == '\\')) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 }
