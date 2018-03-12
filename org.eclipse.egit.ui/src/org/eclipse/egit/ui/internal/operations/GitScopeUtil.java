@@ -93,13 +93,15 @@ public class GitScopeUtil {
 	}
 
 	private static ResourceMapping getResourceMapping(Object o) {
-		if (o instanceof ResourceMapping)
+		if (o instanceof ResourceMapping) {
 			return (ResourceMapping) o;
+		}
 		if (o instanceof IAdaptable) {
 			IAdaptable adaptable = (IAdaptable) o;
 			Object adapted = adaptable.getAdapter(ResourceMapping.class);
-			if (adapted instanceof ResourceMapping)
+			if (adapted instanceof ResourceMapping) {
 				return (ResourceMapping) adapted;
+			}
 			adapted = adaptable.getAdapter(IContributorResourceAdapter.class);
 			if (adapted instanceof IContributorResourceAdapter2) {
 				IContributorResourceAdapter2 cra = (IContributorResourceAdapter2) adapted;
@@ -108,8 +110,9 @@ public class GitScopeUtil {
 		} else {
 			Object adapted = Platform.getAdapterManager().getAdapter(o,
 					ResourceMapping.class);
-			if (adapted instanceof ResourceMapping)
+			if (adapted instanceof ResourceMapping) {
 				return (ResourceMapping) adapted;
+			}
 		}
 		return null;
 	}
@@ -122,8 +125,9 @@ public class GitScopeUtil {
 	 */
 	private static ResourceMapping[] getResourceMappings(IResource[] resources) {
 		List<ResourceMapping> result = new ArrayList<ResourceMapping>();
-		for (IResource resource : resources)
+		for (IResource resource : resources) {
 			result.add(getResourceMapping(resource));
+		}
 		return result.toArray(new ResourceMapping[result.size()]);
 	}
 
@@ -137,7 +141,7 @@ public class GitScopeUtil {
 					throws InvocationTargetException, InterruptedException {
 				try {
 					monitor.beginTask(
-							UIText.CommitActionHandler_lookingForChanges, 100);
+							UIText.CommitActionHandler_lookingChanges, 100);
 					List<IResource> collectedResources = collectRelatedChanges(
 							selectedResources, part, monitor);
 					relatedChanges.addAll(collectedResources);

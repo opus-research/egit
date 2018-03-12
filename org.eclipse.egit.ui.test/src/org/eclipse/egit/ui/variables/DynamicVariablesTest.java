@@ -62,7 +62,7 @@ public class DynamicVariablesTest extends EGitTestCase {
 
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 
-		FileUtils.mkdir(new File(root.getLocation().toFile(),"Sub"), true);
+		new File(root.getLocation().toFile(),"Sub").mkdir();
 		gitDir = new File(new File(root.getLocation().toFile(), "Sub"), Constants.DOT_GIT);
 
 		repository = new FileRepository(gitDir);
