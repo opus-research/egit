@@ -109,7 +109,7 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.TAG.equals(family))
+				if (family.equals(JobFamilies.TAG))
 					return true;
 				return super.belongsTo(family);
 			}
