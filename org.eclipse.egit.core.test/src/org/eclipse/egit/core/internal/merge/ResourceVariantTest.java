@@ -166,8 +166,7 @@ public class ResourceVariantTest extends VariantsTestCase {
 
 			while (tw.next()) {
 				AbstractGitResourceVariant variant = TreeParserResourceVariant
-						.create(repo, tw.getTree(0, CanonicalTreeParser.class),
-								null);
+						.create(repo, tw.getTree(0, CanonicalTreeParser.class));
 
 				assertEquals(tw.getObjectId(0).getName(),
 						variant.getContentIdentifier());
@@ -202,8 +201,7 @@ public class ResourceVariantTest extends VariantsTestCase {
 
 			while (tw.next()) {
 				AbstractGitResourceVariant variant = TreeParserResourceVariant
-						.create(repo, tw.getTree(0, CanonicalTreeParser.class),
-								null);
+						.create(repo, tw.getTree(0, CanonicalTreeParser.class));
 
 				assertEquals(tw.getObjectId(0).getName(),
 						variant.getContentIdentifier());
@@ -238,8 +236,7 @@ public class ResourceVariantTest extends VariantsTestCase {
 
 			while (tw.next()) {
 				AbstractGitResourceVariant variant = TreeParserResourceVariant
-						.create(repo, tw.getTree(0, CanonicalTreeParser.class),
-								null);
+						.create(repo, tw.getTree(0, CanonicalTreeParser.class));
 
 				assertEquals(tw.getObjectId(0).getName(),
 						variant.getContentIdentifier());

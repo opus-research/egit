@@ -12,7 +12,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.storage.GitLocalResourceVariant;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.synchronize.GitRemoteResource;
 import org.eclipse.osgi.util.NLS;
@@ -49,7 +48,6 @@ import org.eclipse.team.internal.core.mapping.SyncInfoToDiffConverter;
  * implementation.
  * </p>
  */
-@SuppressWarnings("restriction")
 public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 	private GitResourceVariantTreeProvider variantTreeProvider;
 
@@ -154,13 +152,12 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 			IResourceVariant remote = info.getRemote();
 
 			int kind;
-			if (ancestor == null) {
+			if (ancestor == null)
 				kind = IDiff.ADD;
-			} else if (remote == null) {
+			else if (remote == null)
 				kind = IDiff.REMOVE;
-			} else {
+			else
 				kind = IDiff.CHANGE;
-			}
 
 			// For folders, we don't need file states
 			if (info.getLocal().getType() == IResource.FILE) {
@@ -178,22 +175,17 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 	 * copied from the private implementation in SyncInfoToDiffConverter
 	 */
 	private IFileRevision asFileState(final IResourceVariant variant) {
-		if (variant == null) {
+		if (variant == null)
 			return null;
-		} else if (variant instanceof GitLocalResourceVariant) {
-			return new WorkspaceFileRevision(
-					((GitLocalResourceVariant) variant).getResource());
-		}
 		return asFileRevision(variant);
 	}
 
 	@Override
 	protected ResourceVariantFileRevision asFileRevision(
 			IResourceVariant variant) {
-		if (variant instanceof GitRemoteResource) {
+		if (variant instanceof GitRemoteResource)
 			return new GitResourceVariantFileRevision(
 					(GitRemoteResource) variant);
-		}
 		return new ResourceVariantFileRevision(variant);
 	}
 }

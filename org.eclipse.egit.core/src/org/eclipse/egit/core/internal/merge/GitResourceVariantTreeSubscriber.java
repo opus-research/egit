@@ -32,7 +32,6 @@ import org.eclipse.team.internal.core.mapping.SyncInfoToDiffConverter;
  * directory as well as it could be a branch.
  * </p>
  */
-@SuppressWarnings("restriction")
 public class GitResourceVariantTreeSubscriber extends
 		ResourceVariantTreeSubscriber {
 	private GitResourceVariantTreeProvider variantTreeProvider;
@@ -55,28 +54,27 @@ public class GitResourceVariantTreeSubscriber extends
 	}
 
 	@Override
-	public IResourceVariantTree getBaseTree() {
+	protected IResourceVariantTree getBaseTree() {
 		return variantTreeProvider.getBaseTree();
 	}
 
 	@Override
-	public IResourceVariantTree getRemoteTree() {
+	protected IResourceVariantTree getRemoteTree() {
 		return variantTreeProvider.getRemoteTree();
 	}
 
 	/**
 	 * @return the source resource variant tree.
 	 */
-	public IResourceVariantTree getSourceTree() {
+	protected IResourceVariantTree getSourceTree() {
 		return variantTreeProvider.getSourceTree();
 	}
 
 	@Override
 	public IDiff getDiff(IResource resource) throws CoreException {
 		final SyncInfo info = getSyncInfo(resource);
-		if (info == null || info.getKind() == SyncInfo.IN_SYNC) {
+		if (info == null || info.getKind() == SyncInfo.IN_SYNC)
 			return null;
-		}
 		return syncInfoConverter.getDeltaFor(info);
 	}
 
@@ -129,9 +127,8 @@ public class GitResourceVariantTreeSubscriber extends
 			try {
 				final IResourceVariant oursVariant = oursTree
 						.getResourceVariant(local);
-				if (oursVariant == null) {
+				if (oursVariant == null)
 					return remote == null;
-				}
 				return compare(oursVariant, remote);
 			} catch (TeamException e) {
 				// We can't throw the TeamException from here, but we can't let
