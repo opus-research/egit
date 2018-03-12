@@ -10,8 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history.command;
 
-import java.io.IOException;
-
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.Activator;
@@ -19,7 +17,6 @@ import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.ui.PartInitException;
 
 /**
@@ -32,15 +29,8 @@ public class OpenInCommitViewerHandler extends AbstractHistoryCommandHandler {
 		if (repository != null)
 			for (Object selected : getSelection(getPage()).toList())
 				try {
-					RevCommit selectedCommit = (RevCommit) selected;
-
-					// Re-parse commit to clear effects of TreeFilter
-					RevWalk revWalk = new RevWalk(repository);
-					RevCommit reparsedCommit = revWalk.parseCommit(selectedCommit.getId());
-
-					CommitEditor.open(new RepositoryCommit(repository, reparsedCommit));
-				} catch (IOException e) {
-					Activator.showError("Error opening commit viewer", e); //$NON-NLS-1$
+					CommitEditor.open(new RepositoryCommit(repository,
+							(RevCommit) selected));
 				} catch (PartInitException e) {
 					Activator.showError("Error opening commit viewer", e); //$NON-NLS-1$
 				}
