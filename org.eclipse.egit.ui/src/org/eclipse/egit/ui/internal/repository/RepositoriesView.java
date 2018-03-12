@@ -471,7 +471,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 
 						scheduleRefresh();
 					} catch (CoreException e1) {
-						Activator.logError(e1.getMessage(), e1);
+						Activator.getDefault().getLog().log(e1.getStatus());
 					}
 
 				}
@@ -526,10 +526,10 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 										monitor);
 								scheduleRefresh();
 							} catch (CoreException e1) {
-								return new Status(IStatus.ERROR, Activator
-										.getPluginId(), e1.getMessage(), e1);
+								return e1.getStatus();
 							}
-							return Status.OK_STATUS;
+							return new Status(IStatus.OK, Activator
+									.getPluginId(), ""); //$NON-NLS-1$
 						}
 					};
 
@@ -597,7 +597,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 								IWorkspace.AVOID_UPDATE,
 								new NullProgressMonitor());
 					} catch (CoreException e1) {
-						Activator.logError(e1.getMessage(), e1);
+						Activator.getDefault().getLog().log(e1.getStatus());
 					}
 
 				}
@@ -800,9 +800,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 							config.save();
 							scheduleRefresh();
 						} catch (IOException e1) {
-							Activator.handleError(
-									UIText.RepositoriesView_ErrorHeader, e1,
-									true);
+							MessageDialog.openError(getSite().getShell(),
+									UIText.RepositoriesView_ErrorHeader, e1
+											.getMessage());
 						}
 					}
 
@@ -845,9 +845,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 							config.save();
 							scheduleRefresh();
 						} catch (IOException e1) {
-							Activator.handleError(
-									UIText.RepositoriesView_ErrorHeader, e1,
-									true);
+							MessageDialog.openError(getSite().getShell(),
+									UIText.RepositoriesView_ErrorHeader, e1
+											.getMessage());
 						}
 					}
 
@@ -879,9 +879,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 							config.save();
 							scheduleRefresh();
 						} catch (IOException e1) {
-							Activator.handleError(
-									UIText.RepositoriesView_ErrorHeader, e1,
-									true);
+							MessageDialog.openError(getSite().getShell(),
+									UIText.RepositoriesView_ErrorHeader, e1
+											.getMessage());
 						}
 					}
 
