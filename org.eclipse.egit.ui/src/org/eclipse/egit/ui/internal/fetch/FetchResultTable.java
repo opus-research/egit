@@ -2,6 +2,7 @@ package org.eclipse.egit.ui.internal.fetch;
 
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.layout.TableColumnLayout;
+import org.eclipse.jface.resource.ColorRegistry;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ColumnWeightData;
@@ -9,9 +10,8 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -39,15 +39,23 @@ class FetchResultTable {
 
 	private static final int COLUMN_STATUS_WEIGHT = 7;
 
+	private static final String COLOR_REJECTED_KEY = "REJECTED"; //$NON-NLS-1$
+
+	private static final RGB COLOR_REJECTED = new RGB(255, 0, 0);
+
+	private static final String COLOR_UPDATED_KEY = "UPDATED"; //$NON-NLS-1$
+
+	private static final RGB COLOR_UPDATED = new RGB(0, 255, 0);
+
+	private static final String COLOR_UP_TO_DATE_KEY = "UP_TO_DATE"; //$NON-NLS-1$
+
+	private static final RGB COLOR_UP_TO_DATE = new RGB(245, 245, 245);
+
 	private final Composite tablePanel;
 
 	private final TableViewer tableViewer;
 
-	private final Color rejectedColor;
-
-	private final Color updatedColor;
-
-	private final Color upToDateColor;
+	private final ColorRegistry colorRegistry;
 
 	private Repository db;
 
@@ -63,18 +71,10 @@ class FetchResultTable {
 		table.setLinesVisible(true);
 		table.setHeaderVisible(true);
 
-		rejectedColor = new Color(parent.getDisplay(), 255, 0, 0);
-		updatedColor = new Color(parent.getDisplay(), 0, 255, 0);
-		upToDateColor = new Color(parent.getDisplay(), 245, 245, 245);
-
-		tablePanel.addDisposeListener(new DisposeListener() {
-			public void widgetDisposed(DisposeEvent e) {
-				// dispose of our allocated Color instances
-				rejectedColor.dispose();
-				updatedColor.dispose();
-				upToDateColor.dispose();
-			}
-		});
+		colorRegistry = new ColorRegistry(table.getDisplay());
+		colorRegistry.put(COLOR_REJECTED_KEY, COLOR_REJECTED);
+		colorRegistry.put(COLOR_UPDATED_KEY, COLOR_UPDATED);
+		colorRegistry.put(COLOR_UP_TO_DATE_KEY, COLOR_UP_TO_DATE);
 
 		tableViewer.setContentProvider(new TrackingRefUpdateContentProvider());
 		tableViewer.setInput(null);
@@ -185,13 +185,13 @@ class FetchResultTable {
 				case FAST_FORWARD:
 				case FORCED:
 				case NEW:
-					return updatedColor;
+					return colorRegistry.get(COLOR_UPDATED_KEY);
 				case NO_CHANGE:
-					return upToDateColor;
+					return colorRegistry.get(COLOR_UP_TO_DATE_KEY);
 				case IO_FAILURE:
 				case LOCK_FAILURE:
 				case REJECTED:
-					return rejectedColor;
+					return colorRegistry.get(COLOR_REJECTED_KEY);
 				default:
 					throw new IllegalArgumentException(NLS.bind(
 							UIText.FetchResultTable_statusUnexpected, result));
