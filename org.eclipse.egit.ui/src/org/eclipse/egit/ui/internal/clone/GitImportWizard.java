@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.clone;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
@@ -52,6 +54,8 @@ public class GitImportWizard extends Wizard implements ProjectCreator,
 
 	private GitCreateGeneralProjectPage createGeneralProjectPage = new GitCreateGeneralProjectPage();
 
+	private GitShareProjectsPage shareProjectsPage = new GitShareProjectsPage();
+
 	/**
 	 * Default constructor
 	 */
@@ -71,16 +75,60 @@ public class GitImportWizard extends Wizard implements ProjectCreator,
 		addPage(importWithDirectoriesPage);
 		addPage(projectsImportPage);
 		addPage(createGeneralProjectPage);
+		addPage(shareProjectsPage);
 	}
 
 	@Override
 	public boolean performFinish() {
 		try {
+			final int actionSelection = importWithDirectoriesPage
+					.getActionSelection();
+
+			final IProject[] projectsToShare;
+			if (actionSelection == GitSelectWizardPage.ACTION_DIALOG_SHARE)
+				projectsToShare = shareProjectsPage.getSelectedProjects();
+			else
+				projectsToShare = null;
+
+			final File repoDir = selectRepoPage.getRepository().getDirectory();
+
 			getContainer().run(true, true, new IRunnableWithProgress() {
 
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
-					importProjects();
+
+					if (actionSelection != GitSelectWizardPage.ACTION_DIALOG_SHARE) {
+						// in case of the share page, the import is done by the
+						// share page itself
+						// TODO this currently must be run in the UI Thread due
+						// to access to
+						// SWT widgets
+						importProjects();
+					}
+
+					if (actionSelection != GitSelectWizardPage.ACTION_NO_SHARE) {
+
+						// TODO scheduling rule?
+						IProject[] projects;
+						if (projectsToShare == null)
+							projects = getAddedProjects();
+						else
+							projects = projectsToShare;
+						for (IProject prj : projects) {
+							if (monitor.isCanceled())
+								throw new InterruptedException();
+							//
+							ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
+									prj, repoDir);
+							try {
+								connectProviderOperation.execute(monitor);
+							} catch (CoreException e) {
+								throw new InvocationTargetException(e);
+							}
+						}
+
+					}
+
 				}
 			});
 		} catch (InvocationTargetException e) {
@@ -110,7 +158,11 @@ public class GitImportWizard extends Wizard implements ProjectCreator,
 						.getPath());
 				return projectsImportPage;
 			case GitSelectWizardPage.NEW_WIZARD:
+				if (importWithDirectoriesPage.getActionSelection() != GitSelectWizardPage.ACTION_DIALOG_SHARE)
 					return null;
+				else
+					return shareProjectsPage;
+
 			case GitSelectWizardPage.GENERAL_WIZARD:
 				createGeneralProjectPage.setPath(importWithDirectoriesPage
 						.getPath());
@@ -120,20 +172,30 @@ public class GitImportWizard extends Wizard implements ProjectCreator,
 
 		} else if (page == createGeneralProjectPage
 				|| page == projectsImportPage) {
+
+			if (importWithDirectoriesPage.getActionSelection() != GitSelectWizardPage.ACTION_DIALOG_SHARE)
 				return null;
+			else
+				return shareProjectsPage;
 		}
 		return super.getNextPage(page);
 	}
 
 	@Override
 	public boolean canFinish() {
+
+		boolean showSharePage = importWithDirectoriesPage.getActionSelection() == GitSelectWizardPage.ACTION_DIALOG_SHARE;
+		boolean showShareComplete = !showSharePage
+				|| shareProjectsPage.isPageComplete();
+
 		switch (importWithDirectoriesPage.getWizardSelection()) {
 		case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
-			return projectsImportPage.isPageComplete();
+			return projectsImportPage.isPageComplete() && showShareComplete;
 		case GitSelectWizardPage.NEW_WIZARD:
-			return true;
+			return showShareComplete;
 		case GitSelectWizardPage.GENERAL_WIZARD:
-			return createGeneralProjectPage.isPageComplete();
+			return createGeneralProjectPage.isPageComplete()
+					&& showShareComplete;
 		}
 		return super.canFinish();
 
