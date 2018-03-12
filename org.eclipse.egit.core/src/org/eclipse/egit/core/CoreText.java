@@ -225,9 +225,6 @@ public class CoreText extends NLS {
 	public static String PushOperation_InternalExceptionOccurredMessage;
 
 	/** */
-	public static String PushOperation_ExceptionOccurredDuringPushOnUriMessage;
-
-	/** */
 	public static String PushOperation_resultCancelled;
 
 	/** */
@@ -238,9 +235,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String AddToIndexOperation_failed;
-
-	/** */
-	public static String RemoveFromIndexOperation_failed;
 
 	/** */
 	public static String BranchOperation_performingBranch;
@@ -289,12 +283,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String IgnoreOperation_updatingFailed;
-
-	/** */
-	public static String GitSubscriberMergeContext_FailedUpdateRevs;
-
-	/** */
-	public static String GitSubscriberMergeContext_FailedRefreshSyncView;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);

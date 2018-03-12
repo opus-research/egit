@@ -54,11 +54,6 @@ public class JobFamilies {
 	public static final Object RESET = new Object();
 
 	/**
-	 * Rebase job
-	 */
-	public static final Object REBASE = new Object();
-
-	/**
 	 * Pull job
 	 */
 	public final static Object PULL = new Object();
@@ -87,10 +82,4 @@ public class JobFamilies {
 	 * Disconnect
 	 */
 	public final static Object DISCONNECT = new Object();
-
-	/**
-	 * Staging View refresh
-	 */
-	public static final Object STAGING_VIEW_REFRESH = new Object();
-
 }

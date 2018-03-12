@@ -136,8 +136,6 @@ class CommitGraphTable {
 
 	private RevCommit commitToShow;
 
-	private GraphLabelProvider graphLabelProvider;
-
 	CommitGraphTable(Composite parent) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
@@ -165,10 +163,7 @@ class CommitGraphTable {
 				((SWTCommit) element).widget = item;
 			}
 		};
-
-		graphLabelProvider = new GraphLabelProvider();
-
-		table.setLabelProvider(graphLabelProvider);
+		table.setLabelProvider(new GraphLabelProvider());
 		table.setContentProvider(new GraphContentProvider());
 		renderer = new SWTPlotRenderer(rawTable.getDisplay());
 
@@ -181,16 +176,8 @@ class CommitGraphTable {
 
 		copy = createStandardAction(ActionFactory.COPY);
 
-		table.setUseHashlookup(true);
-
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
 			public void selectionChanged(SelectionChangedEvent event) {
-				ISelection s = event.getSelection();
-				if (s.isEmpty() || !(s instanceof IStructuredSelection))
-					return;
-				final IStructuredSelection iss = (IStructuredSelection) s;
-				commitToShow = (PlotCommit<?>) iss.getFirstElement();
-
 				copy.setEnabled(canDoCopy());
 			}
 		});
@@ -249,7 +236,7 @@ class CommitGraphTable {
 		table.getTable().addMouseMoveListener(new MouseMoveListener() {
 			public void mouseMove(MouseEvent e) {
 				synchronized (this) {
-					if (hoverShell == null || hoverShell.isDisposed())
+					if (hoverShell == null)
 						return;
 					hoverShell.setVisible(false);
 					hoverShell.dispose();
@@ -257,22 +244,11 @@ class CommitGraphTable {
 				}
 			}
 		});
-
-		table.getTable().addDisposeListener(new DisposeListener() {
-
-			public void widgetDisposed(DisposeEvent e) {
-				if (allCommits != null)
-					allCommits.dispose();
-				if (renderer != null)
-					renderer.dispose();
-			}
-		});
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
 			final MenuManager menuMgr) {
 		this(parent);
-
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
 			public void focusLost(FocusEvent e) {
@@ -364,10 +340,6 @@ class CommitGraphTable {
 		table.removePostSelectionChangedListener(l);
 	}
 
-	boolean setRelativeDate(boolean booleanValue) {
-		return graphLabelProvider.setRelativeDate(booleanValue);
-	}
-
 	private boolean canDoCopy() {
 		return !table.getSelection().isEmpty();
 	}
@@ -387,8 +359,6 @@ class CommitGraphTable {
 			r.append(d.getId().name());
 		}
 
-		if (clipboard == null || clipboard.isDisposed())
-			return;
 		clipboard.setContents(new Object[] { r.toString() },
 				new Transfer[] { TextTransfer.getInstance() }, DND.CLIPBOARD);
 	}
@@ -402,6 +372,7 @@ class CommitGraphTable {
 		table.setInput(asArray);
 		if (asArray != null && asArray.length > 0) {
 			if (oldList != list) {
+				selectCommit(asArray[0]);
 				initCommitsMap();
 			}
 		} else {
@@ -423,8 +394,7 @@ class CommitGraphTable {
 		// the commit list is thread safe
 		synchronized (allCommits) {
 			for (PlotCommit commit : allCommits)
-				if (commit != null)
-					commitsMap.put(commit.getId().name(), commit);
+				commitsMap.put(commit.getId().name(), commit);
 		}
 	}
 
