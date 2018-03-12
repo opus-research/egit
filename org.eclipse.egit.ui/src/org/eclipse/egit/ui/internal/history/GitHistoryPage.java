@@ -772,11 +772,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					return;
 				}
 
-				final IStructuredSelection sel;
-				final PlotCommit<?> c;
-
-				sel = ((IStructuredSelection) s);
-				c = (PlotCommit<?>) sel.getFirstElement();
+				final IStructuredSelection sel = ((IStructuredSelection) s);
+				if (sel.size() > 1) {
+					commentViewer.setInput(null);
+					fileViewer.setInput(null);
+					return;
+				}
+				final PlotCommit<?> c = (PlotCommit<?>) sel.getFirstElement();
 				commentViewer.setInput(c);
 				fileViewer.setInput(c);
 			}
@@ -1059,7 +1061,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			// not dispose of the SWTWalk, even if HEAD was reset to
 			// HEAD^1 and the old HEAD commit should not be visible.
 			//
-			currentHeadId = headId;
 			currentWalk = new SWTWalk(db);
 			currentWalk.sort(RevSort.COMMIT_TIME_DESC, true);
 			currentWalk.sort(RevSort.BOUNDARY, true);
