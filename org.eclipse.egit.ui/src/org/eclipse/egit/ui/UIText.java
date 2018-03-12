@@ -3646,9 +3646,6 @@ public class UIText extends NLS {
 	/** */
 	public static String StagingView_Commit;
 
-	/** */
-	public static String SynchronizeWithMenu_custom;
-
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
