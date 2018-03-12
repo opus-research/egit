@@ -17,9 +17,6 @@ import org.eclipse.osgi.util.NLS;
 public class CoreText extends NLS {
 
 	/** */
-	public static String Activator_ReconfigureWindowCacheError;
-
-	/** */
 	public static String AssumeUnchangedOperation_adding;
 
 	/** */
@@ -273,21 +270,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String TagOperation_objectIdNotFound;
-
-	/** */
-	public static String GitResourceVariantTree_couldNotFindBlob;
-
-	/** */
-	public static String GitResourceVariantTree_fetchingMembers;
-
-	/** */
-	public static String GitResourceVariantTree_fetchingVariant;
-
-	/** */
-	public static String GitResourceVariantTree_unableToReadRepository;
-
-	/** */
-	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
 
 	static {
 		initializeMessages("org.eclipse.egit.core.coretext", //$NON-NLS-1$

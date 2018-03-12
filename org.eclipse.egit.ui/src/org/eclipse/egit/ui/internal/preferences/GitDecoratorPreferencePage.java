@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2000, 2007 IBM Corporation and others.
  * Copyright (C) 2009, Tor Arne Vestbø <torarnv@gmail.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,7 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,7 +28,6 @@ import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
 import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.preference.PreferenceStore;
@@ -616,13 +613,9 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		IPreferenceStore store = getPreferenceStore();
 		final boolean okToClose = performOk(store);
 		if (store.needsSaving()) {
-			try {
-				((IPersistentPreferenceStore)store).save();
-				Activator.broadcastPropertyChange(new PropertyChangeEvent(this,
-						Activator.DECORATORS_CHANGED, null, null));
-			} catch (IOException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			}
+			Activator.getDefault().savePluginPreferences();
+			Activator.broadcastPropertyChange(new PropertyChangeEvent(this,
+					Activator.DECORATORS_CHANGED, null, null));
 		}
 		return okToClose;
 	}
@@ -887,7 +880,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 	}
 
-	private static class PreviewDecoration implements IDecoration {
+	private class PreviewDecoration implements IDecoration {
 
 		private List<String> prefixes = new ArrayList<String>();
 

@@ -118,7 +118,7 @@ public class FetchWizard extends Wizard {
 		fetchJob.setUser(true);
 		fetchJob.schedule();
 
-		repoPage.saveUriInPrefs();
+		RepositorySelectionPage.saveUriInPrefs(repoPage.getSelection().getURI().toString());
 
 		return true;
 	}

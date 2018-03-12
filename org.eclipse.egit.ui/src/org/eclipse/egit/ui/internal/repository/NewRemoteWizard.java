@@ -16,6 +16,7 @@ import java.net.URISyntaxException;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
+import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Repository;
@@ -27,7 +28,7 @@ import org.eclipse.jgit.transport.URIish;
  * Used for "remote" configuration of a Repository
  *
  */
-public class NewRemoteWizard extends Wizard {
+class NewRemoteWizard extends Wizard {
 
 	final RepositoryConfig myConfiguration;
 
@@ -144,6 +145,15 @@ public class NewRemoteWizard extends Wizard {
 
 		try {
 			myConfiguration.save();
+
+			// Save the uris in the RepositorySelectionPage preferences
+
+			for (URIish uri : config.getURIs())
+				RepositorySelectionPage.saveUriInPrefs(uri.toPrivateString());
+
+			for (URIish uri : config.getPushURIs())
+				RepositorySelectionPage.saveUriInPrefs(uri.toPrivateString());
+
 			return true;
 		} catch (IOException e) {
 			// TODO better Exception handling
