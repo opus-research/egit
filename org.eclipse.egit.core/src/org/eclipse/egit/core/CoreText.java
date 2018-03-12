@@ -200,12 +200,6 @@ public class CoreText extends NLS {
 	public static String MergeOperation_ProgressMerge;
 
 	/** */
-	public static String CherryPickOperation_InternalError;
-
-	/** */
-	public static String CherryPickOperation_Failed;
-
-	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;
 
 	/** */

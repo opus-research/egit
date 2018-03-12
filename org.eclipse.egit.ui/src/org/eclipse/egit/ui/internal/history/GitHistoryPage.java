@@ -628,9 +628,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 						popupMgr.add(getCommandContributionItem(
 								HistoryViewCommands.CREATE_PATCH,
 								UIText.GitHistoryPage_CreatePatchMenuLabel));
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHERRYPICK,
-								UIText.GitHistoryPage_cherryPickMenuItem));
 						popupMgr.add(new Separator());
 
 						MenuManager resetManager = new MenuManager(
