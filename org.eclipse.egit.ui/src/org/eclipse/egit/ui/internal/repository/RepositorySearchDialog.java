@@ -352,7 +352,6 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				isUserModifiedTreeSelection = true;
 				fTreeViewer.setAllChecked(true);
 				enableOk();
 			}
@@ -370,7 +369,6 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				isUserModifiedTreeSelection = true;
 				fTreeViewer.setAllChecked(false);
 				enableOk();
 			}
