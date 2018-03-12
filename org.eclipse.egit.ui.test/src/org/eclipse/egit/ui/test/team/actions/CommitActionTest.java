@@ -16,18 +16,18 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.TagOperation;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
@@ -57,10 +57,8 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 		Repository repo = lookupRepository(repositoryFile);
 		// TODO delete the second project for the time being (.gitignore is
 		// currently not hiding the .project file from commit)
-		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ2);
-		File dotProject = new File(project.getLocation().toOSString(), ".project");
-		project.delete(false, false, null);
-		assertTrue(dotProject.delete());
+		ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ2).delete(
+				false, null);
 
 		TagBuilder tag = new TagBuilder();
 		tag.setTag("SomeTag");
@@ -119,9 +117,9 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void testAmendWithChangeIdPreferenceOff() throws Exception {
-		Repository repo = lookupRepository(repositoryFile);
-		repo.getConfig().setBoolean(ConfigConstants.CONFIG_GERRIT_SECTION,
-				null, ConfigConstants.CONFIG_KEY_CREATECHANGEID, true);
+		Activator.getDefault()
+			.getPreferenceStore()
+			.setValue(UIPreferences.COMMIT_DIALOG_CREATE_CHANGE_ID, true);
 		setTestFileContent("Another Change");
 		clickOnCommit();
 		SWTBotShell commitDialog = bot.shell(UIText.CommitDialog_CommitChanges);
@@ -144,8 +142,9 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 		Job.getJobManager().join(JobFamilies.COMMIT, null);
 
 		clickOnCommit();
-		repo.getConfig().setBoolean(ConfigConstants.CONFIG_GERRIT_SECTION,
-				null, ConfigConstants.CONFIG_KEY_CREATECHANGEID, false);
+		Activator.getDefault()
+			.getPreferenceStore()
+			.setValue(UIPreferences.COMMIT_DIALOG_CREATE_CHANGE_ID, false);
 		bot.shell(UIText.CommitAction_noFilesToCommit).bot().button(
 				IDialogConstants.YES_LABEL).click();
 		commitDialog = bot.shell(UIText.CommitDialog_CommitChanges);

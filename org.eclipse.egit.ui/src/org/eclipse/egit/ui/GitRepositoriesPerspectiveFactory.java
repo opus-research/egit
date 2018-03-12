@@ -11,9 +11,7 @@
 package org.eclipse.egit.ui;
 
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
-import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.team.ui.history.IHistoryView;
-import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IPerspectiveFactory;
 
@@ -38,10 +36,8 @@ public class GitRepositoriesPerspectiveFactory implements IPerspectiveFactory {
 		layout.addShowViewShortcut("org.eclipse.jdt.ui.PackageExplorer"); //$NON-NLS-1$
 		// shortcut to History view
 		layout.addShowViewShortcut(IHistoryView.VIEW_ID);
-		// shortcut to Synchronize view
-		layout.addShowViewShortcut(ISynchronizeView.VIEW_ID);
-		// shortcut to Staging view
-		layout.addShowViewShortcut(StagingView.VIEW_ID);
+
+
 
 	}
 

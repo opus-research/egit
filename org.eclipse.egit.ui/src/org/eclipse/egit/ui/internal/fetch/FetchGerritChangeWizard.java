@@ -22,8 +22,6 @@ public class FetchGerritChangeWizard extends Wizard {
 
 	FetchGerritChangePage page;
 
-	private String refName;
-
 	/**
 	 * @param repository
 	 *            the repository
@@ -35,18 +33,9 @@ public class FetchGerritChangeWizard extends Wizard {
 		setWindowTitle(UIText.FetchGerritChangeWizard_WizardTitle);
 	}
 
-	/**
-	 * @param repository
-	 * @param refName initial value for the ref field
-	 */
-	public FetchGerritChangeWizard(Repository repository, String refName) {
-		this(repository);
-		this.refName = refName;
-	}
-
 	@Override
 	public void addPages() {
-		page = new FetchGerritChangePage(repository, refName);
+		page = new FetchGerritChangePage(repository);
 		addPage(page);
 	}
 

@@ -72,7 +72,7 @@ public class CommitOperationTest extends GitTestCase {
 		new AddToIndexOperation(resources).execute(null);
 		CommitOperation commitOperation = new CommitOperation(null, null, null, TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
 		commitOperation.setCommitAll(true);
-		commitOperation.setRepository(repository);
+		commitOperation.setRepos(new Repository[] {repository});
 		commitOperation.execute(null);
 
 		testUtils.addFileToProject(project.getProject(), "zar/b.txt", "some text");
@@ -90,7 +90,7 @@ public class CommitOperationTest extends GitTestCase {
 
 		IFile[] filesToCommit = new IFile[] { project.getProject().getFile("zar/b.txt") };
 		commitOperation = new CommitOperation(filesToCommit, Arrays.asList(filesToCommit), null, TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
-		commitOperation.setRepository(repository);
+		commitOperation.setRepos(new Repository[] {repository});
 		try {
 			commitOperation.execute(null);
 			// TODO this is very ugly. CommitCommand should be extended
@@ -124,7 +124,7 @@ public class CommitOperationTest extends GitTestCase {
 				TestUtils.AUTHOR, TestUtils.COMMITTER,
 				"first commit");
 		commitOperation.setCommitAll(true);
-		commitOperation.setRepository(repository);
+		commitOperation.setRepos(new Repository[]{repository});
 		commitOperation.execute(null);
 
 		Git git = new Git(repository);
@@ -140,7 +140,7 @@ public class CommitOperationTest extends GitTestCase {
 				TestUtils.AUTHOR, TestUtils.COMMITTER,
 				"second commit");
 		commitOperation.setCommitAll(true);
-		commitOperation.setRepository(repository);
+		commitOperation.setRepos(new Repository[]{repository});
 		commitOperation.execute(null);
 
 		git = new Git(repository);
@@ -170,7 +170,7 @@ public class CommitOperationTest extends GitTestCase {
 				TestUtils.AUTHOR, TestUtils.COMMITTER,
 				"first commit");
 		commitOperation.setCommitAll(true);
-		commitOperation.setRepository(repository);
+		commitOperation.setRepos(new Repository[]{repository});
 		commitOperation.execute(null);
 
 		Git git = new Git(repository);
@@ -195,10 +195,13 @@ public class CommitOperationTest extends GitTestCase {
 		ArrayList<IFile> notIndexed = new ArrayList<IFile>();
 		notIndexed.add(filesToCommit[0]);
 		ArrayList<IFile> notTracked = new ArrayList<IFile>();
+		Thread.sleep(1100); // Trouble in "fresh" detection of something
+		// Do this like the commit dialog does it
 		commitOperation = new CommitOperation(filesToCommit, notIndexed, notTracked, TestUtils.AUTHOR, TestUtils.COMMITTER, "second commit");
 		commitOperation.setCommitAll(false);
 		commitOperation.execute(null);
 
+		Thread.sleep(1100); // Trouble in "fresh" detection of something
 		git = new Git(repository);
 		commits = git.log().call().iterator();
 		secondCommit = commits.next();
@@ -247,6 +250,7 @@ public class CommitOperationTest extends GitTestCase {
 				EMPTY_FILE_LIST, Arrays.asList(filesToCommit),
 				TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
 		commitOperation.execute(null);
+		Thread.sleep(1100); // TODO: remove when GitIndex is no longer used
 		testUtils.changeContentOfFile(project.getProject(), fileA,
 				"new content of A");
 		testUtils.changeContentOfFile(project.getProject(), fileB,
@@ -275,6 +279,7 @@ public class CommitOperationTest extends GitTestCase {
 				EMPTY_FILE_LIST, Arrays.asList(filesToCommit),
 				TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
 		commitOperation.execute(null);
+		Thread.sleep(1100); // TODO: remove when GitIndex is no longer used
 		testUtils.changeContentOfFile(project.getProject(), fileA,
 				"new content of A");
 		testUtils.changeContentOfFile(project.getProject(), fileB,

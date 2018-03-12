@@ -8,15 +8,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test;
 
+import org.eclipse.egit.ui.dialogs.commit.SpellcheckableMessageAreaTest;
 import org.eclipse.egit.ui.httpauth.PushTest;
-import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageAreaTest;
 import org.eclipse.egit.ui.prefpages.configuration.GlobalConfigurationPageTest;
 import org.eclipse.egit.ui.test.history.HistoryViewTest;
 import org.eclipse.egit.ui.test.team.actions.AllTeamActionTests;
 import org.eclipse.egit.ui.test.trace.TraceConfigurationDialogTest;
 import org.eclipse.egit.ui.view.repositories.AllRepositoriesViewTests;
-import org.eclipse.egit.ui.view.synchronize.SynchronizeViewGitChangeSetModelTest;
-import org.eclipse.egit.ui.view.synchronize.SynchronizeViewWorkspaceModelTest;
+import org.eclipse.egit.ui.view.synchronize.SynchronizeViewTest;
 import org.eclipse.egit.ui.wizards.clone.GitCloneWizardHttpTest;
 import org.eclipse.egit.ui.wizards.clone.GitCloneWizardTest;
 import org.eclipse.egit.ui.wizards.share.SharingWizardTest;
@@ -35,8 +34,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		PushTest.class,
 		SpellcheckableMessageAreaTest.class,
 		TraceConfigurationDialogTest.class,
-		SynchronizeViewWorkspaceModelTest.class,
-		SynchronizeViewGitChangeSetModelTest.class })
+		SynchronizeViewTest.class })
 public class AllLocalTests {
 	// empty class, don't need anything here
 }

@@ -58,16 +58,12 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.part.IPageSite;
 
-/**
- * Viewer to display {@link FileDiff} objects in a table.
- */
-public class CommitFileDiffViewer extends TableViewer {
+class CommitFileDiffViewer extends TableViewer {
 	private static final String LINESEP = System.getProperty("line.separator"); //$NON-NLS-1$
 
 	private Repository db;
@@ -90,7 +86,7 @@ public class CommitFileDiffViewer extends TableViewer {
 
 	private IAction compare;
 
-	private final IWorkbenchSite site;
+	private final IPageSite site;
 
 	/**
 	 * Shows a list of file changed by a commit.
@@ -100,28 +96,13 @@ public class CommitFileDiffViewer extends TableViewer {
 	 * @param parent
 	 * @param site
 	 */
-	public CommitFileDiffViewer(final Composite parent,
-			final IWorkbenchSite site) {
-		this(parent, site, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER
-				| SWT.FULL_SELECTION);
-	}
-
-	/**
-	 * Shows a list of file changed by a commit.
-	 *
-	 * If no input is available, an error message is shown instead.
-	 *
-	 * @param parent
-	 * @param site
-	 * @param style SWT style bits
-	 */
-	public CommitFileDiffViewer(final Composite parent,
-			final IWorkbenchSite site, final int style) {
+	CommitFileDiffViewer(final Composite parent, final IPageSite site) {
 		// since out parent is a SashForm, we can't add the alternate
 		// text to be displayed in case of no input directly to that
 		// parent; we create our own parent instead and set the
 		// StackLayout on it instead
-		super(new Composite(parent, SWT.NONE), style);
+		super(new Composite(parent, SWT.NONE), SWT.MULTI | SWT.H_SCROLL
+				| SWT.V_SCROLL | SWT.BORDER | SWT.FULL_SELECTION);
 		this.site = site;
 		final Table rawTable = getTable();
 		Composite main = rawTable.getParent();
@@ -205,9 +186,8 @@ public class CommitFileDiffViewer extends TableViewer {
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();) {
 					String relativePath = it.next().getPath();
-					String path = new Path(getRepository().getWorkTree()
-							.getAbsolutePath()).append(relativePath)
-							.toOSString();
+					String path = new Path(db.getWorkTree().getAbsolutePath())
+							.append(relativePath).toOSString();
 					openFileInEditor(path);
 				}
 			}
@@ -242,27 +222,24 @@ public class CommitFileDiffViewer extends TableViewer {
 		mgr.add(selectAll = createStandardAction(ActionFactory.SELECT_ALL));
 		mgr.add(copy = createStandardAction(ActionFactory.COPY));
 
-		if (site instanceof IPageSite) {
-			final IPageSite pageSite = (IPageSite) site;
-			getControl().addFocusListener(new FocusListener() {
-				public void focusLost(FocusEvent e) {
-					pageSite.getActionBars().setGlobalActionHandler(
-							ActionFactory.SELECT_ALL.getId(), null);
-					pageSite.getActionBars().setGlobalActionHandler(
-							ActionFactory.COPY.getId(), null);
-					pageSite.getActionBars().updateActionBars();
-				}
+		getControl().addFocusListener(new FocusListener() {
+			public void focusLost(FocusEvent e) {
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.SELECT_ALL.getId(), null);
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.COPY.getId(), null);
+				site.getActionBars().updateActionBars();
+			}
 
-				public void focusGained(FocusEvent e) {
-					updateActionEnablement(getSelection());
-					pageSite.getActionBars().setGlobalActionHandler(
-							ActionFactory.SELECT_ALL.getId(), selectAll);
-					pageSite.getActionBars().setGlobalActionHandler(
-							ActionFactory.COPY.getId(), copy);
-					pageSite.getActionBars().updateActionBars();
-				}
-			});
-		}
+			public void focusGained(FocusEvent e) {
+				updateActionEnablement(getSelection());
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.SELECT_ALL.getId(), selectAll);
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.COPY.getId(), copy);
+				site.getActionBars().updateActionBars();
+			}
+		});
 	}
 
 	private void updateActionEnablement(ISelection selection) {
@@ -314,16 +291,24 @@ public class CommitFileDiffViewer extends TableViewer {
 
 	@Override
 	protected void inputChanged(final Object input, final Object oldInput) {
-		if (oldInput == null && input == null)
-			return;
-		if (input == null && stackLayout.topControl != noInputText) {
-			stackLayout.topControl = noInputText;
-			getTable().getParent().layout(false);
-		} else if (input != null && stackLayout.topControl != getTable()) {
-			stackLayout.topControl = getTable();
-			getTable().getParent().layout(false);
+		boolean inputChanged;
+		if (oldInput == null && input == null) {
+			inputChanged = false;
+		} else if (oldInput == null || input == null) {
+			inputChanged = true;
+		} else {
+			inputChanged = !input.equals(oldInput);
 		}
-		super.inputChanged(input, oldInput);
+		if (inputChanged) {
+			if (input == null && stackLayout.topControl != noInputText) {
+				stackLayout.topControl = noInputText;
+				getTable().getParent().layout(false);
+			} else if (input != null && stackLayout.topControl != getTable()) {
+				stackLayout.topControl = getTable();
+				getTable().getParent().layout(false);
+			}
+			super.inputChanged(input, oldInput);
+		}
 	}
 
 	private void openFileInEditor(String filePath) {
@@ -345,9 +330,9 @@ public class CommitFileDiffViewer extends TableViewer {
 			IWorkbenchPage page = window.getActivePage();
 			IFileRevision rev = CompareUtils.getFileRevision(d.getPath(), d
 					.getChange().equals(ChangeType.DELETE) ? d.getCommit()
-					.getParent(0) : d.getCommit(), getRepository(), d
-					.getChange().equals(ChangeType.DELETE) ? d.getBlobs()[0]
-					: d.getBlobs()[d.getBlobs().length - 1]);
+					.getParent(0) : d.getCommit(), db, d.getChange().equals(
+					ChangeType.DELETE) ? d.getBlobs()[0] : d.getBlobs()[d
+					.getBlobs().length - 1]);
 			if (rev != null)
 				EgitUiEditorUtils.openEditor(page, rev,
 						new NullProgressMonitor());
@@ -376,7 +361,7 @@ public class CommitFileDiffViewer extends TableViewer {
 
 		if (d.getBlobs().length == 2 && !d.getChange().equals(ChangeType.ADD))
 			base = CompareUtils.getFileRevisionTypedElement(p, c.getParent(0),
-					getRepository(), d.getBlobs()[0]);
+					db, d.getBlobs()[0]);
 		else
 			// Initial import
 			base = new GitCompareFileRevisionEditorInput.EmptyTypedElement(""); //$NON-NLS-1$
@@ -384,8 +369,8 @@ public class CommitFileDiffViewer extends TableViewer {
 		if (d.getChange().equals(ChangeType.DELETE))
 			next = new GitCompareFileRevisionEditorInput.EmptyTypedElement(""); //$NON-NLS-1$
 		else
-			next = CompareUtils.getFileRevisionTypedElement(p, c,
-					getRepository(), d.getBlobs()[1]);
+			next = CompareUtils.getFileRevisionTypedElement(p, c, db, d
+					.getBlobs()[1]);
 
 		in = new GitCompareFileRevisionEditorInput(next, base, null);
 		CompareUtils.openInCompare(site.getWorkbenchWindow().getActivePage(),
@@ -394,24 +379,10 @@ public class CommitFileDiffViewer extends TableViewer {
 	}
 
 	TreeWalk getTreeWalk() {
-		if (walker == null)
-			throw new IllegalStateException("TreeWalk has not been set"); //$NON-NLS-1$
 		return walker;
 	}
 
-	private Repository getRepository() {
-		if (db == null)
-			throw new IllegalStateException("Repository has not been set"); //$NON-NLS-1$
-		return db;
-	}
-
-	/**
-	 * Set repository and tree walk
-	 *
-	 * @param repository
-	 * @param walk
-	 */
-	public void setTreeWalk(Repository repository, TreeWalk walk) {
+	void setTreeWalk(Repository repository, TreeWalk walk) {
 		db = repository;
 		walker = walk;
 	}
