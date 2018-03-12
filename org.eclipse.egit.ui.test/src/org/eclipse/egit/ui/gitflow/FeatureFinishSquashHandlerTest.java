@@ -91,9 +91,9 @@ public class FeatureFinishSquashHandlerTest extends
 
 	@Override
 	protected void preFinish() {
-		String text = bot.styledText().getText();
-		text = text.substring(text.indexOf('\n'));
-		bot.styledText().setText(SQUASHED_COMMENT_SUMMARY + text);
+		int firstLine = 0;
+		bot.styledText().selectLine(firstLine);
+		bot.styledText().typeText(SQUASHED_COMMENT_SUMMARY);
 		bot.button("OK").click();
 	}
 
