@@ -9,9 +9,6 @@
 
 package org.eclipse.egit.ui.internal.actions;
 
-import static org.eclipse.egit.ui.internal.CompareUtils.canDirectlyOpenInCompare;
-import static org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize.synchronizeModelWithWorkspace;
-
 import java.io.IOException;
 
 import org.eclipse.compare.CompareUI;
@@ -28,6 +25,7 @@ import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.dialogs.CompareTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.jface.window.Window;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -56,11 +54,29 @@ public class CompareWithRefActionHandler extends RepositoryActionHandler {
 			if (resources.length == 1 && resources[0] instanceof IFile) {
 				final IFile baseFile = (IFile) resources[0];
 
-				if (canDirectlyOpenInCompare(baseFile)) {
-					showSingleFileComparison(baseFile, dlg.getRefName());
-				} else {
-					synchronizeModel(baseFile, repo, dlg.getRefName());
+				final ITypedElement base = SaveableCompareEditorInput
+						.createFileElement(baseFile);
+
+				final ITypedElement next;
+				ITypedElement ancestor = null;
+				try {
+					RepositoryMapping mapping = RepositoryMapping
+							.getMapping(resources[0]);
+					next = getElementForRef(mapping.getRepository(), mapping
+							.getRepoRelativePath(baseFile), dlg.getRefName());
+					ancestor = CompareUtils.getFileRevisionTypedElementForCommonAncestor(
+							mapping.getRepoRelativePath(baseFile), repo.resolve(Constants.HEAD),
+							repo.resolve(dlg.getRefName()), repo);
+				} catch (IOException e) {
+					Activator.handleError(
+							UIText.CompareWithIndexAction_errorOnAddToIndex, e,
+							true);
+					return null;
 				}
+				final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
+						base, next, ancestor, null);
+				in.getCompareConfiguration().setRightLabel(dlg.getRefName());
+				CompareUI.openCompareEditor(in);
 			} else {
 				CompareTreeView view;
 				try {
@@ -74,38 +90,6 @@ public class CompareWithRefActionHandler extends RepositoryActionHandler {
 			}
 		}
 		return null;
-	}
-
-	private void showSingleFileComparison(IFile file, String refName) {
-		final ITypedElement base = SaveableCompareEditorInput
-				.createFileElement(file);
-
-		final ITypedElement next;
-		try {
-			RepositoryMapping mapping = RepositoryMapping.getMapping(file);
-			next = getElementForRef(mapping.getRepository(),
-					mapping.getRepoRelativePath(file), refName);
-		} catch (IOException e) {
-			Activator.handleError(
-					UIText.CompareWithIndexAction_errorOnAddToIndex, e, true);
-			return;
-		}
-
-		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-				base, next, null);
-		in.getCompareConfiguration().setRightLabel(refName);
-		CompareUI.openCompareEditor(in);
-	}
-
-	private void synchronizeModel(final IFile file, Repository repo,
-			String refName) {
-		try {
-			synchronizeModelWithWorkspace(file, repo, refName);
-		} catch (IOException e) {
-			Activator.handleError(
-					UIText.CompareWithRefAction_errorOnSynchronize, e, true);
-			return;
-		}
 	}
 
 	private ITypedElement getElementForRef(final Repository repository,
