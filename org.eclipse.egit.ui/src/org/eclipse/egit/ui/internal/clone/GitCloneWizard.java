@@ -210,10 +210,6 @@ public class GitCloneWizard extends Wizard {
 						UIText.GitCloneWizard_CloneFailedHeading,
 						UIText.GitCloneWizard_CloneCanceledMessage);
 				return false;
-			} catch (InvocationTargetException e) {
-				Activator.handleError(UIText.GitCloneWizard_CloneFailedHeading,
-						e.getTargetException(), true);
-				return false;
 			} catch (Exception e) {
 				Activator.handleError(UIText.GitCloneWizard_CloneFailedHeading,
 						e, true);

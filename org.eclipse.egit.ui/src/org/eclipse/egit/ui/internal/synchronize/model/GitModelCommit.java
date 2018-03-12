@@ -197,7 +197,7 @@ public class GitModelCommit extends GitModelObject {
 		if (baseNth > -1)
 			objBaseId = tw.getObjectId(baseNth);
 		else
-			objBaseId = ObjectId.zeroId();
+			objBaseId = null;
 
 		ObjectId objRemoteId = tw.getObjectId(actualNth);
 		ObjectId objAncestorId = tw.getObjectId(ancestorNth);

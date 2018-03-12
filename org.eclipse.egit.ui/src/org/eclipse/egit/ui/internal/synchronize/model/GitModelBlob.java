@@ -8,33 +8,24 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import static org.eclipse.jgit.lib.ObjectId.zeroId;
-
 import java.io.IOException;
 
-import org.eclipse.compare.CompareConfiguration;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.compare.structuremergeviewer.Differencer;
+import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.compare.structuremergeviewer.ICompareInputChangeListener;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
-import org.eclipse.team.ui.mapping.SaveableComparison;
 
 /**
  * Git blob object representation in Git ChangeSet
  */
-public class GitModelBlob extends GitModelCommit implements ISynchronizationCompareInput {
+public class GitModelBlob extends GitModelCommit implements ICompareInput {
 
 	private final String name;
 
@@ -109,23 +100,21 @@ public class GitModelBlob extends GitModelCommit implements ISynchronizationComp
 	}
 
 	public ITypedElement getAncestor() {
-		if (objectExist(getAncestorCommit(), ancestorId))
+		return CompareUtils.getFileRevisionTypedElement(gitPath,
+				getAncestorCommit(), getRepository(), ancestorId);
+	}
+
+	public ITypedElement getLeft() {
+		if (getBaseCommit() != null && baseId != null)
 			return CompareUtils.getFileRevisionTypedElement(gitPath,
-					getAncestorCommit(), getRepository(), ancestorId);
+					getBaseCommit(), getRepository(), baseId);
 
 		return null;
 	}
 
-	public ITypedElement getLeft() {
+	public ITypedElement getRight() {
 		return CompareUtils.getFileRevisionTypedElement(gitPath,
 				getRemoteCommit(), getRepository(), remoteId);
-
-	}
-
-	public ITypedElement getRight() {
-			return CompareUtils.getFileRevisionTypedElement(gitPath,
-					getBaseCommit(), getRepository(), baseId);
-
 	}
 
 	public void addCompareInputChangeListener(
@@ -142,45 +131,6 @@ public class GitModelBlob extends GitModelCommit implements ISynchronizationComp
 
 	public void copy(boolean leftToRight) {
 		// do nothing, we should disallow coping content between commits
-	}
-
-	private boolean objectExist(RevCommit commit, ObjectId id) {
-		return commit != null && id != null && !id.equals(zeroId());
-	}
-
-	public SaveableComparison getSaveable() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public void prepareInput(CompareConfiguration configuration,
-			IProgressMonitor monitor) throws CoreException {
-		configuration.setLeftLabel(getFileRevisionLabel(getLeft()));
-		configuration.setRightLabel(getFileRevisionLabel(getRight()));
-
-	}
-
-	private String getFileRevisionLabel(ITypedElement element) {
-		if (element instanceof FileRevisionTypedElement) {
-			FileRevisionTypedElement castElement = (FileRevisionTypedElement)element;
-			return NLS.bind(UIText.GitCompareFileRevisionEditorInput_RevisionLabel,
-					new Object[]{element.getName(),
-					CompareUtils.truncatedRevision(castElement.getContentIdentifier()),
-					castElement.getAuthor()});
-
-		}
-		else
-			return element.getName();
-	}
-
-	public String getFullPath() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public boolean isCompareInputFor(Object object) {
-		// TODO Auto-generated method stub
-		return false;
 	}
 
 }

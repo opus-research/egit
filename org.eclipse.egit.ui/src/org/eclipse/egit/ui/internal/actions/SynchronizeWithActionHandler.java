@@ -84,6 +84,8 @@ public class SynchronizeWithActionHandler extends RepositoryActionHandler {
 			}
 		}
 
+		// new GitSynchronize(gsdSet);
+
 		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
 				gsdSet);
 		ResourceMapping[] mappings = getSelectedResourceMappings(event);

@@ -8,8 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.jgit.lib.Constants.HEAD;
-import static org.eclipse.jgit.lib.Constants.MASTER;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -18,6 +16,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
@@ -34,7 +33,6 @@ import org.eclipse.egit.core.test.TestProject;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IType;
-import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.variants.IResourceVariant;
@@ -74,14 +72,12 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 	 * given repository. In this case there is only one project associated with
 	 * this repository therefore only one root should be returned.
 	 *
-	 * @throws Exception
+	 * @throws IOException
 	 */
 	@Test
-	public void shouldReturnOneRoot() throws Exception {
+	public void shouldReturnOneRoot() throws IOException {
 		// when
-		new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
-				.setMessage("Initial commit").call();
-		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD, false);
+		GitSynchronizeData data = new GitSynchronizeData(repo, "", "", false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
@@ -109,9 +105,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		IProject secondIProject = secondProject.project;
 		// add connect project with repository
 		new ConnectProviderOperation(secondIProject, gitDir).execute(null);
-		new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
-				.setMessage("Initial commit").call();
-		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD, false);
+		GitSynchronizeData data = new GitSynchronizeData(repo, "", "", false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
@@ -136,10 +130,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 	@Test
 	public void shouldReturnNullResourceVariant() throws Exception {
 		// when
-		new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
-				.setMessage("Initial commit").call();
-		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
-				false);
+		GitSynchronizeData data = new GitSynchronizeData(repo, Constants.HEAD,
+				Constants.MASTER, false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
@@ -161,10 +153,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		IPackageFragment iPackage = project.createPackage("org.egit.test");
 		IType mainJava = project.createType(iPackage, "Main.java",
 				"class Main {}");
-		new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
-				.setMessage("Initial commit").call();
-		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
-				false);
+		GitSynchronizeData data = new GitSynchronizeData(repo, Constants.HEAD,
+				Constants.MASTER, false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
@@ -189,8 +179,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		testRepo.appendContentAndCommit(iProject, file, "class Main {}",
 				"initial commit");
 		IFile mainJava = testRepo.getIFile(iProject, file);
-		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
-				false);
+		GitSynchronizeData data = new GitSynchronizeData(repo, Constants.HEAD,
+				Constants.MASTER, false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
@@ -231,8 +221,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 				Constants.R_HEADS + "test");
 		testRepo.appendContentAndCommit(iProject, file, "// test",
 				"first commit");
-		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
-				false);
+		GitSynchronizeData data = new GitSynchronizeData(repo, Constants.HEAD,
+				Constants.MASTER, false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given

@@ -23,12 +23,12 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 
 /**
- * Represents the provider of Git logical model.
+ *
  */
 public class GitChangeSetModelProvider extends ModelProvider {
 
 	/**
-	 * Id of model provider
+	 *
 	 */
 	public static final String ID = "org.eclipse.egit.ui.changeSetModel"; //$NON-NLS-1$
 

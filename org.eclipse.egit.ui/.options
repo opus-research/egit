@@ -4,7 +4,3 @@ org.eclipse.egit.ui/debug = false
 org.eclipse.egit.ui/debug/ui = false
 # Trace location for RepositoriesView
 org.eclipse.egit.ui/debug/ui/repositoriesview = false
-# Trace location for decoration
-org.eclipse.egit.ui/debug/ui/decoration = false
-# Trace location for quickdiff
-org.eclipse.egit.ui/debug/quickdiff = false

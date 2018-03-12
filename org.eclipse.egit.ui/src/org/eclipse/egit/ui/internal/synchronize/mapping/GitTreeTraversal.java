@@ -8,8 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.mapping;
 
-import static org.eclipse.jgit.lib.ObjectId.zeroId;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,9 +47,6 @@ class GitTreeTraversal extends ResourceTraversal {
 
 	private static IResource[] getResourcesImpl(Repository repo, IPath path,
 			AnyObjectId baseId, AnyObjectId remoteId) {
-		if (remoteId.equals(zeroId()))
-			return new IResource[0];
-
 		TreeWalk tw = new TreeWalk(repo);
 		List<IResource> result = new ArrayList<IResource>();
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
@@ -60,8 +55,7 @@ class GitTreeTraversal extends ResourceTraversal {
 		tw.setRecursive(false);
 		tw.setFilter(TreeFilter.ANY_DIFF);
 		try {
-			if (!baseId.equals(zeroId()))
-				tw.addTree(baseId);
+			tw.addTree(baseId);
 			int actualNth = tw.addTree(remoteId);
 
 			while (tw.next()) {

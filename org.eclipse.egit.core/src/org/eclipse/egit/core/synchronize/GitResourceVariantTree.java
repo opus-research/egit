@@ -71,19 +71,15 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 		TreeWalk tw = initializeTreeWalk(repo, path);
 
 		try {
-			int nth = tw.addTree(revCommit.getTree());
+			tw.addTree(revCommit.getTree());
 			if (resource.getType() == IResource.FILE) {
 				tw.setRecursive(true);
 				if (tw.next())
 					return new GitBlobResourceVariant(repo,
-							tw.getObjectId(nth), path);
-			} else {
-				while (tw.next() && !path.equals(tw.getPathString()))
-					if (tw.isSubtree())
-						tw.enterSubtree();
-				return new GitFolderResourceVariant(repo, tw.getObjectId(nth),
+							revCommit.getTree(), path);
+			} else
+				return new GitFolderResourceVariant(repo, revCommit.getTree(),
 						path);
-			}
 		} catch (IOException e) {
 			throw new TeamException(
 					NLS.bind(
