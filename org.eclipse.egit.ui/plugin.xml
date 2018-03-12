@@ -814,6 +814,9 @@
                     <adapt
                         type="org.eclipse.core.resources.mapping.ResourceMapping">
                     </adapt>
+                    <adapt
+                        type="org.eclipse.ui.IContributorResourceAdapter">
+                    </adapt>
                   </or>
                </iterate>
             </and>
@@ -1368,6 +1371,9 @@
                         </instanceof>
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.LocalNode">
                         </instanceof>
                      </or>
                   </iterate>
