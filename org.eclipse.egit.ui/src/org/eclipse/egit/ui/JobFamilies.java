@@ -168,9 +168,4 @@ public class JobFamilies {
 	 * Stash git job
 	 */
 	public static final Object STASH = new Object();
-
-	/**
-	 * Walk submodules job
-	 */
-	public static final Object WALK_SUBMODULES = new Object();
 }
