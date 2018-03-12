@@ -12,10 +12,11 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
@@ -35,10 +36,9 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheCheckout;
-import org.eclipse.jgit.dircache.DirCacheEntry;
+import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -106,6 +106,7 @@ public class DiscardChangesOperation implements IEGitOperation {
 		for (IResource res : files) {
 			allFiles.addAll(getAllMembers(res));
 		}
+		Set<GitIndex> modifiedIndexes = new HashSet<GitIndex>();
 		for (IResource res : allFiles) {
 			Repository repo = getRepository(res);
 			if (repo == null) {
@@ -114,7 +115,7 @@ public class DiscardChangesOperation implements IEGitOperation {
 				throw new CoreException(status);
 			}
 			try {
-				discardChange(res, repo);
+				discardChange(res, repo, modifiedIndexes);
 			} catch (IOException e) {
 				errorOccured = true;
 				String message = NLS.bind(
@@ -124,6 +125,15 @@ public class DiscardChangesOperation implements IEGitOperation {
 			}
 		}
 		monitor.worked(1);
+		for (GitIndex index : modifiedIndexes) {
+			try {
+				index.write();
+			} catch (IOException e) {
+				errorOccured = true;
+				Activator.logError(
+						CoreText.DiscardChangesOperation_writeIndexFailed, e);
+			}
+		}
 		monitor.worked(1);
 		try {
 			ProjectUtil.refreshResources(files, new SubProgressMonitor(monitor,
@@ -152,15 +162,19 @@ public class DiscardChangesOperation implements IEGitOperation {
 			return null;
 	}
 
-	private void discardChange(IResource res, Repository repository)
-			throws IOException {
+	private void discardChange(IResource res, Repository repository,
+			Set<GitIndex> modifiedIndexes) throws IOException {
 		String resRelPath = RepositoryMapping.getMapping(res)
 				.getRepoRelativePath(res);
-		DirCache dc = repository.lockDirCache();
-		DirCacheEntry entry = dc.getEntry(resRelPath);
-		File file = new File(res.getLocationURI());
-		DirCacheCheckout.checkoutEntry(repository, file, entry, true);
-		dc.unlock();
+
+		Entry e = repository.getIndex().getEntry(resRelPath);
+		// resource must exist in the index and be dirty
+		if (e != null && e.getStage() == 0
+				&& e.isModified(repository.getWorkTree())) {
+			GitIndex index = repository.getIndex();
+			index.checkoutEntry(repository.getWorkTree(), e);
+			modifiedIndexes.add(index);
+		}
 	}
 
 	/**
