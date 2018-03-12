@@ -115,9 +115,6 @@ public class UIIcons {
 	/** Remote Repository tree node */
 	public static ImageDescriptor REMOTE_REPOSITORY;
 
-	/** Reset */
-	public static ImageDescriptor RESET;
-
 	/** Remote Repository tree node */
 	public static ImageDescriptor REMOTE_SPEC;
 
@@ -187,7 +184,6 @@ public class UIIcons {
 		BRANCH = map("obj16/branch_obj.gif"); //$NON-NLS-1$
 		COLLAPSEALL = map("elcl16/collapseall.gif"); //$NON-NLS-1$
 		CLONEGIT = map("obj16/cloneGit.gif"); //$NON-NLS-1$
-		RESET = map("obj16/reset.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

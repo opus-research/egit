@@ -31,7 +31,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public class CreateTagOnCommitHandler extends AbstractHistoryCommanndHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		PlotCommit commit = (PlotCommit) getSelection(getPage()).getFirstElement();
+		PlotCommit commit = (PlotCommit) getSelection(event).getFirstElement();
 		final Repository repo = getRepository(event);
 
 		CreateTagDialog dialog = new CreateTagDialog(HandlerUtil
