@@ -33,6 +33,7 @@ public class BlobStorageTest extends GitTestCase {
 
 	@After
 	public void tearDown() throws Exception {
+		repository.close();
 		super.tearDown();
 	}
 
@@ -41,7 +42,7 @@ public class BlobStorageTest extends GitTestCase {
 		ObjectId id = createFile(repository, project.getProject(), "file", "data");
 		BlobStorage blobStorage = new BlobStorage(repository, "p/file", id);
 		assertEquals("file", blobStorage.getName());
-		assertEquals("data", slurpAndClose(blobStorage.getContents()));
+		assertEquals("data", testUtils.slurpAndClose(blobStorage.getContents()));
 		assertEquals(Path.fromPortableString("p/file").toOSString(), blobStorage.getFullPath().toOSString());
 
 	}
@@ -60,14 +61,13 @@ public class BlobStorageTest extends GitTestCase {
 
 	@Test
 	public void testFailWrongType() throws Exception {
-		createEmptyTree(repository);
 		BlobStorage blobStorage = new BlobStorage(repository, "file", ObjectId.fromString("4b825dc642cb6eb9a060e54bf8d69288fbee4904"));
 		assertEquals("file", blobStorage.getName());
 		try {
 			blobStorage.getContents();
 			fail("We should not be able to read this blob");
 		} catch (CoreException e) {
-			assertEquals("IO error reading Git blob 4b825dc642cb6eb9a060e54bf8d69288fbee4904 with path file", e.getMessage());
+			assertEquals("Git blob 4b825dc642cb6eb9a060e54bf8d69288fbee4904 with path file not found", e.getMessage());
 		}
 	}
 
@@ -75,7 +75,6 @@ public class BlobStorageTest extends GitTestCase {
 	public void testFailCorrupt() throws Exception {
 		try {
 			createFileCorruptShort(repository, project.getProject(), "file", "data");
-			createEmptyTree(repository);
 			BlobStorage blobStorage = new BlobStorage(repository, "file", ObjectId.fromString("6320cd248dd8aeaab759d5871f8781b5c0505172"));
 			assertEquals("file", blobStorage.getName());
 			blobStorage.getContents();

@@ -34,6 +34,7 @@ import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.variants.IResourceVariant;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,6 +54,12 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		repo = RepositoryMapping.getMapping(iProject).getRepository();
 	}
 
+	@After
+	public void tearDown() throws Exception {
+		repo.close();
+		super.tearDown();
+	}
+
 	/*============================================
 	 * compare(IResource, IResourceVariant) tests
 	 *============================================*/
@@ -66,7 +73,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenRemoteDoesNotExist() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IResource local = createMock(IResource.class);
@@ -88,7 +95,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenComparingFileAndContainer() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IFile local = createMock(IFile.class);
@@ -112,7 +119,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenComparingContainerAndContainer() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IPath localPath = createMock(IPath.class);
@@ -144,7 +151,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnTrueWhenComparingContainerAndContainer() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IPath path = createMock(IPath.class);
@@ -181,7 +188,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		GitSynchronizeData data = new GitSynchronizeData(repo, "", "", true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				dataSet);
+				dataSet, null);
 
 		// given
 		IFile local = createMock(IFile.class);
@@ -222,7 +229,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		GitSynchronizeData data = new GitSynchronizeData(repo, "", "", true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				dataSet);
+				dataSet, null);
 
 		// given
 		IFile local = createMock(IFile.class);
@@ -265,7 +272,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		GitSynchronizeData data = new GitSynchronizeData(repo, "", "", true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				dataSet);
+				dataSet, null);
 
 		// given
 		IFile local = createMock(IFile.class);
@@ -312,7 +319,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		GitSynchronizeData data = new GitSynchronizeData(repo, "", "", true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				dataSet);
+				dataSet, null);
 
 		// given
 		IFile local = createMock(IFile.class);
@@ -352,7 +359,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		GitSynchronizeData data = new GitSynchronizeData(repo, "", "", true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				dataSet);
+				dataSet, null);
 
 		// given
 		IFile local = createMock(IFile.class);
@@ -395,7 +402,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		GitSynchronizeData data = new GitSynchronizeData(repo, "", "", true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				dataSet);
+				dataSet, null);
 
 		// given
 		IFile local = createMock(IFile.class);
@@ -430,18 +437,18 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenBaseDoesntExist() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IResource baseResource = createMock(IResource.class);
 		expect(baseResource.exists()).andReturn(false);
 		replay(baseResource);
 		GitBlobResourceVariant base = new GitBlobResourceVariant(baseResource,
-				repo, ObjectId.zeroId());
+				repo, ObjectId.zeroId(), null);
 		IResource remoteResource = createMock(IResource.class);
 		replay(remoteResource);
 		GitBlobResourceVariant remote = new GitBlobResourceVariant(
-				remoteResource, repo, ObjectId.zeroId());
+				remoteResource, repo, ObjectId.zeroId(), null);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -457,7 +464,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenRemoteVariantDoesntExist() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IResource baseResource = createMock(IResource.class);
@@ -489,14 +496,14 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenComparingRemoteVariantFileWithContainer() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IResource baseResource = createMock(IResource.class);
 		expect(baseResource.exists()).andReturn(true);
 		replay(baseResource);
 		GitBlobResourceVariant base = new GitBlobResourceVariant(baseResource,
-				repo, ObjectId.zeroId());
+				repo, ObjectId.zeroId(), null);
 		IResource remoteResource = createMock(IResource.class);
 		expect(remoteResource.exists()).andReturn(true);
 		replay(remoteResource);
@@ -517,7 +524,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenComparingRemoteVariantContainerWithFile() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IResource baseResource = createMock(IResource.class);
@@ -545,7 +552,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenComparingRemoteVariantContainerWithContainer() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IPath basePath = createMock(IPath.class);
@@ -579,7 +586,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnTrueWhenComparingRemoteVariantContainerWithContainer() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IPath path = createMock(IPath.class);
@@ -612,7 +619,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenComparingRemoteVariantWithDifferentObjectId() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IResource baseResource = createMock(IResource.class);
@@ -644,7 +651,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnTrueWhenComparingRemoteVariant() {
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
-				null);
+				null, null);
 
 		// given
 		IResource baseResource = createMock(IResource.class);
