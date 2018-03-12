@@ -44,7 +44,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -296,13 +295,8 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		if (selection == null)
 			selection = HandlerUtil.getCurrentSelectionChecked(event);
 		if (selection instanceof TextSelection) {
-			IEditorInput editorInput = (IEditorInput) HandlerUtil
-					.getVariable(event, ISources.ACTIVE_EDITOR_INPUT_NAME);
-			IResource resource = ResourceUtil.getResource(editorInput);
-			if (resource != null)
-				return new StructuredSelection(resource);
-
-			resource = ResourceUtil.getFile(editorInput);
+			IResource resource = ResourceUtil.getResource(HandlerUtil
+					.getVariable(event, ISources.ACTIVE_EDITOR_INPUT_NAME));
 			if (resource != null)
 				return new StructuredSelection(resource);
 		}

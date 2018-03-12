@@ -21,8 +21,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		GitModelRepositoryTest.class,
 		GitModelTreeTest.class,
 		GitModelWorkingTreeTest.class,
-		GitModelWorkingFileTest.class,
-		GitModelRootTest.class })
+		GitModelWorkingFileTest.class })
 public class AllGitModelTests {
 	// empty class, don't need anything here
 }
