@@ -230,8 +230,11 @@ public class FileDiff extends WorkbenchAdapter {
 			return;
 		}
 
-		try (ObjectReader reader = db.newObjectReader()) {
+		ObjectReader reader = db.newObjectReader();
+		try {
 			outputEclipseDiff(d, db, reader, diffFmt);
+		} finally {
+			reader.release();
 		}
 	}
 
