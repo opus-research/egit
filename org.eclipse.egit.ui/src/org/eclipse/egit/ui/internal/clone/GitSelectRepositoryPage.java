@@ -21,7 +21,6 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChang
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.IGitSelectRepositoryWizardPage;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
@@ -55,7 +54,7 @@ import org.eclipse.ui.dialogs.PatternFilter;
 /**
  * Select a repository, add or clone
  */
-public class GitSelectRepositoryPage extends WizardPage implements IGitSelectRepositoryWizardPage {
+public class GitSelectRepositoryPage extends WizardPage {
 	private final static String LAST_SELECTED_REPO_PREF = "GitSelectRepositoryPage.lastRepository"; //$NON-NLS-1$
 
 	private final RepositoryUtil util;
@@ -78,8 +77,8 @@ public class GitSelectRepositoryPage extends WizardPage implements IGitSelectRep
 		util = Activator.getDefault().getRepositoryUtil();
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.ui.internal.clone.IGitSelectRepositoryWizardPage#getRepository()
+	/**
+	 * @return the repository
 	 */
 	public Repository getRepository() {
 		Object obj = ((IStructuredSelection) tv.getSelection())
