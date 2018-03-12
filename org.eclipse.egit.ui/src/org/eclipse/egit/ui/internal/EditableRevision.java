@@ -24,6 +24,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
 
 /**
  * @author simon
@@ -106,13 +107,6 @@ public class EditableRevision extends FileRevisionTypedElement implements
 	private ContentChangeNotifier fChangeNotifier;
 
 	private EditableSharedDocumentAdapter sharedDocumentAdapter;
-
-	/**
-	 * @param fileRevision
-	 */
-	public EditableRevision(IFileRevision fileRevision) {
-		super(fileRevision);
-	}
 
 	/**
 	 * @param fileRevision
