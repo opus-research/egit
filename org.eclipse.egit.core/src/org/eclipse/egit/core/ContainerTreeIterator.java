@@ -345,7 +345,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 					try {
 						File file = asFile();
 						if (file != null)
-							length = FS.DETECTED.length(file);
+							length = FS.DETECTED.length(asFile());
 						else
 							length = 0;
 					} catch (IOException e) {
