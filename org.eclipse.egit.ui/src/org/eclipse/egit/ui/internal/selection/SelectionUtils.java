@@ -45,35 +45,11 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.ide.ResourceUtil;
-import org.eclipse.ui.services.ISourceProviderService;
 
 /**
  * Utilities for working with selections.
  */
 public class SelectionUtils {
-
-	static private RepositorySourceProvider rsp;
-
-	/**
-	 * @return the single selected repository, or <code>null</code>
-	 */
-	@Nullable
-	public static Repository getCurrentRepository() {
-		if (rsp == null) {
-			ISourceProviderService sps = PlatformUI.getWorkbench()
-					.getService(ISourceProviderService.class);
-			if (sps == null) {
-				return null;
-			}
-			rsp = (RepositorySourceProvider) sps.getSourceProvider(
-					RepositorySourceProvider.REPOSITORY_PROPERTY);
-		}
-		if (rsp == null) {
-			return null;
-		}
-		Repository repository = rsp.waitFor();
-		return repository;
-	}
 
 	/**
 	 * @param selection
@@ -83,6 +59,16 @@ public class SelectionUtils {
 	public static Repository getRepository(
 			@NonNull IStructuredSelection selection) {
 		return getRepository(false, selection, null);
+	}
+
+	/**
+	 * @param evaluationContext
+	 * @return the single selected repository, or <code>null</code>
+	 */
+	@Nullable
+	public static Repository getRepository(
+			@Nullable IEvaluationContext evaluationContext) {
+		return getRepository(false, getSelection(evaluationContext), null);
 	}
 
 	/**
