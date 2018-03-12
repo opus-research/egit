@@ -56,7 +56,6 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.ToolBar;
@@ -477,21 +476,6 @@ public class RebaseInteractiveView extends ViewPart implements
 					}
 				}
 				return ""; //$NON-NLS-1$
-			}
-
-			@Override
-			public Point getToolTipShift(Object object) {
-				return new Point(5, 5);
-			}
-
-			@Override
-			public int getToolTipDisplayDelayTime(Object object) {
-				return 100; // msec
-			}
-
-			@Override
-			public int getToolTipTimeDisplayed(Object object) {
-				return 1000; // msec
 			}
 
 			@Override
