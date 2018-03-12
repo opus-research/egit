@@ -28,19 +28,13 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.RefRename;
-import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.layout.GridLayout;
@@ -54,44 +48,50 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefRename;
+import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RefUpdate.Result;
 
 /**
  * The branch and reset selection dialog
  *
  */
 public class BranchSelectionDialog extends Dialog {
-
 	private final Repository repo;
 
-	private final boolean showResetType;
-
-	private Tree branchTree;
-
-	private Button confirmationBtn;
-
-	private Button renameButton;
-
-	private Button newButton;
-
-	private String selectedBranch;
-
-	private ResetType resetType = ResetType.MIXED;
+	private boolean showResetType = true;
 
 	/**
 	 * Construct a dialog to select a branch to reset to or check out
 	 * @param parentShell
 	 * @param repo
-	 * @param showReset true if the "reset" part should be shown
 	 */
-	public BranchSelectionDialog(Shell parentShell, Repository repo, boolean showReset) {
+	public BranchSelectionDialog(Shell parentShell, Repository repo) {
 		super(parentShell);
 		this.repo = repo;
-		this.showResetType = showReset;
 	}
+
+	/**
+	 * Pre-set whether or present a reset or checkout dialog
+	 * @param show
+	 */
+	public void setShowResetType(boolean show) {
+		this.showResetType = show;
+	}
+
+	private Composite parent;
+
+	private Tree branchTree;
+
+	private Button confirmationBtn;
 
 	@Override
 	protected Composite createDialogArea(Composite base) {
-		Composite parent = (Composite) super.createDialogArea(base);
+		parent = (Composite) super.createDialogArea(base);
 		parent.setLayout(GridLayoutFactory.swtDefaults().create());
 		new Label(parent, SWT.NONE).setText(UIText.BranchSelectionDialog_Refs);
 		branchTree = new Tree(parent, SWT.BORDER);
@@ -99,31 +99,15 @@ public class BranchSelectionDialog extends Dialog {
 		branchTree.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// enable the buttons depending on the selection
-				boolean oneSelected = branchTree.getSelection().length == 1;
-
-				String refName = refNameFromDialog();
-
-				boolean headSelected = Constants.HEAD.equals(refName);
-
-				boolean tagSelected = refName!=null && refName.startsWith(
-						Constants.R_TAGS);
-
-				boolean branchSelected = refName!=null && (refName.startsWith(Constants.R_HEADS) || refName.startsWith(Constants.R_REMOTES));
-
-				// TODO add support for checkout of tags
-				confirmationBtn.setEnabled(oneSelected && branchSelected && !headSelected
-						&& !tagSelected);
-				// we don't support rename on tags
-				renameButton.setEnabled(oneSelected && branchSelected && !headSelected && !tagSelected);
-
-				// new branch can not be based on a tag
-				newButton.setEnabled(oneSelected && branchSelected && !tagSelected);
+				// calculate the user's selected ref
+				refNameFromDialog();
+				// make sure it's a valid selection
+				confirmationBtn.setEnabled(refName != null);
 			}
 		});
 
 		if (showResetType) {
-			buildResetGroup(parent);
+			buildResetGroup();
 		}
 
 		String rawTitle = showResetType ? UIText.BranchSelectionDialog_TitleReset
@@ -140,7 +124,7 @@ public class BranchSelectionDialog extends Dialog {
 		return parent;
 	}
 
-	private void buildResetGroup(Composite parent) {
+	private void buildResetGroup() {
 		Group g = new Group(parent, SWT.NONE);
 		g.setText(UIText.BranchSelectionDialog_ResetType);
 		g.setLayoutData(GridDataFactory.swtDefaults().align(SWT.CENTER, SWT.CENTER).create());
@@ -259,12 +243,16 @@ public class BranchSelectionDialog extends Dialog {
 		}
 	}
 
+	private String refName = null;
+
 	/**
-	 * @return the selected refName
+	 * @return Selected ref
 	 */
 	public String getRefName() {
-		return this.selectedBranch;
+		return refName;
 	}
+
+	private ResetType resetType = ResetType.MIXED;
 
 	/**
 	 * @return Type of Reset
@@ -275,7 +263,7 @@ public class BranchSelectionDialog extends Dialog {
 
 	@Override
 	protected void okPressed() {
-		this.selectedBranch = refNameFromDialog();
+		refNameFromDialog();
 		if (showResetType) {
 			if (resetType == ResetType.HARD) {
 				if (!MessageDialog.openQuestion(getShell(),
@@ -289,16 +277,16 @@ public class BranchSelectionDialog extends Dialog {
 		super.okPressed();
 	}
 
-	private String refNameFromDialog() {
+	private void refNameFromDialog() {
 		TreeItem[] selection = branchTree.getSelection();
-		if (selection.length > 0) {
+		refName = null;
+		if (selection != null && selection.length > 0) {
 			TreeItem item = selection[0];
-			return (String) item.getData();
+			refName = (String) item.getData();
 		}
-		return null;
 	}
 
-	private InputDialog getRefNameInputDialog(String prompt, final String refPrefix) {
+	private InputDialog getRefNameInputDialog(String prompt) {
 		InputDialog labelDialog = new InputDialog(
 				getShell(),
 				UIText.BranchSelectionDialog_QuestionNewBranchTitle,
@@ -311,7 +299,7 @@ public class BranchSelectionDialog extends Dialog {
 							return ""; //$NON-NLS-1$
 						}
 
-						String testFor = refPrefix + newText;
+						String testFor = Constants.R_HEADS + newText;
 						try {
 							if (repo.resolve(testFor) != null)
 								return UIText.BranchSelectionDialog_ErrorAlreadyExists;
@@ -332,47 +320,34 @@ public class BranchSelectionDialog extends Dialog {
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
 		if (!showResetType) {
-			newButton = new Button(parent, SWT.PUSH);
+			Button newButton = new Button(parent, SWT.PUSH);
 			newButton.setFont(JFaceResources.getDialogFont());
 			newButton.setText(UIText.BranchSelectionDialog_NewBranch);
 			setButtonLayoutData(newButton);
 			((GridLayout)parent.getLayout()).numColumns++;
 
-			renameButton = new Button(parent, SWT.PUSH);
+			Button renameButton = new Button(parent, SWT.PUSH);
 			renameButton.setFont(JFaceResources.getDialogFont());
 			renameButton.setText(UIText.BranchSelectionDialog_Rename);
 			setButtonLayoutData(renameButton);
 			((GridLayout)parent.getLayout()).numColumns++;
 
-			renameButton.addSelectionListener(new SelectionAdapter() {
+			renameButton.addSelectionListener(new SelectionListener() {
 				public void widgetSelected(SelectionEvent e) {
+					// check what ref name the user selected, if any.
+					refNameFromDialog();
 
-					String refName = refNameFromDialog();
-					String refPrefix;
-
-					// the button should be disabled anyway, but we check again
-					if (refName.equals(Constants.HEAD))
-						return;
-
+					String branchName;
 					if (refName.startsWith(Constants.R_HEADS))
-						refPrefix = Constants.R_HEADS;
-					else if (refName.startsWith(Constants.R_REMOTES))
-						refPrefix = Constants.R_REMOTES;
-					else if (refName.startsWith(Constants.R_TAGS))
-						refPrefix = Constants.R_TAGS;
-					else {
-						// the button should be disabled anyway, but we check again
-						return;
-					}
-
-					String branchName = refName.substring(refPrefix.length());
-
+						branchName = refName.substring(Constants.R_HEADS.length());
+					else
+						branchName = refName;
 					InputDialog labelDialog = getRefNameInputDialog(NLS
 							.bind(
 									UIText.BranchSelectionDialog_QuestionNewBranchNameMessage,
-									branchName, refPrefix), refPrefix);
+									branchName));
 					if (labelDialog.open() == Window.OK) {
-						String newRefName = refPrefix + labelDialog.getValue();
+						String newRefName = Constants.R_HEADS + labelDialog.getValue();
 						try {
 							RefRename renameRef = repo.renameRef(refName, newRefName);
 							if (renameRef.rename() != Result.RENAMED) {
@@ -401,41 +376,28 @@ public class BranchSelectionDialog extends Dialog {
 						}
 					}
 				}
+				public void widgetDefaultSelected(SelectionEvent e) {
+					widgetSelected(e);
+				}
 			});
-			newButton.addSelectionListener(new SelectionAdapter() {
+			newButton.addSelectionListener(new SelectionListener() {
 
 				public void widgetSelected(SelectionEvent e) {
 					// check what ref name the user selected, if any.
-					String refName = refNameFromDialog();
+					refNameFromDialog();
 
-					String refPrefix;
-
-					// the button should be disabled anyway, but we check again
-					if (refName.equals(Constants.HEAD))
-						return;
-
-					if (refName.startsWith(Constants.R_HEADS))
-						refPrefix = Constants.R_HEADS;
-					else if (refName.startsWith(Constants.R_REMOTES))
-						refPrefix = Constants.R_REMOTES;
-					else {
-						// the button should be disabled anyway, but we check again
-						return;
-					}
-
-					InputDialog labelDialog = getRefNameInputDialog(
-							NLS
-									.bind(
-											UIText.BranchSelectionDialog_QuestionNewBranchMessage,
-											refName, refPrefix), refPrefix);
-
+					InputDialog labelDialog = getRefNameInputDialog(UIText.BranchSelectionDialog_QuestionNewBranchMessage);
 					if (labelDialog.open() == Window.OK) {
 						String newRefName = Constants.R_HEADS + labelDialog.getValue();
 						RefUpdate updateRef;
 						try {
 							updateRef = repo.updateRef(newRefName);
 							Ref startRef = repo.getRef(refName);
-							ObjectId startAt = repo.resolve(refName);
+							ObjectId startAt;
+							if (refName == null)
+								startAt = repo.resolve(Constants.HEAD);
+							else
+								startAt = repo.resolve(refName);
 							String startBranch;
 							if (startRef != null)
 								startBranch = refName;
@@ -461,6 +423,11 @@ public class BranchSelectionDialog extends Dialog {
 									UIText.BranchSelectionDialog_ErrorCouldNotRefreshBranchList);
 						}
 					}
+				}
+
+
+				public void widgetDefaultSelected(SelectionEvent e) {
+					widgetSelected(e);
 				}
 			});
 		}

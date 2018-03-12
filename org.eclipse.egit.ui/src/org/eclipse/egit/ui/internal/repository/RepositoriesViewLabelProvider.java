@@ -21,18 +21,23 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
-import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.BaseLabelProvider;
+import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeColumn;
 
 /**
  * Label Provider for the Git Repositories View
  */
-public class RepositoriesViewLabelProvider extends LabelProvider {
+public class RepositoriesViewLabelProvider extends BaseLabelProvider implements
+		ITableLabelProvider {
 
 	/**
 	 * A map of regular images to their decorated counterpart.
@@ -48,6 +53,9 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 	RepositoriesViewLabelProvider(final TreeViewer viewer) {
 
 		viewer.setLabelProvider(this);
+		Tree tree = viewer.getTree();
+		TreeColumn col = new TreeColumn(tree, SWT.NONE);
+		col.setWidth(400);
 		// we could implement some hover here to display additional information
 		// viewer.getTree().addMouseTrackListener(new MouseTrackAdapter() {
 		//
@@ -130,14 +138,12 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 
 	}
 
-	@Override
-	public Image getImage(Object element) {
+	public Image getColumnImage(Object element, int columnIndex) {
 		return decorateImage(
 				((RepositoryTreeNode) element).getType().getIcon(), element);
 	}
 
-	@Override
-	public String getText(Object element) {
+	public String getColumnText(Object element, int columnIndex) {
 
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
 		switch (node.getType()) {
