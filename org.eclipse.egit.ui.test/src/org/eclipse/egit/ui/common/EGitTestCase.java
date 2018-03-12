@@ -16,7 +16,7 @@ import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.junit.After;
 import org.junit.BeforeClass;
 
-public class EGitTestCase {
+public abstract class EGitTestCase {
 
 	static {
 		System.setProperty("org.eclipse.swtbot.playback.delay", "50");
