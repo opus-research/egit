@@ -118,6 +118,16 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 		return;
 	}
 
+	/**
+	 *
+	 * @param event
+	 *            the {@link ExecutionEvent}
+	 * @return the {@link Repository} to execute the {@link RebaseCommand} on
+	 */
+	protected Repository getRepository(ExecutionEvent event) {
+		return AbstractSharedCommandHandler.extractRepository(event);
+	}
+
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final RebaseOperation rebase = createRebaseOperation(event);
 		execute(rebase);

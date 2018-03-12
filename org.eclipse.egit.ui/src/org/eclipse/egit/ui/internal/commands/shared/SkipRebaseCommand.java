@@ -30,8 +30,7 @@ public class SkipRebaseCommand extends AbstractRebaseCommandHandler {
 
 	@Override
 	public RebaseOperation createRebaseOperation(ExecutionEvent event) {
-		return new RebaseOperation(
-				AbstractSharedCommandHandler.getRepository(event),
-				Operation.SKIP, RebaseInteracitveHandler.INSTANCE);
+		return new RebaseOperation(getRepository(event), Operation.SKIP,
+				RebaseInteracitveHandler.INSTANCE);
 	}
 }
