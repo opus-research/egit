@@ -12,7 +12,7 @@
  *******************************************************************************/
 package org.eclipse.egit.core.project;
 
-import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
+import static org.eclipse.egit.core.Helpers.isNonWorksapce;
 
 import java.io.File;
 import java.io.IOException;
@@ -215,7 +215,7 @@ public class RepositoryMapping {
 	 *         or null for non GitProvider.
 	 */
 	public static RepositoryMapping getMapping(final IResource resource) {
-		if (isNonWorkspace(resource))
+		if (isNonWorksapce(resource))
 			return getMappingForNonWorkspaceResource(resource);
 
 		IProject project = resource.getProject();

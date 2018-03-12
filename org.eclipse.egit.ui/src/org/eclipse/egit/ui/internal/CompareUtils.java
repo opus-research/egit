@@ -51,7 +51,6 @@ import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.Repository;
@@ -402,6 +401,12 @@ public class CompareUtils {
 		DirCache dc = repository.lockDirCache();
 		final DirCacheEntry entry = dc.getEntry(gitPath);
 		dc.unlock();
+		if (entry == null) {
+			// the file cannot be found in the index
+			return new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS
+					.bind(UIText.CompareWithIndexAction_FileNotInIndex,
+							baseFile.getName()));
+		}
 
 		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
 		String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
@@ -414,11 +419,34 @@ public class CompareUtils {
 				try {
 					cache = repository.lockDirCache();
 					DirCacheEditor editor = cache.editor();
-					if (newContent.length == 0)
-						editor.add(new DirCacheEditor.DeletePath(gitPath));
-					else
-						editor.add(new DirCacheEntryEditor(gitPath,
-								repository, entry, newContent));
+					editor.add(new DirCacheEditor.PathEdit(gitPath) {
+						@Override
+						public void apply(DirCacheEntry ent) {
+							ent.copyMetaData(entry);
+
+							ObjectInserter inserter = repository
+									.newObjectInserter();
+							ent.copyMetaData(entry);
+							ent.setLength(newContent.length);
+							ent.setLastModified(System.currentTimeMillis());
+							InputStream in = new ByteArrayInputStream(
+									newContent);
+							try {
+								ent.setObjectId(inserter.insert(
+										Constants.OBJ_BLOB, newContent.length,
+										in));
+								inserter.flush();
+							} catch (IOException ex) {
+								throw new RuntimeException(ex);
+							} finally {
+								try {
+									in.close();
+								} catch (IOException e) {
+									// ignore here
+								}
+							}
+						}
+					});
 					try {
 						editor.commit();
 					} catch (RuntimeException e) {
@@ -552,49 +580,6 @@ public class CompareUtils {
 			return diffNode;
 		} else {
 			return new DiffNode(diffType, null, l, r);
-		}
-	}
-
-	private static class DirCacheEntryEditor extends DirCacheEditor.PathEdit {
-
-		private final Repository repo;
-
-		private final DirCacheEntry oldEntry;
-
-		private final byte[] newContent;
-
-		public DirCacheEntryEditor(String path, Repository repo,
-				DirCacheEntry oldEntry, byte[] newContent) {
-			super(path);
-			this.repo = repo;
-			this.oldEntry = oldEntry;
-			this.newContent = newContent;
-		}
-
-		@Override
-		public void apply(DirCacheEntry ent) {
-			ObjectInserter inserter = repo.newObjectInserter();
-			if (oldEntry != null)
-				ent.copyMetaData(oldEntry);
-			else
-				ent.setFileMode(FileMode.REGULAR_FILE);
-
-			ent.setLength(newContent.length);
-			ent.setLastModified(System.currentTimeMillis());
-			InputStream in = new ByteArrayInputStream(newContent);
-			try {
-				ent.setObjectId(inserter.insert(Constants.OBJ_BLOB,
-						newContent.length, in));
-				inserter.flush();
-			} catch (IOException ex) {
-				throw new RuntimeException(ex);
-			} finally {
-				try {
-					in.close();
-				} catch (IOException e) {
-					// ignore here
-				}
-			}
 		}
 	}
 

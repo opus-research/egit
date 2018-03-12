@@ -92,7 +92,7 @@ public class GerritConfigurationPage extends WizardPage {
 
 	private void createGerritCheckbox(Composite panel) {
 		Composite comp = SWTUtils.createHFillComposite(panel,
-				SWTUtils.MARGINS_NONE, 1);
+				SWTUtils.MARGINS_NONE, 2);
 		configureGerrit = new Button(comp, SWT.CHECK);
 		configureGerrit.addSelectionListener(new SelectionListener() {
 			public void widgetSelected(SelectionEvent e) {
@@ -105,8 +105,7 @@ public class GerritConfigurationPage extends WizardPage {
 				checkPage();
 			}
 		});
-		configureGerrit
-				.setText(UIText.GerritConfigurationPage_configurePushToGerrit);
+		new Label(comp, SWT.NULL).setText(UIText.GerritConfigurationPage_configurePushToGerrit);
 	}
 
 	private void createURIGroup(Composite panel) {
@@ -265,9 +264,7 @@ public class GerritConfigurationPage extends WizardPage {
 			newPushURI = prependGerritHttpPathPrefix(newPushURI);
 		}
 		uriText.setText(newPushURI.toString());
-		final String uriScheme = newPushURI.getScheme();
-		if (uriScheme != null)
-			scheme.select(scheme.indexOf(uriScheme));
+		scheme.select(scheme.indexOf(newPushURI.getScheme()));
 		branch.setText(Constants.MASTER);
 	}
 
