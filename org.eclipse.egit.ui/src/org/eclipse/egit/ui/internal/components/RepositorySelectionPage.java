@@ -511,7 +511,8 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	}
 
 	private boolean isURISelected() {
-		return uriButton == null || uriButton.getSelection();
+		return configuredRemotes == null || presetUri != null
+				|| uriButton.getSelection();
 	}
 
 	private void setURI(final URIish u) {
