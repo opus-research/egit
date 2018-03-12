@@ -4,8 +4,6 @@
  * Copyright (C) 2006, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +16,6 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -34,9 +31,8 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.PlatformObject;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
@@ -245,9 +241,9 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	private Repository getRepository(boolean warn,
 			IStructuredSelection selection, Shell shell) {
 		RepositoryMapping mapping = null;
-		for (IPath location : getSelectedLocations(selection)) {
+		for (IResource resource : getSelectedResources(selection)) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(location);
+					.getMapping(resource);
 			if (mapping == null)
 				mapping = repositoryMapping;
 			if (repositoryMapping == null)
@@ -454,7 +450,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			result = new ArrayList();
 			Iterator elements = ((IStructuredSelection) selection).iterator();
 			while (elements.hasNext()) {
-				Object adapter = AdapterUtils.adapt(elements.next(), c);
+				Object adapter = getAdapter(elements.next(), c);
 				if (c.isInstance(adapter))
 					result.add(adapter);
 			}
@@ -463,6 +459,18 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			return result
 					.toArray((Object[]) Array.newInstance(c, result.size()));
 		return (Object[]) Array.newInstance(c, 0);
+	}
+
+	private Object getAdapter(Object adaptable, Class c) {
+		if (c.isInstance(adaptable))
+			return adaptable;
+		if (adaptable instanceof IAdaptable) {
+			IAdaptable a = (IAdaptable) adaptable;
+			Object adapter = a.getAdapter(c);
+			if (c.isInstance(adapter))
+				return adapter;
+		}
+		return null;
 	}
 
 	/**
@@ -474,12 +482,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			throws ExecutionException {
 		IStructuredSelection selection = getSelection(event);
 		return getSelectedResources(selection);
-	}
-
-	protected IPath[] getSelectedLocations(ExecutionEvent event)
-			throws ExecutionException {
-		IStructuredSelection selection = getSelection(event);
-		return getSelectedLocations(selection);
 	}
 
 	/**
@@ -497,40 +499,17 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	private IResource[] getSelectedResources(IStructuredSelection selection) {
 		Set<IResource> result = new LinkedHashSet<IResource>();
 		for (Object o : selection.toList()) {
-			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			IResource resource = (IResource) getAdapter(o, IResource.class);
 			if (resource != null)
 				result.add(resource);
 			else
-				result.addAll(extractResourcesFromMapping(o));
+				extractResourcesFromMapping(result, o);
 		}
 		return result.toArray(new IResource[result.size()]);
 	}
 
-	private IPath[] getSelectedLocations(IStructuredSelection selection) {
-		Set<IPath> result = new LinkedHashSet<IPath>();
-		for (Object o : selection.toList()) {
-			IResource resource = AdapterUtils.adapt(o, IResource.class);
-			if (resource != null) {
-				IPath location = resource.getLocation();
-				if (location != null)
-					result.add(location);
-			} else {
-				IPath location = AdapterUtils.adapt(o, IPath.class);
-				if (location != null)
-					result.add(location);
-				else
-					for (IResource r : extractResourcesFromMapping(o)) {
-						IPath l = r.getLocation();
-						if (l != null)
-							result.add(l);
-					}
-			}
-		}
-		return result.toArray(new IPath[result.size()]);
-	}
-
-	private List<IResource> extractResourcesFromMapping(Object o) {
-		ResourceMapping mapping = AdapterUtils.adapt(o,
+	private void extractResourcesFromMapping(Set<IResource> result, Object o) {
+		ResourceMapping mapping = (ResourceMapping) getAdapter(o,
 				ResourceMapping.class);
 		if (mapping != null) {
 			ResourceTraversal[] traversals;
@@ -538,13 +517,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				traversals = mapping.getTraversals(null, null);
 				for (ResourceTraversal traversal : traversals) {
 					IResource[] resources = traversal.getResources();
-					return Arrays.asList(resources);
+					result.addAll(Arrays.asList(resources));
 				}
 			} catch (CoreException e) {
 				Activator.logError(e.getMessage(), e);
 			}
 		}
-		return Collections.emptyList();
 	}
 
 	/**
