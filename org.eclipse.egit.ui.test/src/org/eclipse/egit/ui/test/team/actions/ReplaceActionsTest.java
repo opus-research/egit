@@ -69,14 +69,13 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 		Git git = new Git(repo);
 
 		Calendar cal = Calendar.getInstance();
-		long time = cal.getTime().getTime();
 		PersonIdent sideCommitter = new PersonIdent("Side Committer",
-				"side@example.org", time, 0);
+				"side@example.org", cal.getTime().getTime(), 0);
 		// Make sure commit time stamps are different, otherwise the order in
 		// the dialog is not stable
-		time += 5000;
+		cal.roll(Calendar.SECOND, 2);
 		PersonIdent masterCommitter = new PersonIdent("Master Committer",
-				"master@example.org", time, 0);
+				"master@example.org", cal.getTime().getTime(), 0);
 
 		git.checkout().setCreateBranch(true).setName("side").call();
 		touch(PROJ1, "folder/test.txt", "side");
