@@ -37,8 +37,7 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public RenameBranchDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
-				| EXPAND_LOCAL_BRANCHES_NODE);
+		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES);
 	}
 
 	private InputDialog getRefNameInputDialog(String prompt,

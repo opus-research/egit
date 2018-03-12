@@ -95,9 +95,6 @@ public class ActionCommands {
 	/** "Reset" action command id */
 	public static final String RESET_ACTION = "org.eclipse.egit.ui.team.Reset"; //$NON-NLS-1$
 
-	/** "Rebase" action command id */
-	public static final String REBASE_ACTION = "org.eclipse.egit.ui.team.Rebase"; //$NON-NLS-1$
-
 	/** "Show History" action command id */
 	public static final String SHOW_HISTORY = "org.eclipse.egit.ui.team.ShowHistory"; //$NON-NLS-1$
 
@@ -124,7 +121,4 @@ public class ActionCommands {
 
 	/** "Merge Tool" action command id */
 	public static final String MERGE_TOOL_ACTION = "org.eclipse.egit.ui.team.MergeTool"; //$NON-NLS-1$
-
-	/** "Show Blame Annotations" action command id */
-	public static final String SHOW_BLAME_ACTION = "org.eclipse.egit.ui.team.ShowBlameAnnotations"; //$NON-NLS-1$
 }
