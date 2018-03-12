@@ -12,8 +12,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.project;
 
-import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
@@ -197,7 +195,7 @@ public class RepositoryMapping {
 		final int pfxLen = workdirPrefix.length();
 		IPath location = rsrc.getLocation();
 		if (location == null)
-			location = rsrc.getFullPath();
+			return null;
 		final String p = location.toString();
 		final int pLen = p.length();
 		if (pLen > pfxLen)
@@ -215,10 +213,7 @@ public class RepositoryMapping {
 	 *         or null for non GitProvider.
 	 */
 	public static RepositoryMapping getMapping(final IResource resource) {
-		if (isNonWorkspace(resource))
-			return getMappingForNonWorkspaceResource(resource);
-
-		IProject project = resource.getProject();
+		final IProject project = resource.getProject();
 		if (project == null)
 			return null;
 
@@ -266,27 +261,4 @@ public class RepositoryMapping {
 					.append(getGitDirPath());
 		return gitDirAbsolutePath;
 	}
-
-	private static RepositoryMapping getMappingForNonWorkspaceResource(
-			final IResource resource) {
-		IPath fullPath = resource.getFullPath().removeLastSegments(1);
-		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects();
-
-		for (IProject project : projects) {
-			RepositoryMapping mapping = getMapping(project);
-			if (mapping == null)
-				continue;
-
-			Path workingTree = new Path(mapping.getWorkTree().toString());
-			IPath relative = fullPath.makeRelativeTo(workingTree);
-			String firstSegment = relative.segment(0);
-
-			if (firstSegment == null || !"..".equals(firstSegment)) //$NON-NLS-1$
-				return mapping;
-		}
-
-		return null;
-	}
-
 }
