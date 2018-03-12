@@ -12,8 +12,8 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.history.GitCreatePatchWizard;
-import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -41,13 +41,15 @@ public class CreatePatchHandler extends AbstractHistoryCommanndHandler {
 
 	@Override
 	public boolean isEnabled() {
-		GitHistoryPage page = getPage();
-		if (page == null)
+		try {
+			IStructuredSelection selection = getSelection(null);
+			if (selection.size() != 1)
+				return false;
+			RevCommit commit = (RevCommit) selection.getFirstElement();
+			return (commit.getParentCount() == 1);
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, false);
 			return false;
-		IStructuredSelection selection = getSelection(page);
-		if (selection.size() != 1)
-			return false;
-		RevCommit commit = (RevCommit) selection.getFirstElement();
-		return (commit.getParentCount() == 1);
+		}
 	}
 }
