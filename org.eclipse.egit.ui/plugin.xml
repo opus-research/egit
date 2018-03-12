@@ -676,8 +676,8 @@
                name="FirstGroup">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewPull"
-               label="%RepoViewPullMenu.label"
+               commandId="org.eclipse.egit.ui.RepositoriesViewFetch"
+               label="%RepoViewFetch.label"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -685,15 +685,12 @@
                   <count
                         value="1">
                   </count>
-                  <iterate>
-                     <and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <test
-                              property="GitRepository.canMerge">
-                        </test>
-                     </and>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -956,26 +953,6 @@
                               value="org.eclipse.egit.ui.internal.repository.tree.TagsNode">
                         </instanceof>
                      </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewFetch"
-               label="%RepoViewFetch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -1699,12 +1676,6 @@
             id="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
             name="Show in History">
       </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.PullCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewPull"
-            name="%RepoViewPullCommand.name">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.commandImages">
@@ -1714,7 +1685,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewFetch"
-            icon="icons/obj16/fetch.gif">
+            icon="icons/obj16/pull.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewClone"
@@ -1790,7 +1761,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewFetchConfigured"
-            icon="icons/obj16/fetch.gif">
+            icon="icons/obj16/pull.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewDeleteBranch"
@@ -1835,10 +1806,6 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
             icon="icons/obj16/history.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewPull"
-            icon="icons/obj16/pull.gif">
       </image>
    </extension>
    <extension
@@ -2033,7 +2000,7 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.PullFromUpstreamActionHandler"
             id="org.eclipse.egit.ui.team.Pull"
-            name="%TeamPullCommand.name">
+            name="Pull">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
