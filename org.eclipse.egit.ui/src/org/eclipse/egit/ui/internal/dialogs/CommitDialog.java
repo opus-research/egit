@@ -168,7 +168,7 @@ public class CommitDialog extends Dialog {
 				IDialogConstants.CANCEL_LABEL, false);
 	}
 
-	CommitMessageArea commitText;
+	SpellcheckableMessageArea commitText;
 	Text authorText;
 	Text committerText;
 	Button amendingButton;
@@ -197,7 +197,7 @@ public class CommitDialog extends Dialog {
 		label.setText(UIText.CommitDialog_CommitMessage);
 		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
 
-		commitText = new CommitMessageArea(container, commitMessage);
+		commitText = new SpellcheckableMessageArea(container, commitMessage);
 		Point size = commitText.getTextWidget().getSize();
 		int minHeight = commitText.getTextWidget().getLineHeight() * 3;
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
@@ -254,7 +254,7 @@ public class CommitDialog extends Dialog {
 			public void widgetSelected(SelectionEvent e) {
 				String preferencePageId = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
 				PreferenceDialog dialog = PreferencesUtil
-						.createPreferenceDialogOn(null, preferencePageId,
+						.createPreferenceDialogOn(getShell(), preferencePageId,
 								new String[] { preferencePageId }, null);
 				dialog.open();
 				commitText.reconfigure();
@@ -418,7 +418,8 @@ public class CommitDialog extends Dialog {
 			// pre-emptively check any preselected files
 			for (IFile selectedFile : preselectedFiles) {
 				for (CommitItem item : items) {
-					if (item.file.equals(selectedFile)) {
+					if (item.file.equals(selectedFile) &&
+							!item.status.equals(UIText.CommitDialog_StatusUntracked)) {
 						filesViewer.setChecked(item, true);
 						break;
 					}
