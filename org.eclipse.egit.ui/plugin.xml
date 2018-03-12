@@ -97,14 +97,6 @@
                menubarPath="team.main/group1"
                tooltip="%ShowResourceInHistoryAction_tooltip"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.ShowInRepositoriesViewAction"
-               definitionId="org.eclipse.egit.ui.ShowInRepositoriesView"
-               enablesFor="1"
-               id="org.eclipse.egit.ui.internal.actions.ShowInRepositoriesView"
-               label="&amp;Show in Git Repositories View"
-               menubarPath="team.main/group1">
-         </action>
-         <action
                class="org.eclipse.egit.ui.internal.actions.Update"
                id="org.eclipse.egit.ui.internal.actions.Update"
                label="%UpdateAction_label"
@@ -134,12 +126,6 @@
                label="%AddToIndexAction_label"
                menubarPath="team.main/group1"
                tooltip="%AddToIndexAction_tooltip"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.DiscardChangesAction"
-               id="org.eclipse.egit.ui.internal.actions.DiscardChangesAction"
-               label="%DiscardChangesAction_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup"
-               tooltip="%DiscardChangesAction_tooltip"/>
 	  </objectContribution>
 	  <objectContribution
          id="org.eclipse.egit.ui.resetto"
@@ -456,7 +442,7 @@
             name="%ShareProjectCommand_name">
          <commandParameter
                id="org.eclipse.egit.ui.command.projectNameParameter"
-               name="%ShareProjectCommandParameter_name"
+               name="Project"
                optional="false"
                values="org.eclipse.egit.ui.internal.commands.ProjectNameParameterValues">
          </commandParameter>
@@ -467,23 +453,13 @@
       <view
             category="org.eclipse.egit.ui.GitCategory"
             class="org.eclipse.egit.ui.internal.repository.RepositoriesView"
-            icon="icons/eview16/repo_rep.gif"
             id="org.eclipse.egit.ui.RepositoriesView"
-            name="%GitRepositoriesView_name"
+            name="Git Repositories"
             restorable="true">
       </view>
       <category
             id="org.eclipse.egit.ui.GitCategory"
-            name="%GitCategory_name">
+            name="Git">
       </category>
-   </extension>
-   <extension
-         point="org.eclipse.ui.perspectives">
-      <perspective
-            class="org.eclipse.egit.ui.GitRepositoriesPerspectiveFactory"
-            icon="icons/obj16/gitrepository.gif"
-            id="org.eclipse.egit.ui.GitRepositoryExploring"
-            name="%GitRepositoryPerspective_name">
-      </perspective>
    </extension>
 </plugin>
