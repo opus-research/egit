@@ -23,10 +23,9 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
-import org.eclipse.egit.ui.internal.dialogs.RenameBranchDialog;
+import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutDialog;
 import org.eclipse.egit.ui.internal.dialogs.CreateBranchDialog;
-import org.eclipse.egit.ui.internal.dialogs.DeleteBranchDialog;
 import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
@@ -44,11 +43,13 @@ public class BranchOperationUI {
 	// create
 	private final static int MODE_CREATE = 1;
 
+	// checkout dialog
 	private final static int MODE_CHECKOUT = 2;
 
-	private final static int MODE_DELETE = 3;
+	// branch dialog (delete, rename)
+	private final static int MODE_BRANCH = 3;
 
-	private final static int MODE_RENAME = 4;
+	private BranchOperation bop;
 
 	private final Repository repository;
 
@@ -57,23 +58,13 @@ public class BranchOperationUI {
 	private final int mode;
 
 	/**
-	 * Create an operation for manipulating branches
+	 * Create an operation for selecting and checking out a branch
 	 *
 	 * @param repository
 	 * @return the {@link BranchOperationUI}
 	 */
-	public static BranchOperationUI rename(Repository repository) {
-		return new BranchOperationUI(repository, MODE_RENAME);
-	}
-
-	/**
-	 * Create an operation for manipulating branches
-	 *
-	 * @param repository
-	 * @return the {@link BranchOperationUI}
-	 */
-	public static BranchOperationUI delete(Repository repository) {
-		return new BranchOperationUI(repository, MODE_DELETE);
+	public static BranchOperationUI branch(Repository repository) {
+		return new BranchOperationUI(repository, MODE_BRANCH);
 	}
 
 	/**
@@ -152,7 +143,7 @@ public class BranchOperationUI {
 		String jobname = NLS.bind(UIText.BranchAction_checkingOut, repoName,
 				target);
 
-		final BranchOperation bop = new BranchOperation(repository, target);
+		bop = new BranchOperation(repository, target);
 
 		Job job = new Job(jobname) {
 			@Override
@@ -216,7 +207,7 @@ public class BranchOperationUI {
 		if (target == null)
 			return;
 
-		BranchOperation bop = new BranchOperation(repository, target);
+		bop = new BranchOperation(repository, target);
 		bop.execute(monitor);
 
 		BranchResultDialog.show(bop.getResult(), repository, target);
@@ -225,6 +216,9 @@ public class BranchOperationUI {
 	private String getTargetWithDialog() {
 		AbstractBranchSelectionDialog dialog;
 		switch (mode) {
+		case MODE_BRANCH:
+			dialog = new BranchSelectionDialog(getShell(), repository);
+			break;
 		case MODE_CHECKOUT:
 			dialog = new CheckoutDialog(getShell(), repository);
 			break;
@@ -235,12 +229,6 @@ public class BranchOperationUI {
 			CreateBranchWizard wiz = new CreateBranchWizard(repository, dialog
 					.getRefName());
 			new WizardDialog(getShell(), wiz).open();
-			return null;
-		case MODE_DELETE:
-			new DeleteBranchDialog(getShell(), repository).open();
-			return null;
-		case MODE_RENAME:
-			new RenameBranchDialog(getShell(), repository).open();
 			return null;
 		default:
 			return null;
