@@ -35,6 +35,9 @@ public class UIText extends NLS {
 	public static String AbortRebaseCommand_JobName;
 
 	/** */
+	public static String AbstractHistoryCommandHandler_ActionRequiresOneSelectedCommitMessage;
+
+	/** */
 	public static String AbstractHistoryCommanndHandler_CouldNotGetRepositoryMessage;
 
 	/** */
@@ -2534,6 +2537,9 @@ public class UIText extends NLS {
 	public static String CreateRepositoryPage_DirectoryLabel;
 
 	/** */
+	public static String CreateRepositoryPage_MissingNameMessage;
+
+	/** */
 	public static String CreateRepositoryPage_NotADirectoryMessage;
 
 	/** */
@@ -2549,7 +2555,10 @@ public class UIText extends NLS {
 	public static String CreateRepositoryPage_PleaseSelectDirectoryMessage;
 
 	/** */
-	public static String CreateRepositoryPage_PleaseUseAbsolutePathMessage;
+	public static String CreateRepositoryPage_PleaseUseAbsoluePathMessage;
+
+	/** */
+	public static String CreateRepositoryPage_RepositoryNameLabel;
 
 	/** */
 	public static String PushResultDialog_ConfigureButton;
