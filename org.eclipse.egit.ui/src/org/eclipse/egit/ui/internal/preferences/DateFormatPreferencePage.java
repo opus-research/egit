@@ -154,7 +154,12 @@ public class DateFormatPreferencePage extends FieldEditorPreferencePage
 				.getString(UIPreferences.DATE_FORMAT);
 		String initialValue = getPreferenceStore()
 				.getString(UIPreferences.DATE_FORMAT_CHOICE);
-		updateFields(initialValue);
+		GitDateFormatter.Format initialFormat = fromString(initialValue);
+		FormatInfo info = DATA.get(initialFormat);
+		dateFormat.setEnabled(initialFormat == null, pane);
+		dateFormat.setStringValue(
+				initialFormat == null ? lastCustomValue : info.format);
+		formatExplanation.setText(info.explanation);
 	}
 
 	@Override
@@ -211,6 +216,7 @@ public class DateFormatPreferencePage extends FieldEditorPreferencePage
 	}
 
 	private void updatePreview(SimpleDateFormat format) {
+		format.setTimeZone(SAMPLE.getTimeZone());
 		dateFormatPreview.setText(format.format(SAMPLE.getWhen()));
 	}
 
