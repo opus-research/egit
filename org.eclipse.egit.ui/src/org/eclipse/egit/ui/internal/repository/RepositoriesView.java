@@ -54,9 +54,7 @@ import org.eclipse.egit.ui.internal.fetch.FetchConfiguredRemoteAction;
 import org.eclipse.egit.ui.internal.fetch.FetchWizard;
 import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.internal.push.PushWizard;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
+import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
@@ -159,15 +157,15 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	private static final String PREFS_SYNCED = "GitRepositoriesView.SyncWithSelection"; //$NON-NLS-1$
 
-	private final Set<Repository> repositories = new HashSet<Repository>();
-
 	private final List<ISelectionChangedListener> selectionListeners = new ArrayList<ISelectionChangedListener>();
 
-	private RepositoryListener repositoryListener;
+	private final static long AUTO_REFRESH_INTERVAL_MILLISECONDS = 10000l;
 
 	private ISelection currentSelection = new StructuredSelection();
 
 	private Job scheduledJob;
+
+	private Job autoRefreshJob;
 
 	private TreeViewer tv;
 
@@ -347,13 +345,25 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			}
 		});
 
-		createRepositoryChangedListener();
-
 		addContextMenu();
 
 		addActionsToToolbar();
 
 		scheduleRefresh();
+
+		// schedule the auto-refresh job
+		autoRefreshJob = new Job("Git Repositories View Auto-Refresh") { //$NON-NLS-1$
+
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				scheduleRefresh();
+				schedule(AUTO_REFRESH_INTERVAL_MILLISECONDS);
+				return Status.OK_STATUS;
+			}
+		};
+
+		autoRefreshJob.setSystem(true);
+		autoRefreshJob.schedule(AUTO_REFRESH_INTERVAL_MILLISECONDS);
 
 		ISelectionService srv = (ISelectionService) getSite().getService(
 				ISelectionService.class);
@@ -1546,10 +1556,50 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			this.scheduledJob.cancel();
 			this.scheduledJob = null;
 		}
-		// remove RepositoryChangedListener
-		unregisterRepositoryListener();
-		repositories.clear();
+		// and the auto refresh job, too
+		if (this.autoRefreshJob != null) {
+			this.autoRefreshJob.cancel();
+			this.autoRefreshJob = null;
+		}
 		super.dispose();
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkForRepositoryChanges() {
+
+		if (tv.getInput() == null)
+			return false;
+
+		final Set<Repository> reposToRefresh = new HashSet<Repository>();
+
+		RepositoryListener listener = new RepositoryListener() {
+
+			public void refsChanged(RefsChangedEvent e) {
+				reposToRefresh.add(e.getRepository());
+			}
+
+			public void indexChanged(IndexChangedEvent e) {
+				reposToRefresh.add(e.getRepository());
+			}
+		};
+
+		List<RepositoryTreeNode<Repository>> input = (List<RepositoryTreeNode<Repository>>) tv
+				.getInput();
+
+		for (final RepositoryTreeNode<Repository> node : input) {
+
+			Repository repository = node.getRepository();
+			repository.addRepositoryChangedListener(listener);
+			try {
+				repository.scanForRepoChanges();
+			} catch (IOException e1) {
+				// ignore
+			} finally {
+				repository.removeRepositoryChangedListener(listener);
+			}
+		}
+
+		return !reposToRefresh.isEmpty();
 	}
 
 	/**
@@ -1584,56 +1634,51 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 				}
 
 				final boolean updateInput = needsNewInput;
-				final List<RepositoryTreeNode<Repository>> newInput;
-				if (updateInput) {
-					unregisterRepositoryListener();
+				final List newInput;
+				if (updateInput)
 					try {
 						newInput = getRepositoriesFromDirs(monitor);
 					} catch (InterruptedException e) {
 						return new Status(IStatus.ERROR, Activator
 								.getPluginId(), e.getMessage(), e);
 					}
-					repositories.clear();
-					for (RepositoryTreeNode<Repository> node: newInput) {
-						Repository repo = node.getRepository();
-						repositories.add(repo);
-						// add listener if not already added
-						repo.removeRepositoryChangedListener(repositoryListener);
-						repo.addRepositoryChangedListener(repositoryListener);
-					}
-				} else {
+				else
 					newInput = null;
-				}
-				Display.getDefault().asyncExec(new Runnable() {
-					public void run() {
-						// keep expansion state and selection so that we can
-						// restore the tree
-						// after update
-						Object[] expanded = tv.getExpandedElements();
-						IStructuredSelection sel = (IStructuredSelection) tv
-								.getSelection();
 
-						if (updateInput)
-							tv.setInput(newInput);
-						else
-							tv.refresh();
-						tv.setExpandedElements(expanded);
+				// we only check for Repository changes if we don't
+				// have a new input
+				if (updateInput || checkForRepositoryChanges()) {
+					Display.getDefault().asyncExec(new Runnable() {
+						public void run() {
+							// keep expansion state and selection so that we can
+							// restore the tree
+							// after update
+							Object[] expanded = tv.getExpandedElements();
+							IStructuredSelection sel = (IStructuredSelection) tv
+									.getSelection();
 
-						Object selected = sel.getFirstElement();
-						if (selected != null)
-							tv.reveal(selected);
+							if (updateInput)
+								tv.setInput(newInput);
+							else
+								tv.refresh();
+							tv.setExpandedElements(expanded);
 
-						IViewPart part = PlatformUI.getWorkbench()
-								.getActiveWorkbenchWindow().getActivePage()
-								.findView(IPageLayout.ID_PROP_SHEET);
-						if (part != null) {
-							PropertySheet sheet = (PropertySheet) part;
-							PropertySheetPage page = (PropertySheetPage) sheet
-									.getCurrentPage();
-							page.refresh();
+							Object selected = sel.getFirstElement();
+							if (selected != null)
+								tv.reveal(selected);
+
+							IViewPart part = PlatformUI.getWorkbench()
+									.getActiveWorkbenchWindow().getActivePage()
+									.findView(IPageLayout.ID_PROP_SHEET);
+							if (part != null) {
+								PropertySheet sheet = (PropertySheet) part;
+								PropertySheetPage page = (PropertySheetPage) sheet
+										.getCurrentPage();
+								page.refresh();
+							}
 						}
-					}
-				});
+					});
+				}
 				return new Status(IStatus.OK, Activator.getPluginId(), ""); //$NON-NLS-1$
 			}
 
@@ -1648,24 +1693,6 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 		scheduledJob = job;
 
 	}
-
-	private void createRepositoryChangedListener() {
-		repositoryListener = new RepositoryListener() {
-			public void refsChanged(RefsChangedEvent e) {
-				scheduleRefresh();
-			}
-
-			public void indexChanged(IndexChangedEvent e) {
-				scheduleRefresh();
-			}
-		};
-	}
-
-	private void unregisterRepositoryListener() {
-		for (Repository repo:repositories)
-			repo.removeRepositoryChangedListener(repositoryListener);
-	}
-
 
 	/**
 	 * Adds a directory to the list if it is not already there
@@ -1718,10 +1745,13 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			try {
 				File dir = new File(dirString);
 				if (dir.exists() && dir.isDirectory()) {
-					Repository repo = org.eclipse.egit.core.Activator
-							.getDefault().getRepositoryCache()
-							.lookupRepository(dir);
-					RepositoryNode node = new RepositoryNode(null, repo);
+					Repository repo = new Repository(dir);
+					// reset repository change events here so that check for
+					// repository changes does not trigger an unnecessary
+					// refresh
+					repo.scanForRepoChanges();
+					RepositoryTreeNode<Repository> node = new RepositoryTreeNode<Repository>(
+							null, RepositoryTreeNodeType.REPO, repo, repo);
 					input.add(node);
 				}
 			} catch (IOException e) {
@@ -1910,7 +1940,6 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 					projectsToDelete.add(prj);
 				}
 			}
-			repo.removeRepositoryChangedListener(repositoryListener);
 		}
 
 		if (!projectsToDelete.isEmpty()) {

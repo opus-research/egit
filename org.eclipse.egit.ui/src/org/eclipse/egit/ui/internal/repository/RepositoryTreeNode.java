@@ -8,12 +8,17 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.repository.tree;
+package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * A node in the Git Repositories view tree
@@ -21,7 +26,7 @@ import org.eclipse.jgit.lib.Repository;
  * @param <T>
  *            the type
  */
-public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTreeNode> {
+public class RepositoryTreeNode<T> implements Comparable<RepositoryTreeNode> {
 
 	private final Repository myRepository;
 
@@ -330,6 +335,83 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			return myObject.equals(otherObject);
 		}
 		return false;
+	}
+
+	/**
+	 * Specifies the type of a {@link RepositoryTreeNode}
+	 */
+	public enum RepositoryTreeNodeType {
+
+		/**	 */
+		REPO(UIIcons.REPOSITORY.createImage()), //
+		/**	 */
+		BRANCHES(UIIcons.BRANCHES.createImage()), //
+		/** */
+		REF(UIIcons.BRANCH.createImage()), //
+		/** */
+		LOCALBRANCHES(PlatformUI.getWorkbench().getSharedImages().getImage(
+				ISharedImages.IMG_OBJ_FOLDER)), //
+		/** */
+		REMOTEBRANCHES(PlatformUI.getWorkbench().getSharedImages().getImage(
+				ISharedImages.IMG_OBJ_FOLDER)), //
+		/** */
+		TAGS(UIIcons.TAGS.createImage()), //
+		/** */
+		SYMBOLICREFS(PlatformUI.getWorkbench().getSharedImages().getImage(
+				ISharedImages.IMG_OBJ_FOLDER)), //
+		/** */
+		SYMBOLICREF(PlatformUI.getWorkbench().getSharedImages().getImage(
+				ISharedImages.IMG_OBJ_FILE)), // TODO icon
+		/** */
+		TAG(UIIcons.TAG.createImage()), //
+		/**	 */
+		FILE(PlatformUI.getWorkbench().getSharedImages().getImage(
+				ISharedImages.IMG_OBJ_FILE)), //
+		/**	 */
+		FOLDER(PlatformUI.getWorkbench().getSharedImages().getImage(
+				ISharedImages.IMG_OBJ_FOLDER)), //
+		/**	 */
+		REMOTES(UIIcons.REMOTE_REPOSITORY.createImage()), //
+		/**	 */
+		REMOTE(UIIcons.REMOTE_SPEC.createImage()), //
+		/**	 */
+		FETCH(UIIcons.FETCH.createImage()), //
+		/**	 */
+		PUSH(UIIcons.PUSH.createImage()), //
+		/**	 */
+		WORKINGDIR(PlatformUI.getWorkbench().getSharedImages().getImage(
+				ISharedImages.IMG_OBJ_FOLDER)), //
+		/** */
+		ERROR(PlatformUI.getWorkbench().getSharedImages().getImage(
+				ISharedImages.IMG_ELCL_STOP)) // TODO icon?
+
+		;
+
+		private final Image myImage;
+
+		private RepositoryTreeNodeType(String iconName) {
+
+			if (iconName != null) {
+				myImage = Activator.getDefault().getImageRegistry().get(
+						iconName);
+			} else {
+				myImage = null;
+			}
+
+		}
+
+		private RepositoryTreeNodeType(Image icon) {
+			myImage = icon;
+
+		}
+
+		/**
+		 * @return the icon for this type
+		 */
+		public Image getIcon() {
+			return myImage;
+		}
+
 	}
 
 }
