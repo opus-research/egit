@@ -345,7 +345,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		shell.bot().text(UIText.WizardProjectsImportPage_ImportProjectsDescription);
 		shell.bot().tree().getAllItems()[0].check();
 		// add to working set
-		shell.bot().checkBox("Add project to working sets").select();
+		shell.bot().checkBox().select();
 		// create new working set
 		shell.bot().button("Select...").click();
 		SWTBotShell workingSetDialog = bot.shell("Select Working Sets");
