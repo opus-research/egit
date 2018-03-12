@@ -372,6 +372,7 @@ public class GitChangeSetSorterTest {
 	/*
 	 * Test for commit chronological order
 	 */
+	@SuppressWarnings("boxing")
 	@Test public void shouldOrderCommitsByCommitDate() {
 		// given
 		Viewer viewer = mock(Viewer.class);
