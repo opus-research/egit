@@ -114,6 +114,12 @@ public class UIText extends NLS {
 	public static String GitCloneWizard_errorCannotCreate;
 
 	/** */
+	public static String GitHistoryPage_CompareVersions;
+
+	/** */
+	public static String GitHistoryPage_CompareWithWorking;
+
+	/** */
 	public static String GitHistoryPage_FileNotInCommit;
 
 	/** */
@@ -136,9 +142,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitProjectPropertyPage_ValueUnbornBranch;
-
-	/** */
-	public static String RepositorySelectionPage_BrowseLocalFile;
 
 	/** */
 	public static String RepositorySelectionPage_sourceSelectionTitle;
