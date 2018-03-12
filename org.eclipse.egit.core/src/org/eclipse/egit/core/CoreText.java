@@ -246,6 +246,9 @@ public class CoreText extends NLS {
 	public static String AddToIndexOperation_failed;
 
 	/** */
+	public static String RemoveFromIndexOperation_failed;
+
+	/** */
 	public static String BranchOperation_performingBranch;
 
 	/** */
@@ -279,6 +282,18 @@ public class CoreText extends NLS {
 	public static String OperationNotYetExecuted;
 
 	/** */
+	public static String GitProjectSetCapability_InvalidTokensCount;
+
+	/** */
+	public static String GitProjectSetCapability_CloneToExistingDirectory;
+
+	/** */
+	public static String GitProjectSetCapability_ExportCouldNotGetBranch;
+
+	/** */
+	public static String GitProjectSetCapability_ExportNoRemote;
+
+	/** */
 	public static String IgnoreOperation_error;
 
 	/** */
@@ -298,6 +313,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitSubscriberMergeContext_FailedRefreshSyncView;
+
+	/** */
+	public static String GitProjectData_repositoryChangedJobName;
+
+	/** */
+	public static String GitProjectData_repositoryChangedTaskName;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
