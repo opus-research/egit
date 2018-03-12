@@ -14,7 +14,6 @@
 package org.eclipse.egit.ui;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.Authenticator;
 import java.net.ProxySelector;
 import java.util.ArrayList;
@@ -112,32 +111,11 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		return getDefault().getBundle().getSymbolicName();
 	}
 
-	private static IStatus toStatus(int severity, String message,
-			Throwable throwable) {
-		Throwable exc = throwable;
-		while (exc instanceof InvocationTargetException) {
-			String msg = exc.getLocalizedMessage();
-			if (msg != null && !msg.isEmpty()) {
-				break;
-			}
-			Throwable cause = throwable.getCause();
-			if (cause == null) {
-				break;
-			}
-			exc = cause;
-		}
-		if (message == null || message.isEmpty()) {
-			message = exc.getLocalizedMessage();
-		}
-		return new Status(severity, getPluginId(), message, exc);
-	}
-
 	/**
 	 * Handle an error. The error is logged. If <code>show</code> is
 	 * <code>true</code> the error is shown to the user.
 	 *
-	 * @param message
-	 *            a localized message
+	 * @param message 		a localized message
 	 * @param throwable
 	 * @param show
 	 */
@@ -160,7 +138,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 */
 	public static void handleIssue(int severity, String message, Throwable throwable,
 			boolean show) {
-		IStatus status = toStatus(severity, message, throwable);
+		IStatus status = new Status(severity, getPluginId(), message,
+				throwable);
 		int style = StatusManager.LOG;
 		if (show)
 			style |= StatusManager.SHOW;
@@ -175,7 +154,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * @param throwable
 	 */
 	public static void showError(String message, Throwable throwable) {
-		IStatus status = toStatus(IStatus.ERROR, message, throwable);
+		IStatus status = new Status(IStatus.ERROR, getPluginId(), message,
+				throwable);
 		StatusManager.getManager().handle(status, StatusManager.SHOW);
 	}
 
