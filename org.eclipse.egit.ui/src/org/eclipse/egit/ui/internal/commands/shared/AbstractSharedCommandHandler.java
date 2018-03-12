@@ -43,19 +43,30 @@ public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 	 * @return a {@link Repository} if all elements in the current selection map
 	 *         to the same {@link Repository}, otherwise null
 	 */
-	protected Repository getRepository(ExecutionEvent event) {
+	public static Repository getRepository(ExecutionEvent event) {
 		ISelection selection = HandlerUtil.getCurrentSelection(event);
-		if (selection.isEmpty())
+		return getRepository(selection);
+	}
+
+	/**
+	 * Get repository from selection
+	 *
+	 * @param selection
+	 * @return a {@link Repository} if all elements in the current selection map
+	 *         to the same {@link Repository}, otherwise null
+	 */
+	protected static Repository getRepository(ISelection selection) {
+		if (selection == null || selection.isEmpty())
 			return null;
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ssel = (IStructuredSelection) selection;
 			Repository result = null;
 			for (Object element : ssel.toList()) {
 				Repository elementRepository = null;
-				if (element instanceof RepositoryTreeNode) {
+				if (element instanceof RepositoryTreeNode)
 					elementRepository = ((RepositoryTreeNode) element)
 							.getRepository();
-				} else if (element instanceof IResource) {
+				else if (element instanceof IResource) {
 					IResource resource = (IResource) element;
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(resource.getProject());
@@ -86,8 +97,12 @@ public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 			IResource resource = (IResource) activeEditor
 					.getAdapter(IResource.class);
 
-			if (resource != null)
-				return RepositoryMapping.getMapping(resource).getRepository();
+			if (resource != null) {
+				RepositoryMapping mapping = RepositoryMapping
+						.getMapping(resource);
+				if (mapping != null)
+					return mapping.getRepository();
+			}
 		}
 		return null;
 	}

@@ -23,7 +23,6 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.rebase.RebaseHelper;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -32,7 +31,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.ui.ISources;
 
 /**
  * Implements "Rebase" to the currently checked out {@link Ref}
@@ -49,14 +47,22 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 		if (currentSelection instanceof IStructuredSelection) {
 			IStructuredSelection selection = (IStructuredSelection) currentSelection;
 			Object selected = selection.getFirstElement();
-
 			ref = getRef(selected);
 		} else
 			ref = null;
 
 		final Repository repository = getRepository(event);
+		if (repository == null)
+			return null;
 
 		BasicConfigurationDialog.show(repository);
+
+		try {
+			if (ref != null && ref.getName().equals(repository.getFullBranch()))
+				ref = null;
+		} catch (IOException ignored) {
+			// Ignored
+		}
 
 		if (ref == null) {
 			RebaseTargetSelectionDialog rebaseTargetSelectionDialog = new RebaseTargetSelectionDialog(
@@ -83,17 +89,14 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 	public void setEnabled(Object evaluationContext) {
 		if (evaluationContext instanceof IEvaluationContext) {
 			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
-			Object selection = ctx
-					.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-			if (selection instanceof IStructuredSelection) {
-				IStructuredSelection sel = (IStructuredSelection) selection;
-				if (sel.getFirstElement() instanceof RepositoryTreeNode) {
-					Repository repo = ((RepositoryTreeNode) ((IStructuredSelection) selection)
-							.getFirstElement()).getRepository();
+			Object selection = getSelection(ctx);
+			if (selection instanceof ISelection) {
+				Repository repo = getRepository((ISelection) selection);
+				if (repo != null) {
 					boolean isSafe = repo.getRepositoryState() == RepositoryState.SAFE;
-
 					setBaseEnabled(isSafe && hasHead(repo));
-				}
+				} else
+					setBaseEnabled(false);
 				return;
 			}
 		}
@@ -102,7 +105,8 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 
 	private boolean hasHead(Repository repo) {
 		try {
-			return repo.getRef(Constants.HEAD).getObjectId() != null;
+			Ref headRef = repo.getRef(Constants.HEAD);
+			return headRef != null && headRef.getObjectId() != null;
 		} catch (IOException e) {
 			return false;
 		}

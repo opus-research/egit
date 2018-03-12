@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2010, 2011 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -236,8 +236,11 @@ public class GitCompareEditorInput extends CompareEditorInput {
 				suffixFilters.add(PathFilter.create(filterPath));
 			TreeFilter otf = OrTreeFilter.create(suffixFilters);
 			tw.setFilter(otf);
-		} else if (filterPathStrings.size() > 0)
-			tw.setFilter(PathFilter.create(filterPathStrings.get(0)));
+		} else if (filterPathStrings.size() > 0) {
+			String path = filterPathStrings.get(0);
+			if (path.length() != 0)
+				tw.setFilter(PathFilter.create(path));
+		}
 
 		tw.setRecursive(true);
 
@@ -298,8 +301,8 @@ public class GitCompareEditorInput extends CompareEditorInput {
 								compareVersionIterator.getEntryPathString());
 
 					add(result, baseVersionIterator.getEntryPathString(),
-							new DiffNode(new FileRevisionTypedElement(baseRev),
-									new FileRevisionTypedElement(compareRev)));
+							new DiffNode(new FileRevisionTypedElement(compareRev),
+									new FileRevisionTypedElement(baseRev)));
 
 				} else if (baseVersionIterator != null
 						&& compareVersionIterator == null) {
@@ -311,7 +314,7 @@ public class GitCompareEditorInput extends CompareEditorInput {
 									.getEntryPathString(), tw
 									.getObjectId(baseTreeIndex));
 					add(result, baseVersionIterator.getEntryPathString(),
-							new DiffNode(Differencer.DELETION, null, null,
+							new DiffNode(Differencer.DELETION | Differencer.RIGHT, null, null,
 									new FileRevisionTypedElement(baseRev)));
 				} else if (compareVersionIterator != null
 						&& baseVersionIterator == null) {
@@ -323,8 +326,8 @@ public class GitCompareEditorInput extends CompareEditorInput {
 									.getEntryPathString(), tw
 									.getObjectId(compareTreeIndex));
 					add(result, compareVersionIterator.getEntryPathString(),
-							new DiffNode(Differencer.ADDITION, null, null,
-									new FileRevisionTypedElement(compareRev)));
+							new DiffNode(Differencer.ADDITION | Differencer.RIGHT, null,
+									new FileRevisionTypedElement(compareRev), null));
 				}
 
 				if (monitor.isCanceled())

@@ -13,9 +13,12 @@ package org.eclipse.egit.ui.view.repositories;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CloneOperation;
@@ -26,14 +29,20 @@ import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.events.ConfigChangedEvent;
+import org.eclipse.jgit.events.ConfigChangedListener;
+import org.eclipse.jgit.events.ListenerHandle;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
-import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
@@ -112,23 +121,13 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		assertEquals("Wrong number of children", 2, localItem.getNodes().size());
 
 		localItem.getNode(0).select();
-		try {
-			ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
-					.getPluginLocalizedValue("CheckoutCommand"));
-		} catch (WidgetNotFoundException e1) {
-			// expected
-		}
+		assertCheckoutNotAvailable(view);
 		localItem.getNode(1).select();
 		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("CheckoutCommand"));
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 
-		try {
-			ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
-					.getPluginLocalizedValue("CheckoutCommand"));
-		} catch (WidgetNotFoundException e) {
-			// expected
-		}
+		assertCheckoutNotAvailable(view);
 
 		localItem.getNode(0).select();
 		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
@@ -144,7 +143,13 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		localItem.expand();
 		assertEquals("Wrong number of children", 1, localItem.getNodes().size());
 	}
-	
+
+	private void assertCheckoutNotAvailable(final SWTBotView view) {
+		assertFalse("Checkout context menu item should not exist",
+				ContextMenuHelper.contextMenuItemExists(view.bot().tree(),
+						myUtil.getPluginLocalizedValue("CheckoutCommand")));
+	}
+
 	@Test
 	public void testCreateDeleteLocalBranchWithUnmerged() throws Exception {
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
@@ -179,28 +184,11 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				repositoryFile);
 		localItem.expand();
 		assertEquals("Wrong number of children", 2, localItem.getNodes().size());
-		
+
 		touchAndSubmit("Some more changes");
 
-		localItem.getNode(0).select();
-		try {
-			ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
-					.getPluginLocalizedValue("CheckoutCommand"));
-		} catch (WidgetNotFoundException e1) {
-			// expected
-		}
 		localItem.getNode(1).select();
-		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
-				.getPluginLocalizedValue("CheckoutCommand"));
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-
-		try {
-			ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
-					.getPluginLocalizedValue("CheckoutCommand"));
-		} catch (WidgetNotFoundException e) {
-			// expected
-		}
-
+		assertCheckoutNotAvailable(view);
 		localItem.getNode(0).select();
 		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("CheckoutCommand"));
@@ -210,7 +198,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		ContextMenuHelper.clickContextMenu(bot.tree(), myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		SWTBotShell confirmPopup = bot
-				.shell(UIText.RepositoriesView_ConfirmDeleteTitle);
+				.shell(UIText.UnmergedBranchDialog_Title);
 		confirmPopup.activate();
 		confirmPopup.bot().button(IDialogConstants.OK_LABEL).click();
 		refreshAndWait();
@@ -340,12 +328,11 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		refreshAndWait();
 
 		SWTBotShell renameDialog = bot
-				.shell(UIText.RepositoriesView_RenameBranchTitle);
-		SWTBotText newBranchNameText = renameDialog.bot().text(0);
-		assertEquals("master", newBranchNameText.getText());
+				.shell(UIText.BranchRenameDialog_WindowTitle);
+		SWTBotText newBranchNameText = renameDialog.bot().textWithLabel(UIText.BranchRenameDialog_NewNameLabel);
 		newBranchNameText.setText("invalid~name");
 
-		renameDialog.bot().text(
+		renameDialog.bot().text(" " + // the text is now in the error message, and the MessageAreaDialog seems to add a space
 				NLS.bind(UIText.ValidationUtils_InvalidRefNameMessage,
 						"refs/heads/invalid~name"));
 		assertFalse(renameDialog.bot().button(IDialogConstants.OK_LABEL)
@@ -363,9 +350,8 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				.getPluginLocalizedValue("RepoViewRenameBranch.label"));
 		refreshAndWait();
 
-		renameDialog = bot.shell(UIText.RepositoriesView_RenameBranchTitle);
+		renameDialog = bot.shell(UIText.BranchRenameDialog_WindowTitle);
 		newBranchNameText = renameDialog.bot().text(0);
-		assertEquals("newmaster", newBranchNameText.getText());
 
 		newBranchNameText.setText("master");
 		renameDialog.bot().button(IDialogConstants.OK_LABEL).click();
@@ -389,11 +375,133 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewMerge.label"));
 
-		String title = NLS.bind(UIText.MergeTargetSelectionDialog_TitleMerge,
-				clonedRepositoryFile.getPath().toString());
+		String title = NLS.bind(
+				UIText.MergeTargetSelectionDialog_TitleMergeWithBranch,
+				new FileRepository(clonedRepositoryFile).getBranch());
 
 		SWTBotShell mergeDialog = bot.shell(title);
 		// TODO do some merge here
 		mergeDialog.close();
+	}
+
+	@Test
+	public void testBranchConfiguration() throws Exception {
+		Repository repo = lookupRepository(clonedRepositoryFile);
+		Git git = new Git(repo);
+		git.branchCreate().setName("configTest")
+				.setStartPoint("refs/remotes/origin/master")
+				.setUpstreamMode(SetupUpstreamMode.TRACK).call();
+
+		boolean rebase = repo.getConfig().getBoolean(
+				ConfigConstants.CONFIG_BRANCH_SECTION, "configTest",
+				ConfigConstants.CONFIG_KEY_REBASE, false);
+		assertFalse(rebase);
+
+		Activator.getDefault().getRepositoryUtil()
+				.addConfiguredRepository(clonedRepositoryFile);
+
+		SWTBotView view = getOrOpenView();
+
+		SWTBotTreeItem localItem = myRepoViewUtil.getLocalBranchesItem(view
+				.bot().tree(), clonedRepositoryFile);
+		localItem.expand().getNode("configTest").select();
+
+		ContextMenuHelper.clickContextMenu(view.bot().tree(),
+				myUtil.getPluginLocalizedValue("ShowIn"),
+				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
+
+		SWTBotView propsView = bot.viewByTitle("Properties");
+		SWTBotTreeItem rootItem = propsView
+				.bot()
+				.tree()
+				.getTreeItem(
+						UIText.BranchPropertySource_UpstreamConfigurationCategory);
+		SWTBotTreeItem rebaseItem = rootItem.expand().getNode(
+				UIText.BranchPropertySource_RebaseDescriptor);
+		assertEquals(UIText.BranchPropertySource_ValueNotSet,
+				rebaseItem.cell(1));
+
+		SWTBotTreeItem remoteItem = rootItem.expand().getNode(
+				UIText.BranchPropertySource_RemoteDescriptor);
+		assertEquals("origin", remoteItem.cell(1));
+
+		SWTBotTreeItem upstreamItem = rootItem.expand().getNode(
+				UIText.BranchPropertySource_UpstreamBranchDescriptor);
+		assertEquals("refs/heads/master", upstreamItem.cell(1));
+
+		view = getOrOpenView();
+
+		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
+				clonedRepositoryFile);
+		localItem.expand().getNode("configTest").select();
+
+		ContextMenuHelper.clickContextMenu(view.bot().tree(),
+				myUtil.getPluginLocalizedValue("ConfigurBranchCommand.label"));
+
+		SWTBotShell configureBranchDialog = bot
+				.shell(UIText.BranchConfigurationDialog_BranchConfigurationTitle);
+		assertEquals(MessageFormat.format(
+				UIText.BranchConfigurationDialog_EditBranchConfigMessage,
+				"configTest"), configureBranchDialog.bot().text().getText());
+		assertEquals(
+				"refs/heads/master",
+				configureBranchDialog
+						.bot()
+						.comboBoxWithLabel(
+								UIText.BranchConfigurationDialog_UpstreamBranchLabel)
+						.getText());
+		assertEquals(
+				"origin",
+				configureBranchDialog
+						.bot()
+						.comboBoxWithLabel(
+								UIText.BranchConfigurationDialog_RemoteLabel)
+						.getText());
+		assertFalse(configureBranchDialog.bot()
+				.checkBox(UIText.BranchConfigurationDialog_RebaseLabel)
+				.isChecked());
+
+		configureBranchDialog.bot()
+				.checkBox(UIText.BranchConfigurationDialog_RebaseLabel)
+				.select();
+		// add a listener to wait for the configuration changed event
+		final AtomicBoolean changed = new AtomicBoolean();
+		ConfigChangedListener listener =
+		new ConfigChangedListener() {
+			public void onConfigChanged(ConfigChangedEvent event) {
+				changed.set(true);
+			}
+		};
+		ListenerHandle handle = repo.getConfig().addChangeListener(listener);
+		// only now click ok
+		configureBranchDialog.bot().button("OK").click();
+
+		// cleanup behind ourselves
+		handle.remove();
+		if (!changed.get())
+			fail("We should have received a config change event");
+
+		rebase = repo.getConfig().getBoolean(
+				ConfigConstants.CONFIG_BRANCH_SECTION, "configTest",
+				ConfigConstants.CONFIG_KEY_REBASE, false);
+		assertTrue(rebase);
+
+		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
+				clonedRepositoryFile);
+		localItem.expand().getNode("configTest").select();
+
+		ContextMenuHelper.clickContextMenu(view.bot().tree(),
+				myUtil.getPluginLocalizedValue("ShowIn"),
+				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
+
+		propsView = bot.viewByTitle("Properties");
+		rootItem = propsView
+				.bot()
+				.tree()
+				.getTreeItem(
+						UIText.BranchPropertySource_UpstreamConfigurationCategory);
+		rebaseItem = rootItem.expand().getNode(
+				UIText.BranchPropertySource_RebaseDescriptor);
+		assertEquals("true", rebaseItem.cell(1));
 	}
 }

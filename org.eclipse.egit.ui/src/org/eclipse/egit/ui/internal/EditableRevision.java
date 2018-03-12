@@ -24,6 +24,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
 
 /**
  * @author simon
@@ -109,9 +110,10 @@ public class EditableRevision extends FileRevisionTypedElement implements
 
 	/**
 	 * @param fileRevision
+	 * @param encoding the file encoding
 	 */
-	public EditableRevision(IFileRevision fileRevision) {
-		super(fileRevision);
+	public EditableRevision(IFileRevision fileRevision, String encoding) {
+		super(fileRevision, encoding);
 	}
 
 	public boolean isEditable() {

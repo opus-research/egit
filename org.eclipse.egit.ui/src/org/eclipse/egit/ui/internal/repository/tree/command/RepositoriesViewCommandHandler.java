@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2011 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,7 +19,7 @@ import java.util.List;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.expressions.EvaluationContext;
+import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
@@ -27,6 +27,7 @@ import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jgit.lib.Constants;
@@ -61,30 +62,68 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 		return HandlerUtil.getActiveShellChecked(event);
 	}
 
-	protected void enableWhenRepositoryHaveHead(Object evaluationContext) {
-		if (evaluationContext instanceof EvaluationContext) {
-			EvaluationContext context = (EvaluationContext) evaluationContext;
-			Object selection = context.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
-			if (selection instanceof TreeSelection) {
-				TreeSelection treeSelection = (TreeSelection) selection;
-				Object firstElement = treeSelection.getFirstElement();
-				if (firstElement instanceof RepositoryTreeNode) {
-					RepositoryTreeNode<?> treeNode = (RepositoryTreeNode<?>) firstElement;
-					Repository repo = treeNode.getRepository();
-					boolean enabled = false;
-					try {
-						Ref ref = repo.getRef(Constants.HEAD);
-						enabled = ref != null && ref.getObjectId() != null;
-					} catch (IOException e) {
-						enabled = false;
-					}
-					setBaseEnabled(enabled);
-					return;
-				}
+	private boolean checkRepositoryHasHead(Object element) {
+		if (element instanceof RepositoryTreeNode) {
+			RepositoryTreeNode<?> treeNode = (RepositoryTreeNode<?>) element;
+			Repository repo = treeNode.getRepository();
+			try {
+				Ref ref = repo.getRef(Constants.HEAD);
+				return ref != null && ref.getObjectId() != null;
+			} catch (IOException e) {
+				// ignore and report false
+				return false;
 			}
 		}
+		return false;
+	}
 
-		setBaseEnabled(false);
+	protected boolean checkSelectionHasHead(Object evaluationContext,
+			boolean all) {
+		// get the current selection
+		Object selection = HandlerUtil.getVariable(evaluationContext,
+				ISources.ACTIVE_CURRENT_SELECTION_NAME);
+		if (selection instanceof IStructuredSelection) {
+			IStructuredSelection structuredSelection = (IStructuredSelection) selection;
+			// check that it's a non-empty selection
+			if (structuredSelection.size() > 0) {
+				if (all) {
+					// check that all the repositories have a valid head
+					for (Object element : structuredSelection.toArray())
+						if (!checkRepositoryHasHead(element))
+							return false;
+					return true;
+				}
+
+				// just check the first one
+				return checkRepositoryHasHead(structuredSelection
+						.getFirstElement());
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Enables this handler if all the repositories that have been selected in
+	 * the current evaluation context is a repository that has a valid head
+	 * reference.
+	 *
+	 * @param evaluationContext
+	 *            the current application context
+	 */
+	protected void enableWhenAllRepositoriesHaveHead(Object evaluationContext) {
+		setBaseEnabled(checkSelectionHasHead(evaluationContext, true));
+	}
+
+	/**
+	 * Enables this handler if the first repository that has been selected in
+	 * the current evaluation context is a repository that has a valid head
+	 * reference.
+	 *
+	 * @param evaluationContext
+	 *            the current application context
+	 */
+	protected void enableWhenRepositoryHaveHead(Object evaluationContext) {
+		setBaseEnabled(checkSelectionHasHead(evaluationContext, false));
 	}
 
 	/**
@@ -96,11 +135,11 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 	 * @param evaluationContext
 	 */
 	protected void enableWorkingDirCommand(Object evaluationContext) {
-		if (!(evaluationContext instanceof EvaluationContext)) {
+		if (!(evaluationContext instanceof IEvaluationContext)) {
 			setBaseEnabled(false);
 			return;
 		}
-		EvaluationContext context = (EvaluationContext) evaluationContext;
+		IEvaluationContext context = (IEvaluationContext) evaluationContext;
 		Object selection = context
 				.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
 		if (!(selection instanceof TreeSelection)) {
@@ -125,16 +164,14 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 			}
 			if (!(object instanceof WorkingDirNode)) {
 				String path;
-				if (object instanceof FolderNode) {
+				if (object instanceof FolderNode)
 					path = ((FolderNode) object).getObject().getAbsolutePath();
-				} else {
-					if (object instanceof FileNode) {
-						path = ((FileNode) object).getObject()
-								.getAbsolutePath();
-					} else {
-						setBaseEnabled(false);
-						return;
-					}
+				else if (object instanceof FileNode)
+					path = ((FileNode) object).getObject()
+							.getAbsolutePath();
+				else {
+					setBaseEnabled(false);
+					return;
 				}
 				if (path.startsWith(repository.getDirectory().getAbsolutePath())) {
 					setBaseEnabled(false);
@@ -144,6 +181,20 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 		}
 
 		setBaseEnabled(true);
+	}
+
+	/**
+	 * Retrieve the current selection. The global selection is used if the menu
+	 * selection is not available.
+	 *
+	 * @param ctx
+	 * @return the selection
+	 */
+	protected Object getSelection(IEvaluationContext ctx) {
+		Object selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
+		if (selection == null || !(selection instanceof ISelection))
+			selection = ctx.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
+		return selection;
 	}
 
 }

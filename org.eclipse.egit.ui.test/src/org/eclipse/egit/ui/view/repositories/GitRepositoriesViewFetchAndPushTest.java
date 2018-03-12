@@ -22,16 +22,16 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -82,9 +82,17 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		clearView();
 		deleteAllProjects();
 	}
+	@Test
+	public void testPushToOriginPushNode() throws Exception {
+		testPushToOrigin(false);
+	}
 
 	@Test
-	public void testPushToOrigin() throws Exception {
+	public void testPushToOriginRemoteNode() throws Exception {
+		testPushToOrigin(true);
+	}
+
+	private void testPushToOrigin(boolean useRemote) throws Exception {
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				clonedRepositoryFile);
 		shareProjects(clonedRepositoryFile);
@@ -97,8 +105,13 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				"refs/heads/*:refs/remotes/origin/*");
 		repository.getConfig().save();
 
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(1).select();
+		// make sure to have a "new" branch name so that the
+		// dialog will return with a corresponding message
+		String currentBranch = repository.getBranch();
+		new Git(repository).branchRename().setOldName(currentBranch)
+				.setNewName("" + System.currentTimeMillis()).call();
+
+		selectNode(tree, useRemote, false);
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimplePushCommand"));
@@ -112,11 +125,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		// first time: expect new branch
 		TestUtil.joinJobs(JobFamilies.PUSH);
 		SWTBotShell confirmed = bot.shell(dialogTitle);
-		SWTBotTable table = confirmed.bot().table();
-		int rowCount = table.rowCount();
+		SWTBotTreeItem[] treeItems = confirmed.bot().tree().getAllItems();
 		boolean newBranch = false;
-		for (int i = 0; i < rowCount; i++) {
-			newBranch = table.getTableItem(i).getText(3).equals(
+		for (SWTBotTreeItem item : treeItems) {
+			newBranch = item.getText().contains(
 					UIText.PushResultTable_statusOkNewBranch);
 			if (newBranch)
 				break;
@@ -124,18 +136,16 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		confirmed.close();
 		assertTrue("New branch expected", newBranch);
 		// second time: expect up to date
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(1).select();
+		selectNode(tree, useRemote, false);
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimplePushCommand"));
 
 		confirmed = bot.shell(dialogTitle);
-		table = confirmed.bot().table();
-		rowCount = table.rowCount();
+		treeItems = confirmed.bot().tree().getAllItems();
 		boolean uptodate = false;
-		for (int i = 0; i < rowCount; i++) {
-			uptodate = table.getTableItem(i).getText(3).equals(
+		for (SWTBotTreeItem item : treeItems) {
+			uptodate = item.getText().contains(
 					UIText.PushResultTable_statusUpToDate);
 			if (uptodate)
 				break;
@@ -143,24 +153,21 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		confirmed.close();
 		assertTrue("Up to date expected", uptodate);
 		// touch and run again: expect new branch
-		String objectIdBefore = repository.getRef("refs/heads/master")
+		String objectIdBefore = repository.getRef(repository.getFullBranch())
 				.getLeaf().getObjectId().name();
 		objectIdBefore = objectIdBefore.substring(0, 7);
 		touchAndSubmit(null);
 
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(1).select();
+		selectNode(tree, useRemote, false);
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimplePushCommand"));
 
 		confirmed = bot.shell(dialogTitle);
-		table = confirmed.bot().table();
-		rowCount = table.rowCount();
+		treeItems = confirmed.bot().tree().getAllItems();
 		newBranch = false;
-		for (int i = 0; i < rowCount; i++) {
-			newBranch = table.getTableItem(i).getText(3).startsWith(
-					objectIdBefore);
+		for (SWTBotTreeItem item : treeItems) {
+			newBranch = item.getText().contains(objectIdBefore);
 			if (newBranch)
 				break;
 		}
@@ -169,7 +176,16 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	}
 
 	@Test
-	public void testFetchFromOrigin() throws Exception {
+	public void testFetchFromOriginFetchNode() throws Exception {
+		testFetchFromOrigin(false);
+	}
+
+	@Test
+	public void testFetchFromOriginRemoteNode() throws Exception {
+		testFetchFromOrigin(true);
+	}
+
+	private void testFetchFromOrigin(boolean useRemote) throws Exception {
 
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				clonedRepositoryFile);
@@ -190,13 +206,12 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		String dialogTitle = NLS.bind(UIText.FetchResultDialog_title,
 				destinationString);
 
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(0).select();
+		selectNode(tree, useRemote, true);
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
 		SWTBotShell confirm = bot.shell(dialogTitle);
-		assertEquals("Wrong result table row count", 0, confirm.bot().table()
+		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
 				.rowCount());
 		confirm.close();
 
@@ -207,8 +222,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		objid = objid.substring(0, 7);
 		touchAndSubmit(null);
 		// push from other repository
-		RemoteConfig config = new RemoteConfig(repository.getConfig(), "origin");
-		PushOperationUI op =new PushOperationUI(repository, config, 0, false);
+		PushOperationUI op =new PushOperationUI(repository, "origin", 0, false);
 		op.start();
 
 		String pushdialogTitle = NLS.bind(UIText.ResultDialog_title,
@@ -220,30 +234,39 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		refreshAndWait();
 
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(0).select();
+		selectNode(tree, useRemote, true);
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
 		TestUtil.joinJobs(JobFamilies.FETCH);
 		confirm = bot.shell(dialogTitle);
-		SWTBotTable table = confirm.bot().table();
+		SWTBotTreeItem[] treeItems = confirm.bot().tree().getAllItems();
 		boolean found = false;
-		for (int i = 0; i < table.rowCount(); i++) {
-			found = table.getTableItem(i).getText(2).startsWith(objid);
+		for (SWTBotTreeItem item : treeItems) {
+			found = item.getText().contains(objid);
 			if (found)
 				break;
 		}
 		assertTrue(found);
 		confirm.close();
 
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(0).select();
+		selectNode(tree, useRemote, true);
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
 		confirm = bot.shell(dialogTitle);
-		assertEquals("Wrong result table row count", 0, confirm.bot().table()
+		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
 				.rowCount());
+	}
+
+	private void selectNode(SWTBotTree tree, boolean useRemote, boolean fetchMode)
+			throws Exception {
+		if (useRemote)
+			myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand()
+					.getNode("origin").select();
+		else
+			myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand()
+					.getNode("origin").expand().getNode(fetchMode ? 0 : 1)
+					.select();
 	}
 }

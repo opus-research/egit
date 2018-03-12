@@ -34,6 +34,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
@@ -210,6 +211,17 @@ public class RemoveCommand extends
 			FileUtils.delete(repo.getDirectory(),
 					FileUtils.RECURSIVE | FileUtils.RETRY
 							| FileUtils.SKIP_MISSING);
+
+			// Delete working directory if a submodule repository and refresh
+			// parent repository
+			if (deleteWorkDir
+					&& !repo.isBare()
+					&& node.getParent() != null
+					&& node.getParent().getType() == RepositoryTreeNodeType.SUBMODULES) {
+				FileUtils.delete(repo.getWorkTree(), FileUtils.RECURSIVE
+						| FileUtils.RETRY | FileUtils.SKIP_MISSING);
+				node.getParent().getRepository().notifyIndexChanged();
+			}
 		}
 	}
 
@@ -264,9 +276,13 @@ public class RemoveCommand extends
 						IDialogConstants.YES_LABEL, IDialogConstants.NO_LABEL,
 						IDialogConstants.CANCEL_LABEL }, 0);
 		int index = dlg.open();
-		if (index == 2)
-			throw new OperationCanceledException();
-
-		return index == 0;
+		// Return true if 'Yes' was selected
+		if (index == 0)
+			return true;
+		// Return false if 'No' was selected
+		if (index == 1)
+			return false;
+		// Cancel operation in all other cases
+		throw new OperationCanceledException();
 	}
 }

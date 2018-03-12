@@ -15,10 +15,10 @@ import java.util.Arrays;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.UntrackOperation;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.job.JobUtil;
 
 /**
  * An action to remove files from a Git repository. The removal does not alter
@@ -34,10 +34,5 @@ public class UntrackActionHandler extends RepositoryActionHandler {
 		JobUtil.scheduleUserJob(new UntrackOperation(Arrays.asList(resources)),
 				UIText.Untrack_untrack, JobFamilies.UNTRACK);
 		return null;
-	}
-
-	@Override
-	public boolean isEnabled() {
-		return !selectionContainsLinkedResources();
 	}
 }

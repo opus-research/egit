@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.httpauth;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -51,7 +52,7 @@ public class PushTest extends EGitTestCase {
 		TestUtil.disableProxy();
 		remoteRepository = new SampleTestRepository(NUMBER_RANDOM_COMMITS, true);
 		localRepoPath = new File(ResourcesPlugin.getWorkspace().getRoot()
-				.getLocation().toFile(), "test1");
+				.getLocation().toFile(), "test" + System.nanoTime());
 		String branch = Constants.R_HEADS + SampleTestRepository.FIX;
 		CloneOperation cloneOperation = new CloneOperation(new URIish(
 				remoteRepository.getUri()), true, null, localRepoPath, branch,
@@ -64,6 +65,7 @@ public class PushTest extends EGitTestCase {
 		assertTrue(file.exists());
 		localRepository = Activator.getDefault().getRepositoryCache()
 				.lookupRepository(new File(localRepoPath, ".git"));
+		assertNotNull(localRepository);
 	}
 
 	@Test
@@ -71,9 +73,8 @@ public class PushTest extends EGitTestCase {
 		// change file
 		TestUtil.appendFileContent(file, "additional content", true);
 		// commit change
-		String repoRelativePath = "test1/" + SampleTestRepository.A_txt_name;
 		Git git = new Git(localRepository);
-		git.add().addFilepattern(repoRelativePath).call();
+		git.add().addFilepattern(SampleTestRepository.A_txt_name).call();
 		git.commit().setMessage("Change").call();
 		configurePush();
 		// push change
@@ -103,10 +104,14 @@ public class PushTest extends EGitTestCase {
 
 	@After
 	public void tearDown() throws Exception {
-		remoteRepository.shutDown();
+		if (remoteRepository != null)
+			remoteRepository.shutDown();
 		Activator.getDefault().getRepositoryCache().clear();
-		localRepository.close();
-		FileUtils.delete(localRepoPath, FileUtils.RECURSIVE | FileUtils.RETRY);
+		if (localRepository != null)
+			localRepository.close();
+		if (localRepoPath != null)
+			FileUtils.delete(localRepoPath, FileUtils.RECURSIVE
+					| FileUtils.RETRY);
 	}
 
 }

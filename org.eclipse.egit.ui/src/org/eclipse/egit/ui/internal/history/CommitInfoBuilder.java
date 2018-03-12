@@ -21,7 +21,8 @@ import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -31,18 +32,20 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.history.CommitMessageViewer.ObjectLink;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectIdSubclassMap;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -50,6 +53,7 @@ import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.util.io.SafeBufferedOutputStream;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
@@ -63,6 +67,8 @@ public class CommitInfoBuilder {
 	private static final String SPACE = " "; //$NON-NLS-1$
 
 	private static final String LF = "\n"; //$NON-NLS-1$
+
+	private static final int MAXBRANCHES = 20;
 
 	private final DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
 
@@ -85,16 +91,20 @@ public class CommitInfoBuilder {
 
 	private Color linesRemovedColor;
 
+	private final Collection<Ref> allRefs;
+
 	/**
 	 * @param db the repository
 	 * @param commit the commit the info should be shown for
 	 * @param currentDiffs list of current diffs
 	 * @param fill whether to fill the available space
+	 * @param allRefs all Ref's to examine regarding marge bases
 	 */
-	public CommitInfoBuilder(Repository db, PlotCommit commit, List<FileDiff> currentDiffs, boolean fill) {
+	public CommitInfoBuilder(Repository db, PlotCommit commit, List<FileDiff> currentDiffs, boolean fill, Collection<Ref> allRefs) {
 		this.db = db;
 		this.commit = commit;
 		this.fill = fill;
+		this.allRefs = allRefs;
 		this.currentDiffs = new ArrayList<FileDiff>(currentDiffs);
 	}
 
@@ -182,18 +192,25 @@ public class CommitInfoBuilder {
 			d.append(LF);
 		}
 
-		List<Ref> branches = getBranches();
+		List<Ref> branches = getBranches(allRefs);
 		if (!branches.isEmpty()) {
 			d.append(UIText.CommitMessageViewer_branches);
 			d.append(": "); //$NON-NLS-1$
+			int count = 0;
 			for (Iterator<Ref> i = branches.iterator(); i.hasNext();) {
 				Ref head = i.next();
 				RevCommit p;
 				try {
 					p = new RevWalk(db).parseCommit(head.getObjectId());
 					addLink(d, formatHeadRef(head), styles, p);
-					if (i.hasNext())
-						d.append(", "); //$NON-NLS-1$
+					if (i.hasNext()) {
+						if (count++ <= MAXBRANCHES) {
+							d.append(", "); //$NON-NLS-1$
+						} else {
+							d.append(NLS.bind(UIText.CommitMessageViewer_MoreBranches, Integer.valueOf(branches.size() - MAXBRANCHES)));
+							break;
+						}
+					}
 				} catch (MissingObjectException e) {
 					Activator.logError(e.getMessage(), e);
 				} catch (IncorrectObjectTypeException e) {
@@ -201,6 +218,7 @@ public class CommitInfoBuilder {
 				} catch (IOException e) {
 					Activator.logError(e.getMessage(), e);
 				}
+
 			}
 			d.append(LF);
 		}
@@ -294,30 +312,52 @@ public class CommitInfoBuilder {
 		addLink(d, to.getId().name(), styles, to);
 	}
 
-	/**
+	/*
 	 * @return List of heads from those current commit is reachable
 	 */
-	private List<Ref> getBranches() {
+	private List<Ref> getBranches(Collection<Ref> allRefs) {
 		RevWalk revWalk = new RevWalk(db);
 		List<Ref> result = new ArrayList<Ref>();
 
 		try {
-			Map<String, Ref> refsMap = new HashMap<String, Ref>();
-			refsMap.putAll(db.getRefDatabase().getRefs(Constants.R_HEADS));
-			// add remote heads to search
-			refsMap.putAll(db.getRefDatabase().getRefs(Constants.R_REMOTES));
+			// searches from branches can be cut off early if any parent of the
+			// search-for commit is found. This is quite likely, so optimize for this.
+			revWalk.markStart(Arrays.asList(commit.getParents()));
+			ObjectIdSubclassMap<ObjectId> cutOff = new ObjectIdSubclassMap<ObjectId>();
 
-			for (Ref ref : refsMap.values()) {
+			final int SKEW = 24*3600; // one day clock skew
+
+			for (Ref ref : allRefs) {
 				RevCommit headCommit = revWalk.parseCommit(ref.getObjectId());
-				// the base RevCommit also must be allocated using same RevWalk
-				// instance,
-				// otherwise isMergedInto returns wrong result!
-				RevCommit base = revWalk.parseCommit(commit);
 
-				if (revWalk.isMergedInto(base, headCommit))
-					result.add(ref); // commit is reachable
-				// from this head
+				// if commit is in the ref branch, then the tip of ref should be
+				// newer than the commit we are looking for. Allow for a large
+				// clock skew.
+				if (headCommit.getCommitTime() + SKEW < commit.getCommitTime())
+					continue;
+
+				List<ObjectId> maybeCutOff = new ArrayList<ObjectId>(cutOff.size()); // guess rough size
+				revWalk.resetRetain();
+				revWalk.markStart(headCommit);
+				RevCommit current;
+				Ref found = null;
+				while ((current = revWalk.next()) != null) {
+					if (AnyObjectId.equals(current, commit)) {
+						found = ref;
+						break;
+					}
+					if (cutOff.contains(current))
+						break;
+					maybeCutOff.add(current.toObjectId());
+				}
+				if (found != null)
+					result.add(ref);
+				else
+					for (ObjectId id : maybeCutOff)
+						cutOff.addIfAbsent(id);
+
 			}
+			revWalk.dispose();
 		} catch (IOException e) {
 			// skip exception
 		}
@@ -382,7 +422,7 @@ public class CommitInfoBuilder {
 		try {
 			monitor.beginTask(UIText.CommitMessageViewer_BuildDiffListTaskName,
 					currentDiffs.size());
-			BufferedOutputStream bos = new BufferedOutputStream(
+			BufferedOutputStream bos = new SafeBufferedOutputStream(
 					new ByteArrayOutputStream() {
 						@Override
 						public synchronized void write(byte[] b, int off,
@@ -410,7 +450,7 @@ public class CommitInfoBuilder {
 					String path = currentDiff.getPath();
 					monitor.setTaskName(NLS.bind(
 							UIText.CommitMessageViewer_BuildDiffTaskName, path));
-					currentEncoding[0] = CompareUtils.getResourceEncoding(db,
+					currentEncoding[0] = CompareCoreUtils.getResourceEncoding(db,
 							path);
 					d.append(formatPathLine(path)).append(LF);
 					currentDiff.outputDiff(d, db, diffFmt, true);
@@ -445,8 +485,10 @@ public class CommitInfoBuilder {
 		StringBuilder sb = new StringBuilder();
 		Map<String, Ref> tagsMap = db.getTags();
 		for (Entry<String, Ref> tagEntry : tagsMap.entrySet()) {
-			ObjectId peeledId = tagEntry.getValue().getPeeledObjectId();
-			if (peeledId != null && peeledId.equals(commit)) {
+			ObjectId target = tagEntry.getValue().getPeeledObjectId();
+			if (target == null)
+				target = tagEntry.getValue().getObjectId();
+			if (target != null && target.equals(commit)) {
 				if (sb.length() > 0)
 					sb.append(", "); //$NON-NLS-1$
 				sb.append(tagEntry.getKey());
