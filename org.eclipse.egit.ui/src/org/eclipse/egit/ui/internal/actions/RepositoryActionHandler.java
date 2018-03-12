@@ -42,7 +42,6 @@ import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.diff.DiffConfig;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Constants;
@@ -222,12 +221,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	protected Repository getRepository(boolean warn, ExecutionEvent event)
 			throws ExecutionException {
+		IStructuredSelection selection = getSelection(event);
 		if (warn) {
 			Shell shell = getShell(event);
-			IStructuredSelection selection = getSelection(event);
 			return SelectionUtils.getRepositoryOrWarn(selection, shell);
 		} else {
-			return SelectionUtils.getCurrentRepository();
+			return SelectionUtils.getRepository(selection);
 		}
 	}
 
@@ -305,7 +304,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * @throws ExecutionException
 	 *             if the selection can't be determined
 	 */
-	@NonNull
 	protected static IStructuredSelection getSelection(ExecutionEvent event)
 			throws ExecutionException {
 		if (event == null)
@@ -319,13 +317,10 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	/**
 	 * @return the current selection
 	 */
-	@NonNull
 	protected IStructuredSelection getSelection() {
 		// if the selection was set explicitly, use it
-		IStructuredSelection s = mySelection;
-		if (s != null) {
-			return s;
-		}
+		if (mySelection != null)
+			return mySelection;
 		return SelectionUtils.getSelection(evaluationContext);
 	}
 
