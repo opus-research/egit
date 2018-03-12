@@ -51,7 +51,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.After;
-import org.junit.AfterClass;
 
 /**
  * Collection of utility methods for Git Repositories View tests
@@ -228,11 +227,6 @@ public abstract class GitRepositoriesViewTestBase extends
 	@After
 	public void afterBase() {
 		new Eclipse().reset();
-	}
-
-	@AfterClass
-	public static void afterClass() {
-		Activator.getDefault().getRepositoryCache().clear();
 	}
 
 	protected SWTBotView getOrOpenView() throws Exception {
