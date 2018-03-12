@@ -14,7 +14,6 @@ import java.util.Date;
 
 import org.eclipse.jface.text.revisions.Revision;
 import org.eclipse.jface.text.source.LineRange;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.graphics.RGB;
@@ -45,10 +44,7 @@ public class BlameRevision extends Revision {
 	}
 
 	public Date getDate() {
-		PersonIdent person = commit.getAuthorIdent();
-		if( person == null)
-			person = commit.getCommitterIdent();
-		return person != null ? person.getWhen() : new Date(0);
+		return commit.getAuthorIdent().getWhen();
 	}
 
 	/**
