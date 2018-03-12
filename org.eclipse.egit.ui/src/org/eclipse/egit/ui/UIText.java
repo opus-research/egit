@@ -571,6 +571,9 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_SynchronizeView;
 
 	/** */
+	public static String ProjectsPreferencePage_AutoShareProjects;
+
+	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -3275,6 +3278,9 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_CompareWithEachOtherInTreeMenuLabel;
 
 	/** */
+	public static String CommitGraphTable_messageColumn;
+
+	/** */
 	public static String CommitGraphTable_OpenCommitLabel;
 
 	/** */
@@ -3456,6 +3462,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefUpdateElement_CommitRangeDecoration;
+
+	/** */
+	public static String RefUpdateElement_statusRejectedNonFastForward;
 
 	/** */
 	public static String RefUpdateElement_UrisDecoration;
