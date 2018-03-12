@@ -45,7 +45,6 @@ public abstract class SelectionHandler extends AbstractHandler {
 
 	/**
 	 * Get current selection as target item class
-	 * @param <V>
 	 *
 	 * @param itemClass
 	 * @param event
@@ -59,7 +58,6 @@ public abstract class SelectionHandler extends AbstractHandler {
 
 	/**
 	 * Get current selection as list of target item class objects
-	 * @param <V>
 	 *
 	 * @param itemClass
 	 * @param event
