@@ -494,7 +494,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 	private RemoteConfig selectDefaultRemoteConfig() {
 		for (final RemoteConfig rc : configuredRemotes)
-			if (getTextForRemoteConfig(rc) == Constants.DEFAULT_REMOTE_NAME)
+			if (Constants.DEFAULT_REMOTE_NAME.equals(getTextForRemoteConfig(rc)))
 				return rc;
 		return configuredRemotes.get(0);
 	}
