@@ -8,9 +8,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Andre Bossert <anb0s@anbos.de> - Cleaning up the DecoratableResourceAdapter
  *******************************************************************************/
 package org.eclipse.egit.core.project;
 
@@ -243,6 +240,26 @@ public class GitProjectData {
 	}
 
 	/**
+	 * Drop the Eclipse project from our association of projects/repositories
+	 * and remove all RepositoryMappings.
+	 *
+	 * @param p
+	 *            to deconfigure
+	 * @throws IOException
+	 *             if the property file cannot be removed.
+	 */
+	public static void deconfigure(final IProject p) throws IOException {
+		trace("deconfigure(" + p.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+		GitProjectData d = lookup(p);
+		if (d == null) {
+			deletePropertyFiles(p);
+		} else {
+			d.deletePropertyFilesAndUncache();
+			unmap(d);
+		}
+	}
+
+	/**
 	 * Add the Eclipse project to our association of projects/repositories
 	 *
 	 * @param p
@@ -363,6 +380,23 @@ public class GitProjectData {
 		}
 	}
 
+	private static void unmap(GitProjectData data) {
+		for (RepositoryMapping m : data.mappings.values()) {
+			IContainer c = m.getContainer();
+			if (c != null && c.isAccessible()) {
+				try {
+					c.setSessionProperty(MAPPING_KEY, null);
+					// Team private members are re-set in
+					// DisconnectProviderOperation
+				} catch (CoreException e) {
+					Activator.logWarning(MessageFormat.format(
+							CoreText.GitProjectData_failedToUnmapRepoMapping,
+							c.getFullPath()), e);
+				}
+			}
+		}
+	}
+
 	private synchronized static GitProjectData lookup(final IProject p) {
 		return projectDataCache.get(p);
 	}
@@ -450,13 +484,13 @@ public class GitProjectData {
 	}
 
 	/**
-	 * Determines whether the project this instance belongs to has any inner
-	 * repositories like submodules or nested repositories.
+	 * Determines whether the project this instance belongs to has any
+	 * submodules.
 	 *
-	 * @return {@code true} if the project has inner repositories; {@code false}
+	 * @return {@code true} if the project has submodules; {@code false}
 	 *         otherwise.
 	 */
-	public boolean hasInnerRepositories() {
+	public boolean hasSubmodules() {
 		return !protectedResources.isEmpty();
 	}
 
@@ -631,8 +665,6 @@ public class GitProjectData {
 			return;
 		}
 
-		fireRepositoryChanged(m);
-
 		trace("map "  //$NON-NLS-1$
 				+ c
 				+ " -> "  //$NON-NLS-1$
@@ -643,6 +675,8 @@ public class GitProjectData {
 			Activator.logError(
 					CoreText.GitProjectData_failedToCacheRepoMapping, err);
 		}
+
+		fireRepositoryChanged(m);
 
 		dotGit = c.findMember(Constants.DOT_GIT);
 		if (dotGit != null) {
