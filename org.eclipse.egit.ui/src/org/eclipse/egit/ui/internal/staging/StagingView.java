@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.operations.IUndoContext;
 import org.eclipse.core.expressions.IEvaluationContext;
@@ -913,7 +914,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private void executeRebaseOperation(AbstractRebaseCommandHandler command) {
 		try {
-			command.execute(currentRepository);
+			command.execute(null);
 		} catch (ExecutionException e) {
 			Activator.showError(e.getMessage(), e);
 		}
@@ -923,7 +924,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 * Abort rebase command in progress
 	 */
 	protected void rebaseAbort() {
-		AbortRebaseCommand abortCommand = new AbortRebaseCommand();
+		AbortRebaseCommand abortCommand = new AbortRebaseCommand() {
+			protected Repository getRepository(ExecutionEvent event) {
+				return currentRepository;
+			}
+		};
 		executeRebaseOperation(abortCommand);
 	}
 
@@ -931,7 +936,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 * Rebase next commit and continue rebase in progress
 	 */
 	protected void rebaseSkip() {
-		SkipRebaseCommand skipCommand = new SkipRebaseCommand();
+		SkipRebaseCommand skipCommand = new SkipRebaseCommand() {
+			@Override
+			protected Repository getRepository(ExecutionEvent event) {
+				return currentRepository;
+			}
+		};
 		executeRebaseOperation(skipCommand);
 	}
 
@@ -939,7 +949,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 * Continue rebase command in progress
 	 */
 	protected void rebaseContinue() {
-		ContinueRebaseCommand continueCommand = new ContinueRebaseCommand();
+		ContinueRebaseCommand continueCommand = new ContinueRebaseCommand() {
+			@Override
+			protected Repository getRepository(ExecutionEvent event) {
+				return currentRepository;
+			}
+		};
 		executeRebaseOperation(continueCommand);
 	}
 

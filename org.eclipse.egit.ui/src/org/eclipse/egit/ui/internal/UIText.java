@@ -516,6 +516,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_rebaseMenuItem;
 
 	/** */
+	public static String GitHistoryPage_rebaseInteractiveMenuItem;
+
+	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
@@ -601,6 +604,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_SecureStoreUseByDefault;
+
+	/** */
+	public static String ProcessStepsRebaseCommand_CancelDialogMessage;
+
+	/** */
+	public static String ProcessStepsRebaseCommand_JobName;
 
 	/** */
 	public static String ProjectsPreferencePage_AutoShareProjects;
@@ -691,6 +700,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseResultDialog_Failed;
+
+	/** */
+	public static String RebaseResultDialog_InteractivePrepared;
 
 	/** */
 	public static String RebaseResultDialog_JobNameAbortRebase;

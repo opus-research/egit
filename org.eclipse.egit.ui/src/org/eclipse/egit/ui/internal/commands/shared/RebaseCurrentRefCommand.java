@@ -37,8 +37,6 @@ import org.eclipse.osgi.util.NLS;
  */
 public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 
-	private Ref ref;
-
 	/** */
 	public RebaseCurrentRefCommand() {
 		super(UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
@@ -46,15 +44,9 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 	}
 
 	@Override
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		// we need the ref from the event in createRebaseOperation
-		ref = setRef(event);
-		if (ref == null)
-			return null;
-		return super.execute(event);
-	}
-
-	private Ref setRef(ExecutionEvent event) throws ExecutionException {
+	public RebaseOperation createRebaseOperation(ExecutionEvent event)
+			throws ExecutionException {
+		Ref ref;
 		ISelection currentSelection = getCurrentSelectionChecked(event);
 		if (currentSelection instanceof IStructuredSelection) {
 			IStructuredSelection selection = (IStructuredSelection) currentSelection;
@@ -87,10 +79,12 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 				return null;
 		}
 
+		// set the jobname
 		jobname = NLS.bind(
 				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
 				Repository.shortenRefName(currentFullBranch), ref.getName());
-		return null;
+
+		return new RebaseOperation(repository, ref);
 	}
 
 	@Override
@@ -99,7 +93,7 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
 			Object selection = getSelection(ctx);
 			if (selection instanceof ISelection) {
-				Repository repo = getRepository((ISelection) selection, getActiveEditorInput(ctx));
+				Repository repo = extractRepository((ISelection) selection,	getActiveEditorInput(ctx));
 				if (repo != null) {
 					boolean enabled = isEnabledForState(repo,
 							repo.getRepositoryState());
@@ -140,11 +134,5 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 					UIText.RebaseCurrentRefCommand_ErrorGettingCurrentBranchMessage,
 					e);
 		}
-	}
-
-	@Override
-	protected RebaseOperation createRebaseOperation(Repository repository)
-			throws ExecutionException {
-		return new RebaseOperation(repository, ref);
 	}
 }

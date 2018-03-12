@@ -115,27 +115,23 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 									repository);
 					}
 				});
-	}
-
-
-
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		Repository repository = getRepository(event);
-		execute(repository);
-		return null;
+		return;
 	}
 
 	/**
-	 * Create a {@link RebaseOperation} by calling
-	 * {@link AbstractRebaseCommandHandler#createRebaseOperation(Repository)}
-	 * and execute it.
 	 *
-	 * @param repository
-	 * @throws ExecutionException
+	 * @param event
+	 *            the {@link ExecutionEvent}
+	 * @return the {@link Repository} to execute the {@link RebaseCommand} on
 	 */
-	public void execute(Repository repository) throws ExecutionException {
-		final RebaseOperation rebase = createRebaseOperation(repository);
+	protected Repository getRepository(ExecutionEvent event) {
+		return AbstractSharedCommandHandler.extractRepository(event);
+	}
+
+	public Object execute(ExecutionEvent event) throws ExecutionException {
+		final RebaseOperation rebase = createRebaseOperation(event);
 		execute(rebase);
+		return null;
 	}
 
 	private void handleBeginError(final Repository repository, IStatus result) {
@@ -158,15 +154,15 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 	}
 
 	/**
-	 * Factory method delegating creation of RebaseOperation to concrete
-	 * subclasses.
+	 * Subclasses are intented to provied the {@link RebaseOperation} to be
+	 * executed with this method.
 	 *
-	 * @param repository
+	 * @param event
 	 * @return the {@link RebaseOperation} to be executed
 	 * @throws ExecutionException
 	 */
 	protected abstract RebaseOperation createRebaseOperation(
-			Repository repository) throws ExecutionException;
+			ExecutionEvent event) throws ExecutionException;
 
 	/**
 	 * Retrieve the current selection. The global selection is used if the menu

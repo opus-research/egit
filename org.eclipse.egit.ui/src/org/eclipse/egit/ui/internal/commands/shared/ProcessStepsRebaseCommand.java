@@ -11,26 +11,28 @@
 package org.eclipse.egit.ui.internal.commands.shared;
 
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.rebase.RebaseInteracitveHandler;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 
 /**
- * Implements "Skip Rebase"
+ * Implements "Abort Rebase"
  */
-public class SkipRebaseCommand extends AbstractRebaseCommandHandler {
+public class ProcessStepsRebaseCommand extends AbstractRebaseCommandHandler {
 	/**
 	 * Default constructor
 	 */
-	public SkipRebaseCommand() {
-		super(UIText.SkipRebaseCommand_JobName,
-				UIText.SkipRebaseCommand_CancelDialogMessage);
+	public ProcessStepsRebaseCommand() {
+		super(UIText.ProcessStepsRebaseCommand_JobName,
+				UIText.ProcessStepsRebaseCommand_CancelDialogMessage);
 	}
 
 	@Override
-	public RebaseOperation createRebaseOperation(ExecutionEvent event) {
-		return new RebaseOperation(getRepository(event), Operation.SKIP,
-				RebaseInteracitveHandler.INSTANCE);
+	public RebaseOperation createRebaseOperation(ExecutionEvent event)
+			throws ExecutionException {
+		return new RebaseOperation(getRepository(event),
+				Operation.PROCESS_STEPS, RebaseInteracitveHandler.INSTANCE);
 	}
 }
