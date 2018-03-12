@@ -43,6 +43,7 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.window.Window;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -62,6 +63,51 @@ import org.eclipse.ui.dialogs.PatternFilter;
  * {@link #createCustomArea(Composite)}.
  */
 public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
+
+	/**
+	 * Get the target merge ref name for the currently checkout branch
+	 *
+	 * @param repo
+	 * @return ref node
+	 */
+	protected static String getMergeTarget(Repository repo) {
+		String branch;
+		try {
+			branch = repo.getBranch();
+		} catch (IOException e) {
+			return null;
+		}
+		if (branch == null)
+			return null;
+
+		String merge = repo.getConfig().getString(
+				ConfigConstants.CONFIG_BRANCH_SECTION, branch,
+				ConfigConstants.CONFIG_KEY_MERGE);
+		if (merge == null)
+			return null;
+
+		String remote = repo.getConfig().getString(
+				ConfigConstants.CONFIG_BRANCH_SECTION, branch,
+				ConfigConstants.CONFIG_KEY_REMOTE);
+		if (remote == null)
+			return null;
+
+		if (".".equals(remote)) //$NON-NLS-1$
+			return merge;
+		else
+			return Constants.R_REMOTES + remote + "/" //$NON-NLS-1$
+					+ Repository.shortenRefName(merge);
+	}
+
+	/**
+	 * Get the target merge ref name for the currently checkout branch
+	 *
+	 * @param repo
+	 * @return ref node
+	 */
+	protected static int getSelectSetting(Repository repo) {
+		return getMergeTarget(repo) != null ? SELECT_CURRENT_REF : 0;
+	}
 
 	/** The {@link Repository} used in the constructor */
 	protected final Repository repo;
@@ -326,22 +372,32 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		RepositoryTreeNode node;
 		try {
 			if (refName.startsWith(Constants.R_HEADS)) {
-				Ref ref = this.repo.getRef(refName);
-				node = new RefNode(localBranches, this.repo, ref);
+				Ref ref = repo.getRef(refName);
+				if (ref == null)
+					return false;
+				node = new RefNode(localBranches, repo, ref);
+			} else if (refName.startsWith(Constants.R_REMOTES)) {
+				Ref ref = repo.getRef(refName);
+				if (ref == null)
+					return false;
+				node = new RefNode(remoteBranches, repo, ref);
 			} else {
 				String mappedRef = Activator.getDefault().getRepositoryUtil()
-						.mapCommitToRef(this.repo, refName, false);
+						.mapCommitToRef(repo, refName, false);
 				if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_REMOTES)) {
-					Ref ref = this.repo.getRef(mappedRef);
-					node = new RefNode(remoteBranches, this.repo, ref);
+					Ref ref = repo.getRef(mappedRef);
+					if (ref == null)
+						return false;
+					node = new RefNode(remoteBranches, repo, ref);
 				} else if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_TAGS)) {
-					Ref ref = this.repo.getRef(mappedRef);
-					node = new TagNode(tags, this.repo, ref);
-				} else {
+					Ref ref = repo.getRef(mappedRef);
+					if (ref == null)
+						return false;
+					node = new TagNode(tags, repo, ref);
+				} else
 					return false;
-				}
 			}
 		} catch (IOException e) {
 			return false;
@@ -392,9 +448,8 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 			return null;
 		RepositoryTreeNode node = (RepositoryTreeNode) sel.getFirstElement();
 		if (node.getType() == RepositoryTreeNodeType.REF
-				|| node.getType() == RepositoryTreeNodeType.TAG) {
+				|| node.getType() == RepositoryTreeNodeType.TAG)
 			return ((Ref) node.getObject());
-		}
 		return null;
 	}
 
@@ -412,4 +467,16 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		return super.getShellStyle() | SWT.RESIZE;
 	}
 
+	/**
+	 * Get short name of current branch
+	 *
+	 * @return branch name
+	 */
+	protected String getCurrentBranch() {
+		try {
+			return repo.getBranch();
+		} catch (IOException e) {
+			return null;
+		}
+	}
 }
