@@ -11,11 +11,7 @@
 package org.eclipse.egit.ui.internal.decorators;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.WeakHashMap;
 
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.GitLabels;
 import org.eclipse.jgit.lib.BranchTrackingStatus;
@@ -28,16 +24,6 @@ import org.eclipse.jgit.lib.RepositoryState;
  * @see IDecoratableResource
  */
 public class DecoratableResourceHelper {
-
-	/**
-	 * Maps repository to the branch state. The entries are removed each time
-	 * {@link IndexDiffData} changes
-	 *
-	 * @see GitLightweightDecorator#indexDiffChanged(Repository,
-	 *      org.eclipse.egit.core.internal.indexdiff.IndexDiffData)
-	 */
-	private static Map<Repository, String> branchState = Collections
-			.synchronizedMap(new WeakHashMap<Repository, String>());
 
 	static String getRepositoryName(Repository repository) {
 		String repoName = Activator.getDefault().getRepositoryUtil()
@@ -55,10 +41,6 @@ public class DecoratableResourceHelper {
 	}
 
 	static String getBranchStatus(Repository repo) throws IOException {
-		String cachedStatus = branchState.get(repo);
-		if (cachedStatus != null)
-			return cachedStatus;
-
 		String branchName = repo.getBranch();
 		if (branchName == null)
 			return null;
@@ -71,11 +53,6 @@ public class DecoratableResourceHelper {
 			return null;
 
 		String formattedStatus = GitLabels.formatBranchTrackingStatus(status);
-		branchState.put(repo, formattedStatus);
 		return formattedStatus;
-	}
-
-	static void clearState(Repository repo) {
-		branchState.remove(repo);
 	}
 }
