@@ -301,6 +301,9 @@ public class UIText extends NLS {
 	public static String ExistingOrNewPage_WrongPathErrorDialogTitle;
 
 	/** */
+	public static String GitCloneSourceProviderExtension_Local;
+
+	/** */
 	public static String GitCloneWizard_abortingCloneMsg;
 
 	/** */
@@ -974,6 +977,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoryCommit_UserAndDate;
+
+	/** */
+	public static String RepositoryLocationPage_info;
+
+	/** */
+	public static String RepositoryLocationPage_title;
+
+	/** */
+	public static String RepositoryLocationContentProvider_errorProvidingRepoServer;
 
 	/** */
 	public static String RepositorySearchDialog_browse;
@@ -1960,6 +1972,9 @@ public class UIText extends NLS {
 	public static String ConfigurationEditorComponent_WrongNumberOfTokensMessage;
 
 	/** */
+	public static String ConfigureGerritWizard_title;
+
+	/** */
 	public static String GlobalConfigurationPreferencePage_systemSettingTabTitle;
 
 	/** */
@@ -2839,6 +2854,9 @@ public class UIText extends NLS {
 	public static String RepositoriesViewLabelProvider_RemoteTrackingNodetext;
 
 	/** */
+	public static String RepositoriesViewLabelProvider_StashNodeText;
+
+	/** */
 	public static String RepositoriesViewLabelProvider_SubmodulesNodeText;
 
 	/** */
@@ -3026,6 +3044,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitImportWithDirectoriesPage_SelectFolderMessage;
+
+	/** */
+	public static String GitImportWizard_errorParsingURI;
+
+	/** */
+	public static String GitImportWizard_noRepositoryInfo;
 
 	/** */
 	public static String GitImportWizard_WizardTitle;
@@ -3393,6 +3417,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_CompareMenuLabel;
+
+	/** */
+	public static String CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel;
 
 	/** */
 	public static String CommitFileDiffViewer_FileDoesNotExist;
