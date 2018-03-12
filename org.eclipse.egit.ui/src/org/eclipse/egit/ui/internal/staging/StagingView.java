@@ -2201,11 +2201,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void addHeadChangedWarning(String commitMessage) {
-		if (!commitMessage.startsWith(UIText.StagingView_headCommitChanged)) {
-			String message = UIText.StagingView_headCommitChanged
-					+ Text.DELIMITER + Text.DELIMITER + commitMessage;
-			commitMessageComponent.setCommitMessage(message);
-		}
+		String message = UIText.StagingView_headCommitChanged + Text.DELIMITER
+				+ Text.DELIMITER + commitMessage;
+		commitMessageComponent.setCommitMessage(message);
 	}
 
 	private void loadInitialState(CommitHelper helper) {
