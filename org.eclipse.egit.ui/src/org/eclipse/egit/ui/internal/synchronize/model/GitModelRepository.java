@@ -76,11 +76,6 @@ public class GitModelRepository extends GitModelObject {
 	}
 
 	@Override
-	public void refresh() {
-		childrens = null;
-	}
-
-	@Override
 	public String getName() {
 		return repo.getWorkTree().toString();
 	}

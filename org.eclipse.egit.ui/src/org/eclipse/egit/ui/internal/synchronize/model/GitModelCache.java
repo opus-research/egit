@@ -161,13 +161,6 @@ public class GitModelCache extends GitModelObjectContainer {
 		return result.toArray(new GitModelObject[result.size()]);
 	}
 
-	@Override
-	public void refresh() {
-		cacheTreeMap.clear();
-
-		super.refresh();
-	}
-
 	/**
 	 * Creates and configures {@link TreeWalk} instance for
 	 * {@link GitModelCache#getChildrenImpl()} method. It is IMPORTANT to add
@@ -227,7 +220,8 @@ public class GitModelCache extends GitModelObjectContainer {
 			cacheTreeMap.put(pathKey, cacheTree);
 		}
 
-		cacheTree.addChild(repoId, cacheId, path.substring(firstSlash + 1));
+		cacheTree.addChild(repoId, cacheId,
+				path.substring(firstSlash + 1));
 
 		return cacheTree;
 	}
