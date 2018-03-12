@@ -2436,7 +2436,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 * Clear the view's state.
 	 * <p>
 	 * This method must be called from the UI-thread
-	 *
+	 * 
 	 * @param repository
 	 */
 	private void clearRepository(@Nullable Repository repository) {
@@ -2513,7 +2513,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					clearRepository(null);
+					clearRepository(repository);
 				}
 			});
 			return;

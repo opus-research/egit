@@ -31,7 +31,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ExceptionCollector;
@@ -224,13 +223,11 @@ public class GitLightweightDecorator extends LabelProvider implements
 		if (mapping.getRepoRelativePath(resource) == null)
 			return null;
 
-		IndexDiffCacheEntry diffCacheEntry = org.eclipse.egit.core.Activator
+		IndexDiffData indexDiffData = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
-				.getIndexDiffCacheEntry(mapping.getRepository());
-		if (diffCacheEntry == null) {
-			return null;
-		}
-		return diffCacheEntry.getIndexDiff();
+				.getIndexDiffCacheEntry(mapping.getRepository()).getIndexDiff();
+
+		return indexDiffData;
 	}
 
 	/**
