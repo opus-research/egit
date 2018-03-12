@@ -386,13 +386,8 @@ public class IndexDiffCacheEntry {
 
 		List<String> treeFilterPaths = calcTreeFilterPaths(filesToUpdate);
 
-		WorkingTreeIterator iterator = null;
-		try {
-			iterator = IteratorService.createInitialIterator(repository);
-		} catch (IllegalStateException e) {
-			// workspace is closed
-			return null;
-		}
+		WorkingTreeIterator iterator = IteratorService
+				.createInitialIterator(repository);
 		IndexDiff diffForChangedResources = new IndexDiff(repository,
 				Constants.HEAD, iterator);
 		diffForChangedResources.setFilter(PathFilterGroup
