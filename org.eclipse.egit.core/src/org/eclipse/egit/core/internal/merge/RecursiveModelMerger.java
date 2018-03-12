@@ -65,11 +65,11 @@ import org.eclipse.team.core.subscribers.SubscriberScopeManager;
  * mergers provided by the Team
  * {@link org.eclipse.core.resources.mapping.ModelProvider model providers}.
  * <p>
- * The Recursive Merger handles files one-by-one, calling file-specific
- * {@link org.eclipse.jgit.merge.MergeDriver merge drivers} for each. On the
- * opposite, this strategy can handle bigger sets of files at once, delegating
- * the merge to the files' model. As such, file-specific merge drivers may not
- * be called from this strategy if that file is part of a larger model.
+ * The Recursive Merger handles files one-by-one, calling file-specific merge
+ * drivers for each. On the opposite, this strategy can handle bigger sets of
+ * files at once, delegating the merge to the files' model. As such,
+ * file-specific merge drivers may not be called from this strategy if that file
+ * is part of a larger model.
  * </p>
  * <p>
  * Any file that is <b>not</b> part of a model, which model cannot be
@@ -104,7 +104,8 @@ public class RecursiveModelMerger extends RecursiveMerger {
 	}
 
 	@Override
-	protected boolean mergeTreeWalk(TreeWalk treeWalk) throws IOException {
+	protected boolean mergeTreeWalk(TreeWalk treeWalk, boolean ignoreConflicts)
+			throws IOException {
 		final GitResourceVariantTreeProvider variantTreeProvider = new TreeWalkResourceVariantTreeProvider(
 				getRepository(), treeWalk, T_BASE, T_OURS, T_THEIRS);
 		final GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
@@ -119,7 +120,7 @@ public class RecursiveModelMerger extends RecursiveMerger {
 			// will properly handle unrefreshed files. Fall back to merging
 			// without workspace awareness.
 			Activator.logError(CoreText.RecursiveModelMerger_RefreshError, e);
-			return super.mergeTreeWalk(treeWalk);
+			return super.mergeTreeWalk(treeWalk, ignoreConflicts);
 		}
 
 		// Eager lookup for the logical models to avoid issues in case we
@@ -203,15 +204,9 @@ public class RecursiveModelMerger extends RecursiveMerger {
 						modifiedFiles.add(filePath);
 						handledPaths.add(filePath);
 
-						/*
-						 * The merge failed. If some parts of the model were
-						 * auto-mergeable, the model merger told us so through
-						 * GitMergeContext#markAsMerged() (stored within
-						 * #makeInSync). All other components of the logical
-						 * model should be marked as conflicts.
-						 */
-						if (status.getSeverity() != IStatus.OK
-								&& !makeInSync.contains(filePath)) {
+						// If the merge failed, mark all parts of the logical
+						// model as conflicting
+						if (status.getSeverity() != IStatus.OK) {
 							unmergedPaths.add(filePath);
 							mergeResults.put(
 									filePath,
@@ -240,13 +235,15 @@ public class RecursiveModelMerger extends RecursiveMerger {
 				// This is either a file with no logical model or a file with no
 				// specific model merger.
 				// Fall back to the RecursiveMerger's behavior
+				boolean hasWorkingTreeIterator = tw.getTreeCount() > T_FILE;
 				if (!processEntry(
 						treeWalk.getTree(T_BASE, CanonicalTreeParser.class),
 						treeWalk.getTree(T_OURS, CanonicalTreeParser.class),
 						treeWalk.getTree(T_THEIRS, CanonicalTreeParser.class),
 						treeWalk.getTree(T_INDEX, DirCacheBuildIterator.class),
-						(tw.getTreeCount() >= T_FILE) ? null : treeWalk
-								.getTree(T_FILE, WorkingTreeIterator.class))) {
+						hasWorkingTreeIterator ? treeWalk.getTree(T_FILE,
+								WorkingTreeIterator.class) : null,
+						ignoreConflicts)) {
 					cleanUp();
 					return false;
 				}
