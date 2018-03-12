@@ -15,7 +15,9 @@ package org.eclipse.egit.core.internal.util;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -295,6 +297,15 @@ public class ProjectUtil {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject[] allProjects = root.getProjects();
 
+		// Sorting makes us look into nested projects first
+		Arrays.sort(allProjects, new Comparator<IProject>() {
+			public int compare(IProject o1, IProject o2) {
+				return -o1.getLocation().toFile()
+						.compareTo(o2.getLocation().toFile());
+			}
+
+		});
+
 		for (IProject prj : allProjects)
 			if (checkContainerMatch(prj, absFile))
 				return prj;
@@ -308,15 +319,12 @@ public class ProjectUtil {
 	private static boolean checkContainerMatch(IContainer container,
 			String absFile) {
 		String absPrj = container.getLocation().toFile().getAbsolutePath();
-		if (absPrj.length() == absFile.length()) {
-			if (absPrj.equals(absFile))
-				return true;
-		} else if (absPrj.length() < absFile.length()) {
+		if (absPrj.equals(absFile))
+			return true;
+		if (absPrj.length() < absFile.length()) {
 			char sepChar = absFile.charAt(absPrj.length());
-			if (absFile.startsWith(absPrj)
-					&& (sepChar == '/' || sepChar == '\\')) {
+			if (sepChar == File.separatorChar && absFile.startsWith(absPrj))
 				return true;
-			}
 		}
 		return false;
 	}
