@@ -444,6 +444,12 @@
 		</adapt>
 	    </enabledWhen>
       </page>
+      <page
+            class="org.eclipse.egit.ui.internal.repository.RepositoryPropertyPage"
+            id="org.eclipse.egit.ui.property.RepositoryPropertyPage"
+            name="%RepositoryConfigPropertyPage"
+            objectClass="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+      </page>
    </extension>
 
    <extension point="org.eclipse.ui.keywords">
@@ -953,11 +959,18 @@
                class="org.eclipse.egit.ui.internal.repository.tree.command.PullCommand">
          </class>
          <activeWhen>
-            <iterate>
-               <instanceof
-                     value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-               </instanceof>
-            </iterate>
+            <and>
+               <count
+                     value="+">
+              </count>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </and>
          </activeWhen>
       </handler>
       <handler
