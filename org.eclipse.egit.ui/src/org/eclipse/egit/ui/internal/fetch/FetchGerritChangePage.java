@@ -144,17 +144,15 @@ public class FetchGerritChangePage extends WizardPage {
 		Clipboard clipboard = new Clipboard(parent.getDisplay());
 		String clipText = (String) clipboard.getContents(TextTransfer
 				.getInstance());
+		final String pattern = "git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"; //$NON-NLS-1$
+		Matcher matcher = Pattern.compile(pattern).matcher(clipText);
 		String defaultUri = null;
 		String defaultCommand = null;
 		String defaultChange = null;
-		if (clipText != null) {
-			final String pattern = "git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"; //$NON-NLS-1$
-			Matcher matcher = Pattern.compile(pattern).matcher(clipText);
-			if (matcher.matches()) {
-				defaultUri = matcher.group(1);
-				defaultChange = matcher.group(2);
-				defaultCommand = matcher.group(3);
-			}
+		if (matcher.matches()) {
+			defaultUri = matcher.group(1);
+			defaultChange = matcher.group(2);
+			defaultCommand = matcher.group(3);
 		}
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(2, false));
@@ -187,6 +185,7 @@ public class FetchGerritChangePage extends WizardPage {
 		createBranch = new Button(checkoutGroup, SWT.RADIO);
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(createBranch);
 		createBranch.setText(UIText.FetchGerritChangePage_LocalBranchRadio);
+		createBranch.setSelection(true);
 		createBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -254,9 +253,6 @@ public class FetchGerritChangePage extends WizardPage {
 
 		if ("checkout".equals(defaultCommand)) //$NON-NLS-1$
 			checkout.setSelection(true);
-		else
-			createBranch.setSelection(true);
-
 		warningAdditionalRefNotActive = new Composite(main, SWT.NONE);
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false)
 				.exclude(true).applyTo(warningAdditionalRefNotActive);
@@ -311,7 +307,7 @@ public class FetchGerritChangePage extends WizardPage {
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
 		setControl(main);
-		checkPage();
+		setPageComplete(false);
 	}
 
 
