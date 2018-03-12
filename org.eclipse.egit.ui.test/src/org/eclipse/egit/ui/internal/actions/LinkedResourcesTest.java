@@ -12,7 +12,6 @@
 package org.eclipse.egit.ui.internal.actions;
 
 import static org.eclipse.jgit.junit.JGitTestUtil.write;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -20,7 +19,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -31,12 +29,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.IExtensionRegistry;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -117,35 +113,19 @@ public class LinkedResourcesTest extends LocalRepositoryTestCase {
 		Object[] mixedSelection = { linkedFile,
 				project.getFile(FILE1), project.getFile(FILE2) };
 		for (RepositoryActionHandler handler : handlers) {
-			String handlerClass = handler.getClass().getSimpleName();
-
 			assertTrue(linkedFile.exists());
 			assertTrue(linkedFile.isLinked(IResource.CHECK_ANCESTORS));
-			IPath location = linkedFile.getLocation();
-			assertNotNull(location);
-			assertNotNull(
-					RepositoryMapping.getMapping(linkedFile.getProject()));
-			assertNull(RepositoryMapping.getMapping(linkedFile));
-			assertNull(RepositoryMapping.getMapping(location));
-			assertFalse(handler.isEnabled());
-			Repository[] repositories = handler.getRepositories();
-			assertEquals(handlerClass
-					+ " found (unexpected) repository mapping for " + location,
-					"[]", Arrays.toString(repositories));
+			assertNotNull(linkedFile.getLocation());
+			assertNull(RepositoryMapping.getMapping(linkedFile.getLocation()));
 
 			handler.setSelection(new StructuredSelection(linkedFile));
-			assertEquals(handlerClass
-					+ " found (unexpected) repository mapping for " + location,
-					"[]", Arrays.toString(repositories));
-
-			assertFalse(handlerClass
+			assertFalse(handler.getClass().getSimpleName()
 					+ " is enabled on a linked resource pointing outside any project and repository: "
-					+ location, handler.isEnabled());
-
+					+ linkedFile.getLocation(), handler.isEnabled());
 			handler.setSelection(new StructuredSelection(mixedSelection));
 			assertFalse(handler.getClass().getSimpleName()
 					+ " is enabled when selection contains a linked resource pointing outside any project and repository: "
-					+ location, handler.isEnabled());
+					+ linkedFile.getLocation(), handler.isEnabled());
 		}
 	}
 }
