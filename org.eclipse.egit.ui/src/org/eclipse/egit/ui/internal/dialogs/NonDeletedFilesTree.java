@@ -74,11 +74,9 @@ public class NonDeletedFilesTree extends TreeViewer {
 		showRepoRelative.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (showRepoRelative.getSelection()) {
-					cp.setMode(Mode.REPO_RELATIVE_PATHS);
-					setInput(getInput());
-					expandAll();
-				}
+				cp.setMode(Mode.REPO_RELATIVE_PATHS);
+				setInput(getInput());
+				expandAll();
 			}
 		});
 
@@ -89,11 +87,9 @@ public class NonDeletedFilesTree extends TreeViewer {
 		showFull.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (showFull.getSelection()) {
-					cp.setMode(Mode.FULL_PATHS);
-					setInput(getInput());
-					expandAll();
-				}
+				cp.setMode(Mode.FULL_PATHS);
+				setInput(getInput());
+				expandAll();
 			}
 		});
 
@@ -104,11 +100,9 @@ public class NonDeletedFilesTree extends TreeViewer {
 		showResource.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (showResource.getSelection()) {
-					cp.setMode(Mode.RESOURCE_PATHS);
-					setInput(getInput());
-					expandAll();
-				}
+				cp.setMode(Mode.RESOURCE_PATHS);
+				setInput(getInput());
+				expandAll();
 			}
 		});
 	}
