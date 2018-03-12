@@ -471,7 +471,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 					return ElementType.DONE_CURRENT;
 				return ElementType.DONE;
 			}
-			return null;
+			throw new IllegalStateException();
 		}
 
 		private RebaseTodoLine getRebaseTodoLine() {

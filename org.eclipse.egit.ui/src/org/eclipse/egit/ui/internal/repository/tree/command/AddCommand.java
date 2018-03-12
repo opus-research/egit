@@ -86,7 +86,6 @@ public class AddCommand extends
 				continue;
 
 			RepositoryFinder f = new RepositoryFinder(project);
-			f.setFindInChildren(false);
 			try {
 				Collection<RepositoryMapping> mappings = f
 						.find(new NullProgressMonitor());

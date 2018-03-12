@@ -23,7 +23,6 @@ import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
-import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -38,15 +37,15 @@ import org.eclipse.ui.handlers.HandlerUtil;
 public class CompareVersionsInTreeHandler extends
 		AbstractHistoryCommandHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IStructuredSelection selection = getSelection(event);
+		IStructuredSelection selection = getSelection(getPage());
 		if (selection.size() == 2) {
 			Iterator<?> it = selection.iterator();
 			RevCommit commit1 = (RevCommit) it.next();
 			RevCommit commit2 = (RevCommit) it.next();
 
-			HistoryPageInput pageInput = getPage(event).getInputInternal();
-			Object input = pageInput.getSingleItem();
-			Repository repository = pageInput.getRepository();
+			Object input = getPage().getInputInternal().getSingleItem();
+			Repository repository = getPage().getInputInternal()
+					.getRepository();
 			IWorkbenchPage workBenchPage = HandlerUtil
 					.getActiveWorkbenchWindowChecked(event).getActivePage();
 			// IFile and File just for compatibility; the action should not be

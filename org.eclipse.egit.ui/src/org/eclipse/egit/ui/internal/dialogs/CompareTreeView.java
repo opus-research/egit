@@ -10,8 +10,6 @@
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Robin Stocker <robin@nibor.org> - ignore linked resources
  *    Robin Stocker <robin@nibor.org> - Unify workbench and PathNode tree code
- *    Marc Khouzam <marc.khouzam@ericsson.com> - Add compare mode toggle
- *    Marc Khouzam <marc.khouzam@ericsson.com> - Skip expensive computations for equal content (bug 431610)
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
@@ -33,7 +31,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
@@ -77,9 +74,6 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.dircache.DirCacheIterator;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.errors.MissingObjectException;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -87,7 +81,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
-import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
@@ -154,8 +147,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 	private IWorkbenchAction showEqualsAction;
 
-	private IWorkbenchAction compareModeAction;
-
 	private Map<IPath, FileNode> fileNodes = new HashMap<IPath, FileNode>();
 
 	private Map<IPath, ContainerNode> containerNodes = new HashMap<IPath, ContainerNode>();
@@ -197,22 +188,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		actionsToDispose.add(reuseCompareEditorAction);
 		getViewSite().getActionBars().getMenuManager().add(
 				reuseCompareEditorAction);
-
-		compareModeAction = new BooleanPrefAction(
-				(IPersistentPreferenceStore) Activator.getDefault()
-						.getPreferenceStore(),
-				UIPreferences.TREE_COMPARE_COMPARE_MODE,
-				UIText.CompareTreeView_CompareModeTooltip) {
-			@Override
-			public void apply(boolean value) {
-				// nothing, just switch the preference
-			}
-		};
-		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
-		compareModeAction.setEnabled(true);
-		actionsToDispose.add(compareModeAction);
-		getViewSite().getActionBars().getToolBarManager()
-				.add(compareModeAction);
 
 		showEqualsAction = new BooleanPrefAction(
 				(IPersistentPreferenceStore) Activator.getDefault()
@@ -261,27 +236,14 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			tv.setExpandedState(selected, !tv.getExpandedState(selected));
 		} else if (selected instanceof FileNode) {
 			FileNode fileNode = (FileNode) selected;
+			left = getTypedElement(fileNode, fileNode.leftRevision, getBaseVersion());
+			right = getTypedElement(fileNode, fileNode.rightRevision, getCompareVersion());
 
-			boolean compareMode = Activator.getDefault().getPreferenceStore()
-					.getBoolean(UIPreferences.TREE_COMPARE_COMPARE_MODE);
-
-			if (compareMode) {
-				left = getTypedElement(fileNode, fileNode.leftRevision,
-						getBaseVersion());
-				right = getTypedElement(fileNode, fileNode.rightRevision,
-						getCompareVersion());
-
-				GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
-						left, right, PlatformUI.getWorkbench()
-								.getActiveWorkbenchWindow().getActivePage());
-				CompareUtils.openInCompare(PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow().getActivePage(),
-						compareInput);
-			} else {
-				IFile file = fileNode.getFile();
-				if (file != null)
-					openFileInEditor(file.getLocation().toOSString());
-			}
+			GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
+					left, right, PlatformUI.getWorkbench()
+							.getActiveWorkbenchWindow().getActivePage());
+			CompareUtils.openInCompare(PlatformUI.getWorkbench()
+					.getActiveWorkbenchWindow().getActivePage(), compareInput);
 		}
 	}
 
@@ -529,7 +491,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			throws InterruptedException, IOException {
 		monitor.beginTask(UIText.CompareTreeView_AnalyzingRepositoryTaskText,
 				IProgressMonitor.UNKNOWN);
-		long previousTimeMilliseconds = System.currentTimeMillis();
 		boolean useIndex = compareVersion.equals(INDEX_VERSION);
 		fileNodes.clear();
 		containerNodes.clear();
@@ -600,48 +561,10 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 						: compareVersionIterator.getEntryPathString();
 				IPath currentPath = new Path(repoRelativePath);
 
-				// Updating the progress bar is slow, so just sample it. To
-				// make sure slow compares are reflected in the progress
-				// monitor also update before comparing large files.
-				long currentTimeMilliseconds = System.currentTimeMillis();
-				long size1 = -1;
-				long size2 = -1;
-				if (compareVersionIterator != null
-						&& baseVersionIterator != null) {
-					size1 = getEntrySize(tw, compareVersionIterator);
-					size2 = getEntrySize(tw, baseVersionIterator);
-				}
-				final long REPORTSIZE = 100000;
-				if (size1 > REPORTSIZE
-						|| size2 > REPORTSIZE
-						|| currentTimeMilliseconds - previousTimeMilliseconds > 500) {
-					monitor.setTaskName(currentPath.toString());
-					previousTimeMilliseconds = currentTimeMilliseconds;
-				}
+				monitor.setTaskName(currentPath.toString());
 
-				Type type = null;
-				if (compareVersionIterator != null
-						&& baseVersionIterator != null) {
-					boolean equalContent = compareVersionIterator
-							.getEntryObjectId().equals(
-									baseVersionIterator.getEntryObjectId());
-					type = equalContent ? Type.FILE_BOTH_SIDES_SAME
-							: Type.FILE_BOTH_SIDES_DIFFER;
-				} else if (compareVersionIterator != null
-						&& baseVersionIterator == null) {
-					type = Type.FILE_DELETED;
-				} else if (compareVersionIterator == null
-						&& baseVersionIterator != null) {
-					type = Type.FILE_ADDED;
-				}
-
-				IFile file = null;
-				if (type != Type.FILE_BOTH_SIDES_SAME) {
-
-					file = ResourceUtil.getFileForLocation(repository,
+				IFile file = ResourceUtil.getFileForLocation(repository,
 						repoRelativePath);
-				}
-
 				if (baseVersionIterator != null) {
 					if (baseCommit == null) {
 						if (file != null)
@@ -670,6 +593,18 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 								repoRelativePath);
 				}
 
+				Type type = null;
+				if (compareVersionIterator != null && baseVersionIterator != null) {
+					boolean equalContent = compareVersionIterator
+							.getEntryObjectId().equals(
+									baseVersionIterator.getEntryObjectId());
+					type = equalContent ? Type.FILE_BOTH_SIDES_SAME : Type.FILE_BOTH_SIDES_DIFFER;
+				} else if (compareVersionIterator != null && baseVersionIterator == null) {
+					type = Type.FILE_DELETED;
+				} else if (compareVersionIterator == null && baseVersionIterator != null) {
+					type = Type.FILE_ADDED;
+				}
+
 				IPath containerPath = currentPath.removeLastSegments(1);
 				ContainerNode containerNode = getOrCreateContainerNode(
 						containerPath, type);
@@ -694,23 +629,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		} finally {
 			tw.release();
 			monitor.done();
-		}
-	}
-
-	private long getEntrySize(TreeWalk tw, AbstractTreeIterator iterator)
-			throws MissingObjectException, IncorrectObjectTypeException,
-			IOException {
-		if (iterator instanceof ContainerTreeIterator)
-			return ((ContainerTreeIterator) iterator).getEntryContentLength();
-		if (iterator instanceof FileTreeIterator)
-			return ((FileTreeIterator) iterator).getEntryContentLength();
-		try {
-			return tw.getObjectReader().getObjectSize(
-					iterator.getEntryObjectId(), Constants.OBJ_BLOB);
-		} catch (MissingObjectException e) {
-			// in case the object is not stored as a blob and not
-			// one of the known iterator types above, say zero.
-			return 0;
 		}
 	}
 

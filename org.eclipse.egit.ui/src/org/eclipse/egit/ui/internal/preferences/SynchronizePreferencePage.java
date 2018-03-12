@@ -46,8 +46,5 @@ public class SynchronizePreferencePage extends FieldEditorPreferencePage
 				UIPreferences.SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL,
 				UIText.GitPreferenceRoot_automaticallyEnableChangesetModel,
 				getFieldEditorParent()));
-		addField(new BooleanFieldEditor(UIPreferences.USE_LOGICAL_MODEL,
-				UIText.GitPreferenceRoot_useLogicalModel,
-				getFieldEditorParent()));
 	}
 }

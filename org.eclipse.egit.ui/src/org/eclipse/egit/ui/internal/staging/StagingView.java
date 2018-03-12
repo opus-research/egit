@@ -449,10 +449,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if (userEnteredCommmitMessage())
-					saveCommitMessageComponentState();
-				else
-					deleteCommitMessageComponentState();
 				resources.dispose();
 				toolkit.dispose();
 			}
@@ -1986,7 +1982,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private boolean isValidRepo(final Repository repository) {
 		return repository != null
 				&& !repository.isBare()
-				&& repository.getWorkTree().exists();
+				&& repository.getWorkTree().exists()
+				&& org.eclipse.egit.core.Activator.getDefault()
+						.getRepositoryUtil().contains(repository);
 	}
 
 	/**
@@ -2048,7 +2046,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (form.isDisposed())
 			return;
 		if (repository == null) {
-			syncExec(new Runnable() {
+			asyncExec(new Runnable() {
 				public void run() {
 					clearRepository();
 				}
@@ -2061,7 +2059,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		final boolean repositoryChanged = currentRepository != repository;
 
-		syncExec(new Runnable() {
+		asyncExec(new Runnable() {
 
 			public void run() {
 				if (form.isDisposed())
@@ -2187,19 +2185,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
-		if (repositoryChanged)
+		CommitHelper helper = new CommitHelper(currentRepository);
+		CommitMessageComponentState oldState = null;
+		if (repositoryChanged) {
 			if (userEnteredCommmitMessage())
 				saveCommitMessageComponentState();
 			else
 				deleteCommitMessageComponentState();
-		if (!indexDiffAvailable)
-			return; // only try to restore the stored repo commit message if
-					// indexDiff is ready
-
-		CommitHelper helper = new CommitHelper(currentRepository);
-		CommitMessageComponentState oldState = null;
-		if (repositoryChanged
-				|| commitMessageComponent.getRepository() != currentRepository) {
 			oldState = loadCommitMessageComponentState();
 			commitMessageComponent.setRepository(currentRepository);
 			if (oldState == null)
@@ -2216,7 +2208,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadInitialState(helper);
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
-		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
+		amendPreviousCommitAction.setEnabled(indexDiffAvailable && helper.amendAllowed());
 		updateMessage();
 	}
 
@@ -2421,8 +2413,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 			refsChangedListener.remove();
 	}
 
-	private void syncExec(Runnable runnable) {
-		PlatformUI.getWorkbench().getDisplay().syncExec(runnable);
+	private void asyncExec(Runnable runnable) {
+		PlatformUI.getWorkbench().getDisplay().asyncExec(runnable);
 	}
 
 }
