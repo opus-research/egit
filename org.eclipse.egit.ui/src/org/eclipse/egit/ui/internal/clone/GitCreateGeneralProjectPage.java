@@ -17,7 +17,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -36,10 +35,12 @@ import org.eclipse.swt.widgets.Text;
  * Allows to import a directory in the local file system as "General" project
  * <p>
  * Asks the user to provide a project name and shows the directory to be shared.
+ * <p>
+ * TODO String externalization
  */
 public class GitCreateGeneralProjectPage extends WizardPage {
 
-	private File myDirectory;
+	private final File myDirectory;
 
 	private Text projectText;
 
@@ -61,26 +62,6 @@ public class GitCreateGeneralProjectPage extends WizardPage {
 		setDescription(UIText.WizardProjectsImportPage_ImportProjectsDescription);
 	}
 
-	/**
-	 * The path must be initialized using setPath()
-	 */
-	public GitCreateGeneralProjectPage() {
-		super(GitCreateGeneralProjectPage.class.getName());
-		setPageComplete(false);
-		setTitle(UIText.WizardProjectsImportPage_ImportProjectsTitle);
-		setDescription(UIText.WizardProjectsImportPage_ImportProjectsDescription);
-	}
-
-	/**
-	 * @param path
-	 */
-	public void setPath(String path) {
-		if (path != null)
-			myDirectory = new File(path);
-		else
-			myDirectory = null;
-	}
-
 	public void createControl(Composite parent) {
 
 		initializeDialogUnits(parent);
@@ -92,8 +73,7 @@ public class GitCreateGeneralProjectPage extends WizardPage {
 		workArea.setLayoutData(new GridData(GridData.FILL_BOTH
 				| GridData.GRAB_HORIZONTAL | GridData.GRAB_VERTICAL));
 
-		new Label(workArea, SWT.NONE)
-				.setText(UIText.GitCreateGeneralProjectPage_ProjectNameLabel);
+		new Label(workArea, SWT.NONE).setText(UIText.GitCreateGeneralProjectPage_ProjectNameLabel);
 		projectText = new Text(workArea, SWT.BORDER);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(projectText);
 		projectText.addModifyListener(new ModifyListener() {
@@ -103,8 +83,7 @@ public class GitCreateGeneralProjectPage extends WizardPage {
 			}
 		});
 
-		new Label(workArea, SWT.NONE)
-				.setText(UIText.GitCreateGeneralProjectPage_DirLabel);
+		new Label(workArea, SWT.NONE).setText(UIText.GitCreateGeneralProjectPage_DirLabel);
 		directoryText = new Text(workArea, SWT.BORDER);
 		directoryText.setEnabled(false);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(directoryText);
@@ -136,15 +115,13 @@ public class GitCreateGeneralProjectPage extends WizardPage {
 		try {
 			// make sure the directory exists
 			if (!myDirectory.exists()) {
-				setErrorMessage(NLS.bind(
-						UIText.GitCreateGeneralProjectPage_DirNotExistMessage,
+				setErrorMessage(NLS.bind(UIText.GitCreateGeneralProjectPage_DirNotExistMessage,
 						myDirectory.getPath()));
 				return;
 			}
 			// make sure we don't have a file
 			if (!myDirectory.isDirectory()) {
-				setErrorMessage(NLS.bind(
-						UIText.GitCreateGeneralProjectPage_FileNotDirMessage,
+				setErrorMessage(NLS.bind(UIText.GitCreateGeneralProjectPage_FileNotDirMessage,
 						myDirectory.getPath()));
 				return;
 			}
@@ -157,10 +134,9 @@ public class GitCreateGeneralProjectPage extends WizardPage {
 					return false;
 				}
 			}).length > 0) {
-				setErrorMessage(NLS
-						.bind(
-								UIText.GitCreateGeneralProjectPage_FileExistsInDirMessage,
-								".project", myDirectory.getPath())); //$NON-NLS-1$
+				setErrorMessage(NLS.bind(
+						UIText.GitCreateGeneralProjectPage_FileExistsInDirMessage,
+						".project", myDirectory.getPath())); //$NON-NLS-1$
 				return;
 			}
 			// project name empty
@@ -177,19 +153,8 @@ public class GitCreateGeneralProjectPage extends WizardPage {
 			}
 			// project already exists
 			if (isProjectInWorkspace(projectName)) {
-				setErrorMessage(NLS
-						.bind(
-								UIText.GitCreateGeneralProjectPage_PorjectAlreadyExistsMessage,
-								projectName));
-				return;
-			}
-			IProject newProject = ResourcesPlugin.getWorkspace().getRoot()
-					.getProject(projectName);
-			IStatus locationResult = ResourcesPlugin.getWorkspace()
-					.validateProjectLocation(newProject,
-							new Path(myDirectory.getPath()));
-			if (!locationResult.isOK()) {
-				setErrorMessage(locationResult.getMessage());
+				setErrorMessage(NLS.bind(UIText.GitCreateGeneralProjectPage_PorjectAlreadyExistsMessage,
+						projectName));
 				return;
 			}
 		} finally {
