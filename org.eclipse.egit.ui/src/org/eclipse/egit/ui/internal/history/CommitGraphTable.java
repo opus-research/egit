@@ -6,7 +6,6 @@
  * Copyright (C) 2011-2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011-2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -353,6 +352,7 @@ class CommitGraphTable {
 		return !table.getSelection().isEmpty();
 	}
 
+	@SuppressWarnings("unchecked")
 	private void doCopy() {
 		final ISelection s = table.getSelection();
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
@@ -747,12 +747,6 @@ class CommitGraphTable {
 							UIText.CommitFileDiffViewer_ShowAnnotationsMenuLabel));
 			}
 
-			if (selectionSize > 0) {
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
-						UIText.CommitGraphTable_OpenCommitLabel));
-			}
-
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
 				popupMgr.add(getCommandContributionItem(
@@ -851,6 +845,9 @@ class CommitGraphTable {
 			// copy and such after additions
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
+			popupMgr.add(getCommandContributionItem(
+					HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
+					UIText.CommitGraphTable_OpenCommitLabel));
 			popupMgr.add(new Separator());
 		}
 

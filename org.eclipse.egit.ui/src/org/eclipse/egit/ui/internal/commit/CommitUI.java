@@ -6,7 +6,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Stefan Lay <stefan.lay@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +42,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
@@ -113,13 +111,13 @@ public class CommitUI  {
 
 	/**
 	 * Performs a commit
-	 * @return true if a commit operation was triggered
 	 */
-	public boolean commit() {
+	public void commit() {
 		// let's see if there is any dirty editor around and
 		// ask the user if they want to save or abort
-		if (!UIUtils.saveAllEditors(repo))
-			return false;
+		if (!PlatformUI.getWorkbench().saveAllEditors(true)) {
+			return;
+		}
 
 		BasicConfigurationDialog.show(new Repository[]{repo});
 
@@ -140,9 +138,9 @@ public class CommitUI  {
 		} catch (InvocationTargetException e) {
 			Activator.handleError(UIText.CommitAction_errorComputingDiffs, e.getCause(),
 					true);
-			return false;
+			return;
 		} catch (InterruptedException e) {
-			return false;
+			return;
 		}
 
 		CommitHelper commitHelper = new CommitHelper(repo);
@@ -152,7 +150,7 @@ public class CommitUI  {
 					shell,
 					UIText.CommitAction_cannotCommit,
 					commitHelper.getCannotCommitMessage());
-			return false;
+			return;
 		}
 		boolean amendAllowed = commitHelper.amendAllowed();
 		if (files.isEmpty()) {
@@ -161,13 +159,13 @@ public class CommitUI  {
 						UIText.CommitAction_noFilesToCommit,
 						UIText.CommitAction_amendCommit);
 				if (!result)
-					return false;
+					return;
 				amending = true;
 			} else {
 				MessageDialog.openWarning(shell,
 						UIText.CommitAction_noFilesToCommit,
 						UIText.CommitAction_amendNotPossible);
-				return false;
+				return;
 			}
 		}
 
@@ -183,7 +181,7 @@ public class CommitUI  {
 		commitDialog.setCommitMessage(commitHelper.getCommitMessage());
 
 		if (commitDialog.open() != IDialogConstants.OK_ID)
-			return false;
+			return;
 
 		final CommitOperation commitOperation;
 		try {
@@ -193,7 +191,7 @@ public class CommitUI  {
 					commitDialog.getCommitter(), commitDialog.getCommitMessage());
 		} catch (CoreException e1) {
 			Activator.handleError(UIText.CommitUI_commitFailed, e1, true);
-			return false;
+			return;
 		}
 		if (commitDialog.isAmending())
 			commitOperation.setAmending(true);
@@ -202,7 +200,7 @@ public class CommitUI  {
 		if (commitHelper.isMergedResolved)
 			commitOperation.setRepository(repo);
 		performCommit(repo, commitOperation, false);
-		return true;
+		return;
 	}
 
 	/**

@@ -5,7 +5,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -36,7 +35,6 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
@@ -646,7 +644,8 @@ public class CommitDialog extends TitleAreaDialog {
 		// allow to commit with ctrl-enter
 		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
 			public void keyPressed(KeyEvent event) {
-				if (UIUtils.isSubmitKeyEvent(event)) {
+				if (event.keyCode == SWT.CR
+						&& (event.stateMask & SWT.CONTROL) > 0) {
 					okPressed();
 				} else if (event.keyCode == SWT.TAB
 						&& (event.stateMask & SWT.SHIFT) == 0) {
@@ -933,7 +932,8 @@ public class CommitDialog extends TitleAreaDialog {
 		if (commitMsg == null || commitMsg.trim().length() == 0) {
 			message = UIText.CommitDialog_Message;
 			type = IMessageProvider.INFORMATION;
-		} else if (!isCommitWithoutFilesAllowed()) {
+		} else if (filesViewer.getCheckedElements().length == 0
+				&& !amendingItem.getSelection()) {
 			message = UIText.CommitDialog_MessageNoFilesSelected;
 			type = IMessageProvider.INFORMATION;
 		} else {
@@ -945,16 +945,6 @@ public class CommitDialog extends TitleAreaDialog {
 		setMessage(message, type);
 		commitButton.setEnabled(type == IMessageProvider.WARNING
 				|| type == IMessageProvider.NONE);
-	}
-
-	private boolean isCommitWithoutFilesAllowed() {
-		if (filesViewer.getCheckedElements().length > 0)
-			return true;
-
-		if (amendingItem.getSelection())
-			return true;
-
-		return CommitHelper.isCommitWithoutFilesAllowed(repository);
 	}
 
 	private Collection<String> getFileList() {
@@ -1071,11 +1061,6 @@ public class CommitDialog extends TitleAreaDialog {
 
 	@Override
 	protected void okPressed() {
-		if (!isCommitWithoutFilesAllowed()) {
-			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoItemsSelected, UIText.CommitDialog_ErrorNoItemsSelectedToBeCommitted);
-			return;
-		}
-
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
 
@@ -1089,6 +1074,11 @@ public class CommitDialog extends TitleAreaDialog {
 		author = commitMessageComponent.getAuthor();
 		committer = commitMessageComponent.getCommitter();
 		createChangeId = changeIdItem.getSelection();
+
+		if (selectedFiles.isEmpty() && !amending) {
+			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoItemsSelected, UIText.CommitDialog_ErrorNoItemsSelectedToBeCommitted);
+			return;
+		}
 
 		IDialogSettings settings = org.eclipse.egit.ui.Activator
 			.getDefault().getDialogSettings();
@@ -1190,6 +1180,7 @@ class CommitViewerComparator extends ViewerComparator {
 		super(comparator);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public int compare(Viewer viewer, Object e1, Object e2) {
 		return getComparator().compare(e1, e2);
