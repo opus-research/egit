@@ -31,4 +31,5 @@ public interface IRepositoryServerProvider {
 	 *             {@code RepositoryServerInfo} object
 	 */
 	public Collection<RepositoryServerInfo> getRepositoryServerInfos() throws NoRepositoryServerInfoException;
+
 }

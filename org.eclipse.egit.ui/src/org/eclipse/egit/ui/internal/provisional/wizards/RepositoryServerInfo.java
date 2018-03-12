@@ -26,9 +26,9 @@ import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
  */
 public class RepositoryServerInfo {
 
-	private String label;
+	private final String label;
 
-	private URI uri;
+	private final URI uri;
 
 	private UserPasswordCredentials credentials;
 
