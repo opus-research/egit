@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.selection;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -25,9 +24,7 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -35,7 +32,6 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.ISources;
@@ -164,26 +160,19 @@ public class SelectionUtils {
 
 	private static List<IResource> extractResourcesFromMapping(Object o) {
 		ResourceMapping mapping = AdapterUtils.adapt(o, ResourceMapping.class);
-		if (mapping == null)
-			return Collections.emptyList();
-
-		ResourceTraversal[] traversals;
-		try {
-			traversals = mapping.getTraversals(null, null);
-		} catch (CoreException e) {
-			Activator.logError(e.getMessage(), e);
-			return Collections.emptyList();
+		if (mapping != null) {
+			ResourceTraversal[] traversals;
+			try {
+				traversals = mapping.getTraversals(null, null);
+				for (ResourceTraversal traversal : traversals) {
+					IResource[] resources = traversal.getResources();
+					return Arrays.asList(resources);
+				}
+			} catch (CoreException e) {
+				Activator.logError(e.getMessage(), e);
+			}
 		}
-
-		if (traversals.length == 0)
-			return Collections.emptyList();
-
-		List<IResource> result = new ArrayList<IResource>();
-		for (ResourceTraversal traversal : traversals) {
-			IResource[] resources = traversal.getResources();
-			result.addAll(Arrays.asList(resources));
-		}
-		return result;
+		return Collections.emptyList();
 	}
 
 	/**
@@ -267,13 +256,6 @@ public class SelectionUtils {
 			IResource resource = ResourceUtil.getResource(editorInput);
 			if (resource != null)
 				return new StructuredSelection(resource);
-			if (editorInput instanceof FileRevisionEditorInput) {
-				FileRevisionEditorInput fileRevisionEditorInput = (FileRevisionEditorInput) editorInput;
-				IFileRevision fileRevision = fileRevisionEditorInput
-						.getFileRevision();
-				if (fileRevision != null)
-					return new StructuredSelection(fileRevision);
-			}
 		}
 
 		return StructuredSelection.EMPTY;
@@ -286,7 +268,8 @@ public class SelectionUtils {
 		// no active window during Eclipse shutdown
 		if (activeWorkbenchWindow == null)
 			return null;
-		IHandlerService hsr = CommonUtils.getService(activeWorkbenchWindow, IHandlerService.class);
+		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
+				.getService(IHandlerService.class);
 		ctx = hsr.getCurrentState();
 		return ctx;
 	}

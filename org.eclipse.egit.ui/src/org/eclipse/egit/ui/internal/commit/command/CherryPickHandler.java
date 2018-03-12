@@ -15,7 +15,6 @@ package org.eclipse.egit.ui.internal.commit.command;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -31,26 +30,12 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIRepositoryUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.handler.SelectionHandler;
-import org.eclipse.egit.ui.internal.rebase.RebaseResultDialog;
-import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
-import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.model.WorkbenchContentProvider;
-import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
  * Handler to cherry pick the commit onto the current branch
@@ -66,7 +51,7 @@ public class CherryPickHandler extends SelectionHandler {
 		List<RevCommit> commits = getSelectedItems(RevCommit.class, event);
 		if ((commits == null) || commits.isEmpty())
 			return null;
-		final Repository repo = getSelectedItem(Repository.class, event);
+		Repository repo = getSelectedItem(Repository.class, event);
 		if (repo == null)
 			return null;
 		final Shell parent = getPart(event).getSite().getShell();
@@ -90,10 +75,6 @@ public class CherryPickHandler extends SelectionHandler {
 			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					op.execute(monitor);
-					RebaseResult result = op.getResult();
-					if (result.getStatus() != RebaseResult.Status.OK) {
-						RebaseResultDialog.show(result, repo);
-					}
 				} catch (CoreException e) {
 					Activator.logError(
 							UIText.CherryPickOperation_InternalError, e);
@@ -131,60 +112,10 @@ public class CherryPickHandler extends SelectionHandler {
 		shell.getDisplay().syncExec(new Runnable() {
 
 			public void run() {
-				ConfirmCherryPickDialog dialog = new ConfirmCherryPickDialog(
-						shell, message, repository, commits);
-				int result = dialog.open();
-				confirmed.set(result == Window.OK);
+				confirmed.set(MessageDialog.openConfirm(shell,
+						UIText.CherryPickHandler_ConfirmTitle, message));
 			}
 		});
 		return confirmed.get();
-	}
-
-	private static class ConfirmCherryPickDialog extends MessageDialog {
-
-		private RepositoryCommit[] commits;
-
-		public ConfirmCherryPickDialog(Shell parentShell,
-				String message, Repository repository, List<RevCommit> revCommits) {
-			super(parentShell, UIText.CherryPickHandler_ConfirmTitle, null,
-					message, MessageDialog.CONFIRM, new String[] {
-							IDialogConstants.OK_LABEL,
-							IDialogConstants.CANCEL_LABEL }, 0);
-			setShellStyle(getShellStyle() | SWT.RESIZE);
-
-			List<RepositoryCommit> repoCommits = new ArrayList<RepositoryCommit>();
-			for (RevCommit commit : revCommits)
-				repoCommits.add(new RepositoryCommit(repository, commit));
-			this.commits = repoCommits.toArray(new RepositoryCommit[0]);
-		}
-
-		@Override
-		protected Control createCustomArea(Composite parent) {
-			Composite area = new Composite(parent, SWT.NONE);
-			area.setLayoutData(GridDataFactory.fillDefaults().grab(true, true)
-					.create());
-			area.setLayout(new FillLayout());
-
-			TreeViewer treeViewer = new TreeViewer(area);
-			treeViewer.setContentProvider(new ContentProvider());
-			treeViewer.setLabelProvider(new DelegatingStyledCellLabelProvider(
-					new WorkbenchLabelProvider()));
-			treeViewer.setInput(commits);
-
-			return area;
-		}
-
-		private static class ContentProvider extends WorkbenchContentProvider {
-
-			public Object[] getElements(final Object element) {
-				return (Object[]) element;
-			}
-
-			public Object[] getChildren(Object element) {
-				if (element instanceof RepositoryCommit)
-					return ((RepositoryCommit) element).getDiffs();
-				return super.getChildren(element);
-			}
-		}
 	}
 }

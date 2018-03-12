@@ -594,9 +594,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FollowRenames;
 
 	/** */
-	public static String GitHistoryPage_FormatDiffJobName;
-
-	/** */
 	public static String GitHistoryPage_FilterSubMenuLabel;
 
 	/** */
@@ -766,9 +763,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_UndoText;
-
-	/** */
-	public static String RebaseInteractiveView_HeadingStep;
 
 	/** */
 	public static String RebaseInteractiveView_HeadingAction;
@@ -1920,16 +1914,10 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_changeto_committer;
 
 	/** */
-	public static String HistoryPage_findbar_changeto_reference;
-
-	/** */
 	public static String HistoryPage_findbar_exceeded;
 
 	/** */
 	public static String HistoryPage_findbar_notFound;
-
-	/** */
-	public static String HistoryPage_findbar_reference;
 
 	/** */
 	public static String HistoryPreferencePage_MaxBranchLength;
@@ -2041,12 +2029,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushBranchPage_UpstreamConfigOverwriteWarning;
-
-	/** */
-	public static String PushBranchPage_advancedWizardLink;
-
-	/** */
-	public static String PushBranchPage_advancedWizardLinkTooltip;
 
 	/** */
 	public static String PushBranchWizard_WindowTitle;
@@ -2187,9 +2169,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_SelectAll;
 
 	/** */
-	public static String CommitDialog_SelectForCommit;
-
-	/** */
 	public static String CommitDialog_ShowUntrackedFiles;
 
 	/** */
@@ -2248,15 +2227,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_MessageNoFilesSelected;
-
-	/** */
-	public static String CommitDialog_OpenStagingViewError;
-
-	/** */
-	public static String CommitDialog_OpenStagingViewLink;
-
-	/** */
-	public static String CommitDialog_OpenStagingViewToolTip;
 
 	/** */
 	public static String CommitDialog_Path;
@@ -2398,6 +2368,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitMessageViewer_MoreBranches;
+
+	/** */
+	public static String CommitMessageViewer_BuildDiffListTaskName;
+
+	/** */
+	public static String CommitMessageViewer_BuildDiffTaskName;
+
+	/** */
+	public static String CommitMessageViewer_CanNotRenderDiffMessage;
 
 	/** */
 	public static String CommitMessageViewer_tags;
@@ -3243,15 +3222,6 @@ public class UIText extends NLS {
 	public static String DeleteRepositoryConfirmDialog_DeleteProjectsCheckbox;
 
 	/** */
-	public static String DeleteTagOnCommitHandler_SelectTagDialogMessage;
-
-	/** */
-	public static String DeleteTagOnCommitHandler_SelectTagDialogTitle;
-
-	/** */
-	public static String DeleteTagCommand_deletingTagsProgress;
-
-	/** */
 	public static String DeleteTagCommand_messageConfirmMultipleTag;
 
 	/** */
@@ -3340,9 +3310,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_RemotesNodeText;
-
-	/** */
-	public static String RepositoriesView_TagDeletionFailureMessage;
 
 	/** */
 	public static String RepositoriesView_WorkingDir_treenode;
@@ -4127,9 +4094,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitGraphTable_DeleteBranchAction;
-
-	/** */
-	public static String CommitGraphTable_DeleteTagAction;
 
 	/** */
 	public static String CommitGraphTable_HoverAdditionalTags;
