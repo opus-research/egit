@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import static java.util.Arrays.copyOf;
 import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
 import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
 
@@ -73,7 +72,7 @@ public class GitModelRepository extends GitModelObject {
 		if (childrens == null)
 			getChildrenImpl();
 
-		return copyOf(childrens, childrens.length);
+		return childrens;
 	}
 
 	@Override
@@ -83,7 +82,7 @@ public class GitModelRepository extends GitModelObject {
 
 	@Override
 	public IProject[] getProjects() {
-		return copyOf(projects, projects.length);
+		return projects;
 	}
 
 	/**
