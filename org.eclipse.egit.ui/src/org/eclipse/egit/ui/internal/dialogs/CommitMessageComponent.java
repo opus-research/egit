@@ -40,9 +40,9 @@ import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
-import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -160,7 +160,7 @@ public class CommitMessageComponent {
 
 	private ObjectId headCommitId;
 
-	private boolean listenersEnabled;
+	private boolean listersEnabled;
 
 	/**
 	 * @param repository
@@ -196,7 +196,7 @@ public class CommitMessageComponent {
 		createChangeId = false;
 		filesToCommit = new ArrayList<String>();
 		headCommitId = null;
-		listenersEnabled = false;
+		listersEnabled = false;
 	}
 
 	/**
@@ -389,12 +389,12 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Enable/disable listeners on commit message editor and committer text to
-	 * change data programmatically.
+	 * Disable listeners on commit message editor and committer text
+	 * to change data programmatically.
 	 * @param enable
 	 */
-	public void enableListeners(boolean enable) {
-		this.listenersEnabled = enable;
+	public void enableListers(boolean enable) {
+		this.listersEnabled = enable;
 	}
 
 	/**
@@ -494,7 +494,7 @@ public class CommitMessageComponent {
 			String oldCommitter = committerText.getText();
 
 			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled)
+				if (!listersEnabled)
 					return;
 				if (signedOff) {
 					// the commit message is signed
@@ -512,7 +512,7 @@ public class CommitMessageComponent {
 				committerText, COMMITTER_VALUES_PREF);
 		commitText.getTextWidget().addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled)
+				if (!listersEnabled)
 					return;
 				updateSignedOffButton();
 				updateChangeIdButton();
@@ -525,8 +525,9 @@ public class CommitMessageComponent {
 	 */
 	public void setDefaults() {
 		if (repository != null)
-			createChangeId = GerritUtil.getCreateChangeId(repository
-					.getConfig());
+			createChangeId = repository.getConfig().getBoolean(
+					ConfigConstants.CONFIG_GERRIT_SECTION,
+					ConfigConstants.CONFIG_KEY_CREATECHANGEID, false);
 		signedOff = org.eclipse.egit.ui.Activator.getDefault()
 				.getPreferenceStore()
 				.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);

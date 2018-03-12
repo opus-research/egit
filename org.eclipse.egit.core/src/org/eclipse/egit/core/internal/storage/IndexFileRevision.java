@@ -40,14 +40,14 @@ public class IndexFileRevision extends GitFileRevision {
 
 	private ObjectId blobId;
 
-	IndexFileRevision(final Repository repo, final String path) {
-		this(repo, path, FIRST_AVAILABLE);
+	IndexFileRevision(final Repository repo, final String fileName) {
+		this(repo, fileName, FIRST_AVAILABLE);
 	}
 
-	IndexFileRevision(final Repository repo, final String path, int stage) {
-		super(path);
+	IndexFileRevision(final Repository repo, final String fileName, int stage) {
+		super(fileName);
 		this.db = repo;
-		this.path = path;
+		this.path = fileName;
 		this.stage = stage;
 	}
 
