@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IProjectDescription;
@@ -47,9 +48,25 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 	@SuppressWarnings("unchecked")
 	public Object[] getElements(Object inputElement) {
 
-		List<RepositoryTreeNode> nodes = (List<RepositoryTreeNode>) inputElement;
-		Collections.sort(nodes);
-		return nodes.toArray();
+		Comparator<RepositoryTreeNode<Repository>> sorter = new Comparator<RepositoryTreeNode<Repository>>() {
+
+			public int compare(RepositoryTreeNode<Repository> o1,
+					RepositoryTreeNode<Repository> o2) {
+				return getRepositoryName(o1.getObject()).compareTo(
+						getRepositoryName(o2.getObject()));
+			}
+
+		};
+
+		Set<RepositoryTreeNode<Repository>> output = new TreeSet<RepositoryTreeNode<Repository>>(
+				sorter);
+
+		for (Repository repo : ((List<Repository>) inputElement)) {
+			output.add(new RepositoryTreeNode<Repository>(null,
+					RepositoryTreeNodeType.REPO, repo, repo));
+		}
+
+		return output.toArray();
 	}
 
 	public void dispose() {
@@ -410,4 +427,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 		return true;
 	}
 
+	private static String getRepositoryName(Repository repository) {
+		return repository.getDirectory().getParentFile().getName();
+	}
 }
