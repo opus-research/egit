@@ -14,6 +14,7 @@ package org.eclipse.egit.ui.internal.sharing;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +56,8 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 
 	private ExistingOrNewPage existingPage;
 
+	private IWorkbenchPage activePage;
+
 	/**
 	 * Construct the Git Sharing Wizard for connecting Git project to Eclipse
 	 */
@@ -82,7 +85,7 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 
 	@Override
 	public boolean performFinish() {
-		final IWorkbenchPage activePage = PlatformUI.getWorkbench()
+		activePage = PlatformUI.getWorkbench()
 				.getActiveWorkbenchWindow().getActivePage();
 		if (!existingPage.getInternalMode()) {
 			try {
@@ -97,8 +100,7 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 							InterruptedException {
 						for (Map.Entry<IProject, File> entry : projectsToMove
 								.entrySet()) {
-							closeOpenEditorsForProject(activePage,
-									entry.getKey());
+							closeOpenEditorsForProject(entry.getKey());
 							IPath targetLocation = new Path(entry.getValue()
 									.getPath());
 							IPath currentLocation = entry.getKey()
@@ -187,38 +189,41 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 		}
 	}
 
-	private void closeOpenEditorsForProject(final IWorkbenchPage activePage,
-			IProject project) {
-		final List<IEditorReference> editorRefsToClose = findEditorReferencesForProject(
-				activePage, project);
+	private void closeOpenEditorsForProject(IProject project) {
+		final List<IEditorReference> editorRefsToClose = new ArrayList<>();
+		Map<IFile, IEditorReference> fileEditors = findAllEditorReferences();
+		Set<IFile> keySet = fileEditors.keySet();
+		for (IFile file : keySet) {
+			if (file.getProject().equals(project)) {
+				editorRefsToClose.add(fileEditors.get(file));
+			}
+		}
+
 		if (editorRefsToClose.isEmpty()) {
 			return;
 		}
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-
 			@Override
 			public void run() {
-				activePage.closeEditors(
-						editorRefsToClose.toArray(
-								new IEditorReference[editorRefsToClose.size()]),
-						true);
+
+				IEditorReference[] editorsToClose = new IEditorReference[editorRefsToClose
+						.size()];
+				editorsToClose = editorRefsToClose.toArray(editorsToClose);
+				activePage.closeEditors(editorsToClose, true);
 			}
 		});
 	}
 
-	private List<IEditorReference> findEditorReferencesForProject(
-			IWorkbenchPage activePage, IProject project) {
-		List<IEditorReference> fileEditors = new ArrayList<>();
-		for (IEditorReference editorReference : activePage
-				.getEditorReferences()) {
+	private Map<IFile, IEditorReference> findAllEditorReferences() {
+		IEditorReference[] editorReferences = activePage.getEditorReferences();
+		Map<IFile, IEditorReference> fileEditors = new HashMap<>();
+		for (IEditorReference editorReference : editorReferences) {
 			try {
 				IEditorInput editorInput = editorReference.getEditorInput();
 				if (editorInput instanceof IFileEditorInput) {
 					IFileEditorInput fileEditorInput = (IFileEditorInput) editorInput;
 					IFile file = fileEditorInput.getFile();
-					if (file.getProject().equals(project)) {
-						fileEditors.add(editorReference);
-					}
+					fileEditors.put(file, editorReference);
 				}
 			} catch (PartInitException e) {
 				Activator.logError("PartInitException - should not happen", e); //$NON-NLS-1$

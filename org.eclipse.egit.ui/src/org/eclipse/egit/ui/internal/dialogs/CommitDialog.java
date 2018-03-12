@@ -1157,10 +1157,11 @@ public class CommitDialog extends TitleAreaDialog {
 
 		boolean ignoreErrorsValue = ignoreErrors == null ? true
 				: !ignoreErrors.getSelection();
+		@SuppressWarnings("boxing")
 		boolean hasErrorsOrWarnings = getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 						? (getProblemsSeverity() >= Integer
-								.parseInt(getPreferenceStore().getString(
+								.valueOf(getPreferenceStore().getString(
 										UIPreferences.WARN_BEFORE_COMMITTING_LEVEL))
 								&& ignoreErrorsValue)
 						: false;
@@ -1182,11 +1183,12 @@ public class CommitDialog extends TitleAreaDialog {
 			}
 		}
 		setMessage(message, type);
+		@SuppressWarnings("boxing")
 		boolean commitBlocked = getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT)
 						? (getProblemsSeverity() >= Integer
-								.parseInt(getPreferenceStore().getString(
+								.valueOf(getPreferenceStore().getString(
 										UIPreferences.BLOCK_COMMIT_LEVEL))
 								&& ignoreErrorsValue)
 						: false;

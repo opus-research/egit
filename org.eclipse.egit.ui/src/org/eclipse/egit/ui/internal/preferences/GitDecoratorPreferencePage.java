@@ -776,13 +776,9 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	 */
 	@Override
 	public void dispose() {
-		if (themeListener != null) {
-			PlatformUI.getWorkbench().getThemeManager()
-					.removePropertyChangeListener(themeListener);
-		}
-		if (uiPrefsListener != null) {
-			getPreferenceStore().removePropertyChangeListener(uiPrefsListener);
-		}
+		PlatformUI.getWorkbench().getThemeManager()
+				.removePropertyChangeListener(themeListener);
+		getPreferenceStore().removePropertyChangeListener(uiPrefsListener);
 		super.dispose();
 	}
 
