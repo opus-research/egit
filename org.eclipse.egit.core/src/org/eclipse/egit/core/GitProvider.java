@@ -11,7 +11,6 @@ package org.eclipse.egit.core;
 
 import java.io.IOException;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceRuleFactory;
 import org.eclipse.core.resources.team.IMoveDeleteHook;
 import org.eclipse.core.resources.team.ResourceRuleFactory;
@@ -101,10 +100,7 @@ public class GitProvider extends RepositoryProvider {
 	@Nullable
 	public synchronized GitProjectData getData() {
 		if (data == null) {
-			IProject project = getProject();
-			if (project != null) {
-				data = GitProjectData.get(project);
-			}
+			data = GitProjectData.get(getProject());
 		}
 		return data;
 	}

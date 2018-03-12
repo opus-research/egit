@@ -61,7 +61,6 @@ import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -126,9 +125,8 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 
 			@Override
 			public void setVisible(boolean visible) {
-				RepositorySelection selection = getRepositorySelection();
-				if (selection != null && visible) {
-					setSelection(selection);
+				if (visible) {
+					setSelection(getRepositorySelection());
 					setCredentials(getCredentials());
 				}
 				super.setVisible(visible);
@@ -137,13 +135,11 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		cloneDestination = new CloneDestinationPage() {
 			@Override
 			public void setVisible(boolean visible) {
-				RepositorySelection selection = getRepositorySelection();
-				if (selection != null && visible) {
-					setSelection(selection,
+				if (visible)
+					setSelection(getRepositorySelection(),
 							validSource.getAvailableBranches(),
 							validSource.getSelectedBranches(),
 							validSource.getHEAD());
-				}
 				super.setVisible(visible);
 			}
 		};
@@ -299,10 +295,8 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	}
 
 	/**
-	 * @return the repository selected by the user or {@code null} if an error
-	 *         occurred
+	 * @return the repository selected by the user
 	 */
-	@Nullable
 	protected RepositorySelection getRepositorySelection() {
 		try {
 			return (new RepositorySelection(new URIish(currentSearchResult.getGitRepositoryInfo().getCloneUri()), null));

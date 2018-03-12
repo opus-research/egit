@@ -7,8 +7,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test.team.actions;
 
-import static org.eclipse.egit.ui.JobFamilies.ADD_TO_INDEX;
-import static org.eclipse.egit.ui.JobFamilies.REMOVE_FROM_INDEX;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -102,7 +100,6 @@ public class StageUnstageActionTest extends LocalRepositoryTestCase {
 		util.getProjectItems(projectExplorerTree, PROJ_A)[0].select();
 		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
 				addToIndexLabel);
-		TestUtil.joinJobs(ADD_TO_INDEX);
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		// Verify file got staged
 		verifyStaging(PROJ_A, filePath, true);
@@ -113,7 +110,6 @@ public class StageUnstageActionTest extends LocalRepositoryTestCase {
 						"Team", addToIndexLabel));
 		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
 				removeFromIndexLabel);
-		TestUtil.joinJobs(REMOVE_FROM_INDEX);
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		// Verify file is unstaged again
 		verifyStaging(PROJ_A, filePath, false);
@@ -134,7 +130,6 @@ public class StageUnstageActionTest extends LocalRepositoryTestCase {
 		// Add to index
 		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
 				addToIndexLabel);
-		TestUtil.joinJobs(ADD_TO_INDEX);
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		// Verify both files got staged
 		verifyStaging(PROJ_A, filePath, true);
@@ -144,7 +139,6 @@ public class StageUnstageActionTest extends LocalRepositoryTestCase {
 		// Remove from index
 		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
 				removeFromIndexLabel);
-		TestUtil.joinJobs(REMOVE_FROM_INDEX);
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		// Verify both files got unstaged
 		verifyStaging(PROJ_A, filePath, false);
