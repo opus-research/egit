@@ -115,7 +115,7 @@ public class AssumeUnchangedOperation implements IEGitOperation {
 		DirCache cache = caches.get(db);
 		if (cache == null) {
 			try {
-				cache = db.lockDirCache();
+				cache = DirCache.lock(db);
 			} catch (IOException err) {
 				throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, err));
 			}

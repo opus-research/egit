@@ -46,8 +46,6 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 
 	private String gitPath;
 
-	private final Repository db;
-
 	private final KidWalk walk;
 
 	private final IFileRevision[] revisions;
@@ -55,35 +53,32 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 	GitFileHistory(final IResource rsrc, final int flags,
 			final IProgressMonitor monitor) {
 		resource = rsrc;
+		walk = buildWalk();
+		revisions = buildRevisions(monitor, flags);
+	}
 
+	private KidWalk buildWalk() {
 		final RepositoryMapping rm = RepositoryMapping.getMapping(resource);
 		if (rm == null) {
 			Activator.logError(NLS.bind(CoreText.GitFileHistory_gitNotAttached,
 					resource.getProject().getName()), null);
-			db = null;
-			walk = null;
-		} else {
-			db = rm.getRepository();
-			walk = new KidWalk(db);
-			gitPath = rm.getRepoRelativePath(resource);
-			walk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
-					.createFromStrings(Collections.singleton(gitPath)),
-					TreeFilter.ANY_DIFF));
+			return null;
 		}
 
-		try {
-			revisions = buildRevisions(monitor, flags);
-		} finally {
-			walk.release();
-		}
+		final KidWalk w = new KidWalk(rm.getRepository());
+		gitPath = rm.getRepoRelativePath(resource);
+		w.setTreeFilter(AndTreeFilter.create(PathFilterGroup
+				.createFromStrings(Collections.singleton(gitPath)),
+				TreeFilter.ANY_DIFF));
+		return w;
 	}
-
 
 	private IFileRevision[] buildRevisions(final IProgressMonitor monitor,
 			final int flags) {
 		if (walk == null)
 			return NO_REVISIONS;
 
+		final Repository db = walk.getRepository();
 		final RevCommit root;
 		try {
 			final AnyObjectId headId = db.resolve(Constants.HEAD);
@@ -143,6 +138,7 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 			return NO_REVISIONS;
 
 		final CommitFileRevision rev = (CommitFileRevision) ifr;
+		final Repository db = walk.getRepository();
 		final String p = rev.getGitPath();
 		final RevCommit c = rev.getRevCommit();
 		final IFileRevision[] r = new IFileRevision[c.getParentCount()];
@@ -156,6 +152,7 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 			return NO_REVISIONS;
 
 		final CommitFileRevision rev = (CommitFileRevision) ifr;
+		final Repository db = walk.getRepository();
 		final String p = rev.getGitPath();
 		final RevCommit rc = rev.getRevCommit();
 		if (!(rc instanceof KidCommit))
@@ -173,7 +170,7 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 				|| GitFileRevision.WORKSPACE.equals(id))
 			return new WorkspaceFileRevision(resource);
 		if (GitFileRevision.INDEX.equals(id))
-			return new IndexFileRevision(db, gitPath);
+			return new IndexFileRevision(walk.getRepository(), gitPath);
 
 		// Only return a revision if it was matched by this filtered history
 		for (IFileRevision r : revisions) {

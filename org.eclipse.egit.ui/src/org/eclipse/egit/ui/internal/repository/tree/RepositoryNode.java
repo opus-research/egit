@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.internal.repository.tree;
 
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 
 /**
  * Represents the "Repository" node
@@ -26,7 +25,7 @@ public class RepositoryNode extends RepositoryTreeNode<Repository> {
 	 * @param repository
 	 *            the {@link Repository}
 	 */
-	public RepositoryNode(RepositoryTreeNode parent, FileRepository repository) {
+	public RepositoryNode(RepositoryTreeNode parent, Repository repository) {
 		super(parent, RepositoryTreeNodeType.REPO, repository, repository);
 	}
 
