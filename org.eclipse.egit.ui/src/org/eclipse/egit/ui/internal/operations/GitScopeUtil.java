@@ -93,9 +93,8 @@ public class GitScopeUtil {
 	}
 
 	private static ResourceMapping getResourceMapping(Object o) {
-		if (o instanceof ResourceMapping) {
+		if (o instanceof ResourceMapping)
 			return (ResourceMapping) o;
-		}
 		if (o instanceof IAdaptable) {
 			IAdaptable adaptable = (IAdaptable) o;
 			Object adapted = adaptable.getAdapter(ResourceMapping.class);
@@ -141,7 +140,7 @@ public class GitScopeUtil {
 					throws InvocationTargetException, InterruptedException {
 				try {
 					monitor.beginTask(
-							UIText.CommitActionHandler_lookingChanges, 100);
+							UIText.CommitActionHandler_lookingForChanges, 100);
 					List<IResource> collectedResources = collectRelatedChanges(
 							selectedResources, part, monitor);
 					relatedChanges.addAll(collectedResources);

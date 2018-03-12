@@ -3095,7 +3095,7 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_errorBuildingScope;
 
 	/** */
-	public static String CommitActionHandler_lookingChanges;
+	public static String CommitActionHandler_lookingForChanges;
 
 	/** */
 	public static String CommitActionHandler_repository;
