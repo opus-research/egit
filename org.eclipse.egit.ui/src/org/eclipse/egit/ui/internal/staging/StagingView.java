@@ -11,7 +11,6 @@ package org.eclipse.egit.ui.internal.staging;
 import static org.eclipse.egit.ui.internal.CommonUtils.runCommand;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,7 +32,6 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
@@ -95,8 +93,6 @@ import org.eclipse.jface.action.ToolBarManager;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -1183,11 +1179,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		refreshAction = new Action(UIText.StagingView_Refresh, IAction.AS_PUSH_BUTTON) {
 			public void run() {
-				if (cacheEntry != null) {
-					schedule(
-							cacheEntry.createRefreshResourcesAndIndexDiffJob(),
-							false);
-				}
+				if(cacheEntry != null)
+					cacheEntry.refreshResourcesAndIndexDiff();
 			}
 		};
 		refreshAction.setImageDescriptor(UIIcons.ELCL16_REFRESH);
@@ -1453,7 +1446,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			break;
 
 		case CONFLICTING:
-			runCommand(ActionCommands.MERGE_TOOL_ACTION, selection);
+			runCommand(ActionCommands.COMPARE_WITH_HEAD_ACTION, selection);
 			break;
 
 		case MISSING:
@@ -1880,34 +1873,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void showResource(final IResource resource) {
-		Repository newRep = getRepositoryOrNestedSubmoduleRepository(resource);
-		if (newRep != null && newRep != currentRepository)
-			reload(newRep);
-	}
-
-	private Repository getRepositoryOrNestedSubmoduleRepository(
-			final IResource resource) {
-		final Repository[] repo = new Repository[1];
-		try {
-			ModalContext.run(new IRunnableWithProgress() {
-
-				public void run(IProgressMonitor monitor) {
-					IProject project = resource.getProject();
-					RepositoryMapping mapping = RepositoryMapping
-							.getMapping(project);
-					if (mapping == null)
-						return;
-					repo[0] = mapping.getSubmoduleRepository(resource);
-					if (repo[0] == null)
-						repo[0] = mapping.getRepository();
-				}
-			}, true, new NullProgressMonitor(), Display.getDefault());
-		} catch (InvocationTargetException e) {
-			// ignore
-		} catch (InterruptedException e) {
-			// ignore
-		}
-		return repo[0];
+		IProject project = resource.getProject();
+		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+		if (mapping == null)
+			return;
+		if (mapping.getRepository() != currentRepository)
+			reload(mapping.getRepository());
 	}
 
 	private void stage(IStructuredSelection selection) {
@@ -1935,8 +1906,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IResource resource = AdapterUtils.adapt(element, IResource.class);
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-					// doesn't do anything if the current repository is a
-					// submodule of the mapped repo
 					if (mapping != null && mapping.getRepository() == currentRepository) {
 						String path = mapping.getRepoRelativePath(resource);
 						// If resource corresponds to root of working directory
