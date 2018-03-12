@@ -1706,6 +1706,20 @@
          </activeWhen>
       </handler>
       <handler
+            commandId="org.eclipse.ui.file.refresh">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.RefreshCommand">
+         </class>
+         <activeWhen>
+             <with
+                   variable="activePartId">
+                <equals
+                        value="org.eclipse.egit.ui.RepositoriesView">
+                </equals>
+             </with>
+          </activeWhen>
+      </handler>
+      <handler
             commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote">
          <class
                class="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand">
@@ -1772,6 +1786,31 @@
                      </instanceof>
                   </iterate>
                </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.RenameBranch"
+            class="org.eclipse.egit.ui.internal.actions.RenameBranchActionHandler">
+         <activeWhen>
+            <test property="GitSelection.projectsSingleRepository" />
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.ui.edit.rename"
+            class="org.eclipse.egit.ui.internal.history.command.RenameBranchOnCommitHandler">
+         <activeWhen>
+            <and>
+               <with
+                     variable="activePartId">
+                  <equals
+                        value="org.eclipse.team.ui.GenericHistoryView">
+                  </equals>
+               </with>
+               <count value="1" />
+               <iterate>
+                  <instanceof value="org.eclipse.egit.ui.internal.history.SWTCommit" />
+               </iterate>
+            </and>
          </activeWhen>
       </handler>
       <handler
@@ -3821,7 +3860,9 @@
                visible="true">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
+               commandId="org.eclipse.ui.file.refresh"
+               icon="icons/obj16/refresh.gif"
+               disabledIcon="icons/obj16/refresh.gif"
                style="push">
          </command>
          <command
@@ -3866,8 +3907,8 @@
                visible="true">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
-               label="%RepoViewRefreshViewMenu.label"
+               commandId="org.eclipse.ui.file.refresh"
+               icon="icons/obj16/refresh.gif"
                style="push">
          </command>
          <command
@@ -4809,21 +4850,9 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
-            name="%RenameBranchCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.PasteCommand"
             id="org.eclipse.egit.ui.RepositoriesViewPaste"
             name="%PastePathCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RefreshCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewRefresh"
-            name="%RefreshCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -5023,10 +5052,6 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewClone"
             icon="icons/obj16/cloneGit.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
-            icon="icons/obj16/refresh.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
@@ -5323,10 +5348,6 @@
       <image
             commandId="org.eclipse.egit.ui.team.stash.create"
             icon="icons/obj16/stash-create.png">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.history.RenameBranch"
-            icon="icons/obj16/editconfig.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.ShowBlame"
@@ -5632,9 +5653,8 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.RenameBranchActionHandler"
             id="org.eclipse.egit.ui.team.RenameBranch"
-            name="%RenameBranchCommand.name">
+            name="%RenameBranchCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -5738,11 +5758,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.history.command.DeleteBranchOnCommitHandler"
             id="org.eclipse.egit.ui.history.DeleteBranch"
             name="%DeleteBranchCommand">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.RenameBranchOnCommitHandler"
-            id="org.eclipse.egit.ui.history.RenameBranch"
-            name="%RenameBranchCommand">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CreateTagOnCommitHandler"
