@@ -28,7 +28,7 @@ import org.eclipse.team.core.Team;
 public class IgnoreAction extends RepositoryAction {
 	@SuppressWarnings("restriction")
 	@Override
-	public void execute(IAction action) {
+	public void run(IAction action) {
 		final IResource[] resources = getSelectedResources();
 		if (resources.length == 0)
 			return;

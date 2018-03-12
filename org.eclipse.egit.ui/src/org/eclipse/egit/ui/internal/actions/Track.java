@@ -19,6 +19,7 @@ import org.eclipse.egit.core.op.TrackOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 
 /**
@@ -29,7 +30,7 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
 public class Track extends RepositoryAction {
 
 	@Override
-	public void execute(IAction action) {
+	public void run(IAction action) {
 		try {
 			final TrackOperation op = new TrackOperation(Arrays
 					.asList(getSelectedResources()));
@@ -46,9 +47,10 @@ public class Track extends RepositoryAction {
 						}
 					});
 		} catch (InvocationTargetException e) {
-			Activator.handleError(UIText.Track_error, e, true);
+			Activator.logError(UIText.Track_error, e);
+			MessageDialog.openError(getShell(), UIText.Track_error, UIText.Track_see_log);
 		} catch (InterruptedException e) {
-			Activator.handleError(UIText.Track_error, e, true);
+			MessageDialog.openError(getShell(), UIText.Track_error, e.getMessage());
 		}
 	}
 
