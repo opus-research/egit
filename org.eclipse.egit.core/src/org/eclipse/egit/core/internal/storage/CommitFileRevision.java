@@ -35,7 +35,7 @@ import org.eclipse.team.core.history.ITag;
  * An {@link IFileRevision} for a version of a specified resource in the
  * specified commit (revision).
  */
-public class CommitFileRevision extends GitFileRevision {
+class CommitFileRevision extends GitFileRevision {
 	private final Repository db;
 
 	private final RevCommit commit;
@@ -46,23 +46,12 @@ public class CommitFileRevision extends GitFileRevision {
 
 	private ObjectId blobId;
 
-	/**
-	 * @param repo
-	 * @param rc
-	 * @param fileName
-	 */
-	public CommitFileRevision(final Repository repo, final RevCommit rc,
+	CommitFileRevision(final Repository repo, final RevCommit rc,
 			final String fileName) {
 		this(repo, rc, fileName, null);
 	}
 
-	/**
-	 * @param repo
-	 * @param rc
-	 * @param fileName
-	 * @param blob
-	 */
-	public CommitFileRevision(final Repository repo, final RevCommit rc,
+	CommitFileRevision(final Repository repo, final RevCommit rc,
 			final String fileName, final ObjectId blob) {
 		super(fileName);
 		db = repo;
