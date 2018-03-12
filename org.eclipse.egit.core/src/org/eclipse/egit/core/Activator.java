@@ -221,11 +221,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 					ignoreDerivedResourcesListener);
 			ignoreDerivedResourcesListener = null;
 		}
-		if (shareGitProjectsJob != null) {
-			ResourcesPlugin.getWorkspace().removeResourceChangeListener(
-					shareGitProjectsJob);
-			shareGitProjectsJob = null;
-		}
 	}
 
 	private void registerAutoShareProjects() {
