@@ -15,6 +15,8 @@ package org.eclipse.egit.ui;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.Authenticator;
+import java.net.ProxySelector;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -23,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
@@ -59,6 +62,8 @@ import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RepositoryEvent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.SshSessionFactory;
+import org.eclipse.jsch.core.IJSchService;
 import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.eclipse.swt.graphics.Font;
@@ -70,6 +75,7 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.themes.ITheme;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 
 /**
  * This is a plugin singleton mostly controlling logging.
@@ -305,6 +311,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		context.registerService(DebugOptionsListener.class.getName(), this,
 				props);
 
+		setupSSH(context);
+		setupProxy(context);
 		setupRepoChangeScanner();
 		setupRepoIndexRefresh();
 		setupFocusHandling();
@@ -673,6 +681,29 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		rcs = new RepositoryChangeScanner();
 		rcs.setSystem(true);
 		rcs.schedule(RepositoryChangeScanner.REPO_SCAN_INTERVAL);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void setupSSH(final BundleContext context) {
+		final ServiceReference ssh;
+
+		ssh = context.getServiceReference(IJSchService.class.getName());
+		if (ssh != null) {
+			SshSessionFactory.setInstance(new EclipseSshSessionFactory(
+					(IJSchService) context.getService(ssh)));
+		}
+	}
+
+	private void setupProxy(final BundleContext context) {
+		final ServiceReference proxy;
+
+		proxy = context.getServiceReference(IProxyService.class.getName());
+		if (proxy != null) {
+			ProxySelector.setDefault(new EclipseProxySelector(
+					(IProxyService) context.getService(proxy)));
+			Authenticator.setDefault(new EclipseAuthenticator(
+					(IProxyService) context.getService(proxy)));
+		}
 	}
 
 	@Override
