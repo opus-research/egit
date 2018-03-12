@@ -283,6 +283,21 @@ public class ProjectUtil {
 		return result.toArray(new IProject[result.size()]);
 	}
 
+	/**
+	 * Tries to make a path relative to the given project, if the given member
+	 * is beneath the projects path. Returns <code>null</code> if the given
+	 * member is not inside the projects directory.
+	 *
+	 * @param repository
+	 *            the repository use to get the work tree from
+	 * @param prj
+	 *            the project to check
+	 * @param member
+	 *            the member to create a relative path from
+	 * @return either the relative path to the member or <code>null</code> if
+	 *         not a member of the given project.
+	 * @throws IOException
+	 */
 	private static String makePrjRelativePath(Repository repository,
 			IProject prj, String member) throws IOException {
 		String canonicalMember = new File(repository.getWorkTree(), member)
