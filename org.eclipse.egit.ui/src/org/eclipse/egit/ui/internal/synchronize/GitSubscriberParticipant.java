@@ -15,6 +15,8 @@ import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.team.core.subscribers.Subscriber;
+import org.eclipse.team.core.variants.ResourceVariantByteStore;
+import org.eclipse.team.core.variants.SessionResourceVariantByteStore;
 import org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration;
 import org.eclipse.team.ui.synchronize.SubscriberParticipant;
 import org.eclipse.team.ui.synchronize.SynchronizePageActionGroup;
@@ -37,10 +39,10 @@ public class GitSubscriberParticipant extends SubscriberParticipant {
 	 * Construct GitBranchSubscriberParticipant.
 	 *
 	 * @param data
-	 *            set of base data that are required to perform synchronization
 	 */
 	public GitSubscriberParticipant(GitSynchronizeDataSet data) {
-		setSubscriber(new GitResourceVariantTreeSubscriber(data));
+		ResourceVariantByteStore store = new SessionResourceVariantByteStore();
+		setSubscriber(new GitResourceVariantTreeSubscriber(data, store));
 		setName(data.toString());
 	}
 
@@ -78,14 +80,11 @@ public class GitSubscriberParticipant extends SubscriberParticipant {
 	}
 
 	/**
-	 * Synchronous version of
-	 * {@link #refresh(org.eclipse.core.resources.IResource[], String, String, org.eclipse.ui.IWorkbenchSite)}
-	 *
 	 * @param data
-	 *            new data that should be set to participant
+	 *
 	 */
 	public void refresh(GitSynchronizeDataSet data) {
-		refresh(data.getAllProjects(),
+		refresh(data.getAllResources(),
 				UIText.GitSynchronizeWizard_gitResourceSynchronization, null,
 				null);
 	}

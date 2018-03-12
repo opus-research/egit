@@ -27,7 +27,7 @@ public class RepoRemoteBranchesPage {
 
 	public void assertRemoteBranches(String... branches) {
 		SWTBotTable table = bot.table();
-		bot.waitUntil(widgetIsEnabled(table), 20000);
+		bot.waitUntil(widgetIsEnabled(table));
 		for (String branch : branches) {
 			table.getTableItem(branch);
 		}

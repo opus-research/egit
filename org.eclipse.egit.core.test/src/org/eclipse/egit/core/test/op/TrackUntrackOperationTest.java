@@ -22,7 +22,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.egit.core.op.AddToIndexOperation;
+import org.eclipse.egit.core.op.TrackOperation;
 import org.eclipse.egit.core.op.UntrackOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.test.DualRepositoryTestCase;
@@ -44,7 +44,7 @@ public class TrackUntrackOperationTest extends DualRepositoryTestCase {
 	@Before
 	public void setUp() throws Exception {
 
-		workdir = testUtils.createTempDir("Repository1");
+		workdir = testUtils.getTempDir("Repository1");
 
 		repository1 = new TestRepository(new File(workdir, Constants.DOT_GIT));
 
@@ -62,7 +62,7 @@ public class TrackUntrackOperationTest extends DualRepositoryTestCase {
 		project.delete(false, false, null);
 		repository1.dispose();
 		repository1 = null;
-		testUtils.deleteTempDirs();
+		testUtils.deleteRecursive(workdir);
 	}
 
 	@Test
@@ -83,7 +83,7 @@ public class TrackUntrackOperationTest extends DualRepositoryTestCase {
 
 		assertTrackedState(fileArr, false);
 
-		AddToIndexOperation trop = new AddToIndexOperation(files);
+		TrackOperation trop = new TrackOperation(fileArr);
 		trop.execute(new NullProgressMonitor());
 
 		assertTrackedState(fileArr, true);
@@ -97,7 +97,7 @@ public class TrackUntrackOperationTest extends DualRepositoryTestCase {
 
 	private void assertTrackedState(IFile[] fileArr, boolean expectedState)
 			throws IOException {
-		DirCache cache = repository1.getRepository().readDirCache();
+		DirCache cache = DirCache.read(repository1.getRepository());
 		for (IFile file : fileArr) {
 			RepositoryMapping rm = RepositoryMapping.getMapping(file);
 			String fileDir = rm.getRepoRelativePath(file);
@@ -111,6 +111,9 @@ public class TrackUntrackOperationTest extends DualRepositoryTestCase {
 
 		final ArrayList<IContainer> containers = new ArrayList<IContainer>();
 		containers.add(project);
+
+		IContainer[] projectArr = containers.toArray(new IContainer[containers
+				.size()]);
 
 		final ArrayList<IFile> files = new ArrayList<IFile>();
 
@@ -127,7 +130,7 @@ public class TrackUntrackOperationTest extends DualRepositoryTestCase {
 
 		assertTrackedState(fileArr, false);
 
-		AddToIndexOperation trop = new AddToIndexOperation(containers);
+		TrackOperation trop = new TrackOperation(projectArr);
 		trop.execute(new NullProgressMonitor());
 
 		assertTrackedState(fileArr, true);

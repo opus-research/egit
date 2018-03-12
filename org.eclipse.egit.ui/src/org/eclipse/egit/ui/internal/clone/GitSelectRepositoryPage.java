@@ -15,8 +15,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
@@ -35,7 +35,6 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -116,7 +115,7 @@ public class GitSelectRepositoryPage extends WizardPage {
 							if (!dirsBefore.contains(dir)) {
 								try {
 									RepositoryNode node = new RepositoryNode(
-											null, new FileRepository(new File(dir)));
+											null, new Repository(new File(dir)));
 									tv.setSelection(new StructuredSelection(
 											node));
 								} catch (IOException e1) {

@@ -19,16 +19,19 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.TimeZone;
 
-import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.GitProvider;
-import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.test.GitTestCase;
-import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Commit;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.FileTreeEntry;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectWriter;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Tree;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
 import org.eclipse.team.core.history.IFileHistoryProvider;
@@ -43,46 +46,77 @@ public class HistoryTest extends GitTestCase {
 	protected static final PersonIdent jcommitter;
 
 	static {
-		jauthor = new PersonIdent("J. Author", "jauthor@example.com",
-				new Date(0L), TimeZone.getTimeZone("GMT+1"));
-		jcommitter = new PersonIdent("J. Committer", "jcommitter@example.com",
-				new Date(0L), TimeZone.getTimeZone("GMT+1"));
+		jauthor = new PersonIdent("J. Author", "jauthor@example.com");
+		jcommitter = new PersonIdent("J. Committer", "jcommitter@example.com");
 	}
 
 	private File workDir;
+	private File gitDir;
 	private Repository thisGit;
+	private Tree tree;
+	private ObjectWriter objectWriter;
 
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
 
-		// ensure we are working on an empty repository
-		testUtils.deleteRecursive(gitDir);
-		thisGit = new FileRepository(gitDir);
-		workDir = thisGit.getWorkTree();
+		project.createSourceFolder();
+		gitDir = new File(project.getProject().getWorkspace().getRoot()
+				.getRawLocation().toFile(), Constants.DOT_GIT);
+		thisGit = new Repository(gitDir);
+		workDir = thisGit.getWorkDir();
 		thisGit.create();
+		objectWriter = new ObjectWriter(thisGit);
 
-		Git git = new Git(thisGit);
+		tree = new Tree(thisGit);
+		Tree projectTree = tree.addTree("Project-1");
+		File project1_a_txt = createFile("Project-1/A.txt","A.txt - first version\n");
+		addFile(projectTree,project1_a_txt);
+		projectTree.setId(objectWriter.writeTree(projectTree));
+		File project1_b_txt = createFile("Project-1/B.txt","B.txt - first version\n");
+		addFile(projectTree,project1_b_txt);
+		projectTree.setId(objectWriter.writeTree(projectTree));
+		tree.setId(objectWriter.writeTree(tree));
+		Commit commit = new Commit(thisGit);
+		commit.setAuthor(new PersonIdent(jauthor, new Date(0L), TimeZone
+				.getTimeZone("GMT+1")));
+		commit.setCommitter(new PersonIdent(jcommitter, new Date(0L), TimeZone
+				.getTimeZone("GMT+1")));
+		commit.setMessage("Foo\n\nMessage");
+		commit.setTree(tree);
+		ObjectId commitId = objectWriter.writeCommit(commit);
 
-		createFile("Project-1/A.txt","A.txt - first version\n");
-		createFile("Project-1/B.txt","B.txt - first version\n");
-		git.add().addFilepattern("Project-1/A.txt").addFilepattern("Project-1/B.txt").call();
-		git.commit().setAuthor(jauthor).setCommitter(jcommitter)
-				.setMessage("Foo\n\nMessage").call();
+		tree = new Tree(thisGit);
+		projectTree = tree.addTree("Project-1");
+		addFile(projectTree,project1_a_txt);
 
-		createFile("Project-1/B.txt","B.txt - second version\n");
-		git.add().addFilepattern("Project-1/B.txt").call();
-		git.commit().setAuthor(jauthor).setCommitter(jcommitter)
-				.setMessage("Modified").call();
+		File project1_b_v2_txt = createFile("Project-1/B.txt","B.txt - second version\n");
+		addFile(projectTree,project1_b_v2_txt);
+		projectTree.setId(objectWriter.writeTree(projectTree));
+		tree.setId(objectWriter.writeTree(tree));
+		commit = new Commit(thisGit);
+		commit.setAuthor(new PersonIdent(jauthor, new Date(0L), TimeZone
+				.getTimeZone("GMT+1")));
+		commit.setCommitter(new PersonIdent(jcommitter, new Date(0L), TimeZone
+				.getTimeZone("GMT+1")));
+		commit.setMessage("Modified");
+		commit.setParentIds(new ObjectId[] { commitId });
+		commit.setTree(tree);
+		commitId = objectWriter.writeCommit(commit);
+
+		RefUpdate lck = thisGit.updateRef("refs/heads/master");
+		assertNotNull("obtained lock", lck);
+		lck.setNewObjectId(commitId);
+		assertEquals(RefUpdate.Result.NEW, lck.forceUpdate());
 
 		ConnectProviderOperation operation = new ConnectProviderOperation(
 				project.getProject(), gitDir);
 		operation.execute(null);
 	}
 
-	@Override
-	public void tearDown() throws Exception {
-		super.tearDown();
+	private void addFile(Tree t,File f) throws IOException {
+		ObjectId id = objectWriter.writeBlob(f);
+		t.addEntry(new FileTreeEntry(t,id,f.getName().getBytes("UTF-8"),false));
 	}
 
 	private File createFile(String name, String content) throws IOException {
@@ -125,31 +159,6 @@ public class HistoryTest extends GitTestCase {
 		assertEquals("J. Author",fileRevision.getAuthor());
 	}
 
-	@Test
-	public void testIndexRevision() throws Exception {
-		GitProvider provider = (GitProvider)RepositoryProvider.getProvider(project.project);
-		assertNotNull(provider);
-		IFileHistoryProvider fileHistoryProvider = provider.getFileHistoryProvider();
-		IFileHistory fileHistory = fileHistoryProvider.getFileHistoryFor(project.getProject().getWorkspace().getRoot().findMember("Project-1/A.txt"), IFileHistoryProvider.SINGLE_LINE_OF_DESCENT, new NullProgressMonitor());
-		IFileRevision fileRevision = fileHistory.getFileRevision(GitFileRevision.INDEX);
-		assertEquals(GitFileRevision.INDEX, fileRevision.getContentIdentifier());
-		IStorage storage = fileRevision.getStorage(null);
-		String content = testUtils.slurpAndClose(storage.getContents());
-		assertEquals("A.txt - first version\n", content);
-	}
-
-	@Test
-	public void testIndexRevisionSecondCommit() throws Exception {
-		GitProvider provider = (GitProvider)RepositoryProvider.getProvider(project.project);
-		assertNotNull(provider);
-		IFileHistoryProvider fileHistoryProvider = provider.getFileHistoryProvider();
-		IFileHistory fileHistory = fileHistoryProvider.getFileHistoryFor(project.getProject().getWorkspace().getRoot().findMember("Project-1/B.txt"), IFileHistoryProvider.SINGLE_LINE_OF_DESCENT, new NullProgressMonitor());
-		IFileRevision fileRevision = fileHistory.getFileRevision(GitFileRevision.INDEX);
-		assertEquals(GitFileRevision.INDEX, fileRevision.getContentIdentifier());
-		IStorage storage = fileRevision.getStorage(null);
-		String content = testUtils.slurpAndClose(storage.getContents());
-		assertEquals("B.txt - second version\n", content);
-	}
 	@Test
 	public void testShallowHistory() {
 		GitProvider provider = (GitProvider)RepositoryProvider.getProvider(project.project);

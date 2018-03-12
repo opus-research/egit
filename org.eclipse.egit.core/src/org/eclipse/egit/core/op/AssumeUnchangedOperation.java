@@ -59,27 +59,24 @@ public class AssumeUnchangedOperation implements IEGitOperation {
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	public void execute(IProgressMonitor m) throws CoreException {
-		IProgressMonitor monitor;
 		if (m == null)
-			monitor = new NullProgressMonitor();
-		else
-			monitor = m;
+			m = new NullProgressMonitor();
 
 		caches.clear();
 		mappings.clear();
 
-		monitor.beginTask(CoreText.AssumeUnchangedOperation_adding,
+		m.beginTask(CoreText.AssumeUnchangedOperation_adding,
 				rsrcList.size() * 200);
 		try {
 			for (IResource resource : rsrcList) {
 				assumeValid(resource);
-				monitor.worked(200);
+				m.worked(200);
 			}
 
 			for (Map.Entry<Repository, DirCache> e : caches.entrySet()) {
 				final Repository db = e.getKey();
 				final DirCache editor = e.getValue();
-				monitor.setTaskName(NLS.bind(
+				m.setTaskName(NLS.bind(
 						CoreText.AssumeUnchangedOperation_writingIndex, db
 								.getDirectory()));
 				editor.write();
@@ -94,7 +91,7 @@ public class AssumeUnchangedOperation implements IEGitOperation {
 				rm.fireRepositoryChanged();
 			caches.clear();
 			mappings.clear();
-			monitor.done();
+			m.done();
 		}
 	}
 
@@ -118,7 +115,7 @@ public class AssumeUnchangedOperation implements IEGitOperation {
 		DirCache cache = caches.get(db);
 		if (cache == null) {
 			try {
-				cache = db.lockDirCache();
+				cache = DirCache.lock(db);
 			} catch (IOException err) {
 				throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, err));
 			}
