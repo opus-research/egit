@@ -5,6 +5,7 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,31 +34,42 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
+import org.eclipse.egit.ui.internal.commit.CommitHelper;
+import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.ChangeIdUtil;
 import org.eclipse.jgit.util.RawParseUtils;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.KeyAdapter;
-import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
 
 /**
- * Dialog is shown to user when they request to commit files. Changes in the
- * selected portion of the tree are shown.
+ * This class provides a reusable UI component for the UI logic around commit
+ * message, author, committer, signed off toggle, amend toggle and change id
+ * toggle. Controls for commit message, author and committer are created by the
+ * component host and attached via method <code>attachControls</code>. The
+ * toggles (signed off, amend, change id) are provided by the host and can be of
+ * any widget type (check box, tool bar item etc.). The host must notify the
+ * commit message component when a toggle state changes by calling the methods
+ * <code>setSignedOffButtonSelection</code>,
+ * <code>setChangeIdButtonSelection</code> and
+ * <code>setAmendingButtonSelection</code>. The component notifies the host via
+ * interface {@link ICommitMessageComponentNotifications} about required changes
+ * of the toggle selections.
  */
 public class CommitMessageComponent {
 
+	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
+
 	/**
-	* Constant for the extension point for the commit message provider
-	*/
+	 * Constant for the extension point for the commit message provider
+	 */
 	private static final String COMMIT_MESSAGE_PROVIDER_ID = "org.eclipse.egit.ui.commitMessageProvider"; //$NON-NLS-1$
 
 	private static final String COMMITTER_VALUES_PREF = "CommitDialog.committerValues"; //$NON-NLS-1$
@@ -72,17 +84,11 @@ public class CommitMessageComponent {
 
 	Text committerText;
 
-	boolean signedOffButtonSelection;
-
-	boolean changeIdButtonSelection;
-
-	Button showUntrackedButton;
-
 	ObjectId originalChangeId;
 
 	private String commitMessage = null;
 
-	private String previousCommitMessage = ""; //$NON-NLS-1$
+	private String previousCommitMessage = EMPTY_STRING;
 
 	private String author = null;
 
@@ -90,11 +96,11 @@ public class CommitMessageComponent {
 
 	private String committer = null;
 
-	private boolean signedOff = org.eclipse.egit.ui.Activator.getDefault()
-	.getPreferenceStore()
-	.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
+	private boolean signedOff = false;
 
 	private boolean amending = false;
+
+	private boolean amendAllowed = false;
 
 	private boolean createChangeId = false;
 
@@ -104,13 +110,46 @@ public class CommitMessageComponent {
 
 	private Repository repository;
 
+	private Collection<String> filesToCommit = new ArrayList<String>();
+
+	private ObjectId headCommitId;
+
+	private boolean listersEnabled;
+
 	/**
 	 * @param repository
 	 * @param listener
 	 */
-	public CommitMessageComponent(Repository repository, ICommitMessageComponentNotifications listener) {
+	public CommitMessageComponent(Repository repository,
+			ICommitMessageComponentNotifications listener) {
 		this.repository = repository;
 		this.listener = listener;
+	}
+
+	/**
+	 * @param listener
+	 */
+	public CommitMessageComponent(ICommitMessageComponentNotifications listener) {
+		this.listener = listener;
+	}
+
+	/**
+	 * Resets all state
+	 */
+	public void resetState() {
+		originalChangeId = null;
+		commitMessage = null;
+		previousCommitMessage =EMPTY_STRING;
+		author = null;
+		previousAuthor = null;
+		committer = null;
+		signedOff = false;
+		amending = false;
+		amendAllowed = false;
+		createChangeId = false;
+		filesToCommit = new ArrayList<String>();
+		headCommitId = null;
+		listersEnabled = false;
 	}
 
 	/**
@@ -123,7 +162,9 @@ public class CommitMessageComponent {
 
 	/**
 	 * Preset a commit message. This might be for amending a commit.
-	 * @param s the commit message
+	 *
+	 * @param s
+	 *            the commit message
 	 */
 	public void setCommitMessage(String s) {
 		this.commitMessage = s;
@@ -147,6 +188,20 @@ public class CommitMessageComponent {
 	}
 
 	/**
+	 * @param signedOff
+	 */
+	public void setSignedOff(boolean signedOff) {
+		this.signedOff = signedOff;
+	}
+
+	/**
+	 * @param createChangeId
+	 */
+	public void setCreateChangeId(boolean createChangeId) {
+		this.createChangeId = createChangeId;
+	}
+
+	/**
 	 * @return The committer to set for the commit
 	 */
 	public String getCommitter() {
@@ -164,12 +219,10 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Pre-set the previous author if amending the commit
-	 *
-	 * @param previousAuthor
+	 * @param filesToCommit
 	 */
-	public void setPreviousAuthor(String previousAuthor) {
-		this.previousAuthor = previousAuthor;
+	public void setFilesToCommit(Collection<String> filesToCommit) {
+		this.filesToCommit = filesToCommit;
 	}
 
 	/**
@@ -180,16 +233,6 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Pre-set whether a signed-off line should be included in the commit
-	 * message.
-	 *
-	 * @param signedOff
-	 */
-	public void setSignedOff(boolean signedOff) {
-		this.signedOff = signedOff;
-	}
-
-	/**
 	 * @return whether the last commit is to be amended
 	 */
 	public boolean isAmending() {
@@ -197,7 +240,7 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Pre-set whether the last commit is going to be amended
+	 * Set whether the last commit is going to be amended
 	 *
 	 * @param amending
 	 */
@@ -206,12 +249,30 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Set the message from the previous commit for amending.
+	 * Set whether the previous commit may be amended
 	 *
-	 * @param string
+	 * @param amendAllowed
 	 */
-	public void setPreviousCommitMessage(String string) {
-		this.previousCommitMessage = string;
+	public void setAmendAllowed(boolean amendAllowed) {
+		this.amendAllowed = amendAllowed;
+	}
+
+	/**
+	 * @param selection
+	 */
+	public void setAmendingButtonSelection(boolean selection) {
+		amending = selection;
+		if (!selection) {
+			originalChangeId = null;
+			authorText.setText(author);
+		} else {
+			getHeadCommitInfo();
+			saveOriginalChangeId();
+			commitText.setText(previousCommitMessage);
+			if (previousAuthor != null)
+				authorText.setText(previousAuthor);
+		}
+		refreshChangeIdText();
 	}
 
 	/**
@@ -224,69 +285,75 @@ public class CommitMessageComponent {
 	/**
 	 *
 	 */
-	public void okPressed() {
+	public void updateStateFromUI() {
 		commitMessage = commitText.getCommitMessage();
 		author = authorText.getText().trim();
 		committer = committerText.getText().trim();
-		signedOff = signedOffButtonSelection;
-		// amending = amendingButton.getSelection();
+	}
 
-		if (commitMessage.trim().length() == 0) {
-			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoMessage, UIText.CommitDialog_ErrorMustEnterCommitMessage);
-			return;
-		}
+	/**
+	 *
+	 */
+	public void updateUIFromState() {
+		commitText.setText(commitMessage);
+		authorText.setText(author);
+		committerText.setText(committer);
+	}
 
-		boolean authorValid = false;
-		if (author.length() > 0) {
-			authorValid = RawParseUtils.parsePersonIdent(author) != null;
-		}
-		if (!authorValid) {
-			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidAuthorSpecified);
-			return;
-		}
+	/**
+	 * @return state
+	 */
+	public CommitMessageComponentState getState() {
+		updateStateFromUI();
+		CommitMessageComponentState state = new CommitMessageComponentState();
+		state.setAmend(isAmending());
+		state.setAuthor(getAuthor());
+		// store text with platform specific line endings
+		state.setCommitMessage(commitText.getText());
+		state.setCommitter(getCommitter());
+		state.setHeadCommit(getHeadCommit());
+		return state;
+	}
 
-		boolean committerValid = false;
-		if (committer.length() > 0) {
-			committerValid = RawParseUtils.parsePersonIdent(committer)!=null;
-		}
-		if (!committerValid) {
-			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidCommitterSpecified);
-			return;
-		}
-
-		authorHandler.updateProposals();
-		committerHandler.updateProposals();
+	/**
+	 * Disable listeners on commit message editor and committer text
+	 * to change data programmatically.
+	 * @param enable
+	 */
+	public void enableListers(boolean enable) {
+		this.listersEnabled = enable;
 	}
 
 	/**
 	 * @return true if commit info is ok
 	 */
 	public boolean checkCommitInfo() {
-		commitMessage = commitText.getCommitMessage();
-		author = authorText.getText().trim();
-		committer = committerText.getText().trim();
-		signedOff = signedOffButtonSelection;
+		updateStateFromUI();
 
 		if (commitMessage.trim().length() == 0) {
-			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoMessage, UIText.CommitDialog_ErrorMustEnterCommitMessage);
+			MessageDialog.openWarning(getShell(),
+					UIText.CommitDialog_ErrorNoMessage,
+					UIText.CommitDialog_ErrorMustEnterCommitMessage);
 			return false;
 		}
 
 		boolean authorValid = false;
-		if (author.length() > 0) {
+		if (author.length() > 0)
 			authorValid = RawParseUtils.parsePersonIdent(author) != null;
-		}
 		if (!authorValid) {
-			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidAuthorSpecified);
+			MessageDialog.openWarning(getShell(),
+					UIText.CommitDialog_ErrorInvalidAuthor,
+					UIText.CommitDialog_ErrorInvalidAuthorSpecified);
 			return false;
 		}
 
 		boolean committerValid = false;
-		if (committer.length() > 0) {
-			committerValid = RawParseUtils.parsePersonIdent(committer)!=null;
-		}
+		if (committer.length() > 0)
+			committerValid = RawParseUtils.parsePersonIdent(committer) != null;
 		if (!committerValid) {
-			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidCommitterSpecified);
+			MessageDialog.openWarning(getShell(),
+					UIText.CommitDialog_ErrorInvalidAuthor,
+					UIText.CommitDialog_ErrorInvalidCommitterSpecified);
 			return false;
 		}
 
@@ -295,14 +362,13 @@ public class CommitMessageComponent {
 		return true;
 	}
 
-
 	/**
 	 * @param commitText
 	 * @param authorText
 	 * @param committerText
 	 */
-	public void attachControls(SpellcheckableMessageArea commitText, Text authorText, Text committerText) {
-
+	public void attachControls(SpellcheckableMessageArea commitText,
+			Text authorText, Text committerText) {
 		this.commitText = commitText;
 		this.authorText = authorText;
 		this.committerText = committerText;
@@ -310,76 +376,93 @@ public class CommitMessageComponent {
 	}
 
 	private void addListeners() {
-		commitText.setText(calculateCommitMessage(new ArrayList<String>())); // TODO extract mylyn stuff to class?
-
-		// allow to commit with ctrl-enter
-		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
-			public void keyPressed(KeyEvent event) {
-				if (event.keyCode == SWT.CR
-						&& (event.stateMask & SWT.CONTROL) > 0) {
-					// okPressed(); TODO implement callback
-				} else if (event.keyCode == SWT.TAB
-						&& (event.stateMask & SWT.SHIFT) == 0) {
-					event.doit = false;
-					commitText.traverse(SWT.TRAVERSE_TAB_NEXT);
-				}
-			}
-		});
-
-		if (author != null)
-			authorText.setText(author);
-
-		authorHandler = UIUtils.addPreviousValuesContentProposalToText(authorText, AUTHOR_VALUES_PREF);
-		if (committer != null)
-			committerText.setText(committer);
+		authorHandler = UIUtils.addPreviousValuesContentProposalToText(
+				authorText, AUTHOR_VALUES_PREF);
 		committerText.addModifyListener(new ModifyListener() {
 			String oldCommitter = committerText.getText();
+
 			public void modifyText(ModifyEvent e) {
-				if (signedOffButtonSelection) {
+				if (!listersEnabled)
+					return;
+				if (signedOff) {
 					// the commit message is signed
 					// the signature must be updated
 					String newCommitter = committerText.getText();
 					String oldSignOff = getSignedOff(oldCommitter);
 					String newSignOff = getSignedOff(newCommitter);
-					commitText.setText(replaceSignOff(commitText.getText(), oldSignOff, newSignOff));
+					commitText.setText(replaceSignOff(commitText.getText(),
+							oldSignOff, newSignOff));
 					oldCommitter = newCommitter;
 				}
 			}
 		});
-
-		committerHandler = UIUtils.addPreviousValuesContentProposalToText(committerText, COMMITTER_VALUES_PREF);
-
-
-		if (amending) {
-			authorText.setText(previousAuthor);
-			saveOriginalChangeId();
-		}
-
-		if (!amending)
-			refreshSignedOffBy();
-
-		if (!amending)
-			refreshChangeIdText();
-
+		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
+				committerText, COMMITTER_VALUES_PREF);
 		commitText.getTextWidget().addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
+				if (!listersEnabled)
+					return;
 				updateSignedOffButton();
 				updateChangeIdButton();
 			}
 		});
-
-		updateSignedOffButton();
-		updateChangeIdButton();
-
 	}
 
 	/**
-	 *
+	 * Sets the defaults for change id and signed off
 	 */
-	public void updateFields() {
-		commitText.setText(commitMessage == null ? "": commitMessage);  // TODO mylyn stuff //$NON-NLS-1$
-		authorText.setText(author);
-		committerText.setText(committer);
+	public void setDefaults() {
+		createChangeId = repository.getConfig().getBoolean(
+				ConfigConstants.CONFIG_GERRIT_SECTION,
+				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false);
+		signedOff = org.eclipse.egit.ui.Activator.getDefault()
+		.getPreferenceStore()
+		.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
+	}
+
+	/**
+	 * Initial UI update
+	 */
+	public void updateUI() {
+		if (amending)
+			getHeadCommitInfo();
+
+		commitText.setText(calculateCommitMessage(filesToCommit));
+		authorText.setText(getSafeString(author));
+		committerText.setText(getSafeString(committer));
+		if (amending) {
+			authorText.setText(previousAuthor);
+			saveOriginalChangeId();
+		} else {
+			if (!amendAllowed) {
+				originalChangeId = null;
+			}
+			refreshSignedOffBy();
+			refreshChangeIdText();
+		}
+		updateSignedOffButton();
+		updateChangeIdButton();
+	}
+
+	/**
+	 * update signed off and change id button from the
+	 * commit message
+	 */
+	public void updateSignedOffAndChangeIdButton() {
+		updateSignedOffButton();
+		updateChangeIdButton();
+	}
+
+	private void getHeadCommitInfo() {
+		CommitInfo headCommitInfo = CommitHelper.getHeadCommitInfo(repository);
+		previousCommitMessage = headCommitInfo.getCommitMessage();
+		previousAuthor = headCommitInfo.getAuthor();
+	}
+
+	private String getSafeString(String string) {
+		if (string == null)
+			return EMPTY_STRING;
+		return string;
 	}
 
 	private Shell getShell() {
@@ -391,7 +474,7 @@ public class CommitMessageComponent {
 	 * @return the calculated commit message
 	 */
 	private String calculateCommitMessage(Collection<String> paths) {
-		if(commitMessage != null) {
+		if (commitMessage != null) {
 			// special case for merge
 			return commitMessage;
 		}
@@ -401,25 +484,26 @@ public class CommitMessageComponent {
 		String calculatedCommitMessage = null;
 
 		Set<IResource> resources = new HashSet<IResource>();
-		for (String path:paths) {
+		for (String path : paths) {
 			IFile file = findFile(path);
 			if (file != null)
 				resources.add(file.getProject());
 		}
 		try {
 			ICommitMessageProvider messageProvider = getCommitMessageProvider();
-			if(messageProvider != null) {
-				IResource[] resourcesArray = resources.toArray(new IResource[0]);
-				calculatedCommitMessage = messageProvider.getMessage(resourcesArray);
+			if (messageProvider != null) {
+				IResource[] resourcesArray = resources
+						.toArray(new IResource[0]);
+				calculatedCommitMessage = messageProvider
+						.getMessage(resourcesArray);
 			}
 		} catch (CoreException coreException) {
-			Activator.error(coreException.getLocalizedMessage(),
-					coreException);
+			Activator.error(coreException.getLocalizedMessage(), coreException);
 		}
 		if (calculatedCommitMessage != null)
 			return calculatedCommitMessage;
 		else
-			return ""; //$NON-NLS-1$
+			return EMPTY_STRING;
 	}
 
 	private ICommitMessageProvider getCommitMessageProvider()
@@ -433,7 +517,8 @@ public class CommitMessageComponent {
 			if (provider instanceof ICommitMessageProvider) {
 				return (ICommitMessageProvider) provider;
 			} else {
-				Activator.logError(UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
+				Activator.logError(
+						UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
 						null);
 			}
 		}
@@ -443,12 +528,14 @@ public class CommitMessageComponent {
 	private void saveOriginalChangeId() {
 		int changeIdOffset = findOffsetOfChangeIdLine(previousCommitMessage);
 		if (changeIdOffset > 0) {
-			int endOfChangeId = findNextEOL(changeIdOffset, previousCommitMessage);
+			int endOfChangeId = findNextEOL(changeIdOffset,
+					previousCommitMessage);
 			if (endOfChangeId < 0)
-				endOfChangeId = previousCommitMessage.length()-1;
-			int sha1Offset = changeIdOffset + "\nChange-Id: I".length(); //$NON-NLS-1$
+				endOfChangeId = previousCommitMessage.length() - 1;
+			int sha1Offset = changeIdOffset + Text.DELIMITER.length() + "Change-Id: I".length(); //$NON-NLS-1$
 			try {
-				originalChangeId = ObjectId.fromString(previousCommitMessage.substring(sha1Offset, endOfChangeId));
+				originalChangeId = ObjectId.fromString(previousCommitMessage
+						.substring(sha1Offset, endOfChangeId));
 			} catch (IllegalArgumentException e) {
 				originalChangeId = null;
 			}
@@ -457,11 +544,11 @@ public class CommitMessageComponent {
 	}
 
 	private int findNextEOL(int oldPos, String message) {
-		return message.indexOf("\n", oldPos + 1); //$NON-NLS-1$
+		return message.indexOf(Text.DELIMITER, oldPos + 1);
 	}
 
 	private int findOffsetOfChangeIdLine(String message) {
-		return message.indexOf("\nChange-Id: I"); //$NON-NLS-1$
+		return message.indexOf(Text.DELIMITER + "Change-Id: I"); //$NON-NLS-1$
 	}
 
 	private void updateChangeIdButton() {
@@ -469,30 +556,29 @@ public class CommitMessageComponent {
 		if (!curText.endsWith(Text.DELIMITER))
 			curText += Text.DELIMITER;
 
-		boolean hasId = curText.indexOf(Text.DELIMITER + "Change-Id: ") != -1; //$NON-NLS-1$
-		if (hasId) {
-			listener.updateChangeIdToggleSelection(true);
-			createChangeId = true;
-		}
+		createChangeId = curText.indexOf(Text.DELIMITER + "Change-Id: ") != -1; //$NON-NLS-1$
+		listener.updateChangeIdToggleSelection(createChangeId);
 	}
 
 	private void refreshChangeIdText() {
-		createChangeId = changeIdButtonSelection;
-		String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
 		if (createChangeId) {
-			String changedText = ChangeIdUtil.insertId(text,
-					originalChangeId != null ? originalChangeId : ObjectId.zeroId(), true);
+			// ChangeIdUtil uses \n line endings
+			String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
+			String changedText = ChangeIdUtil.insertId(
+					text,
+					originalChangeId != null ? originalChangeId : ObjectId
+							.zeroId(), true);
 			if (!text.equals(changedText)) {
 				changedText = changedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
 				commitText.setText(changedText);
 			}
 		} else {
+			String text = commitText.getText();
 			int changeIdOffset = findOffsetOfChangeIdLine(text);
 			if (changeIdOffset > 0) {
 				int endOfChangeId = findNextEOL(changeIdOffset, text);
 				String cleanedText = text.substring(0, changeIdOffset)
 						+ text.substring(endOfChangeId);
-				cleanedText = cleanedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
 				commitText.setText(cleanedText);
 			}
 		}
@@ -524,32 +610,34 @@ public class CommitMessageComponent {
 
 		// remove last line break if exist
 		int lastIndexOfLineBreak = output.lastIndexOf(Text.DELIMITER);
-		if (lastIndexOfLineBreak != -1 && lastIndexOfLineBreak == output.length() - breakLength)
+		if (lastIndexOfLineBreak != -1
+				&& lastIndexOfLineBreak == output.length() - breakLength)
 			output = output.substring(0, output.length() - breakLength);
 
 		// get the last line
 		lastIndexOfLineBreak = output.lastIndexOf(Text.DELIMITER);
-		return lastIndexOfLineBreak == -1 ? output : output.substring(lastIndexOfLineBreak + breakLength, output.length());
+		return lastIndexOfLineBreak == -1 ? output : output.substring(
+				lastIndexOfLineBreak + breakLength, output.length());
 	}
 
 	private void updateSignedOffButton() {
 		String curText = commitText.getText();
 		if (!curText.endsWith(Text.DELIMITER))
 			curText += Text.DELIMITER;
-
-		listener.updateSignedOffToggleSelection(curText.indexOf(getSignedOff() + Text.DELIMITER) != -1);
+		signedOff = curText.indexOf(getSignedOff() + Text.DELIMITER) != -1;
+		listener.updateSignedOffToggleSelection(signedOff);
 	}
 
 	private void refreshSignedOffBy() {
 		String curText = commitText.getText();
-		if (signedOffButtonSelection) {
+		if (signedOff)
 			// add signed off line
 			commitText.setText(signOff(curText));
-		} else {
+		else {
 			// remove signed off line
 			String s = getSignedOff();
 			if (s != null) {
-				curText = replaceSignOff(curText, s, ""); //$NON-NLS-1$
+				curText = replaceSignOff(curText, s, EMPTY_STRING);
 				if (curText.endsWith(Text.DELIMITER + Text.DELIMITER))
 					curText = curText.substring(0, curText.length()
 							- Text.DELIMITER.length());
@@ -558,7 +646,8 @@ public class CommitMessageComponent {
 		}
 	}
 
-	private String replaceSignOff(String input, String oldSignOff, String newSignOff) {
+	private String replaceSignOff(String input, String oldSignOff,
+			String newSignOff) {
 		assert input != null;
 		assert oldSignOff != null;
 		assert newSignOff != null;
@@ -571,7 +660,10 @@ public class CommitMessageComponent {
 		if (indexOfSignOff == -1)
 			return input;
 
-		return input.substring(0, indexOfSignOff) + newSignOff + input.substring(indexOfSignOff + oldSignOff.length(), input.length());
+		return input.substring(0, indexOfSignOff)
+				+ newSignOff
+				+ input.substring(indexOfSignOff + oldSignOff.length(),
+						input.length());
 	}
 
 	// TODO: move to utils
@@ -589,26 +681,8 @@ public class CommitMessageComponent {
 	 * @param signedOffButtonSelection
 	 */
 	public void setSignedOffButtonSelection(boolean signedOffButtonSelection) {
-		this.signedOffButtonSelection = signedOffButtonSelection;
+		signedOff = signedOffButtonSelection;
 		refreshSignedOffBy();
-	}
-
-	/**
-	 * @param selection
-	 */
-	public void setAmendingButtonSelection(boolean selection) {
-		if (!selection) {
-			originalChangeId = null;
-			authorText.setText(author);
-		}
-		else {
-			saveOriginalChangeId();
-			commitText.setText(previousCommitMessage.replaceAll(
-						"\n", Text.DELIMITER)); //$NON-NLS-1$
-			if (previousAuthor != null)
-				authorText.setText(previousAuthor);
-		}
-		refreshChangeIdText();
 	}
 
 	/**
@@ -616,8 +690,36 @@ public class CommitMessageComponent {
 	 *
 	 */
 	public void setChangeIdButtonSelection(boolean selection) {
-		changeIdButtonSelection = selection;
+		createChangeId = selection;
 		refreshChangeIdText();
+	}
+
+	/**
+	 * @param repository
+	 */
+	public void setRepository(Repository repository) {
+		this.repository = repository;
+	}
+
+	/**
+	 * @return repository
+	 */
+	public Repository getRepository() {
+		return repository;
+	}
+
+	/**
+	 * @param id the id of the current head commit
+	 */
+	public void setHeadCommit(ObjectId id) {
+		headCommitId = id;
+	}
+
+	/**
+	 * @return head commit
+	 */
+	public ObjectId getHeadCommit() {
+		return headCommitId;
 	}
 
 }

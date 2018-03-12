@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
+import java.io.File;
+
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetLabelProvider;
@@ -71,7 +73,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 
 		store.setDefault(UIPreferences.REFESH_ON_INDEX_CHANGE, true);
 		store.setDefault(UIPreferences.REFESH_ONLY_WHEN_ACTIVE, true);
-		store.setDefault(UIPreferences.DEFAULT_REPO_DIR, FS.DETECTED.userHome().getPath());
+		store.setDefault(UIPreferences.DEFAULT_REPO_DIR, new File(FS.DETECTED.userHome(), "git").getPath()); //$NON-NLS-1$
 		store.setDefault(UIPreferences.SHOW_REBASE_CONFIRM, true);
 		store.setDefault(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, true);
 		store.setDefault(UIPreferences.SHOW_HOME_DIR_WARNING, true);
@@ -87,6 +89,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 				GitChangeSetLabelProvider.DEFAULT_DATE_FORMAT);
 		store.setDefault(UIPreferences.HISTORY_MAX_NUM_COMMITS, 10000);
 		store.setDefault(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, false);
+		store.setDefault(UIPreferences.BLAME_IGNORE_WHITESPACE, false);
 	}
 
 }
