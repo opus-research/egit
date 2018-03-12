@@ -17,16 +17,15 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.NoWorkTreeException;
 import org.eclipse.jgit.junit.RepositoryTestCase;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SubmoduleAndContainerTreeIteratorTest {
@@ -46,7 +45,7 @@ public class SubmoduleAndContainerTreeIteratorTest {
 
 	private IFile parentFile;
 
-	private AdaptableFileTreeIterator treeIt;
+	private FileTreeIterator treeIt;
 
 	@Before
 	public void setUp() throws Exception {
@@ -79,9 +78,7 @@ public class SubmoduleAndContainerTreeIteratorTest {
 		parentRepository.trackAllFiles(parentProject);
 		parentRepository.commit("Initial commit");
 
-		treeIt = new AdaptableFileTreeIterator(
-				parentRepository.getRepository(), parentFile.getWorkspace()
-						.getRoot());
+		treeIt = new FileTreeIterator(parentRepository.getRepository());
 	}
 
 	@After
@@ -94,10 +91,8 @@ public class SubmoduleAndContainerTreeIteratorTest {
 		testUtils.deleteTempDirs();
 	}
 
-	@Ignore("See last comments on https://git.eclipse.org/r/50372/")
 	@Test
-	public void testCleanStateAfterInit()
-			throws NoWorkTreeException,
+	public void testCleanStateAfterInit() throws NoWorkTreeException,
 			GitAPIException {
 		Git parentGit = Git.wrap(parentRepository.getRepository());
 
@@ -105,7 +100,6 @@ public class SubmoduleAndContainerTreeIteratorTest {
 		assertTrue(status.isClean());
 	}
 
-	@Ignore("See last comments on https://git.eclipse.org/r/50372/")
 	@Test
 	public void testCleanStateFirstCommit() throws NoWorkTreeException,
 			GitAPIException, IOException, CoreException, InterruptedException {

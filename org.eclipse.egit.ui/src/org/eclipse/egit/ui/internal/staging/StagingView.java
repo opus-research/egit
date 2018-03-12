@@ -76,8 +76,8 @@ import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitJob;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
+import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
-import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageArea;
@@ -89,8 +89,6 @@ import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IAction;
@@ -140,6 +138,8 @@ import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -1060,6 +1060,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 			@Override
 			public void updateChangeIdToggleSelection(boolean selection) {
 				addChangeIdAction.setChecked(selection);
+				commitAndPushButton
+						.setImage(selection ? getImage(UIIcons.GERRIT) : null);
 			}
 
 			@Override
@@ -2005,8 +2007,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 					openWorkingTreeVersion.setEnabled(!submoduleSelected
 							&& anyElementIsExistingFile(fileSelection));
 					menuMgr.add(openWorkingTreeVersion);
-					String label = stagingEntryList.get(0)
-							.staged() != Staged.NOT_STAGED
+					String label = stagingEntryList.get(0).isStaged()
 									? UIText.CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel
 									: UIText.StagingView_CompareWithIndexMenuLabel;
 					Action openCompareWithIndex = new Action(label) {
@@ -2412,7 +2413,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 		} else {
 			IResource resource = AdapterUtils.adapt(firstElement,
 					IResource.class);
-			showResource(resource);
+			if (resource != null) {
+				showResource(resource);
+			} else {
+				Repository repo = AdapterUtils.adapt(firstElement,
+						Repository.class);
+				if (repo != null && currentRepository != repo) {
+					reload(repo);
+				}
+			}
 		}
 	}
 
@@ -3200,10 +3209,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 		if (amendPreviousCommitAction.isChecked())
 			commitOperation.setAmending(true);
-		commitOperation.setComputeChangeId(addChangeIdAction.isChecked());
+		final boolean gerritMode = addChangeIdAction.isChecked();
+		commitOperation.setComputeChangeId(gerritMode);
+
+		PushMode pushMode = null;
+		if (pushUpstream) {
+			pushMode = gerritMode ? PushMode.GERRIT : PushMode.UPSTREAM;
+		}
 		final Job commitJob = new CommitJob(currentRepository, commitOperation)
-			.setOpenCommitEditor(openNewCommitsAction.isChecked())
-			.setPushUpstream(pushUpstream);
+				.setOpenCommitEditor(openNewCommitsAction.isChecked())
+				.setPushUpstream(pushMode);
 
 		// don't allow to do anything as long as commit is in progress
 		enableAllWidgets(false);

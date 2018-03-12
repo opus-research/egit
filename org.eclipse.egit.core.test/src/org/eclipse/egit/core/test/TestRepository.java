@@ -3,7 +3,6 @@
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
- * Copyright (C) 2015, Obeo
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -363,19 +362,6 @@ public class TestRepository {
 	}
 
 	/**
-	 * Removes the given resource form the index.
-	 *
-	 * @param file
-	 * @throws NoFilepatternException
-	 * @throws GitAPIException
-	 */
-	public void rm(File file) throws NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(new Path(file.getPath())
-				.toString());
-		new Git(repository).rm().addFilepattern(repoPath).call();
-	}
-
-	/**
 	 * Appends content to end of given file.
 	 *
 	 * @param file
@@ -518,12 +504,13 @@ public class TestRepository {
 	 * Connect a project to this repository
 	 *
 	 * @param project
-	 * @throws CoreException
+	 * @throws Exception
 	 */
-	public void connect(IProject project) throws CoreException {
+	public void connect(IProject project) throws Exception {
 		ConnectProviderOperation op = new ConnectProviderOperation(project,
 				this.getRepository().getDirectory());
 		op.execute(null);
+		TestUtils.waitForJobs(50, 5000, null);
 	}
 
 	/**

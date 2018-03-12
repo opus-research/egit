@@ -84,27 +84,6 @@
                menubarPath="compareWithMenu/gitCompareWithGroup2">
          </action>
          <action
-               class="org.eclipse.egit.ui.internal.actions.IgnoreAction"
-               definitionId="org.eclipse.egit.ui.team.Ignore"
-               icon="$nl$/icons/obj16/ignore.gif"
-               id="org.eclipse.egit.ui.internal.actions.IgnoreAction"
-               label="%IgnoreAction_label"
-               menubarPath="team.main/group8"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.RemoveFromIndexAction"
-               definitionId="org.eclipse.egit.ui.team.RemoveFromIndex"
-               icon="$nl$/icons/obj16/unstage.gif"
-               id="org.eclipse.egit.ui.internal.actions.RemoveFromIndexAction"
-               label="%RemoveFromIndexAction_label"
-               menubarPath="team.main/group8"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
-               definitionId="org.eclipse.egit.ui.team.AddToIndex"
-               icon="$nl$/icons/obj16/add.gif"
-               id="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
-               label="%AddToIndexAction_label"
-               menubarPath="team.main/group8"/>
-         <action
                class="org.eclipse.egit.ui.internal.actions.ReplaceWithPreviousAction"
                enablesFor="1"
                id="org.eclipse.egit.ui.internal.actions.ReplaceWithPreviousAction"
@@ -186,11 +165,22 @@
             </adapter>
          </factory>
          <factory
-	       adaptableType="org.eclipse.core.resources.IResource"
+               adaptableType="org.eclipse.core.resources.IResource"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
                   type="org.eclipse.team.ui.history.IHistoryPageSource">
             </adapter>
+         </factory>
+         <factory
+               adaptableType="org.eclipse.ui.IWorkingSet"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter type="org.eclipse.team.ui.history.IHistoryPageSource" />
+            <adapter type="org.eclipse.jgit.lib.Repository" />
+         </factory>
+         <factory
+               adaptableType="org.eclipse.resources.mapping.ResourceMapping"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter type="org.eclipse.jgit.lib.Repository" />
          </factory>
          <factory
                adaptableType="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode"
@@ -800,6 +790,17 @@
            toolbarPath="org.eclipse.egit.ui"
            tooltip="%PullIntoCurrentBranch.tooltip">
          </action>
+         <action
+           class="org.eclipse.egit.ui.internal.actions.PullWithOptionsAction"
+           definitionId="org.eclipse.egit.ui.team.PullWithOptions"
+           icon="icons/obj16/pull_with_options.png"
+           id="org.eclipse.egit.ui.actionpullwithoptions"
+           label="%PullWithOptions.name"
+           menubarPath="org.eclipse.egit.ui.gitmenu/repo"
+           style="push"
+           toolbarPath="org.eclipse.egit.ui"
+           tooltip="%PullWithOptions.tooltip">
+         </action>
 		 <action
            class="org.eclipse.egit.ui.internal.actions.SimpleFetchAction"
            definitionId="org.eclipse.egit.ui.team.SimpleFetch"
@@ -949,6 +950,11 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.Pull"
             name="%TeamPullCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.PullWithOptions"
+            name="%PullWithOptions.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -1202,6 +1208,36 @@
                         value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
                   </instanceof>
                </iterate>
+            </or>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.PullWithOptions">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.PullWithOptionsActionHandler">
+         </class>
+        <activeWhen>
+            <or>
+               <reference
+                     definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
+               </reference>
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
+                        </instanceof>
+                        <not>
+                           <test
+                                 property="GitRepository.isBare">
+                           </test>
+                        </not>
+                     </and>
+                  </iterate>
+               </and>
             </or>
          </activeWhen>
       </handler>
@@ -3157,6 +3193,30 @@
                </and>
             </visibleWhen>
          </command>
+         <command
+               commandId="org.eclipse.egit.ui.team.PullWithOptions"
+               icon="icons/obj16/pull.png"
+               label="%PullWithOptions.name"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <test
+                              property="GitRepository.canMerge">
+                        </test>
+                     </and>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
          <menu
                label="%RemoteSubMenu.label">
             <command
@@ -3883,6 +3943,17 @@
                   </test>
                </visibleWhen>
             </command>
+            <command
+                  commandId="org.eclipse.egit.ui.team.PullWithOptions"
+                  label="%PullWithOptions.name"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="false">
+                  <test
+                        property="GitSelection.projectsSingleRepository">
+                  </test>
+               </visibleWhen>
+            </command>
             <separator
                   name="org.eclipse.egit.ui.remoteSeparator"
                   visible="true">
@@ -4388,6 +4459,43 @@
                      </or>
                   </iterate>
                </and>
+            </visibleWhen>
+         </command>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="popup:team.main?after=group8">
+         <command
+               commandId="org.eclipse.egit.ui.team.AddToIndex"
+               label="%AddToIndexAction_label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <test
+                     property="org.eclipse.egit.ui.resources.ResourceState.hasUnstagedChanges">
+               </test>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.team.RemoveFromIndex"
+               label="%RemoveFromIndexAction_label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <test
+                     property="org.eclipse.egit.ui.resources.ResourceState.hasStagedChanges">
+               </test>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.team.Ignore"
+               label="%IgnoreAction_label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <test
+                     property="org.eclipse.egit.ui.resources.ResourceState.hasNotIgnoredResources">
+               </test>
             </visibleWhen>
          </command>
       </menuContribution>
@@ -5073,6 +5181,10 @@
             icon="icons/obj16/add.gif">
       </image>
       <image
+            commandId="org.eclipse.egit.ui.team.RemoveFromIndex"
+            icon="icons/obj16/unstage.gif">
+      </image>
+      <image
             commandId="org.eclipse.egit.ui.team.Branch"
             icon="icons/obj16/branch_obj.gif">
       </image>
@@ -5106,6 +5218,10 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Pull"
+            icon="icons/obj16/pull.png">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.PullWithOptions"
             icon="icons/obj16/pull.png">
       </image>
       <image
@@ -5226,6 +5342,13 @@
             id="org.eclipse.egit.ui.SelectionTester"
             namespace="GitSelection"
             properties="projectsSingleRepository,projectsWithRepositories,resourcesSingleRepository,fileOrFolderInRepository,resourcesAllInRepository"
+            type="java.util.Collection">
+      </propertyTester>
+      <propertyTester
+            class="org.eclipse.egit.ui.internal.resources.ResourceStatePropertyTester"
+            id="org.eclipse.egit.ui.ResourceStateTester"
+            namespace="org.eclipse.egit.ui.resources.ResourceState"
+            properties="hasStagedChanges,hasUnstagedChanges,hasNotIgnoredResources"
             type="java.util.Collection">
       </propertyTester>
    </extension>
@@ -6028,5 +6151,15 @@
            </iterate>
         </with>
      </definition>
+  </extension>
+  <extension
+        point="org.eclipse.ui.services">
+     <sourceProvider
+           provider="org.eclipse.egit.ui.internal.selection.RepositorySourceProvider">
+        <variable
+              name="org.eclipse.egit.ui.currentRepository"
+              priorityLevel="activeWorkbenchWindow">
+        </variable>
+     </sourceProvider>
   </extension>
 </plugin>

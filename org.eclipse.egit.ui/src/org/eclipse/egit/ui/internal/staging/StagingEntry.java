@@ -276,20 +276,35 @@ public class StagingEntry extends PlatformObject
 	}
 
 	@Override
-	public Staged staged() {
+	public boolean isMissing() {
+		return state == State.MISSING || state == State.MISSING_AND_CHANGED;
+	}
+
+	@Override
+	public boolean hasUnstagedChanges() {
+		return !isTracked() || isDirty() || isMissing() || hasConflicts();
+	}
+
+	@Override
+	public StagingState getStagingState() {
 		switch (state) {
 		case ADDED:
-			return Staged.ADDED;
+			return StagingState.ADDED;
 		case CHANGED:
-			return Staged.MODIFIED;
+			return StagingState.MODIFIED;
 		case REMOVED:
-			return Staged.REMOVED;
+			return StagingState.REMOVED;
 		case MISSING:
 		case MISSING_AND_CHANGED:
-			return Staged.REMOVED;
+			return StagingState.REMOVED;
 		default:
-			return Staged.NOT_STAGED;
+			return StagingState.NOT_STAGED;
 		}
+	}
+
+	@Override
+	public boolean isStaged() {
+		return getStagingState() != StagingState.NOT_STAGED;
 	}
 
 	@Override
@@ -298,7 +313,7 @@ public class StagingEntry extends PlatformObject
 	}
 
 	@Override
-	public boolean isAssumeValid() {
+	public boolean isAssumeUnchanged() {
 		return false;
 	}
 

@@ -248,12 +248,24 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	 * @since 4.1
 	 */
 	public MergeStrategy getPreferredMergeStrategy() {
+		// Get preferences set by user in the UI
 		final IEclipsePreferences prefs = InstanceScope.INSTANCE
 				.getNode(Activator.getPluginId());
 		String preferredMergeStrategyKey = prefs.get(
 				GitCorePreferences.core_preferredMergeStrategy, null);
+
+		// Get default preferences, wherever they are defined
+		if (preferredMergeStrategyKey == null
+				|| preferredMergeStrategyKey.isEmpty()) {
+			final IEclipsePreferences defaultPrefs = DefaultScope.INSTANCE
+					.getNode(Activator.getPluginId());
+			preferredMergeStrategyKey = defaultPrefs.get(
+					GitCorePreferences.core_preferredMergeStrategy, null);
+		}
 		if (preferredMergeStrategyKey != null
-				&& !preferredMergeStrategyKey.isEmpty()) {
+				&& !preferredMergeStrategyKey.isEmpty()
+				&& !GitCorePreferences.core_preferredMergeStrategy_Default
+						.equals(preferredMergeStrategyKey)) {
 			MergeStrategy result = MergeStrategy.get(preferredMergeStrategyKey);
 			if (result != null) {
 				return result;
@@ -312,6 +324,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	@Override
 	public void stop(final BundleContext context) throws Exception {
 		GitProjectData.detachFromWorkspace();
+		repositoryCache.dispose();
 		repositoryCache = null;
 		indexDiffCache.dispose();
 		indexDiffCache = null;
@@ -406,7 +419,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			if (resource.getType() != IResource.PROJECT) {
 				return false;
 			}
-			if (!resource.isAccessible()) {
+			if (!resource.isAccessible() || resource.getLocation() == null) {
 				return false;
 			}
 			projects.add((IProject) resource);

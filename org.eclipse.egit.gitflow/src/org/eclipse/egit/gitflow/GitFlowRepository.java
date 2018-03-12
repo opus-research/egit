@@ -85,7 +85,7 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public Ref findBranch(String branchName) throws IOException {
-		return repository.getRef(R_HEADS + branchName);
+		return repository.exactRef(R_HEADS + branchName);
 	}
 
 	/**
@@ -257,7 +257,7 @@ public class GitFlowRepository {
 			throws MissingObjectException, IncorrectObjectTypeException,
 			IOException {
 		try (RevWalk revWalk = new RevWalk(repository)) {
-			Ref tagRef = repository.getRef(R_TAGS + tagName);
+			Ref tagRef = repository.exactRef(R_TAGS + tagName);
 			if (tagRef == null) {
 				return null;
 			}
@@ -296,5 +296,35 @@ public class GitFlowRepository {
 	 */
 	public GitFlowConfig getConfig() {
 		return this.config;
+	}
+
+	/**
+	 * Check if the given commit is an ancestor of the current HEAD on the
+	 * develop branch.
+	 *
+	 * @param selectedCommit
+	 * @return Whether or not the selected commit is on the develop branch.
+	 * @throws IOException
+	 * @since 4.3
+	 */
+	public boolean isOnDevelop(@NonNull RevCommit selectedCommit) throws IOException {
+		String develop = config.getDevelopFull();
+		return isOnBranch(selectedCommit, develop);
+	}
+
+	private boolean isOnBranch(RevCommit commit, String fullBranch)
+			throws IOException {
+		Ref branchRef = repository.exactRef(fullBranch);
+		if (branchRef == null) {
+			return false;
+		}
+		try {
+			List<Ref> list = Git.wrap(repository).branchList().setContains(commit.name()).call();
+
+			return list.contains(branchRef);
+		} catch (GitAPIException e) {
+			// ListBranchCommand can only throw a wrapped IOException
+			throw new IOException(e);
+		}
 	}
 }
