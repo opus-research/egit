@@ -11,7 +11,6 @@ package org.eclipse.egit.ui.internal.history.command;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -21,7 +20,6 @@ import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.IWizard;
 import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
@@ -37,33 +35,14 @@ public class CreateBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 		Repository repo = getRepository(event);
 
 		IWizard wiz = null;
-		List<Ref> branches = getBranches(page, repo);
+		List<Ref> branches = getBranchesExcludingCurrent(page, repo);
 
 		if (branches.isEmpty()) {
 			PlotCommit commit = (PlotCommit) getSelection(page)
 					.getFirstElement();
 			wiz = new CreateBranchWizard(repo, commit.name());
 		} else {
-			// prefer to create new branch based on a remote tracking branch
-			Collections.sort(branches, new Comparator<Ref>() {
-
-				public int compare(Ref o1, Ref o2) {
-					String refName1 = o1.getName();
-					String refName2 = o2.getName();
-					if (refName1.startsWith(Constants.R_REMOTES)) {
-						if (refName2.startsWith(Constants.R_HEADS))
-							return -1;
-						else
-							return refName1.compareTo(refName2);
-					} else {
-						if (refName2.startsWith(Constants.R_REMOTES))
-							return 1;
-						else
-							return refName1.compareTo(refName2);
-					}
-				}
-			});
-			Ref branch = branches.get(0).getLeaf();
+			Ref branch = branches.get(0);
 			wiz = new CreateBranchWizard(repo, branch.getName());
 		}
 
@@ -74,10 +53,10 @@ public class CreateBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 		return null;
 	}
 
-	private List<Ref> getBranches(GitHistoryPage page,
+	private List<Ref> getBranchesExcludingCurrent(GitHistoryPage page,
 			Repository repo) {
 		try {
-			return getBranchesOfCommit(page, repo, false);
+			return getBranchesOfCommit(page, repo, true);
 		} catch (IOException e) {
 			// ignore, use commit name
 			return Collections.<Ref> emptyList();
