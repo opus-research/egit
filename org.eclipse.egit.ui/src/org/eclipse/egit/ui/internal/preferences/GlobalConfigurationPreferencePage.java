@@ -86,7 +86,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				SWTUtils.MARGINS_NONE);
 		TabFolder tabFolder = new TabFolder(composite, SWT.NONE);
 		tabFolder.setLayoutData(SWTUtils.createHVFillGridData());
-		userConfigEditor = new ConfigurationEditorComponent(tabFolder, userConfig, true, false) {
+		userConfigEditor = new ConfigurationEditorComponent(tabFolder, userConfig, true) {
 			@Override
 			protected void setErrorMessage(String message) {
 				GlobalConfigurationPreferencePage.this.setErrorMessage(message);
@@ -98,7 +98,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				updateApplyButton();
 			}
 		};
-		sysConfigEditor = new ConfigurationEditorComponent(tabFolder, sysConfig, true, true) {
+		sysConfigEditor = new ConfigurationEditorComponent(tabFolder, sysConfig, true) {
 			@Override
 			protected void setErrorMessage(String message) {
 				GlobalConfigurationPreferencePage.this.setErrorMessage(message);
@@ -109,14 +109,6 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				sysIsDirty = dirty;
 				updateApplyButton();
 			}
-			@Override
-			protected void setChangeSystemPrefix(String prefix) throws IOException {
-				FS.DETECTED.setGitPrefix(new File(prefix));
-				sysConfig = SystemReader.getInstance().openSystemConfig(null,
-						FS.DETECTED);
-				setConfig(sysConfig);
-			}
-
 		};
 		Control result = userConfigEditor.createContents();
 		Dialog.applyDialogFont(result);
@@ -295,7 +287,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 		} else {
 			repositoryConfig = repository.getConfig();
 		}
-		ConfigurationEditorComponent editorComponent = new ConfigurationEditorComponent(repoConfigComposite, repositoryConfig, true, false) {
+		ConfigurationEditorComponent editorComponent = new ConfigurationEditorComponent(repoConfigComposite, repositoryConfig, true) {
 			@Override
 			protected void setErrorMessage(String message) {
 				GlobalConfigurationPreferencePage.this.setErrorMessage(message);
