@@ -357,14 +357,6 @@ public class IndexDiffCacheEntry {
 			return;
 		if (reloadJob != null && reloadJobIsInitializing)
 			return;
-
-		if (filesToUpdate.size() > RESOURCE_LIST_UPDATE_LIMIT) {
-			// Calculate new IndexDiff if too many resources changed
-			// This happens e.g. when a project is opened
-			scheduleReloadJob("Too many resources changed"); //$NON-NLS-1$
-			return;
-		}
-
 		if (updateJob != null) {
 			updateJob.addChanges(filesToUpdate, resourcesToUpdate);
 			return;
@@ -374,19 +366,7 @@ public class IndexDiffCacheEntry {
 			protected IStatus updateIndexDiff(Collection<String> files,
 					Collection<IResource> resources,
 					IProgressMonitor monitor) {
-				if (monitor.isCanceled())
-					return Status.CANCEL_STATUS;
-
-				// second check here is required because we collect changes
-				if (files.size() > RESOURCE_LIST_UPDATE_LIMIT) {
-					// Calculate new IndexDiff if too many resources changed
-					// This happens e.g. when a project is opened
-					scheduleReloadJob("Too many resources changed"); //$NON-NLS-1$
-					return Status.CANCEL_STATUS;
-				}
-
 				waitForWorkspaceLock(monitor);
-
 				if (monitor.isCanceled())
 					return Status.CANCEL_STATUS;
 				lock.lock();
@@ -534,8 +514,12 @@ public class IndexDiffCacheEntry {
 				else if (indexDiffData == null)
 					scheduleReloadJob("Resource changed, no diff available"); //$NON-NLS-1$
 				else if (!filesToUpdate.isEmpty())
-					scheduleUpdateJob(filesToUpdate,
-							visitor.getResourcesToUpdate());
+					if (filesToUpdate.size() < RESOURCE_LIST_UPDATE_LIMIT)
+						scheduleUpdateJob(filesToUpdate, visitor.getResourcesToUpdate());
+					else
+						// Calculate new IndexDiff if too many resources changed
+						// This happens e.g. when a project is opened
+						scheduleReloadJob("Too many resources changed"); //$NON-NLS-1$
 			}
 
 		};
