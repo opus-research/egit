@@ -82,26 +82,15 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 	private static final String[] DEFAULT_SCHEMES;
 
-	private static final String[] SCHEME_TOOLTIPS;
-
 	static {
 		DEFAULT_SCHEMES = new String[7];
 		DEFAULT_SCHEMES[S_GIT] = "git"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_SSH] = "ssh"; //$NON-NLS-1$
+		DEFAULT_SCHEMES[S_SSH] = "git+ssh"; //$NON-NLS-1$
 		DEFAULT_SCHEMES[S_SFTP] = "sftp"; //$NON-NLS-1$
 		DEFAULT_SCHEMES[S_HTTP] = "http"; //$NON-NLS-1$
 		DEFAULT_SCHEMES[S_HTTPS] = "https"; //$NON-NLS-1$
 		DEFAULT_SCHEMES[S_FTP] = "ftp"; //$NON-NLS-1$
 		DEFAULT_SCHEMES[S_FILE] = "file"; //$NON-NLS-1$
-
-		SCHEME_TOOLTIPS = new String[7];
-		SCHEME_TOOLTIPS[S_GIT] = UIText.RepositorySelectionPage_tt_git;
-		SCHEME_TOOLTIPS[S_SSH] = UIText.RepositorySelectionPage_tt_ssh;
-		SCHEME_TOOLTIPS[S_SFTP] = UIText.RepositorySelectionPage_tt_sftp;
-		SCHEME_TOOLTIPS[S_HTTP] = UIText.RepositorySelectionPage_tt_http;
-		SCHEME_TOOLTIPS[S_HTTPS] = UIText.RepositorySelectionPage_tt_https;
-		SCHEME_TOOLTIPS[S_FTP] = UIText.RepositorySelectionPage_tt_ftp;
-		SCHEME_TOOLTIPS[S_FILE] = UIText.RepositorySelectionPage_tt_file;
 	}
 
 	private final List<RemoteConfig> configuredRemotes;
@@ -189,7 +178,8 @@ public class RepositorySelectionPage extends BaseWizardPage {
 					URIish u = new URIish(text);
 					if (Transport.canHandleProtocol(u, FS.DETECTED)) {
 						String s = u.getScheme();
-						if (s.equals(DEFAULT_SCHEMES[S_GIT])
+						// s may be null if an existing local directory was in text
+						if (s != null && s.equals(DEFAULT_SCHEMES[S_GIT])
 								|| s.equals(DEFAULT_SCHEMES[S_SSH])
 								|| text.endsWith(Constants.DOT_GIT))
 							preset = text;
@@ -336,8 +326,10 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		newLabel(g, UIText.RepositorySelectionPage_promptURI + ":"); //$NON-NLS-1$
 		uriText = new Text(g, SWT.BORDER);
 
-		if (presetUri != null)
+		if (presetUri != null) {
 			uriText.setText(presetUri);
+			uriText.selectAll();
+		}
 
 		uriText.setLayoutData(createFieldGridData());
 		uriText.addModifyListener(new ModifyListener() {
@@ -431,13 +423,10 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		scheme.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(final SelectionEvent e) {
 				final int idx = scheme.getSelectionIndex();
-				if (idx < 0) {
+				if (idx < 0)
 					setURI(uri.setScheme(null));
-					scheme.setToolTipText(""); //$NON-NLS-1$
-				} else {
+				else
 					setURI(uri.setScheme(nullString(scheme.getItem(idx))));
-					scheme.setToolTipText(SCHEME_TOOLTIPS[idx]);
-				}
 				updateAuthGroup();
 			}
 		});
