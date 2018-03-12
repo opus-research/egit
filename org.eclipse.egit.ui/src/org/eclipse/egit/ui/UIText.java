@@ -418,9 +418,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_ShowSubMenuLabel;
 
 	/** */
-	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
-
-	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
 
 	/** */
@@ -455,9 +452,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
-
-	/** */
-	public static String GitPreferenceRoot_SynchronizeView;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
