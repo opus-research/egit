@@ -70,10 +70,8 @@ public class MergeToolTest extends LocalRepositoryTestCase {
 		SWTBotTreeItem project1 = getProjectItem(packageExplorer, PROJ1)
 				.select();
 
-		SWTBotTreeItem folderNode = TestUtil.expandAndWait(project1)
-				.getNode(FOLDER);
-		SWTBotTreeItem fileNode = TestUtil.expandAndWait(folderNode)
-				.getNode(FILE1);
+		SWTBotTreeItem folderNode = project1.expand().getNode(FOLDER);
+		SWTBotTreeItem fileNode = folderNode.expand().getNode(FILE1);
 		fileNode.select();
 		ContextMenuHelper.clickContextMenu(packageExplorer,
 				util.getPluginLocalizedValue("TeamMenu.label"),

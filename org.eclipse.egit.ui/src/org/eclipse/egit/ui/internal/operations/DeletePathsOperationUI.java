@@ -83,7 +83,7 @@ public class DeletePathsOperationUI {
 	}
 
 	private List<IResource> getSelectedResourcesIfAllExist() {
-		List<IResource> resources = new ArrayList<>();
+		List<IResource> resources = new ArrayList<IResource>();
 		for (IPath path : paths) {
 			IResource resource = ResourceUtil.getResourceForLocation(path, false);
 			if (resource != null)

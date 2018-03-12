@@ -45,7 +45,7 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 		if (input == null)
 			return null;
 		boolean errorOccurred = false;
-		List<ObjectId> ids = new ArrayList<>();
+		List<ObjectId> ids = new ArrayList<ObjectId>();
 		String gitPath = null;
 		if (input instanceof IFile) {
 			IFile resource = (IFile) input;

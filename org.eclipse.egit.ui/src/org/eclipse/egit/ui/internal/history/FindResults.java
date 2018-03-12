@@ -26,9 +26,9 @@ import org.eclipse.jgit.revwalk.RevObject;
  * @see FindToolbarThread
  */
 public class FindResults {
-	private Map<Integer, Integer> matchesMap = new LinkedHashMap<>();
+	private Map<Integer, Integer> matchesMap = new LinkedHashMap<Integer, Integer>();
 
-	private List<RevObject> revObjList = new ArrayList<>();
+	private List<RevObject> revObjList = new ArrayList<RevObject>();
 
 	Integer[] keysArray;
 

@@ -67,7 +67,7 @@ public abstract class SelectionHandler extends AbstractHandler {
 	 */
 	protected <V> List<V> getSelectedItems(Class<V> itemClass,
 			ExecutionEvent event) {
-		final List<V> items = new LinkedList<>();
+		final List<V> items = new LinkedList<V>();
 		for (Object selected : getSelection(event).toArray()) {
 			V adapted = AdapterUtils.adapt(selected, itemClass);
 			if (adapted != null)
