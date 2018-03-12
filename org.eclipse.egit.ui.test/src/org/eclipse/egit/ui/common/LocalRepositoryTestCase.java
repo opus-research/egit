@@ -44,14 +44,12 @@ import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
@@ -206,8 +204,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		File gitDir = new File(new File(testDirectory, repoName),
 				Constants.DOT_GIT);
-		Repository myRepository = new RepositoryBuilder().setGitDir(gitDir)
-				.build();
+		Repository myRepository = new FileRepository(gitDir);
 		myRepository.create();
 
 		// we need to commit into master first
@@ -280,9 +277,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected static File createRemoteRepository(File repositoryDir)
 			throws Exception {
-		Repository myRepository = lookupRepository(repositoryDir);
+		FileRepository myRepository = lookupRepository(repositoryDir);
 		File gitDir = new File(testDirectory, REPO2);
-		Repository myRemoteRepository = FileRepositoryBuilder.create(gitDir);
+		Repository myRemoteRepository = new FileRepository(gitDir);
 		myRemoteRepository.create();
 		// double-check that this is bare
 		assertTrue(myRemoteRepository.isBare());
@@ -572,7 +569,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	}
 
 	protected static Collection<Ref> getRemoteRefs(URIish uri) throws Exception {
-		final Repository db = FileRepositoryBuilder.create(new File("/tmp")); //$NON-NLS-1$
+		final Repository db = new FileRepository(new File("/tmp")); //$NON-NLS-1$
 		int timeout = 20;
 		ListRemoteOperation listRemoteOp = new ListRemoteOperation(db, uri,
 				timeout);

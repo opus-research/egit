@@ -30,7 +30,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
@@ -241,7 +241,7 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public IDiff getDiff(IResource resource) throws CoreException {
 		final GitSynchronizeData syncData = gsds.getData(resource.getProject());
-		if (syncData == null || syncData.shouldIncludeLocal())
+		if (syncData.shouldIncludeLocal())
 			return super.getDiff(resource);
 
 		SyncInfo info = getSyncInfo(resource);
