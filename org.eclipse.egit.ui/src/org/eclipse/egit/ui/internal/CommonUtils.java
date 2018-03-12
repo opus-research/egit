@@ -16,8 +16,6 @@ package org.eclipse.egit.ui.internal;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ParameterizedCommand;
@@ -39,9 +37,6 @@ import org.eclipse.ui.services.IServiceLocator;
  * Class containing all common utils
  */
 public class CommonUtils {
-
-	private static final Pattern FOOTER_PATTERN = Pattern
-			.compile("(?:\n(?:[A-Z](?:[A-Za-z]+-)*[A-Za-z]+:[^\n]*))+\\s*$"); //$NON-NLS-1$
 
 	private CommonUtils() {
 		// non-instantiable utility class
@@ -202,7 +197,7 @@ public class CommonUtils {
 		}
 		return null;
 	}
-
+	
 	/**
 	 * Returns the adapter corresponding to the given adapter class.
 	 * <p>
@@ -222,7 +217,7 @@ public class CommonUtils {
 		Object adapter = adaptable.getAdapter(adapterClass);
 		return (T) adapter;
 	}
-
+	
 
 	private static LinkedList<String> splitIntoDigitAndNonDigitParts(
 			String input) {
@@ -246,43 +241,5 @@ public class CommonUtils {
 			if (input.charAt(i) != '0')
 				return input.substring(i);
 		return ""; //$NON-NLS-1$
-	}
-
-	/**
-	 * Assuming that the string {@commitMessage} is a commit message, returns
-	 * the offset in the string of the footer of the commit message, if one can
-	 * found, or -1 otherwise.
-	 * <p>
-	 * A footer of a commit message is defined to be the non-empty lines
-	 * following the last empty line in the commit message if they have the
-	 * format "key: value", like Change-Id: I000... or Signed-off-by: ... Empty
-	 * lines at the end of the commit message are ignored.
-	 * </p>
-	 *
-	 * @param commitMessage
-	 * @return the index of the beginning of the empty line marking the start of
-	 *         the footer, if any, or -1 otherwise.
-	 */
-	public static int getFooterOffset(String commitMessage) {
-		if (commitMessage == null) {
-			return -1;
-		}
-		Matcher matcher = FOOTER_PATTERN.matcher(commitMessage);
-		if (matcher.find()) {
-			int start = matcher.start();
-			// Check that the line that ends at start is empty.
-			int i = start - 1;
-			while (i >= 0) {
-				char ch = commitMessage.charAt(i--);
-				if (ch == '\n') {
-					return start + 1;
-				} else if (!Character.isWhitespace(ch)) {
-					return -1;
-				}
-			}
-			// No \n but only whitespace: first line is empty
-			return start + 1;
-		}
-		return -1;
 	}
 }
