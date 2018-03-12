@@ -3,7 +3,7 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (c) 2010, Stefan Lay <stefan.lay@sap.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2010-2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,12 +33,9 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
-import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -65,15 +62,12 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevSort;
-import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
@@ -807,24 +801,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	@Override
 	public void setFocus() {
-		if (repoHasBeenRemoved(currentRepo))
-			clearHistoryPage();
-
 		graph.getControl().setFocus();
-	}
-
-	private boolean repoHasBeenRemoved(final Repository repo) {
-		return (repo != null && repo.getDirectory() != null && !repo
-				.getDirectory().exists());
-	}
-
-	private void clearHistoryPage() {
-		currentRepo = null;
-		name = ""; //$NON-NLS-1$
-		input = null;
-		commentViewer.setInput(null);
-		fileViewer.setInput(null);
-		setInput(null);
 	}
 
 	@Override
@@ -833,9 +810,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	public void refresh() {
-		if (repoHasBeenRemoved(currentRepo))
-			clearHistoryPage();
-
 		this.input = null;
 		inputSet();
 	}
@@ -915,6 +889,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				return true;
 
 			cancelRefreshJob();
+			setErrorMessage(null);
 			Object o = super.getInput();
 			if (o == null) {
 				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
@@ -928,39 +903,24 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					Repository repo = mapping.getRepository();
 					input = new HistoryPageInput(repo,
 							new IResource[] { (IResource) o });
-					showHead(repo);
 				}
 			} else if (o instanceof RepositoryTreeNode) {
 				RepositoryTreeNode repoNode = (RepositoryTreeNode) o;
-				Repository repo = repoNode.getRepository();
 				switch (repoNode.getType()) {
 				case FILE:
 					File file = ((FileNode) repoNode).getObject();
-					input = new HistoryPageInput(repo, new File[] { file });
-					showHead(repo);
+					input = new HistoryPageInput(repoNode.getRepository(),
+							new File[] { file });
 					break;
 				case FOLDER:
 					File folder = ((FolderNode) repoNode).getObject();
-					input = new HistoryPageInput(repo, new File[] { folder });
-					showHead(repo);
-					break;
-				case REF:
-					input = new HistoryPageInput(repo);
-					showRef(((RefNode) repoNode).getObject(), repo);
-					break;
-				case ADDITIONALREF:
-					input = new HistoryPageInput(repo);
-					showRef(((AdditionalRefNode) repoNode).getObject(), repo);
-					break;
-				case TAG:
-					input = new HistoryPageInput(repo);
-					showTag(((TagNode) repoNode).getObject(), repo);
+					input = new HistoryPageInput(repoNode.getRepository(),
+							new File[] { folder });
 					break;
 				default:
-					input = new HistoryPageInput(repo);
-					showHead(repo);
-					break;
+					input = new HistoryPageInput(repoNode.getRepository());
 				}
+
 			} else if (o instanceof HistoryPageInput)
 				input = (HistoryPageInput) o;
 			else if (o instanceof IAdaptable) {
@@ -1004,7 +964,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			actions.showAllFolderVersionsAction.setEnabled(inResources != null);
 			actions.showAllResourceVersionsAction.setEnabled(filtersActive);
 
-			setErrorMessage(null);
 			try {
 				initAndStartRevWalk(false);
 			} catch (IllegalStateException e) {
@@ -1017,49 +976,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
 						GitTraceLocation.HISTORYVIEW.getLocation());
-		}
-	}
-
-	private void showHead(Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
-			ObjectId head = repo.resolve(Constants.HEAD);
-			if (head == null)
-				return;
-			RevCommit c = rw.parseCommit(head);
-			graph.selectCommitStored(c);
-		} catch (IOException e) {
-			Activator.handleError(e.getMessage(), e, true);
-		}
-	}
-
-	private void showRef(Ref ref, Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
-			RevCommit c = rw.parseCommit(ref.getLeaf().getObjectId());
-			graph.selectCommit(c);
-		} catch (IOException e) {
-			Activator.handleError(e.getMessage(), e, true);
-		}
-	}
-
-	private void showTag(Ref ref, Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
-			RevCommit c = null;
-			RevObject any = rw.parseAny(ref.getLeaf().getObjectId());
-			if (any instanceof RevCommit) {
-				c = (RevCommit) any;
-			} else if (any instanceof RevTag) {
-				RevTag t = rw.parseTag(any);
-				Object anyCommit = rw.parseAny(t.getObject());
-				if (anyCommit instanceof RevCommit)
-					c = (RevCommit) anyCommit;
-			}
-			if (c != null)
-				graph.selectCommit(c);
-		} catch (IOException e) {
-			Activator.handleError(e.getMessage(), e, true);
 		}
 	}
 
@@ -1279,18 +1195,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 						GitTraceLocation.HISTORYVIEW.getLocation());
 
 			cancelRefreshJob();
-
-			if (input == null)
-				return;
 			Repository db = input.getRepository();
-			if (repoHasBeenRemoved(db)) {
-				clearHistoryPage();
-				return;
-			}
-
-			AnyObjectId headId = resolveHead(db, true);
-			if (headId == null)
-				return;
+			AnyObjectId headId = resolveHead(db, false);
 
 			List<String> paths = buildFilterPaths(input.getItems(), input
 					.getFileList(), db);
@@ -1453,14 +1359,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES)) {
 				markStartAllRefs(Constants.R_HEADS);
 				markStartAllRefs(Constants.R_REMOTES);
-				markStartAllRefs(Constants.R_TAGS);
 			} else
 				currentWalk.markStart(currentWalk.parseCommit(headId));
 		} catch (IOException e) {
 			throw new IllegalStateException(NLS.bind(
-					UIText.GitHistoryPage_errorSettingStartPoints, Activator
-							.getDefault().getRepositoryUtil()
-							.getRepositoryName(db)), e);
+					UIText.GitHistoryPage_errorReadingHeadCommit, headId, db
+							.getDirectory().getAbsolutePath()), e);
 		}
 	}
 
@@ -1560,9 +1464,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			Ref ref = refEntry.getValue();
 			if (ref.isSymbolic())
 				continue;
-			Object refTarget = currentWalk.parseAny(ref.getObjectId());
-			if (refTarget instanceof RevCommit)
-				currentWalk.markStart((RevCommit) refTarget);
+			currentWalk.markStart(currentWalk.parseCommit(ref.getObjectId()));
 		}
 	}
 

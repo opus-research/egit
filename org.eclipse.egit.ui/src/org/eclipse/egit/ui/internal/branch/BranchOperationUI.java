@@ -10,8 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.branch;
 
-import java.io.IOException;
-
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -22,20 +20,16 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.dialogs.MessageDialogWithToggle;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.jgit.api.CheckoutResult;
 
 /**
  * The UI wrapper for {@link BranchOperation}
@@ -137,7 +131,7 @@ public class BranchOperationUI {
 		job.addJobChangeListener(new JobChangeAdapter() {
 			@Override
 			public void done(IJobChangeEvent cevent) {
-				showResultDialog();
+				BranchResultDialog.show(bop.getResult(), repository, refName);
 			}
 		});
 		job.schedule();
@@ -174,38 +168,7 @@ public class BranchOperationUI {
 
 		bop = new BranchOperation(repository, refName);
 		bop.execute(monitor);
-		showResultDialog();
-	}
-
-	private void showResultDialog() {
 		BranchResultDialog.show(bop.getResult(), repository, refName);
-		try {
-			if (ObjectId.isId(repository.getFullBranch()) && bop.getResult().getStatus() == CheckoutResult.Status.OK)
-				showDetachedHeadWarning();
-		} catch (IOException e) {
-			// Don't show warning then.
-		}
-	}
-
-	private void showDetachedHeadWarning() {
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				IPreferenceStore store = Activator.getDefault()
-						.getPreferenceStore();
-				boolean hidden = !store.getBoolean(UIPreferences.SHOW_DETACHED_HEAD_WARNING);
-				if (!hidden) {
-					String toggleMessage = UIText.ConfigurationChecker_doNotShowAgain;
-					MessageDialogWithToggle dialog = MessageDialogWithToggle
-							.openInformation(
-									getShell(),
-									UIText.BranchOperationUI_DetachedHeadTitle,
-									UIText.BranchOperationUI_DetachedHeadMessage,
-									toggleMessage, false, null, null);
-					store.setValue(UIPreferences.SHOW_DETACHED_HEAD_WARNING,
-							!dialog.getToggleState());
-				}
-			}
-		});
 	}
 
 	private Shell getShell() {

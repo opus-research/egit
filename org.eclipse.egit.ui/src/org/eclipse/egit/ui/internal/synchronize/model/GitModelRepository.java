@@ -42,7 +42,7 @@ public class GitModelRepository extends GitModelObject {
 
 	private final RevCommit dstRev;
 
-	private final Set<IProject> projects;
+	private final IProject[] projects;
 
 	private final boolean includeLocal;
 
@@ -61,7 +61,8 @@ public class GitModelRepository extends GitModelObject {
 		super(null);
 		repo = data.getRepository();
 		includeLocal = data.shouldIncludeLocal();
-		projects = data.getProjects();
+		Set<IProject> projectSet = data.getProjects();
+		projects = projectSet.toArray(new IProject[projectSet.size()]);
 
 		srcRev = data.getSrcRevCommit();
 		dstRev = data.getDstRevCommit();
@@ -82,7 +83,7 @@ public class GitModelRepository extends GitModelObject {
 
 	@Override
 	public IProject[] getProjects() {
-		return projects.toArray(new IProject[projects.size()]);
+		return projects;
 	}
 
 	/**
@@ -158,32 +159,20 @@ public class GitModelRepository extends GitModelObject {
 
 	private List<GitModelObjectContainer> getListOfCommit() {
 		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
+		if (srcRev.equals(dstRev))
+			return result;
 
 		RevWalk rw = new RevWalk(repo);
+		RevFlag localFlag = rw.newFlag("local"); //$NON-NLS-1$
+		RevFlag remoteFlag = rw.newFlag("remote"); //$NON-NLS-1$
+		RevFlagSet allFlags = new RevFlagSet();
+		allFlags.add(localFlag);
+		allFlags.add(remoteFlag);
+		rw.carry(allFlags);
+
 		rw.setRetainBody(true);
 		try {
 			RevCommit srcCommit = rw.parseCommit(srcRev);
-
-			if (includeLocal) {
-				GitModelCache gitModelCache = new GitModelCache(this, srcCommit);
-				if (gitModelCache.getChildren().length > 0)
-					result.add(gitModelCache);
-
-				GitModelWorkingTree gitModelWorkingTree = getLocaWorkingTreeChanges();
-				if (gitModelWorkingTree != null)
-					result.add(gitModelWorkingTree);
-			}
-
-			if (srcRev.equals(dstRev))
-				return result;
-
-			RevFlag localFlag = rw.newFlag("local"); //$NON-NLS-1$
-			RevFlag remoteFlag = rw.newFlag("remote"); //$NON-NLS-1$
-			RevFlagSet allFlags = new RevFlagSet();
-			allFlags.add(localFlag);
-			allFlags.add(remoteFlag);
-			rw.carry(allFlags);
-
 			srcCommit.add(localFlag);
 			rw.markStart(srcCommit);
 
@@ -200,10 +189,19 @@ public class GitModelRepository extends GitModelObject {
 				else if (nextCommit.has(remoteFlag))
 					result.add(new GitModelCommit(this, nextCommit, LEFT));
 			}
+
+			if (includeLocal) {
+				GitModelCache gitModelCache = new GitModelCache(this, srcCommit);
+				if (gitModelCache.getChildren().length > 0)
+					result.add(gitModelCache);
+
+				GitModelWorkingTree gitModelWorkingTree = getLocaWorkingTreeChanges();
+				if (gitModelWorkingTree != null)
+					result.add(gitModelWorkingTree);
+			}
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}
-
 		return result;
 	}
 
