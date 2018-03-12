@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.internal.blame;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,7 +40,6 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jgit.api.BlameCommand;
 import org.eclipse.jgit.blame.BlameResult;
 import org.eclipse.jgit.diff.RawTextComparator;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Shell;
@@ -79,7 +77,6 @@ public class BlameOperation implements IEGitOperation {
 			this.commit = commit;
 		}
 
-		@Override
 		public Object getAdapter(Class adapter) {
 			if (RevCommit.class == adapter)
 				return commit;
@@ -104,7 +101,6 @@ public class BlameOperation implements IEGitOperation {
 				nonResourceFile = new File(repository.getWorkTree(), path);
 		}
 
-		@Override
 		public void selectionChanged(SelectionChangedEvent event) {
 			// Don't show the commit for the first selection change, as that was
 			// not initiated by the user directly. Instead, show the commit the
@@ -196,7 +192,6 @@ public class BlameOperation implements IEGitOperation {
 		this.lineNumberToReveal = lineNumberToReveal;
 	}
 
-	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		final RevisionInformation info = new RevisionInformation();
 
@@ -204,15 +199,6 @@ public class BlameOperation implements IEGitOperation {
 				.setFollowFileRenames(true).setFilePath(path);
 		if (startCommit != null)
 			command.setStartCommit(startCommit);
-		else {
-			try {
-				command.setStartCommit(repository.resolve(Constants.HEAD));
-			} catch (IOException e) {
-				Activator
-						.error("Error resolving HEAD for showing annotations in repository: " + repository, e); //$NON-NLS-1$
-				return;
-			}
-		}
 		if (Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.BLAME_IGNORE_WHITESPACE))
 			command.setTextComparator(RawTextComparator.WS_IGNORE_ALL);
@@ -264,12 +250,7 @@ public class BlameOperation implements IEGitOperation {
 		if (previous != null)
 			previous.register();
 
-		if (shell.isDisposed()) {
-			return;
-		}
-
 		shell.getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				openEditor(info);
 			}
@@ -364,7 +345,6 @@ public class BlameOperation implements IEGitOperation {
 		}
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return null;
 	}

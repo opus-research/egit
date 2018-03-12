@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2015, Obeo.
+ * Copyright (C) 2014, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,7 +9,6 @@
 package org.eclipse.egit.core.internal.storage;
 
 import org.eclipse.core.resources.IStorage;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
@@ -22,17 +21,9 @@ import org.eclipse.team.core.TeamException;
  * This can provide access to local resources as well as their remote variants.
  */
 public class TreeParserResourceVariant extends AbstractGitResourceVariant {
-
-	/**
-	 * The workspace-relative path of this resource.
-	 */
-	private IPath workspacePath;
-
 	private TreeParserResourceVariant(Repository repository, String path,
-			IPath workspacePath,
-			boolean isContainer, ObjectId objectId, int rawMode) {
-		super(repository, path, isContainer, objectId, rawMode);
-		this.workspacePath = workspacePath;
+			String fileName, boolean isContainer, ObjectId objectId, int rawMode) {
+		super(repository, path, fileName, isContainer, objectId, rawMode);
 	}
 
 	/**
@@ -45,24 +36,28 @@ public class TreeParserResourceVariant extends AbstractGitResourceVariant {
 	 *            A CanonicalTreeParser to retrieve information from. This will
 	 *            only read information about the current entry on which this
 	 *            parser is positioned and will not change its state.
-	 * @param workspacePath
-	 *            The workspace-relative path of this resource.
 	 * @return The created variant.
 	 */
 	public static TreeParserResourceVariant create(Repository repository,
-			CanonicalTreeParser treeParser, IPath workspacePath) {
+			CanonicalTreeParser treeParser) {
 		final String path = treeParser.getEntryPathString();
+		final String fileName;
+		int lastSeparator = path.lastIndexOf('/');
+		if (lastSeparator > 0)
+			fileName = path.substring(lastSeparator + 1);
+		else
+			fileName = path;
+
 		final boolean isContainer = FileMode.TREE.equals(treeParser
 				.getEntryFileMode());
 		final ObjectId objectId = treeParser.getEntryObjectId();
 		final int rawMode = treeParser.getEntryRawMode();
 
-		return new TreeParserResourceVariant(repository, path, workspacePath,
+		return new TreeParserResourceVariant(repository, path, fileName,
 				isContainer, objectId, rawMode);
 	}
 
 	public IStorage getStorage(IProgressMonitor monitor) throws TeamException {
-		return new WorkspaceGitBlobStorage(repository, path, workspacePath,
-				objectId);
+		return new BlobStorage(repository, path, objectId);
 	}
 }

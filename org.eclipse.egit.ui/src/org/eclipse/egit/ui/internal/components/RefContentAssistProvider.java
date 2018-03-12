@@ -69,10 +69,9 @@ public class RefContentAssistProvider {
 						Activator.getDefault().getPreferenceStore().getInt(
 								UIPreferences.REMOTE_CONNECTION_TIMEOUT));
 
-				new ProgressMonitorDialog(shell).run(true, true,
+				new ProgressMonitorDialog(shell).run(false, true,
 						new IRunnableWithProgress() {
 
-							@Override
 							public void run(IProgressMonitor monitor)
 									throws InvocationTargetException,
 									InterruptedException {
@@ -103,10 +102,6 @@ public class RefContentAssistProvider {
 					result.add(ref);
 		} catch (RuntimeException e) {
 			throw e;
-		} catch (InvocationTargetException e) {
-			Throwable cause = e.getCause();
-			Activator.handleError(cause.getMessage(), cause, true);
-			return result;
 		} catch (Exception e) {
 			Activator.handleError(e.getMessage(), e, true);
 			return result;

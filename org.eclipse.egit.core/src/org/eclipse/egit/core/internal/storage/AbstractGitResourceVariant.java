@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2015, Obeo.
+ * Copyright (C) 2014, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -7,8 +7,6 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 package org.eclipse.egit.core.internal.storage;
-
-import java.io.File;
 
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -23,6 +21,9 @@ public abstract class AbstractGitResourceVariant implements IResourceVariant {
 
 	/** Repository-relative path of this resource. */
 	protected final String path;
+
+	/** Name of the resource. Typically the last segment of {@link #path}. */
+	protected final String fileName;
 
 	/**
 	 * Whether this resource is a container or not in this particular variant.
@@ -42,6 +43,8 @@ public abstract class AbstractGitResourceVariant implements IResourceVariant {
 	 *            Repository in which this variant's content will be accessed.
 	 * @param path
 	 *            Repository-relative path of this resource.
+	 * @param fileName
+	 *            Name of the resource.
 	 * @param isContainer
 	 *            Whether this resource is a container or not in this particular
 	 *            variant.
@@ -51,32 +54,17 @@ public abstract class AbstractGitResourceVariant implements IResourceVariant {
 	 *            Raw mode bits of this variant.
 	 */
 	protected AbstractGitResourceVariant(Repository repository, String path,
-			boolean isContainer, ObjectId objectId, int rawMode) {
+			String fileName, boolean isContainer, ObjectId objectId, int rawMode) {
 		this.repository = repository;
 		this.path = path;
+		this.fileName = fileName;
 		this.isContainer = isContainer;
 		this.objectId = objectId;
 		this.rawMode = rawMode;
 	}
 
 	public String getName() {
-		int lastSeparator = path.lastIndexOf('/');
-		return path.substring(lastSeparator + 1);
-	}
-
-	/**
-	 * @return repository-relative path of this resource.
-	 */
-	public String getPath() {
-		return path;
-	}
-
-	/**
-	 * @return absolute path of this resource.
-	 */
-	public String getAbsolutePath() {
-		return repository.getWorkTree().getAbsolutePath() + File.separator
-				+ path;
+		return fileName;
 	}
 
 	public boolean isContainer() {

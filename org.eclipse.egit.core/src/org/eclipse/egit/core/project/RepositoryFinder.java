@@ -26,13 +26,11 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.SystemReader;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * Searches for existing Git repositories associated with a project's files.
@@ -40,16 +38,14 @@ import org.eclipse.osgi.util.NLS;
  * This finder algorithm searches a project's contained files to see if any of
  * them are located within the working directory of an existing Git repository.
  * By default linked resources are ignored and not included in the search.
+ * </p>
  * <p>
  * The search algorithm is exhaustive, it will find all matching repositories.
  * For the project itself and possibly for each linked container within the
  * project it scans down the local filesystem trees to locate any Git
- * repositories which may be found there. Descending into children can be
- * disabled, see {@link #setFindInChildren(boolean)}.
- * <p>
- * It also scans up the local filesystem tree to locate any Git repository which
- * may be outside of Eclipse's workspace-view of the world.
- * <p>
+ * repositories which may be found there. It also scans up the local filesystem
+ * tree to locate any Git repository which may be outside of Eclipse's
+ * workspace-view of the world.
  * In short, if there is a Git repository associated, it finds it.
  * </p>
  */
@@ -59,9 +55,7 @@ public class RepositoryFinder {
 	private final Collection<RepositoryMapping> results = new ArrayList<RepositoryMapping>();
 	private final Set<File> gitdirs = new HashSet<File>();
 
-	private final Set<File> ceilingDirectories = new HashSet<File>();
-
-	private boolean findInChildren = true;
+	private Set<File> ceilingDirectories = new HashSet<File>();
 
 	/**
 	 * Create a new finder to locate Git repositories for a project.
@@ -78,16 +72,6 @@ public class RepositoryFinder {
 			for (String path : ceilingDirectoriesVar.split(File.pathSeparator))
 				ceilingDirectories.add(new File(path));
 		}
-	}
-
-	/**
-	 * @param findInChildren
-	 *            whether children of the project should also be scanned for a
-	 *            .git directory
-	 * @since 3.4
-	 */
-	public void setFindInChildren(boolean findInChildren) {
-		this.findInChildren = findInChildren;
 	}
 
 	/**
@@ -140,22 +124,16 @@ public class RepositoryFinder {
 		m.beginTask("", 101);  //$NON-NLS-1$
 		m.subTask(CoreText.RepositoryFinder_finding);
 		try {
-			if (loc == null) {
-				throw new CoreException(Activator.error(
-						NLS.bind(CoreText.RepositoryFinder_ResourceDoesNotExist,
-								c),
-						null));
-			}
-			final File fsLoc = loc.toFile();
-			assert fsLoc.isAbsolute();
+			if (loc != null) {
+				final File fsLoc = loc.toFile();
+				assert fsLoc.isAbsolute();
 
-			if (c instanceof IProject)
-				findInDirectoryAndParents(c, fsLoc);
-			else
-				findInDirectory(c, fsLoc);
-			m.worked(1);
+				if (c instanceof IProject)
+					findInDirectoryAndParents(c, fsLoc);
+				else
+					findInDirectory(c, fsLoc);
+				m.worked(1);
 
-			if (findInChildren) {
 				final IResource[] children = c.members();
 				if (children != null && children.length > 0) {
 					final int scale = 100 / children.length;
@@ -204,13 +182,9 @@ public class RepositoryFinder {
 
 	private void register(final IContainer c, final File gitdir) {
 		File f = gitdir.getAbsoluteFile();
-		if (gitdirs.contains(f)) {
+		if (gitdirs.contains(f))
 			return;
-		}
 		gitdirs.add(f);
-		RepositoryMapping mapping = RepositoryMapping.create(c, f);
-		if (mapping != null) {
-			results.add(mapping);
-		}
+		results.add(new RepositoryMapping(c, f));
 	}
 }

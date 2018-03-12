@@ -11,8 +11,6 @@ package org.eclipse.egit.ui.internal.history;
 import java.io.IOException;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
 
 /**
  * This class executes the search function for the find toolbar. Only one thread
@@ -55,8 +53,6 @@ public class FindToolbarThread extends Thread {
 
 	boolean findInCommitter;
 
-	boolean findInReference;
-
 	private volatile static int globalThreadIx = 0;
 
 	private int currentThreadIx;
@@ -71,7 +67,6 @@ public class FindToolbarThread extends Thread {
 		currentThreadIx = globalThreadIx;
 	}
 
-	@Override
 	public void run() {
 		synchronized (EXEC_LOCK) {
 			execFind();
@@ -110,7 +105,6 @@ public class FindToolbarThread extends Thread {
 				if (System.currentTimeMillis() - lastUIUpdate > 500) {
 					final int percentage = (int) (((i + 1F) / totalRevisions) * 100);
 					toolbar.getDisplay().asyncExec(new Runnable() {
-						@Override
 						public void run() {
 							if (toolbar.isDisposed()) {
 								return;
@@ -215,23 +209,6 @@ public class FindToolbarThread extends Thread {
 					}
 				}
 
-				if (findInReference && notFound) {
-					if (revision.getRefCount() > 0) {
-						for (int j = 0; j < revision.getRefCount(); j++) {
-							Ref ref = revision.getRef(j);
-							String refName = ref.getName();
-							refName = Repository.shortenRefName(refName);
-							if (ignoreCase)
-								refName = refName.toLowerCase();
-							if (refName.indexOf(findPattern) != -1) {
-								totalMatches++;
-								findResults.add(i, revision);
-								notFound = false;
-							}
-						}
-					}
-				}
-
 				if (totalMatches == MAX_RESULTS) {
 					maxResultsOverflow = true;
 					break;
@@ -243,7 +220,6 @@ public class FindToolbarThread extends Thread {
 		// Updates the toolbar with the result find info.
 		final boolean overflow = maxResultsOverflow;
 		toolbar.getDisplay().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				if (toolbar.isDisposed()) {
 					return;

@@ -33,7 +33,6 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
-import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.IWizardPage;
@@ -45,6 +44,7 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -116,7 +116,8 @@ public class PushWizard extends Wizard {
 			}
 		};
 		confirmPage.setHelpContext(HELP_CONTEXT);
-		setDefaultPageImageDescriptor(UIIcons.WIZBAN_PUSH);
+		// TODO use/create another cool icon
+		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
 	}
 
@@ -161,7 +162,7 @@ public class PushWizard extends Wizard {
 			return false;
 		UserPasswordCredentials credentials = repoPage.getCredentials();
 		if (credentials != null)
-			operation.setCredentialsProvider(new EGitCredentialsProvider(
+			operation.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
 					credentials.getUser(), credentials.getPassword()));
 		final PushOperationResult resultToCompare;
 		if (confirmPage.isShowOnlyIfChangedSelected())
@@ -310,7 +311,6 @@ public class PushWizard extends Wizard {
 			if (resultToCompare == null || !result.equals(resultToCompare)) {
 				PlatformUI.getWorkbench().getDisplay().asyncExec(
 						new Runnable() {
-							@Override
 							public void run() {
 								final Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2015, Obeo.
+ * Copyright (C) 2014, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,9 +12,9 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.storage.GitLocalResourceVariant;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.synchronize.GitRemoteResource;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.diff.IDiff;
@@ -49,7 +49,6 @@ import org.eclipse.team.internal.core.mapping.SyncInfoToDiffConverter;
  * implementation.
  * </p>
  */
-@SuppressWarnings("restriction")
 public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 	private GitResourceVariantTreeProvider variantTreeProvider;
 
@@ -77,13 +76,13 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 				IResource local = info.getLocal();
 
 				int kind;
-				if (remote == null) {
+				if (remote == null)
 					kind = IDiff.REMOVE;
-				} else if (!local.exists()) {
+				else if (!local.exists())
 					kind = IDiff.ADD;
-				} else {
+				else
 					kind = IDiff.CHANGE;
-				}
+
 				if (local.getType() == IResource.FILE) {
 					IFileRevision after = asFileState(remote);
 					IFileRevision before = getLocalFileRevision((IFile) local);
@@ -104,13 +103,13 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 			IResource local = info.getLocal();
 
 			int kind;
-			if (ancestor == null) {
+			if (ancestor == null)
 				kind = IDiff.ADD;
-			} else if (!local.exists()) {
+			else if (!local.exists())
 				kind = IDiff.REMOVE;
-			} else {
+			else
 				kind = IDiff.CHANGE;
-			}
+
 			if (local.getType() == IResource.FILE) {
 				IFileRevision before = asFileState(ancestor);
 				IFileRevision after = getLocalFileRevision((IFile) local);
@@ -128,7 +127,7 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 	 * @param local
 	 *            The local file.
 	 * @return The file revision that should be considered for the local (left)
-	 *         side of a delta
+	 *         side a delta
 	 */
 	public IFileRevision getLocalFileRevision(IFile local) {
 		try {
@@ -145,7 +144,7 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 	}
 
 	/*
-	 * copied from the private implementation in SyncInfoToDiffConverter
+	 * copy-pasted from the private implementation in SyncInfoToDiffConverter
 	 */
 	private ITwoWayDiff getRemoteDelta(SyncInfo info) {
 		int direction = SyncInfo.getDirection(info.getKind());
@@ -154,13 +153,12 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 			IResourceVariant remote = info.getRemote();
 
 			int kind;
-			if (ancestor == null) {
+			if (ancestor == null)
 				kind = IDiff.ADD;
-			} else if (remote == null) {
+			else if (remote == null)
 				kind = IDiff.REMOVE;
-			} else {
+			else
 				kind = IDiff.CHANGE;
-			}
 
 			// For folders, we don't need file states
 			if (info.getLocal().getType() == IResource.FILE) {
@@ -175,25 +173,75 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 	}
 
 	/*
-	 * copied from the private implementation in SyncInfoToDiffConverter
+	 * copy-pasted from the private implementation in SyncInfoToDiffConverter
 	 */
 	private IFileRevision asFileState(final IResourceVariant variant) {
-		if (variant == null) {
+		if (variant == null)
 			return null;
-		} else if (variant instanceof GitLocalResourceVariant) {
-			return new WorkspaceFileRevision(
-					((GitLocalResourceVariant) variant).getResource());
-		}
 		return asFileRevision(variant);
 	}
 
 	@Override
 	protected ResourceVariantFileRevision asFileRevision(
 			IResourceVariant variant) {
-		if (variant instanceof GitRemoteResource) {
-			return new GitResourceVariantFileRevision(
-					(GitRemoteResource) variant);
+		return new GitResourceVariantFileRevision(variant);
+	}
+
+	/**
+	 * The default implementation of ResourceVariantFileRevision has no author,
+	 * comment, timestamp... or any information that could be provided by the
+	 * Git resource variant. This implementation uses the variant's information.
+	 */
+	private static class GitResourceVariantFileRevision extends
+			ResourceVariantFileRevision {
+		private final IResourceVariant variant;
+
+		public GitResourceVariantFileRevision(IResourceVariant variant) {
+			super(variant);
+			this.variant = variant;
 		}
-		return new ResourceVariantFileRevision(variant);
+
+		@Override
+		public String getContentIdentifier() {
+			// Use the same ID as would CommitFileRevision
+			if (variant instanceof GitRemoteResource)
+				return ((GitRemoteResource) variant).getCommitId().getId()
+						.getName();
+
+			return super.getContentIdentifier();
+		}
+
+		@Override
+		public long getTimestamp() {
+			if (variant instanceof GitRemoteResource) {
+				final PersonIdent author = ((GitRemoteResource) variant)
+						.getCommitId().getAuthorIdent();
+				if (author != null)
+					return author.getWhen().getTime();
+			}
+
+			return super.getTimestamp();
+		}
+
+		@Override
+		public String getAuthor() {
+			if (variant instanceof GitRemoteResource) {
+				final PersonIdent author = ((GitRemoteResource) variant)
+						.getCommitId().getAuthorIdent();
+				if (author != null)
+					return author.getName();
+			}
+
+			return super.getAuthor();
+		}
+
+		@Override
+		public String getComment() {
+			if (variant instanceof GitRemoteResource)
+				return ((GitRemoteResource) variant).getCommitId()
+						.getFullMessage();
+
+			return super.getComment();
+		}
 	}
 }

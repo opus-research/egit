@@ -33,8 +33,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.jobs.IJobManager;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -148,7 +146,7 @@ public class TestUtils {
 	 *            the contents
 	 * @return the file
 	 * @throws CoreException
-	 *             if the file cannot be created
+	 *             if the file can not be created
 	 * @throws UnsupportedEncodingException
 	 */
 	public IFile addFileToProject(IProject project, String path, String content) throws CoreException, UnsupportedEncodingException {
@@ -238,16 +236,14 @@ public class TestUtils {
 		Set<String> expectedfiles = new HashSet<String>();
 		for (String path : paths)
 			expectedfiles.add(path);
-		try (TreeWalk treeWalk = new TreeWalk(repository)) {
-			treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-			treeWalk.setRecursive(true);
-			while (treeWalk.next()) {
-				String path = treeWalk.getPathString();
-				if (!expectedfiles.contains(path))
-					fail("Repository contains unexpected expected file "
-							+ path);
-				expectedfiles.remove(path);
-			}
+		TreeWalk treeWalk = new TreeWalk(repository);
+		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
+		treeWalk.setRecursive(true);
+		while (treeWalk.next()) {
+			String path = treeWalk.getPathString();
+			if (!expectedfiles.contains(path))
+				fail("Repository contains unexpected expected file " + path);
+			expectedfiles.remove(path);
 		}
 		if (expectedfiles.size() > 0) {
 			StringBuilder message = new StringBuilder(
@@ -275,25 +271,23 @@ public class TestUtils {
 	public void assertRepositoryContainsFilesWithContent(Repository repository,
 			String... args) throws Exception {
 		HashMap<String, String> expectedfiles = mkmap(args);
-		try (TreeWalk treeWalk = new TreeWalk(repository)) {
-			treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-			treeWalk.setRecursive(true);
-			while (treeWalk.next()) {
-				String path = treeWalk.getPathString();
-				assertTrue(expectedfiles.containsKey(path));
-				ObjectId objectId = treeWalk.getObjectId(0);
-				byte[] expectedContent = expectedfiles.get(path)
-						.getBytes("UTF-8");
-				byte[] repoContent = treeWalk.getObjectReader().open(objectId)
-						.getBytes();
-				if (!Arrays.equals(repoContent, expectedContent)) {
-					fail("File " + path + " has repository content "
-							+ new String(repoContent, "UTF-8")
-							+ " instead of expected content "
-							+ new String(expectedContent, "UTF-8"));
-				}
-				expectedfiles.remove(path);
+		TreeWalk treeWalk = new TreeWalk(repository);
+		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
+		treeWalk.setRecursive(true);
+		while (treeWalk.next()) {
+			String path = treeWalk.getPathString();
+			assertTrue(expectedfiles.containsKey(path));
+			ObjectId objectId = treeWalk.getObjectId(0);
+			byte[] expectedContent = expectedfiles.get(path).getBytes("UTF-8");
+			byte[] repoContent = treeWalk.getObjectReader().open(objectId)
+					.getBytes();
+			if (!Arrays.equals(repoContent, expectedContent)) {
+				fail("File " + path + " has repository content "
+						+ new String(repoContent, "UTF-8")
+						+ " instead of expected content "
+						+ new String(expectedContent, "UTF-8"));
 			}
+			expectedfiles.remove(path);
 		}
 		if (expectedfiles.size() > 0) {
 			StringBuilder message = new StringBuilder(
@@ -303,43 +297,6 @@ public class TestUtils {
 				message.append(" ");
 			}
 			fail(message.toString());
-		}
-	}
-
-	/**
-	 * Waits at least 50 milliseconds until no jobs of given family are running
-	 *
-	 * @param maxWaitTime
-	 * @param family
-	 * @throws InterruptedException
-	 */
-	public void waitForJobs(long maxWaitTime, Object family)
-			throws InterruptedException {
-		waitForJobs(maxWaitTime, 50, family);
-	}
-
-	/**
-	 * Waits at least <code>minWaitTime</code> milliseconds until no jobs of
-	 * given family are running
-	 *
-	 * @param maxWaitTime
-	 * @param minWaitTime
-	 * @param family
-	 * @throws InterruptedException
-	 */
-	public void waitForJobs(long maxWaitTime, long minWaitTime, Object family)
-			throws InterruptedException {
-		Thread.sleep(minWaitTime);
-		long start = System.currentTimeMillis();
-		IJobManager jobManager = Job.getJobManager();
-
-		Job[] jobs = jobManager.find(family);
-		while (jobs.length > 0) {
-			Thread.sleep(100);
-			jobs = jobManager.find(family);
-			if (System.currentTimeMillis() - start > maxWaitTime) {
-				return;
-			}
 		}
 	}
 

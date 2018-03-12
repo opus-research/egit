@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2015, Obeo.
+ * Copyright (C) 2014, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,14 +25,13 @@ import org.eclipse.team.internal.core.mapping.SyncInfoToDiffConverter;
 
 /**
  * This implementation of a {@link ResourceVariantTreeSubscriber} takes its
- * input from a {@link GitResourceVariantTreeProvider}.
+ * input from an {@link GitResourceVariantTreeProvider}.
  * <p>
  * This allows us to hijack all calls from the default subscriber for "local"
  * resources to our actual source tree, which could be the local working
- * directory as well as it could be a branch.
+ * directory as well as it could be a remote branch.
  * </p>
  */
-@SuppressWarnings("restriction")
 public class GitResourceVariantTreeSubscriber extends
 		ResourceVariantTreeSubscriber {
 	private GitResourceVariantTreeProvider variantTreeProvider;
@@ -55,28 +54,27 @@ public class GitResourceVariantTreeSubscriber extends
 	}
 
 	@Override
-	public IResourceVariantTree getBaseTree() {
+	protected IResourceVariantTree getBaseTree() {
 		return variantTreeProvider.getBaseTree();
 	}
 
 	@Override
-	public IResourceVariantTree getRemoteTree() {
+	protected IResourceVariantTree getRemoteTree() {
 		return variantTreeProvider.getRemoteTree();
 	}
 
 	/**
 	 * @return the source resource variant tree.
 	 */
-	public IResourceVariantTree getSourceTree() {
+	protected IResourceVariantTree getSourceTree() {
 		return variantTreeProvider.getSourceTree();
 	}
 
 	@Override
 	public IDiff getDiff(IResource resource) throws CoreException {
 		final SyncInfo info = getSyncInfo(resource);
-		if (info == null || info.getKind() == SyncInfo.IN_SYNC) {
+		if (info == null || info.getKind() == SyncInfo.IN_SYNC)
 			return null;
-		}
 		return syncInfoConverter.getDeltaFor(info);
 	}
 
@@ -129,9 +127,8 @@ public class GitResourceVariantTreeSubscriber extends
 			try {
 				final IResourceVariant oursVariant = oursTree
 						.getResourceVariant(local);
-				if (oursVariant == null) {
+				if (oursVariant == null)
 					return remote == null;
-				}
 				return compare(oursVariant, remote);
 			} catch (TeamException e) {
 				// We can't throw the TeamException from here, but we can't let

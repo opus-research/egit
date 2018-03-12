@@ -25,13 +25,11 @@ import org.eclipse.egit.core.CommitUtil;
 import org.eclipse.egit.core.op.SquashCommitsOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIRepositoryUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.handler.SelectionHandler;
 import org.eclipse.egit.ui.internal.rebase.CommitMessageEditorDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.RebaseCommand.InteractiveHandler;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.RebaseTodoLine;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -43,7 +41,6 @@ public class SquashHandler extends SelectionHandler {
 	/** Command id */
 	public static final String ID = "org.eclipse.egit.ui.commit.Squash"; //$NON-NLS-1$
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		List<RevCommit> commits = getSelectedItems(RevCommit.class, event);
 		if ((commits == null) || commits.isEmpty())
@@ -56,21 +53,11 @@ public class SquashHandler extends SelectionHandler {
 
 		final Shell shell = getPart(event).getSite().getShell();
 
-		try {
-			if (!UIRepositoryUtils.handleUncommittedFiles(repo, shell))
-				return null;
-		} catch (GitAPIException e) {
-			Activator.logError(e.getMessage(), e);
-			return null;
-		}
-
 		InteractiveHandler messageHandler = new InteractiveHandler() {
-			@Override
 			public void prepareSteps(List<RebaseTodoLine> steps) {
 				// not used
 			}
 
-			@Override
 			public String modifyCommitMessage(String oldMessage) {
 				return promptCommitMessage(shell, oldMessage);
 			}
@@ -106,7 +93,6 @@ public class SquashHandler extends SelectionHandler {
 	private String promptCommitMessage(final Shell shell, final String message) {
 		final String[] msg = { message };
 		shell.getDisplay().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				CommitMessageEditorDialog dialog = new CommitMessageEditorDialog(
 						shell, msg[0]);

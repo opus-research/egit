@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2014 Marek Zawirski <marek.zawirski@gmail.com> and others.
+ * Copyright (C) 2008, 2011 Marek Zawirski <marek.zawirski@gmail.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -131,7 +131,6 @@ class RefUpdateElement extends WorkbenchAdapter {
 		return result.getPushResult(uri).getAdvertisedRef(getDstRefName());
 	}
 
-	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		switch (getStatus()) {
 		case OK:
@@ -161,13 +160,13 @@ class RefUpdateElement extends WorkbenchAdapter {
 		}
 	}
 
-	@Override
 	public String getLabel(Object object) {
 		return getStyledText(object).getString();
 	}
 
 	private RepositoryCommit[] getCommits(Ref end) {
-		try (final RevWalk walk = new RevWalk(reader)) {
+		final RevWalk walk = new RevWalk(reader);
+		try {
 			walk.setRetainBody(true);
 			walk.markStart(walk.parseCommit(update.getNewObjectId()));
 			walk.markUninteresting(walk.parseCommit(end.getObjectId()));
@@ -181,7 +180,6 @@ class RefUpdateElement extends WorkbenchAdapter {
 		}
 	}
 
-	@Override
 	public Object[] getChildren(Object object) {
 		if (children != null)
 			return children;
@@ -224,12 +222,12 @@ class RefUpdateElement extends WorkbenchAdapter {
 		final String remote = getDstRefName();
 		final String local = getSrcRefName();
 
-		if (!tag && local != null) {
-			styled.append(shortenRef(local));
-			styled.append(" \u2192 " /* → */); //$NON-NLS-1$
-		}
 		styled.append(shortenRef(remote));
 
+		if (!tag && local != null) {
+			styled.append(": ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
+			styled.append(shortenRef(local), StyledString.QUALIFIER_STYLER);
+		}
 		styled.append(' ');
 		// Include uri if more than one
 		if (result.getURIs().size() > 1) {

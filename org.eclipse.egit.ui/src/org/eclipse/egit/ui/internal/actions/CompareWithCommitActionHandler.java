@@ -31,7 +31,6 @@ import org.eclipse.ui.PlatformUI;
  */
 public class CompareWithCommitActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repo = getRepository(true, event);
 		if (repo == null)
