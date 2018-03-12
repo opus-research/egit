@@ -182,15 +182,6 @@ public class UIIcons {
 	/** Untracked file icon */
 	public final static ImageDescriptor UNTRACKED_FILE;
 
-	/** Commit note icon */
-	public final static ImageDescriptor NOTE;
-
-	/** Show Annotation icon */
-	public final static ImageDescriptor ANNOTATE;
-
-	/** Commit icon */
-	public final static ImageDescriptor COMMIT;
-
 	/** base URL */
 	public final static URL base;
 
@@ -256,9 +247,6 @@ public class UIIcons {
 		UNCHECK_ALL = map("obj16/uncheck_all.gif"); //$NON-NLS-1$
 		AMEND_COMMIT = map("obj16/commit_amend.gif"); //$NON-NLS-1$
 		UNTRACKED_FILE = map("obj16/untracked_file.gif"); //$NON-NLS-1$
-		NOTE = map("obj16/note.png"); //$NON-NLS-1$
-		ANNOTATE = map("etool16/annotate.gif"); //$NON-NLS-1$
-		COMMIT = map("obj16/commit.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

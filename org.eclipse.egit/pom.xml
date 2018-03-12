@@ -22,5 +22,5 @@
   <artifactId>org.eclipse.egit</artifactId>
   <packaging>eclipse-plugin</packaging>
 
-  <name>Eclipse EGit</name>
+  <name>Eclipse Git (Incubation)</name>
 </project>

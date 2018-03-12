@@ -10,8 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
-import java.io.File;
-
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -72,25 +70,15 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		DirectoryFieldEditor editor = new DirectoryFieldEditor(
 				UIPreferences.DEFAULT_REPO_DIR,
 				UIText.GitPreferenceRoot_DefaultRepoFolderLabel, cloningGroup) {
-			@Override
-			protected boolean doCheckState() {
-				String fileName = getTextControl().getText();
-				fileName = fileName.trim();
-				if (fileName.length() == 0 && isEmptyStringAllowed()) {
-					return true;
-				}
-				File file = new File(fileName);
-				// other than the super implementation, we don't
-				// require the file to exist
-				return !file.exists() || file.isDirectory();
-			}
 
 			@Override
 			protected void createControl(Composite parent) {
 				// setting validate strategy using the setter method is too late
-				super.setValidateStrategy(StringFieldEditor.VALIDATE_ON_KEY_STROKE);
+				super
+						.setValidateStrategy(StringFieldEditor.VALIDATE_ON_KEY_STROKE);
 				super.createControl(parent);
 			}
+
 		};
 		updateMargins(cloningGroup);
 		editor.setEmptyStringAllowed(false);
@@ -168,9 +156,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
 				.applyTo(synchronizeGroup);
 		synchronizeGroup.setText(UIText.GitPreferenceRoot_SynchronizeView);
-		addField(new BooleanFieldEditor(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH,
-				UIText.GitPreferenceRoot_fetchBeforeSynchronization,
-				synchronizeGroup));
 		addField(new BooleanFieldEditor(UIPreferences.SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL,
 				UIText.GitPreferenceRoot_automaticallyEnableChangesetModel,
 				synchronizeGroup));
