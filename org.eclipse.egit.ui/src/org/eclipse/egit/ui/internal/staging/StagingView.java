@@ -118,8 +118,8 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
-import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
+import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.part.ViewPart;
@@ -137,7 +137,7 @@ public class StagingView extends ViewPart {
 
 	private static final String EMPTY_STRING = ""; //$NON-NLS-1$
 
-	private Form form;
+	private ScrolledForm form;
 
 	private Section stagedSection;
 
@@ -199,14 +199,14 @@ public class StagingView extends ViewPart {
 			}
 		});
 
-		form = toolkit.createForm(parent);
+		form = toolkit.createScrolledForm(parent);
 
 		Image repoImage = UIIcons.REPOSITORY.createImage();
 		UIUtils.hookDisposal(form, repoImage);
 		form.setImage(repoImage);
 		form.setText(UIText.StagingView_NoSelectionTitle);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(form);
-		toolkit.decorateFormHeading(form);
+		toolkit.decorateFormHeading(form.getForm());
 		GridLayoutFactory.swtDefaults().applyTo(form.getBody());
 
 		SashForm horizontalSashForm = new SashForm(form.getBody(), SWT.NONE);
@@ -757,29 +757,27 @@ public class StagingView extends ViewPart {
 
 		job.addJobChangeListener(new JobChangeAdapter() {
 			public void done(final IJobChangeEvent event) {
-				PlatformUI.getWorkbench().getDisplay()
-						.asyncExec(new Runnable() {
-							public void run() {
-								if (form.isDisposed())
-									return;
+				form.getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						if (form.isDisposed())
+							return;
 
-								final IndexDiff indexDiff = results.get();
-								unstagedTableViewer.setInput(new Object[] {
-										repository, indexDiff });
-								stagedTableViewer.setInput(new Object[] {
-										repository, indexDiff });
-								commitAction.setEnabled(repository
-										.getRepositoryState().canCommit());
-								form.setText(StagingView
-										.getRepositoryName(repository));
-								if (repositoryChanged) {
-									updateCommitMessageComponent(repositoryChanged);
-									clearCommitMessageToggles();
-								}
-								updateSectionText();
-							}
+						final IndexDiff indexDiff = results.get();
+						unstagedTableViewer.setInput(new Object[] { repository,
+								indexDiff });
+						stagedTableViewer
+								.setInput(new Object[] { repository, indexDiff });
+						commitAction.setEnabled(repository.getRepositoryState()
+								.canCommit());
+						form.setText(StagingView.getRepositoryName(repository));
+						if (repositoryChanged) {
+							updateCommitMessageComponent(repositoryChanged);
+							clearCommitMessageToggles();
+						}
+						updateSectionText();
+					}
 
-						});
+				});
 			}
 		});
 
@@ -820,7 +818,7 @@ public class StagingView extends ViewPart {
 		removeListeners();
 		attachListeners(repository);
 
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+		form.getDisplay().asyncExec(new Runnable() {
 			public void run() {
 				if (form.isDisposed())
 					return;
