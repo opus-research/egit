@@ -13,7 +13,6 @@ import org.eclipse.core.runtime.IAdapterFactory;
 import org.eclipse.team.core.mapping.IResourceMappingMerger;
 
 public class SampleModelAdapterFactory implements IAdapterFactory {
-	@Override
 	public Object getAdapter(Object adaptableObject, Class adapterType) {
 		if (adaptableObject instanceof SampleModelProvider
 				&& IResourceMappingMerger.class.isAssignableFrom(adapterType)) {
@@ -23,7 +22,6 @@ public class SampleModelAdapterFactory implements IAdapterFactory {
 		return null;
 	}
 
-	@Override
 	public Class[] getAdapterList() {
 		return new Class[] { IResourceMappingMerger.class, };
 	}

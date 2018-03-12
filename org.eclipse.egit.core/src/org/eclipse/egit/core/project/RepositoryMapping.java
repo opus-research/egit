@@ -256,7 +256,6 @@ public class RepositoryMapping {
 		p.setProperty(containerPathString + ".gitdir", gitDirPathString); //$NON-NLS-1$
 	}
 
-	@Override
 	public String toString() {
 		IPath absolutePath = getGitDirAbsolutePath();
 		return "RepositoryMapping[" //$NON-NLS-1$

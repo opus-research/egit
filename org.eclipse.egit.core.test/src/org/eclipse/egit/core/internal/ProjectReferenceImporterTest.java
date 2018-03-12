@@ -35,7 +35,6 @@ public class ProjectReferenceImporterTest extends GitTestCase {
 
 	private Repository repository;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -45,7 +44,6 @@ public class ProjectReferenceImporterTest extends GitTestCase {
 		util.addConfiguredRepository(repository.getDirectory());
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		RepositoryUtil util = Activator.getDefault().getRepositoryUtil();

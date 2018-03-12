@@ -39,7 +39,6 @@ public class AdaptableFileTreeIteratorTest extends GitTestCase {
 
 	private File file;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();

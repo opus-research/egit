@@ -43,7 +43,6 @@ class GitRemoteFolder extends GitRemoteResource {
 		this.cachedData = cachedData;
 	}
 
-	@Override
 	public boolean isContainer() {
 		return true;
 	}
@@ -53,7 +52,6 @@ class GitRemoteFolder extends GitRemoteResource {
 		// should be never used on folder
 	}
 
-	@Override
 	public boolean equals(Object object) {
 		if (object == this)
 			return true;
@@ -68,7 +66,6 @@ class GitRemoteFolder extends GitRemoteResource {
 		return false;
 	}
 
-	@Override
 	public int hashCode() {
 		return getObjectId().hashCode() ^ getPath().hashCode();
 	}

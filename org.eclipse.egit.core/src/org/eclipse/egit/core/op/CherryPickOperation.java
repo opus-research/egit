@@ -63,12 +63,10 @@ public class CherryPickOperation implements IEGitOperation {
 		return result;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor = m != null ? m : new NullProgressMonitor();
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
 				pm.beginTask("", 2); //$NON-NLS-1$
 
@@ -101,7 +99,6 @@ public class CherryPickOperation implements IEGitOperation {
 				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repo);
 	}

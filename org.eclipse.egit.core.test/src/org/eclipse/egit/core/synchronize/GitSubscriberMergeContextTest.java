@@ -53,7 +53,6 @@ public class GitSubscriberMergeContextTest extends ModelTestCase {
 
 	private TestRepository testRepo;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
