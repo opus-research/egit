@@ -8,9 +8,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Andre Bossert <anb0s@anbos.de> - Extended support for nested repositories in project.
  *******************************************************************************/
 package org.eclipse.egit.core.project;
 
@@ -419,15 +416,6 @@ public class GitProjectData {
 	}
 
 	/**
-	 * Get repository mappings
-	 *
-	 * @return the repository mappings for a project
-	 */
-	public final Map<IPath, RepositoryMapping> getRepositoryMappings() {
-		return mappings;
-	}
-
-	/**
 	 * Hide our private parts from the navigators other browsers.
 	 *
 	 * @throws CoreException
@@ -459,13 +447,13 @@ public class GitProjectData {
 	}
 
 	/**
-	 * Determines whether the project this instance belongs to has any inner
-	 * repositories like submodules or nested repositories.
+	 * Determines whether the project this instance belongs to has any
+	 * submodules.
 	 *
-	 * @return {@code true} if the project has inner repositories; {@code false}
+	 * @return {@code true} if the project has submodules; {@code false}
 	 *         otherwise.
 	 */
-	public boolean hasInnerRepositories() {
+	public boolean hasSubmodules() {
 		return !protectedResources.isEmpty();
 	}
 
