@@ -1,5 +1,4 @@
 /*******************************************************************************
- * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  *
@@ -10,15 +9,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.util.Arrays;
+import java.util.List;
 
-import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.egit.core.op.IEGitOperation;
 import org.eclipse.egit.core.op.UntrackOperation;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.job.JobUtil;
 
 /**
  * An action to remove files from a Git repository. The removal does not alter
@@ -26,13 +22,13 @@ import org.eclipse.egit.ui.internal.job.JobUtil;
  *
  * @see UntrackOperation
  */
-public class UntrackActionHandler extends RepositoryActionHandler {
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IResource[] resources = getSelectedResources();
-		if (resources.length == 0)
-			return null;
-		JobUtil.scheduleUserJob(new UntrackOperation(Arrays.asList(resources)),
-				UIText.Untrack_untrack, JobFamilies.UNTRACK);
-		return null;
+public class Untrack extends AbstractResourceOperationAction {
+	protected IEGitOperation createOperation(final List<IResource> sel) {
+		return sel.isEmpty() ? null : new UntrackOperation(sel);
+	}
+
+	@Override
+	protected String getJobName() {
+		return UIText.Untrack_untrack;
 	}
 }

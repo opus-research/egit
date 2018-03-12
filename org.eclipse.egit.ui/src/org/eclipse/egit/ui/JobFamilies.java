@@ -64,17 +64,8 @@ public class JobFamilies {
 	public final static Object FORMAT_COMMIT_INFO = new Object();
 
 	/**
-	 * AssumeUnchanged/NoAssumeUnchanged
+	 * Fill tag list
 	 */
-	public final static Object ASSUME_NOASSUME_UNCHANGED = new Object();
+	public final static Object FILL_TAG_LIST = new Object();
 
-	/**
-	 * Untrack
-	 */
-	public final static Object UNTRACK = new Object();
-
-	/**
-	 * Disconnect
-	 */
-	public final static Object DISCONNECT = new Object();
 }

@@ -34,7 +34,7 @@
                value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
          </filter>
          <action
-               class="org.eclipse.egit.ui.internal.actions.DisconnectAction"
+               class="org.eclipse.egit.ui.internal.actions.Disconnect"
                icon="$nl$/icons/obj16/disconnect_co.gif"
                id="org.eclipse.egit.ui.internal.actions.Disconnect"
                label="%DisconnectAction_label"
@@ -93,10 +93,23 @@
                value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
          </filter>
          <action
-               class="org.eclipse.egit.ui.internal.actions.UntrackAction"
+               class="org.eclipse.egit.ui.internal.actions.Untrack"
                icon="$nl$/icons/obj16/untrack.gif"
                id="org.eclipse.egit.ui.internal.actions.Untrack"
                label="%UntrackAction_label"
+               menubarPath="team.main/group9"/>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.NoAssumeUnchangedAction"
+               icon="icons/obj16/no-assume-unchanged.gif"
+               id="org.eclipse.egit.ui.internal.actions.NoAssumeUnchanged"
+               label="%NoAssumeUnchangedAction_label"
+               menubarPath="team.main/group9">
+         </action>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.AssumeUnchangedAction"
+               icon="icons/obj16/assume-unchanged.gif"
+               id="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"
+               label="%AssumeUnchangedAction_label"
                menubarPath="team.main/group9"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.CommitAction"
@@ -309,8 +322,10 @@
       <page name="%GitPreferences_name"
             category="org.eclipse.team.ui.TeamPreferences"
             class="org.eclipse.egit.ui.internal.preferences.GitPreferenceRoot"
-            id="org.eclipse.egit.ui.GitPreferences" />
-
+            id="org.eclipse.egit.ui.GitPreferences">
+	      <keywordReference
+	            id="org.eclipse.egit.ui.keyword.refresh"/>
+      </page>
       <page name="%GitPreferences_WindowCachePreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.WindowCachePreferencePage"
@@ -1818,7 +1833,7 @@
                   checkEnabled="false">
                <and>
                   <count
-                        value="1">
+                        value="+">
                   </count>
                   <iterate>
                      <and>
@@ -2452,46 +2467,6 @@
                      </and>
                   </visibleWhen>
                </command>
-               <separator
-                     name="org.eclipse.egit.ui.TeamAdvancedFileSeparator"
-                     visible="true">
-               </separator>
-               <command
-                     commandId="org.eclipse.egit.ui.team.AssumeUnchanged"
-                     label="%AssumeUnchangedAction_label"
-                     style="push">
-                  <visibleWhen
-                        checkEnabled="false">
-                     <and>
-                        <count
-                              value="+">
-                        </count>
-                        <iterate>
-                           <test
-                                 property="GitResource.isShared">
-                           </test>
-                        </iterate>
-                     </and>
-                  </visibleWhen>
-               </command>
-               <command
-                     commandId="org.eclipse.egit.ui.team.NoAssumeUnchanged"
-                     label="%NoAssumeUnchangedAction_label"
-                     style="push">
-                  <visibleWhen
-                        checkEnabled="false">
-                     <and>
-                        <count
-                              value="+">
-                        </count>
-                        <iterate>
-                           <test
-                                 property="GitResource.isShared">
-                           </test>
-                        </iterate>
-                     </and>
-                  </visibleWhen>
-               </command>
             </menu>
             <separator
                   name="applyPatchGroup"
@@ -2514,7 +2489,8 @@
                   visible="true">
             </separator>
            <command
-                 commandId="org.eclipse.egit.ui.RepositoriesViewRebase" style="push">
+                 commandId="org.eclipse.egit.ui.RepositoriesViewRebase" style="push"
+                 label="%RebaseWithDialog_label">
 	           <visibleWhen checkEnabled="false">
 	              <and>
 	                 <iterate>
@@ -2545,6 +2521,9 @@
 	                    <and>
 	                       <adapt
 	                             type="org.eclipse.core.resources.IProject">
+                              <test
+                                    property="GitResource.isShared">
+                              </test>
 	                          <not>
 		                          <test
 		                                property="GitResource.isSafe">
@@ -2967,14 +2946,6 @@
             commandId="org.eclipse.egit.ui.team.Tag"
             icon="icons/obj16/tags.gif">
       </image>
-      <image
-            commandId="org.eclipse.egit.ui.team.AssumeUnchanged"
-            icon="icons/obj16/assume-unchanged.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.team.NoAssumeUnchanged"
-            icon="icons/obj16/no-assume-unchanged.gif">
-      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -3185,18 +3156,6 @@
             id="org.eclipse.egit.ui.team.RenameBranch"
             name="%RenameBranchCommand.name">
       </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.AssumeUnchangedAction"
-            id="org.eclipse.egit.ui.team.AssumeUnchanged"
-            name="Assume Unchanged">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.NoAssumeUnchangedAction"
-            id="org.eclipse.egit.ui.team.NoAssumeUnchanged"
-            name="No Assume Unchanged">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">
@@ -3364,5 +3323,8 @@
             name="%RepositoriesViewContext.name"
             parentId="org.eclipse.ui.contexts.window">
       </context>
+   </extension>
+   <extension
+         point="org.eclipse.core.expressions.propertyTesters">
    </extension>
 </plugin>
