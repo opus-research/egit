@@ -8,15 +8,15 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
+import java.net.Authenticator;
 import java.net.InetAddress;
 import java.net.PasswordAuthentication;
 import java.net.UnknownHostException;
 
 import org.eclipse.core.net.proxy.IProxyData;
 import org.eclipse.core.net.proxy.IProxyService;
-import org.eclipse.ui.internal.net.auth.NetAuthenticator;
 
-class EclipseAuthenticator extends NetAuthenticator {
+class EclipseAuthenticator extends Authenticator {
 	private final IProxyService service;
 
 	EclipseAuthenticator(final IProxyService s) {
@@ -26,18 +26,15 @@ class EclipseAuthenticator extends NetAuthenticator {
 	@Override
 	protected PasswordAuthentication getPasswordAuthentication() {
 		final IProxyData[] data = service.getProxyData();
-		if (data == null) {
-			return super.getPasswordAuthentication();
-		}
+		if (data == null)
+			return null;
 		for (final IProxyData d : data) {
-			if (d.getUserId() == null || d.getHost() == null) {
+			if (d.getUserId() == null || d.getHost() == null)
 				continue;
-			}
-			if (d.getPort() == getRequestingPort() && hostMatches(d)) {
+			if (d.getPort() == getRequestingPort() && hostMatches(d))
 				return auth(d);
-			}
 		}
-		return super.getPasswordAuthentication();
+		return null;
 	}
 
 	private PasswordAuthentication auth(final IProxyData d) {
