@@ -138,10 +138,7 @@ public class CloneOperation implements IRunnableWithProgress {
 		final File gitdir = new File(workdir, ".git");
 		local = new Repository(gitdir);
 		local.create();
-
-		final RefUpdate head = local.updateRef(Constants.HEAD);
-		head.disableRefLog();
-		head.link(branch);
+		local.writeSymref(Constants.HEAD, branch);
 
 		remoteConfig = new RemoteConfig(local.getConfig(), remoteName);
 		remoteConfig.addURI(uri);
