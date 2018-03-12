@@ -693,12 +693,6 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_Failed;
 
 	/** */
-	public static String RebaseResultDialog_JobNameAbortRebase;
-
-	/** */
-	public static String RebaseResultDialog_JobNameSkipCommit;
-
-	/** */
 	public static String RebaseResultDialog_NextSteps;
 
 	/** */
