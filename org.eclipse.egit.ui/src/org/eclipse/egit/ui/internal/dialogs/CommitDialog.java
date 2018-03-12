@@ -5,7 +5,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +15,8 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
@@ -36,11 +38,8 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.commit.CommitHelper;
-import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
-import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent.CommitStatus;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -55,7 +54,11 @@ import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.text.DocumentEvent;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.jface.text.contentassist.ContentAssistant;
+import org.eclipse.jface.text.contentassist.IContentAssistant;
+import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
@@ -72,6 +75,7 @@ import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.IndexDiff;
@@ -103,8 +107,11 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.team.core.RepositoryProvider;
+import org.eclipse.ui.IMemento;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.WorkbenchException;
+import org.eclipse.ui.XMLMemento;
 import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
@@ -117,8 +124,75 @@ import org.eclipse.ui.forms.widgets.Section;
  */
 public class CommitDialog extends TitleAreaDialog {
 
+	private static final String KEY_MESSAGE = "message"; //$NON-NLS-1$
+
+	private static final String KEY_MESSAGES = "messages"; //$NON-NLS-1$
+
 	private static IPreferenceStore getPreferenceStore() {
 		return org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore();
+	}
+
+	private static Set<String> getCommitHistory() {
+		String all = getPreferenceStore().getString(
+				UIPreferences.COMMIT_DIALOG_HISTORY_MESSAGES);
+		if (all.length() == 0)
+			return Collections.emptySet();
+		int max = getCommitHistorySize();
+		if (max < 1)
+			return Collections.emptySet();
+		XMLMemento memento;
+		try {
+			memento = XMLMemento.createReadRoot(new StringReader(all));
+		} catch (WorkbenchException e) {
+			org.eclipse.egit.ui.Activator.logError(
+					"Error reading commit message history", e); //$NON-NLS-1$
+			return Collections.emptySet();
+		}
+		Set<String> messages = new LinkedHashSet<String>();
+		for (IMemento child : memento.getChildren(KEY_MESSAGE)) {
+			messages.add(child.getTextData());
+			if (messages.size() == max)
+				break;
+		}
+		return messages;
+	}
+
+	private static void saveCommitHistory(String message) {
+		if (message == null || message.length() == 0)
+			return;
+		int size = getCommitHistorySize();
+		if (size < 1)
+			return;
+
+		XMLMemento memento = XMLMemento.createWriteRoot(KEY_MESSAGES);
+		memento.createChild(KEY_MESSAGE).putTextData(message);
+
+		int count = 1;
+		if (count < size) {
+			Set<String> history = getCommitHistory();
+			history.remove(message);
+			for (String previous : history) {
+				memento.createChild(KEY_MESSAGE).putTextData(previous);
+				count++;
+				if (count == size)
+					break;
+			}
+		}
+		StringWriter writer = new StringWriter();
+		try {
+			memento.save(writer);
+			getPreferenceStore().setValue(
+					UIPreferences.COMMIT_DIALOG_HISTORY_MESSAGES,
+					writer.toString());
+		} catch (IOException e) {
+			org.eclipse.egit.ui.Activator.logError(
+					"Error writing commit message history", e); //$NON-NLS-1$
+		}
+	}
+
+	private static int getCommitHistorySize() {
+		return getPreferenceStore().getInt(
+				UIPreferences.COMMIT_DIALOG_HISTORY_SIZE);
 	}
 
 	static class CommitStatusLabelProvider extends ColumnLabelProvider {
@@ -614,22 +688,30 @@ public class CommitDialog extends TitleAreaDialog {
 
 		messageSection.setTextClient(headerArea);
 
-		final CommitProposalProcessor commitProposalProcessor = new CommitProposalProcessor() {
-			@Override
-			protected Collection<String> computeFileNameProposals() {
-				return getFileList();
+		commitText = new SpellcheckableMessageArea(messageArea, commitMessage,
+				SWT.NONE) {
+
+			protected IContentAssistant createContentAssistant(
+					ISourceViewer viewer) {
+				ContentAssistant assistant = new ContentAssistant();
+				assistant.enableAutoInsert(true);
+				Collection<String> paths = getFileList();
+				Collection<String> messages = getCommitHistory();
+				final CommitProposalProcessor processor = new CommitProposalProcessor(
+						messages.toArray(new String[messages.size()]),
+						paths.toArray(new String[paths.size()]));
+				viewer.getTextWidget().addDisposeListener(
+						new DisposeListener() {
+
+							public void widgetDisposed(DisposeEvent e) {
+								processor.dispose();
+							}
+						});
+				assistant.setContentAssistProcessor(processor,
+						IDocument.DEFAULT_CONTENT_TYPE);
+				return assistant;
 			}
 
-			@Override
-			protected Collection<String> computeMessageProposals() {
-				return CommitMessageHistory.getCommitHistory();
-			}
-		};
-		commitText = new CommitMessageArea(messageArea, commitMessage, SWT.NONE) {
-			@Override
-			protected CommitProposalProcessor getCommitProposalProcessor() {
-				return commitProposalProcessor;
-			}
 		};
 		commitText
 				.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TEXT_BORDER);
@@ -646,7 +728,8 @@ public class CommitDialog extends TitleAreaDialog {
 		// allow to commit with ctrl-enter
 		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
 			public void keyPressed(KeyEvent event) {
-				if (UIUtils.isSubmitKeyEvent(event)) {
+				if (event.keyCode == SWT.CR
+						&& (event.stateMask & SWT.CONTROL) > 0) {
 					okPressed();
 				} else if (event.keyCode == SWT.TAB
 						&& (event.stateMask & SWT.SHIFT) == 0) {
@@ -926,35 +1009,12 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private void updateMessage() {
-		String message = null;
-		int type = IMessageProvider.NONE;
-
-		String commitMsg = commitMessageComponent.getCommitMessage();
-		if (commitMsg == null || commitMsg.trim().length() == 0) {
-			message = UIText.CommitDialog_Message;
-			type = IMessageProvider.INFORMATION;
-		} else if (!isCommitWithoutFilesAllowed()) {
+		String message = commitMessageComponent.getMessage();
+		if (message == null && filesViewer.getCheckedElements().length == 0
+				&& !amendingItem.getSelection())
 			message = UIText.CommitDialog_MessageNoFilesSelected;
-			type = IMessageProvider.INFORMATION;
-		} else {
-			CommitStatus status = commitMessageComponent.getStatus();
-			message = status.getMessage();
-			type = status.getMessageType();
-		}
-
-		setMessage(message, type);
-		commitButton.setEnabled(type == IMessageProvider.WARNING
-				|| type == IMessageProvider.NONE);
-	}
-
-	private boolean isCommitWithoutFilesAllowed() {
-		if (filesViewer.getCheckedElements().length > 0)
-			return true;
-
-		if (amendingItem.getSelection())
-			return true;
-
-		return CommitHelper.isCommitWithoutFilesAllowed(repository);
+		setMessage(message, IMessageProvider.INFORMATION);
+		commitButton.setEnabled(message == null);
 	}
 
 	private Collection<String> getFileList() {
@@ -997,7 +1057,7 @@ public class CommitDialog extends TitleAreaDialog {
 				}
 				try {
 					addCommand.call();
-				} catch (Exception e) {
+				} catch (NoFilepatternException e) {
 					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
 				}
 				for (Iterator<?> it = sel.iterator(); it.hasNext();) {
@@ -1071,11 +1131,6 @@ public class CommitDialog extends TitleAreaDialog {
 
 	@Override
 	protected void okPressed() {
-		if (!isCommitWithoutFilesAllowed()) {
-			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoItemsSelected, UIText.CommitDialog_ErrorNoItemsSelectedToBeCommitted);
-			return;
-		}
-
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
 
@@ -1090,10 +1145,15 @@ public class CommitDialog extends TitleAreaDialog {
 		committer = commitMessageComponent.getCommitter();
 		createChangeId = changeIdItem.getSelection();
 
+		if (selectedFiles.isEmpty() && !amending) {
+			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoItemsSelected, UIText.CommitDialog_ErrorNoItemsSelectedToBeCommitted);
+			return;
+		}
+
 		IDialogSettings settings = org.eclipse.egit.ui.Activator
 			.getDefault().getDialogSettings();
 		settings.put(SHOW_UNTRACKED_PREF, showUntracked);
-		CommitMessageHistory.saveCommitHistory(getCommitMessage());
+		saveCommitHistory(getCommitMessage());
 		super.okPressed();
 	}
 
@@ -1190,6 +1250,7 @@ class CommitViewerComparator extends ViewerComparator {
 		super(comparator);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public int compare(Viewer viewer, Object e1, Object e2) {
 		return getComparator().compare(e1, e2);

@@ -108,15 +108,6 @@ public class CoreText extends NLS {
 	public static String DiscardChangesOperation_repoNotFound;
 
 	/** */
-	public static String DeleteResourcesOperation_deletingResources;
-
-	/** */
-	public static String DeleteResourcesOperation_deleteFailed;
-
-	/** */
-	public static String DeleteResourcesOperation_deleteFailedSeeLog;
-
-	/** */
 	public static String DisconnectProviderOperation_disconnecting;
 
 	/** */
@@ -163,9 +154,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String RepositoryFinder_finding;
-
-	/** */
-	public static String RepositoryUtil_noHead;
 
 	/** */
 	public static String RemoteRefUpdateCantBeReused;
