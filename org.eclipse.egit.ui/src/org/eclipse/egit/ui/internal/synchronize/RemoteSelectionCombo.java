@@ -41,13 +41,6 @@ class RemoteSelectionCombo extends Composite {
 		createRefsGroup(refLabel);
 	}
 
-	@Override
-	public void setEnabled(boolean enabled) {
-		refsCombo.setEnabled(enabled);
-		remotesCombo.setEnabled(enabled);
-		super.setEnabled(enabled);
-	}
-
 	private void createRemoteGroup(String remoteLabel) {
 		Composite remoteComposite = new Composite(this, SWT.NONE);
 		remoteComposite.setLayout(new GridLayout());
@@ -92,7 +85,7 @@ class RemoteSelectionCombo extends Composite {
 				refSelectedIndex).getValue();
 	}
 
-	public void setDefautlValue(String remote, String ref) {
+	public void setDefaultValue(String remote, String ref) {
 		int i = 0;
 		for (; i < syncRepos.size(); i++)
 			if (syncRepos.get(i).getName().equals(remote))
