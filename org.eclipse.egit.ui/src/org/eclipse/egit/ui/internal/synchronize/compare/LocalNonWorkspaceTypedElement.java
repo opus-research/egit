@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2012, 2015 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,7 +8,6 @@
  *
  * Contributors:
  *     IBM Corporation - initial implementation of some methods
- *     Thomas Wolf <thomas.wolf@paranor.ch> - Bug 474981
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.compare;
 
@@ -69,13 +68,12 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 
 	@Override
 	public InputStream getContents() throws CoreException {
-		if (exists) {
-			try {
-				return new FileInputStream(path.toFile());
-			} catch (FileNotFoundException e) {
-				Activator.error(e.getMessage(), e);
-			}
+		try {
+			return new FileInputStream(path.toFile());
+		} catch (FileNotFoundException e) {
+			Activator.error(e.getMessage(), e);
 		}
+
 		return null;
 	}
 
