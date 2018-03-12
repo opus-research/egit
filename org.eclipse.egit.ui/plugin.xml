@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.0"?>
 <plugin>
-   <extension-point id="commitMessageProvider" name="CommitMessageProvider" schema="schema/commitMessageProvider.exsd"/>
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.eclipse.egit.ui.PluginPreferenceInitializer"/>
    </extension>
@@ -2469,6 +2468,16 @@
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CherryPickHandler"
             id="org.eclipse.egit.ui.history.CherryPick"
             name="%CherryPickCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.RevertHandler"
+            id="org.eclipse.egit.ui.history.Revert"
+            name="%RevertCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.MergeHandler"
+            id="org.eclipse.egit.ui.history.Merge"
+            name="%MergeCommand.name">
       </command>
    </extension>
    <extension
