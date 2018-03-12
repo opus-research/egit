@@ -96,6 +96,12 @@ public class UIText extends NLS {
 	public static String ExistingOrNewPage_SymbolicValueEmptyMapping;
 
 	/** */
+	public static String GitCloneWizard_CloneFailedHeading;
+
+	/** */
+	public static String GitCloneWizard_CloneCanceledMessage;
+
+	/** */
 	public static String GitCloneWizard_title;
 
 	/** */
@@ -106,6 +112,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCloneWizard_errorCannotCreate;
+
+	/** */
+	public static String GitHistoryPage_CompareVersions;
+
+	/** */
+	public static String GitHistoryPage_CompareWithWorking;
+
+	/** */
+	public static String GitHistoryPage_FileNotInCommit;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -1090,6 +1105,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String IgnoreAction_error;
+
+	/** */
+	public static String Track_error;
+
+	/** */
+	public static String Track_see_log;
 
 	static {
 		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$
