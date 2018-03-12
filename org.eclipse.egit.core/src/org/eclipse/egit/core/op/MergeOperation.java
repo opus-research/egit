@@ -111,8 +111,7 @@ public class MergeOperation implements IEGitOperation {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedRefUpdate, e);
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
-				}
-				finally {
+				} finally {
 					ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
 							mymonitor, 1));
 					mymonitor.done();

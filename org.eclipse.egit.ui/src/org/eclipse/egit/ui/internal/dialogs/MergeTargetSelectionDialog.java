@@ -47,7 +47,8 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 	@Override
 	protected String getMessageText() {
-		return UIText.MergeTargetSelectionDialog_SelectRef;
+		return UIText.MergeTargetSelectionDialog_SelectRef
+				+ " " + UIText.MergeTargetSelectionDialog_OnlyFastForward; //$NON-NLS-1$
 	}
 
 	@Override
