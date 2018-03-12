@@ -5008,9 +5008,6 @@ public class UIText extends NLS {
 	public static String StagingViewContentProvider_SubmoduleError;
 
 	/** */
-	public static String StagingViewContentProvider_WalkSubmodules;
-
-	/** */
 	public static String StashApplyCommand_applyFailed;
 
 	/** */
