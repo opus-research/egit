@@ -78,13 +78,13 @@ public class HistoryTest extends GitTestCase {
 		addFile(projectTree,project1_b_txt);
 		projectTree.setId(objectWriter.writeTree(projectTree));
 		tree.setId(objectWriter.writeTree(tree));
-		Commit commit = new Commit();
+		Commit commit = new Commit(thisGit);
 		commit.setAuthor(new PersonIdent(jauthor, new Date(0L), TimeZone
 				.getTimeZone("GMT+1")));
 		commit.setCommitter(new PersonIdent(jcommitter, new Date(0L), TimeZone
 				.getTimeZone("GMT+1")));
 		commit.setMessage("Foo\n\nMessage");
-		commit.setTreeId(tree.getTreeId());
+		commit.setTree(tree);
 		ObjectId commitId = objectWriter.writeCommit(commit);
 
 		tree = new Tree(thisGit);
@@ -95,14 +95,14 @@ public class HistoryTest extends GitTestCase {
 		addFile(projectTree,project1_b_v2_txt);
 		projectTree.setId(objectWriter.writeTree(projectTree));
 		tree.setId(objectWriter.writeTree(tree));
-		commit = new Commit();
+		commit = new Commit(thisGit);
 		commit.setAuthor(new PersonIdent(jauthor, new Date(0L), TimeZone
 				.getTimeZone("GMT+1")));
 		commit.setCommitter(new PersonIdent(jcommitter, new Date(0L), TimeZone
 				.getTimeZone("GMT+1")));
 		commit.setMessage("Modified");
-		commit.setParentId(commitId);
-		commit.setTreeId(tree.getTreeId());
+		commit.setParentIds(new ObjectId[] { commitId });
+		commit.setTree(tree);
 		commitId = objectWriter.writeCommit(commit);
 
 		RefUpdate lck = thisGit.updateRef("refs/heads/master");

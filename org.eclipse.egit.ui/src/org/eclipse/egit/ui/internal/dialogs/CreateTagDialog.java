@@ -39,7 +39,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -87,9 +86,9 @@ public class CreateTagDialog extends Dialog {
 
 	private RevWalk revCommits;
 
-	private List<RevTag> existingTags;
+	private List<Tag> existingTags;
 
-	private RevTag tag;
+	private Tag tag;
 
 	private Text tagNameText;
 
@@ -113,9 +112,9 @@ public class CreateTagDialog extends Dialog {
 
 	static class TagInputList extends LabelProvider implements IWorkbenchAdapter {
 
-		private final List<RevTag> tagList;
+		private final List<Tag> tagList;
 
-		public TagInputList(List<RevTag> tagList) {
+		public TagInputList(List<Tag> tagList) {
 			this.tagList = tagList;
 		}
 
@@ -235,7 +234,7 @@ public class CreateTagDialog extends Dialog {
 	 *
 	 * @param existingTags
 	 */
-	public void setExistingTags(List<RevTag> existingTags) {
+	public void setExistingTags(List<Tag> existingTags) {
 		this.existingTags = existingTags;
 	}
 
@@ -255,7 +254,7 @@ public class CreateTagDialog extends Dialog {
 	 *
 	 * @param tag
 	 */
-	public void setTag(RevTag tag) {
+	public void setTag(Tag tag) {
 		this.tag = tag;
 	}
 
@@ -547,11 +546,11 @@ public class CreateTagDialog extends Dialog {
 				.getSelection();
 		Object firstSelected = selection.getFirstElement();
 
-		if (firstSelected instanceof RevTag) {
-			tag = (RevTag) firstSelected;
+		if (firstSelected instanceof Tag) {
+			tag = (Tag) firstSelected;
 
 			if (!overwriteButton.isEnabled()) {
-				String tagMessageValue = tag.getFullMessage();
+				String tagMessageValue = tag.getMessage();
 				// don't enable OK button if we are dealing with un-annotated
 				// tag because JGit doesn't support them
 				if (tagMessageValue != null
@@ -569,12 +568,12 @@ public class CreateTagDialog extends Dialog {
 	}
 
 	private void setTagImpl() {
-		tagNameText.setText(tag.getTagName());
+		tagNameText.setText(tag.getTag());
 		if (commitCombo != null)
-			commitCombo.setSelectedElement(tag.getObject());
+			commitCombo.setSelectedElement(tag.getObjId());
 
 		// handle un-annotated tags
-		String message = tag.getFullMessage();
+		String message = tag.getMessage();
 		tagMessageText.setText(null != message ? message : ""); //$NON-NLS-1$
 	}
 

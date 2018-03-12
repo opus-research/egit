@@ -33,9 +33,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tag;
-import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevSort;
-import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 
@@ -80,13 +78,13 @@ public class TagActionHandler extends RepositoryActionHandler {
 		dialog.setRevCommitList(revCommits);
 
 		// get and set existing tags
-		List<RevTag> tags = getRevTags(event);
+		List<Tag> tags = getRevTags(event);
 		dialog.setExistingTags(tags);
 
 		if (dialog.open() != IDialogConstants.OK_ID)
 			return null;
 
-		final Tag tag = new Tag();
+		final Tag tag = new Tag(repo);
 		PersonIdent personIdent = new PersonIdent(repo);
 		String tagName = dialog.getTagName();
 
@@ -94,15 +92,15 @@ public class TagActionHandler extends RepositoryActionHandler {
 		tag.setTagger(personIdent);
 		tag.setMessage(dialog.getTagMessage());
 
-		RevObject tagTarget;
+		ObjectId tagCommit;
 		try {
-			tagTarget = getTagTarget(dialog.getTagCommit());
+			tagCommit = getTagCommit(dialog.getTagCommit());
 		} catch (IOException e1) {
 			Activator.handleError(UIText.TagAction_unableToResolveHeadObjectId,
 					e1, true);
 			return null;
 		}
-		tag.setObjectId(tagTarget);
+		tag.setObjId(tagCommit);
 
 		String tagJobName = NLS.bind(UIText.TagAction_creating, tagName);
 		final boolean shouldMoveTag = dialog.shouldOverWriteTag();
@@ -154,17 +152,14 @@ public class TagActionHandler extends RepositoryActionHandler {
 		return revWalk;
 	}
 
-	private RevObject getTagTarget(ObjectId objectId) throws IOException {
-		RevWalk rw = new RevWalk(repo);
-		try {
-			if (objectId == null) {
-				return rw.parseAny(repo.resolve(Constants.HEAD));
+	private ObjectId getTagCommit(ObjectId objectId) throws IOException {
+		ObjectId result = null;
+		if (objectId == null) {
+			result = repo.resolve(Constants.HEAD);
 
-			} else {
-				return rw.parseAny(objectId);
-			}
-		} finally {
-			rw.release();
+		} else {
+			result = objectId;
 		}
+		return result;
 	}
 }

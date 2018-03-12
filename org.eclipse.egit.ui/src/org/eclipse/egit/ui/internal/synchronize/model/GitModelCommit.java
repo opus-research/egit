@@ -187,9 +187,12 @@ public class GitModelCommit extends GitModelObject implements
 
 	@Override
 	public int hashCode() {
-		int result = getLocation().hashCode() ^ remoteCommit.hashCode();
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + getLocation().hashCode();
+		result = prime * result + remoteCommit.hashCode();
 		if (baseCommit != null)
-			result ^= baseCommit.hashCode();
+			result = prime * result + baseCommit.hashCode();
 
 		return result;
 	}
