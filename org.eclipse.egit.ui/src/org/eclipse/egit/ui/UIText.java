@@ -823,6 +823,9 @@ public class UIText extends NLS {
 	public static String CherryPickHandler_IndexDirty;
 
 	/** */
+	public static String CherryPickHandler_JobName;
+
+	/** */
 	public static String CherryPickHandler_unknown;
 
 	/** */
@@ -1760,6 +1763,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_ConfigureLink;
+
+	/** */
+	public static String CommitDialog_ContentAssist;
 
 	/** */
 	public static String CommitDialog_Files;
@@ -3429,6 +3435,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RevertHandler_AlreadyRevertedMessae;
+
+	/** */
+	public static String RevertHandler_JobName;
 
 	/** */
 	public static String RevertHandler_NoRevertTitle;
