@@ -63,8 +63,8 @@ public class ProjectUtil {
 			IPath projectLocation = p.getLocation();
 			if (!p.isOpen() || projectLocation == null)
 				continue;
-			String projectFilePath = projectLocation.append(
-					IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
+			String projectFilePath = projectLocation
+					.append(".project").toOSString(); //$NON-NLS-1$
 			File projectFile = new File(projectFilePath);
 			if (projectFile.exists()) {
 				final File file = p.getLocation().toFile();
@@ -100,11 +100,7 @@ public class ProjectUtil {
 			for (IProject p : projects) {
 				if (monitor.isCanceled())
 					break;
-				IPath projectLocation = p.getLocation();
-				if (projectLocation == null)
-					continue;
-				String projectFilePath = projectLocation.append(
-						IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
+				String projectFilePath = p.getLocation().append(".project").toOSString();  //$NON-NLS-1$
 				File projectFile = new File(projectFilePath);
 				if (projectFile.exists())
 						p.refreshLocal(IResource.DEPTH_INFINITE,
