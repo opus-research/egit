@@ -14,7 +14,6 @@ import java.io.IOException;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.IInputValidator;
-import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 
@@ -51,10 +50,6 @@ public class ValidationUtils {
 						return NLS.bind(
 								UIText.ValidationUtils_RefAlreadyExistsMessage,
 								testFor);
-					RefDatabase refDatabase = repo.getRefDatabase();
-					boolean nameConflicting = refDatabase.isNameConflicting(testFor);
-					if (nameConflicting)
-						return UIText.ValidationUtils_RefNameConflictsWithExistingMessage;
 				} catch (IOException e1) {
 					Activator.logError(NLS.bind(
 							UIText.ValidationUtils_CanNotResolveRefMessage,

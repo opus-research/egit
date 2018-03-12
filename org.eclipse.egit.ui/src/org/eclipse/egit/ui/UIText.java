@@ -3388,6 +3388,9 @@ public class UIText extends NLS {
 	public static String MergeResultDialog_id;
 
 	/** */
+	public static String MergeResultDialog_failed;
+
+	/** */
 	public static String MergeResultDialog_mergeInput;
 
 	/** */
@@ -3395,6 +3398,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeResultDialog_newHead;
+
+	/** */
+	public static String MergeResultDialog_nMore;
 
 	/** */
 	public static String MergeResultDialog_result;
@@ -4269,9 +4275,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_RefAlreadyExistsMessage;
-
-	/** */
-	public static String ValidationUtils_RefNameConflictsWithExistingMessage;
 
 	/** */
 	public static String ValidationUtils_PleaseEnterNameMessage;
