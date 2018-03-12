@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
@@ -64,7 +63,6 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.team.core.Team;
 import org.eclipse.team.ui.ISharedImages;
 import org.eclipse.team.ui.TeamImages;
 import org.eclipse.team.ui.TeamUI;
@@ -185,7 +183,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 *      org.eclipse.jface.viewers.IDecoration)
 	 */
 	public void decorate(Object element, IDecoration decoration) {
-
 		final IResource resource = getResource(element);
 		if (resource == null)
 			return;
@@ -206,9 +203,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		// Don't decorate non-existing resources
 		if (!resource.exists() && !resource.isPhantom())
 			return;
-		// Don't decorate ignored resources (e.g. bin folder content)
-		if (Team.isIgnoredHint(resource))
-			return;
+
 		// Make sure we're dealing with a project under Git revision control
 		final RepositoryMapping mapping = RepositoryMapping
 				.getMapping(resource);
@@ -601,12 +596,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 					// All seems good, schedule the resource for update
 					if (Constants.GITIGNORE_FILENAME.equals(resource.getName())) {
 						// re-decorate all container members when .gitignore changes
-						IContainer parent = resource.getParent();
-						if (parent.exists())
-							resourcesToUpdate.addAll(Arrays.asList(parent
-									.members()));
-						else
-							return false;
+						resourcesToUpdate.addAll(Arrays.asList(resource.getParent().members()));
 					} else {
 						resourcesToUpdate.add(resource);
 					}

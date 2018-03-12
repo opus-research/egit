@@ -48,9 +48,6 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
 class CommitFileDiffViewer extends TableViewer {
-
-	private static final String LINESEP = System.getProperty("line.separator"); //$NON-NLS-1$
-
 	private Repository db;
 
 	private TreeWalk walker;
@@ -167,7 +164,7 @@ class CommitFileDiffViewer extends TableViewer {
 		while (itr.hasNext()) {
 			final FileDiff d = itr.next();
 			if (r.length() > 0)
-				r.append(LINESEP);
+				r.append("\n"); //$NON-NLS-1$
 			r.append(d.path);
 		}
 
