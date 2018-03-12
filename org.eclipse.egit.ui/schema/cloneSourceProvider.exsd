@@ -52,14 +52,14 @@
    <element name="source">
       <annotation>
          <documentation>
-            Description of the server type. Used to configure the node in the Wizard page where a user can choose the server type.
+            The
          </documentation>
       </annotation>
       <complexType>
          <attribute name="label" type="string" use="required">
             <annotation>
                <documentation>
-                  The human readable name of a type of servers containing repositories
+                  The human readable name of a type of servers which contains repositories
                </documentation>
             </annotation>
          </attribute>
@@ -67,14 +67,14 @@
             <annotation>
                <documentation>
                   If true there will be no ability to add different servers of this type.
-The provided repositoryImportPage has to know where to look for the repositories.
+                  The provided repositoryImportPage has to know where to look for the repositories.
                </documentation>
             </annotation>
          </attribute>
          <attribute name="icon" type="string">
             <annotation>
                <documentation>
-                  a relative path of an icon used to visually represent the clone source. 
+                  a relative path of an icon used to visually represent the clone source.
 The path is relative to the location of the plugin.xml file of the contributing plug-in.
                </documentation>
                <appInfo>
@@ -95,7 +95,7 @@ The path is relative to the location of the plugin.xml file of the contributing 
          <attribute name="class" type="string" use="required">
             <annotation>
                <documentation>
-                  The class needs to have a default (no arguments) constructor.
+                  The class needs to have a default (no argumnents) constructor.
                </documentation>
                <appInfo>
                   <meta.attribute kind="java" basedOn=":org.eclipse.egit.ui.internal.provisional.wizards.IRepositoryServerProvider"/>
@@ -115,7 +115,7 @@ The path is relative to the location of the plugin.xml file of the contributing 
          <attribute name="class" type="string">
             <annotation>
                <documentation>
-                  The class needs to have a default (no arguments) constructor.
+                  The class needs to have a default (no argumnents) constructor.
                </documentation>
                <appInfo>
                   <meta.attribute kind="java" basedOn="org.eclipse.jface.wizard.WizardPage:org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult"/>
@@ -149,6 +149,14 @@ org.eclipse.egit.ui.internal.provisional.wizards.RepositoryServerInfo
       </documentation>
    </annotation>
 
+   <annotation>
+      <appInfo>
+         <meta.section type="implementation"/>
+      </appInfo>
+      <documentation>
+         [Enter information about supplied implementation of this extension point.]
+      </documentation>
+   </annotation>
 
    <annotation>
       <appInfo>
@@ -160,7 +168,7 @@ org.eclipse.egit.ui.internal.provisional.wizards.RepositoryServerInfo
  are made available under the terms of the Eclipse Public License v1.0
  which accompanies this distribution, and is available at
  http://www.eclipse.org/legal/epl-v10.html
-
+ 
  Contributors:
     Stefan Lay (SAP AG) - initial implementation
       </documentation>

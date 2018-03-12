@@ -30,5 +30,4 @@ public interface IRepositorySearchResult {
 	 */
 	public GitRepositoryInfo getGitRepositoryInfo()
 			throws NoRepositoryInfoException;
-
 }

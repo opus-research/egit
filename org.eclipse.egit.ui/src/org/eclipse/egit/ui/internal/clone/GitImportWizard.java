@@ -263,7 +263,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					defaultLocation[0] = createGeneralProjectPage
 							.isDefaultLocation();
 					path[0] = importWithDirectoriesPage.getPath();
-					repoDir[0] = getClonedRepository().getDirectory();
+					repoDir[0] =  getClonedRepository().getDirectory();
 				}
 			});
 			try {

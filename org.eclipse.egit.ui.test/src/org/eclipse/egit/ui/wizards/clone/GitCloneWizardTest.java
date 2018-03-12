@@ -19,16 +19,13 @@ import java.io.File;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.RepoPropertiesPage;
 import org.eclipse.egit.ui.common.RepoRemoteBranchesPage;
 import org.eclipse.egit.ui.common.WorkingCopyPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.osgi.util.NLS;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class GitCloneWizardTest extends GitCloneWizardTestBase {
@@ -245,31 +242,29 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 		RepoPropertiesPage repoProperties = importWizard.openRepoPropertiesPage();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://no.example.com/EGIT");
-		remoteBranches.assertErrorMessage(NLS.bind(
-				UIText.SourceBranchPage_CompositeTransportErrorMessage,
-				"Exception caught during execution of ls-remote command",
-				"git://no.example.com/EGIT: unknown host"));
-		remoteBranches.assertCannotProceed();
-		remoteBranches.cancel();
-	}
-
-	@Test
-	public void invalidPortFreezesDialog() throws Exception {
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openRepoPropertiesPage();
-		RepoRemoteBranchesPage remoteBranches = repoProperties
-				.nextToRemoteBranches("git://localhost:80/EGIT");
-		remoteBranches.assertErrorMessage(NLS.bind(
-				UIText.SourceBranchPage_CompositeTransportErrorMessage,
-				"Exception caught during execution of ls-remote command",
-				"git://localhost:80/EGIT: Connection refused"));
+		remoteBranches
+				.assertErrorMessage("git://no.example.com/EGIT: unknown host");
 		remoteBranches.assertCannotProceed();
 		remoteBranches.cancel();
 	}
 
 	// TODO: Broken, seems that this takes forever and does not come back with
 	// an error. Perhaps set a higher timeout for this test ?
-	@Ignore
+	@Test
+	public void invalidPortFreezesDialog() throws Exception {
+		importWizard.openWizard();
+		RepoPropertiesPage repoProperties = importWizard.openRepoPropertiesPage();
+		RepoRemoteBranchesPage remoteBranches = repoProperties
+				.nextToRemoteBranches("git://localhost:80/EGIT");
+		remoteBranches
+				.assertErrorMessage("git://localhost:80/EGIT: Connection refused: connect");
+		remoteBranches.assertCannotProceed();
+		remoteBranches.cancel();
+	}
+
+	// TODO: Broken, seems that this takes forever and does not come back with
+	// an error. Perhaps set a higher timeout for this test ?
+	@Test
 	public void timeoutToASocketFreezesDialog() throws Exception {
 		importWizard.openWizard();
 		RepoPropertiesPage repoProperties = importWizard.openRepoPropertiesPage();
