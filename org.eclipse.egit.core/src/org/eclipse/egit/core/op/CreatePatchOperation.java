@@ -174,14 +174,14 @@ public class CreatePatchOperation implements IEGitOperation {
 					@Override
 					public synchronized void write(byte[] b, int off, int len) {
 						super.write(b, off, len);
-						try {
-							if (currentEncoding == null)
-								sb.append(toString("UTF-8")); //$NON-NLS-1$
-							else
-								sb.append(toString(currentEncoding));
-						} catch (UnsupportedEncodingException e) {
+						if (currentEncoding == null)
 							sb.append(toString());
-						}
+						else
+							try {
+								sb.append(toString(currentEncoding));
+							} catch (UnsupportedEncodingException e) {
+								sb.append(toString());
+							}
 						reset();
 					}
 				}) {
@@ -336,12 +336,7 @@ public class CreatePatchOperation implements IEGitOperation {
 	 * @param diffFmt
 	 */
 	public void updateWorkspacePatchPrefixes(StringBuilder sb, DiffFormatter diffFmt) {
-		RawText rt;
-		try {
-			rt = new RawText(sb.toString().getBytes("UTF-8")); //$NON-NLS-1$
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
-		}
+		RawText rt = new RawText(sb.toString().getBytes());
 
 		final String oldPrefix = diffFmt.getOldPrefix();
 		final String newPrefix = diffFmt.getNewPrefix();
