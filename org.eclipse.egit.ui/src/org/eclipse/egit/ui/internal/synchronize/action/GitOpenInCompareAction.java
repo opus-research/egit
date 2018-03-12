@@ -124,9 +124,6 @@ public class GitOpenInCompareAction extends Action {
 		try {
 			IPath location = blob.getLocation();
 			RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-			if (mapping == null) {
-				return null;
-			}
 			Repository repo = mapping.getRepository();
 			String repoRelativePath = mapping.getRepoRelativePath(location);
 			return CompareUtils.getIndexTypedElement(repo, repoRelativePath);
@@ -137,9 +134,6 @@ public class GitOpenInCompareAction extends Action {
 
 	private ITypedElement getHeadFileElement(GitModelBlob blob) {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(blob.getLocation());
-		if (mapping == null) {
-			return null;
-		}
 		Repository repo = mapping.getRepository();
 		String gitPath = mapping.getRepoRelativePath(blob.getLocation());
 		return CompareUtils.getHeadTypedElement(repo, gitPath);

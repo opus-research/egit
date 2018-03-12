@@ -34,19 +34,16 @@ public class UIText extends NLS {
 	public static String FeatureFinishHandler_Conflicts;
 
 	/**	 */
-	public static String FinishHandler_conflictsWhileMergingFromTo;
+	public static String FeatureFinishHandler_conflictsWhileMergingFromTo;
 
 	/**	 */
-	public static String AbstractGitFlowHandler_rebaseConflicts;
-
-	/**	 */
-	public static String AbstractGitFlowHandler_finishConflicts;
+	public static String FeatureFinishHandler_featureFinishConflicts;
 
 	/**	 */
 	public static String FeatureFinishHandler_finishingFeature;
 
 	/**	 */
-	public static String FeatureRebaseHandler_problemsOccurred;
+	public static String FeatureRebaseHandler_conflicts;
 
 	/**	 */
 	public static String FeatureRebaseHandler_rebaseFailed;
@@ -55,10 +52,7 @@ public class UIText extends NLS {
 	public static String FeatureRebaseHandler_rebasingFeature;
 
 	/**	 */
-	public static String FeatureRebaseHandler_problemsOcccurredDuringRebase;
-
-	/**	 */
-	public static String FeatureRebaseHandler_statusWas;
+	public static String FeatureRebaseHandler_resolveConflictsManually;
 
 	/**	 */
 	public static String FeatureStartHandler_pleaseProvideANameForTheNewFeature;
@@ -124,9 +118,6 @@ public class UIText extends NLS {
 	public static String ReleaseStartHandler_provideReleaseName;
 
 	/**	 */
-	public static String ReleaseStartHandler_startCommitCouldNotBeDetermined;
-
-	/**	 */
 	public static String ReleaseStartHandler_startingNewRelease;
 
 	/**	 */
@@ -158,15 +149,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FeatureCheckoutHandler_cleanupDialog_text;
-
-	/** */
-	public static String FinishFeatureDialog_squashCheck;
-
-	/** */
-	public static String FinishFeatureDialog_title;
-
-	/** */
-	public static String FinishFeatureDialog_setParameterForFinishing;
 
 	/** */
 	public static String HotfixFinishOperation_unexpectedConflictsHotfixAborted;
