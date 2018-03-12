@@ -133,6 +133,9 @@ class GitSyncObjectCache {
 				return null;
 		}
 
+		if (parent == null)
+			return null;
+
 		return parent.get(childPath.subSequence(
 				childPath.lastIndexOf("/") + 1, childPath.length())); //$NON-NLS-1$
 	}
