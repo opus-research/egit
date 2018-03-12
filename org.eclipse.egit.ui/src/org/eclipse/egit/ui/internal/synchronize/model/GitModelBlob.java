@@ -30,15 +30,13 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public class GitModelBlob extends GitModelCommit {
 
-	private final String name;
+	private final IPath location;
 
 	private final ObjectId baseId;
 
 	private final ObjectId remoteId;
 
 	private final ObjectId ancestorId;
-
-	private final IPath location;
 
 	private static final GitModelObject[] empty = new GitModelObject[0];
 
@@ -56,27 +54,27 @@ public class GitModelBlob extends GitModelCommit {
 	 *            parent of this object
 	 * @param commit
 	 *            remote commit
+	 * @param ancestorCommit TODO
 	 * @param ancestorId
 	 *            common ancestor id
 	 * @param baseId
 	 *            id of base object variant
 	 * @param remoteId
 	 *            id of remote object variants
-	 * @param name
-	 *            human readable blob name (file name)
+	 * @param location
+	 *            absolute blob location
 	 * @throws IOException
 	 */
 	public GitModelBlob(GitModelObjectContainer parent, RevCommit commit,
-			ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, String name)
+			RevCommit ancestorCommit, ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, IPath location)
 			throws IOException {
 		// only direction is important for us, therefore we mask rest of bits in
 		// kind
-		super(parent, commit, parent.getKind() & (LEFT | RIGHT));
-		this.name = name;
+		super(parent, commit, ancestorCommit, parent.getKind() & (LEFT | RIGHT));
 		this.baseId = baseId;
 		this.remoteId = remoteId;
 		this.ancestorId = ancestorId;
-		location = getParent().getLocation().append(name);
+		this.location = location;
 		gitPath = Repository.stripWorkDir(getRepository().getWorkTree(),
 				getLocation().toFile());
 	}
@@ -88,7 +86,7 @@ public class GitModelBlob extends GitModelCommit {
 
 	@Override
 	public String getName() {
-		return name;
+		return location.lastSegment();
 	}
 
 	@Override
@@ -163,7 +161,7 @@ public class GitModelBlob extends GitModelCommit {
 			ComparisonDataSource remoteData = new ComparisonDataSource(
 					remoteCommit, remoteId);
 			ComparisonDataSource ancestorData = new ComparisonDataSource(
-					getAncestorCommit(), ancestorId);
+					ancestorCommit, ancestorId);
 			compareInput = getCompareInput(baseData, remoteData, ancestorData);
 		}
 	}
