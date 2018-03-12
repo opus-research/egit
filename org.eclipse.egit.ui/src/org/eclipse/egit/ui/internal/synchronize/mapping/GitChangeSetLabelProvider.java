@@ -68,7 +68,7 @@ public class GitChangeSetLabelProvider extends SynchronizationLabelProvider {
 			}
 
 			if (element instanceof GitModelCommit)
-				return fImageCache.createImage(UIIcons.CHANGESET);
+				return fImageCache.createImage(UIIcons.PUSH);
 
 			if (element instanceof GitModelRepository)
 				return fImageCache.createImage(UIIcons.REPOSITORY);

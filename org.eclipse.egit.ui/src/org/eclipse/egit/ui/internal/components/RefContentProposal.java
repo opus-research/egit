@@ -17,12 +17,11 @@ import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 
@@ -119,13 +118,14 @@ public class RefContentProposal implements IContentProposal {
 	public String getDescription() {
 		if (objectId == null)
 			return null;
-		ObjectReader reader = db.newObjectReader();
+		final ObjectLoader loader;
 		try {
-			final ObjectLoader loader = reader.open(objectId);
+			loader = db.open(objectId);
+
 			final StringBuilder sb = new StringBuilder();
 			sb.append(refName);
 			sb.append('\n');
-			sb.append(reader.abbreviate(objectId).name());
+			sb.append(objectId.abbreviate(db).name());
 			sb.append(" - "); //$NON-NLS-1$
 
 			switch (loader.getType()) {
@@ -136,9 +136,9 @@ public class RefContentProposal implements IContentProposal {
 				break;
 			case Constants.OBJ_TAG:
 				RevWalk walk = new RevWalk(db);
-				RevTag t = walk.parseTag(objectId);
+				Tag t = walk.parseTag(objectId).asTag(walk);
 				appendObjectSummary(sb, UIText.RefContentProposal_tag, t
-						.getTaggerIdent(), t.getFullMessage());
+						.getTagger(), t.getMessage());
 				break;
 			case Constants.OBJ_TREE:
 				sb.append(UIText.RefContentProposal_tree);
@@ -154,8 +154,6 @@ public class RefContentProposal implements IContentProposal {
 			Activator.logError(NLS.bind(
 					UIText.RefContentProposal_errorReadingObject, objectId), e);
 			return null;
-		} finally {
-			reader.release();
 		}
 	}
 
