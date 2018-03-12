@@ -106,7 +106,7 @@ public class BranchSelectionDialog extends TitleAreaDialog {
 		// TODO deprecated constructor for now
 		FilteredTree tree = new FilteredTree(parent, SWT.SINGLE | SWT.BORDER, new PatternFilter());
 		branchTree = tree.getViewer();
-		branchTree.setLabelProvider(new RepositoriesViewLabelProvider());
+		new RepositoriesViewLabelProvider(branchTree);
 		branchTree.setContentProvider(new RepositoriesViewContentProvider());
 
 		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300).applyTo(
@@ -168,6 +168,8 @@ public class BranchSelectionDialog extends TitleAreaDialog {
 		setTitle(title);
 		setMessage(getMessageText());
 		getShell().setText(title);
+
+		applyDialogFont(parent);
 
 		return parent;
 	}
