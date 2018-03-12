@@ -175,8 +175,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 	private Entry[] entries(final boolean hasInheritedResourceFilters) {
 		final IResource[] resources;
 		try {
-			resources = node.members(IContainer.INCLUDE_HIDDEN
-					| IContainer.INCLUDE_TEAM_PRIVATE_MEMBERS);
+			resources = node.members(IContainer.INCLUDE_HIDDEN);
 		} catch (CoreException err) {
 			return EOF;
 		}
