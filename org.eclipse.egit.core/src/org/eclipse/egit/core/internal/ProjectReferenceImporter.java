@@ -6,10 +6,9 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.core;
+package org.eclipse.egit.core.internal;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -31,24 +30,38 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.ProjectReference;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 
-class ProjectReferenceImporter {
+/**
+ * Processes project references, clones and imports them.
+ */
+public class ProjectReferenceImporter {
 
 	private final String[] referenceStrings;
 
-	ProjectReferenceImporter(String[] referenceStrings) {
+	/**
+	 * @param referenceStrings the reference strings to import
+	 */
+	public ProjectReferenceImporter(String[] referenceStrings) {
 		this.referenceStrings = referenceStrings;
 	}
 
-	List<IProject> run(IProgressMonitor monitor) throws TeamException {
+	/**
+	 * Imports the projects as described in the reference strings.
+	 *
+	 * @param monitor progress monitor
+	 * @return the imported projects
+	 * @throws TeamException
+	 */
+	public List<IProject> run(IProgressMonitor monitor) throws TeamException {
 
 		final Map<URIish, Map<String, Set<ProjectReference>>> repositories = parseReferenceStrings();
 
@@ -67,35 +80,27 @@ class ProjectReferenceImporter {
 
 				final IPath workDir = getWorkingDir(gitUrl, branch,
 						branches.keySet());
-				final File repositoryPath = workDir.append(
-						Constants.DOT_GIT_EXT).toFile();
-
-				boolean shouldClone = true;
-
 				if (workDir.toFile().exists()) {
-					if (repositoryAlreadyExistsForUrl(repositoryPath, gitUrl)) {
-						shouldClone = false;
-					} else {
-						final Collection<String> projectNames = new LinkedList<String>();
-						for (final ProjectReference projectReference : projects)
-							projectNames.add(projectReference.getProjectDir());
-						throw new TeamException(
-								NLS.bind(
-										CoreText.GitProjectSetCapability_CloneToExistingDirectory,
-										new Object[] { workDir, projectNames,
-												gitUrl }));
-					}
+					final Collection<String> projectNames = new LinkedList<String>();
+					for (final ProjectReference projectReference : projects)
+						projectNames.add(projectReference.getProjectDir());
+					throw new TeamException(
+							NLS.bind(
+									CoreText.GitProjectSetCapability_CloneToExistingDirectory,
+									new Object[] { workDir, projectNames,
+											gitUrl }));
 				}
 
 				try {
-					if (shouldClone) {
-						int timeout = 60;
-						String refName = Constants.R_HEADS + branch;
-						final CloneOperation cloneOperation = new CloneOperation(
-								gitUrl, true, null, workDir.toFile(), refName,
-								Constants.DEFAULT_REMOTE_NAME, timeout);
-						cloneOperation.run(monitor);
-					}
+					int timeout = 60;
+					String refName = Constants.R_HEADS + branch;
+					final CloneOperation cloneOperation = new CloneOperation(
+							gitUrl, true, null, workDir.toFile(), refName,
+							Constants.DEFAULT_REMOTE_NAME, timeout);
+					cloneOperation.run(monitor);
+
+					final File repositoryPath = workDir.append(
+							Constants.DOT_GIT_EXT).toFile();
 
 					Activator.getDefault().getRepositoryUtil()
 							.addConfiguredRepository(repositoryPath);
@@ -169,30 +174,6 @@ class ProjectReferenceImporter {
 			extendedName = humanishName + "_" + branch; //$NON-NLS-1$
 		final IPath workDir = workspaceLocation.append(extendedName);
 		return workDir;
-	}
-
-	private boolean repositoryAlreadyExistsForUrl(File repositoryPath,
-			URIish gitUrl) {
-		if (repositoryPath.exists()) {
-			try {
-				FileRepository existingRepository = new FileRepository(
-						repositoryPath);
-				String remoteUrl = existingRepository.getConfig().getString(
-						ConfigConstants.CONFIG_REMOTE_SECTION,
-						Constants.DEFAULT_REMOTE_NAME,
-						ConfigConstants.CONFIG_KEY_URL);
-				existingRepository.close();
-				URIish existingUrl = new URIish(remoteUrl);
-				if (existingUrl.equals(gitUrl)) {
-					return true;
-				}
-			} catch (IOException e) {
-				return false;
-			} catch (URISyntaxException e) {
-				return false;
-			}
-		}
-		return false;
 	}
 
 	private List<IProject> importProjects(final Set<ProjectReference> projects,
