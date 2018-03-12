@@ -1271,10 +1271,6 @@ public class StagingView extends ViewPart {
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
 
 		removeListeners();
-		if (reloadJob != null) {
-			reloadJob.cancel();
-			reloadJob = null;
-		}
 	}
 
 	private void asyncExec(Runnable runnable) {
