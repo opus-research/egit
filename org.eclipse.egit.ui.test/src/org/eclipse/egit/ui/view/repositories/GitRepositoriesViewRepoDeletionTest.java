@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, Matthias Sohn <matthias.sohn@sap.com> and others.
+ * Copyright (c) 2012, 2013 Matthias Sohn <matthias.sohn@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,7 @@ import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.SubmoduleAddCommand;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
@@ -98,6 +98,7 @@ public class GitRepositoriesViewRepoDeletionTest extends
 		command.setURI(uri);
 		Repository subRepo = command.call();
 		assertNotNull(subRepo);
+		subRepo.close();
 
 		refreshAndWait();
 

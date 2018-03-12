@@ -49,7 +49,7 @@ import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.StringUtils;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
@@ -94,6 +94,14 @@ public abstract class AbstractSynchronizeViewTest extends
 	public void closeSynchronizeView() {
 		SWTBotView syncView = bot.viewByTitle("Synchronize");
 		syncView.close();
+	}
+
+	@After
+	public void deleteEmptyProject() throws Exception {
+		IProject prj = ResourcesPlugin.getWorkspace().getRoot()
+				.getProject(EMPTY_PROJECT);
+		if (prj.exists())
+			prj.delete(false, false, null);
 	}
 
 	@Before
