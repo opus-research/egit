@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -26,7 +26,8 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
-import org.eclipse.ui.ISources;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
@@ -34,6 +35,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 
+	private static final IWorkbench WORKBENCH = PlatformUI.getWorkbench();
 
 	/**
 	 * @param event
@@ -43,19 +45,17 @@ public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 	 */
 	public static Repository getRepository(ExecutionEvent event) {
 		ISelection selection = HandlerUtil.getCurrentSelection(event);
-		IEditorInput editorInput = getActiveEditorInput(event);
-		return getRepository(selection, editorInput);
+		return getRepository(selection);
 	}
 
 	/**
 	 * Get repository from selection
 	 *
-	 * @param selection the selection or <code>null</code> if not available
-	 * @param editorInput the editor input to be used in case of a text selection or <code>null</code> if not available
+	 * @param selection
 	 * @return a {@link Repository} if all elements in the current selection map
 	 *         to the same {@link Repository}, otherwise null
 	 */
-	protected static Repository getRepository(ISelection selection, IEditorInput editorInput) {
+	protected static Repository getRepository(ISelection selection) {
 		if (selection == null || selection.isEmpty())
 			return null;
 		if (selection instanceof IStructuredSelection) {
@@ -91,9 +91,12 @@ public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 			}
 			return result;
 		}
-		if (selection instanceof TextSelection && editorInput != null) {
-			IResource resource = (IResource) editorInput
+		if (selection instanceof TextSelection) {
+			IEditorInput activeEditor = WORKBENCH.getActiveWorkbenchWindow()
+					.getActivePage().getActiveEditor().getEditorInput();
+			IResource resource = (IResource) activeEditor
 					.getAdapter(IResource.class);
+
 			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource);
@@ -128,21 +131,6 @@ public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 	 */
 	protected Shell getShell(ExecutionEvent event) {
 		return HandlerUtil.getActiveShell(event);
-	}
-
-	/**
-	 * Return the input of the active editor.
-	 * <strong>Note:</strong> Copied from org.eclipse.ui.handlers.HandlerUtil.getActiveEditorInput(ExecutionEvent) for compatibility reasons.
-	 *
-	 * @param event
-	 *            The execution event that contains the application context
-	 * @return the input of the active editor, or <code>null</code>.
-	 */
-	private static IEditorInput getActiveEditorInput(ExecutionEvent event) {
-		Object o = HandlerUtil.getVariable(event, ISources.ACTIVE_EDITOR_INPUT_NAME);
-		if (o instanceof IEditorInput)
-			return (IEditorInput) o;
-		return null;
 	}
 
 }

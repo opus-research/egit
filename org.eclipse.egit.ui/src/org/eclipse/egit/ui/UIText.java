@@ -1863,9 +1863,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_Commit;
 
 	/** */
-	public static String CommitDialog_CommitAndPush;
-
-	/** */
 	public static String CommitDialog_CommitChanges;
 
 	/** */
@@ -1971,10 +1968,28 @@ public class UIText extends NLS {
 	public static String CommitDialog_Title;
 
 	/** */
+	public static String CommitDialog_PushSectionTitle;
+
+	/** */
+	public static String CommitDialog_PushUpstream;
+
+	/** */
 	public static String ConfigurationChecker_gitPrefixWarningMessage;
 
 	/** */
+	public static String ConfigurationChecker_gitPrefixWarningTitle;
+
+	/** */
+	public static String ConfigurationChecker_checkHomeDirectory;
+
+	/** */
 	public static String ConfigurationChecker_checkConfiguration;
+
+	/** */
+	public static String ConfigurationChecker_doNotShowAgain;
+
+	/** */
+	public static String ConfigurationChecker_doNotShowGitPrefixWarningAgain;
 
 	/** */
 	public static String ConfigurationChecker_homeNotSet;
@@ -2143,12 +2158,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitMessageViewer_parent;
-
-	/** */
-	public static String CompareWithHeadActionHandler_NoHeadTitle;
-
-	/** */
-	public static String CompareWithHeadActionHandler_NoHeadMessage;
 
 	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
@@ -3061,9 +3070,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
-
-	/** */
-	public static String DialogsPreferencePage_HideWarningGroupHeader;
 
 	/** */
 	public static String DialogsPreferencePage_HomeDirWarning;
@@ -4450,9 +4456,6 @@ public class UIText extends NLS {
 	public static String StagingView_CommitMessage;
 
 	/** */
-	public static String StagingView_CommitAndPush;
-
-	/** */
 	public static String StagingView_Committer;
 
 	/** */
@@ -4520,9 +4523,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_StageItemMenuLabel;
-
-	/** */
-	public static String StagingView_IgnoreItemMenuLabel;
 
 	/** */
 	public static String StagingView_DeleteItemMenuLabel;
