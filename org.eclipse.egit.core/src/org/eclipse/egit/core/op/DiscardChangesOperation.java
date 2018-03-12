@@ -170,11 +170,8 @@ public class DiscardChangesOperation implements IEGitOperation {
 			Collection<String> paths = entry.getValue();
 			CheckoutCommand checkoutCommand = new Git(repository).checkout();
 			checkoutCommand.setStartPoint(this.revision);
-			if (!paths.isEmpty())
-				for (String path : paths)
-					checkoutCommand.addPath(path);
-			else
-				checkoutCommand.setAllPaths(true);
+			for (String path : paths)
+				checkoutCommand.addPath(path);
 			checkoutCommand.call();
 		}
 	}
