@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +18,6 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
@@ -323,16 +321,16 @@ public class TestRepository {
 
 
 	/**
-	 * Adds the given resource to the index
+	 * Adds the given file to the index
 	 *
-	 * @param resource
+	 * @param file
 	 * @throws CoreException
 	 * @throws IOException
 	 * @throws GitAPIException
 	 * @throws NoFilepatternException
 	 */
-	public void addToIndex(IResource resource) throws CoreException, IOException, NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(resource.getLocation().toOSString());
+	public void addToIndex(IFile file) throws CoreException, IOException, NoFilepatternException, GitAPIException {
+		String repoPath = getRepoRelativePath(file.getLocation().toOSString());
 		new Git(repository).add().addFilepattern(repoPath).call();
 	}
 
