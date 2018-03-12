@@ -236,23 +236,13 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected File createProjectAndCommitToRepository(String repoName)
 			throws Exception {
-		return createProjectAndCommitToRepository(repoName, PROJ1, PROJ2);
-	}
-
-	protected File createProjectAndCommitToRepository(String repoName,
-			String projectName) throws Exception {
-		return createProjectAndCommitToRepository(repoName, projectName, null);
-	}
-
-	protected File createProjectAndCommitToRepository(String repoName,
-			String project1Name, String project2Name) throws Exception {
 
 		Repository myRepository = createLocalTestRepository(repoName);
 		File gitDir = myRepository.getDirectory();
 
 		// we need to commit into master first
 		IProject firstProject = createStandardTestProjectInRepository(
-				myRepository, project1Name);
+				myRepository, PROJ1);
 
 		try {
 			new ConnectProviderOperation(firstProject, gitDir).execute(null);
@@ -261,25 +251,20 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		}
 		assertConnected(firstProject);
 
-		IProject secondProject = null;
-		if (project2Name != null) {
-			secondProject = createStandardTestProjectInRepository(myRepository,
-					project2Name);
+		IProject secondProject = createStandardTestProjectInRepository(
+				myRepository, PROJ2);
 
-			// TODO we should be able to hide the .project
-			// IFile gitignore = secondPoject.getFile(".gitignore");
-			// gitignore.create(new ByteArrayInputStream("/.project\n"
-			// .getBytes(firstProject.getDefaultCharset())), false, null);
+		// TODO we should be able to hide the .project
+		// IFile gitignore = secondPoject.getFile(".gitignore");
+		// gitignore.create(new ByteArrayInputStream("/.project\n"
+		// .getBytes(firstProject.getDefaultCharset())), false, null);
 
-			try {
-				new ConnectProviderOperation(secondProject, gitDir)
-						.execute(null);
-			} catch (Exception e) {
-				Activator.logError("Failed to connect project to repository",
-						e);
-			}
-			assertConnected(secondProject);
+		try {
+			new ConnectProviderOperation(secondProject, gitDir).execute(null);
+		} catch (Exception e) {
+			Activator.logError("Failed to connect project to repository", e);
 		}
+		assertConnected(secondProject);
 
 		IFile dotProject = firstProject.getFile(".project");
 		assertTrue(".project is not accessible: " + dotProject,
@@ -287,17 +272,12 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		IFolder folder = firstProject.getFolder(FOLDER);
 		IFile textFile = folder.getFile(FILE1);
 		IFile textFile2 = folder.getFile(FILE2);
-		IFile[] commitables = null;
-		if (secondProject != null) {
-			folder = secondProject.getFolder(FOLDER);
-			IFile secondtextFile = folder.getFile(FILE1);
-			IFile secondtextFile2 = folder.getFile(FILE2);
+		folder = secondProject.getFolder(FOLDER);
+		IFile secondtextFile = folder.getFile(FILE1);
+		IFile secondtextFile2 = folder.getFile(FILE2);
 
-			commitables = new IFile[] { dotProject, textFile, textFile2,
-					secondtextFile, secondtextFile2 };
-		} else {
-			commitables = new IFile[] { dotProject, textFile, textFile2 };
-		}
+		IFile[] commitables = new IFile[] { dotProject,
+				textFile, textFile2, secondtextFile, secondtextFile2 };
 		ArrayList<IFile> untracked = new ArrayList<IFile>();
 		untracked.addAll(Arrays.asList(commitables));
 		// commit to stable
@@ -309,10 +289,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// now create a stable branch (from master)
 		createStableBranch(myRepository);
 		// and check in some stuff into master again
-		String newContent = "Touched at " + System.currentTimeMillis();
-		IFile file = touch(firstProject.getName(), FOLDER + '/' + FILE1,
-				newContent);
-		addAndCommit(file, newContent);
+		touchAndSubmit(null);
 
 		// Make sure cache entry is already listening for changes
 		IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();
