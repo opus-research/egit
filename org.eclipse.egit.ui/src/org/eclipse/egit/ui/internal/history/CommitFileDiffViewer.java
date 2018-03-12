@@ -144,8 +144,6 @@ public class CommitFileDiffViewer extends TableViewer {
 		this.site = site;
 		final Table rawTable = getTable();
 
-		rawTable.setLinesVisible(true);
-
 		Color fg = rawTable.getForeground();
 		Color bg = rawTable.getBackground();
 		RGB dimmedForegroundRgb = ColorUtil.blend(fg.getRGB(), bg.getRGB(), 60);
@@ -416,29 +414,8 @@ public class CommitFileDiffViewer extends TableViewer {
 	protected void inputChanged(final Object input, final Object oldInput) {
 		if (oldInput == null && input == null)
 			return;
-
-		updateLabelProviderFlags();
-
 		super.inputChanged(input, oldInput);
 		revealFirstInterestingElement();
-	}
-
-	/**
-	 * Updates "interesting" flag for the label provider to make sure there is
-	 * no highlighting if all files shown are "interesting"
-	 */
-	private void updateLabelProviderFlags() {
-		Object[] elements = ((IStructuredContentProvider) getContentProvider())
-				.getElements(null);
-		boolean all = true;
-		for (int i = 0; i < elements.length; i++) {
-			final FileDiff c = (FileDiff) elements[i];
-			if (!c.isMarked(FileDiffContentProvider.INTERESTING_MARK_TREE_FILTER_INDEX)) {
-				all = false;
-				break;
-			}
-		}
-		((FileDiffLabelProvider) getLabelProvider()).setAllInteresting(all);
 	}
 
 	/**
@@ -586,7 +563,7 @@ public class CommitFileDiffViewer extends TableViewer {
 			try {
 				if (file != null) {
 					IResource[] resources = new IResource[] { file, };
-					CompareUtils.compare(resources, getRepository(),
+					CompareUtils.compare(resources, getRepository(), np, op,
 							newCommit.getName(), oldCommit.getName(), false,
 							page);
 				} else {
@@ -710,13 +687,7 @@ public class CommitFileDiffViewer extends TableViewer {
 	 * @param interestingPaths
 	 */
 	void setInterestingPaths(Set<String> interestingPaths) {
-		FileDiffContentProvider contentProvider = (FileDiffContentProvider) getContentProvider();
-		contentProvider.setInterestingPaths(interestingPaths);
-		if (interestingPaths == null)
-			((FileDiffLabelProvider) getLabelProvider())
-					.setAllInteresting(true);
-		else
-			updateLabelProviderFlags();
+		((FileDiffContentProvider) getContentProvider()).setInterestingPaths(interestingPaths);
 	}
 
 	void selectFirstInterestingElement() {
