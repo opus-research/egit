@@ -18,7 +18,6 @@ import static org.junit.Assert.fail;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashSet;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -156,8 +155,8 @@ public class IgnoreOperationTest extends GitTestCase {
 	@Test
 	public void testIgnoreWithResource() throws Exception {
 		IFolder binFolder = project.getProject().getFolder("bin");
-		IgnoreOperation operation = new IgnoreOperation(
-				new HashSet<IPath>(Arrays.asList(binFolder.getLocation())));
+		@SuppressWarnings("deprecation")
+		IgnoreOperation operation = new IgnoreOperation(new IResource[] {binFolder});
 		operation.execute(new NullProgressMonitor());
 
 		String content = project.getFileContent(Constants.GITIGNORE_FILENAME);
