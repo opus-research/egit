@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -137,7 +137,7 @@ public class RebaseOperation implements IEGitOperation {
 								new EclipseGitProgressTransformer(actMonitor));
 				try {
 					if (handler != null)
-						cmd.runInteractively(handler, true);
+						cmd.runInteractively(handler);
 					if (operation == Operation.BEGIN)
 						result = cmd.setUpstream(ref.getName()).call();
 					else
