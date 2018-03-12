@@ -315,14 +315,13 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		bot.activeEditor().save();
 
 
-		/*
-		 * Then file FILE1 should not be in index since 'copyLeftToRight' should
-		 * do nothing as the file in the index is read-only.
-		 */
+		// then file FILE1 should be in index
 		FileRepository repo = lookupRepository(repositoryFile);
 		Status status = new Git(repo).status().call();
 		assertThat(Long.valueOf(status.getChanged().size()),
-				is(Long.valueOf(0L)));
+				is(Long.valueOf(1L)));
+		assertThat(status.getChanged().iterator().next(), is(PROJ1 + "/"
+				+ FOLDER + "/" + FILE1));
 	}
 
 	@Test

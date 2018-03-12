@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2009, 2013 Yann Simon <yann.simon.fr@gmail.com> and others.
+ * Copyright (C) 2009, Yann Simon <yann.simon.fr@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
-import org.eclipse.ui.IEditorInput;
 
 /**
  * @author simon
@@ -160,36 +159,29 @@ public class EditableRevision extends FileRevisionTypedElement implements
 	}
 
 	private synchronized ISharedDocumentAdapter getSharedDocumentAdapter() {
-		if (sharedDocumentAdapter == null) {
-			EditableSharedDocumentAdapter.ISharedDocumentAdapterListener sharedDocumentAdapterListener = new EditableSharedDocumentAdapter.ISharedDocumentAdapterListener() {
-				public void handleDocumentConnected() {
-					// nothing
-				}
-
-				public void handleDocumentFlushed() {
-					// nothing
-				}
-
-				public void handleDocumentDeleted() {
-					// nothing
-				}
-
-				public void handleDocumentSaved() {
-					// nothing
-				}
-
-				public void handleDocumentDisconnected() {
-					// nothing
-				}
-			};
+		if (sharedDocumentAdapter == null)
 			sharedDocumentAdapter = new EditableSharedDocumentAdapter(
-					sharedDocumentAdapterListener) {
-				@Override
-				public IEditorInput getDocumentKey(Object element) {
-					return EditableRevision.this.getDocumentKey(element);
-				}
-			};
-		}
+					new EditableSharedDocumentAdapter.ISharedDocumentAdapterListener() {
+						public void handleDocumentConnected() {
+							// nothing
+						}
+
+						public void handleDocumentFlushed() {
+							// nothing
+						}
+
+						public void handleDocumentDeleted() {
+							// nothing
+						}
+
+						public void handleDocumentSaved() {
+							// nothing
+						}
+
+						public void handleDocumentDisconnected() {
+							// nothing
+						}
+					});
 		return sharedDocumentAdapter;
 	}
 
