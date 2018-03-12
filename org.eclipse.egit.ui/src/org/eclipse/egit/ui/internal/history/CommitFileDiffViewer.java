@@ -39,8 +39,6 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 
 class CommitFileDiffViewer extends TableViewer {
-	private Repository db;
-
 	private TreeWalk walker;
 
 	private Clipboard clipboard;
@@ -66,7 +64,7 @@ class CommitFileDiffViewer extends TableViewer {
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				final FileDiff d = (FileDiff) iss.getFirstElement();
-				if (walker != null && d.blobs.length <= 2)
+				if (walker != null && d.blobs.length == 2)
 					showTwoWayFileDiff(d);
 			}
 		});
@@ -82,19 +80,14 @@ class CommitFileDiffViewer extends TableViewer {
 	void showTwoWayFileDiff(final FileDiff d) {
 		final GitCompareFileRevisionEditorInput in;
 
+		final Repository db = walker.getRepository();
 		final String p = d.path;
 		final RevCommit c = d.commit;
 		final ITypedElement base;
 		final ITypedElement next;
 
-		if (d.blobs.length == 2) {
-			base = CompareUtils.getFileRevisionTypedElement(p, c.getParent(0), db, d.blobs[0]);
-			next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.blobs[1]);
-		} else {
-			// Initial import
-			base = new GitCompareFileRevisionEditorInput.EmptyTypedElement(""); //$NON-NLS-1$
-			next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.blobs[0]);
-		}
+		base = CompareUtils.getFileRevisionTypedElement(p, c.getParent(0), db, d.blobs[0]);
+		next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.blobs[1]);
 
 		in = new GitCompareFileRevisionEditorInput(base, next, null);
 		CompareUI.openCompareEditor(in);
@@ -104,8 +97,7 @@ class CommitFileDiffViewer extends TableViewer {
 		return walker;
 	}
 
-	void setTreeWalk(Repository repository, TreeWalk walk) {
-		db = repository;
+	void setTreeWalk(final TreeWalk walk) {
 		walker = walk;
 	}
 
@@ -122,7 +114,6 @@ class CommitFileDiffViewer extends TableViewer {
 		setSelection(new StructuredSelection(el));
 	}
 
-	@SuppressWarnings("unchecked")
 	void doCopy() {
 		final ISelection s = getSelection();
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
