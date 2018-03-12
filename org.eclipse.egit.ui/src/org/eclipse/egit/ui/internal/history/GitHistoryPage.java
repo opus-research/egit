@@ -19,8 +19,6 @@ import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Preferences;
 import org.eclipse.core.runtime.Preferences.IPropertyChangeListener;
 import org.eclipse.core.runtime.Preferences.PropertyChangeEvent;
@@ -29,6 +27,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.ResourceList;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
@@ -36,16 +35,15 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.EditableRevision;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
-import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
+import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.util.OpenStrategy;
@@ -58,7 +56,6 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexChangedEvent;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefsChangedEvent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryListener;
@@ -78,8 +75,7 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.MenuDetectEvent;
-import org.eclipse.swt.events.MenuDetectListener;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -89,7 +85,6 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.internal.ui.IPreferenceIds;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
-import org.eclipse.team.internal.ui.Utils;
 import org.eclipse.team.ui.history.HistoryPage;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
 import org.eclipse.ui.IActionBars;
@@ -128,8 +123,6 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 	private IAction compareAction = new CompareWithWorkingTreeAction();
 
 	private IAction compareVersionsAction = new CompareVersionsAction();
-
-	private IAction viewVersionsAction = new ViewVersionsAction();
 
 	/**
 	 * Determine if the input can be shown in this viewer.
@@ -393,22 +386,23 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 
 	private ITypedElement getEditableRevision(final IFile resource,
 			final String gitPath, SWTCommit commit) {
-		ITypedElement right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
-				NLS.bind(UIText.GitHistoryPage_FileNotInCommit, resource
-						.getName(), commit));
+		ITypedElement right = new EmptyElement(NLS.bind(UIText.GitHistoryPage_FileNotInCommit,
+				resource.getName(), commit));
 
 		try {
 			TreeWalk w = TreeWalk.forPath(db, gitPath, commit.getTree());
 			// check if file is contained in commit
 			if (w != null) {
-				final IFileRevision nextFile = GitFileRevision.inCommit(db,
-						commit, gitPath, null);
+				final IFileRevision nextFile = GitFileRevision.inCommit(
+						db,
+						commit,
+						gitPath,
+						null);
 				right = new EditableRevision(nextFile);
 			}
 		} catch (IOException e) {
-			// TODO throw an exception or log this?
-			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-					gitPath, commit.getId()), e);
+			Activator.error("IO error looking up path" + gitPath + " in "
+					+ commit.getId() + ".", e);
 		}
 		return right;
 	}
@@ -525,42 +519,25 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 	private void attachContextMenu(final Control c) {
 		c.setMenu(popupMgr.createContextMenu(c));
 
-		if (c == graph.getControl()) {
+		popupMgr.addMenuListener(new IMenuListener() {
 
-			c.addMenuDetectListener(new MenuDetectListener() {
-
-				public void menuDetected(MenuDetectEvent e) {
-					popupMgr.remove(new ActionContributionItem(compareAction));
-					popupMgr.remove(new ActionContributionItem(
-							compareVersionsAction));
-					popupMgr.remove(new ActionContributionItem(
-							viewVersionsAction));
-					int size = ((IStructuredSelection) revObjectSelectionProvider
-							.getSelection()).size();
-					if (IFile.class.isAssignableFrom(getInput().getClass())) {
-						popupMgr.add(new Separator());
-						if (size == 1) {
-							popupMgr.add(compareAction);
-						} else if (size == 2) {
-							popupMgr.add(compareVersionsAction);
-						}
-						if (size >= 1)
-							popupMgr.add(viewVersionsAction);
+			public void menuAboutToShow(IMenuManager manager) {
+				popupMgr.remove(new ActionContributionItem(compareAction));
+				popupMgr.remove(new ActionContributionItem(compareVersionsAction));
+				int size = ((IStructuredSelection) revObjectSelectionProvider
+						.getSelection()).size();
+				if (IFile.class.isAssignableFrom(getInput()
+						.getClass())) {
+					if (size == 1 ) {
+						popupMgr.add(compareAction);
+					}
+					else if (size == 2) {
+						popupMgr.add(compareVersionsAction);
 					}
 				}
-			});
-		} else {
-			c.addMenuDetectListener(new MenuDetectListener() {
 
-				public void menuDetected(MenuDetectEvent e) {
-					popupMgr.remove(new ActionContributionItem(compareAction));
-					popupMgr.remove(new ActionContributionItem(
-							compareVersionsAction));
-					popupMgr.remove(new ActionContributionItem(
-							viewVersionsAction));
-				}
-			});
-		}
+			}
+		});
 	}
 
 	private void layoutSashForm(final SashForm sf, final String key) {
@@ -652,7 +629,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 	}
 
 	private IAction createFindToolbarAction() {
-		final IAction r = new Action(UIText.GitHistoryPage_find, UIIcons.ELCL16_FIND) {
+		final IAction r = new Action("Fi", UIIcons.ELCL16_FIND) {
 			public void run() {
 				prefs.setValue(SHOW_FIND_TOOLBAR, isChecked());
 				layout();
@@ -872,8 +849,8 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 		try {
 			headId = db.resolve(Constants.HEAD);
 		} catch (IOException e) {
-			Activator.logError(NLS.bind(UIText.GitHistoryPage_errorParsingHead,
-					db.getDirectory().getAbsolutePath()), e);
+			Activator.logError("Cannot parse HEAD in: "
+					+ db.getDirectory().getAbsolutePath(), e);
 			return false;
 		}
 
@@ -888,7 +865,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 			currentWalk = new SWTWalk(db);
 			currentWalk.sort(RevSort.COMMIT_TIME_DESC, true);
 			currentWalk.sort(RevSort.BOUNDARY, true);
-			highlightFlag = currentWalk.newFlag("highlight"); //$NON-NLS-1$
+			highlightFlag = currentWalk.newFlag("highlight");
 		} else {
 			currentWalk.reset();
 		}
@@ -898,8 +875,8 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 		try {
 			currentWalk.markStart(currentWalk.parseCommit(headId));
 		} catch (IOException e) {
-			Activator.logError(NLS.bind(UIText.GitHistoryPage_errorReadingHeadCommit,
-					headId, db.getDirectory().getAbsolutePath()), e);
+			Activator.logError("Cannot read HEAD commit " + headId + " in: "
+					+ db.getDirectory().getAbsolutePath(), e);
 			return false;
 		}
 
@@ -1043,6 +1020,27 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 	public String getDescription() {
 		return getName();
 	}
+
+	private class EmptyElement implements ITypedElement{
+
+		private String name;
+
+		public EmptyElement(String name) {
+			this.name = name;
+		}
+
+		public Image getImage() {
+			return null;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getType() {
+			return null;
+		}
+	};
 
 	private abstract class BooleanPrefAction extends Action implements
 			IPropertyChangeListener, ActionFactory.IWorkbenchAction {
@@ -1223,89 +1221,6 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 					&& size == 2;
 		}
 
-	}
-
-	private class ViewVersionsAction extends Action {
-		public ViewVersionsAction() {
-			super(UIText.GitHistoryPage_open);
-		}
-
-		@Override
-		public void run() {
-			IStructuredSelection selection = ((IStructuredSelection) revObjectSelectionProvider
-					.getSelection());
-			if (selection.size() < 1)
-				return;
-			if (!(getInput() instanceof IFile))
-				return;
-			IFile resource = (IFile) getInput();
-			final RepositoryMapping map = RepositoryMapping
-					.getMapping(resource);
-			final String gitPath = map.getRepoRelativePath(resource);
-			Iterator<?> it = selection.iterator();
-			boolean errorOccured = false;
-			List<ObjectId> ids = new ArrayList<ObjectId>();
-			while (it.hasNext()) {
-				SWTCommit commit = (SWTCommit) it.next();
-				IFileRevision rev = null;
-				try {
-					rev = getFileRevision(resource, gitPath, commit);
-				} catch (IOException e) {
-					Activator.logError(NLS.bind(
-							UIText.GitHistoryPage_errorLookingUpPath, gitPath,
-							commit.getId()), e);
-					errorOccured = true;
-				}
-				if (rev != null) {
-					try {
-						Utils.openEditor(getSite().getPage(), rev,
-								new NullProgressMonitor());
-					} catch (CoreException e) {
-						Activator.logError(UIText.GitHistoryPage_openFailed, e);
-						errorOccured = true;
-					}
-				} else {
-					ids.add(commit.getId());
-				}
-			}
-			if (errorOccured)
-				MessageDialog.openError(getSite().getShell(),
-						UIText.GitHistoryPage_openFailed,
-						UIText.GitHistoryPage_seeLog);
-			if (ids.size() > 0) {
-				String idList = ""; //$NON-NLS-1$
-				for (ObjectId objectId : ids) {
-					idList += objectId.getName() + " "; //$NON-NLS-1$
-				}
-				MessageDialog.openError(getSite().getShell(),
-						UIText.GitHistoryPage_fileNotFound, NLS.bind(
-								UIText.GitHistoryPage_notContainedInCommits,
-								gitPath, idList));
-			}
-
-		}
-
-		@Override
-		public boolean isEnabled() {
-			int size = ((IStructuredSelection) revObjectSelectionProvider
-					.getSelection()).size();
-			return IFile.class.isAssignableFrom(getInput().getClass())
-					&& size >= 1;
-		}
-
-	}
-
-	private IFileRevision getFileRevision(final IFile resource,
-			final String gitPath, SWTCommit commit) throws IOException {
-
-		TreeWalk w = TreeWalk.forPath(db, gitPath, commit.getTree());
-		// check if file is contained in commit
-		if (w != null) {
-			final IFileRevision fileRevision = GitFileRevision.inCommit(db,
-					commit, gitPath, null);
-			return fileRevision;
-		}
-		return null;
 	}
 
 }

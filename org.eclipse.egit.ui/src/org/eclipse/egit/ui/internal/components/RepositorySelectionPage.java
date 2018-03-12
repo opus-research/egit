@@ -693,9 +693,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 				selectionIncomplete(e.getReason());
 				return;
 			} catch (Exception e) {
-				Activator.logError(NLS.bind(
-						UIText.RepositorySelectionPage_errorValidating,
-						getClass().getName()),
+				Activator.logError("Error validating " + getClass().getName(),
 						e);
 				selectionIncomplete(UIText.RepositorySelectionPage_internalError);
 				return;

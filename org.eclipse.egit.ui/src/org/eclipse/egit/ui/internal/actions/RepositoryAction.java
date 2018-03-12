@@ -17,15 +17,26 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.internal.ui.actions.TeamAction;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * A helper class for Team Actions on Git controlled projects
  */
 public abstract class RepositoryAction extends TeamAction {
+
+	// There are changes in Eclipse 3.3 requiring that execute be implemented
+	// for it to compile. while 3.2 requires that run is implemented instead.
+	/*
+	 * See {@link #run(IAction)}
+	 *
+	 * @param action
+	 */
+	public void execute(IAction action) {
+		run(action);
+	}
 
 	/**
 	 * @return the projects hosting the selected resources
@@ -92,17 +103,13 @@ public abstract class RepositoryAction extends TeamAction {
 				return null;
 			if (mapping.getRepository() != repositoryMapping.getRepository()) {
 				if (warn)
-					MessageDialog.openError(getShell(),
-							UIText.RepositoryAction_multiRepoSelectionTitle,
-							UIText.RepositoryAction_multiRepoSelection);
+					MessageDialog.openError(getShell(), "Multiple Repositories Selection", "Cannot perform reset on multiple repositories simultaneously.\n\nPlease select items from only one repository.");
 				return null;
 			}
 		}
 		if (mapping == null) {
 			if (warn)
-				MessageDialog.openError(getShell(),
-						UIText.RepositoryAction_errorFindingRepoTitle,
-						UIText.RepositoryAction_errorFindingRepo);
+				MessageDialog.openError(getShell(), "Cannot Find Repository", "Could not find a repository associated with this project");
 			return null;
 		}
 

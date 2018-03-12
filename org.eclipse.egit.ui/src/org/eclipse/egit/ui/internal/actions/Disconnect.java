@@ -14,6 +14,7 @@ import java.util.List;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.egit.core.op.DisconnectProviderOperation;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
+import org.eclipse.jface.action.IAction;
 
 /**
  *	Action to disassociate a project from its Git repository.
@@ -21,7 +22,8 @@ import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
  *  @see DisconnectProviderOperation
  */
 public class Disconnect extends AbstractOperationAction {
-	protected IWorkspaceRunnable createOperation(final List sel) {
+	protected IWorkspaceRunnable createOperation(final IAction act,
+			final List sel) {
 		return sel.isEmpty() ? null : new DisconnectProviderOperation(sel);
 	}
 
