@@ -164,11 +164,9 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 			Tree tree = getRevTree(resource);
 			ObjectId objId = getRevObjId(resource);
 
-			if (objId != null && tree != null) {
-				trees.put(db, tree);
-				// walk the tree to retrieve information
-				walk(db, objId, tree);
-			}
+			trees.put(db, tree);
+			// walk the tree to retrieve information
+			walk(db, objId, tree);
 		}
 	}
 
@@ -218,8 +216,6 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 	private IResourceVariant findFolderVariant(IResource resource,
 			Repository repository) {
 		File workDir = repository.getWorkDir();
-		if (resource.getLocation() == null)
-			return null;
 		File resourceLocation = resource.getLocation().toFile();
 		String resLocationAbsolutePath = resourceLocation.getAbsolutePath();
 
@@ -227,8 +223,10 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 			String entryName = entry.getKey();
 			File file = new File(workDir, entryName);
 
-			if (file.getAbsolutePath().startsWith(resLocationAbsolutePath))
+			if (file.getAbsolutePath().startsWith(resLocationAbsolutePath)) {
 				return new GitFolderResourceVariant(resource);
+			}
+
 		}
 
 		return null;
@@ -236,11 +234,8 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 
 	private IResourceVariant findFileVariant(IResource resource,
 			Repository repository) throws TeamException {
-		RepositoryMapping repoMapping = RepositoryMapping.getMapping(resource);
-		if (repoMapping == null)
-			return null;
-
-		String gitPath = repoMapping.getRepoRelativePath(resource);
+		String gitPath = RepositoryMapping.getMapping(resource)
+				.getRepoRelativePath(resource);
 		ObjectId objectId = updated.get(gitPath);
 		if (objectId != null) {
 			File root = repository.getWorkDir();
@@ -271,8 +266,8 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 
 	public void flushVariants(IResource resource, int depth)
 			throws TeamException {
-		if (!gsdData.getData(resource.getProject()).shouldIncludeLocal())
-			store.flushBytes(resource, depth);
+		// nothing do to here
+		// TODO implement ?
 	}
 
 	@Override
@@ -365,10 +360,7 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 	protected IResourceVariant fetchVariant(IResource resource, int depth,
 			IProgressMonitor monitor) throws TeamException {
 		try {
-			if (resource != null)
-				return fetchVariant(resource, monitor);
-			else
-				return null;
+			return fetchVariant(resource, monitor);
 		} finally {
 			monitor.done();
 		}
@@ -389,10 +381,6 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 		Repository repo = gsd.getRepository();
 		try {
 			Tree tree = gsd.mapSrcTree();
-
-			if (tree == null)
-				return new IResource[0];
-
 			IResource[] members = ((IContainer) resource).members();
 			Set<IResource> membersSet = getAllMembers(repo, tree, members);
 
@@ -409,36 +397,29 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 		Set<IResource> membersSet = new HashSet<IResource>();
 
 		for (IResource member : members) {
-			String memberRelPath = getMemberRelPath(repo, member);
-
-			// check if this file exists in repository
-			if (tree.existsBlob(memberRelPath)) {
-				// read file content and add it into store
+			if (member.getType() == IResource.FILE) {
+				String repoWorkDir = repo.getWorkDir().toString();
+				String memberRelPath = member.getLocation().toString();
+				memberRelPath = memberRelPath.replace(repoWorkDir, ""); //$NON-NLS-1$
+				if (memberRelPath.startsWith(File.separator)) {
+					memberRelPath = memberRelPath.substring(1);
+				}
 				TreeEntry entry = tree.findBlobMember(memberRelPath);
-				ObjectLoader objLoader = repo.openBlob(entry.getId());
-				store.setBytes(member, objLoader.getCachedBytes());
-				membersSet.add(member);
-			} else if (tree.existsTree(memberRelPath)) {
-				// add to members if folder exists in repository
-				membersSet.add(member);
+				if (entry != null) {
+					ObjectLoader objLoader = repo.openBlob(entry.getId());
+					store.setBytes(member, objLoader.getCachedBytes());
+					membersSet.add(member);
+				}
+			} else if (member.getType() == IResource.FOLDER ) {
+				try {
+					IResource[] resources = ((IContainer) member).members();
+					membersSet.addAll(getAllMembers(repo, tree, resources));
+				} catch (CoreException e) {
+					throw new TeamException(e.getStatus());
+				}
 			}
 		}
 		return membersSet;
-	}
-
-	private String getMemberRelPath(Repository repo, IResource member) {
-		String repoWorkDir = repo.getWorkDir().toString();
-		if (!"/".equals(File.separator)) { //$NON-NLS-1$
-			// fix file separator issue on windows
-			repoWorkDir = repoWorkDir.replace(File.separatorChar, '/');
-		}
-
-		String memberRelPath = member.getLocation().toString();
-		memberRelPath = memberRelPath.replace(repoWorkDir, ""); //$NON-NLS-1$
-		if (memberRelPath.startsWith("/"))//$NON-NLS-1$
-			memberRelPath = memberRelPath.substring(1);
-
-		return memberRelPath;
 	}
 
 }
