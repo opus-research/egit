@@ -19,6 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -54,9 +55,10 @@ import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.mylyn.tasks.ui.TasksUi;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -112,8 +114,6 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Button activateAdditionalRefs;
 
-	private Button baseBranchNameOnTaskButton;
-
 	/**
 	 * @param repository
 	 * @param refName initial value for the ref field
@@ -141,6 +141,21 @@ public class FetchGerritChangePage extends WizardPage {
 	}
 
 	public void createControl(Composite parent) {
+		Clipboard clipboard = new Clipboard(parent.getDisplay());
+		String clipText = (String) clipboard.getContents(TextTransfer
+				.getInstance());
+		String defaultUri = null;
+		String defaultCommand = null;
+		String defaultChange = null;
+		if (clipText != null) {
+			final String pattern = "git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"; //$NON-NLS-1$
+			Matcher matcher = Pattern.compile(pattern).matcher(clipText);
+			if (matcher.matches()) {
+				defaultUri = matcher.group(1);
+				defaultChange = matcher.group(2);
+				defaultCommand = matcher.group(3);
+			}
+		}
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(2, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
@@ -157,6 +172,8 @@ public class FetchGerritChangePage extends WizardPage {
 		new Label(main, SWT.NONE)
 				.setText(UIText.FetchGerritChangePage_ChangeLabel);
 		refText = new Text(main, SWT.BORDER);
+		if (defaultChange != null)
+			refText.setText(defaultChange);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(refText);
 		addRefContentProposalToText(refText);
 
@@ -170,7 +187,6 @@ public class FetchGerritChangePage extends WizardPage {
 		createBranch = new Button(checkoutGroup, SWT.RADIO);
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(createBranch);
 		createBranch.setText(UIText.FetchGerritChangePage_LocalBranchRadio);
-		createBranch.setSelection(true);
 		createBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -189,18 +205,6 @@ public class FetchGerritChangePage extends WizardPage {
 				checkPage();
 			}
 		});
-		if(TasksUi.getTaskActivityManager().getActiveTask()!=null){
-			baseBranchNameOnTaskButton = new Button(checkoutGroup, SWT.CHECK);
-			baseBranchNameOnTaskButton.setText("Base branch name on active task"); //$NON-NLS-1$
-			GridDataFactory.swtDefaults().span(2, 1).applyTo(baseBranchNameOnTaskButton);
-			baseBranchNameOnTaskButton.setSelection(true);
-			baseBranchNameOnTaskButton.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					updateBranchAndTag();
-				}
-			});
-		}
 
 		// radio: create tag
 		createTag = new Button(checkoutGroup, SWT.RADIO);
@@ -248,6 +252,11 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		});
 
+		if ("checkout".equals(defaultCommand)) //$NON-NLS-1$
+			checkout.setSelection(true);
+		else
+			createBranch.setSelection(true);
+
 		warningAdditionalRefNotActive = new Composite(main, SWT.NONE);
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false)
 				.exclude(true).applyTo(warningAdditionalRefNotActive);
@@ -263,7 +272,18 @@ public class FetchGerritChangePage extends WizardPage {
 
 		refText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
-				updateBranchAndTag();
+				Change change = Change.fromRef(refText.getText());
+				if (change != null) {
+					branchText.setText(NLS
+							.bind(UIText.FetchGerritChangePage_SuggestedRefNamePattern,
+									change.getChangeNumber(),
+									change.getPatchSetNumber()));
+					tagText.setText(branchText.getText());
+				} else {
+					branchText.setText(""); //$NON-NLS-1$
+					tagText.setText(""); //$NON-NLS-1$
+				}
+				checkPage();
 			}
 		});
 
@@ -284,11 +304,14 @@ public class FetchGerritChangePage extends WizardPage {
 		}
 		for (String aUri : uris)
 			uriCombo.add(aUri);
-		selectLastUsedUri();
+		if (defaultUri != null)
+			uriCombo.setText(defaultUri);
+		else
+			selectLastUsedUri();
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
 		setControl(main);
-		setPageComplete(false);
+		checkPage();
 	}
 
 
@@ -628,29 +651,6 @@ public class FetchGerritChangePage extends WizardPage {
 				new TextContentAdapter(), cp, stroke, null);
 		// set the acceptance style to always replace the complete content
 		adapter.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
-	}
-
-	/**
-	 *
-	 */
-	protected void updateBranchAndTag() {
-		Change change = Change.fromRef(refText.getText());
-		if (change != null) {
-			if(baseBranchNameOnTaskButton!=null&& baseBranchNameOnTaskButton.getSelection()) {
-				String branchName = TaskBranchNameSuggester.suggestBranchName(TasksUi.getTaskActivityManager().getActiveTask(), "task"); //$NON-NLS-1$
-				branchText.setText(branchName);
-			} else {
-				branchText.setText(NLS
-						.bind(UIText.FetchGerritChangePage_SuggestedRefNamePattern,
-								change.getChangeNumber(),
-								change.getPatchSetNumber()));
-			}
-			tagText.setText(branchText.getText());
-		} else {
-			branchText.setText(""); //$NON-NLS-1$
-			tagText.setText(""); //$NON-NLS-1$
-		}
-		checkPage();
 	}
 
 	private final static class Change {
