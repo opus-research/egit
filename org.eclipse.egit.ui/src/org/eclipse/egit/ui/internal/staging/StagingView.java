@@ -908,14 +908,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		};
 		unstagedViewer.addFilter(filter);
 		stagedViewer.addFilter(filter);
-
-		IWorkbenchSiteProgressService service = CommonUtils.getService(
-				getSite(), IWorkbenchSiteProgressService.class);
-		if (service != null && reactOnSelection)
-			// If we are linked, each time IndexDiffUpdateJob starts, indicate
-			// that the view is busy (e.g. reload() will trigger this job in
-			// background!).
-			service.showBusyForFamily(org.eclipse.egit.core.JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 	}
 
 	private void executeRebaseOperation(AbstractRebaseCommandHandler command) {
@@ -1454,7 +1446,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			break;
 
 		case CONFLICTING:
-			runCommand(ActionCommands.COMPARE_WITH_HEAD_ACTION, selection);
+			runCommand(ActionCommands.MERGE_TOOL_ACTION, selection);
 			break;
 
 		case MISSING:
