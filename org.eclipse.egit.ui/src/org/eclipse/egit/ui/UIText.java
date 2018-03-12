@@ -2528,13 +2528,7 @@ public class UIText extends NLS {
 	public static String LoginDialog_repository;
 
 	/** */
-	public static String LoginDialog_storeInSecureStore;
-
-	/** */
 	public static String LoginDialog_user;
-
-	/** */
-	public static String LoginService_storingCredentialsFailed;
 
 	/** */
 	public static String NewRemoteWizard_CheckingUriTaskName;
