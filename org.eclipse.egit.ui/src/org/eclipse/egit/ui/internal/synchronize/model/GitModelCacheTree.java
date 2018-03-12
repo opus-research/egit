@@ -83,7 +83,7 @@ public class GitModelCacheTree extends GitModelTree {
 	}
 
 	/**
-	 * Distinguish working tree from cached/staged tree
+	 * Distinguish working tree from changed/staged tree
 	 *
 	 * @return {@code true} when this tree is working tree, {@code false}
 	 *         when it is a cached tree

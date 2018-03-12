@@ -52,7 +52,6 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -200,7 +199,7 @@ public class CommitUI  {
 		commitOperation.setCommitAll(commitHelper.isMergedResolved);
 		if (commitHelper.isMergedResolved)
 			commitOperation.setRepository(repo);
-		performCommit(repo, commitOperation, false);
+		performCommit(repo, commitOperation);
 		return;
 	}
 
@@ -208,18 +207,14 @@ public class CommitUI  {
 	 * Uses a Job to perform the given CommitOperation
 	 * @param repository
 	 * @param commitOperation
-	 * @param openNewCommit
 	 */
-	public static void performCommit(final Repository repository,
-			final CommitOperation commitOperation, final boolean openNewCommit) {
+	public static void performCommit(final Repository repository, final CommitOperation commitOperation) {
 		String jobname = UIText.CommitAction_CommittingChanges;
 		Job job = new Job(jobname) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				RevCommit commit = null;
 				try {
 					commitOperation.execute(monitor);
-					commit = commitOperation.getCommit();
 					CommitMessageComponentStateManager.deleteState(
 							repository);
 					RepositoryMapping mapping = RepositoryMapping
@@ -232,8 +227,6 @@ public class CommitUI  {
 				} finally {
 					GitLightweightDecorator.refresh();
 				}
-				if (openNewCommit && commit != null)
-					openCommit(repository, commit);
 				return Status.OK_STATUS;
 			}
 
@@ -247,17 +240,6 @@ public class CommitUI  {
 		};
 		job.setUser(true);
 		job.schedule();
-	}
-
-	private static void openCommit(final Repository repository,
-			final RevCommit newCommit) {
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-
-			public void run() {
-				CommitEditor.openQuiet(new RepositoryCommit(repository,
-						newCommit));
-			}
-		});
 	}
 
 	private IProject[] getProjectsOfRepositories() {
