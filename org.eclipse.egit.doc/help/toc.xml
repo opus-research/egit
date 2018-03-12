@@ -13,7 +13,7 @@
 				<topic href="help/EGit/User_Guide/User-Guide.html#Track_Changes" label="Track Changes"></topic>
 				<topic href="help/EGit/User_Guide/User-Guide.html#Inspect_History" label="Inspect History"></topic>
 			</topic>
-			<topic href="help/EGit/User_Guide/User-Guide.html#GitHub_Tutorial" label="GitHub Tutorial">
+			<topic href="help/EGit/User_Guide/User-Guide.html#Github_Tutorial" label="Github Tutorial">
 				<topic href="help/EGit/User_Guide/User-Guide.html#Create_Local_Repository" label="Create Local Repository"></topic>
 				<topic href="help/EGit/User_Guide/User-Guide.html#Create_Repository_at_GitHub" label="Create Repository at GitHub"></topic>
 				<topic href="help/EGit/User_Guide/User-Guide.html#Eclipse_SSH_Configuration" label="Eclipse SSH Configuration"></topic>
@@ -283,11 +283,6 @@
 				<topic href="help/EGit/User_Guide/Tasks.html#Adding_a_Submodule" label="Adding a Submodule"></topic>
 				<topic href="help/EGit/User_Guide/Tasks.html#Updating_Submodules" label="Updating Submodules"></topic>
 			</topic>
-			<topic href="help/EGit/User_Guide/Tasks.html#Team_Project_Sets" label="Team Project Sets">
-				<topic href="help/EGit/User_Guide/Tasks.html#Import" label="Import"></topic>
-				<topic href="help/EGit/User_Guide/Tasks.html#Export" label="Export"></topic>
-				<topic href="help/EGit/User_Guide/Tasks.html#Format" label="Format"></topic>
-			</topic>
 		</topic>
 		<topic href="help/EGit/User_Guide/Reference.html" label="Reference">
 			<topic href="help/EGit/User_Guide/Reference.html#Menus" label="Menus">
@@ -352,9 +347,7 @@
 					<topic href="help/EGit/User_Guide/Reference.html#Navigation" label="Navigation"></topic>
 				</topic>
 				<topic href="help/EGit/User_Guide/Reference.html#Git_Tree_Compare_View" label="Git Tree Compare View"></topic>
-				<topic href="help/EGit/User_Guide/Reference.html#Git_Staging_View" label="Git Staging View">
-					<topic href="help/EGit/User_Guide/Reference.html#Partial_Staging" label="Partial Staging"></topic>
-				</topic>
+				<topic href="help/EGit/User_Guide/Reference.html#Git_Staging_View" label="Git Staging View"></topic>
 				<topic href="help/EGit/User_Guide/Reference.html#Git_Reflog_View" label="Git Reflog View"></topic>
 			</topic>
 			<topic href="help/EGit/User_Guide/Reference.html#Git_URLs" label="Git URLs"></topic>
@@ -419,20 +412,34 @@
 		</topic>
 		<topic href="help/JGit/User_Guide/Updating-This-Document.html" label="Updating This Document"></topic>
 	</topic>
-	<topic href="help/EGit/New_and_Noteworthy/2.3/2.3.html" label="EGit 2.3 New and Noteworthy">
-		<topic href="help/EGit/New_and_Noteworthy/2.3/2.3.html" label="Features"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/2.3/API-changes.html" label="API changes"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/2.3/Performance-Improvements.html" label="Performance Improvements"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/2.3/Bug-Fixes.html" label="Bug Fixes"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/2.3/Contributors.html" label="Contributors"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/2.3/Updating-This-Document.html" label="Updating This Document"></topic>
+	<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html" label="EGit 2.1 New and Noteworthy">
+		<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html" label="EGit Features">
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#.22Push_to_Gerrit....22_action" label="&quot;Push to Gerrit...&quot; action"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#Delete_untracked_files_in_Staging_View_and_Repositories_View" label="Delete untracked files in Staging View and Repositories View"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#Commit_using_Ctrl.2BEnter_.28Cmd.2BEnter.29_in_Staging_View_and_Commit_Dialog" label="Commit using Ctrl+Enter (Cmd+Enter) in Staging View and Commit Dialog"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#Show_warnings.2Ferrors_on_files_in_Staging_View_and_Commit_Dialog" label="Show warnings/errors on files in Staging View and Commit Dialog"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#Context_menu_in_Git_Tree_Compare_view" label="Context menu in Git Tree Compare view"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#Improved_conflict_markers_for_rebase.2Fcherry-pick_conflicts" label="Improved conflict markers for rebase/cherry-pick conflicts"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#Garbage_Collector_and_Repository_Storage_Statistics" label="Garbage Collector and Repository Storage Statistics"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#Branch_Tracking_Status_Decoration_for_Tracking_of_Local_Branches" label="Branch Tracking Status Decoration for Tracking of Local Branches"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#Improved_autocrlf_Support" label="Improved autocrlf Support"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#One-click_Commit_and_Push" label="One-click Commit and Push"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#Synchronize_View" label="Synchronize View"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/2.1/2.1.html#Other_Improvements" label="Other Improvements"></topic>
+		</topic>
+		<topic href="help/EGit/New_and_Noteworthy/2.1/Bugs-Closed.html" label="Bugs Closed"></topic>
+		<topic href="help/EGit/New_and_Noteworthy/2.1/Updating-This-Document.html" label="Updating This Document"></topic>
 	</topic>
-	<topic href="help/JGit/New_and_Noteworthy/2.3/2.3.html" label="JGit 2.3 New and Noteworthy">
-		<topic href="help/JGit/New_and_Noteworthy/2.3/2.3.html" label="Features"></topic>
-		<topic href="help/JGit/New_and_Noteworthy/2.3/Performance-Improvements.html" label="Performance Improvements"></topic>
-		<topic href="help/JGit/New_and_Noteworthy/2.3/Bug-Fixes.html" label="Bug Fixes"></topic>
-		<topic href="help/JGit/New_and_Noteworthy/2.3/Contributors.html" label="Contributors"></topic>
-		<topic href="help/JGit/New_and_Noteworthy/2.3/Updating-This-Document.html" label="Updating This Document"></topic>
+	<topic href="help/JGit/New_and_Noteworthy/2.1/2.1.html" label="JGit 2.1 New and Noteworthy">
+		<topic href="help/JGit/New_and_Noteworthy/2.1/2.1.html" label="Garbage Collector for FileRepositories"></topic>
+		<topic href="help/JGit/New_and_Noteworthy/2.1/Updated-Porcelain-Commands.html" label="Updated Porcelain Commands">
+			<topic href="help/JGit/New_and_Noteworthy/2.1/Updated-Porcelain-Commands.html#MergeCommand" label="MergeCommand"></topic>
+			<topic href="help/JGit/New_and_Noteworthy/2.1/Updated-Porcelain-Commands.html#CheckoutCommand" label="CheckoutCommand"></topic>
+		</topic>
+		<topic href="help/JGit/New_and_Noteworthy/2.1/Command-Line.html" label="Command Line"></topic>
+		<topic href="help/JGit/New_and_Noteworthy/2.1/Performance-improvements.html" label="Performance improvements"></topic>
+		<topic href="help/JGit/New_and_Noteworthy/2.1/Bug-Fixes.html" label="Bug Fixes"></topic>
+		<topic href="help/JGit/New_and_Noteworthy/2.1/Updating-This-Document.html" label="Updating This Document"></topic>
 	</topic>
 	<topic href="help/EGit/Git_For_Eclipse_Users/Git-For-Eclipse-Users.html" label="Git for Eclipse Users">
 		<topic href="help/EGit/Git_For_Eclipse_Users/Git-For-Eclipse-Users.html" label="Centralised version control systems"></topic>

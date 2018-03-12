@@ -21,7 +21,7 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>3.0.0-SNAPSHOT</version>
+  <version>2.2.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>EGit Parent</name>
@@ -62,22 +62,21 @@
   </licenses>
 
   <properties>
-    <egit-version>2.4.0-SNAPSHOT</egit-version>
-    <tycho-version>0.17.0</tycho-version>
-    <tycho-extras-version>0.17.0</tycho-extras-version>
+    <egit-version>2.2.0-SNAPSHOT</egit-version>
+    <tycho-version>0.16.0</tycho-version>
     <mockito-version>1.8.4</mockito-version>
     <junit-version>4.8.1</junit-version>
     <jgit-site>file:/${basedir}/../../jgit/org.eclipse.jgit.packaging/org.eclipse.jgit.repository/target/repository</jgit-site>
     <signer-input-directory>/home/data/httpd/download-staging.priv/egit</signer-input-directory>
     <download-publish-path>/home/data/httpd/download.eclipse.org/egit/updates-nightly</download-publish-path>
     <target-platform>egit-4.2</target-platform>
-    <tycho.scmUrl>scm:git:https://git.eclipse.org/r/p/egit/egit.git</tycho.scmUrl>
   </properties>
 
   <profiles>
     <profile>
       <id>platform-indigo</id>
       <activation>
+        <activeByDefault>true</activeByDefault>
         <property>
           <name>platform-version-name</name>
           <value>indigo</value>
@@ -91,6 +90,7 @@
     <profile>
       <id>platform-juno</id>
       <activation>
+        <activeByDefault>true</activeByDefault>
         <property>
           <name>platform-version-name</name>
           <value>juno</value>
@@ -107,35 +107,16 @@
       </modules>
     </profile>
     <profile>
-      <id>platform-kepler</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-        <property>
-          <name>platform-version-name</name>
-          <value>kepler</value>
-        </property>
-      </activation>
-      <properties>
-        <target-platform>egit-4.3</target-platform>
-        <platform-version>[3.9,4.0)</platform-version>
-      </properties>
-      <modules>
-        <module>org.eclipse.egit.import</module>
-        <module>org.eclipse.egit.import-feature</module>
-        <module>org.eclipse.egit.repository</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>platform-kepler-staging</id>
+      <id>platform-juno-staging</id>
       <activation>
         <property>
           <name>platform-version-name</name>
-          <value>kepler-staging</value>
+          <value>juno-staging</value>
         </property>
       </activation>
       <properties>
-        <target-platform>egit-4.3-staging</target-platform>
-        <platform-version>[3.9,4.0)</platform-version>
+        <target-platform>egit-4.2-staging</target-platform>
+        <platform-version>[3.8,3.9)</platform-version>
       </properties>
       <modules>
         <module>org.eclipse.egit.import</module>
@@ -277,23 +258,6 @@
           </executions>
         </plugin>
         <plugin>
-          <groupId>org.eclipse.tycho</groupId>
-          <artifactId>tycho-packaging-plugin</artifactId>
-          <version>${tycho-version}</version>
-          <configuration>
-            <sourceReferences>
-              <generate>true</generate>
-            </sourceReferences>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.eclipse.tycho.extras</groupId>
-              <artifactId>tycho-sourceref-jgit</artifactId>
-              <version>${tycho-extras-version}</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <version>2.5</version>
@@ -378,19 +342,5 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
-  <distributionManagement>
-    <repository>
-      <id>repo.eclipse.org</id>
-      <name>JGit Maven Repository - Releases</name>
-      <url>https://repo.eclipse.org/content/repositories/egit-releases/</url>
-    </repository>
-    <snapshotRepository>
-      <id>repo.eclipse.org</id>
-      <name>JGit Maven Repository - Snapshots</name>
-      <url>https://repo.eclipse.org/content/repositories/egit-snapshots/</url>
-      <uniqueVersion>true</uniqueVersion>
-    </snapshotRepository>
-  </distributionManagement>
 </project>
 

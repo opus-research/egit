@@ -19,7 +19,6 @@ import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -34,7 +33,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.team.core.ProjectSetSerializationContext;
 import org.eclipse.team.core.TeamException;
@@ -57,7 +56,6 @@ public class GitProjectSetCapabilityTest {
 
 	@After
 	public void tearDown() throws Exception {
-		ResourcesPlugin.getWorkspace().getRoot().delete(IResource.FORCE, null);
 		Activator.getDefault().getRepositoryCache().clear();
 		for (IProject project : createdProjects)
 			if (project.exists())
@@ -285,7 +283,7 @@ public class GitProjectSetCapabilityTest {
 
 	private File createRepository(IPath location, String url, String branch) throws Exception {
 		File gitDirectory = new File(location.toFile(), Constants.DOT_GIT);
-		Repository repo = FileRepositoryBuilder.create(gitDirectory);
+		Repository repo = new FileRepository(gitDirectory);
 		repo.getConfig().setString(ConfigConstants.CONFIG_REMOTE_SECTION, "origin", ConfigConstants.CONFIG_KEY_URL, url);
 		repo.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION, branch, ConfigConstants.CONFIG_KEY_REMOTE, "origin");
 		repo.create();

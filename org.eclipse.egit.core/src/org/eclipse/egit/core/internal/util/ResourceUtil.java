@@ -1,8 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
- * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,28 +9,17 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.util;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 
-import org.eclipse.core.filesystem.URIUtil;
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.mapping.IModelProviderDescriptor;
-import org.eclipse.core.resources.mapping.ModelProvider;
-import org.eclipse.core.resources.mapping.ResourceMapping;
-import org.eclipse.core.resources.mapping.ResourceMappingContext;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
 
@@ -44,41 +31,33 @@ public class ResourceUtil {
 
 	/**
 	 * Return the corresponding resource if it exists.
-	 * <p>
-	 * The returned file will be relative to the most nested non-closed project.
 	 *
-	 * @param location
-	 *            the path to check
+	 * @param location the path to check
 	 * @return the resources, or null
 	 */
 	public static IResource getResourceForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		URI uri = URIUtil.toURI(location);
-		IFile file = getFileForLocationURI(root, uri);
+		IFile file = root.getFileForLocation(location);
 		if (file != null)
 			return file;
-		IContainer[] containers = root.findContainersForLocationURI(uri);
-		return getExistingResourceWithShortestPath(containers);
+		return root.getContainerForLocation(location);
 	}
 
 	/**
 	 * Return the corresponding file if it exists.
-	 * <p>
-	 * The returned file will be relative to the most nested non-closed project.
 	 *
 	 * @param location
 	 * @return the file, or null
 	 */
 	public static IFile getFileForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		URI uri = URIUtil.toURI(location);
-		return getFileForLocationURI(root, uri);
+		return root.getFileForLocation(location);
 	}
 
 	/**
-	 * Get the {@link IFile} corresponding to the arguments if it exists.
-	 * <p>
-	 * The returned file will be relative to the most nested non-closed project.
+	 * Get the {@link IFile} corresponding to the arguments, using
+	 * {@link IWorkspaceRoot#getFileForLocation(org.eclipse.core.runtime.IPath)}
+	 * .
 	 *
 	 * @param repository
 	 *            the repository of the file
@@ -88,8 +67,9 @@ public class ResourceUtil {
 	 */
 	public static IFile getFileForLocation(Repository repository,
 			String repoRelativePath) {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
-		return getFileForLocation(path);
+		return root.getFileForLocation(path);
 	}
 
 	/**
@@ -154,28 +134,6 @@ public class ResourceUtil {
 		return resource.getLocation() == null;
 	}
 
-	private static IFile getFileForLocationURI(IWorkspaceRoot root, URI uri) {
-		IFile[] files = root.findFilesForLocationURI(uri);
-		return getExistingResourceWithShortestPath(files);
-	}
-
-	private static <T extends IResource> T getExistingResourceWithShortestPath(
-			T[] resources) {
-		int shortestPathSegmentCount = Integer.MAX_VALUE;
-		T shortestPath = null;
-		for (T resource : resources) {
-			if (!resource.exists())
-				continue;
-			IPath fullPath = resource.getFullPath();
-			int segmentCount = fullPath.segmentCount();
-			if (segmentCount < shortestPathSegmentCount) {
-				shortestPath = resource;
-				shortestPathSegmentCount = segmentCount;
-			}
-		}
-		return shortestPath;
-	}
-
 	private static void addPathToMap(RepositoryMapping repositoryMapping,
 			String path, Map<Repository, Collection<String>> result) {
 		if (path != null) {
@@ -187,40 +145,5 @@ public class ResourceUtil {
 			}
 			resourcesList.add(path);
 		}
-	}
-
-	/**
-	 * This will query all model providers for those that are enabled on the
-	 * given file and list all mappings available for that file.
-	 *
-	 * @param file
-	 *            The file for which we need the associated resource mappings.
-	 * @param context
-	 *            Context from which remote content could be retrieved.
-	 * @return All mappings available for that file.
-	 */
-	public static ResourceMapping[] getResourceMappings(IFile file,
-			ResourceMappingContext context) {
-		final IModelProviderDescriptor[] modelDescriptors = ModelProvider
-				.getModelProviderDescriptors();
-
-		final Set<ResourceMapping> mappings = new LinkedHashSet<ResourceMapping>();
-		for (IModelProviderDescriptor candidate : modelDescriptors) {
-			try {
-				final IResource[] resources = candidate
-						.getMatchingResources(new IResource[] { file, });
-				if (resources.length > 0) {
-					// get mappings from model provider if there are matching resources
-					final ModelProvider model = candidate.getModelProvider();
-					final ResourceMapping[] modelMappings = model.getMappings(
-							file, context, null);
-					for (ResourceMapping mapping : modelMappings)
-						mappings.add(mapping);
-				}
-			} catch (CoreException e) {
-				Activator.logError(e.getMessage(), e);
-			}
-		}
-		return mappings.toArray(new ResourceMapping[mappings.size()]);
 	}
 }

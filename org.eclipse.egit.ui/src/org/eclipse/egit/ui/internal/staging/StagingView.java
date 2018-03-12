@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, 2012 Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
@@ -36,7 +37,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
@@ -44,11 +44,11 @@ import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
@@ -74,7 +74,6 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.action.ToolBarManager;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -97,7 +96,6 @@ import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RmCommand;
-import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
@@ -132,7 +130,6 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -398,55 +395,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				horizontalSashForm, ExpandableComposite.TITLE_BAR);
 		commitMessageSection.setText(UIText.StagingView_CommitMessage);
 
-		Composite commitMessageToolbarComposite = toolkit
-				.createComposite(commitMessageSection);
-		commitMessageToolbarComposite.setBackground(null);
-		RowLayout commitMessageRowLayout = new RowLayout();
-		commitMessageRowLayout.marginHeight = 0;
-		commitMessageRowLayout.marginWidth = 0;
-		commitMessageRowLayout.marginTop = 0;
-		commitMessageRowLayout.marginBottom = 0;
-		commitMessageRowLayout.marginLeft = 0;
-		commitMessageRowLayout.marginRight = 0;
-		commitMessageToolbarComposite.setLayout(commitMessageRowLayout);
-		commitMessageSection.setTextClient(commitMessageToolbarComposite);
-		ToolBarManager commitMessageToolBarManager = new ToolBarManager(
-				SWT.FLAT | SWT.HORIZONTAL);
-
-		amendPreviousCommitAction = new Action(
-				UIText.StagingView_Ammend_Previous_Commit, IAction.AS_CHECK_BOX) {
-
-			public void run() {
-				commitMessageComponent.setAmendingButtonSelection(isChecked());
-				updateMessage();
-			}
-		};
-		amendPreviousCommitAction.setImageDescriptor(UIIcons.AMEND_COMMIT);
-		commitMessageToolBarManager.add(amendPreviousCommitAction);
-
-		signedOffByAction = new Action(UIText.StagingView_Add_Signed_Off_By,
-				IAction.AS_CHECK_BOX) {
-
-			public void run() {
-				commitMessageComponent.setSignedOffButtonSelection(isChecked());
-			}
-		};
-		signedOffByAction.setImageDescriptor(UIIcons.SIGNED_OFF);
-		commitMessageToolBarManager.add(signedOffByAction);
-
-		addChangeIdAction = new Action(UIText.StagingView_Add_Change_ID,
-				IAction.AS_CHECK_BOX) {
-
-			public void run() {
-				commitMessageComponent.setChangeIdButtonSelection(isChecked());
-			}
-		};
-		addChangeIdAction.setImageDescriptor(UIIcons.GERRIT);
-		commitMessageToolBarManager.add(addChangeIdAction);
-
-		commitMessageToolBarManager
-				.createControl(commitMessageToolbarComposite);
-
 		Composite commitMessageComposite = toolkit
 				.createComposite(commitMessageSection);
 		commitMessageSection.setClient(commitMessageComposite);
@@ -584,14 +532,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 					public void drop(DropTargetEvent event) {
 						if (event.data instanceof IStructuredSelection) {
 							final IStructuredSelection selection = (IStructuredSelection) event.data;
-							Object firstElement = selection.getFirstElement();
-							if (firstElement instanceof StagingEntry)
+							if (selection.getFirstElement() instanceof StagingEntry)
 								stage(selection);
-							else {
-								IResource resource = AdapterUtils.adapt(firstElement, IResource.class);
-								if (resource != null)
-									stage(selection);
-							}
 						}
 					}
 
@@ -783,6 +725,39 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		toolbar.add(new Separator());
 
+		amendPreviousCommitAction = new Action(
+				UIText.StagingView_Ammend_Previous_Commit, IAction.AS_CHECK_BOX) {
+
+			public void run() {
+				commitMessageComponent.setAmendingButtonSelection(isChecked());
+				updateMessage();
+			}
+		};
+		amendPreviousCommitAction.setImageDescriptor(UIIcons.AMEND_COMMIT);
+		toolbar.add(amendPreviousCommitAction);
+
+		signedOffByAction = new Action(UIText.StagingView_Add_Signed_Off_By,
+				IAction.AS_CHECK_BOX) {
+
+			public void run() {
+				commitMessageComponent.setSignedOffButtonSelection(isChecked());
+			}
+		};
+		signedOffByAction.setImageDescriptor(UIIcons.SIGNED_OFF);
+		toolbar.add(signedOffByAction);
+
+		addChangeIdAction = new Action(UIText.StagingView_Add_Change_ID,
+				IAction.AS_CHECK_BOX) {
+
+			public void run() {
+				commitMessageComponent.setChangeIdButtonSelection(isChecked());
+			}
+		};
+		addChangeIdAction.setImageDescriptor(UIIcons.GERRIT);
+		toolbar.add(addChangeIdAction);
+
+		toolbar.add(new Separator());
+
 		openNewCommitsAction = new Action(UIText.StagingView_OpenNewCommits,
 				IAction.AS_CHECK_BOX) {
 
@@ -907,7 +882,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			break;
 
 		case MISSING:
-		case MISSING_AND_CHANGED:
 		case MODIFIED:
 		case PARTIALLY_MODIFIED:
 		case CONFLICTING:
@@ -1139,26 +1113,33 @@ public class StagingView extends ViewPart implements IShowInSource {
 			if (!(selectedObject instanceof StagingEntry))
 				return false;
 			StagingEntry stagingEntry = (StagingEntry) selectedObject;
-			IFile file = stagingEntry.getFile();
-			if (file == null)
+			String path = currentRepository.getWorkTree() + "/" + stagingEntry.getPath(); //$NON-NLS-1$
+			if (getResource(path) == null)
 				return true;
 		}
 		return false;
+	}
+
+	private IFile getResource(String path) {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IFile file = root.getFileForLocation(new Path(path));
+		if (file == null)
+			return null;
+		if (file.getProject().isAccessible())
+			return file;
+		return null;
 	}
 
 	private void openSelectionInEditor(ISelection s) {
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
 			return;
 		final IStructuredSelection iss = (IStructuredSelection) s;
-		for (Object element : iss.toList()) {
-			if (element instanceof StagingEntry) {
-				StagingEntry entry = (StagingEntry) element;
-				String relativePath = entry.getPath();
-				String path = new Path(currentRepository.getWorkTree()
-						.getAbsolutePath()).append(relativePath)
-						.toOSString();
-				openFileInEditor(path);
-			}
+		for (Iterator<StagingEntry> it = iss.iterator(); it.hasNext();) {
+			String relativePath = it.next().getPath();
+			String path = new Path(currentRepository.getWorkTree()
+					.getAbsolutePath()).append(relativePath)
+					.toOSString();
+			openFileInEditor(path);
 		}
 	}
 
@@ -1231,72 +1212,48 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private void stage(IStructuredSelection selection) {
 		Git git = new Git(currentRepository);
+		AddCommand add = null;
 		RmCommand rm = null;
 		Iterator iterator = selection.iterator();
-		List<String> addPaths = new ArrayList<String>();
 		while (iterator.hasNext()) {
-			Object element = iterator.next();
-			if (element instanceof StagingEntry) {
-				StagingEntry entry = (StagingEntry) element;
-				switch (entry.getState()) {
-				case ADDED:
-				case CHANGED:
-				case REMOVED:
-					// already staged
-					break;
-				case CONFLICTING:
-				case MODIFIED:
-				case PARTIALLY_MODIFIED:
-				case UNTRACKED:
-					addPaths.add(entry.getPath());
-					break;
-				case MISSING:
-				case MISSING_AND_CHANGED:
-					if (rm == null)
-						rm = git.rm().setCached(true);
-					rm.addFilepattern(entry.getPath());
-					break;
-				}
-			} else {
-				IResource resource = AdapterUtils.adapt(element, IResource.class);
-				if (resource != null) {
-					RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-					if (mapping != null && mapping.getRepository() == currentRepository) {
-						String path = mapping.getRepoRelativePath(resource);
-						// If resource corresponds to root of working directory
-						if ("".equals(path)) //$NON-NLS-1$
-							addPaths.add("."); //$NON-NLS-1$
-						else
-							addPaths.add(path);
-					}
-				}
+			StagingEntry entry = (StagingEntry) iterator.next();
+			switch (entry.getState()) {
+			case ADDED:
+			case CHANGED:
+			case REMOVED:
+				// already staged
+				break;
+			case CONFLICTING:
+			case MODIFIED:
+			case PARTIALLY_MODIFIED:
+			case UNTRACKED:
+				if (add == null)
+					add = git.add();
+				add.addFilepattern(entry.getPath());
+				break;
+			case MISSING:
+				if (rm == null)
+					rm = git.rm();
+				rm.addFilepattern(entry.getPath());
+				break;
 			}
 		}
 
-		if (!addPaths.isEmpty())
+		if (add != null)
 			try {
-				AddCommand add = git.add();
-				for (String addPath : addPaths)
-					add.addFilepattern(addPath);
 				add.call();
 			} catch (NoFilepatternException e1) {
 				// cannot happen
-			} catch (JGitInternalException e1) {
-				Activator.handleError(e1.getCause().getMessage(),
-						e1.getCause(), true);
-			} catch (Exception e1) {
-				Activator.handleError(e1.getMessage(), e1, true);
+			} catch (Exception e2) {
+				Activator.error(e2.getMessage(), e2);
 			}
 		if (rm != null)
 			try {
 				rm.call();
 			} catch (NoFilepatternException e) {
 				// cannot happen
-			} catch (JGitInternalException e) {
-				Activator.handleError(e.getCause().getMessage(), e.getCause(),
-						true);
-			} catch (Exception e) {
-				Activator.handleError(e.getMessage(), e, true);
+			} catch (Exception e2) {
+				Activator.error(e2.getMessage(), e2);
 			}
 	}
 
