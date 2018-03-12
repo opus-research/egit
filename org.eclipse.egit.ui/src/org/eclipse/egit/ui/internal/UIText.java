@@ -746,12 +746,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseInteractiveView_HeadingStatus;
-	
-	/** */
-	public static String RebaseInteractiveView_HeadingAuthor;
-	
-	/** */
-	public static String RebaseInteractiveView_HeadingAuthorDate;
 
 	/** */
 	public static String RebaseInteractiveView_NoSelection;
