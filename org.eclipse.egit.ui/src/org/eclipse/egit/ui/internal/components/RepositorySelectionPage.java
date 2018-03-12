@@ -32,7 +32,6 @@ import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.Transport;
-import org.eclipse.jgit.transport.TransportProtocol;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
@@ -330,7 +329,7 @@ public class RepositorySelectionPage extends WizardPage {
 					if (index > 0)
 						text = text.substring(0, index);
 					URIish u = new URIish(text);
-					if (canHandleProtocol(u)) {
+					if (Transport.canHandleProtocol(u, FS.DETECTED)) {
 						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
 								|| text.endsWith(Constants.DOT_GIT))
 							preset = text;
@@ -355,15 +354,6 @@ public class RepositorySelectionPage extends WizardPage {
 			setTitle(UIText.RepositorySelectionPage_destinationSelectionTitle);
 			setDescription(UIText.RepositorySelectionPage_destinationSelectionDescription);
 		}
-	}
-
-	private boolean canHandleProtocol(URIish u) {
-		for (TransportProtocol proto : Transport.getTransportProtocols()) {
-			if (proto.canHandle(u))
-				return true;
-		}
-
-		return false;
 	}
 
 	/**
