@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositoryServerProvider;
 import org.eclipse.jface.wizard.WizardPage;
@@ -81,7 +82,7 @@ public class GitCloneSourceProviderExtension {
 		 * The constant provider used for local repositories
 		 */
 		public static final CloneSourceProvider LOCAL = new CloneSourceProvider(
-				"Local", null, null, true); //$NON-NLS-1$
+				UIText.GitCloneSourceProviderExtension_Local, null, null, true);
 
 		private final String label;
 
