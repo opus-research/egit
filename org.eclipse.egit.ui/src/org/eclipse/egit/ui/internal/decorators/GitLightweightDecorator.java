@@ -31,6 +31,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
@@ -38,12 +39,11 @@ import org.eclipse.egit.core.internal.util.ExceptionCollector;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -706,9 +706,9 @@ public class GitLightweightDecorator extends LabelProvider implements
 			resource = (IResource) element;
 		} else if (element instanceof IAdaptable) {
 			final IAdaptable adaptable = (IAdaptable) element;
-			resource = CommonUtils.getAdapter(adaptable, IResource.class);
+			resource = AdapterUtils.adapt(adaptable, IResource.class);
 			if (resource == null) {
-				final IContributorResourceAdapter adapter = CommonUtils.getAdapter(adaptable, IContributorResourceAdapter.class);
+				final IContributorResourceAdapter adapter = AdapterUtils.adapt(adaptable, IContributorResourceAdapter.class);
 				if (adapter != null)
 					resource = adapter.getAdaptedResource(adaptable);
 			}

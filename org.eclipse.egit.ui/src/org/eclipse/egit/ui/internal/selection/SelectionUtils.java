@@ -21,7 +21,6 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -29,8 +28,8 @@ import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -138,25 +137,21 @@ public class SelectionUtils {
 			@NonNull IStructuredSelection selection) {
 		Set<IPath> result = new LinkedHashSet<IPath>();
 		for (Object o : selection.toList()) {
-			ResourceMapping mapping = AdapterUtils.adapt(o,
-					ResourceMapping.class);
-			if (mapping != null) {
-				for (IResource r : extractResourcesFromMapping(mapping)) {
-					IPath l = r.getLocation();
-					if (l != null)
-						result.add(l);
-				}
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			if (resource != null) {
+				IPath location = resource.getLocation();
+				if (location != null)
+					result.add(location);
 			} else {
-				IResource resource = AdapterUtils.adapt(o, IResource.class);
-				if (resource != null) {
-					IPath location = resource.getLocation();
-					if (location != null)
-						result.add(location);
-				} else {
-					IPath location = AdapterUtils.adapt(o, IPath.class);
-					if (location != null)
-						result.add(location);
-				}
+				IPath location = AdapterUtils.adapt(o, IPath.class);
+				if (location != null)
+					result.add(location);
+				else
+					for (IResource r : extractResourcesFromMapping(o)) {
+						IPath l = r.getLocation();
+						if (l != null)
+							result.add(l);
+					}
 			}
 		}
 		return result.toArray(new IPath[result.size()]);
@@ -171,22 +166,17 @@ public class SelectionUtils {
 			@NonNull IStructuredSelection selection) {
 		Set<IResource> result = new LinkedHashSet<IResource>();
 		for (Object o : selection.toList()) {
-			ResourceMapping mapping = AdapterUtils.adapt(o,
-					ResourceMapping.class);
-			if (mapping != null) {
-				result.addAll(extractResourcesFromMapping(mapping));
-			} else {
-				IResource resource = AdapterUtils.adapt(o, IResource.class);
-				if (resource != null)
-					result.add(resource);
-			}
-
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			if (resource != null)
+				result.add(resource);
+			else
+				result.addAll(extractResourcesFromMapping(o));
 		}
 		return result.toArray(new IResource[result.size()]);
 	}
 
-	private static List<IResource> extractResourcesFromMapping(
-			ResourceMapping mapping) {
+	private static List<IResource> extractResourcesFromMapping(Object o) {
+		ResourceMapping mapping = AdapterUtils.adapt(o, ResourceMapping.class);
 		if (mapping == null)
 			return Collections.emptyList();
 
@@ -221,9 +211,9 @@ public class SelectionUtils {
 	 *            must be provided if warn = true
 	 * @return repository for current project, or null
 	 */
+	@Nullable
 	private static Repository getRepository(boolean warn,
-			IStructuredSelection selection, Shell shell) {
-		RepositoryMapping mapping = null;
+			@NonNull IStructuredSelection selection, Shell shell) {
 
 		IPath[] locations = getSelectedLocations(selection);
 		if (GitTraceLocation.SELECTION.isActive())
@@ -231,32 +221,39 @@ public class SelectionUtils {
 					GitTraceLocation.SELECTION.getLocation(), "selection=" //$NON-NLS-1$
 							+ selection + ", locations=" //$NON-NLS-1$
 							+ Arrays.toString(locations));
-
+		boolean hadNull = false;
+		Repository result = null;
 		for (IPath location : locations) {
-			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(location);
-			if (repositoryMapping == null)
-				return null;
-			if (mapping == null)
-				mapping = repositoryMapping;
-			if (mapping.getRepository() != repositoryMapping.getRepository()) {
-				if (warn)
+			RepositoryMapping mapping = RepositoryMapping.getMapping(location);
+			Repository repo;
+			if (mapping != null) {
+				repo = mapping.getRepository();
+			} else {
+				// location is outside workspace
+				repo = org.eclipse.egit.core.Activator.getDefault()
+						.getRepositoryCache().getRepository(location);
+			}
+			if (repo == null) {
+				hadNull = true;
+			}
+			if (result == null) {
+				result = repo;
+			}
+			boolean mismatch = hadNull && result != null;
+			if (mismatch || result != repo) {
+				if (warn) {
 					MessageDialog.openError(shell,
 							UIText.RepositoryAction_multiRepoSelectionTitle,
 							UIText.RepositoryAction_multiRepoSelection);
+				}
 				return null;
 			}
 		}
-		Repository result = null;
-		if (mapping == null)
+
+		if (result == null) {
 			for (Object o : selection.toArray()) {
-				Repository nextRepo = null;
-				if (o instanceof Repository)
-					nextRepo = (Repository) o;
-				else if (o instanceof PlatformObject)
-					nextRepo = CommonUtils.getAdapter(((PlatformObject) o), Repository.class);
-				if (nextRepo != null && result != null
-						&& !result.equals(nextRepo)) {
+				Repository nextRepo = AdapterUtils.adapt(o, Repository.class);
+				if (nextRepo != null && result != null && result != nextRepo) {
 					if (warn)
 						MessageDialog
 								.openError(
@@ -267,8 +264,8 @@ public class SelectionUtils {
 				}
 				result = nextRepo;
 			}
-		else
-			result = mapping.getRepository();
+		}
+
 		if (result == null) {
 			if (warn)
 				MessageDialog.openError(shell,

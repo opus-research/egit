@@ -23,10 +23,10 @@ import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
@@ -129,16 +129,17 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				String property = event.getProperty();
-				if (property.equals(
-						UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL)) {
+				if (UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL
+						.equals(property)) {
 					setFill(((Boolean) event.getNewValue()).booleanValue());
-					return;
-				}
-				if (property.equals(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE)
-						|| property.equals(
-								UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE)) {
+				} else
+					if (UIPreferences.HISTORY_SHOW_TAG_SEQUENCE.equals(property)
+							|| UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE
+									.equals(property)
+							|| UIPreferences.DATE_FORMAT.equals(property)
+							|| UIPreferences.DATE_FORMAT_CHOICE
+									.equals(property)) {
 					format();
-					return;
 				}
 			}
 		};
@@ -376,7 +377,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 	}
 
 	private void scheduleFormatJob() {
-		IWorkbenchSiteProgressService siteService = CommonUtils.getAdapter(partSite, IWorkbenchSiteProgressService.class);
+		IWorkbenchSiteProgressService siteService = AdapterUtils.adapt(partSite, IWorkbenchSiteProgressService.class);
 		if (siteService == null)
 			return;
 		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(

@@ -18,19 +18,21 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 
 
 /**
  * A staged/unstaged entry in the table
  */
-public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
+public class StagingEntry extends PlatformObject
+		implements IProblemDecoratable, IDecoratableResource {
 
 	/**
 	 * State of the node
@@ -121,7 +123,7 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		this.repository = repository;
 		this.state = state;
 		this.path = path;
-		this.file = ResourceUtil.getFileForLocation(repository, path);
+		this.file = ResourceUtil.getFileForLocation(repository, path, false);
 	}
 
 	/**
@@ -195,6 +197,7 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	/**
 	 * @return the location (path) of the entry
 	 */
+	@NonNull
 	public IPath getLocation() {
 		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
 		return absolutePath;
@@ -225,15 +228,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		} catch (CoreException e) {
 			return SEVERITY_NONE;
 		}
-	}
-
-	@Override
-	public Object getAdapter(Class adapter) {
-		if (adapter == IResource.class)
-			return getFile();
-		else if (adapter == IPath.class)
-			return getLocation();
-		return null;
 	}
 
 	@Override
