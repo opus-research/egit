@@ -93,7 +93,7 @@ public class BranchOperationUI {
 	 * time we do checkout, we don't want to ask any questions we already asked
 	 * the first time, so this will be false then.
 	 */
-	private final boolean showQuestionsBeforeCheckout;
+	private final boolean showQuestionAboutTarget;
 
 	private final int mode;
 
@@ -191,13 +191,13 @@ public class BranchOperationUI {
 	/**
 	 * @param repository
 	 * @param target
-	 * @param showQuestionsBeforeCheckout
+	 * @param showQuestionAboutTarget
 	 */
 	private BranchOperationUI(Repository repository, String target,
-			boolean showQuestionsBeforeCheckout) {
+			boolean showQuestionAboutTarget) {
 		this.repository = repository;
 		this.target = target;
-		this.showQuestionsBeforeCheckout = showQuestionsBeforeCheckout;
+		this.showQuestionAboutTarget = showQuestionAboutTarget;
 		this.mode = 0;
 	}
 
@@ -210,7 +210,7 @@ public class BranchOperationUI {
 	private BranchOperationUI(Repository repository, int mode) {
 		this.repository = repository;
 		this.mode = mode;
-		this.showQuestionsBeforeCheckout = true;
+		this.showQuestionAboutTarget = true;
 	}
 
 	/**
@@ -350,7 +350,7 @@ public class BranchOperationUI {
 	private void askForTargetIfNecessary() {
 		if (target == null)
 			target = getTargetWithDialog();
-		if (target != null && showQuestionsBeforeCheckout) {
+		if (target != null && showQuestionAboutTarget) {
 			if (shouldShowCheckoutRemoteTrackingDialog(target))
 				target = getTargetWithCheckoutRemoteTrackingDialog();
 		}
@@ -531,8 +531,6 @@ public class BranchOperationUI {
 
 	private boolean shouldCancelBecauseOfRunningLaunches() {
 		if (mode == MODE_CHECKOUT)
-			return false;
-		if (!showQuestionsBeforeCheckout)
 			return false;
 		final IPreferenceStore store = Activator.getDefault().getPreferenceStore();
 		if (!store
