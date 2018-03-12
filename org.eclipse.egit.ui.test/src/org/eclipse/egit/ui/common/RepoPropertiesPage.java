@@ -15,7 +15,6 @@ import static org.eclipse.swtbot.swt.finder.SWTBotAssert.assertText;
 import static org.junit.Assert.assertEquals;
 
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotCheckBox;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 
 public class RepoPropertiesPage {
@@ -24,21 +23,6 @@ public class RepoPropertiesPage {
 
 	public void setURI(String uri) {
 		uri().setText(uri);
-	}
-
-	public void setUser(String user) {
-		user().setText(user);
-	}
-
-	public void setPassword(String password) {
-		password().setText(password);
-	}
-
-	public void setStoreInSecureStore(boolean store) {
-		if (store)
-			storeCheckBox().select();
-		else
-			storeCheckBox().deselect();
 	}
 
 	public void appendToURI(String toAppend) {
@@ -81,26 +65,9 @@ public class RepoPropertiesPage {
 		return bot.textWithLabel("URI:");
 	}
 
-	private SWTBotText user() {
-		return bot.textWithLabel("User:");
-	}
-
-	private SWTBotText password() {
-		return bot.textWithLabel("Password:");
-	}
-
-	private SWTBotCheckBox storeCheckBox() {
-		return bot.checkBoxWithLabel("Store in Secure Store");
-	}
-
 	public RepoRemoteBranchesPage nextToRemoteBranches(String string) {
 		setURI(string);
-		return nextToRemoteBranches();
-	}
-
-	public RepoRemoteBranchesPage nextToRemoteBranches() {
 		bot.button("Next >").click();
 		return new RepoRemoteBranchesPage();
 	}
-
 }
