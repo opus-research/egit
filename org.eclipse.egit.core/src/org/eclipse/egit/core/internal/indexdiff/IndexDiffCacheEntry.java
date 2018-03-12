@@ -58,6 +58,7 @@ import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.InterIndexDiffFilter;
@@ -74,7 +75,9 @@ public class IndexDiffCacheEntry {
 
 	private static final int RESOURCE_LIST_UPDATE_LIMIT = 1000;
 
-	private Repository repository;
+	private final File repositoryGitDir;
+
+	private final String repositoryName;
 
 	private volatile IndexDiffData indexDiffData;
 
@@ -91,8 +94,30 @@ public class IndexDiffCacheEntry {
 
 	private Set<IndexDiffChangedListener> listeners = new HashSet<IndexDiffChangedListener>();
 
-	private final ListenerHandle indexChangedListenerHandle;
-	private final ListenerHandle refsChangedListenerHandle;
+	private final IndexChangedListener indexChangedListener = new IndexChangedListener() {
+		@Override
+		public void onIndexChanged(IndexChangedEvent event) {
+			refreshIndexDelta();
+		}
+	};
+
+	private final RefsChangedListener refsChangedListener = new RefsChangedListener() {
+		@Override
+		public void onRefsChanged(RefsChangedEvent event) {
+			scheduleReloadJob("RefsChanged"); //$NON-NLS-1$
+		}
+	};
+
+	private final Set<ListenerHandle> indexChangedListenerHandles = new HashSet<>();
+
+	private final Set<ListenerHandle> refsChangedListenerHandles = new HashSet<>();
+
+	/**
+	 * Keep hard references to submodules -- we need them in the cache at least
+	 * as long as the parent repository.
+	 */
+	private final Set<Repository> submodules = new HashSet<>();
+
 	private IResourceChangeListener resourceChangeListener;
 
 	private static Semaphore parallelism = new Semaphore(2);
@@ -104,38 +129,67 @@ public class IndexDiffCacheEntry {
 	 */
 	public IndexDiffCacheEntry(Repository repository,
 			@Nullable IndexDiffChangedListener listener) {
-		this.repository = repository;
+		this.repositoryGitDir = repository.getDirectory();
+		this.repositoryName = Activator.getDefault().getRepositoryUtil()
+				.getRepositoryName(repository);
 		if (listener != null) {
 			addIndexDiffChangedListener(listener);
 		}
 
-		indexChangedListenerHandle = repository.getListenerList().addIndexChangedListener(
-				new IndexChangedListener() {
-					@Override
-					public void onIndexChanged(IndexChangedEvent event) {
-						refreshIndexDelta();
-					}
-				});
-		refsChangedListenerHandle = repository.getListenerList().addRefsChangedListener(
-				new RefsChangedListener() {
-					@Override
-					public void onRefsChanged(RefsChangedEvent event) {
-						scheduleReloadJob("RefsChanged"); //$NON-NLS-1$
-					}
-				});
-
+		indexChangedListenerHandles.add(repository.getListenerList()
+				.addIndexChangedListener(indexChangedListener));
+		refsChangedListenerHandles.add(repository.getListenerList()
+				.addRefsChangedListener(refsChangedListener));
+		// Add the listeners also to all submodules in order to be notified when
+		// a branch switch or so occurs in a submodule.
+		try (SubmoduleWalk walk = SubmoduleWalk.forIndex(repository)) {
+			while (walk.next()) {
+				Repository submodule = walk.getRepository();
+				if (submodule != null) {
+					Repository cached = org.eclipse.egit.core.Activator
+							.getDefault().getRepositoryCache().lookupRepository(
+									submodule.getDirectory().getAbsoluteFile());
+					indexChangedListenerHandles.add(cached.getListenerList()
+							.addIndexChangedListener(indexChangedListener));
+					refsChangedListenerHandles.add(cached.getListenerList()
+							.addRefsChangedListener(refsChangedListener));
+					submodules.add(cached);
+					submodule.close();
+				}
+			}
+		} catch (IOException ex) {
+			Activator.logError(MessageFormat.format(
+					CoreText.IndexDiffCacheEntry_errorCalculatingIndexDelta,
+					repository), ex);
+		}
 		scheduleReloadJob("IndexDiffCacheEntry construction"); //$NON-NLS-1$
 		createResourceChangeListener();
 		if (!repository.isBare()) {
 			try {
-				lastIndex = repository.readDirCache();
+				lastIndex = DirCache.read(repository.getIndexFile(),
+						repository.getFS());
 			} catch (IOException ex) {
-				Activator
-						.error(MessageFormat
-								.format(CoreText.IndexDiffCacheEntry_errorCalculatingIndexDelta,
-										repository), ex);
+				Activator.logError(MessageFormat.format(
+						CoreText.IndexDiffCacheEntry_errorCalculatingIndexDelta,
+						repository), ex);
 			}
 		}
+	}
+
+	private @Nullable Repository getRepository() {
+		if (Activator.getDefault() == null) {
+			return null;
+		}
+		Repository repository = Activator.getDefault().getRepositoryCache()
+				.getRepository(repositoryGitDir);
+		if (repository == null) {
+			return null;
+		}
+		File directory = repository.getDirectory();
+		if (directory == null || !directory.exists()) {
+			return null;
+		}
+		return repository;
 	}
 
 	/**
@@ -168,8 +222,6 @@ public class IndexDiffCacheEntry {
 	 * @return new job ready to be scheduled, never null
 	 */
 	public Job createRefreshResourcesAndIndexDiffJob() {
-		final String repositoryName = Activator.getDefault().getRepositoryUtil()
-				.getRepositoryName(repository);
 		String jobName = MessageFormat
 				.format(CoreText.IndexDiffCacheEntry_refreshingProjects,
 						repositoryName);
@@ -177,6 +229,10 @@ public class IndexDiffCacheEntry {
 
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {
+				Repository repository = getRepository();
+				if (repository == null) {
+					return Status.CANCEL_STATUS;
+				}
 				final long start = System.currentTimeMillis();
 				ISchedulingRule rule = RuleUtil.getRule(repository);
 				try {
@@ -184,6 +240,7 @@ public class IndexDiffCacheEntry {
 					try {
 						IProject[] validOpenProjects = ProjectUtil
 								.getValidOpenProjects(repository);
+						repository = null;
 						ProjectUtil.refreshResources(validOpenProjects,
 								monitor);
 					} catch (CoreException e) {
@@ -200,6 +257,7 @@ public class IndexDiffCacheEntry {
 					return Status.CANCEL_STATUS;
 				} finally {
 					Job.getJobManager().endRule(rule);
+					repository = null;
 				}
 				refresh();
 				Job next = reloadJob;
@@ -248,11 +306,13 @@ public class IndexDiffCacheEntry {
 	 * For bare repositories this does nothing.
 	 */
 	private void refreshIndexDelta() {
-		if (repository.isBare())
+		Repository repository = getRepository();
+		if (repository == null || repository.isBare()) {
 			return;
-
+		}
 		try {
-			DirCache currentIndex = repository.readDirCache();
+			DirCache currentIndex = DirCache.read(repository.getIndexFile(),
+					repository.getFS());
 			DirCache oldIndex = lastIndex;
 
 			lastIndex = currentIndex;
@@ -280,7 +340,7 @@ public class IndexDiffCacheEntry {
 				refreshFiles(paths);
 
 		} catch (IOException ex) {
-			Activator.error(MessageFormat.format(
+			Activator.logError(MessageFormat.format(
 					CoreText.IndexDiffCacheEntry_errorCalculatingIndexDelta,
 					repository), ex);
 			scheduleReloadJob("Exception while calculating index delta, doing full reload instead"); //$NON-NLS-1$
@@ -313,7 +373,7 @@ public class IndexDiffCacheEntry {
 			updateJob.cleanupAndCancel();
 		}
 
-		if (!checkRepository()) {
+		if (getRepository() == null) {
 			return;
 		}
 		reloadJob = new Job(getReloadJobName()) {
@@ -332,7 +392,12 @@ public class IndexDiffCacheEntry {
 					}
 					parallelism.acquire();
 					long startTime = System.currentTimeMillis();
-					IndexDiffData result = calcIndexDiffDataFull(monitor, getName());
+					Repository repository = getRepository();
+					if (repository == null) {
+						return Status.CANCEL_STATUS;
+					}
+					IndexDiffData result = calcIndexDiffDataFull(monitor,
+							getName(), repository);
 					if (monitor.isCanceled() || (result == null)) {
 						return Status.CANCEL_STATUS;
 					}
@@ -346,7 +411,7 @@ public class IndexDiffCacheEntry {
 								message.append(indexDiffData.toString())
 										.toString());
 					}
-					notifyListeners();
+					notifyListeners(repository);
 					return Status.OK_STATUS;
 				} catch (IndexReadException e) {
 					return Activator.error(CoreText.IndexDiffCacheEntry_cannotReadIndex, e);
@@ -368,7 +433,7 @@ public class IndexDiffCacheEntry {
 				return NLS
 						.bind("\nUpdated IndexDiffData in {0} ms\nReason: {1}\nRepository: {2}\n", //$NON-NLS-1$
 						new Object[] { Long.valueOf(time), trigger,
-								repository.getWorkTree().getName() });
+								repositoryGitDir });
 			}
 
 			@Override
@@ -382,20 +447,6 @@ public class IndexDiffCacheEntry {
 		};
 		reloadJob.setSystem(true);
 		reloadJob.schedule();
-	}
-
-	private boolean checkRepository() {
-		if (Activator.getDefault() == null) {
-			return false;
-		}
-		if (repository == null) {
-			return false;
-		}
-		File directory = repository.getDirectory();
-		if (directory == null || !directory.exists()) {
-			return false;
-		}
-		return true;
 	}
 
 	/**
@@ -428,8 +479,9 @@ public class IndexDiffCacheEntry {
 	 */
 	protected void scheduleUpdateJob(final Collection<String> filesToUpdate,
 			final Collection<IResource> resourcesToUpdate) {
-		if (!checkRepository())
+		if (getRepository() == null) {
 			return;
+		}
 		if (reloadJob != null && reloadJobIsInitializing)
 			return;
 
@@ -469,8 +521,12 @@ public class IndexDiffCacheEntry {
 				lock.lock();
 				try {
 					long startTime = System.currentTimeMillis();
+					Repository repository = getRepository();
+					if (repository == null) {
+						return Status.CANCEL_STATUS;
+					}
 					IndexDiffData result = calcIndexDiffDataIncremental(monitor,
-							getName(), files, resources);
+							getName(), repository, files, resources);
 					if (monitor.isCanceled() || (result == null)) {
 						return Status.CANCEL_STATUS;
 					}
@@ -487,7 +543,7 @@ public class IndexDiffCacheEntry {
 								message.append(indexDiffData.toString())
 								.toString());
 					}
-					notifyListeners();
+					notifyListeners(repository);
 					return Status.OK_STATUS;
 				} catch (IOException e) {
 					if (GitTraceLocation.INDEXDIFFCACHE.isActive()) {
@@ -524,12 +580,13 @@ public class IndexDiffCacheEntry {
 	}
 
 	private IndexDiffData calcIndexDiffDataIncremental(IProgressMonitor monitor,
-			String jobName, Collection<String> filesToUpdate,
+			String jobName, Repository repository,
+			Collection<String> filesToUpdate,
 			Collection<IResource> resourcesToUpdate) throws IOException {
 		if (indexDiffData == null)
 			// Incremental update not possible without prior indexDiffData
 			// -> do full refresh instead
-			return calcIndexDiffDataFull(monitor, jobName);
+			return calcIndexDiffDataFull(monitor, jobName, repository);
 
 		EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(
 				monitor);
@@ -544,7 +601,13 @@ public class IndexDiffCacheEntry {
 		diffForChangedResources.setFilter(PathFilterGroup
 				.createFromStrings(treeFilterPaths));
 		diffForChangedResources.diff(jgitMonitor, 0, 0, jobName);
-		return new IndexDiffData(indexDiffData, filesToUpdate,
+		IndexDiffData previous = indexDiffData;
+		if (previous == null) {
+			// Can happen when the index diff cache entry is already disposed,
+			// but the updateJob is still running (and about to cancel).
+			return null;
+		}
+		return new IndexDiffData(previous, filesToUpdate,
 				resourcesToUpdate, diffForChangedResources);
 	}
 
@@ -565,7 +628,7 @@ public class IndexDiffCacheEntry {
 		return paths;
 	}
 
-	private void notifyListeners() {
+	private void notifyListeners(Repository repository) {
 		IndexDiffChangedListener[] tmpListeners;
 		synchronized (listeners) {
 			tmpListeners = listeners
@@ -580,7 +643,8 @@ public class IndexDiffCacheEntry {
 			}
 	}
 
-	private IndexDiffData calcIndexDiffDataFull(IProgressMonitor monitor, String jobName)
+	private IndexDiffData calcIndexDiffDataFull(IProgressMonitor monitor,
+			String jobName, Repository repository)
 			throws IOException {
 		EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(
 				monitor);
@@ -596,22 +660,27 @@ public class IndexDiffCacheEntry {
 	}
 
 	private String getReloadJobName() {
-		String repoName = Activator.getDefault().getRepositoryUtil()
-				.getRepositoryName(repository);
-		return MessageFormat.format(CoreText.IndexDiffCacheEntry_reindexing, repoName);
+		return MessageFormat.format(CoreText.IndexDiffCacheEntry_reindexing,
+				repositoryName);
 	}
 
 	private String getUpdateJobName() {
-		String repoName = Activator.getDefault().getRepositoryUtil()
-				.getRepositoryName(repository);
 		return MessageFormat.format(
-				CoreText.IndexDiffCacheEntry_reindexingIncrementally, repoName);
+				CoreText.IndexDiffCacheEntry_reindexingIncrementally,
+				repositoryName);
 	}
 
 	private void createResourceChangeListener() {
 		resourceChangeListener = new IResourceChangeListener() {
 			@Override
 			public void resourceChanged(IResourceChangeEvent event) {
+				Repository repository = getRepository();
+				if (repository == null) {
+					ResourcesPlugin.getWorkspace()
+							.removeResourceChangeListener(this);
+					resourceChangeListener = null;
+					return;
+				}
 				GitResourceDeltaVisitor visitor = new GitResourceDeltaVisitor(repository);
 				try {
 					event.getDelta().accept(visitor);
@@ -649,8 +718,15 @@ public class IndexDiffCacheEntry {
 	 * are canceled.
 	 */
 	public void dispose() {
-		indexChangedListenerHandle.remove();
-		refsChangedListenerHandle.remove();
+		for (ListenerHandle h : indexChangedListenerHandles) {
+			h.remove();
+		}
+		for (ListenerHandle h : refsChangedListenerHandles) {
+			h.remove();
+		}
+		indexChangedListenerHandles.clear();
+		refsChangedListenerHandles.clear();
+		submodules.clear();
 		if (resourceChangeListener != null) {
 			ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
 		}

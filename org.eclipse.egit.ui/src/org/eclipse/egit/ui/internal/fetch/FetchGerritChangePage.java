@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010, 2016 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,6 +8,7 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Marc Khouzam (Ericsson)  - Add an option not to checkout the new branch
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 493935
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.fetch;
 
@@ -29,6 +30,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.op.TagOperation;
@@ -42,6 +44,7 @@ import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.BranchEditDialog;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
+import org.eclipse.egit.ui.internal.gerrit.GerritDialogSettings;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -103,9 +106,6 @@ import org.eclipse.ui.PlatformUI;
  * Fetch a change from Gerrit
  */
 public class FetchGerritChangePage extends WizardPage {
-	private static final String FETCH_GERRIT_CHANGE_PAGE_SECTION = "FetchGerritChangePage"; //$NON-NLS-1$
-
-	private static final String LAST_URI_POSTFIX = ".lastUri"; //$NON-NLS-1$
 
 	private static final String RUN_IN_BACKGROUND = "runInBackground"; //$NON-NLS-1$
 
@@ -166,7 +166,7 @@ public class FetchGerritChangePage extends WizardPage {
 								.getRepositoryName(repository)));
 		setMessage(UIText.FetchGerritChangePage_PageMessage);
 		settings = getDialogSettings();
-		lastUriKey = repository + LAST_URI_POSTFIX;
+		lastUriKey = repository + GerritDialogSettings.LAST_URI_SUFFIX;
 
 		branchValidator = ValidationUtils.getRefNameInputValidator(repository,
 				Constants.R_HEADS, true);
@@ -176,12 +176,8 @@ public class FetchGerritChangePage extends WizardPage {
 
 	@Override
 	protected IDialogSettings getDialogSettings() {
-		IDialogSettings s = Activator.getDefault().getDialogSettings();
-		IDialogSettings section = s
-				.getSection(FETCH_GERRIT_CHANGE_PAGE_SECTION);
-		if (section == null)
-			section = s.addNewSection(FETCH_GERRIT_CHANGE_PAGE_SECTION);
-		return section;
+		return GerritDialogSettings
+				.getSection(GerritDialogSettings.FETCH_FROM_GERRIT_SECTION);
 	}
 
 	@Override
@@ -189,6 +185,7 @@ public class FetchGerritChangePage extends WizardPage {
 		Clipboard clipboard = new Clipboard(parent.getDisplay());
 		String clipText = (String) clipboard.getContents(TextTransfer
 				.getInstance());
+		clipboard.dispose();
 		String defaultUri = null;
 		String defaultCommand = null;
 		String defaultChange = null;
@@ -383,27 +380,33 @@ public class FetchGerritChangePage extends WizardPage {
 				.applyTo(runInBackgroud);
 		runInBackgroud.setText(UIText.FetchGerritChangePage_RunInBackground);
 
-		// get all available URIs from the repository
-		SortedSet<String> uris = new TreeSet<String>();
+		// get all available Gerrit URIs from the repository
+		SortedSet<String> uris = new TreeSet<>();
 		try {
 			for (RemoteConfig rc : RemoteConfig.getAllRemoteConfigs(repository
 					.getConfig())) {
-				if (rc.getURIs().size() > 0)
-					uris.add(rc.getURIs().get(0).toPrivateString());
-				for (URIish u : rc.getPushURIs())
-					uris.add(u.toPrivateString());
+				if (GerritUtil.isGerritFetch(rc)) {
+					if (rc.getURIs().size() > 0) {
+						uris.add(rc.getURIs().get(0).toPrivateString());
+					}
+					for (URIish u : rc.getPushURIs()) {
+						uris.add(u.toPrivateString());
+					}
+				}
 
 			}
 		} catch (URISyntaxException e) {
 			Activator.handleError(e.getMessage(), e, false);
 			setErrorMessage(e.getMessage());
 		}
-		for (String aUri : uris)
+		for (String aUri : uris) {
 			uriCombo.add(aUri);
-		if (defaultUri != null)
+		}
+		if (defaultUri != null) {
 			uriCombo.setText(defaultUri);
-		else
+		} else {
 			selectLastUsedUri();
+		}
 		restoreRunInBackgroundSelection();
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
@@ -609,7 +612,7 @@ public class FetchGerritChangePage extends WizardPage {
 							}
 
 							listOp.run(monitor);
-							changeRefs = new ArrayList<Change>();
+							changeRefs = new ArrayList<>();
 							for (Ref ref : listOp.getRemoteRefs()) {
 								Change change = Change.fromRef(ref.getName());
 								if (change != null)
@@ -659,10 +662,16 @@ public class FetchGerritChangePage extends WizardPage {
 
 				@Override
 				public IStatus runInWorkspace(IProgressMonitor monitor) {
-					internalDoFetch(spec, uri, doCheckout, doCreateTag,
-							doCreateBranch, doCheckoutNewBranch,
-							doActivateAdditionalRefs,
-							textForTag, textForBranch, monitor);
+					try {
+						internalDoFetch(spec, uri, doCheckout, doCreateTag,
+								doCreateBranch, doCheckoutNewBranch,
+								doActivateAdditionalRefs, textForTag,
+								textForBranch, monitor);
+					} catch (CoreException ce) {
+						return ce.getStatus();
+					} catch (Exception e) {
+						return Activator.createErrorStatus(e.getLocalizedMessage(), e);
+					}
 					return org.eclipse.core.runtime.Status.OK_STATUS;
 				}
 
@@ -712,9 +721,10 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private void internalDoFetch(RefSpec spec, String uri, boolean doCheckout,
 			boolean doCreateTag, boolean doCreateBranch,
-			boolean doCheckoutNewBranch,
-			boolean doActivateAdditionalRefs, String textForTag,
-			String textForBranch, IProgressMonitor monitor) {
+			boolean doCheckoutNewBranch, boolean doActivateAdditionalRefs,
+			String textForTag, String textForBranch, IProgressMonitor monitor)
+					throws IOException, CoreException, URISyntaxException,
+					GitAPIException {
 
 		int totalWork = 1;
 		if (doCheckout)
@@ -743,8 +753,6 @@ public class FetchGerritChangePage extends WizardPage {
 
 			storeLastUsedUri(uri);
 
-		} catch (Exception e) {
-			Activator.handleError(e.getMessage(), e, true);
 		} finally {
 			monitor.done();
 		}
@@ -756,7 +764,7 @@ public class FetchGerritChangePage extends WizardPage {
 		int timeout = Activator.getDefault().getPreferenceStore()
 				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 
-		List<RefSpec> specs = new ArrayList<RefSpec>(1);
+		List<RefSpec> specs = new ArrayList<>(1);
 		specs.add(spec);
 
 		String taskName = NLS
@@ -798,8 +806,9 @@ public class FetchGerritChangePage extends WizardPage {
 		bop.execute(monitor);
 
 		if (doCheckout) {
-			CheckoutCommand co = new Git(repository).checkout();
-			try {
+			CheckoutCommand co = null;
+			try (Git git = new Git(repository)) {
+				co = git.checkout();
 				co.setName(textForBranch).call();
 			} catch (CheckoutConflictException e) {
 				final CheckoutResult result = co.getResult();
@@ -856,7 +865,7 @@ public class FetchGerritChangePage extends WizardPage {
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
+				List<IContentProposal> resultList = new ArrayList<>();
 
 				// make the simplest possible pattern check: allow "*"
 				// for multiple characters
@@ -889,7 +898,7 @@ public class FetchGerritChangePage extends WizardPage {
 				try {
 					proposals = getRefsForContentAssist();
 				} catch (InvocationTargetException e) {
-					Activator.handleError(e.getMessage(), e, false);
+					Activator.handleError(e.getMessage(), e, true);
 					return null;
 				} catch (InterruptedException e) {
 					return null;

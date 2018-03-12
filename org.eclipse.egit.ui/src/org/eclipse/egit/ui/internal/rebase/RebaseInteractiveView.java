@@ -331,8 +331,10 @@ public class RebaseInteractiveView extends ViewPart implements
 		prefListener = new IPreferenceChangeListener() {
 			@Override
 			public void preferenceChange(PreferenceChangeEvent event) {
-				if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey()))
+				if (!RepositoryUtil.PREFS_DIRECTORIES_REL
+						.equals(event.getKey())) {
 					return;
+				}
 
 				final Repository repo = currentRepository;
 				if (repo == null)
@@ -572,7 +574,10 @@ public class RebaseInteractiveView extends ViewPart implements
 		@Override
 		public void widgetSelected(SelectionEvent sEvent) {
 			try {
-				command.execute(currentPlan.getRepository());
+				Repository repository = currentPlan.getRepository();
+				if (repository != null) {
+					command.execute(repository);
+				}
 			} catch (ExecutionException e) {
 				Activator.showError(e.getMessage(), e);
 			}
@@ -1036,7 +1041,7 @@ public class RebaseInteractiveView extends ViewPart implements
 	}
 
 	private void createContextMenuItems(final TreeViewer planViewer) {
-		contextMenuItems = new ArrayList<PlanContextMenuAction>();
+		contextMenuItems = new ArrayList<>();
 
 		contextMenuItems.add(new PlanContextMenuAction(
 				UIText.RebaseInteractiveStepActionToolBarProvider_PickText,

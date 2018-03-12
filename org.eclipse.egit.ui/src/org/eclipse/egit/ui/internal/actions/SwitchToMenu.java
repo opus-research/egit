@@ -101,7 +101,7 @@ public class SwitchToMenu extends ContributionItem implements
 						ConfigConstants.CONFIG_WORKFLOW_SECTION, null,
 						ConfigConstants.CONFIG_KEY_DEFBRANCHSTARTPOINT);
 				try {
-					Ref ref = repository.getRef(sourceRef);
+					Ref ref = repository.findRef(sourceRef);
 					if (ref != null)
 						BranchOperationUI.createWithRef(repository,
 								ref.getName()).start();
@@ -117,7 +117,7 @@ public class SwitchToMenu extends ContributionItem implements
 			String currentBranch = repository.getFullBranch();
 			Map<String, Ref> localBranches = repository.getRefDatabase().getRefs(
 					Constants.R_HEADS);
-			TreeMap<String, Ref> sortedRefs = new TreeMap<String, Ref>(
+			TreeMap<String, Ref> sortedRefs = new TreeMap<>(
 					CommonUtils.STRING_ASCENDING_COMPARATOR);
 
 			// Add the MAX_NUM_MENU_ENTRIES most recently used branches first

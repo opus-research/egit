@@ -3,6 +3,7 @@
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
+ * Copyright (C) 2015, Obeo
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -309,7 +310,7 @@ public class TestRepository {
 			throws IOException {
 		RefUpdate updateRef;
 		updateRef = repository.updateRef(newRefName);
-		Ref startRef = repository.getRef(refName);
+		Ref startRef = repository.findRef(refName);
 		ObjectId startAt = repository.resolve(refName);
 		String startBranch;
 		if (startRef != null)
@@ -359,6 +360,21 @@ public class TestRepository {
 	public void addToIndex(IResource resource) throws CoreException, IOException, NoFilepatternException, GitAPIException {
 		String repoPath = getRepoRelativePath(resource.getLocation().toString());
 		new Git(repository).add().addFilepattern(repoPath).call();
+	}
+
+	/**
+	 * Remove the given resource form the index.
+	 *
+	 * @param file
+	 * @throws NoFilepatternException
+	 * @throws GitAPIException
+	 */
+	public void removeFromIndex(File file) throws NoFilepatternException, GitAPIException {
+		String repoPath = getRepoRelativePath(new Path(file.getPath())
+				.toString());
+		try (Git git = new Git(repository)) {
+			git.rm().addFilepattern(repoPath).call();
+		}
 	}
 
 	/**
@@ -446,7 +462,7 @@ public class TestRepository {
 		if (dc == null)
 			return true;
 
-		Ref ref = repository.getRef(Constants.HEAD);
+		Ref ref = repository.exactRef(Constants.HEAD);
 		try (RevWalk rw = new RevWalk(repository)) {
 			RevCommit c = rw.parseCommit(ref.getObjectId());
 

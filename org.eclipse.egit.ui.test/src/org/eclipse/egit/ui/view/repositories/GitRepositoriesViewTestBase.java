@@ -63,8 +63,10 @@ public abstract class GitRepositoriesViewTestBase extends
 	 * remove all configured repositories from the view
 	 */
 	protected static void clearView() {
-		InstanceScope.INSTANCE.getNode(Activator.getPluginId()).remove(
-				RepositoryUtil.PREFS_DIRECTORIES);
+		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
+				.remove(RepositoryUtil.PREFS_DIRECTORIES);
+		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
+				.remove(RepositoryUtil.PREFS_DIRECTORIES_REL);
 	}
 
 	protected static void createStableBranch(Repository myRepository)
@@ -73,7 +75,7 @@ public abstract class GitRepositoriesViewTestBase extends
 		// that we push two branches to remote
 		String newRefName = "refs/heads/stable";
 		RefUpdate updateRef = myRepository.updateRef(newRefName);
-		Ref sourceBranch = myRepository.getRef("refs/heads/master");
+		Ref sourceBranch = myRepository.exactRef("refs/heads/master");
 		ObjectId startAt = sourceBranch.getObjectId();
 		String startBranch = Repository.shortenRefName(sourceBranch.getName());
 		updateRef.setNewObjectId(startAt);

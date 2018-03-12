@@ -32,7 +32,7 @@ public class PullFromUpstreamActionHandler extends RepositoryActionHandler {
 		Repository[] repos = getRepositories(event);
 		if (repos.length == 0)
 			return null;
-		Set<Repository> repositories = new LinkedHashSet<Repository>(
+		Set<Repository> repositories = new LinkedHashSet<>(
 				Arrays.asList(repos));
 		new PullOperationUI(repositories).start();
 		return null;
@@ -50,7 +50,7 @@ public class PullFromUpstreamActionHandler extends RepositoryActionHandler {
 						|| !fullBranch.startsWith(Constants.R_REFS)) {
 					return false;
 				}
-				Ref head = repo.getRef(Constants.HEAD);
+				Ref head = repo.exactRef(Constants.HEAD);
 				if (head == null || head.getObjectId() == null) {
 					return false;
 				}

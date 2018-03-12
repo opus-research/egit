@@ -1487,6 +1487,9 @@
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
                            </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode">
+                           </instanceof>
                            <test
                                  property="GitRepository.isLocalBranch">
                            </test>
@@ -2394,6 +2397,9 @@
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
                            </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode">
+                           </instanceof>
                            <test
                                  property="GitRepository.isLocalBranch">
                            </test>
@@ -3120,7 +3126,7 @@
                               value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
                         </instanceof>
                         <test
-                              property="GitRepository.hasGerritConfiguration">
+                              property="GitRepository.canPushToGerrit">
                         </test>
                      </and>
                   </iterate>
@@ -3143,7 +3149,7 @@
                               value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
                         </instanceof>
                         <test
-                              property="GitRepository.hasGerritConfiguration">
+                              property="GitRepository.canFetchFromGerrit">
                         </test>
                      </and>
                   </iterate>
@@ -3580,6 +3586,24 @@
                </and>
             </visibleWhen>
          </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewOpen"
+               label="%OpenInCommitViewerCommand.name"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode">
+                        </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
       </menuContribution>
       <menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=repo-4">
@@ -3983,7 +4007,7 @@
                         checkEnabled="false">
                      <test
                            property="GitSelection.projectsSingleRepository"
-                           args="hasGerritConfiguration">
+                           args="canPushToGerrit">
                      </test>
                   </visibleWhen>
                </command>
@@ -3995,7 +4019,7 @@
                         checkEnabled="false">
                      <test
                            property="GitSelection.projectsSingleRepository"
-                           args="hasGerritConfiguration">
+                           args="canFetchFromGerrit">
                      </test>
                   </visibleWhen>
                </command>
@@ -4729,7 +4753,7 @@
             locationURI="popup:org.eclipse.ui.popup.any?after=additions">
          <menu
                id="compareWithMenu"
-               label="Compare With">
+               label="%CompareWithMenu.label">
             <separator
                   name="compareWithGroup">
             </separator>
@@ -4748,7 +4772,7 @@
             locationURI="popup:org.eclipse.ui.popup.any?after=additions">
          <menu
                id="replaceWithMenu"
-               label="Replace With">
+               label="%ReplaceWithMenu.label">
             <separator
                   name="replaceWithGroup">
             </separator>
@@ -5277,6 +5301,10 @@
             icon="icons/obj16/open-commit.gif">
       </image>
       <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewOpen"
+            icon="icons/obj16/open-commit.gif">
+      </image>
+      <image
             commandId="org.eclipse.egit.ui.history.Revert"
             icon="icons/obj16/revert.gif">
       </image>
@@ -5327,14 +5355,14 @@
             class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewPropertyTester"
             id="org.eclipse.egit.ui.RepositoryTester"
             namespace="GitRepository"
-            properties="isBare,isSafe,canCommit,canAmend,canResetHead,canStash,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase,canContinueRebase,isSubmodule,containsHead,hasGerritConfiguration"
+            properties="isBare,isSafe,canCommit,canAmend,canResetHead,canStash,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase,canContinueRebase,isSubmodule,containsHead,hasGerritConfiguration,canFetchFromGerrit,canPushToGerrit"
             type="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
       </propertyTester>
       <propertyTester
             class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
             id="org.eclipse.egit.ui.ResourceTester"
             namespace="GitResource"
-            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,canAbortRebase,canContinueRebase,hasGerritConfiguration"
+            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,canAbortRebase,canContinueRebase,hasGerritConfiguration,canFetchFromGerrit,canPushToGerrit"
             type="org.eclipse.core.resources.IResource">
       </propertyTester>
       <propertyTester

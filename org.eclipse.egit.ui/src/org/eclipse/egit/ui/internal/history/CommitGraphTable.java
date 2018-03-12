@@ -207,6 +207,9 @@ class CommitGraphTable {
 
 			@Override
 			protected void mapElement(final Object element, final Widget item) {
+				if (element == null) {
+					return;
+				}
 				((SWTCommit) element).widget = item;
 			}
 		};
@@ -418,7 +421,7 @@ class CommitGraphTable {
 	}
 
 	private void initCommitsMap() {
-		commitsMap = new HashMap<String, PlotCommit>();
+		commitsMap = new HashMap<>();
 		// ensure that filling (GenerateHistoryJob) and reading (here)
 		// the commit list is thread safe
 		synchronized (allCommits) {
@@ -815,14 +818,14 @@ class CommitGraphTable {
 					HistoryViewCommands.SET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_SetAsBaselineMenuLabel));
 
-			Map<String, String> parameters = new HashMap<String, String>();
+			Map<String, String> parameters = new HashMap<>();
 			parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD"); //$NON-NLS-1$
 			quickDiffManager.add(getCommandContributionItem(
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_ResetBaselineToHeadMenuLabel,
 					parameters));
 
-			parameters = new HashMap<String, String>();
+			parameters = new HashMap<>();
 			parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD^1"); //$NON-NLS-1$
 			quickDiffManager.add(getCommandContributionItem(
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,

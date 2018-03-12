@@ -8,11 +8,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.submodules;
 
+import static org.eclipse.egit.ui.JobFamilies.ADD_TO_INDEX;
 import static org.eclipse.egit.ui.JobFamilies.GENERATE_HISTORY;
+import static org.eclipse.egit.ui.JobFamilies.REMOVE_FROM_INDEX;
 import static org.eclipse.swtbot.eclipse.finder.waits.Conditions.waitForEditor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -24,10 +27,12 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
+import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
@@ -50,6 +55,7 @@ import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IViewPart;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -86,6 +92,8 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 		parentRepositoryGitDir = createProjectAndCommitToRepository();
 		childRepositoryGitDir = createProjectAndCommitToRepository(CHILDREPO,
 				CHILDPROJECT);
+		Activator.getDefault().getRepositoryUtil()
+				.addConfiguredRepository(parentRepositoryGitDir);
 		parentRepository = lookupRepository(parentRepositoryGitDir);
 		childRepository = lookupRepository(childRepositoryGitDir);
 		parentProject = ResourcesPlugin.getWorkspace().getRoot()
@@ -137,6 +145,21 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 		assertNotNull(subRepository);
 	}
 
+	@After
+	public void removeConfiguredRepositories() {
+		if (parentRepositoryGitDir != null) {
+			Activator.getDefault().getRepositoryUtil()
+					.removeDir(parentRepositoryGitDir);
+		}
+		if (childRepositoryGitDir != null) {
+			Activator.getDefault().getRepositoryUtil()
+					.removeDir(childRepositoryGitDir);
+		}
+		childRepository = null;
+		parentRepository = null;
+		subRepository = null;
+	}
+
 	@Test
 	public void testChildProjectMapsToSubRepo() {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(childProject);
@@ -177,27 +200,29 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		SWTBotTreeItem node = TestUtil.navigateTo(projectExplorerTree,
 				file.getFullPath().segments());
-		waitForDecorations();
+		TestUtil.waitForDecorations();
 		assertTrue(node.getText().startsWith("> " + file.getName()));
 		node.select();
 		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
 				util.getPluginLocalizedValue("AddToIndexAction_label"));
+		TestUtil.joinJobs(ADD_TO_INDEX);
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		IndexDiffCacheEntry cache = Activator.getDefault().getIndexDiffCache()
 				.getIndexDiffCacheEntry(subRepository);
 		IResourceState state = ResourceStateFactory.getInstance()
 				.get(cache.getIndexDiff(), file);
 		assertTrue("File should be staged", state.isStaged());
-		waitForDecorations();
+		TestUtil.waitForDecorations();
 		assertFalse(node.getText().startsWith("> "));
 		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
 				util.getPluginLocalizedValue("RemoveFromIndexAction_label"));
+		TestUtil.joinJobs(REMOVE_FROM_INDEX);
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		state = ResourceStateFactory.getInstance().get(cache.getIndexDiff(),
 				file);
 		assertFalse("File should not be staged", state.isStaged());
 		assertTrue("File should be dirty", state.isDirty());
-		waitForDecorations();
+		TestUtil.waitForDecorations();
 		assertTrue(node.getText().startsWith("> " + file.getName()));
 	}
 
@@ -244,21 +269,59 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
+	public void testDisconnect() throws Exception {
+		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
+		getProjectItem(projectExplorerTree, PROJ1).select();
+		String menuString = util
+				.getPluginLocalizedValue("DisconnectAction_label");
+		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
+				menuString);
+		TestUtil.waitForJobs(500, 5000);
+		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
+		ResourcesPlugin.getWorkspace().getRoot()
+				.refreshLocal(IResource.DEPTH_INFINITE, null);
+		// Access the session property directly: RepositoryMapping.getMapping()
+		// checks whether the project is shared with git.
+		Object mapping = childFolder.getSessionProperty(new QualifiedName(
+				GitProjectData.class.getName(), "RepositoryMapping"));
+		assertNull("Should have no RepositoryMapping", mapping);
+	}
+
+	@Test
 	public void testDecoration() throws Exception {
 		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		SWTBotTreeItem node = TestUtil.navigateTo(projectExplorerTree,
 				childFolder.getFullPath().segments());
-		waitForDecorations();
+		TestUtil.waitForDecorations();
 		assertTrue("Folder should have repo/branch decoration",
 				node.getText().contains("[master"));
-		node = TestUtil.getChildNode(node.expand(), CHILDPROJECT);
-		waitForDecorations();
+		TestUtil.expandAndWait(node);
+		node = TestUtil.getChildNode(node, CHILDPROJECT);
+		TestUtil.waitForDecorations();
 		assertFalse("Folder should not have repo/branch decoration",
 				node.getText().contains("["));
 		node = TestUtil.navigateTo(projectExplorerTree, CHILDPROJECT);
-		waitForDecorations();
+		TestUtil.waitForDecorations();
 		assertTrue("Project should have subrepo/branch decoration",
 				node.getText().contains("[child"));
+	}
+
+	/**
+	 * Tests that unrelated changes to the configured repositories do not
+	 * prematurely remove submodules from the cache.
+	 */
+	@Test
+	public void testRepoRemoval() {
+		Activator.getDefault().getRepositoryUtil()
+				.addConfiguredRepository(childRepositoryGitDir);
+		assertTrue("Should still have the subrepo in the cache",
+				containsRepo(Activator.getDefault().getRepositoryCache()
+						.getAllRepositories(), subRepository));
+		assertTrue("Should have changed the preference", Activator.getDefault()
+				.getRepositoryUtil().removeDir(childRepositoryGitDir));
+		assertTrue("Should still have the subrepo in the cache",
+				containsRepo(Activator.getDefault().getRepositoryCache()
+						.getAllRepositories(), subRepository));
 	}
 
 	@SuppressWarnings("restriction")
@@ -283,6 +346,15 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 				2);
 	}
 
+	private boolean containsRepo(Repository[] repositories, Repository needle) {
+		for (Repository repo : repositories) {
+			if (needle.equals(repo)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private void assertRowCountInHistory(String msg, int expected)
 			throws Exception {
 		SWTBotView historyBot = TestUtil.showHistoryView();
@@ -298,9 +370,4 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 				historyBot.bot().table().rowCount());
 	}
 
-	@SuppressWarnings("restriction")
-	private void waitForDecorations() throws Exception {
-		TestUtil.joinJobs(
-				org.eclipse.ui.internal.decorators.DecoratorManager.FAMILY_DECORATE);
-	}
 }

@@ -21,7 +21,7 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>4.3.0-SNAPSHOT</version>
+  <version>4.5.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>EGit Parent</name>
@@ -62,21 +62,21 @@
   </licenses>
 
   <properties>
-    <egit-version>4.3.0-SNAPSHOT</egit-version>
+    <egit-version>4.5.0-SNAPSHOT</egit-version>
     <tycho-version>0.23.0</tycho-version>
     <tycho-extras-version>${tycho-version}</tycho-extras-version>
     <jboss-tycho-plugins-version>0.22.0</jboss-tycho-plugins-version>
     <mockito-version>1.8.4</mockito-version>
-    <junit-version>4.11</junit-version>
     <jgit-site>file:/${basedir}/../../jgit/org.eclipse.jgit.packaging/org.eclipse.jgit.repository/target/repository</jgit-site>
     <license-site>http://download.eclipse.org/cbi/updates/license</license-site>
     <signer-input-directory>/home/data/httpd/download-staging.priv/egit</signer-input-directory>
     <download-publish-path>/home/data/httpd/download.eclipse.org/egit/updates-nightly</download-publish-path>
-    <target-platform>egit-4.5</target-platform>
+    <target-platform>egit-4.6-staging</target-platform>
     <tycho.scmUrl>scm:git:https://git.eclipse.org/r/egit/egit.git</tycho.scmUrl>
     <test.vmparams></test.vmparams>
     <coretest.vmparams></coretest.vmparams>
     <uitest.vmparams>-Dorg.eclipse.swtbot.search.timeout=30000 -Dorg.eclipse.swtbot.screenshots.dir=target/screenshots -Xmx1024m -XX:MaxPermSize=150m</uitest.vmparams>
+    <eclipse-with-smartimport>http://download.eclipse.org/eclipse/updates/4.6milestones/S-4.6M6-201603170200</eclipse-with-smartimport>
   </properties>
 
   <profiles>
@@ -251,7 +251,7 @@
     <module>org.eclipse.egit.core</module>
     <module>org.eclipse.egit.ui</module>
 
-    <module>org.eclipse.egit.ui.importer</module>
+    <module>org.eclipse.egit.ui.smartimport</module>
 
     <module>org.eclipse.egit.mylyn.ui</module>
     <module>org.eclipse.egit.mylyn-feature</module>
@@ -451,7 +451,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>findbugs-maven-plugin</artifactId>
-          <version>2.5.2</version>
+          <version>3.0.3</version>
           <configuration>
             <findbugsXmlOutput>true</findbugsXmlOutput>
             <failOnError>false</failOnError>
@@ -509,17 +509,6 @@
       <version>${mockito-version}</version>
     </dependency>
   </dependencies>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>${junit-version}</version>
-        <scope>test</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <distributionManagement>
     <repository>

@@ -73,9 +73,9 @@ import org.eclipse.egit.ui.internal.commands.shared.ContinueRebaseCommand;
 import org.eclipse.egit.ui.internal.commands.shared.SkipRebaseCommand;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitJob;
+import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
-import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
@@ -129,6 +129,8 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
@@ -137,8 +139,6 @@ import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -158,6 +158,8 @@ import org.eclipse.swt.dnd.DropTargetAdapter;
 import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.FileTransfer;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
@@ -237,7 +239,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private Form form;
 
-	private SashForm horizontalSashForm;
+	private SashForm mainSashForm;
 
 	private Section stagedSection;
 
@@ -294,9 +296,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private Presentation presentation = Presentation.LIST;
 
-	private Set<IPath> pathsToExpandInStaged = new HashSet<IPath>();
+	private Set<IPath> pathsToExpandInStaged = new HashSet<>();
 
-	private Set<IPath> pathsToExpandInUnstaged = new HashSet<IPath>();
+	private Set<IPath> pathsToExpandInUnstaged = new HashSet<>();
 
 	/**
 	 * Presentation mode of the staged/unstaged files.
@@ -360,7 +362,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 
 			if (FileTransfer.getInstance().isSupportedType(event.dataType)) {
-				List<String> files = new ArrayList<String>();
+				List<String> files = new ArrayList<>();
 				for (Object selected : selection.toList())
 					if (selected instanceof StagingEntry) {
 						StagingEntry entry = (StagingEntry) selected;
@@ -513,8 +515,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		@Override
 		public void preferenceChange(PreferenceChangeEvent event) {
-			if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey()))
+			if (!RepositoryUtil.PREFS_DIRECTORIES_REL.equals(event.getKey())) {
 				return;
+			}
 
 			final Repository repo = currentRepository;
 			if (repo == null)
@@ -609,7 +612,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	@Override
-	public void createPartControl(Composite parent) {
+	public void createPartControl(final Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
 
 		toolkit = new FormToolkit(parent.getDisplay());
@@ -628,21 +631,44 @@ public class StagingView extends ViewPart implements IShowInSource {
 		});
 
 		form = toolkit.createForm(parent);
+		parent.addControlListener(new ControlListener() {
 
+			private int[] defaultWeights = { 1, 1 };
+
+			@Override
+			public void controlResized(ControlEvent e) {
+				org.eclipse.swt.graphics.Rectangle b = parent.getBounds();
+				int oldOrientation = mainSashForm.getOrientation();
+				if ((oldOrientation == SWT.HORIZONTAL)
+						&& (b.height > b.width)) {
+					mainSashForm.setOrientation(SWT.VERTICAL);
+					mainSashForm.setWeights(defaultWeights);
+				} else if ((oldOrientation == SWT.VERTICAL)
+						&& (b.height <= b.width)) {
+					mainSashForm.setOrientation(SWT.HORIZONTAL);
+					mainSashForm.setWeights(defaultWeights);
+				}
+			}
+
+			@Override
+			public void controlMoved(ControlEvent e) {
+				// ignore
+			}
+		});
 		form.setImage(getImage(UIIcons.REPOSITORY));
 		form.setText(UIText.StagingView_NoSelectionTitle);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(form);
 		toolkit.decorateFormHeading(form);
 		GridLayoutFactory.swtDefaults().applyTo(form.getBody());
 
-		horizontalSashForm = new SashForm(form.getBody(), SWT.NONE);
-		saveSashFormWeightsOnDisposal(horizontalSashForm,
+		mainSashForm = new SashForm(form.getBody(), SWT.HORIZONTAL);
+		saveSashFormWeightsOnDisposal(mainSashForm,
 				HORIZONTAL_SASH_FORM_WEIGHT);
-		toolkit.adapt(horizontalSashForm, true, true);
+		toolkit.adapt(mainSashForm, true, true);
 		GridDataFactory.fillDefaults().grab(true, true)
-				.applyTo(horizontalSashForm);
+				.applyTo(mainSashForm);
 
-		stagingSashForm = new SashForm(horizontalSashForm,
+		stagingSashForm = new SashForm(mainSashForm,
 				getStagingFormOrientation());
 		saveSashFormWeightsOnDisposal(stagingSashForm,
 				STAGING_SASH_FORM_WEIGHT);
@@ -709,7 +735,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		enableAutoExpand(unstagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
 
-		Composite rebaseAndCommitComposite = toolkit.createComposite(horizontalSashForm);
+		Composite rebaseAndCommitComposite = toolkit.createComposite(mainSashForm);
 		rebaseAndCommitComposite.setLayout(GridLayoutFactory.fillDefaults().create());
 
 		rebaseSection = toolkit.createSection(rebaseAndCommitComposite,
@@ -938,6 +964,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		this.commitAndPushButton = toolkit.createButton(commitButtonsContainer,
 				UIText.StagingView_CommitAndPush, SWT.PUSH);
+		commitAndPushButton.setImage(getImage(UIIcons.PUSH));
 		commitAndPushButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1064,7 +1091,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 			public void updateChangeIdToggleSelection(boolean selection) {
 				addChangeIdAction.setChecked(selection);
 				commitAndPushButton
-						.setImage(selection ? getImage(UIIcons.GERRIT) : null);
+						.setImage(getImage(
+								selection ? UIIcons.GERRIT : UIIcons.PUSH));
 			}
 
 			@Override
@@ -1157,7 +1185,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT);
 		showControl(ignoreErrors, visible);
-		ignoreErrors.getParent().layout(true);
+		mainSashForm.layout();
 	}
 
 	private int getProblemsSeverity() {
@@ -1229,7 +1257,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void restoreSashFormWeights() {
-		restoreSashFormWeights(horizontalSashForm,
+		restoreSashFormWeights(mainSashForm,
 				HORIZONTAL_SASH_FORM_WEIGHT);
 		restoreSashFormWeights(stagingSashForm,
 				STAGING_SASH_FORM_WEIGHT);
@@ -1247,7 +1275,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		String[] parts = s.split(","); //$NON-NLS-1$
 		int[] ints = new int[parts.length];
 		for (int i = 0; i < parts.length; i++) {
-			ints[i] = Integer.valueOf(parts[i]).intValue();
+			ints[i] = Integer.parseInt(parts[i]);
 		}
 		return ints;
 	}
@@ -1491,7 +1519,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private ShowInContext getShowInContext(TreeViewer treeViewer) {
 		IStructuredSelection selection = (IStructuredSelection) treeViewer.getSelection();
-		List<Object> elements = new ArrayList<Object>();
+		List<Object> elements = new ArrayList<>();
 		for (Object selectedElement : selection.toList()) {
 			if (selectedElement instanceof StagingEntry) {
 				StagingEntry entry = (StagingEntry) selectedElement;
@@ -1525,6 +1553,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (isDisposed())
 			return;
 		enableCommitWidgets(enabled);
+		commitMessageText.setEnabled(enabled);
 		enableStagingWidgets(enabled);
 	}
 
@@ -1536,10 +1565,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void enableCommitWidgets(boolean enabled) {
-		if (isDisposed())
+		if (isDisposed()) {
 			return;
-
-		commitMessageText.setEnabled(enabled);
+		}
 		committerText.setEnabled(enabled);
 		enableAuthorText(enabled);
 		amendPreviousCommitAction.setEnabled(enabled);
@@ -1980,7 +2008,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				if (selection.isEmpty())
 					return;
 
-				List<StagingEntry> stagingEntryList = new ArrayList<StagingEntry>();
+				List<StagingEntry> stagingEntryList = new ArrayList<>();
 
 				boolean submoduleSelected = false;
 				boolean folderSelected = false;
@@ -2210,15 +2238,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 			if (files.isEmpty() || repository == null) {
 				return;
 			}
-			CheckoutCommand checkoutCommand = new Git(repository)
-					.checkout();
-			if (headRevision) {
-				checkoutCommand.setStartPoint(Constants.HEAD);
-			}
-			for (String path : files) {
-				checkoutCommand.addPath(path);
-			}
-			try {
+			try (Git git = new Git(repository)) {
+				CheckoutCommand checkoutCommand = git.checkout();
+				if (headRevision) {
+					checkoutCommand.setStartPoint(Constants.HEAD);
+				}
+				for (String path : files) {
+					checkoutCommand.addPath(path);
+				}
 				checkoutCommand.call();
 				if (!inaccessibleFiles.isEmpty()) {
 					IndexDiffCacheEntry indexDiffCacheForRepository = org.eclipse.egit.core.Activator
@@ -2319,7 +2346,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private static List<IPath> getSelectedPaths(IStructuredSelection selection) {
-		List<IPath> paths = new ArrayList<IPath>();
+		List<IPath> paths = new ArrayList<>();
 		Iterator iterator = selection.iterator();
 		while (iterator.hasNext()) {
 			StagingEntry stagingEntry = (StagingEntry) iterator.next();
@@ -2477,10 +2504,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private void stage(IStructuredSelection selection) {
 		StagingViewContentProvider contentProvider = getContentProvider(unstagedViewer);
-		final Git git = new Git(currentRepository);
+		final Repository repository = currentRepository;
 		Iterator iterator = selection.iterator();
-		final List<String> addPaths = new ArrayList<String>();
-		final List<String> rmPaths = new ArrayList<String>();
+		final List<String> addPaths = new ArrayList<>();
+		final List<String> rmPaths = new ArrayList<>();
 		resetPathsToExpand();
 		while (iterator.hasNext()) {
 			Object element = iterator.next();
@@ -2519,7 +2546,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			Job addJob = new Job(UIText.StagingView_AddJob) {
 				@Override
 				protected IStatus run(IProgressMonitor monitor) {
-					try {
+					try (Git git = new Git(repository)) {
 						AddCommand add = git.add();
 						for (String addPath : addPaths)
 							add.addFilepattern(addPath);
@@ -2548,7 +2575,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			Job removeJob = new Job(UIText.StagingView_RemoveJob) {
 				@Override
 				protected IStatus run(IProgressMonitor monitor) {
-					try {
+					try (Git git = new Git(repository)) {
 						RmCommand rm = git.rm().setCached(true);
 						for (String rmPath : rmPaths)
 							rm.addFilepattern(rmPath);
@@ -2604,12 +2631,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (paths.isEmpty())
 			return;
 
-		final Git git = new Git(currentRepository);
+		final Repository repository = currentRepository;
 
 		Job resetJob = new Job(UIText.StagingView_ResetJob) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				try {
+				try (Git git = new Git(repository)) {
 					ResetCommand reset = git.reset();
 					for (String path : paths)
 						reset.addPath(path);
@@ -2629,7 +2656,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private List<String> processUnstageSelection(IStructuredSelection selection) {
-		List<String> paths = new ArrayList<String>();
+		List<String> paths = new ArrayList<>();
 		resetPathsToExpand();
 		for (Object element : selection.toList()) {
 			if (element instanceof StagingEntry) {
@@ -2662,8 +2689,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void resetPathsToExpand() {
-		pathsToExpandInStaged = new HashSet<IPath>();
-		pathsToExpandInUnstaged = new HashSet<IPath>();
+		pathsToExpandInStaged = new HashSet<>();
+		pathsToExpandInUnstaged = new HashSet<>();
 	}
 
 	private static void addExpandedPathsBelowFolder(StagingFolderEntry folder,
@@ -2942,18 +2969,18 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private boolean hasErrorsOrWarnings() {
 		return getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
-				? (getProblemsSeverity() >= Integer.valueOf(getPreferenceStore()
+						? (getProblemsSeverity() >= Integer
+								.parseInt(getPreferenceStore()
 						.getString(UIPreferences.WARN_BEFORE_COMMITTING_LEVEL))
 				&& !ignoreErrors.getSelection()) : false;
 	}
 
-	@SuppressWarnings("boxing")
 	private boolean isCommitBlocked() {
 		return getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT)
 						? (getProblemsSeverity() >= Integer
-								.valueOf(getPreferenceStore().getString(
+								.parseInt(getPreferenceStore().getString(
 										UIPreferences.BLOCK_COMMIT_LEVEL))
 								&& !ignoreErrors.getSelection())
 						: false;
@@ -2989,14 +3016,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (getPresentation() == Presentation.LIST)
 			return;
 
-		Set<IPath> paths = new HashSet<IPath>(additionalPaths);
+		Set<IPath> paths = new HashSet<>(additionalPaths);
 		// Instead of just expanding the previous elements directly, also expand
 		// all parent paths. This makes it work in case of "re-folding" of
 		// compact tree.
 		for (Object element : previous)
 			if (element instanceof StagingFolderEntry)
 				addPathAndParentPaths(((StagingFolderEntry) element).getPath(), paths);
-		List<StagingFolderEntry> expand = new ArrayList<StagingFolderEntry>();
+		List<StagingFolderEntry> expand = new ArrayList<>();
 
 		calculateNodesToExpand(paths, stagedContentProvider.getElements(null),
 				expand);
@@ -3177,7 +3204,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private Collection<String> getStagedFileNames() {
 		StagingViewContentProvider stagedContentProvider = getContentProvider(stagedViewer);
 		StagingEntry[] entries = stagedContentProvider.getStagingEntries();
-		List<String> files = new ArrayList<String>();
+		List<String> files = new ArrayList<>();
 		for (StagingEntry entry : entries)
 			files.add(entry.getPath());
 		return files;
@@ -3276,7 +3303,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	@Override
 	public void setFocus() {
-		unstagedViewer.getControl().setFocus();
+		Tree tree = unstagedViewer.getTree();
+		if (tree.getItemCount() > 0) {
+			unstagedViewer.getControl().setFocus();
+			return;
+		}
+		commitMessageText.setFocus();
 	}
 
 	@Override
@@ -3305,8 +3337,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		getPreferenceStore().removePropertyChangeListener(uiPrefsListener);
 
-
 		getDialogSettings().put(STORE_SORT_STATE, sortAction.isChecked());
+
+		currentRepository = null;
 
 		disposed = true;
 	}

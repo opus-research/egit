@@ -81,8 +81,6 @@ public class AddToIndexOperation implements IEGitOperation {
 		} catch (GitAPIException e) {
 			throw new CoreException(Activator.error(CoreText.AddToIndexOperation_failed, e));
 		} finally {
-			for (final RepositoryMapping rm : addCommands.keySet())
-				rm.fireRepositoryChanged();
 			monitor.done();
 		}
 	}
@@ -103,8 +101,9 @@ public class AddToIndexOperation implements IEGitOperation {
 		AddCommand command = addCommands.get(map);
 		if (command == null) {
 			Repository repo = map.getRepository();
-			Git git = new Git(repo);
-			command = git.add();
+			try (Git git = new Git(repo)) {
+				command = git.add();
+			}
 			addCommands.put(map, command);
 		}
 		String filepattern = map.getRepoRelativePath(resource);
