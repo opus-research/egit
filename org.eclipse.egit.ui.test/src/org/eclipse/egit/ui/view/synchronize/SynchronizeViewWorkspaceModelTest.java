@@ -35,7 +35,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.common.CompareEditorTester;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.swt.finder.SWTBot;
@@ -231,7 +230,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		// then
 		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem projectTree = waitForNodeWithText(syncViewTree, PROJ1);
-		TestUtil.expandAndWait(projectTree);
+		projectTree.expand();
 		assertEquals(1, projectTree.getItems().length);
 	}
 
@@ -254,7 +253,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertTrue(syncItems[0].getText().contains(PROJ1));
-		TestUtil.expandAndWait(syncItems[0]);
+		syncItems[0].expand();
 		// WidgetNotFoundException will be thrown when node named 'new.txt' not exists
 		assertNotNull(syncItems[0].getNode(newFileName));
 	}
@@ -269,8 +268,8 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertTrue(syncItems[0].getText().contains(PROJ1));
-		TestUtil.expandAndWait(syncItems[0]);
-		TestUtil.expandAndWait(syncItems[0].getItems()[0]);
+		syncItems[0].expand();
+		syncItems[0].getItems()[0].expand();
 		assertEquals(2, syncItems[0].getItems()[0].getItems().length);
 
 		// when
@@ -329,7 +328,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem workingTree = syncViewTree.expandNode(PROJ1);
 		assertEquals(1, syncViewTree.getAllItems().length);
-		TestUtil.expandAndWait(workingTree).getNode(name).doubleClick();
+		workingTree.expand().getNode(name).doubleClick();
 
 		SWTBotEditor editor = bot.editorByTitle(name);
 		editor.setFocus();
