@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011 GitHub Inc.
+ *  Copyright (c) 2011 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,23 +7,28 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
+ *    Daniel Megert <daniel_megert@ch.ibm.com> - Added context menu to the Commit Editor's header text
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
-
-import java.text.MessageFormat;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.commit.command.CheckoutHandler;
 import org.eclipse.egit.ui.internal.commit.command.CreateBranchHandler;
 import org.eclipse.egit.ui.internal.commit.command.CreateTagHandler;
+import org.eclipse.egit.ui.internal.commit.command.CherryPickHandler;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.jface.action.ContributionManager;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.ISelectionProvider;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -137,8 +142,7 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	protected void createHeaderContents(IManagedForm headerForm) {
 		RepositoryCommit commit = getCommit();
 		ScrolledForm form = headerForm.getForm();
-		new HeaderText(form.getForm(), MessageFormat.format(
-				UIText.CommitEditor_TitleHeader, commit.getRevCommit().name()));
+		new HeaderText(form.getForm(), commit.getRevCommit().name());
 		form.setToolTipText(commit.getRevCommit().name());
 		getToolkit().decorateFormHeading(form.getForm());
 
@@ -184,8 +188,30 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		toolbar.add(repositoryLabelControl);
 		toolbar.add(createCommandContributionItem(CreateTagHandler.ID));
 		toolbar.add(createCommandContributionItem(CreateBranchHandler.ID));
+		toolbar.add(createCommandContributionItem(CheckoutHandler.ID));
+		toolbar.add(createCommandContributionItem(CherryPickHandler.ID));
 		addContributions(toolbar);
 		toolbar.update(true);
+		getSite().setSelectionProvider(new ISelectionProvider() {
+
+			public void setSelection(ISelection selection) {
+				// Ignored
+			}
+
+			public void removeSelectionChangedListener(
+					ISelectionChangedListener listener) {
+				// Ignored
+			}
+
+			public ISelection getSelection() {
+				return new StructuredSelection(getCommit());
+			}
+
+			public void addSelectionChangedListener(
+					ISelectionChangedListener listener) {
+				// Ignored
+			}
+		});
 	}
 
 	private void addContributions(IToolBarManager toolBarManager) {

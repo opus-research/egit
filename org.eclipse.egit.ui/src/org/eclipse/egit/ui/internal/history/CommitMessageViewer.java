@@ -17,8 +17,8 @@ import java.util.List;
 
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
-import org.eclipse.core.runtime.jobs.IJobChangeListener;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -115,16 +115,7 @@ class CommitMessageViewer extends TextViewer implements
 		// set the cursor when hovering over a link
 		t.addListener(SWT.MouseMove, new Listener() {
 			public void handleEvent(final Event e) {
-				final int o;
-				try {
-					o = t.getOffsetAtLocation(new Point(e.x, e.y));
-				} catch (IllegalArgumentException err) {
-					t.setCursor(sys_normalCursor);
-					return;
-				}
-
-				final StyleRange r = t.getStyleRangeAtOffset(o);
-				if (r instanceof ObjectLink)
+				if (getStyleRange(e.x, e.y) instanceof ObjectLink)
 					t.setCursor(SYS_LINK_CURSOR);
 				else
 					t.setCursor(sys_normalCursor);
@@ -139,14 +130,7 @@ class CommitMessageViewer extends TextViewer implements
 					return;
 				}
 
-				final int o;
-				try {
-					o = t.getOffsetAtLocation(new Point(e.x, e.y));
-				} catch (IllegalArgumentException err) {
-					return;
-				}
-
-				final StyleRange r = t.getStyleRangeAtOffset(o);
+				final StyleRange r = getStyleRange(e.x, e.y);
 				if (r instanceof ObjectLink) {
 					final RevCommit c = ((ObjectLink) r).targetCommit;
 					for (final Object l : navListeners.getListeners())
@@ -221,46 +205,28 @@ class CommitMessageViewer extends TextViewer implements
 	}
 
 	void addDoneListenerToFormatJob() {
-		formatJob.addJobChangeListener(new IJobChangeListener() {
-
-			public void sleeping(IJobChangeEvent event) {
-				// empty
-			}
-
-			public void scheduled(IJobChangeEvent event) {
-				// empty
-			}
-
-			public void running(IJobChangeEvent event) {
-				// empty
-			}
+		formatJob.addJobChangeListener(new JobChangeAdapter() {
 
 			public void done(IJobChangeEvent event) {
-				if (event.getResult().isOK()) {
-					if (getTextWidget().isDisposed())
-						return;
-					final FormatJob job = (FormatJob) event.getJob();
-					getTextWidget().getDisplay().asyncExec(new Runnable() {
-						public void run() {
-							if (getTextWidget().isDisposed())
-								return;
-							setDocument(new Document(job.getFormatResult().getCommitInfo()));
-							getTextWidget().setStyleRanges(job.getFormatResult().getStyleRange());
-						}
-					});
-				}
-			}
-
-			public void awake(IJobChangeEvent event) {
-				// empty
-			}
-
-			public void aboutToRun(IJobChangeEvent event) {
-				// empty
+				if (!event.getResult().isOK())
+					return;
+				final StyledText text = getTextWidget();
+				if (text == null || text.isDisposed())
+					return;
+				final FormatJob job = (FormatJob) event.getJob();
+				text.getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						if (text.isDisposed())
+							return;
+						setDocument(new Document(job.getFormatResult()
+								.getCommitInfo()));
+						text.setStyleRanges(job.getFormatResult()
+								.getStyleRange());
+					}
+				});
 			}
 		});
 	}
-
 
 	@Override
 	protected void handleDispose() {
@@ -379,6 +345,25 @@ class CommitMessageViewer extends TextViewer implements
 		format();
 	}
 
-
-
+	/**
+	 * Get style range at x/y coordinates
+	 *
+	 * @param x
+	 * @param y
+	 * @return style range, will be null when no style range exists at given
+	 *         coordinates
+	 */
+	private StyleRange getStyleRange(final int x, final int y) {
+		final StyledText t = getTextWidget();
+		final int offset;
+		try {
+			offset = t.getOffsetAtLocation(new Point(x, y));
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
+		if (offset < t.getCharCount())
+			return t.getStyleRangeAtOffset(offset);
+		else
+			return null;
+	}
 }

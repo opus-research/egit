@@ -9,7 +9,7 @@
 package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
-import static org.eclipse.egit.core.synchronize.CheckedInCommitsCache.calculateAndSetChangeKind;
+import static org.eclipse.egit.core.synchronize.GitCommitsModelCache.calculateAndSetChangeKind;
 import static org.eclipse.jgit.treewalk.filter.TreeFilter.ANY_DIFF;
 
 import java.io.IOException;
@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.MutableObjectId;
@@ -63,7 +63,7 @@ public class WorkingTreeChangeCache {
 			return result;
 		} catch (IOException e) {
 			Activator.error(e.getMessage(), e);
-			return new HashMap<String, CheckedInCommitsCache.Change>(0);
+			return new HashMap<String, GitCommitsModelCache.Change>(0);
 		}
 	}
 

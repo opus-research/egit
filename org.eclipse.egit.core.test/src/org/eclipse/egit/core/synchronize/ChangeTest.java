@@ -8,11 +8,11 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.egit.core.synchronize.CheckedInCommitsCache.ZERO_ID;
+import static org.eclipse.egit.core.synchronize.GitCommitsModelCache.ZERO_ID;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.junit.Test;
 
@@ -75,7 +75,7 @@ public class ChangeTest {
 		// given
 		Change c1 = new Change();
 		Change c2 = new Change();
-		c1.objectId = c2.objectId = ZERO_ID;
+		c1.objectId = c2.objectId = MISC_ID;
 
 		// when
 		boolean result = c1.equals(c2);

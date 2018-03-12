@@ -48,8 +48,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.RESOURCEHISTORY_COMPARE_MODE, false);
 
 		store.setDefault(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS, true);
-		store.setDefault(UIPreferences.DECORATOR_RECURSIVE_LIMIT,
-				Integer.MAX_VALUE);
 		store.setDefault(UIPreferences.DECORATOR_FILETEXT_DECORATION,
 				GitLightweightDecorator.DecorationHelper.FILE_FORMAT_DEFAULT);
 		store.setDefault(UIPreferences.DECORATOR_FOLDERTEXT_DECORATION,
@@ -95,6 +93,10 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.REMOTE_CONNECTION_TIMEOUT, 30 /* seconds */);
 		store.setDefault(UIPreferences.STAGING_VIEW_FILENAME_MODE, true);
 		store.setDefault(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE, false);
+		store.setDefault(UIPreferences.COMMIT_DIALOG_HISTORY_SIZE, 10);
+		store.setDefault(UIPreferences.CHECKOUT_PROJECT_RESTORE, true);
+		store.setDefault(UIPreferences.HISTORY_MAX_TAG_LENGTH, 15);
+		store.setDefault(UIPreferences.HISTORY_MAX_BRANCH_LENGTH, 15);
 	}
 
 }

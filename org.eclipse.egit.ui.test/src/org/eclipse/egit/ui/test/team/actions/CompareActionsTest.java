@@ -110,6 +110,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		assertEquals(3, dialog.bot().table().rowCount());
 		dialog.bot().table().select(0);
 		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+		TestUtil.waitUntilViewWithGivenIdShows(CompareTreeView.ID);
 		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
 				.getAllItems().length);
 		// use the second (previous) -> should have a change
@@ -232,4 +233,5 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		SWTBotTree tree = bot.viewById(CompareTreeView.ID).bot().tree();
 		bot.waitUntil(Conditions.treeHasRows(tree, nodeCount), 10000);
 	}
+
 }
