@@ -10,7 +10,7 @@
 	    id="org.eclipse.egit.ui.internal.clone.gitclonecategory"/>
       <wizard name="%Git_clone_wizard"
 	    icon="icons/obj16/import_obj.gif"
-	    class="org.eclipse.egit.ui.internal.clone.GitCloneWizard"
+	    class="org.eclipse.egit.ui.internal.clone.GitImportWizard"
 	    id="org.eclipse.egit.ui.internal.clone.GitCloneWizard"
 	    category="org.eclipse.egit.ui.internal.clone.gitclonecategory">
 	    <description>%Git_clone_description</description>
@@ -59,6 +59,12 @@
                tooltip="%ResetAction_tooltip">
          </action>
          <action
+               class="org.eclipse.egit.ui.internal.actions.TagAction"
+               id="org.eclipse.egit.ui.internal.actions.TagAction"
+               label="%TagAction_label"
+               menubarPath="team.main/projectGroup"
+               tooltip="%TagAction_tooltip"/>
+         <action
                class="org.eclipse.egit.ui.internal.actions.BranchAction"
                id="org.eclipse.egit.ui.internal.actions.BranchAction"
                label="%BranchAction_label"
@@ -90,20 +96,6 @@
                tooltip="%AssumeUnchangedAction_tooltip"
                menubarPath="team.main/group1"
                id="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ShowResourceInHistoryAction"
-               id="org.eclipse.egit.ui.internal.actions.ShowResourceInHistoryAction"
-               label="%ShowResourceInHistoryAction_label"
-               menubarPath="team.main/group1"
-               tooltip="%ShowResourceInHistoryAction_tooltip"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ShowInRepositoriesViewAction"
-               definitionId="org.eclipse.egit.ui.ShowInRepositoriesView"
-               enablesFor="1"
-               id="org.eclipse.egit.ui.internal.actions.ShowInRepositoriesView"
-               label="&amp;Show in Git Repositories View"
-               menubarPath="team.main/group1">
-         </action>
          <action
                class="org.eclipse.egit.ui.internal.actions.Update"
                id="org.eclipse.egit.ui.internal.actions.Update"
@@ -154,7 +146,7 @@
                class="org.eclipse.egit.ui.internal.actions.SoftResetToRevisionAction"
                id="org.eclipse.egit.ui.softresettorevision"
                label="%Soft_Reset_label"
-               menubarPath="additions"
+               menubarPath="org.eclipse.egit.ui.reset/reset"
                enablesFor="1"
                tooltip="%Soft_Reset_tooltip">
          </action>
@@ -162,7 +154,7 @@
                class="org.eclipse.egit.ui.internal.actions.MixedResetToRevisionAction"
                id="org.eclipse.egit.ui.mixedresettorevision"
                label="%Mixed_Reset_label"
-               menubarPath="additions"
+               menubarPath="org.eclipse.egit.ui.reset/reset"
                enablesFor="1"
                tooltip="%Mixed_Reset_tooltip">
          </action>
@@ -170,7 +162,7 @@
                class="org.eclipse.egit.ui.internal.actions.HardResetToRevisionAction"
                id="org.eclipse.egit.ui.hardresettorevision"
                label="%Hard_Reset_label"
-               menubarPath="additions"
+               menubarPath="org.eclipse.egit.ui.reset/reset"
                enablesFor="1"
                tooltip="%Hard_Reset_tooltip">
          </action>
@@ -179,22 +171,38 @@
 	       enablesFor="1"
 	       id="org.eclipse.egit.ui.setquickdiffbaseline"
 	       label="%Set_As_Quickdiff_Baseline_label"
-	       menubarPath="additions">
+	       menubarPath="org.eclipse.egit.ui.quickdiffbaseline/quickdiff">
 	 </action>
 	 <action
 	       class="org.eclipse.egit.ui.internal.actions.ResetQuickdiffBaselineAction"
 	       enablesFor="*"
 	       id="org.eclipse.egit.ui.resetquickdiffbaseline"
 	       label="%Reset_Quickdiff_Baseline_To_HEAD_label"
-	       menubarPath="additions">
+	       menubarPath="org.eclipse.egit.ui.quickdiffbaseline/quickdiff">
 	 </action>
 	 <action
 	       class="org.eclipse.egit.ui.internal.actions.ResetQuickdiffBaselineHeadParentAction"
 	       enablesFor="*"
 	       id="org.eclipse.egit.ui.resetquickdiffheadparentbaseline"
 	       label="%Reset_Quickdiff_Baseline_To_First_Parent_label"
-	       menubarPath="additions">
+	       menubarPath="org.eclipse.egit.ui.quickdiffbaseline/quickdiff">
 	 </action>
+  <menu
+        id="org.eclipse.egit.ui.quickdiffbaseline"
+        label="%QuickDiffMenuName"
+        path="additions">
+     <groupMarker
+           name="quickdiff">
+     </groupMarker>
+  </menu>
+  <menu
+        id="org.eclipse.egit.ui.reset"
+        label="%ResetMenuName"
+        path="additions">
+     <groupMarker
+           name="reset">
+     </groupMarker>
+  </menu>
 	  </objectContribution>
    	  <objectContribution
          adaptable="true"
@@ -493,23 +501,30 @@
       </perspective>
    </extension>
    <extension
-         point="org.eclipse.team.ui.synchronizeWizards">
-      <wizard
-            class="org.eclipse.egit.ui.internal.synchronize.GitSynchronizeWizard"
-            description="description"
-            icon="icons/obj16/gitrepository.gif"
-            id="org.eclipse.egit.ui.wizard1"
-            name="%Synchronize_Name">
-      </wizard>
-   </extension>
-   <extension
-         point="org.eclipse.team.ui.synchronizeParticipants">
-      <participant
-            class="org.eclipse.egit.ui.internal.synchronize.GitBranchResourceVariantTreeSubscriber"
-            id="org.eclipse.egit.ui.synchronizeParticipant"
-            icon="icons/obj16/gitrepository.gif"
-            name="%Synchronize_Name"
-            persistent="false">
-      </participant>
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.ui.resourcePerspective">
+         <showInPart
+               id="org.eclipse.egit.ui.RepositoriesView">
+         </showInPart>
+      </perspectiveExtension>
+      <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+         <showInPart
+               id="org.eclipse.egit.ui.RepositoriesView">
+         </showInPart>
+      </perspectiveExtension>
+      <perspectiveExtension
+            targetID="org.eclipse.debug.ui.DebugPerspective">
+         <showInPart
+               id="org.eclipse.egit.ui.RepositoriesView">
+         </showInPart>
+      </perspectiveExtension>
+      <perspectiveExtension
+            targetID="org.eclipse.pde.ui.PDEPerspective">
+         <showInPart
+               id="org.eclipse.egit.ui.RepositoriesView">
+         </showInPart>
+      </perspectiveExtension>
    </extension>
 </plugin>

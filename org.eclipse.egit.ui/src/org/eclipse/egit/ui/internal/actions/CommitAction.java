@@ -16,9 +16,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -45,6 +47,7 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryConfig;
+import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
 import org.eclipse.jgit.lib.GitIndex.Entry;
@@ -92,10 +95,12 @@ public class CommitAction extends RepositoryAction {
 		amendAllowed = repos.length == 1;
 		for (Repository repo : repos) {
 			repository = repo;
-			if (!repo.getRepositoryState().canCommit()) {
+			RepositoryState state = repo.getRepositoryState();
+			// currently we don't support committing a merge commit
+			if (state == RepositoryState.MERGING_RESOLVED || !state.canCommit()) {
 				MessageDialog.openError(getTargetPart().getSite().getShell(),
 					UIText.CommitAction_cannotCommit,
-					NLS.bind(UIText.CommitAction_repositoryState, repo.getRepositoryState().getDescription()));
+					NLS.bind(UIText.CommitAction_repositoryState, state.getDescription()));
 				return;
 			}
 		}
@@ -133,6 +138,7 @@ public class CommitAction extends RepositoryAction {
 		commitDialog.setAmending(amending);
 		commitDialog.setAmendAllowed(amendAllowed);
 		commitDialog.setFileList(files);
+		commitDialog.setPreselectedFiles(getSelectedFiles());
 		commitDialog.setAuthor(author);
 		commitDialog.setCommitter(committer);
 		if(notTracked.size() == files.size())
@@ -164,6 +170,33 @@ public class CommitAction extends RepositoryAction {
 		notTracked = new ArrayList<IFile>();
 		amending = false;
 		previousCommit = null;
+	}
+
+	/**
+	 * Retrieves a collection of files that may be committed based on the user's
+	 * selection when they performed the commit action. That is, even if the
+	 * user only selected one folder when the action was performed, if the
+	 * folder contains any files that could be committed, they will be returned.
+	 *
+	 * @return a collection of files that is eligible to be committed based on
+	 *         the user's selection
+	 */
+	private Collection<IFile> getSelectedFiles() {
+		List<IFile> preselectionCandidates = new ArrayList<IFile>();
+		// get the resources the user selected
+		IResource[] selectedResources = getSelectedResources();
+		// iterate through all the files that may be committed
+		for (IFile file : files) {
+			for (IResource resource : selectedResources) {
+				// if any selected resource contains the file, add it as a
+				// preselection candidate
+				if (resource.contains(file)) {
+					preselectionCandidates.add(file);
+					break;
+				}
+			}
+		}
+		return preselectionCandidates;
 	}
 
 	private void loadPreviousCommit() {
@@ -416,7 +449,9 @@ public class CommitAction extends RepositoryAction {
 		project.accept(new IResourceVisitor() {
 
 			public boolean visit(IResource resource) throws CoreException {
-				if (resource.getType() == IResource.FILE && !Team.isIgnoredHint(resource)) {
+				if (Team.isIgnoredHint(resource))
+					return false;
+				if (resource.getType() == IResource.FILE) {
 
 					String repoRelativePath = RepositoryMapping.getMapping(project).getRepoRelativePath(resource);
 					try {

@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (c) 2010, Stefan Lay <stefan.lay@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +21,7 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Preferences;
 import org.eclipse.core.runtime.Preferences.IPropertyChangeListener;
@@ -131,6 +133,12 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 
 	private IAction viewVersionsAction = new ViewVersionsAction();
 
+	private IAction compareModeAction;
+
+	private boolean compareMode = false;
+
+	private CreatePatchAction createPatchAction = new CreatePatchAction();
+
 	/**
 	 * Determine if the input can be shown in this viewer.
 	 *
@@ -151,6 +159,12 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 			}
 			return true;
 
+		}
+
+		if (object instanceof IAdaptable) {
+			IResource resource = (IResource) ((IAdaptable) object)
+					.getAdapter(IResource.class);
+			return resource == null ? false : typeOk(resource);
 		}
 
 		if (object instanceof IResource) {
@@ -324,6 +338,33 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 				showAllFolderVersionsAction);
 	}
 
+	private void createCompareModeAction() {
+		final IToolBarManager barManager = getSite().getActionBars()
+				.getToolBarManager();
+		compareModeAction = new Action(UIText.GitHistoryPage_compareMode,
+				IAction.AS_CHECK_BOX) {
+			public void run() {
+				compareMode = !compareMode;
+				setChecked(compareMode);
+			}
+		};
+		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
+		compareModeAction.setChecked(compareMode);
+		compareModeAction.setToolTipText(UIText.GitHistoryPage_compareMode);
+		barManager.add(compareModeAction);
+	}
+
+	/**
+	 * @param compareMode
+	 * switch compare mode button of the view on / off
+	 */
+	public void setCompareMode(boolean compareMode) {
+		if (compareModeAction!=null) {
+			this.compareMode = compareMode;
+			compareModeAction.setChecked(compareMode);
+		}
+	}
+
 	@Override
 	public void createControl(final Composite parent) {
 		GridData gd;
@@ -353,17 +394,21 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 				if (!(input instanceof IFile)) {
 					return;
 				}
-				final IFile resource = (IFile) input;
-				final RepositoryMapping mapping = RepositoryMapping.getMapping(resource.getProject());
-				final String gitPath = mapping.getRepoRelativePath(resource);
-				IStructuredSelection selection = (IStructuredSelection) event.getSelection();
-				SWTCommit commit = (SWTCommit) selection.getFirstElement();
-				ITypedElement right = getFileRevisionTypedElement(resource, gitPath, commit);
-				final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-						SaveableCompareEditorInput.createFileElement(resource),
-						right,
-						null);
-				openInCompare(in);
+				if (compareMode) {
+					final IFile resource = (IFile) input;
+					final RepositoryMapping mapping = RepositoryMapping.getMapping(resource.getProject());
+					final String gitPath = mapping.getRepoRelativePath(resource);
+					IStructuredSelection selection = (IStructuredSelection) event.getSelection();
+					SWTCommit commit = (SWTCommit) selection.getFirstElement();
+					ITypedElement right = getFileRevisionTypedElement(resource, gitPath, commit);
+					final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
+							SaveableCompareEditorInput.createFileElement(resource),
+							right,
+							null);
+					openInCompare(in);
+				} else {
+					new ViewVersionsAction().run();
+				}
 			}
 
 		});
@@ -380,6 +425,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 		attachCommitSelectionChanged();
 		createLocalToolbarActions();
 		createResourceFilterActions();
+		createCompareModeAction();
 		createStandardActions();
 		createViewMenu();
 
@@ -539,6 +585,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 			c.addMenuDetectListener(new MenuDetectListener() {
 
 				public void menuDetected(MenuDetectEvent e) {
+					popupMgr.remove(new ActionContributionItem(createPatchAction));
 					popupMgr.remove(new ActionContributionItem(compareAction));
 					popupMgr.remove(new ActionContributionItem(
 							compareVersionsAction));
@@ -546,6 +593,11 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 							viewVersionsAction));
 					int size = ((IStructuredSelection) revObjectSelectionProvider
 							.getSelection()).size();
+					if (size == 1) {
+						popupMgr.add(new Separator());
+						popupMgr.add(createPatchAction);
+						createPatchAction.setEnabled(createPatchAction.isEnabled());
+					}
 					if (IFile.class.isAssignableFrom(getInput().getClass())) {
 						popupMgr.add(new Separator());
 						if (size == 1) {
@@ -562,6 +614,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 			c.addMenuDetectListener(new MenuDetectListener() {
 
 				public void menuDetected(MenuDetectEvent e) {
+					popupMgr.remove(new ActionContributionItem(createPatchAction));
 					popupMgr.remove(new ActionContributionItem(compareAction));
 					popupMgr.remove(new ActionContributionItem(
 							compareVersionsAction));
@@ -826,7 +879,10 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 			in = new ResourceList(new IResource[] { (IResource) o });
 		else if (o instanceof ResourceList)
 			in = o;
-		else
+		else if (o instanceof IAdaptable) {
+			IResource resource = (IResource) ((IAdaptable) o).getAdapter(IResource.class);
+			in = resource == null ? null : new ResourceList(new IResource[] { resource });
+		} else
 			in = null;
 		return super.setInput(in);
 	}
@@ -837,7 +893,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 			revObjectSelectionProvider.setActiveRepository(null);
 		cancelRefreshJob();
 
-		if (graph == null)
+		if (graph == null || super.getInput() == null)
 			return false;
 
 		final IResource[] in = ((ResourceList) super.getInput()).getItems();
@@ -929,6 +985,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 		fileViewer.addSelectionChangedListener(commentViewer);
 		commentViewer.setTreeWalk(fileWalker);
 		commentViewer.setDb(db);
+		createPatchAction.setTreeWalk(fileWalker);
 		findToolbar.clear();
 		graph.setInput(highlightFlag, null, null);
 
@@ -1277,9 +1334,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 				}
 			}
 			if (errorOccured)
-				MessageDialog.openError(getSite().getShell(),
-						UIText.GitHistoryPage_openFailed,
-						UIText.GitHistoryPage_seeLog);
+				Activator.showError(UIText.GitHistoryPage_openFailed, null);
 			if (ids.size() > 0) {
 				String idList = ""; //$NON-NLS-1$
 				for (ObjectId objectId : ids) {
@@ -1303,4 +1358,41 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 
 	}
 
+	private class CreatePatchAction extends Action {
+
+		private TreeWalk walker;
+
+		public CreatePatchAction() {
+			super(UIText.GitHistoryPage_CreatePatch);
+		}
+
+		@Override
+		public void run() {
+			IStructuredSelection selection = ((IStructuredSelection) revObjectSelectionProvider
+					.getSelection());
+			if (selection.size() == 1) {
+
+				Iterator<?> it = selection.iterator();
+				SWTCommit commit = (SWTCommit) it.next();
+
+				GitCreatePatchWizard.run(getHistoryPageSite().getPart(),
+						commit, walker, db);
+			}
+		}
+
+		public void setTreeWalk(TreeWalk walker) {
+			this.walker = walker;
+		}
+
+		@Override
+		public boolean isEnabled() {
+			IStructuredSelection selection = ((IStructuredSelection) revObjectSelectionProvider
+					.getSelection());
+			Iterator<?> it = selection.iterator();
+			SWTCommit commit = (SWTCommit) it.next();
+			return (commit.getParentCount() == 1);
+
+		}
+
+	}
 }
