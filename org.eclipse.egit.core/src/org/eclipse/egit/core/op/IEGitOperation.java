@@ -10,7 +10,6 @@ package org.eclipse.egit.core.op;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
 
 /**
  * interface for EGit operations
@@ -23,9 +22,4 @@ public interface IEGitOperation {
 	 * @throws CoreException
 	 */
 	void execute(IProgressMonitor monitor) throws CoreException;
-
-	/**
-	 * @return the rule needed to execute this operation
-	 */
-	ISchedulingRule getSchedulingRule();
 }

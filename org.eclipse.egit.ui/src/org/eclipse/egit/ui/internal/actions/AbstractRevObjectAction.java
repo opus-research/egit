@@ -8,19 +8,20 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.util.List;
+import org.eclipse.egit.ui.internal.history.RevObjectSelectionProvider;
+import org.eclipse.jgit.lib.Repository;
 
-import org.eclipse.egit.core.op.IEGitOperation;
-import org.eclipse.jgit.revwalk.RevObject;
+abstract class AbstractRevObjectAction extends AbstractOperationAction {
 
-/**
- * Changes the reference for the quickdiff
- */
-public class SetQuickdiffBaselineAction extends AbstractRevObjectAction {
-
-	@Override
-	protected IEGitOperation createOperation(List selection) {
-		return new QuickdiffBaselineOperation(getActiveRepository(), ((RevObject)selection.get(0)).getId().name());
+	/**
+	 * Find out which repository is involved here
+	 *
+	 * @return the Git repository associated with the selected RevObject
+	 */
+	protected Repository getActiveRepository() {
+		RevObjectSelectionProvider selectionProvider = (RevObjectSelectionProvider) wp
+				.getSite().getSelectionProvider();
+		return selectionProvider.getActiveRepository();
 	}
 
 }

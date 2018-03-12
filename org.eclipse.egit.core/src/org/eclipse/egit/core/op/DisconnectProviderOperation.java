@@ -14,11 +14,10 @@ import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.team.core.RepositoryProvider;
@@ -30,7 +29,7 @@ import org.eclipse.team.core.RepositoryProvider;
  * </p>
  */
 public class DisconnectProviderOperation implements IEGitOperation {
-	private final Collection<IProject> projectList;
+	private final Collection projectList;
 
 	/**
 	 * Create a new disconnect operation.
@@ -40,7 +39,7 @@ public class DisconnectProviderOperation implements IEGitOperation {
 	 *            disconnected from the Git team provider, and returned to
 	 *            untracked/unmanaged status.
 	 */
-	public DisconnectProviderOperation(final Collection<IProject> projs) {
+	public DisconnectProviderOperation(final Collection projs) {
 		projectList = projs;
 	}
 
@@ -55,29 +54,28 @@ public class DisconnectProviderOperation implements IEGitOperation {
 		m.beginTask(CoreText.DisconnectProviderOperation_disconnecting,
 				projectList.size() * 200);
 		try {
-			for (IProject p : projectList) {
-				// TODO is this the right location?
-				if (GitTraceLocation.CORE.isActive())
-					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.CORE.getLocation(),
-							"disconnect " + p.getName()); //$NON-NLS-1$
-				unmarkTeamPrivate(p);
-				RepositoryProvider.unmap(p);
-				m.worked(100);
+			for (Object obj : projectList) {
+				obj = ((IAdaptable)obj).getAdapter(IResource.class);
+				if (obj instanceof IProject) {
+					final IProject p = (IProject) obj;
+					// TODO is this the right location?
+					if (GitTraceLocation.CORE.isActive())
+						GitTraceLocation.getTrace().trace(
+								GitTraceLocation.CORE.getLocation(),
+								"disconnect " + p.getName()); //$NON-NLS-1$
+					unmarkTeamPrivate(p);
+					RepositoryProvider.unmap(p);
+					m.worked(100);
 
-				p.refreshLocal(IResource.DEPTH_INFINITE,
-						new SubProgressMonitor(m, 100));
+					p.refreshLocal(IResource.DEPTH_INFINITE,
+							new SubProgressMonitor(m, 100));
+				} else {
+					m.worked(200);
+				}
 			}
 		} finally {
 			m.done();
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
-	 */
-	public ISchedulingRule getSchedulingRule() {
-		return new MultiRule(projectList.toArray(new IProject[projectList.size()]));
 	}
 
 	private void unmarkTeamPrivate(final IContainer p) throws CoreException {

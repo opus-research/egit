@@ -14,7 +14,6 @@ import java.util.Collection;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.internal.UpdateJob;
 
 /**
@@ -44,14 +43,6 @@ public class UpdateOperation implements IEGitOperation {
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	public void execute(IProgressMonitor m) throws CoreException {
-		// TODO: integrate UpdateJob here since UpdateOperation is already run in a Job
 		new UpdateJob(rsrcList).schedule();
-	}
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
-	 */
-	public ISchedulingRule getSchedulingRule() {
-		return null;
 	}
 }
