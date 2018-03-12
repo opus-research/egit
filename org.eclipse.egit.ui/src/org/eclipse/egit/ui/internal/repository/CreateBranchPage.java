@@ -37,7 +37,6 @@ import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -232,12 +231,13 @@ class CreateBranchPage extends WizardPage {
 		warningComposite.setLayout(new GridLayout(2, false));
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(
 				warningComposite);
-
-		CLabel warningLabel = new CLabel(warningComposite, SWT.NONE);
-		warningLabel.setText(UIText.CreateBranchPage_LocalBranchWarningText);
-		warningLabel.setToolTipText(UIText.CreateBranchPage_LocalBranchWarningTooltip);
+		Label warningLabel = new Label(warningComposite, SWT.NONE);
 		warningLabel.setImage(PlatformUI.getWorkbench().getSharedImages()
 				.getImage(ISharedImages.IMG_OBJS_INFO_TSK));
+		Text warningText = new Text(warningComposite, SWT.READ_ONLY);
+		warningText.setText(UIText.CreateBranchPage_LocalBranchWarningText);
+		warningText
+				.setToolTipText(UIText.CreateBranchPage_LocalBranchWarningTooltip);
 
 		buttonConfigRebase = new Button(upstreamConfigGroup, SWT.RADIO);
 		buttonConfigRebase.setText(UIText.CreateBranchPage_RebaseRadioButton);
