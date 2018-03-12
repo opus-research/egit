@@ -2,7 +2,6 @@
 <?eclipse version="3.0"?>
 <plugin>
    <extension-point id="commitMessageProvider" name="%CommitMessageProviderExtension-point.name" schema="schema/commitMessageProvider.exsd"/>
-   <extension-point id="cloneSourceProvider" name="%CloneSourceProviderExtension-point.name" schema="schema/cloneSourceProvider.exsd"/>
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.eclipse.egit.ui.PluginPreferenceInitializer"/>
    </extension>
@@ -214,16 +213,8 @@
                label="%CompareWithCommitAction.label"
                menubarPath="compareWithMenu/gitCompareWithGroup">
          </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.CreatePatchAction"
-               enablesFor="1"
-               id="org.eclipse.egit.ui.internal.actions.CreatePatchAction"
-               label="%CreatePatchAction.label"
-               menubarPath="team.main/group6"
-               tooltip="%CreatePatchAction.tooltip">
-         </action>
-      </objectContribution>
-      <objectContribution
+	  </objectContribution>
+   	  <objectContribution
          adaptable="true"
          id="org.eclipse.egit.ui.fileContributions"
          objectClass="org.eclipse.core.resources.IFile">
@@ -275,13 +266,6 @@
          </factory>
          <factory
                adaptableType="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode"
-               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
-            <adapter
-                  type="org.eclipse.team.ui.history.IHistoryPageSource">
-            </adapter>
-         </factory>
-         <factory
-               adaptableType="org.eclipse.egit.ui.internal.commit.RepositoryCommit"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
                   type="org.eclipse.team.ui.history.IHistoryPageSource">
@@ -442,18 +426,9 @@
       </page>
       <page
             category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.SynchronizePreferencePage"
-            id="org.eclipse.egit.ui.internal.preferences.SynchronizePreferencePage"
-            name="%SynchronizePreferencePage.name">
-         <keywordReference
-               id="org.eclipse.egit.ui.keyword.git">
-         </keywordReference>
-      </page>
-      <page
-            category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"
-            id="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"
-            name="%HistoryPreferencePage.name">
+            class="org.eclipse.egit.ui.internal.preferences.ViewsPreferencePage"
+            id="org.eclipse.egit.ui.internal.preferences.ViewsPreferencePage"
+            name="%ViewsPreferencePage.name">
          <keywordReference
                id="org.eclipse.egit.ui.keyword.git">
          </keywordReference>
@@ -503,7 +478,7 @@
             location="BOTTOM_RIGHT"
             id="org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator">
             <enablement>
-              <objectClass name="org.eclipse.core.resources.mapping.ResourceMapping"/>
+              <objectClass name="org.eclipse.core.resources.IResource"/>
             </enablement>
          <description>
             %Decorator_description
@@ -1478,24 +1453,6 @@
                </and>
          </activeWhen>
       </handler>
-      <handler
-            commandId="org.eclipse.ui.edit.rename">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand">
-         </class>
-         <activeWhen>
-             <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-         </activeWhen>
-      </handler>
    </extension>
    <extension
          point="org.eclipse.ui.views">
@@ -1728,7 +1685,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.ui.edit.rename"
+               commandId="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
                icon="icons/obj16/editconfig.gif"
                label="%RepoViewRenameBranch.label"
                style="push">
@@ -3697,10 +3654,6 @@
             icon="icons/obj16/editconfig.gif">
       </image>
       <image
-            commandId="org.eclipse.ui.edit.rename"
-            icon="icons/obj16/editconfig.gif">
-      </image>
-      <image
             commandId="org.eclipse.egit.ui.history.DeleteBranch"
             icon="icons/obj16/delete_obj.gif">
       </image>
@@ -4296,14 +4249,5 @@
 			<property name="product" value="EGit"/>
 			<property name="component" value="Mylyn"/>
 		</mapping>
-  </extension>
-  <extension
-        point="org.eclipse.egit.ui.cloneSourceProvider">
-     <source
-           hasFixLocation="true"
-           label="URI">
-     </source>
-     <repositorySearchPage
-           class="org.eclipse.egit.ui.internal.components.RepositorySelectionPage"></repositorySearchPage>
   </extension>
 </plugin>
