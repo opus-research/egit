@@ -33,11 +33,11 @@ import org.eclipse.egit.core.op.DisconnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.ExistingOrNewPage;
 import org.eclipse.egit.ui.common.ExistingOrNewPage.Row;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.common.SharingWizard;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
@@ -46,7 +46,7 @@ import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.junit.MockSystemReader;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -193,15 +193,15 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 	@Test
 	public void shareProjectWithAlreadyCreatedRepos() throws IOException,
 			InterruptedException, JGitInternalException, GitAPIException {
-		FileRepository repo1 = new FileRepository(new File(
+		Repository repo1 = FileRepositoryBuilder.create(new File(
 				createProject(projectName1), "../.git"));
 		repo1.create();
 		repo1.close();
-		FileRepository repo2 = new FileRepository(new File(
+		Repository repo2 = FileRepositoryBuilder.create(new File(
 				createProject(projectName2), ".git"));
 		repo2.create();
 		repo2.close();
-		FileRepository repo3 = new FileRepository(new File(
+		Repository repo3 = FileRepositoryBuilder.create(new File(
 				createProject(projectName3), ".git"));
 		repo3.create();
 		Git git = new Git(repo3);

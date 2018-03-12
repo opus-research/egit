@@ -11,9 +11,12 @@
 package org.eclipse.egit.ui.internal.rebase;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.compare.CompareEditorInput;
@@ -32,7 +35,8 @@ import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.egit.ui.internal.merge.GitMergeEditorInput;
 import org.eclipse.egit.ui.internal.merge.MergeModeDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -48,6 +52,7 @@ import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.RebaseResult.Status;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.ResolveMerger.MergeFailureReason;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
@@ -55,6 +60,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -103,6 +109,19 @@ public class RebaseResultDialog extends MessageDialog {
 		boolean shouldShow = result.getStatus() == Status.STOPPED
 				|| Activator.getDefault().getPreferenceStore().getBoolean(
 						UIPreferences.SHOW_REBASE_CONFIRM);
+
+		if(result.getStatus() == Status.CONFLICTS) {
+			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				public void run() {
+					Shell shell = PlatformUI.getWorkbench()
+							.getActiveWorkbenchWindow().getShell();
+					new CheckoutConflictDialog(shell, repository, result.getConflicts()).open();
+				}
+			});
+
+			return;
+		}
+
 		if (!shouldShow) {
 			Activator.getDefault().getLog().log(
 					new org.eclipse.core.runtime.Status(IStatus.INFO, Activator
@@ -161,10 +180,108 @@ public class RebaseResultDialog extends MessageDialog {
 	@Override
 	protected Control createCustomArea(Composite parent) {
 
-		if (result.getStatus() != Status.STOPPED) {
-			createToggleButton(parent);
-			return null;
+		if (result.getStatus() == Status.STOPPED)
+			return createStoppedDialogArea(parent);
+		if (result.getStatus() == Status.FAILED
+				|| result.getStatus() == Status.CONFLICTS)
+			return createFailedOrConflictDialog(parent);
+		createToggleButton(parent);
+		return null;
+	}
+
+	private Control createFailedOrConflictDialog(Composite parent) {
+		Composite composite = new Composite(parent, SWT.NONE);
+		createFailedOrConflictsParts(composite, result);
+
+		return composite;
+	}
+
+	/**
+	 * Create the items in composite necessary for a rebase result
+	 *
+	 * @param composite
+	 * @param result
+	 */
+	public static void createFailedOrConflictsParts(Composite composite,
+			RebaseResult result) {
+		GridLayout gridLayout = new GridLayout();
+		gridLayout.numColumns = 2;
+		composite.setLayout(gridLayout);
+		// result
+		Label resultLabel = new Label(composite, SWT.NONE);
+		resultLabel.setText(UIText.MergeResultDialog_result);
+		resultLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false,
+				false));
+		Text resultText = new Text(composite, SWT.READ_ONLY);
+		resultText.setText(result.getStatus().toString());
+		resultText.setSelection(resultText.getCaretPosition());
+		resultText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		if (result.getStatus() == Status.FAILED) {
+			resultText.setForeground(composite.getParent().getDisplay()
+					.getSystemColor(
+					SWT.COLOR_RED));
+
+			StringBuilder paths = new StringBuilder();
+			Label pathsLabel = new Label(composite, SWT.NONE);
+			pathsLabel.setText(UIText.MergeResultDialog_failed);
+			pathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false,
+					false));
+			Text pathsText = new Text(composite, SWT.READ_ONLY);
+			pathsText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false,
+					false));
+			Set<Entry<String, MergeFailureReason>> failedPaths = result
+					.getFailingPaths().entrySet();
+			int n = 0;
+			for (Map.Entry<String, MergeFailureReason> e : failedPaths) {
+				if (n > 0)
+					paths.append(Text.DELIMITER);
+				paths.append(e.getValue());
+				paths.append("\t"); //$NON-NLS-1$
+				paths.append(e.getKey());
+				n++;
+				if (n > 10 && failedPaths.size() > 15)
+					break;
+			}
+			if (n < failedPaths.size()) {
+				paths.append(Text.DELIMITER);
+				paths.append(MessageFormat.format(
+						UIText.MergeResultDialog_nMore,
+						Integer.valueOf(n - failedPaths.size())));
+			}
+			pathsText.setText(paths.toString());
+		} else if (result.getStatus() == Status.CONFLICTS) {
+			resultText.setForeground(composite.getParent().getDisplay()
+					.getSystemColor(SWT.COLOR_RED));
+
+			StringBuilder paths = new StringBuilder();
+			Label pathsLabel = new Label(composite, SWT.NONE);
+			pathsLabel.setText(UIText.MergeResultDialog_conflicts);
+			pathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false,
+					false));
+			Text pathsText = new Text(composite, SWT.READ_ONLY);
+			pathsText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false,
+					false));
+			List<String> conflList = result.getConflicts();
+			int n = 0;
+			for (String e : conflList) {
+				if (n > 0)
+					paths.append(Text.DELIMITER);
+				paths.append(e);
+				n++;
+				if (n > 10 && conflList.size() > 15)
+					break;
+			}
+			if (n < conflList.size()) {
+				paths.append(Text.DELIMITER);
+				paths.append(MessageFormat.format(
+						UIText.MergeResultDialog_nMore,
+						Integer.valueOf(n - conflList.size())));
+			}
+			pathsText.setText(paths.toString());
 		}
+	}
+
+	private Control createStoppedDialogArea(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(1, false));
 		GridDataFactory.fillDefaults().indent(0, 0).grab(true, true).applyTo(
@@ -198,10 +315,9 @@ public class RebaseResultDialog extends MessageDialog {
 			commitMessage.getTextWidget().setText(commit.getFullMessage());
 			commitId.setText(commit.name());
 			dc = repo.lockDirCache();
-			for (int i = 0; i < dc.getEntryCount(); i++) {
+			for (int i = 0; i < dc.getEntryCount(); i++)
 				if (dc.getEntry(i).getStage() > 0)
 					conflictPaths.add(dc.getEntry(i).getPathString());
-			}
 			if (conflictPaths.size() > 0) {
 				message = NLS.bind(UIText.RebaseResultDialog_Conflicting,
 						Integer.valueOf(conflictPaths.size()));
@@ -287,12 +403,11 @@ public class RebaseResultDialog extends MessageDialog {
 		startMergeButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				if (startMergeButton.getSelection()) {
+				if (startMergeButton.getSelection())
 					nextSteps
 							.getTextWidget()
 							.setText(
 									UIText.RebaseResultDialog_NextStepsAfterResolveConflicts);
-				}
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -409,14 +524,13 @@ public class RebaseResultDialog extends MessageDialog {
 				IPath repoWorkdirPath = new Path(repo.getWorkTree().getPath());
 				for (String repoPath : conflictPaths) {
 					IPath filePath = repoWorkdirPath.append(repoPath);
-					for (IProject project : validProjects) {
+					for (IProject project : validProjects)
 						if (project.getLocation().isPrefixOf(filePath)) {
 							IResource res = project.getFile(filePath
 									.removeFirstSegments(project.getLocation()
 											.segmentCount()));
 							resourceList.add(res);
 						}
-					}
 				}
 				IResource[] resources = new IResource[resourceList.size()];
 				resourceList.toArray(resources);
@@ -435,7 +549,7 @@ public class RebaseResultDialog extends MessageDialog {
 				}
 				CompareUI.openCompareEditor(input);
 				return;
-			} else if (skipCommitButton.getSelection()) {
+			} else if (skipCommitButton.getSelection())
 				// skip the rebase
 				try {
 					final RebaseOperation op = new RebaseOperation(repo,
@@ -446,7 +560,7 @@ public class RebaseResultDialog extends MessageDialog {
 				} catch (CoreException e) {
 					Activator.handleError(e.getMessage(), e, true);
 				}
-			} else if (abortRebaseButton.getSelection()) {
+			else if (abortRebaseButton.getSelection())
 				// abort the rebase
 				try {
 					final RebaseOperation op = new RebaseOperation(repo,
@@ -457,7 +571,7 @@ public class RebaseResultDialog extends MessageDialog {
 				} catch (CoreException e) {
 					Activator.handleError(e.getMessage(), e, true);
 				}
-			} else if (doNothingButton.getSelection()) {
+			else if (doNothingButton.getSelection()) {
 				// nothing
 			}
 		}
