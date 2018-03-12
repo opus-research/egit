@@ -23,6 +23,8 @@ class GraphLabelProvider extends BaseLabelProvider implements
 		ITableLabelProvider {
 	private GitDateFormatter dateFormatter;
 
+	private boolean showEmail;
+
 	private RevCommit lastCommit;
 
 	private PersonIdent lastAuthor;
@@ -39,14 +41,17 @@ class GraphLabelProvider extends BaseLabelProvider implements
 		if (columnIndex == 0)
 			return c.getShortMessage();
 		if (columnIndex == 3)
-			return c.getId().abbreviate(8).name() + "..."; //$NON-NLS-1$
+			return c.getId().name();
 		if (columnIndex == 1 || columnIndex == 2) {
 			final PersonIdent author = authorOf(c);
 			if (author != null)
 				switch (columnIndex) {
 				case 1:
-					return author.getName()
-							+ " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+					if (showEmail)
+						return author.getName()
+								+ " <" + author.getEmailAddress() + '>'; //$NON-NLS-1$
+					else
+						return author.getName();
 				case 2:
 					return getDateFormatter().formatDate(author);
 				}
@@ -56,8 +61,11 @@ class GraphLabelProvider extends BaseLabelProvider implements
 			if (committer != null)
 				switch (columnIndex) {
 				case 4:
-					return committer.getName()
-							+ " <" + committer.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+					if (showEmail)
+						return committer.getName()
+								+ " <" + committer.getEmailAddress() + '>'; //$NON-NLS-1$
+					else
+						return committer.getName();
 				case 5:
 					return getDateFormatter().formatDate(committer);
 				}
@@ -103,5 +111,12 @@ class GraphLabelProvider extends BaseLabelProvider implements
 			format = Format.RELATIVE;
 		else
 			format = Format.LOCALE;
+	}
+
+	/**
+	 * @param showEmail true to show e-mail addresses, false otherwise
+	 */
+	public void setShowEmailAddresses(boolean showEmail) {
+		this.showEmail = showEmail;
 	}
 }
