@@ -222,8 +222,23 @@ public class RemoveCommand extends
 			}
 			repo.close();
 
-			if (!repo.isBare())
-				closeSubmoduleRepositories(repo);
+			SubmoduleWalk walk = SubmoduleWalk.forIndex(repo);
+			while (walk.next()) {
+				Repository subRepo = walk.getRepository();
+				if (subRepo != null) {
+					RepositoryCache cache = null;
+					try {
+						cache = org.eclipse.egit.core.Activator.getDefault()
+								.getRepositoryCache();
+					} finally {
+						if (cache != null)
+							cache.lookupRepository(subRepo.getDirectory())
+									.close();
+						subRepo.close();
+					}
+				}
+			}
+			walk.release();
 
 			FileUtils.delete(repo.getDirectory(),
 					FileUtils.RECURSIVE | FileUtils.RETRY
@@ -244,30 +259,6 @@ public class RemoveCommand extends
 				if (isWorkingDirEmpty)
 					FileUtils.delete(workTree, FileUtils.RETRY | FileUtils.SKIP_MISSING);
 			}
-		}
-	}
-
-	private static void closeSubmoduleRepositories(Repository repo)
-			throws IOException {
-		SubmoduleWalk walk = SubmoduleWalk.forIndex(repo);
-		try {
-			while (walk.next()) {
-				Repository subRepo = walk.getRepository();
-				if (subRepo != null) {
-					RepositoryCache cache = null;
-					try {
-						cache = org.eclipse.egit.core.Activator.getDefault()
-								.getRepositoryCache();
-					} finally {
-						if (cache != null)
-							cache.lookupRepository(subRepo.getDirectory())
-									.close();
-						subRepo.close();
-					}
-				}
-			}
-		} finally {
-			walk.release();
 		}
 	}
 
