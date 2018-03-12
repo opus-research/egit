@@ -33,8 +33,6 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.util.IPropertyChangeListener;
-import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -138,13 +136,6 @@ class CommitGraphTable {
 
 	private RevCommit commitToShow;
 
-	private GraphLabelProvider graphLabelProvider;
-
-	// listener to detect changes in the date preferences
-	private final IPropertyChangeListener listener;
-
-	private GitHistoryPage historyPage;
-
 	CommitGraphTable(Composite parent) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
@@ -172,27 +163,7 @@ class CommitGraphTable {
 				((SWTCommit) element).widget = item;
 			}
 		};
-
-		graphLabelProvider = new GraphLabelProvider();
-		// react on changes in the date preferences
-		listener = new IPropertyChangeListener() {
-			public void propertyChange(PropertyChangeEvent event) {
-				if (event.getProperty().equals(
-						UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE)) {
-					if (setRelativeDate(((Boolean) event.getNewValue())
-							.booleanValue()) && (historyPage != null))
-						historyPage.initAndStartRevWalk(true);
-					return;
-				}
-			}
-		};
-
-		setRelativeDate(Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE));
-		Activator.getDefault().getPreferenceStore()
-				.addPropertyChangeListener(listener);
-
-		table.setLabelProvider(graphLabelProvider);
+		table.setLabelProvider(new GraphLabelProvider());
 		table.setContentProvider(new GraphContentProvider());
 		renderer = new SWTPlotRenderer(rawTable.getDisplay());
 
@@ -276,10 +247,8 @@ class CommitGraphTable {
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
-			final MenuManager menuMgr, GitHistoryPage historyPage) {
+			final MenuManager menuMgr) {
 		this(parent);
-		this.historyPage = historyPage;
-
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
 			public void focusLost(FocusEvent e) {
@@ -369,10 +338,6 @@ class CommitGraphTable {
 
 	void removeSelectionChangedListener(final ISelectionChangedListener l) {
 		table.removePostSelectionChangedListener(l);
-	}
-
-	private boolean setRelativeDate(boolean booleanValue) {
-		return graphLabelProvider.setRelativeDate(booleanValue);
 	}
 
 	private boolean canDoCopy() {
