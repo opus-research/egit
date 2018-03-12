@@ -10,7 +10,13 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
-import org.eclipse.egit.ui.UIPreferences;
+import static org.eclipse.egit.ui.UIPreferences.THEME_DiffAddBackgroundColor;
+import static org.eclipse.egit.ui.UIPreferences.THEME_DiffAddForegroundColor;
+import static org.eclipse.egit.ui.UIPreferences.THEME_DiffHunkBackgroundColor;
+import static org.eclipse.egit.ui.UIPreferences.THEME_DiffHunkForegroundColor;
+import static org.eclipse.egit.ui.UIPreferences.THEME_DiffRemoveBackgroundColor;
+import static org.eclipse.egit.ui.UIPreferences.THEME_DiffRemoveForegroundColor;
+
 import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter.DiffStyleRange;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferenceConverter;
@@ -70,18 +76,12 @@ public class DiffViewer extends SourceViewer {
 		public void propertyChange(PropertyChangeEvent event) {
 			String property = event.getProperty();
 			if (IThemeManager.CHANGE_CURRENT_THEME.equals(property)
-					|| UIPreferences.THEME_DiffAddBackgroundColor
-							.equals(property)
-					|| UIPreferences.THEME_DiffAddForegroundColor
-							.equals(property)
-					|| UIPreferences.THEME_DiffHunkBackgroundColor
-							.equals(property)
-					|| UIPreferences.THEME_DiffHunkForegroundColor
-							.equals(property)
-					|| UIPreferences.THEME_DiffRemoveBackgroundColor
-							.equals(property)
-					|| UIPreferences.THEME_DiffRemoveForegroundColor
-							.equals(property)) {
+					|| THEME_DiffAddBackgroundColor.equals(property)
+					|| THEME_DiffAddForegroundColor.equals(property)
+					|| THEME_DiffHunkBackgroundColor.equals(property)
+					|| THEME_DiffHunkForegroundColor.equals(property)
+					|| THEME_DiffRemoveBackgroundColor.equals(property)
+					|| THEME_DiffRemoveForegroundColor.equals(property)) {
 				refreshDiffColors();
 				refreshStyleRanges();
 			}
@@ -129,20 +129,14 @@ public class DiffViewer extends SourceViewer {
 	}
 
 	private void refreshDiffColors() {
-		ColorRegistry colorRegistry = PlatformUI.getWorkbench()
-				.getThemeManager().getCurrentTheme().getColorRegistry();
-		this.addBackgroundColor = colorRegistry
-				.get(UIPreferences.THEME_DiffAddBackgroundColor);
-		this.addForegroundColor = colorRegistry
-				.get(UIPreferences.THEME_DiffAddForegroundColor);
-		this.removeBackgroundColor = colorRegistry
-				.get(UIPreferences.THEME_DiffRemoveBackgroundColor);
-		this.removeForegroundColor = colorRegistry
-				.get(UIPreferences.THEME_DiffRemoveForegroundColor);
-		this.hunkBackgroundColor = colorRegistry
-				.get(UIPreferences.THEME_DiffHunkBackgroundColor);
-		this.hunkForegroundColor = colorRegistry
-				.get(UIPreferences.THEME_DiffHunkForegroundColor);
+		ColorRegistry reg = PlatformUI.getWorkbench().getThemeManager()
+				.getCurrentTheme().getColorRegistry();
+		this.addBackgroundColor = reg.get(THEME_DiffAddBackgroundColor);
+		this.addForegroundColor = reg.get(THEME_DiffAddForegroundColor);
+		this.removeBackgroundColor = reg.get(THEME_DiffRemoveBackgroundColor);
+		this.removeForegroundColor = reg.get(THEME_DiffRemoveForegroundColor);
+		this.hunkBackgroundColor = reg.get(THEME_DiffHunkBackgroundColor);
+		this.hunkForegroundColor = reg.get(THEME_DiffHunkForegroundColor);
 	}
 
 	private void initListeners() {
@@ -175,7 +169,6 @@ public class DiffViewer extends SourceViewer {
 
 	private void styleViewer() {
 		IPreferenceStore store = EditorsUI.getPreferenceStore();
-
 		Color foreground = null;
 		if (!store
 				.getBoolean(AbstractTextEditor.PREFERENCE_COLOR_FOREGROUND_SYSTEM_DEFAULT))
@@ -202,7 +195,6 @@ public class DiffViewer extends SourceViewer {
 		text.setSelectionForeground(selectionForeground);
 		text.setSelectionBackground(selectionBackground);
 		text.setFont(JFaceResources.getFont(JFaceResources.TEXT_FONT));
-
 		if (lineNumberRuler != null) {
 			lineNumberRuler.setFont(text.getFont());
 			lineNumberRuler.setForeground(foreground);
@@ -210,13 +202,8 @@ public class DiffViewer extends SourceViewer {
 		}
 	}
 
-	/**
-	 * Refresh style ranges
-	 *
-	 * @return this viewer
-	 */
-	public DiffViewer refreshStyleRanges() {
-		StyledText text = getTextWidget();
+	/** Refresh style ranges */
+	public void refreshStyleRanges() {
 		DiffStyleRange[] ranges = formatter != null ? formatter.getRanges()
 				: new DiffStyleRange[0];
 		for (DiffStyleRange range : ranges)
@@ -236,20 +223,13 @@ public class DiffViewer extends SourceViewer {
 			default:
 				break;
 			}
-		text.setStyleRanges(ranges);
-		return this;
+		getTextWidget().setStyleRanges(ranges);
 	}
 
-	/**
-	 * Set diff style range formatter
-	 *
-	 * @param formatter
-	 * @return this viewer
-	 */
-	public DiffViewer setFormatter(DiffStyleRangeFormatter formatter) {
+	/** @param formatter */
+	public void setFormatter(DiffStyleRangeFormatter formatter) {
 		this.formatter = formatter;
 		refreshStyleRanges();
-		return this;
 	}
 
 }
