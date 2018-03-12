@@ -14,7 +14,6 @@ import org.eclipse.jsch.core.IJSchService;
 import org.eclipse.jsch.ui.UserInfoPrompter;
 import org.eclipse.jgit.transport.OpenSshConfig;
 import org.eclipse.jgit.transport.SshConfigSessionFactory;
-import org.eclipse.jgit.util.FS;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -28,7 +27,7 @@ class EclipseSshSessionFactory extends SshConfigSessionFactory {
 	}
 
 	@Override
-	protected JSch createDefaultJSch(FS fs) throws JSchException {
+	protected JSch createDefaultJSch() throws JSchException {
 		// Forcing a dummy session to be created will cause the known hosts
 		// and configured private keys to be initialized. This is needed by
 		// our parent class in case non-default JSch instances need to be made.
@@ -39,9 +38,9 @@ class EclipseSshSessionFactory extends SshConfigSessionFactory {
 
 	@Override
 	protected Session createSession(final OpenSshConfig.Host hc,
-			final String user, final String host, final int port, FS fs)
+			final String user, final String host, final int port)
 			throws JSchException {
-		final JSch jsch = getJSch(hc, FS.DETECTED);
+		final JSch jsch = getJSch(hc);
 		if (jsch == provider.getJSch()) {
 			// If its the default JSch desired, let the provider
 			// manage the session creation for us.

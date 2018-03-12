@@ -193,7 +193,7 @@ public class FindResults {
 		return keysArray;
 	}
 
-	synchronized void setHighlightFlag(RevFlag hFlag) {
+	void setHighlightFlag(RevFlag hFlag) {
 		if (highlight != null) {
 			clear();
 		}

@@ -62,17 +62,9 @@ public class WindowCachePreferencePage extends FieldEditorPreferencePage
 	}
 
 	public boolean performOk() {
-		// first put the editor values into the configuration
-		super.performOk();
-		// we can't revert this in case of an error anyway, so let's save it now
 		Activator.getDefault().savePluginPreferences();
-		try {
-			GitProjectData.reconfigureWindowCache();
-			return true;
-		} catch (RuntimeException e) {
-			org.eclipse.egit.ui.Activator.handleError(e.getMessage(), e, true);
-			return false;
-		}
+		GitProjectData.reconfigureWindowCache();
+		return super.performOk();
 	}
 
 	public void init(IWorkbench workbench) {

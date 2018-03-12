@@ -16,9 +16,9 @@ import java.util.WeakHashMap;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.ui.IEditorInput;
@@ -77,7 +77,6 @@ public class GitQuickDiffProvider implements IQuickDiffReferenceProvider {
 			try {
 				document = GitDocument.create(resource);
 			} catch (IOException e) {
-				// TODO throw an exception or log this?
 				Activator.error(UIText.QuickDiff_failedLoading, e);
 			}
 			return document;
