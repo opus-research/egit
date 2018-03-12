@@ -99,7 +99,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Listener;
@@ -596,18 +595,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	// react on changes to the relative date preference
 	private final IPropertyChangeListener listener = new IPropertyChangeListener() {
-		@SuppressWarnings("boxing")
-		public void propertyChange(final PropertyChangeEvent event) {
+		public void propertyChange(PropertyChangeEvent event) {
 			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(event
-					.getProperty())) {
-				Display.getCurrent().syncExec(new Runnable() {
-					public void run() {
-						graph.setRelativeDate(isShowingRelativeDates());
-						graph.getTableView().refresh();
-					}
-				});
+					.getProperty()))
+				graph.setRelativeDate(isShowingRelativeDates());
+				graph.getTableView().refresh();
 			}
-	}
+	};
 
 	/**
 	 * Highlight flag that can be applied to commits to make them stand out.
