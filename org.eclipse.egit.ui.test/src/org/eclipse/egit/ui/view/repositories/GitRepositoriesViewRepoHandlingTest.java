@@ -33,7 +33,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.utils.TableCollection;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -95,8 +94,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		clearView();
 		refreshAndWait();
 		final Exception[] exceptions = new Exception[1];
-		final SWTBotLabel label = getOrOpenView().bot().label(
-				UIText.RepositoriesView_messsageEmpty);
+		final SWTBotTree tree = getOrOpenView().bot().tree();
 		Display.getDefault().syncExec(new Runnable() {
 
 			public void run() {
@@ -106,8 +104,8 @@ public class GitRepositoriesViewRepoHandlingTest extends
 					clip.setContents(new Object[] { repositoryFile.getPath() },
 							new Transfer[] { TextTransfer.getInstance() });
 
-					ContextMenuHelper.clickContextMenu(label,
-							myUtil.getPluginLocalizedValue("PastePathCommand"));
+					ContextMenuHelper.clickContextMenu(tree, myUtil
+							.getPluginLocalizedValue("PastePathCommand"));
 				} catch (Exception e) {
 					exceptions[0] = e;
 				} finally {

@@ -1,7 +1,4 @@
 /*******************************************************************************
- * Copyright (c) 2004, 2008 IBM Corporation and others.
- * Copyright (C) 2007, Martin Oberhuber (martin.oberhuber@windriver.com)
- * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
@@ -12,27 +9,18 @@
 package org.eclipse.egit.core.internal.util;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * This class contains utility methods related to projects
@@ -41,29 +29,21 @@ import org.eclipse.osgi.util.NLS;
 public class ProjectUtil {
 
 	/**
-	 * The name of the folder containing metadata information for the workspace.
-	 */
-	public static final String METADATA_FOLDER = ".metadata"; //$NON-NLS-1$
-
-	/**
-	 * The method returns all valid open projects contained in the given Git
+	 * The method returns all valid projects contained in the given Git
 	 * repository. A project is considered as valid if the .project file exists.
 	 * @see ProjectUtil#refreshValidProjects(IProject[], IProgressMonitor)
 	 * @param repository
-	 * @return valid open projects
+	 * @return valid projects
 	 * @throws CoreException
 	 */
-	public static IProject[] getValidOpenProjects(Repository repository)
+	public static IProject[] getValidProjects(Repository repository)
 			throws CoreException {
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		List<IProject> result = new ArrayList<IProject>();
 		final File parentFile = repository.getWorkTree();
 		for (IProject p : projects) {
-			IPath projectLocation = p.getLocation();
-			if (!p.isOpen() || projectLocation == null)
-				continue;
-			String projectFilePath = projectLocation
+			String projectFilePath = p.getLocation()
 					.append(".project").toOSString(); //$NON-NLS-1$
 			File projectFile = new File(projectFilePath);
 			if (projectFile.exists()) {
@@ -81,7 +61,7 @@ public class ProjectUtil {
 	 * The method refreshes the given projects. Projects with missing .project
 	 * file are deleted. The method should be called in the following flow:<br>
 	 * <ol>
-	 * <li>Call {@link ProjectUtil#getValidOpenProjects(Repository)}
+	 * <li>Call {@link ProjectUtil#getValidProjects(Repository)}
 	 * <li>Perform a workdir checkout (e.g. branch, reset)
 	 * <li>Call
 	 * {@link ProjectUtil#refreshValidProjects(IProject[], IProgressMonitor)}
@@ -115,6 +95,7 @@ public class ProjectUtil {
 			monitor.done();
 		}
 	}
+
 
 	/**
 	 * The method refreshes resources
@@ -164,75 +145,4 @@ public class ProjectUtil {
 		return result.toArray(new IProject[result.size()]);
 	}
 
-	/**
-	 * Find directories containing .project files recursively starting at given
-	 * directory
-	 *
-	 * @param files
-	 * @param directory
-	 * @param visistedDirs
-	 * @param monitor
-	 * @return true if projects files found, false otherwise
-	 */
-	public static boolean findProjectFiles(final Collection<File> files,
-			final File directory, final Set<String> visistedDirs,
-			final IProgressMonitor monitor) {
-		IProgressMonitor pm = monitor;
-		if (pm == null)
-			pm = new NullProgressMonitor();
-		else if (pm.isCanceled())
-			return false;
-
-		monitor.subTask(NLS.bind(CoreText.ProjectUtil_taskCheckingDirectory,
-				directory.getPath()));
-
-		final File[] contents = directory.listFiles();
-		if (contents == null || contents.length == 0)
-			return false;
-
-		Set<String> directoriesVisited;
-		// Initialize recursion guard for recursive symbolic links
-		if (visistedDirs == null) {
-			directoriesVisited = new HashSet<String>();
-			try {
-				directoriesVisited.add(directory.getCanonicalPath());
-			} catch (IOException exception) {
-				Activator.logError(exception.getLocalizedMessage(), exception);
-			}
-		} else
-			directoriesVisited = visistedDirs;
-
-		// first look for project description files
-		final String dotProject = IProjectDescription.DESCRIPTION_FILE_NAME;
-		for (int i = 0; i < contents.length; i++) {
-			File file = contents[i];
-			if (file.isFile() && file.getName().equals(dotProject)) {
-				files.add(file);
-				// don't search sub-directories since we can't have nested
-				// projects
-				return true;
-			}
-		}
-		// no project description found, so recurse into sub-directories
-		for (int i = 0; i < contents.length; i++) {
-			// Skip non-directories
-			if (!contents[i].isDirectory())
-				continue;
-			// Skip .metadata folders
-			if (contents[i].getName().equals(METADATA_FOLDER))
-				continue;
-			try {
-				String canonicalPath = contents[i].getCanonicalPath();
-				if (!directoriesVisited.add(canonicalPath)) {
-					// already been here --> do not recurse
-					continue;
-				}
-			} catch (IOException exception) {
-				Activator.logError(exception.getLocalizedMessage(), exception);
-
-			}
-			findProjectFiles(files, contents[i], directoriesVisited, pm);
-		}
-		return true;
-	}
 }

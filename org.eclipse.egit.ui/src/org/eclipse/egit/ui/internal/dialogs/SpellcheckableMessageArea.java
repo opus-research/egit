@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
  * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2011, IBM Corporation
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -198,6 +197,11 @@ public class SpellcheckableMessageArea extends Composite {
 
 			protected Map getHyperlinkDetectorTargets(ISourceViewer targetViewer) {
 				return getHyperlinkTargets();
+			}
+
+			@Override
+			public int getHyperlinkStateMask(ISourceViewer viewer) {
+				return SWT.NONE;
 			}
 
 			@Override
@@ -511,8 +515,7 @@ public class SpellcheckableMessageArea extends Composite {
 		Action proposalAction = new Action() {
 			public void run() {
 				if (textOperationTarget
-						.canDoOperation(ISourceViewer.CONTENTASSIST_PROPOSALS)
-						&& getTextWidget().isFocusControl())
+						.canDoOperation(ISourceViewer.CONTENTASSIST_PROPOSALS))
 					textOperationTarget
 							.doOperation(ISourceViewer.CONTENTASSIST_PROPOSALS);
 			}
