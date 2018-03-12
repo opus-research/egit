@@ -5,20 +5,13 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Andre Bossert <anb0s@anbos.de> - Bug 496356
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.selection;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.core.expressions.PropertyTester;
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -30,7 +23,6 @@ import org.eclipse.egit.ui.internal.ResourcePropertyTester;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.ui.IWorkingSet;
 
@@ -54,10 +46,6 @@ public class SelectionPropertyTester extends PropertyTester {
 			Repository repository = getRepositoryOfProjects(collection, false);
 			return repository != null;
 
-		} else if ("selectionSingleRepository".equals(property)) { //$NON-NLS-1$
-			return SelectionUtils
-					.getRepository(getStructuredSelection(collection)) != null;
-
 		} else if ("resourcesSingleRepository".equals(property)) { //$NON-NLS-1$
 			IStructuredSelection selection = getStructuredSelection(collection);
 
@@ -78,19 +66,13 @@ public class SelectionPropertyTester extends PropertyTester {
 				return false;
 
 			Object firstElement = selection.getFirstElement();
-
-			IResource resource = AdapterUtils.adaptToAnyResource(firstElement);
+			IResource resource = AdapterUtils.adapt(firstElement,
+					IResource.class);
 			if ((resource != null) && (resource instanceof IFile
 					|| resource instanceof IFolder)) {
 				RepositoryMapping m = RepositoryMapping.getMapping(resource);
 				if (m != null) {
-					if ((resource instanceof IFolder)
-							&& resource.equals(m.getContainer())) {
-						return false;
-					} else {
-						return testRepositoryProperties(m.getRepository(),
-								args);
-					}
+					return testRepositoryProperties(m.getRepository(), args);
 				}
 			}
 		} else if ("resourcesAllInRepository".equals(property)) { //$NON-NLS-1$
@@ -98,23 +80,12 @@ public class SelectionPropertyTester extends PropertyTester {
 
 			IResource[] resources = SelectionUtils
 					.getSelectedResources(selection);
-			Collection<Repository> repositories = getRepositories(resources);
-			if (repositories.isEmpty()) {
-				return false;
-			}
-			if (args != null && args.length > 0) {
-				for (Repository repository : repositories) {
-					if (!testRepositoryProperties(repository, args)) {
-						return false;
-					}
-				}
-			}
-			return true;
+			return haveRepositories(resources);
 		}
 		return false;
 	}
 
-	private static @NonNull IStructuredSelection getStructuredSelection(
+	private static IStructuredSelection getStructuredSelection(
 			Collection<?> collection) {
 		Object firstElement = collection.iterator().next();
 		if (collection.size() == 1 && firstElement instanceof ITextSelection)
@@ -148,36 +119,23 @@ public class SelectionPropertyTester extends PropertyTester {
 			boolean single) {
 		Repository repo = null;
 		for (Object element : collection) {
-			IContainer container = AdapterUtils.adapt(element,
-					IProject.class);
-			RepositoryMapping mapping = null;
-			if (container != null) {
-				mapping = RepositoryMapping.getMapping(container);
-			} else {
-				container = AdapterUtils.adapt(element, IContainer.class);
-				if (container != null) {
-					mapping = RepositoryMapping.getMapping(container);
-				}
-			}
-			if (container != null && mapping != null
-					&& container.equals(mapping.getContainer())) {
-				Repository r = mapping.getRepository();
-				if (single && r != null && repo != null && r != repo) {
+			IProject project = AdapterUtils.adapt(element, IProject.class);
+			if (project != null) {
+				Repository r = getRepositoryOfMapping(project);
+				if (single && r != null && repo != null && r != repo)
 					return null;
-				} else if (r != null) {
+				else if (r != null)
 					repo = r;
-				}
 			} else {
 				IWorkingSet workingSet = AdapterUtils.adapt(element,
 						IWorkingSet.class);
 				if (workingSet != null) {
 					for (IAdaptable adaptable : workingSet.getElements()) {
 						Repository r = getRepositoryOfProject(adaptable);
-						if (single && r != null && repo != null && r != repo) {
+						if (single && r != null && repo != null && r != repo)
 							return null;
-						} else if (r != null) {
+						else if (r != null)
 							repo = r;
-						}
 					}
 				}
 			}
@@ -206,21 +164,17 @@ public class SelectionPropertyTester extends PropertyTester {
 	/**
 	 * @param resources
 	 *            the resources
-	 * @return a collection containing all the repositories the given resources
-	 *         belong to, or an empty collection if a resource is not in a git
-	 *         repository
+	 * @return {@code true} when all {@code resources} map to a repository,
+	 *         {@code false} otherwise.
 	 */
-	private static Collection<Repository> getRepositories(
-			IResource[] resources) {
-		Set<Repository> result = new HashSet<>();
+	private static boolean haveRepositories(IResource[] resources) {
 		for (IResource resource : resources) {
 			Repository r = getRepositoryOfMapping(resource);
 			if (r == null) {
-				return Collections.emptySet();
+				return false;
 			}
-			result.add(r);
 		}
-		return result;
+		return true;
 	}
 
 	private static Repository getRepositoryOfProject(Object object) {

@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011, 2016 GitHub Inc and others.
+ *  Copyright (c) 2011, 2014 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -8,7 +8,6 @@
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
  *    Marc-Andre Laperle (Ericsson) - Set the input to null when not visible
- *    Thomas Wolf <thomas.wolf@paranor.ch> - preference-based date formatting
  *****************************************************************************/
 package org.eclipse.egit.ui.internal.blame;
 
@@ -16,37 +15,35 @@ import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
 
-import org.eclipse.egit.core.internal.CompareCoreUtils;
+import org.eclipse.core.resources.IStorage;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.internal.job.JobUtil;
-import org.eclipse.egit.core.internal.storage.CommitFileRevision;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.blame.BlameOperation.BlameHistoryPageInput;
 import org.eclipse.egit.ui.internal.blame.BlameRevision.Diff;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
-import org.eclipse.egit.ui.internal.commit.DiffDocument;
-import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter;
+import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
-import org.eclipse.egit.ui.internal.history.FileDiff;
 import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.jface.action.ToolBarManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.AbstractInformationControl;
+import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IInformationControlCreator;
 import org.eclipse.jface.text.IInformationControlExtension2;
 import org.eclipse.jface.text.source.IVerticalRulerInfo;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.Edit;
 import org.eclipse.jgit.diff.EditList;
-import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -68,7 +65,6 @@ import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.editors.text.EditorsUI;
 
 /**
  * Annotation information control
@@ -267,15 +263,12 @@ public class BlameInformationControl extends AbstractInformationControl
 						.name());
 		commitLabel.setText(linkText);
 
-		PreferenceBasedDateFormatter dateFormatter = PreferenceBasedDateFormatter
-				.create();
 		PersonIdent author = commit.getAuthorIdent();
 		if (author != null) {
 			setControlVisible(authorLabel, true);
 			authorLabel.setText(MessageFormat.format(
 					UIText.BlameInformationControl_Author, author.getName(),
-					author.getEmailAddress(),
-					dateFormatter.formatDate(author)));
+					author.getEmailAddress(), author.getWhen()));
 		} else
 			setControlVisible(authorLabel, false);
 
@@ -286,7 +279,7 @@ public class BlameInformationControl extends AbstractInformationControl
 			committerLabel.setText(MessageFormat.format(
 					UIText.BlameInformationControl_Committer,
 					committer.getName(), committer.getEmailAddress(),
-					dateFormatter.formatDate(committer)));
+					committer.getWhen()));
 		} else
 			setControlVisible(committerLabel, false);
 
@@ -368,32 +361,22 @@ public class BlameInformationControl extends AbstractInformationControl
 		showAnnotationsLink
 				.addSelectionListener(showAnnotationsLinkSelectionAdapter);
 
-		DiffViewer diffText = new DiffViewer(diffComposite, null, SWT.NONE);
-		diffText.configure(
-				new DiffViewer.Configuration(EditorsUI.getPreferenceStore()));
+		DiffViewer diffText = new DiffViewer(diffComposite, null, SWT.NONE,
+				false);
+		diffText.setEditable(false);
 		diffText.getControl().setLayoutData(
 				GridDataFactory.fillDefaults().grab(true, true).create());
 
-		DiffDocument document = new DiffDocument();
-		DiffRegionFormatter diffFormatter = new DiffRegionFormatter(
+		IDocument document = new Document();
+		DiffStyleRangeFormatter diffFormatter = new DiffStyleRangeFormatter(
 				document);
 		diffFormatter.setContext(1);
 		diffFormatter.setRepository(revision.getRepository());
 		diffFormatter.format(interestingDiff, diff.getOldText(),
 				diff.getNewText());
 
-		try (ObjectReader reader = revision.getRepository().newObjectReader()) {
-			DiffEntry diffEntry = CompareCoreUtils.getChangeDiffEntry(
-					revision.getRepository(), revision.getSourcePath(),
-					revision.getCommit(), parent, reader);
-			if (diffEntry != null) {
-				FileDiff fileDiff = new FileDiff(revision.getCommit(),
-						diffEntry);
-				document.setDefault(revision.getRepository(), fileDiff);
-			}
-		}
-		document.connect(diffFormatter);
 		diffText.setDocument(document);
+		diffText.setFormatter(diffFormatter);
 	}
 
 	private EditList getInterestingDiff(EditList fullDiff) {
@@ -471,16 +454,17 @@ public class BlameInformationControl extends AbstractInformationControl
 			IFileRevision rev = CompareUtils.getFileRevision(path, parent,
 					revision.getRepository(), null);
 			int line = sourceLine == null ? -1 : sourceLine.intValue();
-			if (rev instanceof CommitFileRevision) {
-				IWorkbenchPage page = PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow().getActivePage();
-				BlameOperation operation = new BlameOperation(
-						(CommitFileRevision) rev, getShell(),
-						page, line);
-				JobUtil.scheduleUserJob(operation,
-						UIText.ShowBlameHandler_JobName, JobFamilies.BLAME);
-			}
+			IStorage storage = rev.getStorage(new NullProgressMonitor());
+			IWorkbenchPage page = PlatformUI.getWorkbench()
+					.getActiveWorkbenchWindow().getActivePage();
+			BlameOperation operation = new BlameOperation(
+					revision.getRepository(), storage, path, parent,
+					getShell(), page, line);
+			JobUtil.scheduleUserJob(operation, UIText.ShowBlameHandler_JobName,
+					JobFamilies.BLAME);
 		} catch (IOException e) {
+			Activator.logError(UIText.ShowBlameHandler_errorMessage, e);
+		} catch (CoreException e) {
 			Activator.logError(UIText.ShowBlameHandler_errorMessage, e);
 		}
 	}

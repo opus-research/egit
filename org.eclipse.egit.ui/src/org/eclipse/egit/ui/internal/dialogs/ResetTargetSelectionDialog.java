@@ -18,8 +18,8 @@ import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -52,7 +52,7 @@ import org.eclipse.swt.widgets.Text;
  * Dialog for selecting a reset target.
  */
 public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
-	private static final String RESET_TYPE_SETTING = "ResetTargetSelectionDialog.resetType"; //$NON-NLS-1$
+
 	private static final int SWT_NONE = 0;
 	private ResetType resetType = ResetType.MIXED;
 	private Text anySha1;
@@ -201,16 +201,12 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 				}
 			}
 		});
-		IDialogSettings settings = Activator.getDefault().getDialogSettings();
-		if (settings.get(RESET_TYPE_SETTING) != null) {
-			resetType = ResetType.valueOf(settings.get(RESET_TYPE_SETTING));
-		}
 		createResetButton(g,
 				UIText.ResetTargetSelectionDialog_ResetTypeSoftButton,
 				ResetType.SOFT);
 		createResetButton(g,
 				UIText.ResetTargetSelectionDialog_ResetTypeMixedButton,
-				ResetType.MIXED);
+				ResetType.MIXED).setSelection(true);
 		createResetButton(g,
 				UIText.ResetTargetSelectionDialog_ResetTypeHardButton,
 				ResetType.HARD);
@@ -227,7 +223,6 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 					resetType = type;
 			}
 		});
-		button.setSelection(type == resetType);
 		return button;
 	}
 
@@ -266,12 +261,12 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	@Override
 	protected void okPressed() {
 		if (resetType == ResetType.HARD) {
-			if (!CommandConfirmation.confirmHardReset(getShell(), repo)) {
+			if (!MessageDialog.openQuestion(getShell(),
+					UIText.ResetTargetSelectionDialog_ResetQuestion,
+					UIText.ResetTargetSelectionDialog_ResetConfirmQuestion)) {
 				return;
 			}
 		}
-		IDialogSettings settings = Activator.getDefault().getDialogSettings();
-		settings.put(RESET_TYPE_SETTING, resetType.name());
 		super.okPressed();
 	}
 

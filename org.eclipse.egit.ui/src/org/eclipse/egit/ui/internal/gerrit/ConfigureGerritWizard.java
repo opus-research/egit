@@ -1,13 +1,10 @@
 /*******************************************************************************
- * Copyright (C) 2012, 2016 Stefan Lay <stefan.lay@sap.com> and others
+ * Copyright (C) 2012, Stefan Lay <stefan.lay@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 493935
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.gerrit;
 
@@ -39,8 +36,6 @@ public class ConfigureGerritWizard extends Wizard {
 	private final String remoteName;
 	private RemoteConfig remoteConfig;
 
-	private Repository repository;
-
 	/**
 	 * @param repository the repository
 	 * @param remoteName the name of the remote in the configuration
@@ -62,7 +57,7 @@ public class ConfigureGerritWizard extends Wizard {
 		};
 		this.config = repository.getConfig();
 		this.remoteName = remoteName;
-		this.repository = repository;
+
 	}
 
 	@Override
@@ -120,11 +115,10 @@ public class ConfigureGerritWizard extends Wizard {
 			gerritConfiguration.setErrorMessage(e.getMessage());
 			return false;
 		}
-		GerritDialogSettings.updateRemoteConfig(repository, remoteConfig);
 		return true;
 	}
 
-	private void configureRemoteSection() {
+	private void configureRemoteSection() throws URISyntaxException {
 		GerritUtil.configurePushURI(remoteConfig, gerritConfiguration.getURI());
 		GerritUtil.configurePushRefSpec(remoteConfig,
 				gerritConfiguration.getBranch());
