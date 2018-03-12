@@ -11,6 +11,8 @@
  *    Stefan Lay (SAP AG) - initial implementation
  *    Yann Simon <yann.simon.fr@gmail.com> - implementation of getHeadTypedElement
  *    Robin Stocker <robin@nibor.org>
+ *    Laurent Goubet <laurent.goubet@obeo.fr>
+ *    Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
