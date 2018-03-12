@@ -485,8 +485,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 
 	private static void createTag(String projectName, String tagName)
 			throws Exception {
-		// TODO use externalized Strings here
-		showDialog(projectName, "Team", "Advanced", "Tag...");
+		showDialog(projectName, "Team", "Tag...");
 
 		bot.shell("Create new tag").bot().activeShell();
 		bot.text(0).setFocus();
