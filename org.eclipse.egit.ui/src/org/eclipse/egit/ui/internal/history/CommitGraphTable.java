@@ -230,8 +230,9 @@ class CommitGraphTable {
 						Ref ref = commit.getRef(i);
 						Point textSpan = renderer.getRefHSpan(ref);
 						if ((textSpan != null)
-								&& (relativeX >= textSpan.x && relativeX <= textSpan.y))
+								&& (relativeX >= textSpan.x && relativeX <= textSpan.y)) {
 							showHover(ref, e);
+						}
 					}
 				}
 			}
