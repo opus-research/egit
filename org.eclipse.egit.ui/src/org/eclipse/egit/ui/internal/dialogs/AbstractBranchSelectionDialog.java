@@ -13,8 +13,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import static org.eclipse.egit.ui.internal.CommonUtils.STRING_ASCENDING_COMPARATOR;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +38,6 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -238,9 +235,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 
 			}
 		});
-
-		branchTree.setComparator(new ViewerComparator(
-				STRING_ASCENDING_COMPARATOR));
 
 		createCustomArea(parent);
 
