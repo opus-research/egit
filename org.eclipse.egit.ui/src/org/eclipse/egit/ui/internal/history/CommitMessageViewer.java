@@ -4,7 +4,6 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2011, Stefan Lay <stefan.lay@sap.com>
- * Copyright (C) 2014, Marc-Andre Laperle <marc-andre.laperle@ericsson.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -122,12 +121,6 @@ class CommitMessageViewer extends SourceViewer implements
 	private ListenerHandle refsChangedListener;
 
 	private StyleRange[] styleRanges;
-
-	private BooleanPrefAction showTagSequencePrefAction;
-
-	private BooleanPrefAction wrapCommentsPrefAction;
-
-	private BooleanPrefAction fillParagraphsPrefAction;
 
 	CommitMessageViewer(final Composite parent, final IPageSite site, IWorkbenchPartSite partSite) {
 		super(parent, null, SWT.H_SCROLL | SWT.V_SCROLL | SWT.READ_ONLY);
@@ -248,35 +241,29 @@ class CommitMessageViewer extends SourceViewer implements
 
 		IPersistentPreferenceStore pstore = (IPersistentPreferenceStore) store;
 
-		showTagSequencePrefAction = new BooleanPrefAction(pstore,
-				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
-				UIText.ResourceHistory_ShowTagSequence) {
+		Action showTagSequence = new BooleanPrefAction(pstore, UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, UIText.ResourceHistory_ShowTagSequence) {
 			@Override
 			protected void apply(boolean value) {
 				// nothing, just toggle
 			}
 		};
-		mgr.add(showTagSequencePrefAction);
+		mgr.add(showTagSequence);
 
-		wrapCommentsPrefAction = new BooleanPrefAction(pstore,
-				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
-				UIText.ResourceHistory_toggleCommentWrap) {
+		Action wrapComments = new BooleanPrefAction(pstore, UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP, UIText.ResourceHistory_toggleCommentWrap) {
 			@Override
 			protected void apply(boolean value) {
 				// nothing, just toggle
 			}
 		};
-		mgr.add(wrapCommentsPrefAction);
+		mgr.add(wrapComments);
 
-		fillParagraphsPrefAction = new BooleanPrefAction(pstore,
-				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL,
-				UIText.ResourceHistory_toggleCommentFill) {
+		Action fillParagraphs = new BooleanPrefAction(pstore, UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL, UIText.ResourceHistory_toggleCommentFill) {
 			@Override
 			protected void apply(boolean value) {
 				// nothing, just toggle
 			}
 		};
-		mgr.add(fillParagraphsPrefAction);
+		mgr.add(fillParagraphs);
 
 	}
 
@@ -347,10 +334,6 @@ class CommitMessageViewer extends SourceViewer implements
 		if (refsChangedListener != null)
 			refsChangedListener.remove();
 		refsChangedListener = null;
-		showTagSequencePrefAction.dispose();
-		wrapCommentsPrefAction.dispose();
-		fillParagraphsPrefAction.dispose();
-
 		super.handleDispose();
 	}
 
