@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,9 +9,6 @@
 package org.eclipse.egit.core.synchronize;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,11 +26,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
-import org.eclipse.jgit.treewalk.filter.OrTreeFilter;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Simple and thin tree cache for git meta data about resources in repository.
@@ -44,78 +37,36 @@ class GitSyncCache {
 
 	public static GitSyncCache getAllData(GitSynchronizeDataSet gsds,
 			IProgressMonitor monitor) {
-		Map<GitSynchronizeData, Collection<String>> updateRequests = new HashMap<GitSynchronizeData, Collection<String>>();
-		for (GitSynchronizeData data : gsds)
-			updateRequests.put(data, Collections.<String> emptyList());
-		return getAllData(updateRequests, monitor);
-	}
-
-	public static GitSyncCache getAllData(
-			Map<GitSynchronizeData, Collection<String>> updateRequests,
-			IProgressMonitor monitor) {
 		GitSyncCache cache = new GitSyncCache();
-		SubMonitor m = SubMonitor.convert(monitor, updateRequests.size());
 
-		for (Entry<GitSynchronizeData, Collection<String>> entry : updateRequests
-				.entrySet()) {
-			cache.merge(getAllData(entry.getKey(), entry.getValue()));
+		SubMonitor m = SubMonitor.convert(monitor, gsds.size());
+		for (GitSynchronizeData gsd : gsds) {
+			Repository repo = gsd.getRepository();
+			ObjectId baseTree = getTree(gsd.getSrcRevCommit());
+			ObjectId remoteTree = getTree(gsd.getDstRevCommit());
+			GitSyncObjectCache repoCache = cache
+					.put(repo, baseTree, remoteTree);
+
+			loadDataFromGit(gsd, repoCache);
 			m.worked(1);
 		}
-
 		m.done();
+
 		return cache;
-	}
-
-	private static GitSyncCache getAllData(GitSynchronizeData gsd,
-			Collection<String> paths) {
-		GitSyncCache cache = new GitSyncCache();
-		TreeFilter filter = paths.isEmpty() ? null : createPathFilter(paths);
-
-		Repository repo = gsd.getRepository();
-		ObjectId baseTree = getTree(gsd.getSrcRevCommit());
-		ObjectId remoteTree = getTree(gsd.getDstRevCommit());
-		GitSyncObjectCache repoCache = cache.put(repo, baseTree, remoteTree);
-
-		TreeFilter gsdFilter = gsd.getPathFilter();
-		if (filter == null)
-			loadDataFromGit(gsd, gsdFilter, repoCache);
-		else if (gsdFilter == null)
-			loadDataFromGit(gsd, filter, repoCache);
-		else
-			loadDataFromGit(gsd, AndTreeFilter.create(filter, gsdFilter),
-					repoCache);
-		return cache;
-	}
-
-	private static TreeFilter createPathFilter(Collection<String> paths) {
-		// do not use PathFilterGroup to create the filter, see bug 362430
-		List<TreeFilter> filters = new ArrayList<TreeFilter>(paths.size());
-		for (String path : paths) {
-			if (path.length() == 0)
-				return null;
-			filters.add(PathFilter.create(path));
-		}
-		if (filters.size() == 1)
-			return filters.get(0);
-		return OrTreeFilter.create(filters);
 	}
 
 	private static void loadDataFromGit(GitSynchronizeData gsd,
-			TreeFilter filter, GitSyncObjectCache repoCache) {
+			GitSyncObjectCache repoCache) {
 		Repository repo = gsd.getRepository();
 		TreeWalk tw = new TreeWalk(repo);
-		if (filter != null)
-			tw.setFilter(filter);
+		if (gsd.getPathFilter() != null)
+			tw.setFilter(gsd.getPathFilter());
 
 		try {
 			// setup local tree
 			if (gsd.shouldIncludeLocal()) {
 				tw.addTree(new FileTreeIterator(repo));
-				if (filter != null)
-					tw.setFilter(AndTreeFilter.create(filter,
-							new NotIgnoredFilter(0)));
-				else
-					tw.setFilter(new NotIgnoredFilter(0));
+				tw.setFilter(new NotIgnoredFilter(0));
 			} else if (gsd.getSrcRevCommit() != null)
 				tw.addTree(gsd.getSrcRevCommit().getTree());
 			else
