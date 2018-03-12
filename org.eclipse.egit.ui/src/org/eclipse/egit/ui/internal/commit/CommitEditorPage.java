@@ -338,9 +338,8 @@ public class CommitEditorPage extends FormPage {
 			}
 
 		};
-		if ((toolkit.getBorderStyle() & SWT.BORDER) == 0)
-			textContent.setData(FormToolkit.KEY_DRAW_BORDER,
-					FormToolkit.TEXT_BORDER);
+		textContent.setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TEXT_BORDER);
 		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 80).grab(true, true)
 				.applyTo(textContent);
 		textContent.getTextWidget().setEditable(false);
