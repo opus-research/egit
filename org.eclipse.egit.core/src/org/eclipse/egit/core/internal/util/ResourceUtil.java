@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, 2015 Laurent Goubet <laurent.goubet@obeo.fr>
+ * Copyright (C) 2012, 2013 Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *
  * All rights reserved. This program and the accompanying materials
@@ -32,7 +32,6 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.IModelProviderDescriptor;
 import org.eclipse.core.resources.mapping.ModelProvider;
-import org.eclipse.core.resources.mapping.RemoteResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceMappingContext;
 import org.eclipse.core.runtime.CoreException;
@@ -46,10 +45,6 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
-import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.team.core.RepositoryProvider;
@@ -72,12 +67,11 @@ public class ResourceUtil {
 	 * @return the resources, or null
 	 */
 	public static IResource getResourceForLocation(IPath location) {
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		URI uri = URIUtil.toURI(location);
-		IFile file = getFileForLocationURI(root, uri);
-		if (file != null)
+		IFile file = getFileForLocation(location);
+		if (file != null) {
 			return file;
-		return getContainerForLocationURI(root, uri);
+		}
+		return getContainerForLocation(location);
 	}
 
 	/**
@@ -92,8 +86,33 @@ public class ResourceUtil {
 	 */
 	public static IFile getFileForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IFile file = root.getFileForLocation(location);
+		if (file == null) {
+			return null;
+		}
+		if (isValid(file)) {
+			return file;
+		}
 		URI uri = URIUtil.toURI(location);
 		return getFileForLocationURI(root, uri);
+	}
+
+	/**
+	 * sort out closed, linked or not shared resources
+	 *
+	 * @param resource
+	 * @return true if the resource is shared with git, not a link and
+	 *         accessible in Eclipse
+	 */
+	private static boolean isValid(IResource resource) {
+		return resource.isAccessible()
+				&& !resource.isLinked(IResource.CHECK_ANCESTORS)
+				&& isSharedWithGit(resource);
+	}
+
+	private static boolean isSharedWithGit(IResource resource) {
+		return RepositoryProvider.getProvider(resource.getProject(),
+				GitProvider.ID) != null;
 	}
 
 	/**
@@ -108,6 +127,13 @@ public class ResourceUtil {
 	 */
 	public static IContainer getContainerForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IContainer dir = root.getContainerForLocation(location);
+		if (dir == null) {
+			return null;
+		}
+		if (isValid(dir)) {
+			return dir;
+		}
 		URI uri = URIUtil.toURI(location);
 		return getContainerForLocationURI(root, uri);
 	}
@@ -166,7 +192,7 @@ public class ResourceUtil {
 			File f = new Path(repository.getWorkTree().getAbsolutePath())
 					.append((repoRelativePath)).toFile();
 			return FS.DETECTED.isSymLink(f);
-		} catch (@SuppressWarnings("unused") IOException e) {
+		} catch (IOException e) {
 			return false;
 		}
 	}
@@ -264,12 +290,12 @@ public class ResourceUtil {
 		int shortestPathSegmentCount = Integer.MAX_VALUE;
 		T shortestPath = null;
 		for (T resource : resources) {
-			if (!resource.exists())
+			if (!resource.exists()) {
 				continue;
-			RepositoryProvider provider = RepositoryProvider.getProvider(
-					resource.getProject(), GitProvider.ID);
-			if (provider == null)
+			}
+			if (!isSharedWithGit(resource)) {
 				continue;
+			}
 			IPath fullPath = resource.getFullPath();
 			int segmentCount = fullPath.segmentCount();
 			if (segmentCount < shortestPathSegmentCount) {
@@ -326,46 +352,6 @@ public class ResourceUtil {
 			}
 		}
 		return mappings.toArray(new ResourceMapping[mappings.size()]);
-	}
-
-	/**
-	 * The model providers need information about the remote sides to properly
-	 * detect whether a given file is part of a logical model or not. This will
-	 * prepare the RemoteResourceMappingContext corresponding to the given
-	 * source branch ("ours" side of the comparison, {@code leftRev} or the work
-	 * tree, depending on the state of {@code inclueLocal}) and the given
-	 * destination branch ("theirs" side, {@code rightRev}). The common ancestor
-	 * ("base" side) for this comparison will be inferred as the first common
-	 * ancestor of {@code leftRev} and {@code rightRev}.
-	 *
-	 * @param repository
-	 *            The repository from which we're currently comparing or
-	 *            synchronizing files.
-	 * @param leftRev
-	 *            Left revision of the comparison (usually the local or "new"
-	 *            revision). Won't be used if <code>includeLocal</code> is
-	 *            <code>true</code>.
-	 * @param rightRev
-	 *            Right revision of the comparison (usually the "old" revision).
-	 * @param includeLocal
-	 *            <code>true</code> if we are to consider local data (work tree)
-	 *            as being the source of this comparison. <code>false</code> if
-	 *            we are to use the data from <code>leftRev</code> for that.
-	 * @return a {@link RemoteResourceMappingContext} ready for use by the model
-	 *         providers.
-	 * @throws IOException
-	 */
-	public static RemoteResourceMappingContext prepareContext(
-			Repository repository, String leftRev, String rightRev,
-			boolean includeLocal) throws IOException {
-		GitSynchronizeData gsd = new GitSynchronizeData(repository, leftRev,
-				rightRev, includeLocal);
-		GitSynchronizeDataSet gsds = new GitSynchronizeDataSet(gsd);
-		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
-				gsds);
-		subscriber.init(new NullProgressMonitor());
-
-		return new GitSubscriberResourceMappingContext(subscriber, gsds);
 	}
 
 	/**
