@@ -1,22 +1,21 @@
 /*******************************************************************************
- * Copyright (C) 2009, Mykola Nikishov <mn@mn.com.ua>
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com >
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.core;
-
-import org.eclipse.team.core.ProjectSetCapability;
-import org.eclipse.team.core.RepositoryProviderType;
+package org.eclipse.egit.ui.internal.actions;
 
 /**
- * A Git repository provider type.
+ * Checkout all selected dirty files.
  */
-public final class GitProviderType extends RepositoryProviderType {
-	@Override
-	public ProjectSetCapability getProjectSetCapability() {
-		return new GitProjectSetCapability();
+public class DisconnectAction extends RepositoryAction {
+	/**
+	 *
+	 */
+	public DisconnectAction() {
+		super(ActionCommands.DISCONNECT_ACTION, new DisconnectActionHandler());
 	}
 }
