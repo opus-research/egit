@@ -32,7 +32,6 @@ import org.eclipse.ui.dialogs.PropertyPage;
  * Page exposing statistic data for elements that can adapt to a
  * {@link Repository} object.
  */
-@SuppressWarnings("restriction")
 public class RepositoryStatisticsPage extends PropertyPage {
 	private final NumberFormat bigFpFmt;
 
@@ -103,7 +102,6 @@ public class RepositoryStatisticsPage extends PropertyPage {
 				}
 				parent.pack();
 			} catch (IOException e) {
-				// ignore
 			}
 		}
 		return table;
