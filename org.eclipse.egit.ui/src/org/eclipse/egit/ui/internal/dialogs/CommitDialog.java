@@ -19,19 +19,25 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Assert;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
+import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -81,7 +87,6 @@ import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
 import org.eclipse.team.core.history.IFileHistoryProvider;
 import org.eclipse.team.core.history.IFileRevision;
-import org.eclipse.team.internal.ui.history.FileRevisionTypedElement;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
@@ -157,7 +162,7 @@ public class CommitDialog extends Dialog {
 				IDialogConstants.CANCEL_LABEL, false);
 	}
 
-	Text commitText;
+	CommitMessageArea commitText;
 	Text authorText;
 	Text committerText;
 	Button amendingButton;
@@ -186,19 +191,19 @@ public class CommitDialog extends Dialog {
 		label.setText(UIText.CommitDialog_CommitMessage);
 		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
 
-		commitText = new Text(container, SWT.MULTI | SWT.BORDER | SWT.V_SCROLL);
+		commitText = new CommitMessageArea(container, commitMessage);
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
 				.hint(600, 200).create());
 
 		// allow to commit with ctrl-enter
-		commitText.addKeyListener(new KeyAdapter() {
-			public void keyPressed(KeyEvent arg0) {
-				if (arg0.keyCode == SWT.CR
-						&& (arg0.stateMask & SWT.CONTROL) > 0) {
+		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent event) {
+				if (event.keyCode == SWT.CR
+						&& (event.stateMask & SWT.CONTROL) > 0) {
 					okPressed();
-				} else if (arg0.keyCode == SWT.TAB
-						&& (arg0.stateMask & SWT.SHIFT) == 0) {
-					arg0.doit = false;
+				} else if (event.keyCode == SWT.TAB
+						&& (event.stateMask & SWT.SHIFT) == 0) {
+					event.doit = false;
 					commitText.traverse(SWT.TRAVERSE_TAB_NEXT);
 				}
 			}
@@ -341,19 +346,16 @@ public class CommitDialog extends Dialog {
 
 		showUntrackedButton.setSelection(showUntracked);
 
-		showUntrackedButton.addSelectionListener(new SelectionListener() {
+		showUntrackedButton.addSelectionListener(new SelectionAdapter() {
 
 			public void widgetSelected(SelectionEvent e) {
 				showUntracked = showUntrackedButton.getSelection();
 				filesViewer.refresh(true);
 			}
 
-			public void widgetDefaultSelected(SelectionEvent e) {
-				// Empty
-			}
 		});
 
-		commitText.addModifyListener(new ModifyListener() {
+		commitText.getTextWidget().addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				updateSignedOffButton();
 				updateChangeIdButton();
@@ -505,42 +507,20 @@ public class CommitDialog extends Dialog {
 					return;
 				}
 				try {
-					ArrayList<GitIndex> changedIndexes = new ArrayList<GitIndex>();
+					List<IResource> filesToAdd = new ArrayList<IResource>();
 					for (Iterator<?> it = sel.iterator(); it.hasNext();) {
 						CommitItem commitItem = (CommitItem) it.next();
-
-						IProject project = commitItem.file.getProject();
-						RepositoryMapping map = RepositoryMapping.getMapping(project);
-
-						Repository repo = map.getRepository();
-						GitIndex index = null;
-						index = repo.getIndex();
-						String repoRelativePath = map.getRepoRelativePath(commitItem.file);
-						Entry entry = index.getEntry(repoRelativePath);
-						if (entry != null && entry.isModified(map.getWorkTree())) {
-							entry.update(new File(map.getWorkTree(), entry.getName()));
-							if (!changedIndexes.contains(index))
-								changedIndexes.add(index);
-							commitItem.status = UIText.CommitDialog_StatusModified;
-						} else if (entry == null) {
-							final Tree headTree = repo.mapTree(Constants.HEAD);
-							TreeEntry  headEntry = (headTree == null ? null : headTree.findBlobMember(repoRelativePath));
-							if (headEntry == null){
-								entry = index.add(map.getWorkTree(), new File(map.getWorkTree(), repoRelativePath));
-								if (!changedIndexes.contains(index))
-									changedIndexes.add(index);
-								commitItem.status = UIText.CommitDialog_StatusAdded;
-							}
-						}
+						filesToAdd.add(commitItem.file);
 					}
-					if (!changedIndexes.isEmpty()) {
-						for (GitIndex idx : changedIndexes) {
-							idx.write();
-						}
-						filesViewer.refresh(true);
+					AddToIndexOperation op = new AddToIndexOperation(filesToAdd);
+					op.execute(new NullProgressMonitor());
+					for (Iterator<?> it = sel.iterator(); it.hasNext();) {
+						CommitItem commitItem = (CommitItem) it.next();
+						commitItem.status = getFileStatus(commitItem.file);
 					}
-				} catch (IOException e) {
-
+					filesViewer.refresh(true);
+				} catch (CoreException e) {
+					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
 					return;
 				}
 			}
