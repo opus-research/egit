@@ -8,22 +8,19 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.jgit.lib.ObjectId.zeroId;
+import static org.eclipse.jgit.lib.Constants.OBJ_BLOB;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.Activator;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.osgi.util.NLS;
-import org.eclipse.team.core.variants.IResourceVariant;
 
 class GitRemoteFolder extends GitRemoteResource {
 
@@ -63,40 +60,42 @@ class GitRemoteFolder extends GitRemoteResource {
 		return getObjectId().hashCode() ^ getPath().hashCode();
 	}
 
-	GitRemoteResource[] members(IProgressMonitor monitor) throws IOException {
+	GitRemoteResource[] members(IProgressMonitor monitor) {
+		String path = getPath();
 		Repository repo = getRepo();
-		TreeWalk tw = new TreeWalk(repo);
-		int nth = tw.addTree(getObjectId());
+		RevCommit revCommit = getCommit();
+		List<GitRemoteResource> result = new ArrayList<GitRemoteResource>();
 
-		IProgressMonitor m = SubMonitor.convert(monitor);
-		m.beginTask(NLS.bind(CoreText.GitFolderResourceVariant_fetchingMembers,
-				this), tw.getTreeCount());
-
-		int i = 0;
-		List<IResourceVariant> result = new ArrayList<IResourceVariant>();
 		try {
+			TreeWalk tw;
+			if (path.length() > 0) {
+				tw = TreeWalk.forPath(repo, path, revCommit.getTree());
+			} else {
+				tw = new TreeWalk(repo);
+				tw.addTree(revCommit.getTree());
+			}
 			while (tw.next()) {
 				if (monitor.isCanceled())
-					throw new OperationCanceledException();
+					break;
 
-				ObjectId newObjectId = tw.getObjectId(nth);
-				String path = getPath() + "/" + tw.getPathString(); //$NON-NLS-1$
+				ObjectId objectId = tw.getObjectId(0);
+				if (ObjectId.zeroId().equals(objectId))
+					continue;
 
-				if (!zeroId().equals(newObjectId))
-					if (tw.isSubtree())
-						result.add(new GitRemoteFolder(repo, getCommit(),
-								newObjectId, path));
-					else
-						result.add(new GitRemoteFile(repo, getCommit(),
-								newObjectId, path));
+				GitRemoteResource obj = null;
+				int objectType = tw.getFileMode(0).getObjectType();
+				if (objectType == OBJ_BLOB)
+					obj = new GitRemoteFile(repo, revCommit, objectId, tw.getPathString());
+				else if (objectType == Constants.OBJ_TREE)
+					obj = new GitRemoteFolder(repo, revCommit, objectId, tw.getPathString());
 
-				if (i % 10 == 0)
-					m.worked(10);
-
-				i++;
+				if (obj != null)
+					result.add(obj);
 			}
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
 		} finally {
-			m.done();
+			monitor.done();
 		}
 
 		return result.toArray(new GitRemoteResource[result.size()]);

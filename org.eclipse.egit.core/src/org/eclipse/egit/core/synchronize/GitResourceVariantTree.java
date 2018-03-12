@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -56,11 +55,7 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 	public IResource[] roots() {
 		Set<IResource> roots = new HashSet<IResource>();
 		for (GitSynchronizeData gsd : gsds)
-			if (gsd.getPathFilter() == null)
-				roots.addAll(gsd.getProjects());
-			else
-				for (IContainer container : gsd.getIncludedPaths())
-					roots.add(container.getProject());
+			roots.addAll(gsd.getProjects());
 
 		return roots.toArray(new IResource[roots.size()]);
 	}
@@ -147,15 +142,7 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 
 		GitRemoteFolder gitVariant = (GitRemoteFolder) variant;
 
-		try {
-			return gitVariant.members(progress);
-		} catch (IOException e) {
-			throw new TeamException(NLS.bind(
-					CoreText.GitResourceVariantTree_couldNotFetchMembers,
-					gitVariant), e);
-		} finally {
-			progress.done();
-		}
+		return gitVariant.members(progress);
 	}
 
 	public IResourceVariant getResourceVariant(final IResource resource)
@@ -174,10 +161,16 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 			throws TeamException;
 
 	private IResourceVariant handleRepositoryRoot(final IResource resource,
-			Repository repo, RevCommit revCommit) {
-		String path = RepositoryMapping.findRepositoryMapping(repo)
-				.getRepoRelativePath(resource);
-		return new GitRemoteFolder(repo, revCommit, revCommit.getTree(), path);
+			Repository repo, RevCommit revCommit) /*throws TeamException*/ {
+//		try {
+		String path = RepositoryMapping.findRepositoryMapping(repo).getRepoRelativePath(resource);
+			return new GitRemoteFolder(repo, revCommit, revCommit.getTree(), path);
+//		} catch (IOException e) {
+//			throw new TeamException(
+//					NLS.bind(
+//							CoreText.GitResourceVariantTree_couldNotFindResourceVariant,
+//							resource), e);
+//		}
 	}
 
 	private TreeWalk initializeTreeWalk(Repository repo, String path) {

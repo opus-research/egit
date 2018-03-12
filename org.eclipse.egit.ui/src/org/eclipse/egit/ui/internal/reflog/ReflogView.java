@@ -61,7 +61,6 @@ import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.forms.widgets.Form;
@@ -200,8 +199,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 					return (Image) resourceManager.get(UIIcons.CLONEGIT);
 				if (comment.startsWith("rebase finished:")) //$NON-NLS-1$
 					return (Image) resourceManager.get(UIIcons.REBASE);
-				if (comment.startsWith("merge branch")) //$NON-NLS-1$
-					return (Image) resourceManager.get(UIIcons.MERGE);
 				return null;
 			}
 
@@ -253,21 +250,11 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			}
 		};
 
-		IWorkbenchPartSite site = getSite();
-		ISelectionService service = (ISelectionService) site
-				.getService(ISelectionService.class);
+		ISelectionService service = (ISelectionService) getSite().getService(
+				ISelectionService.class);
 		service.addPostSelectionListener(selectionChangedListener);
 
-		// Use current selection to populate reflog view
-		ISelection selection = service.getSelection();
-		if (selection != null && !selection.isEmpty()) {
-			IWorkbenchPart part = site.getPage().getActivePart();
-			if (part != null)
-				selectionChangedListener.selectionChanged(part, selection);
-		}
-
-		site.setSelectionProvider(refLogTableTreeViewer);
-
+		getSite().setSelectionProvider(refLogTableTreeViewer);
 		addRefsChangedListener = Repository.getGlobalListenerList().addRefsChangedListener(this);
 	}
 
@@ -314,19 +301,10 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 				repository = repoNode.getRepository();
 			}
 
-			showReflogFor(repository);
-		}
-	}
-
-	/**
-	 * Defines the repository for the reflog to show.
-	 *
-	 * @param repository
-	 */
-	public void showReflogFor(Repository repository) {
-		if (repository != null) {
-			refLogTableTreeViewer.setInput(repository);
-			form.setText(getRepositoryName(repository));
+			if (repository != null) {
+				refLogTableTreeViewer.setInput(repository);
+				form.setText(getRepositoryName(repository));
+			}
 		}
 	}
 

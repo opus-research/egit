@@ -97,9 +97,6 @@ public class UIText extends NLS {
 	public static String AddToIndexCommand_addingFilesFailed;
 
 	/** */
-	public static String RemoveFromIndexAction_removingFiles;
-
-	/** */
 	public static String BlameInformationControl_Author;
 
 	/** */
@@ -448,9 +445,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_OpenMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_PreferencesLink;
-
-	/** */
 	public static String GitHistoryPage_ProjectType;
 
 	/** */
@@ -574,9 +568,6 @@ public class UIText extends NLS {
 	public static String GitProjectPropertyPage_LabelWorkdir;
 
 	/** */
-	public static String GitProjectPropertyPage_UnableToGetCommit;
-
-	/** */
 	public static String GitProjectPropertyPage_ValueEmptyRepository;
 
 	/** */
@@ -674,18 +665,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseTargetSelectionDialog_RebaseTitle;
-
-	/** */
-	public static String ReplaceTargetSelectionDialog_ReplaceButton;
-
-	/** */
-	public static String ReplaceTargetSelectionDialog_ReplaceMessage;
-
-	/** */
-	public static String ReplaceTargetSelectionDialog_ReplaceTitle;
-
-	/** */
-	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
 
 	/** */
 	public static String RepositoryPropertySource_EditConfigButton;
@@ -811,24 +790,6 @@ public class UIText extends NLS {
 	public static String CherryPickHandler_CherryPickConflictsTitle;
 
 	/** */
-	public static String CherryPickHandler_CherryPickFailedMessage;
-
-	/** */
-	public static String CherryPickHandler_CouldNotDeleteFile;
-
-	/** */
-	public static String CherryPickHandler_ErrorMsgTemplate;
-
-	/** */
-	public static String CherryPickHandler_IndexDirty;
-
-	/** */
-	public static String CherryPickHandler_unknown;
-
-	/** */
-	public static String CherryPickHandler_WorktreeDirty;
-
-	/** */
 	public static String CherryPickOperation_Failed;
 
 	/** */
@@ -908,9 +869,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoryAction_multiRepoSelectionTitle;
-
-	/** */
-	public static String RepositoryCommit_UserAndDate;
 
 	/** */
 	public static String RepositorySearchDialog_browse;
@@ -2083,9 +2041,6 @@ public class UIText extends NLS {
 	public static String PushResultTable_columnMode;
 
 	/** */
-	public static String PushResultTable_MesasgeText;
-
-	/** */
 	public static String PushResultTable_statusUnexpected;
 
 	/** */
@@ -2263,7 +2218,13 @@ public class UIText extends NLS {
 	public static String FetchResultDialog_title;
 
 	/** */
-	public static String FetchResultTable_counterCommits;
+	public static String FetchResultTable_columnDst;
+
+	/** */
+	public static String FetchResultTable_columnSrc;
+
+	/** */
+	public static String FetchResultTable_columnStatus;
 
 	/** */
 	public static String FetchResultTable_statusDetailCouldntLock;
@@ -2938,9 +2899,6 @@ public class UIText extends NLS {
 	public static String MultiPullResultDialog_OkStatus;
 
 	/** */
-	public static String MultiPullResultDialog_FailedStatus;
-
-	/** */
 	public static String MultiPullResultDialog_OverallStatusColumnHeader;
 
 	/** */
@@ -2966,12 +2924,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIIcons_errorLoadingPluginImage;
-
-	/** */
-	public static String UIUtils_CollapseAll;
-
-	/** */
-	public static String UIUtils_ExpandAll;
 
 	/** */
 	public static String UIUtils_PressShortcutMessage;
@@ -3095,12 +3047,6 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_repository;
 
 	/** */
-	public static String CommitEditor_couldNotShowRepository;
-
-	/** */
-	public static String CommitEditor_showGitRepo;
-
-	/** */
 	public static String CommitEditor_TitleHeader;
 
 	/** */
@@ -3195,9 +3141,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_fetchChangesFromRemote;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
@@ -3345,15 +3288,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefreshPreferencesPage_RefreshWhenIndexChange;
-
-	/** */
-	public static String RefUpdateElement_CommitCountDecoration;
-
-	/** */
-	public static String RefUpdateElement_CommitRangeDecoration;
-
-	/** */
-	public static String RefUpdateElement_UrisDecoration;
 
 	/** */
 	public static String RemoteSelectionCombo_destinationName;
@@ -3815,9 +3749,6 @@ public class UIText extends NLS {
 	public static String GitActionContributor_Pull;
 
 	/** */
-	public static String GitLabelProvider_UnableToRetrieveLabel;
-
-	/** */
 	public static String GitVariableResolver_InternalError;
 
 	/** */
@@ -3831,9 +3762,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_UnstagedChanges;
-
-	/** */
-	public static String StagingView_ShowFileNamesFirst;
 
 	/** */
 	public static String StagingView_StagedChanges;
@@ -3876,9 +3804,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_OpenNewCommits;
-
-	/** */
-	public static String StagingView_ColumnLayout;
 
 	/** */
 	public static String StagingView_IndexDiffReload;
