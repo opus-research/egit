@@ -2779,9 +2779,6 @@ public class UIText extends NLS {
 	public static String GitImportWizard_WizardTitle;
 
 	/** */
-	public static String GitScopeOperation_GitScopeManager;
-
-	/** */
 	public static String GitSelectRepositoryPage_AddButton;
 
 	/** */
@@ -3045,12 +3042,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitActionHandler_calculatingChanges;
-
-	/** */
-	public static String CommitActionHandler_errorBuildingScope;
-
-	/** */
-	public static String CommitActionHandler_lookingChanges;
 
 	/** */
 	public static String CommitActionHandler_repository;
