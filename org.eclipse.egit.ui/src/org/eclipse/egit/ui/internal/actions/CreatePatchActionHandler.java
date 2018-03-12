@@ -34,6 +34,6 @@ public class CreatePatchActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return getRepository() != null && getSelectedResources().length == 1;
+		return getRepository() != null;
 	}
 }
