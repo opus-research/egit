@@ -874,9 +874,6 @@ public class UIText extends NLS {
 	public static String CompareTargetSelectionDialog_CompareTitle;
 
 	/** */
-	public static String CompareTargetSelectionDialog_CompareTitleEmptyPath;
-
-	/** */
 	public static String CompareTargetSelectionDialog_WindowTitle;
 
 	/** */
