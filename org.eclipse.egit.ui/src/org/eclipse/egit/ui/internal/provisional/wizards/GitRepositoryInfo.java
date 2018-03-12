@@ -64,6 +64,7 @@ public class GitRepositoryInfo {
 			return pushUri;
 		}
 	}
+
 	private List<PushInfo> pushInfos = new ArrayList<PushInfo>();
 
 	/** */
@@ -115,6 +116,7 @@ public class GitRepositoryInfo {
 			return value;
 		}
 	}
+
 	private final List<RepositoryConfigProperty> repositoryConfigProperties = new ArrayList<RepositoryConfigProperty>();
 
 
