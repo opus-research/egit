@@ -385,6 +385,9 @@ public class UIText extends NLS {
 	public static String RepositoryAction_multiRepoSelectionTitle;
 
 	/** */
+	public static String RepositoryActionHandler_CouldNotGetSelection_message;
+
+	/** */
 	public static String RepositorySearchDialog_browse;
 
 	/** */
@@ -1229,9 +1232,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfirmationPage_title;
-
-	/** */
-	public static String CreateBranchPage_InvalidNameMessage;
 
 	/** */
 	public static String CreateBranchPage_BranchAlreadyExistsMessage;
