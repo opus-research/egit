@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +28,9 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.JFacePreferences;
@@ -44,6 +47,7 @@ import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
@@ -62,6 +66,8 @@ class GitSynchronizeWizardPage extends WizardPage {
 	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace()
 			.getRoot();
 
+	private boolean forceFetch;
+
 	private boolean shouldIncludeLocal = false;
 
 	private TreeViewer treeViewer;
@@ -77,7 +83,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 	GitSynchronizeWizardPage() {
 		super(GitSynchronizeWizardPage.class.getName());
 		setTitle(UIText.GitBranchSynchronizeWizardPage_title);
-		setDescription(UIText.GitBranchSynchronizeWizardPage_description);
+		setMessage(UIText.GitBranchSynchronizeWizardPage_description, WARNING);
 	}
 
 	public void createControl(Composite parent) {
@@ -197,7 +203,22 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 			@Override
 			protected CellEditor getCellEditor(Object element) {
-				Set<String> refs = ((Repository) element).getAllRefs().keySet();
+				Repository repo = (Repository) element;
+				List<String> refs = new LinkedList<String>(repo.getAllRefs()
+						.keySet());
+
+				List<Ref> additionalRefs;
+				try {
+					additionalRefs = repo.getRefDatabase().getAdditionalRefs();
+				} catch (IOException e) {
+					additionalRefs = null;
+				}
+				if (additionalRefs != null)
+					for (Ref ref : additionalRefs)
+						refs.add(ref.getName());
+
+				Collections.sort(refs, CommonUtils.STRING_ASCENDING_COMPARATOR);
+
 				branchesEditor.setItems(refs.toArray(new String[refs.size()]));
 
 				return branchesEditor;
@@ -260,11 +281,26 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 		Composite buttonsComposite = new Composite(composite, SWT.NONE);
 		layout = new GridLayout(4, false);
+		layout.numColumns = 1;
 		layout.marginWidth = 0;
 		layout.marginHeight = 0;
 		buttonsComposite.setLayout(layout);
 		buttonsComposite.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).create());
+
+		final Button fetchChanges = new Button(buttonsComposite, SWT.CHECK);
+		fetchChanges
+		.setText(UIText.GitBranchSynchronizeWizardPage_fetchChangesFromRemote);
+		fetchChanges.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				forceFetch = fetchChanges.getSelection();
+			}
+		});
+		fetchChanges.setLayoutData(GridDataFactory.fillDefaults()
+				.grab(true, false).create());
+		fetchChanges.setSelection(Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH));
 
 		final Button includeLocal = new Button(buttonsComposite, SWT.CHECK);
 		includeLocal
@@ -312,6 +348,10 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 	boolean shouldIncludeLocal() {
 		return shouldIncludeLocal;
+	}
+
+	boolean forceFetch() {
+		return forceFetch;
 	}
 
 }

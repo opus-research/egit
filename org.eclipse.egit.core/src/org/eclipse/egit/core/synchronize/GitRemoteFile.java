@@ -1,17 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2010 IBM Corporation and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *     IBM Corporation - initial API and implementation
- *     Dariusz Luksza <dariusz@luksza.org>
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
-
-import java.io.IOException;
 
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -21,13 +16,10 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.TeamException;
 
-/**
- * This is a representation of a file's blob in some branch.
- */
-public class GitBlobResourceVariant extends GitResourceVariant {
+class GitRemoteFile extends GitRemoteResource {
 
-	GitBlobResourceVariant(Repository repo, RevCommit revCommit,
-			ObjectId objectId, String path) throws IOException {
+	GitRemoteFile(Repository repo, RevCommit revCommit,
+			ObjectId objectId, String path) {
 		super(repo, revCommit, objectId, path);
 	}
 
@@ -35,9 +27,30 @@ public class GitBlobResourceVariant extends GitResourceVariant {
 		return false;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this)
+			return true;
+
+		if (obj instanceof GitRemoteFile) {
+			GitRemoteFile that = (GitRemoteFile) obj;
+
+			return getPath().equals(that.getPath())
+					&& getObjectId().equals(that.getObjectId());
+		}
+
+		return false;
+	}
+
+	@Override
 	public IStorage getStorage(IProgressMonitor monitor) throws TeamException {
-		return new CommitBlobStorage(getRepository(), getPath(),
-					getObjectId(), getRevCommit());
+		return new CommitBlobStorage(getRepo(), getCachePath(), getObjectId(),
+				getCommit());
+	}
+
+	@Override
+	public int hashCode() {
+		return getObjectId().hashCode() ^ getPath().hashCode();
 	}
 
 }

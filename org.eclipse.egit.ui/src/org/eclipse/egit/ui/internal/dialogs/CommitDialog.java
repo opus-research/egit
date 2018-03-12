@@ -35,6 +35,7 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -48,6 +49,10 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.contentassist.ContentAssistant;
+import org.eclipse.jface.text.contentassist.IContentAssistant;
+import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
@@ -67,7 +72,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.swt.SWT;
@@ -269,7 +273,6 @@ public class CommitDialog extends TitleAreaDialog {
 		}
 	}
 
-
 	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
 
 	FormToolkit toolkit;
@@ -293,8 +296,6 @@ public class CommitDialog extends TitleAreaDialog {
 	CheckboxTableViewer filesViewer;
 
 	Section filesSection;
-
-	ObjectId originalChangeId;
 
 	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
@@ -510,27 +511,30 @@ public class CommitDialog extends TitleAreaDialog {
 		final ToolItem dropDownItem = new ToolItem(dropDownBar, SWT.PUSH);
 		dropDownItem.setImage(PlatformUI.getWorkbench().getSharedImages()
 				.getImage("IMG_LCL_RENDERED_VIEW_MENU")); //$NON-NLS-1$
+		final Menu menu = new Menu(dropDownBar);
+		dropDownItem.addDisposeListener(new DisposeListener() {
+
+			public void widgetDisposed(DisposeEvent e) {
+				menu.dispose();
+			}
+		});
+		MenuItem preferencesItem = new MenuItem(menu, SWT.PUSH);
+		preferencesItem.setText(UIText.CommitDialog_ConfigureLink);
+		preferencesItem.addSelectionListener(new SelectionAdapter() {
+
+			public void widgetSelected(SelectionEvent e) {
+				String[] pages = new String[] { UIPreferences.PAGE_COMMIT_PREFERENCES };
+				PreferenceDialog dialog = PreferencesUtil
+						.createPreferenceDialogOn(getShell(), pages[0], pages,
+								null);
+				if (Window.OK == dialog.open())
+					commitText.reconfigure();
+			}
+
+		});
 		dropDownItem.addSelectionListener(new SelectionAdapter() {
 
 			public void widgetSelected(SelectionEvent e) {
-				Menu menu = new Menu(dropDownBar);
-				MenuItem preferencesItem = new MenuItem(menu, SWT.PUSH);
-				preferencesItem.setText(UIText.CommitDialog_ConfigureLink);
-				preferencesItem.addSelectionListener(new SelectionAdapter() {
-
-					public void widgetSelected(SelectionEvent e1) {
-						PreferenceDialog dialog = PreferencesUtil
-								.createPreferenceDialogOn(
-										getShell(),
-										UIPreferences.PAGE_COMMIT_PREFERENCES,
-										new String[] { UIPreferences.PAGE_COMMIT_PREFERENCES },
-										null);
-						if (Window.OK == dialog.open())
-							commitText.reconfigure();
-					}
-
-				});
-
 				Rectangle b = dropDownItem.getBounds();
 				Point p = dropDownItem.getParent().toDisplay(
 						new Point(b.x, b.y + b.height));
@@ -588,7 +592,28 @@ public class CommitDialog extends TitleAreaDialog {
 		messageSection.setTextClient(headerArea);
 
 		commitText = new SpellcheckableMessageArea(messageArea, commitMessage,
-				SWT.NONE);
+				SWT.NONE) {
+
+			protected IContentAssistant createContentAssistant(
+					ISourceViewer viewer) {
+				ContentAssistant assistant = new ContentAssistant();
+				assistant.enableAutoInsert(true);
+				Collection<String> paths = getFileList();
+				final CommitProposalProcessor processor = new CommitProposalProcessor(
+						paths.toArray(new String[paths.size()]));
+				viewer.getTextWidget().addDisposeListener(
+						new DisposeListener() {
+
+							public void widgetDisposed(DisposeEvent e) {
+								processor.dispose();
+							}
+						});
+				assistant.setContentAssistProcessor(processor,
+						IDocument.DEFAULT_CONTENT_TYPE);
+				return assistant;
+			}
+
+		};
 		commitText
 				.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TEXT_BORDER);
 		messageSection.setClient(messageArea);
@@ -597,6 +622,9 @@ public class CommitDialog extends TitleAreaDialog {
 		commitText.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, true).hint(size).minSize(size.x, minHeight)
 				.align(SWT.FILL, SWT.FILL).create());
+
+		UIUtils.addBulbDecorator(commitText.getTextWidget(),
+				UIText.CommitDialog_ContentAssist);
 
 		// allow to commit with ctrl-enter
 		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
@@ -640,10 +668,8 @@ public class CommitDialog extends TitleAreaDialog {
 		if (amending)
 			amendingItem.setEnabled(false); // if already set, don't allow any
 											// changes
-		else if (!amendAllowed) {
+		else if (!amendAllowed)
 			amendingItem.setEnabled(false);
-			originalChangeId = null;
-		}
 		amendingItem.setToolTipText(UIText.CommitDialog_AmendPreviousCommit);
 		Image amendImage = UIIcons.AMEND_COMMIT.createImage();
 		UIUtils.hookDisposal(amendingItem, amendImage);
@@ -814,12 +840,15 @@ public class CommitDialog extends TitleAreaDialog {
 			amendingItem.setEnabled(false);
 			showUntrackedItem.setSelection(false);
 			showUntrackedItem.setEnabled(false);
+			checkAllItem.setEnabled(false);
+			uncheckAllItem.setEnabled(false);
 
 			filesViewer.addCheckStateListener(new ICheckStateListener() {
 
 				public void checkStateChanged(CheckStateChangedEvent event) {
 					if (!event.getChecked())
 						filesViewer.setAllChecked(true);
+					updateFileSectionText();
 				}
 			});
 			filesViewer.setAllGrayed(true);
@@ -861,7 +890,13 @@ public class CommitDialog extends TitleAreaDialog {
 	private Menu getContextMenu() {
 		if (!allowToChangeSelection)
 			return null;
-		Menu menu = new Menu(filesViewer.getTable());
+		final Menu menu = new Menu(filesViewer.getTable());
+		filesViewer.getTable().addDisposeListener(new DisposeListener() {
+
+			public void widgetDisposed(DisposeEvent e) {
+				menu.dispose();
+			}
+		});
 		MenuItem item = new MenuItem(menu, SWT.PUSH);
 		item.setText(UIText.CommitDialog_AddFileOnDiskToIndex);
 		item.addListener(SWT.Selection, new Listener() {

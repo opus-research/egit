@@ -33,6 +33,9 @@ public class CoreText extends NLS {
 	public static String AssumeUnchangedOperation_writingIndex;
 
 	/** */
+	public static String CherryPickOperation_cherryPicking;
+
+	/** */
 	public static String CommitFileRevision_errorLookingUpPath;
 
 	/** */
@@ -198,6 +201,12 @@ public class CoreText extends NLS {
 	public static String CreateLocalBranchOperation_CreatingBranchMessage;
 
 	/** */
+	public static String CreatePatchOperation_commitRequired;
+
+	/** */
+	public static String CreatePatchOperation_repoRequired;
+
+	/** */
 	public static String IndexFileRevision_errorLookingUpPath;
 
 	/** */
@@ -225,6 +234,9 @@ public class CoreText extends NLS {
 	public static String PushOperation_InternalExceptionOccurredMessage;
 
 	/** */
+	public static String PushOperation_ExceptionOccurredDuringPushOnUriMessage;
+
+	/** */
 	public static String PushOperation_resultCancelled;
 
 	/** */
@@ -235,6 +247,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String AddToIndexOperation_failed;
+
+	/** */
+	public static String RemoveFromIndexOperation_failed;
+
+	/** */
+	public static String RevertCommitOperation_reverting;
 
 	/** */
 	public static String BranchOperation_performingBranch;
@@ -270,6 +288,18 @@ public class CoreText extends NLS {
 	public static String OperationNotYetExecuted;
 
 	/** */
+	public static String GitProjectSetCapability_InvalidTokensCount;
+
+	/** */
+	public static String GitProjectSetCapability_CloneToExistingDirectory;
+
+	/** */
+	public static String GitProjectSetCapability_ExportCouldNotGetBranch;
+
+	/** */
+	public static String GitProjectSetCapability_ExportNoRemote;
+
+	/** */
 	public static String IgnoreOperation_error;
 
 	/** */
@@ -289,6 +319,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitSubscriberMergeContext_FailedRefreshSyncView;
+
+	/** */
+	public static String GitProjectData_repositoryChangedJobName;
+
+	/** */
+	public static String GitProjectData_repositoryChangedTaskName;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
