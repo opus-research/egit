@@ -213,8 +213,16 @@
                label="%CompareWithCommitAction.label"
                menubarPath="compareWithMenu/gitCompareWithGroup">
          </action>
-	  </objectContribution>
-   	  <objectContribution
+         <action
+               class="org.eclipse.egit.ui.internal.actions.CreatePatchAction"
+               enablesFor="1"
+               id="org.eclipse.egit.ui.internal.actions.CreatePatchAction"
+               label="%CreatePatchAction.label"
+               menubarPath="team.main/group6"
+               tooltip="%CreatePatchAction.tooltip">
+         </action>
+      </objectContribution>
+      <objectContribution
          adaptable="true"
          id="org.eclipse.egit.ui.fileContributions"
          objectClass="org.eclipse.core.resources.IFile">
@@ -426,9 +434,18 @@
       </page>
       <page
             category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.ViewsPreferencePage"
-            id="org.eclipse.egit.ui.internal.preferences.ViewsPreferencePage"
-            name="%ViewsPreferencePage.name">
+            class="org.eclipse.egit.ui.internal.preferences.SynchronizePreferencePage"
+            id="org.eclipse.egit.ui.internal.preferences.SynchronizePreferencePage"
+            name="%SynchronizePreferencePage.name">
+         <keywordReference
+               id="org.eclipse.egit.ui.keyword.git">
+         </keywordReference>
+      </page>
+      <page
+            category="org.eclipse.egit.ui.GitPreferences"
+            class="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"
+            id="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"
+            name="%HistoryPreferencePage.name">
          <keywordReference
                id="org.eclipse.egit.ui.keyword.git">
          </keywordReference>
@@ -1453,6 +1470,24 @@
                </and>
          </activeWhen>
       </handler>
+      <handler
+            commandId="org.eclipse.ui.edit.rename">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand">
+         </class>
+         <activeWhen>
+             <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+         </activeWhen>
+      </handler>
    </extension>
    <extension
          point="org.eclipse.ui.views">
@@ -1685,7 +1720,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
+               commandId="org.eclipse.ui.edit.rename"
                icon="icons/obj16/editconfig.gif"
                label="%RepoViewRenameBranch.label"
                style="push">
@@ -3651,6 +3686,10 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.RenameBranch"
+            icon="icons/obj16/editconfig.gif">
+      </image>
+      <image
+            commandId="org.eclipse.ui.edit.rename"
             icon="icons/obj16/editconfig.gif">
       </image>
       <image
