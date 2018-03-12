@@ -1974,7 +1974,19 @@ public class UIText extends NLS {
 	public static String ConfigurationChecker_gitPrefixWarningMessage;
 
 	/** */
+	public static String ConfigurationChecker_gitPrefixWarningTitle;
+
+	/** */
+	public static String ConfigurationChecker_checkHomeDirectory;
+
+	/** */
 	public static String ConfigurationChecker_checkConfiguration;
+
+	/** */
+	public static String ConfigurationChecker_doNotShowAgain;
+
+	/** */
+	public static String ConfigurationChecker_doNotShowGitPrefixWarningAgain;
 
 	/** */
 	public static String ConfigurationChecker_homeNotSet;
@@ -3061,9 +3073,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
-
-	/** */
-	public static String DialogsPreferencePage_HideWarningGroupHeader;
 
 	/** */
 	public static String DialogsPreferencePage_HomeDirWarning;
