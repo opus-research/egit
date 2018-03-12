@@ -684,6 +684,32 @@
             %Theme_DiffHeadlineFont_description
          </description>
       </fontDefinition>
+      <colorDefinition
+        id="org.eclipse.egit.ui.IgnoredResourceForegroundColor"
+        categoryId="org.eclipse.egit.ui.GitTheme"
+        label="%Theme_IgnoredResourceForegroundColor_label"
+        value="COLOR_LIST_FOREGROUND">
+        <description>
+        %Theme_IgnoredResourceForegroundColor_description
+        </description>
+      </colorDefinition>
+      <colorDefinition
+        id="org.eclipse.egit.ui.IgnoredResourceBackgroundColor"
+        categoryId="org.eclipse.egit.ui.GitTheme"
+        label="%Theme_IgnoredResourceBackgroundColor_label"
+        value="COLOR_LIST_BACKGROUND">
+        <description>
+        %Theme_IgnoredResourceBackgroundColor_description
+        </description>
+      </colorDefinition>
+      <fontDefinition
+            categoryId="org.eclipse.egit.ui.GitTheme"
+            id="org.eclipse.egit.ui.IgnoredResourceFont"
+            label="%Theme_IgnoredResourceFont_label">
+        <description>
+        %Theme_IgnoredResourceFont_description
+        </description>
+      </fontDefinition>
    </extension>
 
 <!-- ********** QuickDiff text editor support ************** -->
@@ -1234,7 +1260,7 @@
       <handler
             commandId="org.eclipse.ui.edit.delete">
          <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteCommand">
+               class="org.eclipse.egit.ui.internal.repository.tree.command.RemoveOrDeleteRepositoryCommand">
          </class>
          <activeWhen>
             <and>
@@ -3319,7 +3345,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.ui.edit.delete"
+               commandId="org.eclipse.egit.ui.RepositoriesViewDelete"
                label="%RepoViewDeleteRepository.label"
                style="push">
             <visibleWhen
@@ -4314,6 +4340,10 @@
             icon="icons/obj16/changelog_obj.gif">
       </image>
       <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewDelete"
+            icon="icons/obj16/delete_obj.gif">
+      </image>
+      <image
             commandId="org.eclipse.egit.ui.RepositoriesViewRemove"
             icon="icons/obj16/clear.gif">
       </image>
@@ -4416,6 +4446,10 @@
       <image
             commandId="org.eclipse.egit.ui.team.NoAssumeUnchanged"
             icon="icons/obj16/no-assume-unchanged.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.DeleteBranch"
+            icon="icons/obj16/delete_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.RenameBranch"
