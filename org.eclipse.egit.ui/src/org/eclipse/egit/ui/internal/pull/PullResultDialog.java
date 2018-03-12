@@ -48,8 +48,6 @@ public class PullResultDialog extends Dialog {
 
 	private final PullResult result;
 
-	private final boolean hasUpdates;
-
 	/**
 	 * @param shell
 	 * @param repo
@@ -60,26 +58,6 @@ public class PullResultDialog extends Dialog {
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repo = repo;
 		this.result = result;
-		hasUpdates = hasFetchResults() || hasMergeResults()
-				|| hasRebaseResults();
-	}
-
-	private boolean hasFetchResults() {
-		final FetchResult fetchResult = result.getFetchResult();
-		return fetchResult != null
-				&& !fetchResult.getTrackingRefUpdates().isEmpty();
-	}
-
-	private boolean hasMergeResults() {
-		final MergeResult mergeResult = result.getMergeResult();
-		return mergeResult != null
-				&& mergeResult.getMergeStatus() != MergeStatus.ALREADY_UP_TO_DATE;
-	}
-
-	private boolean hasRebaseResults() {
-		final RebaseResult rebaseResult = result.getRebaseResult();
-		return rebaseResult != null
-				&& rebaseResult.getStatus() != Status.UP_TO_DATE;
 	}
 
 	@Override
@@ -95,8 +73,7 @@ public class PullResultDialog extends Dialog {
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				fetchResultGroup);
 		FetchResult fRes = result.getFetchResult();
-		if (hasFetchResults()) {
-			GridLayoutFactory.fillDefaults().applyTo(fetchResultGroup);
+		if (fRes != null && !fRes.getTrackingRefUpdates().isEmpty()) {
 			FetchResultDialog dlg = new FetchResultDialog(getParentShell(),
 					repo, fRes, result.getFetchedFrom());
 			Control fresult = dlg.createFetchResultTable(fetchResultGroup);
@@ -106,7 +83,6 @@ public class PullResultDialog extends Dialog {
 						.hint(SWT.DEFAULT, 130).applyTo(fresult);
 
 		} else {
-			GridLayoutFactory.swtDefaults().applyTo(fetchResultGroup);
 			Label noResult = new Label(fetchResultGroup, SWT.NONE);
 			if (result.getFetchedFrom().equals(".")) //$NON-NLS-1$
 				noResult
@@ -120,17 +96,17 @@ public class PullResultDialog extends Dialog {
 		Group mergeResultGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		mergeResultGroup
 				.setText(UIText.PullResultDialog_MergeResultGroupHeader);
+		GridLayoutFactory.fillDefaults().applyTo(mergeResultGroup);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				mergeResultGroup);
 		MergeResult mRes = result.getMergeResult();
 		RebaseResult rRes = result.getRebaseResult();
-		if (hasMergeResults()) {
-			GridLayoutFactory.fillDefaults().applyTo(mergeResultGroup);
+		if (mRes != null
+				&& mRes.getMergeStatus() != MergeStatus.ALREADY_UP_TO_DATE) {
 			MergeResultDialog dlg = new MergeResultDialog(getParentShell(),
 					repo, mRes);
 			dlg.createDialogArea(mergeResultGroup);
-		} else if (hasRebaseResults()) {
-			GridLayoutFactory.fillDefaults().applyTo(mergeResultGroup);
+		} else if (rRes != null && rRes.getStatus() != Status.UP_TO_DATE) {
 			switch (rRes.getStatus()) {
 			case OK:
 				// fall through
@@ -155,7 +131,6 @@ public class PullResultDialog extends Dialog {
 			Text statusText = new Text(mergeResultGroup, SWT.READ_ONLY);
 			statusText.setText(rRes.getStatus().name());
 		} else {
-			GridLayoutFactory.swtDefaults().applyTo(mergeResultGroup);
 			Label noResult = new Label(mergeResultGroup, SWT.NONE);
 			noResult
 					.setText(UIText.PullResultDialog_MergeAlreadyUpToDateMessage);
@@ -175,8 +150,7 @@ public class PullResultDialog extends Dialog {
 		newShell.setText(UIText.PullResultDialog_DialogTitle);
 	}
 
-	@Override
 	protected IDialogSettings getDialogBoundsSettings() {
-		return hasUpdates ? UIUtils.getDialogBoundSettings(getClass()) : null;
+		return UIUtils.getDialogBoundSettings(getClass());
 	}
 }
