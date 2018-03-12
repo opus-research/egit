@@ -81,7 +81,6 @@
       <unit id="org.eclipse.mylyn.context_feature.feature.group" version="0.0.0"/>
       <unit id="org.eclipse.mylyn.sdk_feature.feature.group" version="0.0.0"/>
       <unit id="org.eclipse.mylyn.wikitext_feature.feature.group" version="0.0.0"/>
-      <unit id="org.eclipse.mylyn.versions.feature.group" version="0.0.0"/>
     </location>
   </locations>
 </target>
