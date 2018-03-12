@@ -665,6 +665,9 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_SecureStoreUseByDefault;
 
 	/** */
+	public static String GitPreferenceRoot_useLogicalModel;
+
+	/** */
 	public static String ProcessStepsRebaseCommand_CancelDialogMessage;
 
 	/** */
@@ -2720,6 +2723,9 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_LocalBranchRadio;
 
 	/** */
+	public static String FetchGerritChangePage_LocalBranchCheckout;
+
+	/** */
 	public static String FetchGerritChangePage_MissingChangeMessage;
 
 	/** */
@@ -4042,9 +4048,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_OpenInEditorMenuLabel;
-
-	/** */
-	public static String CommitFileDiffViewer_OpenPreviousInEditorMenuLabel;
 
 	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
