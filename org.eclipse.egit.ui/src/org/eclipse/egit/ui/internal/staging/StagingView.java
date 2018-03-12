@@ -3304,6 +3304,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	public void setFocus() {
 		Tree tree = unstagedViewer.getTree();
 		if (tree.getItemCount() > 0) {
+			tree.setSelection(tree.getItems());
 			unstagedViewer.getControl().setFocus();
 			return;
 		}
