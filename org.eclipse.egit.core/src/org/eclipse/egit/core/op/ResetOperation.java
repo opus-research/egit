@@ -103,8 +103,8 @@ public class ResetOperation implements IEGitOperation {
 			monitor = m;
 		if (type == ResetType.HARD) {
 			IWorkspaceRunnable action = new IWorkspaceRunnable() {
-				public void run(IProgressMonitor actMonitor) throws CoreException {
-					reset(actMonitor);
+				public void run(IProgressMonitor monitor) throws CoreException {
+					reset(monitor);
 				}
 			};
 			// lock workspace to protect working tree changes
