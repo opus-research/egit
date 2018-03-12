@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2012 Markus Duft <markus.duft@salomon.at> and others.
+ * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -75,10 +75,7 @@ public class SimplePushSpecPage extends WizardPage {
 
 		Composite inputPanel = new Composite(main, SWT.NONE);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(inputPanel);
-		GridLayout layout = new GridLayout(2, false);
-		layout.marginWidth= 0;
-		layout.marginHeight= 0;
-		inputPanel.setLayout(layout);
+		inputPanel.setLayout(new GridLayout(2, false));
 
 		final Label lblRemote = new Label(inputPanel, SWT.NONE);
 		lblRemote.setText(UIText.SimplePushSpecPage_TargetRefName);
@@ -112,17 +109,6 @@ public class SimplePushSpecPage extends WizardPage {
 		});
 
 		setControl(main);
-	}
-
-	/*
-	 * @see org.eclipse.jface.dialogs.DialogPage#setVisible(boolean)
-	 * @since 2.0
-	 */
-	@Override
-	public void setVisible(boolean visible) {
-		super.setVisible(visible);
-		if (visible)
-			remoteRefName.setFocus();
 	}
 
 	/**
@@ -174,7 +160,8 @@ public class SimplePushSpecPage extends WizardPage {
 
 	@Override
 	public boolean isPageComplete() {
-		return remoteRefName.getText().length() > 0;
+		return remoteRefName.getText() != null
+				&& remoteRefName.getText().length() > 0;
 	}
 
 	/**

@@ -39,6 +39,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ResetOperation;
+import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.Activator;
@@ -50,7 +51,6 @@ import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
@@ -139,13 +139,7 @@ public abstract class AbstractSynchronizeViewTest extends
 	}
 
 	protected void resetRepositoryToCreateInitialTag() throws Exception {
-		Thread.sleep(2000);
 		ResetOperation rop = new ResetOperation(
-				lookupRepository(repositoryFile), Constants.R_TAGS +
-						INITIAL_TAG, ResetType.HARD);
-		rop.execute(new NullProgressMonitor());
-		Thread.sleep(2000);
-		rop = new ResetOperation(
 				lookupRepository(repositoryFile), Constants.R_TAGS +
 						INITIAL_TAG, ResetType.HARD);
 		rop.execute(new NullProgressMonitor());

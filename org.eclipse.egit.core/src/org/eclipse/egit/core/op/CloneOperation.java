@@ -137,8 +137,6 @@ public class CloneOperation {
 			cloneRepository.setCredentialsProvider(credentialsProvider);
 			if (refName != null)
 				cloneRepository.setBranch(refName);
-			else
-				cloneRepository.setNoCheckout(true);
 			cloneRepository.setDirectory(workdir);
 			cloneRepository.setProgressMonitor(gitMonitor);
 			cloneRepository.setRemote(remoteName);

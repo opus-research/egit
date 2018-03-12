@@ -1,10 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2009, 2012 Shawn O. Pearce and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *******************************************************************************/
 package org.eclipse.egit.ui.internal.fetch;
 
 import java.io.IOException;
@@ -24,12 +17,13 @@ import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
+import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
@@ -51,7 +45,6 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.OpenAndLinkWithEditorHelper;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.model.WorkbenchAdapter;
 import org.eclipse.ui.model.WorkbenchContentProvider;
@@ -329,28 +322,17 @@ class FetchResultTable {
 
 		});
 
-		new OpenAndLinkWithEditorHelper(treeViewer) {
-			@Override
-			protected void linkToEditor(ISelection selection) {
-				// Not supported
+		treeViewer.addOpenListener(new IOpenListener() {
 
-			}
-			@Override
-			protected void open(ISelection selection, boolean activate) {
-				handleOpen(selection, OpenStrategy.activateOnOpen());
-			}
-			@Override
-			protected void activate(ISelection selection) {
-				handleOpen(selection, true);
-			}
-			private void handleOpen(ISelection selection, boolean activateOnOpen) {
+			public void open(OpenEvent event) {
+				ISelection selection = event.getSelection();
 				if (selection instanceof IStructuredSelection)
 					for (Object element : ((IStructuredSelection) selection)
 							.toArray())
 						if (element instanceof RepositoryCommit)
-							CommitEditor.openQuiet((RepositoryCommit) element, activateOnOpen);
+							CommitEditor.openQuiet((RepositoryCommit) element);
 			}
-		};
+		});
 	}
 
 	private void addToolbar(Composite parent) {

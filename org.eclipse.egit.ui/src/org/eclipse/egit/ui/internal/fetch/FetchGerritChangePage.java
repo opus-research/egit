@@ -392,6 +392,7 @@ public class FetchGerritChangePage extends WizardPage {
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
+							changeRefs = new ArrayList<Change>();
 							ListRemoteOperation listOp;
 							try {
 								listOp = new ListRemoteOperation(
@@ -406,7 +407,6 @@ public class FetchGerritChangePage extends WizardPage {
 							}
 
 							listOp.run(monitor);
-							changeRefs = new ArrayList<Change>();
 							for (Ref ref : listOp.getRemoteRefs()) {
 								Change change = Change.fromRef(ref.getName());
 								if (change != null)

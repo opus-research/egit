@@ -145,7 +145,7 @@ public class GitSynchronizeData {
 			ow.release();
 		}
 
-		if (this.dstRevCommit != null && this.srcRevCommit != null)
+		if (this.dstRevCommit != null || this.srcRevCommit != null)
 			this.ancestorRevCommit = getCommonAncestor(repo, this.srcRevCommit,
 					this.dstRevCommit);
 		else
@@ -275,20 +275,6 @@ public class GitSynchronizeData {
 	 */
 	public TreeFilter getPathFilter() {
 		return pathFilter;
-	}
-
-	/**
-	 * @return synchronization source rev
-	 */
-	public String getSrcRev() {
-		return srcRev;
-	}
-
-	/**
-	 * @return synchronization destination rev
-	 */
-	public String getDstRev() {
-		return dstRev;
 	}
 
 	private RemoteConfig extractRemoteName(String rev) {
