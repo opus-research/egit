@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,7 +12,6 @@ import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.ADDED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.CHANGED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.CONFLICTING;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING_AND_CHANGED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.PARTIALLY_MODIFIED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.REMOVED;
@@ -85,11 +84,7 @@ public class StagingViewContentProvider implements
 		final Repository repository = update.repository;
 		if (isWorkspace) {
 			for (String file : indexDiff.getMissing())
-				if (indexDiff.getChanged().contains(file))
-					nodes.add(new StagingEntry(repository, MISSING_AND_CHANGED,
-							file));
-				else
-					nodes.add(new StagingEntry(repository, MISSING, file));
+				nodes.add(new StagingEntry(repository, MISSING, file));
 			for (String file : indexDiff.getModified())
 				if (indexDiff.getChanged().contains(file))
 					nodes.add(new StagingEntry(repository, PARTIALLY_MODIFIED,
