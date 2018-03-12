@@ -10,30 +10,30 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test.commit;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
-import org.eclipse.egit.ui.internal.commit.CommitEditorInput;
-import org.eclipse.egit.ui.internal.commit.CommitEditorInputFactory;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
+import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
+import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter.DiffStyleRange;
+import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.ui.XMLMemento;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Unit tests of {@link CommitEditorInputFactory}
+ * Unit tests for {@link DiffStyleRangeFormatter}
+ * 
+ * @author Kevin Sawicki (kevin@github.com)
  */
-public class CommitEditorInputFactoryTest extends LocalRepositoryTestCase {
+public class DiffStyleRangeFormatterTest extends LocalRepositoryTestCase {
 
 	private static Repository repository;
 
@@ -51,26 +51,31 @@ public class CommitEditorInputFactoryTest extends LocalRepositoryTestCase {
 		try {
 			commit = walk.parseCommit(repository.resolve(Constants.HEAD));
 			assertNotNull(commit);
+			walk.parseBody(commit.getParent(0));
 		} finally {
 			walk.release();
 		}
 	}
 
 	@Test
-	public void testPersistable() {
-		CommitEditorInput input = new CommitEditorInput(new RepositoryCommit(
-				repository, commit));
-		XMLMemento memento = XMLMemento.createWriteRoot("test");
-		input.getPersistable().saveState(memento);
-		CommitEditorInputFactory factory = new CommitEditorInputFactory();
-		IAdaptable created = factory.createElement(memento);
-		assertNotNull(created);
-		assertTrue(created instanceof CommitEditorInput);
-		CommitEditorInput createdInput = (CommitEditorInput) created;
-		assertEquals(input.getCommit().getRevCommit().name(), createdInput
-				.getCommit().getRevCommit().name());
-		assertEquals(input.getCommit().getRepository().getDirectory(),
-				createdInput.getCommit().getRepository().getDirectory());
+	public void testRanges() throws Exception {
+		IDocument document = new Document();
+		DiffStyleRangeFormatter formatter = new DiffStyleRangeFormatter(
+				document);
+		formatter.setRepository(repository);
+		formatter.format(commit.getTree(), commit.getParent(0).getTree());
+		assertTrue(document.getLength() > 0);
+		DiffStyleRange[] ranges = formatter.getRanges();
+		assertNotNull(ranges);
+		assertTrue(ranges.length > 0);
+		for (DiffStyleRange range : ranges) {
+			assertNotNull(range);
+			assertNotNull(range.diffType);
+			assertTrue(range.start >= 0);
+			assertTrue(range.length >= 0);
+			assertTrue(range.start < document.getLength());
+		}
+
 	}
 
 }
