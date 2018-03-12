@@ -106,7 +106,7 @@ public class GitModelSynchronize {
 			final IResource[] resourcesArray = includedResources
 					.toArray(new IResource[includedResources.size()]);
 			openGitTreeCompare(resourcesArray, srcRev,
-					CompareTreeView.INDEX_VERSION);
+					CompareTreeView.INDEX_VERSION, includeLocal);
 		} else if (srcRev == GitFileRevision.INDEX) {
 			// Even git tree compare cannot handle index as source...
 			// Synchronize using the local data for now.
@@ -141,13 +141,16 @@ public class GitModelSynchronize {
 	}
 
 	private static void openGitTreeCompare(IResource[] resources,
-			String srcRev, String dstRev) {
+			String srcRev, String dstRev, boolean includeLocal) {
 		CompareTreeView view;
 		try {
 			view = (CompareTreeView) PlatformUI.getWorkbench()
 					.getActiveWorkbenchWindow().getActivePage()
 					.showView(CompareTreeView.ID);
-			view.setInput(resources, srcRev, dstRev);
+			if (includeLocal)
+				view.setInput(resources, dstRev);
+			else
+				view.setInput(resources, srcRev, dstRev);
 		} catch (PartInitException e) {
 			Activator.handleError(e.getMessage(), e, true);
 		}

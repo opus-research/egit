@@ -50,7 +50,7 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 				IPath[] locations = getSelectedLocations(event);
 				if (locations.length > 0)
 					CompareUtils.compare(locations[0], repository,
-							Constants.HEAD, GitFileRevision.INDEX, false,
+							Constants.HEAD, GitFileRevision.INDEX, true,
 							workBenchPage);
 			}
 		} catch (IOException e) {
