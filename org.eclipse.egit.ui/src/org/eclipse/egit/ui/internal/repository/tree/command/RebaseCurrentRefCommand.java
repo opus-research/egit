@@ -10,7 +10,7 @@
  *    Dariusz Luksza (dariusz@luksza.org) - disable command when HEAD cannot be
  *    										resolved
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.commands.shared;
+package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.io.IOException;
 
@@ -21,6 +21,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.rebase.RebaseHelper;
+import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -30,28 +31,22 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.ISources;
-import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
  * Implements "Rebase" to the currently checked out {@link Ref}
  */
-public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
-	/** */
-	public RebaseCurrentRefCommand() {
-		super(null, null, null);
-	}
-
+public class RebaseCurrentRefCommand extends
+		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		BasicConfigurationDialog.show();
+		RepositoryTreeNode node = getSelectedNodes(event).get(0);
 
-		IStructuredSelection selection = (IStructuredSelection) HandlerUtil
-				.getCurrentSelectionChecked(event);
-		Object selected = selection.getFirstElement();
+		final Repository repository = node.getRepository();
 
-		Ref ref = getRef(selected);
-		final Repository repository = getRepository(event);
-
-		if (ref == null) {
+		Ref ref;
+		if (node instanceof RefNode)
+			ref = ((RefNode) node).getObject();
+		else {
 			RebaseTargetSelectionDialog rebaseTargetSelectionDialog = new RebaseTargetSelectionDialog(
 					getShell(event), repository);
 			if (rebaseTargetSelectionDialog.open() == IDialogConstants.OK_ID) {
