@@ -13,7 +13,6 @@ import java.io.IOException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitQuickDiffProvider;
 import org.eclipse.jgit.lib.Repository;
 
@@ -39,10 +38,7 @@ public class QuickdiffBaselineOperation extends AbstractRevObjectOperation {
 		try {
 			GitQuickDiffProvider.setBaselineReference(repository, baseline);
 		} catch (IOException e) {
-			Activator
-					.logError(
-							UIText.QuickdiffBaselineOperation_baseline,
-							e);
+			Activator.logError("Cannot set quickdiff baseline", e);
 		}
 	}
 
