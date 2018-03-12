@@ -5,6 +5,7 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,8 +13,6 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
-
-import static org.eclipse.egit.core.internal.util.ResourceUtil.getResourceMappings;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -29,15 +28,12 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
-import org.eclipse.core.resources.mapping.ResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
@@ -458,7 +454,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			result = new ArrayList();
 			Iterator elements = ((IStructuredSelection) selection).iterator();
 			while (elements.hasNext()) {
-				Object adapter = getAdapter(elements.next(), c);
+				Object adapter = AdapterUtils.adapt(elements.next(), c);
 				if (c.isInstance(adapter))
 					result.add(adapter);
 			}
@@ -467,18 +463,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			return result
 					.toArray((Object[]) Array.newInstance(c, result.size()));
 		return (Object[]) Array.newInstance(c, 0);
-	}
-
-	private Object getAdapter(Object adaptable, Class c) {
-		if (c.isInstance(adaptable))
-			return adaptable;
-		if (adaptable instanceof IAdaptable) {
-			IAdaptable a = (IAdaptable) adaptable;
-			Object adapter = a.getAdapter(c);
-			if (c.isInstance(adapter))
-				return adapter;
-		}
-		return null;
 	}
 
 	/**
@@ -513,7 +497,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	private IResource[] getSelectedResources(IStructuredSelection selection) {
 		Set<IResource> result = new LinkedHashSet<IResource>();
 		for (Object o : selection.toList()) {
-			IResource resource = (IResource) getAdapter(o, IResource.class);
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
 			if (resource != null)
 				result.add(resource);
 			else
@@ -546,7 +530,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	}
 
 	private List<IResource> extractResourcesFromMapping(Object o) {
-		ResourceMapping mapping = (ResourceMapping) getAdapter(o,
+		ResourceMapping mapping = AdapterUtils.adapt(o,
 				ResourceMapping.class);
 		if (mapping != null) {
 			ResourceTraversal[] traversals;
@@ -732,45 +716,4 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		}
 	}
 
-	/**
-	 * Return whether it is OK to open the selected file directly in a compare
-	 * editor. It is not OK to show the single file if the file is part of a
-	 * logical model element that spans multiple files.
-	 *
-	 * @param file
-	 *            File the user is trying to compare.
-	 * @return <code>true</code> if the file can be opened directly in a compare
-	 *         editor, <code>false</code> if the synchronize view should be
-	 *         opened instead.
-	 */
-	protected boolean isOKToShowSingleFile(IFile file) {
-		/*
-		 * Note : it would be better to use a remote context here in order to
-		 * give the model provider a change to resolve the remote logical model
-		 * instead of only relying on the local one. However, this might be a
-		 * long operation and would not really provide more context : we're
-		 * trying to determine if the local file can be compared alone, this can
-		 * be done by relying one the local model only.
-		 */
-		final ResourceMapping[] mappings = getResourceMappings(file,
-				ResourceMappingContext.LOCAL_CONTEXT);
-
-		for (ResourceMapping mapping : mappings) {
-			try {
-				final ResourceTraversal[] traversals = mapping.getTraversals(
-						ResourceMappingContext.LOCAL_CONTEXT, null);
-				for (ResourceTraversal traversal : traversals) {
-					final IResource[] resources = traversal.getResources();
-					for (IResource resource : resources) {
-						if (!resource.equals(file)) {
-							return false;
-						}
-					}
-				}
-			} catch (CoreException e) {
-				Activator.logError(e.getMessage(), e);
-			}
-		}
-		return true;
-	}
 }
