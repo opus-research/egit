@@ -11,11 +11,11 @@ package org.eclipse.egit.ui.internal.synchronize.mapping;
 import static org.eclipse.core.resources.IResource.ALLOW_MISSING_LOCAL;
 import static org.eclipse.core.resources.IResource.DEPTH_ONE;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -24,9 +24,6 @@ import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObjectContainer;
 
@@ -43,84 +40,40 @@ class GitContainerMapping extends GitObjectMapping {
 			IProgressMonitor monitor) throws CoreException {
 		GitModelObject[] children = ((GitModelObjectContainer) getModelObject())
 				.getChildren();
-		Set<ResourceTraversal> result = new LinkedHashSet<ResourceTraversal>();
-
-		final GitSynchronizeDataSet dataSet;
-		if (context instanceof GitSubscriberResourceMappingContext)
-			dataSet = ((GitSubscriberResourceMappingContext) context)
-					.getSyncData();
-		else
-			dataSet = null;
+		List<ResourceTraversal> result = new ArrayList<ResourceTraversal>();
 
 		for (GitModelObject child : children) {
 			if (child.isContainer())
-				result.addAll(createTraversalForContainer(child, dataSet));
+				result.addAll(createTraversalForContainer(child));
 			else
-				result.add(createTraversalForFile(child, dataSet));
+				result.add(createTraversalForFile(child));
 		}
-
+		result.removeAll(Collections.singleton(null));
 		return result.toArray(new ResourceTraversal[result.size()]);
 	}
 
-	private Set<ResourceTraversal> createTraversalForContainer(
-			GitModelObject child, GitSynchronizeDataSet dataSet) {
+	private List<ResourceTraversal> createTraversalForContainer(GitModelObject child) {
 		GitModelObject[] containerChildren = child.getChildren();
-		Set<ResourceTraversal> result = new LinkedHashSet<ResourceTraversal>();
+		List<ResourceTraversal> result = new ArrayList<ResourceTraversal>();
 		for (GitModelObject aChild : containerChildren) {
 			if(aChild.isContainer())
-				result.addAll(createTraversalForContainer(aChild, dataSet));
-			else {
-				ResourceTraversal traversal = createTraversalForFile(aChild,
-						dataSet);
-				if (traversal != null)
-					result.add(traversal);
-			}
+				result.addAll(createTraversalForContainer(aChild));
+			else
+				result.add(createTraversalForFile(aChild));
 		}
 		return result;
 	}
 
-	private ResourceTraversal createTraversalForFile(GitModelObject aChild, GitSynchronizeDataSet dataSet) {
+	private ResourceTraversal createTraversalForFile(GitModelObject aChild) {
 		IPath childLocation = aChild.getLocation();
 		IFile file = ROOT.getFileForLocation(childLocation);
 
 		if (file == null) {
 			file = ROOT.getFile(childLocation);
 		}
-
-		ResourceTraversal traversal = null;
-		if (dataSet == null)
-			traversal = new ResourceTraversal(new IResource[] { file },
-					DEPTH_ONE, ALLOW_MISSING_LOCAL);
-		else if (file != null && shouldBeIncluded(file, dataSet))
-			traversal = new ResourceTraversal(new IResource[] { file },
-					DEPTH_ONE, ALLOW_MISSING_LOCAL);
-
+		ResourceTraversal traversal = new ResourceTraversal(
+				new IResource[] { file }, DEPTH_ONE, ALLOW_MISSING_LOCAL);
 		return traversal;
 	}
 
-	private boolean shouldBeIncluded(IResource res,
-			GitSynchronizeDataSet dataSet) {
-		final IProject project = res.getProject();
-		if (project == null)
-			return false;
-
-		final GitSynchronizeData syncData = dataSet.getData(project);
-		if (syncData == null)
-			return false;
-
-		final Set<? extends IResource> includedPaths = syncData
-				.getIncludedPaths();
-		if (includedPaths == null)
-			return true;
-
-		IPath path = res.getLocation();
-		if (path != null) {
-			for (IResource resource : includedPaths) {
-				IPath inclResourceLocation = resource.getLocation();
-				if (inclResourceLocation != null && inclResourceLocation.isPrefixOf(path))
-					return true;
-			}
-		}
-		return false;
-	}
 }
