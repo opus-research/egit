@@ -161,8 +161,7 @@ public class BranchResultDialog extends MessageDialog {
 		}
 		if (shouldCheckout) {
 			super.buttonPressed(buttonId);
-			BranchOperationUI op = BranchOperationUI.checkoutWithoutQuestion(
-					repository, target);
+			BranchOperationUI op = BranchOperationUI.checkout(repository, target);
 			op.start();
 		}
 	}
@@ -187,7 +186,7 @@ public class BranchResultDialog extends MessageDialog {
 						.getPreferenceStore();
 
 				if (store.getBoolean(UIPreferences.SHOW_DETACHED_HEAD_WARNING)) {
-					String toggleMessage = UIText.BranchResultDialog_DetachedHeadWarningDontShowAgain;
+					String toggleMessage = UIText.BranchResultDialog_dontShowAgain;
 					MessageDialogWithToggle.openInformation(PlatformUI
 							.getWorkbench().getActiveWorkbenchWindow()
 							.getShell(),
