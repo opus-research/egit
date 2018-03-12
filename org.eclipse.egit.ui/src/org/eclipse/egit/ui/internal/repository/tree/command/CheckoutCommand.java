@@ -29,7 +29,6 @@ public class CheckoutCommand extends
 
 		final Ref ref = (Ref) node.getObject();
 		Repository repo = node.getRepository();
-
 		BranchOperationUI op = BranchOperationUI.checkout(repo, ref.getName());
 		op.start();
 

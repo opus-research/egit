@@ -664,15 +664,6 @@ public class UIText extends NLS {
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
-	public static String CheckoutDialog_Message;
-
-	/** */
-	public static String CheckoutDialog_Title;
-
-	/** */
-	public static String CheckoutDialog_WindowTitle;
-
-	/** */
 	public static String CheckoutHandler_SelectBranchMessage;
 
 	/** */
@@ -1775,15 +1766,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ContinueRebaseCommand_JobName;
-
-	/** */
-	public static String CreateBranchDialog_DialogTitle;
-
-	/** */
-	public static String CreateBranchDialog_SelectRefMessage;
-
-	/** */
-	public static String CreateBranchDialog_WindowTitle;
 
 	/** */
 	public static String CreateBranchPage_BranchNameLabel;
