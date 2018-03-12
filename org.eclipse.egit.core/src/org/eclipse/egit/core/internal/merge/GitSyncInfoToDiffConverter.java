@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2014, Obeo.
+ * Copyright (C) 2015, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,8 +13,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
-import org.eclipse.egit.core.synchronize.GitRemoteResource;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.diff.IDiff;
@@ -75,22 +73,7 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 				IResourceVariant remote = info.getRemote();
 				IResource local = info.getLocal();
 
-				int kind;
-				if (remote == null)
-					kind = IDiff.REMOVE;
-				else if (!local.exists())
-					kind = IDiff.ADD;
-				else
-					kind = IDiff.CHANGE;
-
-				if (local.getType() == IResource.FILE) {
-					IFileRevision after = asFileState(remote);
-					IFileRevision before = getLocalFileRevision((IFile) local);
-					return new ResourceDiff(info.getLocal(), kind, 0, before,
-							after);
-				}
-				// For folders, we don't need file states
-				return new ResourceDiff(info.getLocal(), kind);
+				return computeResourceDiff(info, remote, local);
 			}
 			return null;
 		}
@@ -102,23 +85,28 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 			IResourceVariant ancestor = info.getBase();
 			IResource local = info.getLocal();
 
-			int kind;
-			if (ancestor == null)
-				kind = IDiff.ADD;
-			else if (!local.exists())
-				kind = IDiff.REMOVE;
-			else
-				kind = IDiff.CHANGE;
-
-			if (local.getType() == IResource.FILE) {
-				IFileRevision before = asFileState(ancestor);
-				IFileRevision after = getLocalFileRevision((IFile) local);
-				return new ResourceDiff(info.getLocal(), kind, 0, before, after);
-			}
-			// For folders, we don't need file states
-			return new ResourceDiff(info.getLocal(), kind);
+			return computeResourceDiff(info, ancestor, local);
 		}
 		return null;
+	}
+
+	private ResourceDiff computeResourceDiff(SyncInfo info,
+			IResourceVariant variant, IResource local) {
+		int kind;
+		if (variant == null)
+			kind = IDiff.REMOVE;
+		else if (!local.exists())
+			kind = IDiff.ADD;
+		else
+			kind = IDiff.CHANGE;
+
+		if (local.getType() == IResource.FILE) {
+			IFileRevision after = asFileState(variant);
+			IFileRevision before = getLocalFileRevision((IFile) local);
+			return new ResourceDiff(info.getLocal(), kind, 0, before, after);
+		}
+		// For folders, we don't need file states
+		return new ResourceDiff(info.getLocal(), kind);
 	}
 
 	/**
@@ -185,63 +173,5 @@ public class GitSyncInfoToDiffConverter extends SyncInfoToDiffConverter {
 	protected ResourceVariantFileRevision asFileRevision(
 			IResourceVariant variant) {
 		return new GitResourceVariantFileRevision(variant);
-	}
-
-	/**
-	 * The default implementation of ResourceVariantFileRevision has no author,
-	 * comment, timestamp... or any information that could be provided by the
-	 * Git resource variant. This implementation uses the variant's information.
-	 */
-	private static class GitResourceVariantFileRevision extends
-			ResourceVariantFileRevision {
-		private final IResourceVariant variant;
-
-		public GitResourceVariantFileRevision(IResourceVariant variant) {
-			super(variant);
-			this.variant = variant;
-		}
-
-		@Override
-		public String getContentIdentifier() {
-			// Use the same ID as would CommitFileRevision
-			if (variant instanceof GitRemoteResource)
-				return ((GitRemoteResource) variant).getCommitId().getId()
-						.getName();
-
-			return super.getContentIdentifier();
-		}
-
-		@Override
-		public long getTimestamp() {
-			if (variant instanceof GitRemoteResource) {
-				final PersonIdent author = ((GitRemoteResource) variant)
-						.getCommitId().getAuthorIdent();
-				if (author != null)
-					return author.getWhen().getTime();
-			}
-
-			return super.getTimestamp();
-		}
-
-		@Override
-		public String getAuthor() {
-			if (variant instanceof GitRemoteResource) {
-				final PersonIdent author = ((GitRemoteResource) variant)
-						.getCommitId().getAuthorIdent();
-				if (author != null)
-					return author.getName();
-			}
-
-			return super.getAuthor();
-		}
-
-		@Override
-		public String getComment() {
-			if (variant instanceof GitRemoteResource)
-				return ((GitRemoteResource) variant).getCommitId()
-						.getFullMessage();
-
-			return super.getComment();
-		}
 	}
 }
