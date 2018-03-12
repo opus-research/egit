@@ -51,13 +51,12 @@ public class RepoPropertiesPage {
 	public void setPushDestination(String destination) {
 		SWTBotCombo destinationCombo = bot.comboBox();
 		String[] items = destinationCombo.items();
-		for (int i = 0; i < items.length; i++) {
+		for (int i = 0; i < items.length; i++)
 			if (items[i].startsWith(destination)) {
 				destinationCombo.setSelection(i);
 				return;
 			}
-		}
-		fail("ould not find destination " + destination);
+		fail("Could not find destination " + destination);
 	}
 
 	@SuppressWarnings("boxing")
@@ -104,7 +103,7 @@ public class RepoPropertiesPage {
 	}
 
 	private SWTBotCheckBox storeCheckBox() {
-		return bot.checkBoxWithLabel("Store in Secure Store");
+		return bot.checkBox("Store in Secure Store");
 	}
 
 	public RepoRemoteBranchesPage nextToRemoteBranches(String string) {

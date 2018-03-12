@@ -13,6 +13,7 @@ package org.eclipse.egit.core.op;
 import java.text.MessageFormat;
 import java.util.List;
 
+import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -20,9 +21,11 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.RevertCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
@@ -37,21 +40,24 @@ public class RevertCommitOperation implements IEGitOperation {
 
 	private final Repository repo;
 
-	private final RevCommit commit;
+	private final List<RevCommit> commits;
 
 	private RevCommit newHead;
 
 	private List<Ref> reverted;
 
+	private MergeResult result;
+
 	/**
 	 * Create revert commit operation
 	 *
 	 * @param repository
-	 * @param commit
+	 * @param commits
+	 *            the commits to revert (in newest-first order)
 	 */
-	public RevertCommitOperation(Repository repository, RevCommit commit) {
+	public RevertCommitOperation(Repository repository, List<RevCommit> commits) {
 		this.repo = repository;
-		this.commit = commit;
+		this.commits = commits;
 	}
 
 	/**
@@ -76,11 +82,15 @@ public class RevertCommitOperation implements IEGitOperation {
 				pm.beginTask("", 2); //$NON-NLS-1$
 
 				pm.subTask(MessageFormat.format(
-						CoreText.RevertCommitOperation_reverting, commit.name()));
-				RevertCommand command = new Git(repo).revert().include(commit);
+						CoreText.RevertCommitOperation_reverting,
+						Integer.valueOf(commits.size())));
+				RevertCommand command = new Git(repo).revert();
+				for (RevCommit commit : commits)
+					command.include(commit);
 				try {
 					newHead = command.call();
 					reverted = command.getRevertedRefs();
+					result = command.getFailingResult();
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
@@ -94,11 +104,20 @@ public class RevertCommitOperation implements IEGitOperation {
 				pm.done();
 			}
 		};
-		ResourcesPlugin.getWorkspace().run(action, monitor);
+		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
+				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
 	public ISchedulingRule getSchedulingRule() {
-		return ResourcesPlugin.getWorkspace().getRoot();
+		return RuleUtil.getRule(repo);
 	}
 
+	/**
+	 * Get failing result of merge
+	 *
+	 * @return merge result
+	 */
+	public MergeResult getFailingResult() {
+		return result;
+	}
 }

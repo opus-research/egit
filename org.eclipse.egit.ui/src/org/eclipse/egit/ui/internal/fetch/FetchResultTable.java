@@ -1,3 +1,10 @@
+/*******************************************************************************
+ * Copyright (c) 2009, 2013 Shawn O. Pearce and others.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
 package org.eclipse.egit.ui.internal.fetch;
 
 import java.io.IOException;
@@ -8,22 +15,24 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.DecorationOverlayDescriptor;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.WorkbenchStyledLabelProvider;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
+import org.eclipse.egit.ui.internal.history.FileDiff;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
-import org.eclipse.jface.viewers.IOpenListener;
+import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
@@ -45,6 +54,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.OpenAndLinkWithEditorHelper;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.model.WorkbenchAdapter;
 import org.eclipse.ui.model.WorkbenchContentProvider;
@@ -77,6 +87,17 @@ class FetchResultTable {
 				return PlatformUI.getWorkbench().getSharedImages()
 						.getImageDescriptor(ISharedImages.IMG_OBJS_ERROR_TSK);
 			case FORCED:
+				if (isPruned()) {
+					ImageDescriptor icon = UIIcons.BRANCH;
+					if (update.getLocalName().startsWith(Constants.R_TAGS))
+						icon = UIIcons.TAG;
+					if (update.getLocalName().startsWith(Constants.R_NOTES))
+						icon = UIIcons.NOTE;
+					return new DecorationOverlayDescriptor(icon,
+							UIIcons.OVR_STAGED_REMOVE, IDecoration.TOP_RIGHT);
+				}
+				// else
+				//$FALL-THROUGH$
 			case RENAMED:
 			case FAST_FORWARD:
 				if (update.getRemoteName().startsWith(Constants.R_HEADS))
@@ -121,6 +142,10 @@ class FetchResultTable {
 
 			switch (update.getResult()) {
 			case FORCED:
+				if (isPruned())
+					return NO_CHILDREN;
+				// else
+				//$FALL-THROUGH$
 			case FAST_FORWARD:
 				RevWalk walk = new RevWalk(reader);
 				try {
@@ -185,7 +210,11 @@ class FetchResultTable {
 							StyledString.DECORATIONS_STYLER);
 				break;
 			case FORCED:
-				addCommits(styled, "..."); //$NON-NLS-1$
+				if (isPruned())
+					styled.append(UIText.FetchResultTable_statusPruned,
+							StyledString.DECORATIONS_STYLER);
+				else
+					addCommits(styled, "..."); //$NON-NLS-1$
 				break;
 			case FAST_FORWARD:
 				addCommits(styled, ".."); //$NON-NLS-1$
@@ -202,6 +231,10 @@ class FetchResultTable {
 				break;
 			}
 			return styled;
+		}
+
+		private boolean isPruned() {
+			return update.getNewObjectId().equals(ObjectId.zeroId());
 		}
 	}
 
@@ -283,6 +316,12 @@ class FetchResultTable {
 						&& e2 instanceof RepositoryCommit)
 					return 0;
 
+				if (e1 instanceof FileDiff && e2 instanceof FileDiff) {
+					FileDiff f1 = (FileDiff) e1;
+					FileDiff f2 = (FileDiff) e2;
+					return f1.getPath().compareTo(f2.getPath());
+				}
+
 				return super.compare(viewer, e1, e2);
 			}
 
@@ -290,7 +329,6 @@ class FetchResultTable {
 		ColumnViewerToolTipSupport.enableFor(treeViewer);
 		final Tree tree = treeViewer.getTree();
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tree);
-		tree.setLinesVisible(true);
 
 		treePanel.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
@@ -322,17 +360,28 @@ class FetchResultTable {
 
 		});
 
-		treeViewer.addOpenListener(new IOpenListener() {
+		new OpenAndLinkWithEditorHelper(treeViewer) {
+			@Override
+			protected void linkToEditor(ISelection selection) {
+				// Not supported
 
-			public void open(OpenEvent event) {
-				ISelection selection = event.getSelection();
+			}
+			@Override
+			protected void open(ISelection selection, boolean activate) {
+				handleOpen(selection, OpenStrategy.activateOnOpen());
+			}
+			@Override
+			protected void activate(ISelection selection) {
+				handleOpen(selection, true);
+			}
+			private void handleOpen(ISelection selection, boolean activateOnOpen) {
 				if (selection instanceof IStructuredSelection)
 					for (Object element : ((IStructuredSelection) selection)
 							.toArray())
 						if (element instanceof RepositoryCommit)
-							CommitEditor.openQuiet((RepositoryCommit) element);
+							CommitEditor.openQuiet((RepositoryCommit) element, activateOnOpen);
 			}
-		});
+		};
 	}
 
 	private void addToolbar(Composite parent) {

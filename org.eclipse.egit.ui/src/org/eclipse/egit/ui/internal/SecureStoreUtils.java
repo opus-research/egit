@@ -13,7 +13,6 @@ import java.io.IOException;
 
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.jgit.transport.URIish;
 
@@ -48,4 +47,44 @@ public class SecureStoreUtils {
 		}
 		return true;
 	}
+
+	/**
+	 * Gets credentials stored for the given uri. Logs but does not re-throw
+	 * {@code StorageException} if thrown by the secure store implementation
+	 *
+	 * @param uri
+	 * @return credentials stored in secure store for given uri
+	 */
+	public static UserPasswordCredentials getCredentialsQuietly(
+			final URIish uri) {
+		try {
+			return org.eclipse.egit.core.Activator.getDefault()
+					.getSecureStore().getCredentials(uri);
+		} catch (StorageException e) {
+			Activator.logError(
+					UIText.EGitCredentialsProvider_errorReadingCredentials, e);
+		}
+		return null;
+	}
+
+	/**
+	 * Gets credentials stored for the given uri. Logs and re-throws
+	 * {@code StorageException} if thrown by the secure store implementation
+	 *
+	 * @param uri
+	 * @return credentials stored in secure store for given uri
+	 * @throws StorageException
+	 */
+	public static UserPasswordCredentials getCredentials(
+			final URIish uri) throws StorageException {
+		try {
+			return org.eclipse.egit.core.Activator.getDefault()
+					.getSecureStore().getCredentials(uri);
+		} catch (StorageException e) {
+			Activator.logError(
+					UIText.EGitCredentialsProvider_errorReadingCredentials, e);
+			throw e;
+		}
+	}
+
 }

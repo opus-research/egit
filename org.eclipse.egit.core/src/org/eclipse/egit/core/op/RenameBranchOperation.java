@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
+import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -15,13 +16,11 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.DetachedHeadException;
-import org.eclipse.jgit.api.errors.InvalidRefNameException;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
-import org.eclipse.jgit.api.errors.RefAlreadyExistsException;
-import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
@@ -68,13 +67,7 @@ public class RenameBranchOperation implements IEGitOperation {
 							branch.getName()).setNewName(newName).call();
 				} catch (JGitInternalException e) {
 					throw new CoreException(Activator.error(e.getMessage(), e));
-				} catch (RefNotFoundException e) {
-					throw new CoreException(Activator.error(e.getMessage(), e));
-				} catch (InvalidRefNameException e) {
-					throw new CoreException(Activator.error(e.getMessage(), e));
-				} catch (RefAlreadyExistsException e) {
-					throw new CoreException(Activator.error(e.getMessage(), e));
-				} catch (DetachedHeadException e) {
+				} catch (GitAPIException e) {
 					throw new CoreException(Activator.error(e.getMessage(), e));
 				}
 				actMonitor.worked(1);
@@ -82,10 +75,11 @@ public class RenameBranchOperation implements IEGitOperation {
 			}
 		};
 		// lock workspace to protect working tree changes
-		ResourcesPlugin.getWorkspace().run(action, monitor);
+		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
+				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
 	public ISchedulingRule getSchedulingRule() {
-		return ResourcesPlugin.getWorkspace().getRoot();
+		return RuleUtil.getRule(repository);
 	}
 }

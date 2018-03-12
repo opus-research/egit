@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2011, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,16 +8,18 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
-import static org.eclipse.egit.ui.UIIcons.EXPAND_ALL;
-import static org.eclipse.egit.ui.UIIcons.PULL;
-import static org.eclipse.egit.ui.UIIcons.PUSH;
-import static org.eclipse.egit.ui.UIText.GitActionContributor_ExpandAll;
+import static org.eclipse.egit.ui.internal.UIIcons.EXPAND_ALL;
+import static org.eclipse.egit.ui.internal.UIIcons.PULL;
+import static org.eclipse.egit.ui.internal.UIIcons.PUSH;
+import static org.eclipse.egit.ui.internal.UIText.GitActionContributor_ExpandAll;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.ADD_TO_INDEX;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.COMMIT_ACTION;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.IGNORE_ACTION;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.MERGE_TOOL_ACTION;
+import static org.eclipse.egit.ui.internal.actions.ActionCommands.CREATE_PATCH;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.PUSH_ACTION;
 import static org.eclipse.egit.ui.internal.synchronize.model.SupportedContextActionsHelper.canPush;
+import static org.eclipse.team.internal.ui.synchronize.SynchronizePageConfiguration.P_OPEN_ACTION;
 import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.NAVIGATE_GROUP;
 import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.P_TOOLBAR_MENU;
 import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.SYNCHRONIZE_GROUP;
@@ -26,13 +28,16 @@ import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.synchronize.action.ExpandAllModelAction;
+import org.eclipse.egit.ui.internal.synchronize.action.GitOpenInCompareAction;
 import org.eclipse.egit.ui.internal.synchronize.action.OpenWorkingFileAction;
 import org.eclipse.egit.ui.internal.synchronize.action.PullAction;
 import org.eclipse.egit.ui.internal.synchronize.action.PushAction;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.SupportedContextActionsHelper;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -59,6 +64,9 @@ class GitActionContributor extends SynchronizePageActionGroup {
 	public void fillContextMenu(IMenuManager menu) {
 		IStructuredSelection selection = (IStructuredSelection) getContext()
 				.getSelection();
+		if (selection.isEmpty())
+			return;
+
 		Object element = selection.getFirstElement();
 		IResource resource = ResourceUtil.getResource(element);
 		if (resource != null) {
@@ -67,6 +75,7 @@ class GitActionContributor extends SynchronizePageActionGroup {
 			menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
 			menu.appendToGroup(GIT_ACTIONS, createItem(IGNORE_ACTION));
 			menu.appendToGroup(GIT_ACTIONS, createItem(MERGE_TOOL_ACTION));
+			menu.appendToGroup(GIT_ACTIONS, createItem(CREATE_PATCH));
 		} else if (element instanceof GitModelObject && selection.size() == 1)
 			createMenuForGitModelObject(menu, (GitModelObject) element);
 
@@ -106,8 +115,7 @@ class GitActionContributor extends SynchronizePageActionGroup {
 
 		IWorkbenchWindow activeWorkbenchWindow = workbench
 				.getActiveWorkbenchWindow();
-		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
-				.getService(IHandlerService.class);
+		IHandlerService hsr = CommonUtils.getService(activeWorkbenchWindow, IHandlerService.class);
 		IEvaluationContext ctx = hsr.getCurrentState();
 		ctx.addVariable(ACTIVE_MENU_SELECTION_NAME, getContext().getSelection());
 
@@ -135,11 +143,20 @@ class GitActionContributor extends SynchronizePageActionGroup {
 
 		ISynchronizePageSite site = configuration.getSite();
 		IWorkbenchSite ws = site.getWorkbenchSite();
+		openWorkingFileAction = new OpenWorkingFileAction(ws.getWorkbenchWindow()
+			.getActivePage());
+
+		site.getSelectionProvider().addSelectionChangedListener(
+				openWorkingFileAction);
+
 		if (ws instanceof IViewSite) {
-			openWorkingFileAction = new OpenWorkingFileAction(ws.getWorkbenchWindow()
-					.getActivePage());
-			site.getSelectionProvider().addSelectionChangedListener(
-					openWorkingFileAction);
+			Object oldAction = configuration.getProperty(P_OPEN_ACTION);
+			if (!(oldAction instanceof Action))
+				return;
+
+			final GitOpenInCompareAction openInCompareAction = new GitOpenInCompareAction(
+					configuration, (Action) oldAction);
+			configuration.setProperty(P_OPEN_ACTION, openInCompareAction);
 		}
 	}
 }

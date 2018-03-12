@@ -4,6 +4,7 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2011, Stefan Lay <stefan.lay@sap.com>
+ * Copyright (C) 2014, Marc-Andre Laperle <marc-andre.laperle@ericsson.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +13,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,21 +23,28 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
+import org.eclipse.egit.ui.internal.history.FormatJob.FormatResult;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.preference.IPersistentPreferenceStore;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.DefaultTextDoubleClickStrategy;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextOperationTarget;
-import org.eclipse.jface.text.TextViewer;
+import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jgit.events.ListenerHandle;
+import org.eclipse.jgit.events.RefsChangedEvent;
+import org.eclipse.jgit.events.RefsChangedListener;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -50,6 +59,7 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.IWorkbenchPartSite;
@@ -58,23 +68,13 @@ import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
-class CommitMessageViewer extends TextViewer implements
-		ISelectionChangedListener {
+class CommitMessageViewer extends SourceViewer {
 
 	private static final Color SYS_LINKCOLOR = PlatformUI.getWorkbench()
 			.getDisplay().getSystemColor(SWT.COLOR_BLUE);
 
 	private static final Color SYS_DARKGRAY = PlatformUI.getWorkbench()
 			.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY);
-
-	private static final Color SYS_HUNKHEADER_COLOR = PlatformUI.getWorkbench()
-			.getDisplay().getSystemColor(SWT.COLOR_BLUE);
-
-	private static final Color SYS_LINES_ADDED_COLOR = PlatformUI
-			.getWorkbench().getDisplay().getSystemColor(SWT.COLOR_DARK_GREEN);
-
-	private static final Color SYS_LINES_REMOVED_COLOR = PlatformUI
-			.getWorkbench().getDisplay().getSystemColor(SWT.COLOR_DARK_RED);
 
 	private static final Cursor SYS_LINK_CURSOR = PlatformUI.getWorkbench()
 			.getDisplay().getSystemCursor(SWT.CURSOR_HAND);
@@ -83,9 +83,6 @@ class CommitMessageViewer extends TextViewer implements
 
 	// notified when clicking on a link in the message (branch, commit...)
 	private final ListenerList navListeners = new ListenerList();
-
-	// set by selecting files in the file list
-	private final List<FileDiff> currentDiffs = new ArrayList<FileDiff>();
 
 	// listener to detect changes in the wrap and fill preferences
 	private final IPropertyChangeListener listener;
@@ -103,8 +100,18 @@ class CommitMessageViewer extends TextViewer implements
 
 	private final IWorkbenchPartSite partSite;
 
+	private List<Ref> allRefs;
+
+	private ListenerHandle refsChangedListener;
+
+	private BooleanPrefAction showTagSequencePrefAction;
+
+	private BooleanPrefAction wrapCommentsPrefAction;
+
+	private BooleanPrefAction fillParagraphsPrefAction;
+
 	CommitMessageViewer(final Composite parent, final IPageSite site, IWorkbenchPartSite partSite) {
-		super(parent, SWT.H_SCROLL | SWT.V_SCROLL | SWT.READ_ONLY);
+		super(parent, null, SWT.READ_ONLY);
 		this.partSite = partSite;
 
 		final StyledText t = getTextWidget();
@@ -115,16 +122,8 @@ class CommitMessageViewer extends TextViewer implements
 		// set the cursor when hovering over a link
 		t.addListener(SWT.MouseMove, new Listener() {
 			public void handleEvent(final Event e) {
-				final int o;
-				try {
-					o = t.getOffsetAtLocation(new Point(e.x, e.y));
-				} catch (IllegalArgumentException err) {
-					t.setCursor(sys_normalCursor);
-					return;
-				}
-
-				final StyleRange r = t.getStyleRangeAtOffset(o);
-				if (r instanceof ObjectLink)
+				StyleRange styleRange = getStyleRange(e.x, e.y);
+				if (styleRange != null && styleRange.underline)
 					t.setCursor(SYS_LINK_CURSOR);
 				else
 					t.setCursor(sys_normalCursor);
@@ -135,18 +134,10 @@ class CommitMessageViewer extends TextViewer implements
 			@Override
 			public void mouseDown(final MouseEvent e) {
 				// only process the hyper link if it was a primary mouse click
-				if (e.button != 1) {
+				if (e.button != 1)
 					return;
-				}
 
-				final int o;
-				try {
-					o = t.getOffsetAtLocation(new Point(e.x, e.y));
-				} catch (IllegalArgumentException err) {
-					return;
-				}
-
-				final StyleRange r = t.getStyleRangeAtOffset(o);
+				final StyleRange r = getStyleRange(e.x, e.y);
 				if (r instanceof ObjectLink) {
 					final RevCommit c = ((ObjectLink) r).targetCommit;
 					for (final Object l : navListeners.getListeners())
@@ -162,19 +153,21 @@ class CommitMessageViewer extends TextViewer implements
 		listener = new IPropertyChangeListener() {
 			public void propertyChange(PropertyChangeEvent event) {
 				if (event.getProperty().equals(
-						UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP)) {
-					setWrap(((Boolean) event.getNewValue()).booleanValue());
-					return;
-				}
-				if (event.getProperty().equals(
 						UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL)) {
 					setFill(((Boolean) event.getNewValue()).booleanValue());
 					return;
 				}
+				if (event.getProperty().equals(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE)) {
+					format();
+					return;
+				}
 			}
 		};
-		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(
-				listener);
+
+		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+		store.addPropertyChangeListener(listener);
+		fill = store
+				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL);
 
 		// global action handlers for select all and copy
 		final IAction selectAll = new Action() {
@@ -218,6 +211,43 @@ class CommitMessageViewer extends TextViewer implements
 				site.getActionBars().updateActionBars();
 			}
 		});
+
+		final MenuManager mgr = new MenuManager();
+		Control c = getControl();
+		c.setMenu(mgr.createContextMenu(c));
+
+		IPersistentPreferenceStore pstore = (IPersistentPreferenceStore) store;
+
+		showTagSequencePrefAction = new BooleanPrefAction(pstore,
+				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
+				UIText.ResourceHistory_ShowTagSequence) {
+			@Override
+			protected void apply(boolean value) {
+				// nothing, just toggle
+			}
+		};
+		mgr.add(showTagSequencePrefAction);
+
+		wrapCommentsPrefAction = new BooleanPrefAction(pstore,
+				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
+				UIText.ResourceHistory_toggleCommentWrap) {
+			@Override
+			protected void apply(boolean value) {
+				// nothing, just toggle
+			}
+		};
+		mgr.add(wrapCommentsPrefAction);
+
+		fillParagraphsPrefAction = new BooleanPrefAction(pstore,
+				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL,
+				UIText.ResourceHistory_toggleCommentFill) {
+			@Override
+			protected void apply(boolean value) {
+				// nothing, just toggle
+			}
+		};
+		mgr.add(fillParagraphsPrefAction);
+
 	}
 
 	void addDoneListenerToFormatJob() {
@@ -232,12 +262,7 @@ class CommitMessageViewer extends TextViewer implements
 				final FormatJob job = (FormatJob) event.getJob();
 				text.getDisplay().asyncExec(new Runnable() {
 					public void run() {
-						if (text.isDisposed())
-							return;
-						setDocument(new Document(job.getFormatResult()
-								.getCommitInfo()));
-						text.setStyleRanges(job.getFormatResult()
-								.getStyleRange());
+						applyFormatJobResultInUI(job.getFormatResult());
 					}
 				});
 			}
@@ -252,6 +277,13 @@ class CommitMessageViewer extends TextViewer implements
 		}
 		Activator.getDefault().getPreferenceStore()
 				.removePropertyChangeListener(listener);
+		if (refsChangedListener != null)
+			refsChangedListener.remove();
+		refsChangedListener = null;
+		showTagSequencePrefAction.dispose();
+		wrapCommentsPrefAction.dispose();
+		fillParagraphsPrefAction.dispose();
+
 		super.handleDispose();
 	}
 
@@ -269,8 +301,22 @@ class CommitMessageViewer extends TextViewer implements
 		// so we only rebuild this when the commit did in fact change
 		if (input == commit)
 			return;
-		currentDiffs.clear();
 		commit = (PlotCommit<?>) input;
+		if (refsChangedListener != null) {
+			refsChangedListener.remove();
+			refsChangedListener = null;
+		}
+
+		if (db != null) {
+			allRefs = getBranches(db);
+			refsChangedListener = db.getListenerList().addRefsChangedListener(
+					new RefsChangedListener() {
+
+						public void onRefsChanged(RefsChangedEvent event) {
+							allRefs = getBranches(db);
+						}
+					});
+		}
 		format();
 	}
 
@@ -282,6 +328,18 @@ class CommitMessageViewer extends TextViewer implements
 		this.db = repository;
 	}
 
+	private static List<Ref> getBranches(Repository repo)  {
+		List<Ref> ref = new ArrayList<Ref>();
+		try {
+			RefDatabase refDb = repo.getRefDatabase();
+			ref.addAll(refDb.getRefs(Constants.R_HEADS).values());
+			ref.addAll(refDb.getRefs(Constants.R_REMOTES).values());
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+		}
+		return ref;
+	}
+
 	private Repository getRepository() {
 		if (db == null)
 			throw new IllegalStateException("Repository has not been set"); //$NON-NLS-1$
@@ -289,14 +347,12 @@ class CommitMessageViewer extends TextViewer implements
 	}
 
 	private void format() {
-		if (commit == null) {
-			setDocument(new Document(
-					UIText.CommitMessageViewer_SelectOneCommitMessage));
+		if (db == null || commit == null) {
+			setDocument(new Document("")); //$NON-NLS-1$
 			return;
 		}
-		if (formatJob != null && formatJob.getState() != Job.NONE) {
+		if (formatJob != null && formatJob.getState() != Job.NONE)
 			formatJob.cancel();
-		}
 		scheduleFormatJob();
 	}
 
@@ -305,16 +361,33 @@ class CommitMessageViewer extends TextViewer implements
 				.getAdapter(IWorkbenchSiteProgressService.class);
 		if (siteService == null)
 			return;
-		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(getRepository(),
-				commit, fill, currentDiffs, SYS_LINKCOLOR, SYS_DARKGRAY,
-				SYS_HUNKHEADER_COLOR, SYS_LINES_ADDED_COLOR,
-				SYS_LINES_REMOVED_COLOR);
+		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(
+				getRepository(), commit, fill, SYS_LINKCOLOR, SYS_DARKGRAY,
+				allRefs);
 		formatJob = new FormatJob(formatRequest);
 		addDoneListenerToFormatJob();
 		siteService.schedule(formatJob, 0 /* now */, true /*
 														 * use the half-busy
 														 * cursor in the part
 														 */);
+	}
+
+	private void applyFormatJobResultInUI(FormatResult formatResult) {
+		StyledText text = getTextWidget();
+		if (!UIUtils.isUsable(text))
+			return;
+
+		setDocument(new Document(formatResult.getCommitInfo()));
+
+		// Set style ranges from format job. We know that they are already
+		// ordered and don't overlap.
+		text.setStyleRanges(formatResult.getStyleRange());
+
+		// Apply additional styles. If we combined them with the above style
+		// ranges and set them all at once, we would have to manually remove
+		// overlapping ones.
+		UIUtils.applyHyperlinkDetectorStyleRanges(CommitMessageViewer.this,
+				fHyperlinkDetectors);
 	}
 
 	static final class ObjectLink extends StyleRange {
@@ -340,27 +413,31 @@ class CommitMessageViewer extends TextViewer implements
 		}
 	}
 
-	private void setWrap(boolean wrap) {
-		getTextWidget().setWordWrap(wrap);
-	}
-
 	private void setFill(boolean fill) {
 		this.fill = fill;
 		format();
 	}
 
-	public void selectionChanged(SelectionChangedEvent event) {
-		currentDiffs.clear();
-		ISelection selection = event.getSelection();
-		if (selection instanceof IStructuredSelection) {
-			IStructuredSelection sel = (IStructuredSelection) selection;
-			for (Object obj : sel.toList())
-				if (obj instanceof FileDiff)
-					currentDiffs.add((FileDiff) obj);
+	/**
+	 * Get style range at x/y coordinates
+	 *
+	 * @param x
+	 * @param y
+	 * @return style range, will be null when no style range exists at given
+	 *         coordinates
+	 */
+	private StyleRange getStyleRange(final int x, final int y) {
+		final StyledText t = getTextWidget();
+		final int offset;
+		try {
+			offset = t.getOffsetAtLocation(new Point(x, y));
+		} catch (IllegalArgumentException e) {
+			return null;
 		}
-		format();
+		if (offset < t.getCharCount())
+			return t.getStyleRangeAtOffset(offset);
+		else
+			return null;
 	}
-
-
 
 }

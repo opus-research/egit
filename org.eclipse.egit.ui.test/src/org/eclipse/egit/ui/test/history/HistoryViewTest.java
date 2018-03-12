@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui.test.history;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -24,18 +25,21 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
+import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
@@ -43,14 +47,11 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTableItem;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarToggleButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Tests for the Team->Branch action
- */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class HistoryViewTest extends LocalRepositoryTestCase {
 	private static final String SECONDFOLDER = "secondFolder";
@@ -59,18 +60,13 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 	private static final String ADDEDMESSAGE = "A new file in a new folder";
 
-	private static SWTBotPerspective perspective;
+	private int commitCount;
 
-	private static int commitCount;
+	private File repoFile;
 
-	private static File repoFile;
-
-	@BeforeClass
-	public static void setup() throws Exception {
-		// File repoFile =
+	@Before
+	public void setup() throws Exception {
 		repoFile = createProjectAndCommitToRepository();
-		perspective = bot.activePerspective();
-		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
 		IProject prj = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(PROJ1);
 		IFolder folder2 = prj.getFolder(SECONDFOLDER);
@@ -82,11 +78,6 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		addAndCommit(addedFile, ADDEDMESSAGE);
 		// TODO count the commits
 		commitCount = 3;
-	}
-
-	@AfterClass
-	public static void shutdown() {
-		perspective.activate();
 	}
 
 	@Test
@@ -110,10 +101,10 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		assertEquals("Wrong commit message", ADDEDMESSAGE,
 				getHistoryViewTable(PROJ1, SECONDFOLDER, ADDEDFILE)
-						.getTableItem(0).getText(0));
+						.getTableItem(0).getText(1));
 		assertEquals("Wrong commit message", "Initial commit",
 				getHistoryViewTable(PROJ1, FOLDER, FILE2).getTableItem(0)
-						.getText(0));
+						.getText(1));
 	}
 
 	@Test
@@ -219,7 +210,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		SWTBotTable table = getHistoryViewTable(PROJ1);
 		int rowCount = table.rowCount();
 		assertTrue(table.rowCount() > 0);
-		assertEquals(table.getTableItem(rowCount - 1).getText(0),
+		assertEquals(table.getTableItem(rowCount - 1).getText(1),
 				"Initial commit");
 	}
 
@@ -231,7 +222,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		int countAfter = getHistoryViewTable(PROJ1).rowCount();
 		assertEquals("Wrong number of entries", countBefore + 1, countAfter);
 		assertEquals("Wrong comit message", commitMessage,
-				getHistoryViewTable(PROJ1).getTableItem(0).getText(0));
+				getHistoryViewTable(PROJ1).getTableItem(0).getText(1));
 	}
 
 	/**
@@ -241,34 +232,35 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	 * @throws Exception
 	 */
 	private SWTBotTable getHistoryViewTable(String... path) throws Exception {
-		SWTBotTree projectExplorerTree = bot
-				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
-		TestUtil testUtil = new TestUtil();
+		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		SWTBotTreeItem explorerItem;
 		SWTBotTreeItem projectItem = getProjectItem(projectExplorerTree, path[0]);
 		if (path.length == 1)
 			explorerItem = projectItem;
 		else if (path.length == 2)
-			explorerItem = testUtil.getChildNode(projectItem.expand(), path[1]);
+			explorerItem = TestUtil.getChildNode(projectItem.expand(), path[1]);
 		else {
-			SWTBotTreeItem childItem = testUtil.getChildNode(
+			SWTBotTreeItem childItem = TestUtil.getChildNode(
 					projectItem.expand(), path[1]);
-			explorerItem = testUtil.getChildNode(childItem.expand(), path[2]);
+			explorerItem = TestUtil.getChildNode(childItem.expand(), path[2]);
 		}
 		explorerItem.select();
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Show In",
-				"History");
+		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
+				"Show in History");
 		// join GenerateHistoryJob
 		Job.getJobManager().join(JobFamilies.GENERATE_HISTORY, null);
 		// join UI update triggered by GenerateHistoryJob
 		projectExplorerTree.widget.getDisplay().syncExec(new Runnable() {
-
 			public void run() {
 				// empty
 			}
 		});
-		return bot.viewById("org.eclipse.team.ui.GenericHistoryView").bot()
-				.table();
+
+		return getHistoryViewBot().table();
+	}
+
+	private SWTBot getHistoryViewBot() {
+		return TestUtil.showHistoryView().bot();
 	}
 
 	@Test
@@ -313,7 +305,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 				.setText("NewTag");
 		dialog.bot().styledTextWithLabel(UIText.CreateTagDialog_tagMessage)
 				.setText("New Tag message");
-		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+		dialog.bot().button(UIText.CreateTagDialog_CreateTagButton).click();
 		TestUtil.joinJobs(JobFamilies.TAG);
 		assertNotNull(repo.resolve(Constants.R_TAGS + "NewTag"));
 	}
@@ -344,6 +336,72 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 				getHistoryViewTable(PROJ1).rowCount());
 	}
 
+	@Test
+	public void testRevertFailure() throws Exception {
+		touchAndSubmit(null);
+		setTestFileContent("dirty in working directory"
+				+ System.currentTimeMillis());
+		final SWTBotTable table = getHistoryViewTable(PROJ1);
+		assertTrue(table.rowCount() > 0);
+		table.getTableItem(0).select();
+		final RevCommit[] commit = new RevCommit[1];
+
+		Display.getDefault().syncExec(new Runnable() {
+
+			public void run() {
+				TableItem tableItem = table.widget.getSelection()[0];
+				ensureTableItemLoaded(tableItem);
+				commit[0] = (RevCommit) tableItem.getData();
+			}
+		});
+		assertEquals(1, commit[0].getParentCount());
+
+		ContextMenuHelper.clickContextMenu(table,
+				UIText.GitHistoryPage_revertMenuItem);
+		SWTBot dialog = bot.shell(UIText.RevertFailureDialog_Title).bot();
+		assertEquals(1, dialog.tree().rowCount());
+		assertEquals(1, dialog.tree().getAllItems()[0].rowCount());
+		assertTrue(dialog.tree().getAllItems()[0].getItems()[0].getText()
+				.startsWith(FILE1));
+	}
+
+	@Test
+	public void testOpenOfDeletedFile() throws Exception {
+		Git git = Git.wrap(lookupRepository(repoFile));
+		git.rm().addFilepattern(FILE1_PATH).call();
+		RevCommit commit = git.commit().setMessage("Delete file").call();
+
+		SWTBotTable commitsTable = getHistoryViewTable(PROJ1);
+		assertEquals(commitCount + 1, commitsTable.rowCount());
+		commitsTable.select(0);
+
+		SWTBot viewBot = getHistoryViewBot();
+		SWTBotTable fileDiffTable = viewBot.table(1);
+		assertEquals(1, fileDiffTable.rowCount());
+
+		fileDiffTable.select(0);
+		assertFalse(fileDiffTable.contextMenu(
+				UIText.CommitFileDiffViewer_OpenInEditorMenuLabel).isEnabled());
+		fileDiffTable.contextMenu(
+				UIText.CommitFileDiffViewer_OpenPreviousInEditorMenuLabel)
+				.click();
+
+		// Editor for old file version should be opened
+		bot.editorByTitle(FILE1 + " " + commit.getParent(0).getName());
+	}
+
+	@Test
+	@Ignore
+	public void testRebaseAlreadyUpToDate() throws Exception {
+		Repository repo = lookupRepository(repoFile);
+		Ref stable = repo.getRef("stable");
+		SWTBotTable table = getHistoryViewTable(PROJ1);
+		SWTBotTableItem stableItem = getTableItemWithId(table, stable.getObjectId());
+
+		stableItem.contextMenu(UIText.GitHistoryPage_rebaseMenuItem).click();
+		TestUtil.joinJobs(JobFamilies.REBASE);
+	}
+
 	private RevCommit[] checkoutLine(final SWTBotTable table, int line)
 			throws InterruptedException {
 		table.getTableItem(line).select();
@@ -358,7 +416,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 			}
 		});
 
-		ContextMenuHelper.clickContextMenu(table,
+		ContextMenuHelper.clickContextMenuSync(table,
 				UIText.GitHistoryPage_CheckoutMenuLabel);
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		return commit;
@@ -367,7 +425,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	/**
 	 * Workaround to ensure that the TableItem of a SWT table with style
 	 * SWT_VIRTUAL is loaded.
-	 * 
+	 *
 	 * @param item
 	 */
 	private static void ensureTableItemLoaded(TableItem item) {
@@ -383,5 +441,17 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		boolean isChecked = showAllBranches.isChecked();
 		if(isChecked && !checked || !isChecked && checked)
 			showAllBranches.click();
+	}
+
+	private static SWTBotTableItem getTableItemWithId(SWTBotTable table,
+			ObjectId wantedId) {
+		for (int i = 0; i < table.rowCount(); i++) {
+			String id = table.cell(i, UIText.CommitGraphTable_CommitId);
+			String idWithoutEllipsis = id.substring(0, 7);
+			if (wantedId.getName().startsWith(idWithoutEllipsis))
+				return table.getTableItem(i);
+		}
+
+		throw new IllegalStateException("TableItem for commit with ID " + wantedId + " not found.");
 	}
 }

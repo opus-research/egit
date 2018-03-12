@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011 GitHub Inc.
+ *  Copyright (c) 2011, 2012 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -14,18 +14,25 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.PlatformObject;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.history.CommitFileDiffViewer;
 import org.eclipse.egit.ui.internal.history.FileDiff;
@@ -38,21 +45,23 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.RevWalkUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
-import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PartInitException;
@@ -67,13 +76,15 @@ import org.eclipse.ui.forms.events.HyperlinkEvent;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Hyperlink;
+import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
+import org.eclipse.ui.part.ShowInContext;
 
 /**
  * Commit editor page class displaying author, committer, parent commits,
  * message, and file information in form sections.
  */
-public class CommitEditorPage extends FormPage {
+public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 	private static final String SIGNED_OFF_BY = "Signed-off-by: {0} <{1}>"; //$NON-NLS-1$
 
@@ -90,6 +101,10 @@ public class CommitEditorPage extends FormPage {
 	private Section branchSection;
 
 	private TableViewer branchViewer;
+
+	private Section diffSection;
+
+	private CommitFileDiffViewer diffViewer;
 
 	/**
 	 * Create commit editor page
@@ -126,7 +141,7 @@ public class CommitEditorPage extends FormPage {
 		return (Image) this.resources.get(descriptor);
 	}
 
-	private Section createSection(Composite parent, FormToolkit toolkit,
+	Section createSection(Composite parent, FormToolkit toolkit,
 			int span) {
 		Section section = toolkit.createSection(parent,
 				ExpandableComposite.TITLE_BAR | ExpandableComposite.TWISTIE
@@ -136,7 +151,7 @@ public class CommitEditorPage extends FormPage {
 		return section;
 	}
 
-	private Composite createSectionClient(Section parent, FormToolkit toolkit) {
+	Composite createSectionClient(Section parent, FormToolkit toolkit) {
 		Composite client = toolkit.createComposite(parent);
 		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
 				.applyTo(client);
@@ -200,7 +215,7 @@ public class CommitEditorPage extends FormPage {
 		return userArea;
 	}
 
-	private void updateSectionClient(Section section, Composite client,
+	void updateSectionClient(Section section, Composite client,
 			FormToolkit toolkit) {
 		hookExpansionGrabbing(section);
 		toolkit.paintBordersFor(client);
@@ -229,53 +244,65 @@ public class CommitEditorPage extends FormPage {
 			createUserArea(userArea, toolkit, committer, false);
 
 		int count = commit.getParentCount();
-		if (count > 0) {
-			Composite parents = toolkit.createComposite(top);
-			GridLayoutFactory.fillDefaults().spacing(2, 2).numColumns(2)
-					.applyTo(parents);
-			GridDataFactory.fillDefaults().grab(false, false).applyTo(parents);
-
-			for (int i = 0; i < count; i++) {
-				final RevCommit parentCommit = commit.getParent(i);
-				toolkit.createLabel(parents,
-						UIText.CommitEditorPage_LabelParent).setForeground(
-						toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
-				final Hyperlink link = toolkit
-						.createHyperlink(parents,
-								parentCommit.abbreviate(PARENT_LENGTH).name(),
-								SWT.NONE);
-				link.addHyperlinkListener(new HyperlinkAdapter() {
-
-					public void linkActivated(HyperlinkEvent e) {
-						try {
-							CommitEditor.open(new RepositoryCommit(getCommit()
-									.getRepository(), parentCommit));
-							if ((e.getStateMask() & SWT.MOD1) != 0)
-								getEditor().close(false);
-						} catch (PartInitException e1) {
-							Activator.logError(
-									"Error opening commit editor", e1);//$NON-NLS-1$
-						}
-					}
-				});
-			}
-		}
+		if (count > 0)
+			createParentsArea(top, toolkit, commit);
 
 		createTagsArea(userArea, toolkit, 2);
 	}
 
-	private List<String> getTags() {
-		RevCommit commit = getCommit().getRevCommit();
+	private void createParentsArea(Composite parent, FormToolkit toolkit,
+			RevCommit commit) {
+		Composite parents = toolkit.createComposite(parent);
+		GridLayoutFactory.fillDefaults().spacing(2, 2).numColumns(2)
+				.applyTo(parents);
+		GridDataFactory.fillDefaults().grab(false, false).applyTo(parents);
+
+		for (int i = 0; i < commit.getParentCount(); i++) {
+			final RevCommit parentCommit = commit.getParent(i);
+			toolkit.createLabel(parents, getParentCommitLabel(i))
+					.setForeground(
+							toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
+			final Hyperlink link = toolkit
+					.createHyperlink(parents,
+							parentCommit.abbreviate(PARENT_LENGTH).name(),
+							SWT.NONE);
+			link.addHyperlinkListener(new HyperlinkAdapter() {
+				public void linkActivated(HyperlinkEvent e) {
+					try {
+						CommitEditor.open(new RepositoryCommit(getCommit()
+								.getRepository(), parentCommit));
+						if ((e.getStateMask() & SWT.MOD1) != 0)
+							getEditor().close(false);
+					} catch (PartInitException e1) {
+						Activator.logError(
+								"Error opening commit editor", e1);//$NON-NLS-1$
+					}
+				}
+			});
+		}
+	}
+
+	@SuppressWarnings("unused")
+	String getParentCommitLabel(int i) {
+		return UIText.CommitEditorPage_LabelParent;
+	}
+
+	private List<Ref> getTags() {
 		Repository repository = getCommit().getRepository();
-		List<String> tags = new ArrayList<String>();
-		for (Ref tag : repository.getTags().values())
-			if (commit.equals(repository.peel(tag).getPeeledObjectId()))
-				tags.add(Repository.shortenRefName(tag.getName()));
-		Collections.sort(tags);
+		List<Ref> tags = new ArrayList<Ref>(repository.getTags().values());
+		Collections.sort(tags, new Comparator<Ref>() {
+
+			public int compare(Ref r1, Ref r2) {
+				return Repository.shortenRefName(r1.getName())
+						.compareToIgnoreCase(
+								Repository.shortenRefName(r2.getName()));
+			}
+		});
 		return tags;
 	}
 
-	private void createTagsArea(Composite parent, FormToolkit toolkit, int span) {
+	void createTagsArea(Composite parent, FormToolkit toolkit,
+			int span) {
 		Composite tagArea = toolkit.createComposite(parent);
 		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false)
 				.applyTo(tagArea);
@@ -284,22 +311,50 @@ public class CommitEditorPage extends FormPage {
 		toolkit.createLabel(tagArea, UIText.CommitEditorPage_LabelTags)
 				.setForeground(
 						toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
-		fillTags(tagArea, toolkit);
+		tagLabelArea = toolkit.createComposite(tagArea);
+		GridDataFactory.fillDefaults().grab(true, true).applyTo(tagLabelArea);
+		GridLayoutFactory.fillDefaults().spacing(1, 1).applyTo(tagLabelArea);
 	}
 
-	private void fillTags(Composite parent, FormToolkit toolkit) {
-		if (tagLabelArea != null)
-			tagLabelArea.dispose();
-		tagLabelArea = toolkit.createComposite(parent);
-		GridLayoutFactory.fillDefaults().spacing(1, 1).numColumns(4)
+	void fillDiffs(FileDiff[] diffs) {
+		diffViewer.setInput(diffs);
+		diffSection.setText(getDiffSectionTitle(Integer.valueOf(diffs.length)));
+		setSectionExpanded(diffSection, diffs.length != 0);
+	}
+
+	static void setSectionExpanded(Section section, boolean expanded) {
+		section.setExpanded(expanded);
+		((GridData) section.getLayoutData()).grabExcessVerticalSpace = expanded;
+	}
+
+	String getDiffSectionTitle(Integer numChanges) {
+		return MessageFormat.format(UIText.CommitEditorPage_SectionFiles,
+				numChanges);
+	}
+
+	void fillTags(FormToolkit toolkit, List<Ref> tags) {
+		for (Control child : tagLabelArea.getChildren())
+			child.dispose();
+
+		// Hide "Tags" area if no tags to show
+		((GridData) tagLabelArea.getParent().getLayoutData()).exclude = tags
+				.isEmpty();
+
+		GridLayoutFactory.fillDefaults().spacing(1, 1).numColumns(tags.size())
 				.applyTo(tagLabelArea);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(tagLabelArea);
-		List<String> tags = getTags();
-		for (String tag : tags) {
+
+		for (Ref tag : tags) {
+			ObjectId id = tag.getPeeledObjectId();
+			boolean annotated = id != null;
+			if (id == null)
+				id = tag.getObjectId();
 			CLabel tagLabel = new CLabel(tagLabelArea, SWT.NONE);
 			toolkit.adapt(tagLabel, false, false);
-			tagLabel.setImage(getImage(UIIcons.TAG));
-			tagLabel.setText(tag);
+			if (annotated)
+				tagLabel.setImage(getImage(UIIcons.TAG_ANNOTATED));
+			else
+				tagLabel.setImage(getImage(UIIcons.TAG));
+			tagLabel.setText(Repository.shortenRefName(tag.getName()));
 		}
 	}
 
@@ -338,11 +393,16 @@ public class CommitEditorPage extends FormPage {
 			}
 
 		};
+
 		if ((toolkit.getBorderStyle() & SWT.BORDER) == 0)
 			textContent.setData(FormToolkit.KEY_DRAW_BORDER,
 					FormToolkit.TEXT_BORDER);
-		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 80).grab(true, true)
-				.applyTo(textContent);
+
+		Point size = textContent.getTextWidget().computeSize(SWT.DEFAULT,
+				SWT.DEFAULT);
+		int yHint = size.y > 80 ? 80 : SWT.DEFAULT;
+		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, yHint).minSize(1, 20)
+				.grab(true, true).applyTo(textContent);
 
 		updateSectionClient(messageSection, messageArea, toolkit);
 	}
@@ -350,6 +410,7 @@ public class CommitEditorPage extends FormPage {
 	private void createBranchesArea(Composite parent, FormToolkit toolkit,
 			int span) {
 		branchSection = createSection(parent, toolkit, span);
+		branchSection.setText(UIText.CommitEditorPage_SectionBranchesEmpty);
 		Composite branchesArea = createSectionClient(branchSection, toolkit);
 
 		branchViewer = new TableViewer(toolkit.createTable(branchesArea,
@@ -368,76 +429,35 @@ public class CommitEditorPage extends FormPage {
 		branchViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
 
-		fillBranches();
-
 		updateSectionClient(branchSection, branchesArea, toolkit);
 	}
 
-	private void fillBranches() {
-		Repository repository = getCommit().getRepository();
-		RevCommit commit = getCommit().getRevCommit();
-		RevWalk revWalk = new RevWalk(repository);
-		List<Ref> result = new ArrayList<Ref>();
-		try {
-			Map<String, Ref> refsMap = new HashMap<String, Ref>();
-			refsMap.putAll(repository.getRefDatabase().getRefs(
-					Constants.R_HEADS));
-			refsMap.putAll(repository.getRefDatabase().getRefs(
-					Constants.R_REMOTES));
-			for (Ref ref : refsMap.values()) {
-				if (ref.isSymbolic())
-					continue;
-				RevCommit headCommit = revWalk.parseCommit(ref.getObjectId());
-				RevCommit base = revWalk.parseCommit(commit);
-				if (revWalk.isMergedInto(base, headCommit))
-					result.add(ref);
-			}
-		} catch (IOException ignored) {
-			// Ignored
-		}
-
+	private void fillBranches(List<Ref> result) {
 		branchViewer.setInput(result);
 		branchSection.setText(MessageFormat.format(
 				UIText.CommitEditorPage_SectionBranches,
 				Integer.valueOf(result.size())));
 	}
 
-	private void createFilesArea(Composite parent, FormToolkit toolkit, int span) {
-		Section files = createSection(parent, toolkit, span);
-		Composite filesArea = createSectionClient(files, toolkit);
-		GridLayout filesAreaLayout = (GridLayout) filesArea.getLayout();
-		filesAreaLayout.marginLeft = 0;
-		filesAreaLayout.marginRight = 0;
-		filesAreaLayout.marginTop = 0;
-		filesAreaLayout.marginBottom = 0;
+	void createDiffArea(Composite parent, FormToolkit toolkit, int span) {
+		diffSection = createSection(parent, toolkit, span);
+		diffSection.setText(UIText.CommitEditorPage_SectionFilesEmpty);
+		Composite filesArea = createSectionClient(diffSection, toolkit);
 
-		CommitFileDiffViewer viewer = new CommitFileDiffViewer(filesArea,
-				getSite(), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
-						| SWT.FULL_SELECTION | toolkit.getBorderStyle());
-		// commit file diff viewer uses a nested composite with a stack layout
-		// and so margins need to be applied to have form toolkit style borders
-		toolkit.paintBordersFor(viewer.getTable().getParent());
-		viewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+		diffViewer = new CommitFileDiffViewer(filesArea, getSite(), SWT.MULTI
+				| SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION
+				| toolkit.getBorderStyle());
+		diffViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		StackLayout viewerLayout = (StackLayout) viewer.getControl()
-				.getParent().getLayout();
-		viewerLayout.marginHeight = 2;
-		viewerLayout.marginWidth = 2;
-		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 80)
-				.applyTo(viewer.getTable().getParent());
-		viewer.setContentProvider(ArrayContentProvider.getInstance());
-		viewer.setTreeWalk(getCommit().getRepository(), null);
+		GridDataFactory.fillDefaults().grab(true, true)
+				.applyTo(diffViewer.getControl());
+		diffViewer.setContentProvider(ArrayContentProvider.getInstance());
+		diffViewer.setTreeWalk(getCommit().getRepository(), null);
 
-		FileDiff[] diffs = getCommit().getDiffs();
-		viewer.setInput(diffs);
-		files.setText(MessageFormat.format(
-				UIText.CommitEditorPage_SectionFiles,
-				Integer.valueOf(diffs.length)));
-
-		updateSectionClient(files, filesArea, toolkit);
+		updateSectionClient(diffSection, filesArea, toolkit);
 	}
 
-	private RepositoryCommit getCommit() {
+	RepositoryCommit getCommit() {
 		return (RepositoryCommit) getEditor()
 				.getAdapter(RepositoryCommit.class);
 	}
@@ -465,17 +485,104 @@ public class CommitEditorPage extends FormPage {
 
 		createHeaderArea(displayArea, toolkit, 2);
 		createMessageArea(displayArea, toolkit, 2);
-		createFilesArea(displayArea, toolkit, 1);
+		createChangesArea(displayArea, toolkit);
+
+		loadSections();
+	}
+
+	void createChangesArea(Composite displayArea, FormToolkit toolkit) {
+		createDiffArea(displayArea, toolkit, 1);
 		createBranchesArea(displayArea, toolkit, 1);
+	}
+
+	private List<Ref> loadTags() {
+		RepositoryCommit repoCommit = getCommit();
+		RevCommit commit = repoCommit.getRevCommit();
+		Repository repository = repoCommit.getRepository();
+		List<Ref> tags = new ArrayList<Ref>();
+		for (Ref tag : getTags()) {
+			tag = repository.peel(tag);
+			ObjectId id = tag.getPeeledObjectId();
+			if (id == null)
+				id = tag.getObjectId();
+			if (!commit.equals(id))
+				continue;
+			tags.add(tag);
+		}
+		return tags;
+	}
+
+	private List<Ref> loadBranches() {
+		Repository repository = getCommit().getRepository();
+		RevCommit commit = getCommit().getRevCommit();
+		RevWalk revWalk = new RevWalk(repository);
+		try {
+			Map<String, Ref> refsMap = new HashMap<String, Ref>();
+			refsMap.putAll(repository.getRefDatabase().getRefs(
+					Constants.R_HEADS));
+			refsMap.putAll(repository.getRefDatabase().getRefs(
+					Constants.R_REMOTES));
+			return RevWalkUtils.findBranchesReachableFrom(commit, revWalk, refsMap.values());
+		} catch (IOException e) {
+			Activator.handleError(e.getMessage(), e, false);
+			return Collections.emptyList();
+		}
+	}
+
+	void loadSections() {
+		RepositoryCommit commit = getCommit();
+		Job refreshJob = new Job(MessageFormat.format(
+				UIText.CommitEditorPage_JobName, commit.getRevCommit().name())) {
+
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				final List<Ref> tags = loadTags();
+				final List<Ref> branches = loadBranches();
+				final FileDiff[] diffs = getCommit().getDiffs();
+
+				final ScrolledForm form = getManagedForm().getForm();
+				if (UIUtils.isUsable(form))
+					form.getDisplay().syncExec(new Runnable() {
+
+						public void run() {
+							if (!UIUtils.isUsable(form))
+								return;
+
+							fillTags(getManagedForm().getToolkit(), tags);
+							fillDiffs(diffs);
+							fillBranches(branches);
+							form.reflow(true);
+							form.layout(true, true);
+						}
+					});
+
+				return Status.OK_STATUS;
+			}
+		};
+		refreshJob.setRule(this);
+		refreshJob.schedule();
 	}
 
 	/**
 	 * Refresh the editor page
 	 */
 	public void refresh() {
-		fillTags(tagLabelArea.getParent(), getManagedForm().getToolkit());
-		fillBranches();
-		getManagedForm().getForm().layout(true, true);
+		loadSections();
+	}
+
+	public boolean contains(ISchedulingRule rule) {
+		return rule == this;
+	}
+
+	public boolean isConflicting(ISchedulingRule rule) {
+		return rule == this;
+	}
+
+	ShowInContext getShowInContext() {
+		if (diffViewer != null && diffViewer.getControl().isFocusControl())
+			return diffViewer.getShowInContext();
+		else
+			return null;
 	}
 
 }

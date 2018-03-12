@@ -22,7 +22,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.team.core.history.IFileRevision;
 
 /** An {@link IFileRevision} for the current version in the working tree */
-public class WorkingTreeFileRevision extends GitFileRevision implements IFileRevision {
+public class WorkingTreeFileRevision extends GitFileRevision {
 
 	private final File file;
 
@@ -30,7 +30,7 @@ public class WorkingTreeFileRevision extends GitFileRevision implements IFileRev
 	 * @param file
 	 */
 	public WorkingTreeFileRevision(final File file) {
-		super(file.getName());
+		super(file.getPath());
 		this.file = file;
 	}
 
@@ -65,11 +65,6 @@ public class WorkingTreeFileRevision extends GitFileRevision implements IFileRev
 
 	public boolean isPropertyMissing() {
 		return false;
-	}
-
-	public IFileRevision withAllProperties(IProgressMonitor monitor)
-			throws CoreException {
-		return null;
 	}
 
 	public String getAuthor() {

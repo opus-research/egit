@@ -10,8 +10,8 @@
 package org.eclipse.egit.ui.internal.fetch;
 
 import org.eclipse.egit.core.op.FetchOperationResult;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -49,7 +49,8 @@ public class FetchResultDialog extends TitleAreaDialog {
 	public FetchResultDialog(final Shell parentShell, final Repository localDb,
 			final FetchOperationResult result, final String sourceString) {
 		super(parentShell);
-		setShellStyle(getShellStyle() | SWT.RESIZE);
+		setShellStyle(getShellStyle() & ~SWT.APPLICATION_MODAL | SWT.RESIZE);
+		setBlockOnOpen(false);
 		this.localDb = localDb;
 		this.result = result;
 		this.sourceString = sourceString;
@@ -88,7 +89,8 @@ public class FetchResultDialog extends TitleAreaDialog {
 	public FetchResultDialog(final Shell parentShell, final Repository localDb,
 			final FetchResult result, final String sourceString) {
 		super(parentShell);
-		setShellStyle(getShellStyle() | SWT.RESIZE);
+		setShellStyle(getShellStyle() & ~SWT.APPLICATION_MODAL | SWT.RESIZE);
+		setBlockOnOpen(false);
 		this.localDb = localDb;
 		this.result = new FetchOperationResult(result.getURI(), result);
 		this.sourceString = sourceString;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,13 +9,15 @@
 package org.eclipse.egit.ui.internal.synchronize.mapping;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObjectContainer;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
+import org.eclipse.egit.ui.internal.synchronize.model.HasProjects;
 
 /**
  * Maps Git's objects onto proper {@link ResourceMapping} instants. It allows
@@ -36,8 +38,6 @@ public abstract class GitObjectMapping extends ResourceMapping {
 			return new GitTreeMapping((GitModelTree) object);
 		if (object instanceof GitModelObjectContainer)
 			return new GitContainerMapping((GitModelObjectContainer) object);
-		if (object instanceof GitModelRepository)
-			return new GitRepositoryMapping((GitModelRepository) object);
 
 		return null;
 	}
@@ -53,7 +53,7 @@ public abstract class GitObjectMapping extends ResourceMapping {
 	public boolean contains(ResourceMapping mapping) {
 		if (mapping.getModelProviderId().equals(getModelProviderId())) {
 			GitModelObject obj = (GitModelObject) mapping.getModelObject();
-			return obj.getRepository().equals(object.getRepository());
+			return obj.repositoryHashCode() == object.repositoryHashCode();
 		}
 
 		return false;
@@ -69,9 +69,26 @@ public abstract class GitObjectMapping extends ResourceMapping {
 		return GitChangeSetModelProvider.ID;
 	}
 
-	@Override
-	public IProject[] getProjects() {
-		return object.getProjects();
+	private IProject getProject(final IResource resource) {
+		return resource != null ? resource.getProject() : null;
 	}
 
+	@Override
+	public IProject[] getProjects() {
+		IProject[] projects = null;
+		if (!object.isContainer()) {
+			IProject project = getProject(ResourcesPlugin.getWorkspace()
+					.getRoot().getFileForLocation(object.getLocation()));
+			if (project != null)
+				projects = new IProject[] { project };
+		} else if (object instanceof GitModelTree) {
+			IProject project = getProject(ResourcesPlugin.getWorkspace()
+					.getRoot().getContainerForLocation(object.getLocation()));
+			if (project != null)
+				projects = new IProject[] { project };
+		} else if (object instanceof HasProjects)
+			projects = ((HasProjects) object).getProjects();
+
+		return projects != null ? projects : new IProject[0];
+	}
 }

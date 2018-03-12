@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
+ * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -42,6 +42,11 @@ public class JobFamilies {
 	 * Repositories View refresh
 	 */
 	public final static Object REPO_VIEW_REFRESH = new Object();
+
+	/**
+	 * Delete repository job
+	 */
+	public final static Object REPOSITORY_DELETE = new Object();
 
 	/**
 	 * Tag job
@@ -89,9 +94,10 @@ public class JobFamilies {
 	public final static Object DISCONNECT = new Object();
 
 	/**
-	 * Staging View refresh
+	 * Discard Changes
 	 */
-	public static final Object STAGING_VIEW_REFRESH = new Object();
+	public final static Object DISCARD_CHANGES = new Object();
+
 
 	/**
 	 * Add to index job
@@ -109,6 +115,21 @@ public class JobFamilies {
 	public static final Object CHERRY_PICK = new Object();
 
 	/**
+	 * Squash commits job
+	 */
+	public static final Object SQUASH = new Object();
+
+	/**
+	 * Reword commit job
+	 */
+	public static final Object REWORD = new Object();
+
+	/**
+	 * Edit commit job
+	 */
+	public static final Object EDIT = new Object();
+
+	/**
 	 * Revert commit job
 	 */
 	public static final Object REVERT_COMMIT = new Object();
@@ -117,10 +138,34 @@ public class JobFamilies {
 	 * Clone repository job
 	 */
 	public static final Object CLONE = new Object();
-	
+
 	/**
 	 * Fetch data from git job
 	 */
 	public static final Object SYNCHRONIZE_READ_DATA = new Object();
 
+	/**
+	 * Show annotations git job
+	 */
+	public static final Object BLAME = new Object();
+
+	/**
+	 * Submodule add git job
+	 */
+	public static final Object SUBMODULE_ADD = new Object();
+
+	/**
+	 * Submodule sync git job
+	 */
+	public static final Object SUBMODULE_SYNC = new Object();
+
+	/**
+	 * Submodule update git job
+	 */
+	public static final Object SUBMODULE_UPDATE = new Object();
+
+	/**
+	 * Stash git job
+	 */
+	public static final Object STASH = new Object();
 }

@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011 SAP AG.
- * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (C) 2011, 2012 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,6 +8,8 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ *    Daniel Megert <daniel_megert@ch.ibm.com> - remove unnecessary @SuppressWarnings
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.clone;
 
@@ -21,16 +22,18 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChang
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
-import org.eclipse.egit.ui.internal.repository.RepositorySearchDialog;
+import org.eclipse.egit.ui.internal.repository.RepositorySearchWizard;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -40,7 +43,7 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -62,8 +65,6 @@ public class GitSelectRepositoryPage extends WizardPage {
 	private TreeViewer tv;
 
 	private Button addRepo;
-
-	private Button cloneRepo;
 
 	private IPreferenceChangeListener configChangeListener;
 
@@ -120,27 +121,6 @@ public class GitSelectRepositoryPage extends WizardPage {
 		GridLayoutFactory.fillDefaults().numColumns(1).applyTo(tb);
 		GridDataFactory.fillDefaults().grab(false, true).applyTo(tb);
 
-		cloneRepo = new Button(tb, SWT.PUSH);
-		cloneRepo.setText(UIText.GitSelectRepositoryPage_CloneButton);
-		cloneRepo.setToolTipText(UIText.GitSelectRepositoryPage_CloneTooltip);
-
-		GridDataFactory.fillDefaults().grab(false, false).align(SWT.FILL,
-				SWT.BEGINNING).applyTo(cloneRepo);
-
-		cloneRepo.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent event) {
-				GitCloneWizard cloneWizard = new GitCloneWizard();
-				cloneWizard.setCallerRunsCloneOperation(true);
-				WizardDialog dlg = new WizardDialog(getShell(), cloneWizard);
-				dlg.setHelpAvailable(true);
-				if (dlg.open() == Window.OK)
-					cloneWizard.runCloneOperation(getContainer());
-				checkPage();
-			}
-
-		});
-
 		addRepo = new Button(tb, SWT.PUSH);
 		GridDataFactory.fillDefaults().grab(true, false).align(SWT.FILL,
 				SWT.BEGINNING).applyTo(addRepo);
@@ -150,13 +130,13 @@ public class GitSelectRepositoryPage extends WizardPage {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-
 				List<String> configuredDirs = util.getConfiguredRepositories();
-				RepositorySearchDialog dlg = new RepositorySearchDialog(
-						getShell(), configuredDirs);
-				if (dlg.open() == Window.OK && dlg.getDirectories().size() > 0) {
-
-					Set<String> dirs = dlg.getDirectories();
+				RepositorySearchWizard wizard = new RepositorySearchWizard(
+						configuredDirs);
+				WizardDialog dlg = new WizardDialog(getShell(), wizard);
+				if (dlg.open() == Window.OK
+						&& !wizard.getDirectories().isEmpty()) {
+					Set<String> dirs = wizard.getDirectories();
 					for (String dir : dirs)
 						util.addConfiguredRepository(new File(dir));
 					checkPage();
@@ -169,6 +149,15 @@ public class GitSelectRepositoryPage extends WizardPage {
 
 			public void selectionChanged(SelectionChangedEvent event) {
 				checkPage();
+			}
+		});
+
+		tv.addDoubleClickListener(new IDoubleClickListener() {
+
+			public void doubleClick(DoubleClickEvent event) {
+				checkPage();
+				if (isPageComplete())
+					getContainer().showPage(getNextPage());
 			}
 		});
 
@@ -202,15 +191,13 @@ public class GitSelectRepositoryPage extends WizardPage {
 			// check in the dialog settings if a repository was selected before
 			// and select it if nothing else is selected
 			String repoDir = settings.get(LAST_SELECTED_REPO_PREF);
-			if (repoDir != null) {
+			if (repoDir != null)
 				for (TreeItem item : tv.getTree().getItems()) {
 					RepositoryNode node = (RepositoryNode) item.getData();
 					if (node.getRepository().getDirectory().getPath().equals(
-							repoDir)) {
+							repoDir))
 						tv.setSelection(new StructuredSelection(node));
-					}
 				}
-			}
 		} else {
 			// save selection in dialog settings
 			Object element = ((IStructuredSelection) tv.getSelection())
@@ -223,24 +210,21 @@ public class GitSelectRepositoryPage extends WizardPage {
 	}
 
 	private void refreshRepositoryList() {
-		@SuppressWarnings("unchecked")
 		List<String> dirsBefore = (List<String>) tv.getInput();
 		List<String> dirsAfter = util.getConfiguredRepositories();
 		if (!dirsBefore.containsAll(dirsAfter)) {
 			tv.setInput(dirsAfter);
-			for (String dir : dirsAfter) {
-				if (!dirsBefore.contains(dir)) {
+			for (String dir : dirsAfter)
+				if (!dirsBefore.contains(dir))
 					try {
-						RepositoryNode node = new RepositoryNode(
-								null, new FileRepository(new File(dir)));
+						RepositoryNode node = new RepositoryNode(null,
+								FileRepositoryBuilder.create(new File(dir)));
 						tv.setSelection(new StructuredSelection(
 								node));
 					} catch (IOException e1) {
 						Activator.handleError(e1.getMessage(), e1,
 								false);
 					}
-				}
-			}
 		}
 	}
 
