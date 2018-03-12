@@ -1089,9 +1089,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (isDisposed())
 			return;
 
-		// Can't disable viewers, see bug 440758
-		// unstagedViewer.getControl().setEnabled(enabled);
-		// stagedViewer.getControl().setEnabled(enabled);
+		unstagedViewer.getControl().setEnabled(enabled);
+		stagedViewer.getControl().setEnabled(enabled);
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		enableAuthorText(enabled);
@@ -2409,7 +2408,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) getSite()
 				.getService(IWorkbenchSiteProgressService.class);
 		if (service != null)
-			service.schedule(commitJob, 0, true);
+			service.schedule(commitJob);
 		else
 			commitJob.schedule();
 
