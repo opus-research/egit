@@ -8,6 +8,8 @@
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
  *    Mathias Kinzler (SAP AG) - move to command framework
+ *    Dariusz Luksza (dariusz@luksza.org - set action disabled when HEAD cannot
+ *    										be resolved
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -48,10 +50,10 @@ import org.eclipse.ui.PlatformUI;
 public class MergeCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
-		BasicConfigurationDialog.show();
 		RepositoryTreeNode node = getSelectedNodes(event).get(0);
-
 		final Repository repository = node.getRepository();
+
+		BasicConfigurationDialog.show(repository);
 
 		if (!canMerge(repository))
 			return null;
@@ -134,6 +136,11 @@ public class MergeCommand extends
 		job.schedule();
 
 		return null;
+	}
+
+	@Override
+	public void setEnabled(Object evaluationContext) {
+		enableWhenRepositoryHaveHead(evaluationContext);
 	}
 
 	private boolean canMerge(final Repository repository) {

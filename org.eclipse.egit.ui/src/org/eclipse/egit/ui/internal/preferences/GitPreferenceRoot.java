@@ -63,16 +63,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
 
-		Group initialGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
-		initialGroup.setText(UIText.GitPreferenceRoot_InitialConfiguration);
-		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(initialGroup);
-		addField(new BooleanFieldEditor(
-				UIPreferences.SHOW_INITIAL_CONFIG_DIALOG,
-				UIText.GitPreferenceRoot_ShowInitialConfigDialogCheckbox,
-				initialGroup));
-		updateMargins(initialGroup);
-
 		Group cloningGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		cloningGroup.setText(UIText.GitPreferenceRoot_CloningRepoGroupHeader);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
@@ -101,6 +91,9 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
 				.applyTo(historyGroup);
 
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE,
+				UIText.ResourceHistory_toggleRelativeDate, historyGroup));
 		addField(new BooleanFieldEditor(
 				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
 				UIText.ResourceHistory_toggleCommentWrap, historyGroup));
@@ -159,14 +152,14 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		addField(mergeMode);
 		updateMargins(mergeGroup);
 
-		Group confirmGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		Group synchronizeGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(confirmGroup);
-		confirmGroup.setText(UIText.GitPreferenceRoot_HideConfirmationGroup);
-		addField(new BooleanFieldEditor(UIPreferences.REBASE_HIDE_CONFIRM,
-				UIText.GitPreferenceRoot_HideRebaseConfirmationField,
-				confirmGroup));
-		updateMargins(confirmGroup);
+				.applyTo(synchronizeGroup);
+		synchronizeGroup.setText(UIText.GitPreferenceRoot_SynchronizeView);
+		addField(new BooleanFieldEditor(UIPreferences.SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL,
+				UIText.GitPreferenceRoot_automaticallyEnableChangesetModel,
+				synchronizeGroup));
+		updateMargins(synchronizeGroup);
 	}
 
 	private void updateMargins(Group group) {

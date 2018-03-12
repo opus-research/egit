@@ -32,6 +32,7 @@ import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.TransportProtocol;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
@@ -50,7 +51,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -329,7 +329,7 @@ public class RepositorySelectionPage extends WizardPage {
 					if (index > 0)
 						text = text.substring(0, index);
 					URIish u = new URIish(text);
-					if (Transport.canHandleProtocol(u, FS.DETECTED)) {
+					if (canHandleProtocol(u)) {
 						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
 								|| text.endsWith(Constants.DOT_GIT))
 							preset = text;
@@ -408,6 +408,14 @@ public class RepositorySelectionPage extends WizardPage {
 		setControl(panel);
 
 		checkPage();
+	}
+
+	private boolean canHandleProtocol(URIish u) {
+		for (TransportProtocol proto : Transport.getTransportProtocols())
+			if (proto.canHandle(u))
+				return true;
+
+		return false;
 	}
 
 	private void createRemotePanel(final Composite parent) {
@@ -866,11 +874,11 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void updateRemoteAndURIPanels() {
-		setEnabledRecursively(uriPanel, isURISelected());
+		UIUtils.setEnabledRecursively(uriPanel, isURISelected());
 		if (uriPanel.getEnabled())
 			updateAuthGroup();
 		if (configuredRemotes != null)
-			setEnabledRecursively(remotePanel, !isURISelected());
+			UIUtils.setEnabledRecursively(remotePanel, !isURISelected());
 	}
 
 	private void updateAuthGroup() {
@@ -878,7 +886,7 @@ public class RepositorySelectionPage extends WizardPage {
 		if (p != null) {
 			hostText.setEnabled(p.hasHost());
 			portText.setEnabled(p.hasPort());
-			setEnabledRecursively(authGroup, p.canAuthenticate());
+			UIUtils.setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
 	}
 
@@ -933,14 +941,6 @@ public class RepositorySelectionPage extends WizardPage {
 	@Override
 	public void performHelp() {
 		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
-	}
-
-	private void setEnabledRecursively(final Control control,
-			final boolean enable) {
-		control.setEnabled(enable);
-		if (control instanceof Composite)
-			for (final Control child : ((Composite) control).getChildren())
-				setEnabledRecursively(child, enable);
 	}
 
 	private void updateFields(final String text) {
