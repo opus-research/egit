@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,9 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.project.GitProjectData;
@@ -56,6 +59,7 @@ import org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration;
 import org.eclipse.team.ui.synchronize.ModelSynchronizeParticipant;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.IWorkbenchPart;
 
 /**
  * Git model synchronization participant
@@ -213,7 +217,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		if (object instanceof IFile) {
 			IFile file = (IFile) object;
 			GitSynchronizeData gsd = gsds.getData(file.getProject());
-			if (!gsd.shouldIncludeLocal())
+			if (gsd != null && !gsd.shouldIncludeLocal())
 				return getFileFromGit(gsd, file.getLocation());
 		}
 
@@ -221,23 +225,44 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 	}
 
 	@Override
+	public void run(final IWorkbenchPart part) {
+		boolean launchFetch = Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH);
+		if (launchFetch || gsds.forceFetch()) {
+			Job fetchJob = new SynchronizeFetchJob(gsds);
+			fetchJob.setUser(true);
+			fetchJob.addJobChangeListener(new JobChangeAdapter() {
+				@Override
+				public void done(IJobChangeEvent event) {
+					GitModelSynchronizeParticipant.super.run(part);
+				}
+			});
+
+			fetchJob.schedule();
+		} else
+			super.run(part);
+	}
+
+	@Override
 	public void saveState(IMemento memento) {
 		super.saveState(memento);
 		for (GitSynchronizeData gsd : gsds) {
-			IMemento child = memento.createChild(DATA_NODE_KEY);
 			Repository repo = gsd.getRepository();
 			RepositoryMapping mapping = RepositoryMapping.findRepositoryMapping(repo);
-			child.putString(CONTAINER_PATH_KEY, getPathForContainer(mapping.getContainer()));
-			child.putString(SRC_REV_KEY, gsd.getSrcRev());
-			child.putString(DST_REV_KEY, gsd.getDstRev());
-			child.putBoolean(INCLUDE_LOCAL_KEY, gsd.shouldIncludeLocal());
-			Set<IContainer> includedPaths = gsd.getIncludedPaths();
-			if (includedPaths != null && !includedPaths.isEmpty()) {
-				IMemento paths = child.createChild(INCLUDED_PATHS_NODE_KEY);
-				for (IContainer container : includedPaths) {
-					String path = getPathForContainer(container);
-					paths.createChild(INCLUDED_PATH_KEY).putString(
-							INCLUDED_PATH_KEY, path);
+			if (mapping != null) {
+				IMemento child = memento.createChild(DATA_NODE_KEY);
+				child.putString(CONTAINER_PATH_KEY, getPathForContainer(mapping.getContainer()));
+				child.putString(SRC_REV_KEY, gsd.getSrcRev());
+				child.putString(DST_REV_KEY, gsd.getDstRev());
+				child.putBoolean(INCLUDE_LOCAL_KEY, gsd.shouldIncludeLocal());
+				Set<IContainer> includedPaths = gsd.getIncludedPaths();
+				if (includedPaths != null && !includedPaths.isEmpty()) {
+					IMemento paths = child.createChild(INCLUDED_PATHS_NODE_KEY);
+					for (IContainer container : includedPaths) {
+						String path = getPathForContainer(container);
+						paths.createChild(INCLUDED_PATH_KEY).putString(
+								INCLUDED_PATH_KEY, path);
+					}
 				}
 			}
 		}
@@ -274,6 +299,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 			ResourceMapping[] mappings) {
 		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
 				gsds);
+		subscriber.init(new NullProgressMonitor());
 		GitSubscriberResourceMappingContext context = new GitSubscriberResourceMappingContext(
 				subscriber, gsds);
 		return new SynchronizationScopeManager(

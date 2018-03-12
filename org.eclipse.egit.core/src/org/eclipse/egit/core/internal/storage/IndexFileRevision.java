@@ -25,7 +25,7 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 
 /** An {@link IFileRevision} for the version in the Git index. */
-class IndexFileRevision extends GitFileRevision implements IFileRevision {
+class IndexFileRevision extends GitFileRevision {
 	private final Repository db;
 
 	private final String path;
@@ -46,11 +46,6 @@ class IndexFileRevision extends GitFileRevision implements IFileRevision {
 
 	public boolean isPropertyMissing() {
 		return false;
-	}
-
-	public IFileRevision withAllProperties(IProgressMonitor monitor)
-			throws CoreException {
-		return null;
 	}
 
 	public String getAuthor() {
