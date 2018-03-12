@@ -67,8 +67,6 @@ public class RefSpecPage extends BaseWizardPage {
 
 	private String transportError;
 
-	private String configName;
-
 	/**
 	 * Create specifications selection page for provided context.
 	 *
@@ -159,15 +157,6 @@ public class RefSpecPage extends BaseWizardPage {
 		if (visible)
 			revalidate();
 		super.setVisible(visible);
-	}
-
-	/**
-	 * Special mode: the configuration is determined by the wizard
-	 *
-	 * @param configName
-	 */
-	public void setConfigName(String configName) {
-		this.configName = configName;
 	}
 
 	/**
@@ -263,25 +252,18 @@ public class RefSpecPage extends BaseWizardPage {
 		}
 
 		this.validatedRepoSelection = newRepoSelection;
-		final String actRemoteName;
-		if (configName == null)
-			actRemoteName = validatedRepoSelection.getConfigName();
-		else
-			actRemoteName = configName;
-
+		final String remoteName = validatedRepoSelection.getConfigName();
 		specsPanel.setAssistanceData(local, listRemotesOp.getRemoteRefs(),
-				actRemoteName);
+				remoteName);
 
-		if (!pushPage) {
-			tagsAutoFollowButton.setSelection(false);
-			tagsFetchTagsButton.setSelection(false);
-			tagsNoTagsButton.setSelection(false);
-		}
+		tagsAutoFollowButton.setSelection(false);
+		tagsFetchTagsButton.setSelection(false);
+		tagsNoTagsButton.setSelection(false);
 
 		if (newRepoSelection.isConfigSelected()) {
 			saveButton.setVisible(true);
 			saveButton.setText(NLS.bind(UIText.RefSpecPage_saveSpecifications,
-					actRemoteName));
+					remoteName));
 			saveButton.getParent().layout();
 			final TagOpt tagOpt = newRepoSelection.getConfig().getTagOpt();
 			switch (tagOpt) {
@@ -295,7 +277,7 @@ public class RefSpecPage extends BaseWizardPage {
 				tagsNoTagsButton.setSelection(true);
 				break;
 			}
-		} else if (!pushPage)
+		} else
 			tagsAutoFollowButton.setSelection(true);
 
 		checkPage();
