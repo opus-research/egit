@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2005, 2015 IBM Corporation and others.
+ * Copyright (c) 2005, 2008 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -23,7 +23,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.PlatformObject;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -64,7 +63,7 @@ public class FileRevisionEditorInput extends PlatformObject implements
 		if (storage instanceof IFileState) {
 			return new IFileState() {
 				public Object getAdapter(Class adapter) {
-					return CommonUtils.getAdapter(storage, adapter);
+					return storage.getAdapter(adapter);
 				}
 
 				public boolean isReadOnly() {
@@ -99,7 +98,7 @@ public class FileRevisionEditorInput extends PlatformObject implements
 
 		return new IEncodedStorage() {
 			public Object getAdapter(Class adapter) {
-				return CommonUtils.getAdapter(storage, adapter);
+				return storage.getAdapter(adapter);
 			}
 
 			public boolean isReadOnly() {
@@ -168,12 +167,12 @@ public class FileRevisionEditorInput extends PlatformObject implements
 	}
 
 	public String getName() {
-		IFileRevision rev = CommonUtils.getAdapter(this, IFileRevision.class);
+		IFileRevision rev = (IFileRevision) getAdapter(IFileRevision.class);
 		if (rev != null)
 			return NLS.bind(
 					UIText.FileRevisionEditorInput_NameAndRevisionTitle,
 					new String[] { rev.getName(), rev.getContentIdentifier() });
-		IFileState state = CommonUtils.getAdapter(this, IFileState.class);
+		IFileState state = (IFileState) getAdapter(IFileState.class);
 		if (state != null)
 			return state.getName()
 					+ " " + DateFormat.getInstance().format(new Date(state.getModificationTime())); //$NON-NLS-1$
@@ -210,7 +209,7 @@ public class FileRevisionEditorInput extends PlatformObject implements
 	}
 
 	public String getLabel(Object o) {
-		IFileRevision rev = CommonUtils.getAdapter(this, IFileRevision.class);
+		IFileRevision rev = (IFileRevision) getAdapter(IFileRevision.class);
 		if (rev != null)
 			return rev.getName();
 		return storage.getName();

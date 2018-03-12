@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Tasktop Technologies Inc. and others.
+ * Copyright (C) 2011, Tasktop Technologies Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -106,10 +106,10 @@ public class GitScopeUtil {
 			return (ResourceMapping) o;
 		if (o instanceof IAdaptable) {
 			IAdaptable adaptable = (IAdaptable) o;
-			Object adapted = CommonUtils.getAdapter(adaptable, ResourceMapping.class);
+			Object adapted = adaptable.getAdapter(ResourceMapping.class);
 			if (adapted instanceof ResourceMapping)
 				return (ResourceMapping) adapted;
-			adapted = CommonUtils.getAdapter(adaptable, IContributorResourceAdapter.class);
+			adapted = adaptable.getAdapter(IContributorResourceAdapter.class);
 			if (adapted instanceof IContributorResourceAdapter2) {
 				IContributorResourceAdapter2 cra = (IContributorResourceAdapter2) adapted;
 				return cra.getAdaptedResourceMapping(adaptable);
