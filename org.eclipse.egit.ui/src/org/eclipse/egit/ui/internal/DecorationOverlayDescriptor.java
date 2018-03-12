@@ -162,7 +162,7 @@ public class DecorationOverlayDescriptor extends CompositeImageDescriptor {
 	}
 
 	public int hashCode() {
-		int code = base.hashCode();
+		int code = System.identityHashCode(base);
 		for (int i = 0; i < overlays.length; i++)
 			if (overlays[i] != null)
 				code ^= overlays[i].hashCode();

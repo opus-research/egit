@@ -79,12 +79,6 @@ class CloneDestinationPage extends WizardPage {
 
 	private String helpContext = null;
 
-	private File clonedDestination;
-
-	private Ref clonedInitialBranch;
-
-	private String clonedRemote;
-
 	CloneDestinationPage() {
 		super(CloneDestinationPage.class.getName());
 		setTitle(UIText.CloneDestinationPage_title);
@@ -330,11 +324,6 @@ class CloneDestinationPage extends WizardPage {
 	 * Check internal state for page completion status.
 	 */
 	private void checkPage() {
-		if (!cloneSettingsChanged()) {
-			setErrorMessage(null);
-			setPageComplete(true);
-			return;
-		}
 		final String dstpath = directoryText.getText();
 		if (dstpath.length() == 0) {
 			setErrorMessage(UIText.CloneDestinationPage_errorDirectoryRequired);
@@ -370,21 +359,6 @@ class CloneDestinationPage extends WizardPage {
 
 		setErrorMessage(null);
 		setPageComplete(true);
-	}
-
-	void saveSettingsForClonedRepo() {
-		clonedDestination = getDestinationFile();
-		clonedInitialBranch = getInitialBranch();
-		clonedRemote = getRemote();
-	}
-
-	boolean cloneSettingsChanged() {
-		boolean cloneSettingsChanged = false;
-		if (clonedDestination == null || !clonedDestination.equals(getDestinationFile()) ||
-				clonedInitialBranch == null || !clonedInitialBranch.equals(getInitialBranch()) ||
-				clonedRemote == null || !clonedRemote.equals(getRemote()))
-			cloneSettingsChanged = true;
-		return cloneSettingsChanged;
 	}
 
 	private static boolean isEmptyDir(final File dir) {
