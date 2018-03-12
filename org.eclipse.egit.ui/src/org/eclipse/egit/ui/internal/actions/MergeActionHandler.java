@@ -47,7 +47,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 
 		if (!canMerge(repository, event))
 			return null;
-		BasicConfigurationDialog.show(repository);
+		BasicConfigurationDialog.show();
 		MergeTargetSelectionDialog mergeTargetSelectionDialog = new MergeTargetSelectionDialog(
 				getShell(event), repository);
 		if (mergeTargetSelectionDialog.open() == IDialogConstants.OK_ID) {
