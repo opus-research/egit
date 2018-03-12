@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2012 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, 2013 Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -45,11 +45,11 @@ import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
@@ -1142,12 +1142,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
 			return;
 		final IStructuredSelection iss = (IStructuredSelection) s;
-		for (Iterator<StagingEntry> it = iss.iterator(); it.hasNext();) {
-			String relativePath = it.next().getPath();
-			String path = new Path(currentRepository.getWorkTree()
-					.getAbsolutePath()).append(relativePath)
-					.toOSString();
-			openFileInEditor(path);
+		for (Object element : iss.toList()) {
+			if (element instanceof StagingEntry) {
+				StagingEntry entry = (StagingEntry) element;
+				String relativePath = entry.getPath();
+				String path = new Path(currentRepository.getWorkTree()
+						.getAbsolutePath()).append(relativePath)
+						.toOSString();
+				openFileInEditor(path);
+			}
 		}
 	}
 
