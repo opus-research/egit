@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -35,7 +34,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode;
@@ -435,12 +434,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 						.getRepository());
 				while (walk.next()) {
 					Repository subRepo = walk.getRepository();
-					if (subRepo != null) {
-						final Repository cachedRepo = repositoryCache
-								.lookupRepository(subRepo.getDirectory());
-						subRepo.close();
-						children.add(new RepositoryNode(node, cachedRepo));
-					}
+					if (subRepo != null)
+						children.add(new RepositoryNode(node, subRepo));
 				}
 			} catch (IOException e) {
 				handleException(e, node);

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * Copyright (C) 2012, 2013 Tomasz Zarna <tzarna@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
@@ -36,6 +36,7 @@ import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -56,8 +57,6 @@ public class MergeOperation implements IEGitOperation {
 	private MergeStrategy mergeStrategy;
 
 	private boolean squash;
-
-	private FastForwardMode fastForwardMode;
 
 	private MergeResult mergeResult;
 
@@ -91,14 +90,6 @@ public class MergeOperation implements IEGitOperation {
 		this.squash = squash;
 	}
 
-	/**
-	 * @param ffmode set the fast forward mode
-	 * @since 3.0
-	 */
-	public void setFastForwardMode(FastForwardMode ffmode) {
-		this.fastForwardMode = ffmode;
-	}
-
 	public void execute(IProgressMonitor m) throws CoreException {
 		if (mergeResult != null)
 			throw new CoreException(new Status(IStatus.ERROR, Activator
@@ -117,10 +108,7 @@ public class MergeOperation implements IEGitOperation {
 				mymonitor.worked(1);
 				MergeCommand merge;
 				try {
-					FastForwardMode ffmode = fastForwardMode;
-					if (ffmode == null)
-						ffmode = Activator.getDefault().getRepositoryUtil()
-								.getFastForwardMode(repository);
+					FastForwardMode ffmode = getFastForwardMode();
 					Ref ref = repository.getRef(refName);
 					if (ref != null)
 						merge = git.merge().include(ref).setFastForward(ffmode);
@@ -158,6 +146,17 @@ public class MergeOperation implements IEGitOperation {
 		};
 		// lock workspace to protect working tree changes
 		ResourcesPlugin.getWorkspace().run(action, monitor);
+	}
+
+	private FastForwardMode getFastForwardMode() throws IOException {
+		FastForwardMode ffmode = FastForwardMode.valueOf(repository.getConfig()
+				.getEnum(ConfigConstants.CONFIG_KEY_MERGE, null,
+						ConfigConstants.CONFIG_KEY_FF,
+						FastForwardMode.Merge.TRUE));
+		ffmode = repository.getConfig().getEnum(
+				ConfigConstants.CONFIG_BRANCH_SECTION, repository.getBranch(),
+				ConfigConstants.CONFIG_KEY_MERGEOPTIONS, ffmode);
+		return ffmode;
 	}
 
 	/**

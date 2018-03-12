@@ -5,7 +5,7 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011-2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011-2012, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2012-2013, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
@@ -34,10 +34,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.CreatePatchOperation;
 import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -429,24 +429,24 @@ class CommitGraphTable {
 		} finally {
 			gc.dispose();
 		}
-		layout.addColumnData(new ColumnWeightData(1, minWidth, true));
+		layout.addColumnData(new ColumnWeightData(3, minWidth, true));
 
 		final TableColumn graph = new TableColumn(rawTable, SWT.NONE);
 		graph.setResizable(true);
 		graph.setText(UIText.CommitGraphTable_messageColumn);
-		graph.setWidth(400);
+		graph.setWidth(250);
 		layout.addColumnData(new ColumnWeightData(20, true));
 
 		final TableColumn author = new TableColumn(rawTable, SWT.NONE);
 		author.setResizable(true);
 		author.setText(UIText.HistoryPage_authorColumn);
-		author.setWidth(100);
-		layout.addColumnData(new ColumnWeightData(5, true));
+		author.setWidth(250);
+		layout.addColumnData(new ColumnWeightData(10, true));
 
 		final TableColumn date = new TableColumn(rawTable, SWT.NONE);
 		date.setResizable(true);
 		date.setText(UIText.HistoryPage_authorDateColumn);
-		date.setWidth(100);
+		date.setWidth(250);
 		layout.addColumnData(new ColumnWeightData(5, true));
 
 		final TableColumn committer = new TableColumn(rawTable, SWT.NONE);

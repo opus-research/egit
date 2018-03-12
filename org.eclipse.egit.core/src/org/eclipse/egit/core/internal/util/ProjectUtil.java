@@ -3,7 +3,7 @@
  * Copyright (C) 2007, Martin Oberhuber (martin.oberhuber@windriver.com)
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -271,50 +271,30 @@ public class ProjectUtil {
 		Set<IProject> result = new LinkedHashSet<IProject>();
 		File workTree = repository.getWorkTree();
 
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IProject[] projects = getProjectsForContainerMatch(root);
-
 		for (String member : fileList) {
 			File file = new File(workTree, member);
 
-			for (IProject prj : projects) {
-				if (checkContainerMatch(prj, file.getAbsolutePath())) {
-					result.add(prj);
-					break;
-				}
-			}
+			IContainer container = findContainer(file);
+			if (container instanceof IProject)
+				result.add((IProject) container);
 		}
 
 		return result.toArray(new IProject[result.size()]);
 	}
 
 	/**
-	 * Looks up the IProject containing the given file, if available. This is
+	 * Looks up the IContainer containing the given file, if available. This is
 	 * done by path comparison, which is very cheap compared to
-	 * IWorkspaceRoot.findContainersForLocationURI(). If no project is found the
-	 * code returns the {@link IWorkspaceRoot} or the file is inside the
-	 * workspace.
+	 * IWorkspaceRoot.findContainersForLocationURI()
 	 *
 	 * @param file
 	 *            the path to lookup a container for
-	 * @return the IProject or IWorkspaceRoot or <code>null</code> if not found.
+	 * @return the IContainer (either IProject or IWorkspaceRoot) or
+	 *         <code>null</code> if not found.
 	 */
-	public static IContainer findProjectOrWorkspaceRoot(File file) {
+	public static IContainer findContainer(File file) {
 		String absFile = file.getAbsolutePath();
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IProject[] allProjects = getProjectsForContainerMatch(root);
-
-		for (IProject prj : allProjects)
-			if (checkContainerMatch(prj, absFile))
-				return prj;
-
-		if (checkContainerMatch(root, absFile))
-			return root;
-
-		return null;
-	}
-
-	private static IProject[] getProjectsForContainerMatch(IWorkspaceRoot root) {
 		IProject[] allProjects = root.getProjects();
 
 		// Sorting makes us look into nested projects first
@@ -325,7 +305,15 @@ public class ProjectUtil {
 			}
 
 		});
-		return allProjects;
+
+		for (IProject prj : allProjects)
+			if (checkContainerMatch(prj, absFile))
+				return prj;
+
+		if (checkContainerMatch(root, absFile))
+			return root;
+
+		return null;
 	}
 
 	private static boolean checkContainerMatch(IContainer container,
@@ -347,19 +335,13 @@ public class ProjectUtil {
 	 *
 	 * @param files the collection to add the found projects to
 	 * @param directory where to search for project files
-	 * @param searchNested whether to search for nested projects or not
+	 * @param visistedDirs
 	 * @param monitor
 	 * @return true if projects files found, false otherwise
 	 */
 	public static boolean findProjectFiles(final Collection<File> files,
-			final File directory, boolean searchNested,
+			final File directory, final Set<String> visistedDirs,
 			final IProgressMonitor monitor) {
-		return findProjectFiles(files, directory, searchNested, null, monitor);
-	}
-
-	private static boolean findProjectFiles(final Collection<File> files,
-			final File directory, final boolean searchNested,
-			final Set<String> visistedDirs, final IProgressMonitor monitor) {
 		if (directory == null)
 			return false;
 
@@ -393,17 +375,13 @@ public class ProjectUtil {
 			directoriesVisited = visistedDirs;
 
 		// first look for project description files
-		boolean foundProject = false;
 		final String dotProject = IProjectDescription.DESCRIPTION_FILE_NAME;
 		for (int i = 0; i < contents.length; i++) {
 			File file = contents[i];
 			if (file.isFile() && file.getName().equals(dotProject)) {
 				files.add(file);
-				foundProject = true;
 			}
 		}
-		if (foundProject && !searchNested)
-			return true;
 		// recurse into sub-directories (even when project was found above, for nested projects)
 		for (int i = 0; i < contents.length; i++) {
 			// Skip non-directories
@@ -421,8 +399,7 @@ public class ProjectUtil {
 				Activator.logError(exception.getLocalizedMessage(), exception);
 
 			}
-			findProjectFiles(files, contents[i], searchNested,
-					directoriesVisited, pm);
+			findProjectFiles(files, contents[i], directoriesVisited, pm);
 		}
 		return true;
 	}

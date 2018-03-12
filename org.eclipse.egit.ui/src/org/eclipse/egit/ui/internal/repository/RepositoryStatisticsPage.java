@@ -13,11 +13,11 @@ package org.eclipse.egit.ui.internal.repository;
 import java.io.IOException;
 import java.text.NumberFormat;
 
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.internal.storage.file.GC;
-import org.eclipse.jgit.internal.storage.file.GC.RepoStatistics;
+import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.GC;
+import org.eclipse.jgit.storage.file.GC.RepoStatistics;
 import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;

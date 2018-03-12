@@ -47,7 +47,7 @@ import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.internal.storage.file.WindowCache;
+import org.eclipse.jgit.storage.file.WindowCache;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
@@ -537,14 +537,6 @@ public class GitProjectData {
 		while (c != null && !c.equals(getProject())) {
 			trace("protect " + c);  //$NON-NLS-1$
 			protectedResources.add(c);
-			try {
-				c.setTeamPrivateMember(true);
-			} catch (CoreException e) {
-				Activator.logError(MessageFormat.format(
-						CoreText.GitProjectData_FailedToMarkTeamPrivate,
-						c.getFullPath()),
-						e);
-			}
 			c = c.getParent();
 		}
 	}
