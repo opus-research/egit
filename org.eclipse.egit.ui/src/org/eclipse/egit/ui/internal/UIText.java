@@ -2357,9 +2357,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_WrongTypeOfCommitMessageProvider;
 
 	/** */
-	public static String CommitDialog_ErrorCreatingCommitMessageProvider;
-
-	/** */
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
