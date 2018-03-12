@@ -303,7 +303,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		assertNull(lookupRepository(repositoryFile).resolve("newBranch"));
 		SWTBotShell dialog = openCreateBranchDialog();
 		dialog.bot().tree().getTreeItem(LOCAL_BRANCHES).expand().getNode("master").select();
-		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+		dialog.bot().button(UIText.CreateBranchDialog_OKButtonText).click();
 
 		SWTBotShell newBranchDialog = bot.shell(UIText.CreateBranchWizard_NewBranchTitle);
 		newBranchDialog.bot().textWithId("BranchName").setText("newBranch");
