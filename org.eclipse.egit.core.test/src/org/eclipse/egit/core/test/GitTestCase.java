@@ -15,10 +15,11 @@ import java.io.IOException;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.jgit.junit.MockSystemReader;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectWriter;
+import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.IO;
 import org.eclipse.jgit.util.SystemReader;
@@ -35,6 +36,9 @@ public abstract class GitTestCase {
 
 	@Before
 	public void setUp() throws Exception {
+		// ensure there are no shared Repository instances left
+		// when starting a new test
+		Activator.getDefault().getRepositoryCache().clear();
 		MockSystemReader mockSystemReader = new MockSystemReader();
 		SystemReader.setInstance(mockSystemReader);
 		mockSystemReader.setProperty(Constants.GIT_CEILING_DIRECTORIES_KEY,
@@ -57,8 +61,15 @@ public abstract class GitTestCase {
 		FileWriter fileWriter = new FileWriter(file);
 		fileWriter.write(content);
 		fileWriter.close();
-		ObjectWriter objectWriter = new ObjectWriter(repository);
-		return objectWriter.writeBlob(file);
+		byte[] fileContents = IO.readFully(file);
+		ObjectInserter inserter = repository.newObjectInserter();
+		try {
+			ObjectId objectId = inserter.insert(Constants.OBJ_BLOB, fileContents);
+			inserter.flush();
+			return objectId;
+		} finally {
+			inserter.release();
+		}
 	}
 
 	protected ObjectId createFileCorruptShort(Repository repository, IProject actProject, String name, String content) throws IOException {

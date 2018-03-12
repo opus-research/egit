@@ -45,22 +45,23 @@ import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
+import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
-import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
-import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.util.ChangeIdUtil;
+import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -70,7 +71,6 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -126,7 +126,7 @@ public class CommitDialog extends Dialog {
 		public boolean select(Viewer viewer, Object parentElement,
 				Object element) {
 			boolean result = true;
-			if (!showUntracked){
+			if (!showUntracked || !allowToChangeSelection){
 				if (element instanceof CommitItem) {
 					CommitItem item = (CommitItem)element;
 					if (item.status.equals(UIText.CommitDialog_StatusUntracked))
@@ -193,9 +193,9 @@ public class CommitDialog extends Dialog {
 		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
 
 		commitText = new CommitMessageArea(container, commitMessage);
-		Point size = commitText.getTextWidget().getSize();
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
-				.minSize(size).align(SWT.BEGINNING, SWT.FILL).create());
+				.hint(600, 200).create());
+		commitText.setText(commitMessage);
 
 		// allow to commit with ctrl-enter
 		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
@@ -254,19 +254,23 @@ public class CommitDialog extends Dialog {
 		amendingButton.addSelectionListener(new SelectionListener() {
 			boolean alreadyAdded = false;
 			public void widgetSelected(SelectionEvent arg0) {
-				if (alreadyAdded)
-					return;
-				if (amendingButton.getSelection()) {
-					alreadyAdded = true;
-					String curText = commitText.getText();
-					if (curText.length() > 0)
-						curText += Text.DELIMITER;
-					commitText.setText(curText
-							+ previousCommitMessage.replaceAll(
-									"\n", Text.DELIMITER)); //$NON-NLS-1$
-					authorText.setText(previousAuthor);
-					saveOriginalChangeId();
+				if (!amendingButton.getSelection()) {
+					originalChangeId = null;
 				}
+				else {
+					saveOriginalChangeId();
+					if (!alreadyAdded) {
+						alreadyAdded = true;
+						String curText = commitText.getText();
+						if (curText.length() > 0)
+							curText += Text.DELIMITER;
+						commitText.setText(curText
+								+ previousCommitMessage.replaceAll(
+										"\n", Text.DELIMITER)); //$NON-NLS-1$
+						authorText.setText(previousAuthor);
+					}
+				}
+				refreshChangeIdText();
 			}
 
 			public void widgetDefaultSelected(SelectionEvent arg0) {
@@ -309,25 +313,7 @@ public class CommitDialog extends Dialog {
 		changeIdButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				createChangeId = changeIdButton.getSelection();
-				String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
-				if (createChangeId) {
-					String changedText = ChangeIdUtil.insertId(text,
-							originalChangeId != null ? originalChangeId : ObjectId.zeroId());
-					if (!text.equals(changedText)) {
-						changedText = changedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
-						commitText.setText(changedText);
-					}
-				} else {
-					int changeIdOffset = findOffsetOfChangeIdLine(text);
-					if (changeIdOffset > 0) {
-						int endOfChangeId = findNextEOL(changeIdOffset, text);
-						String cleanedText = text.substring(0, changeIdOffset)
-								+ text.substring(endOfChangeId);
-						cleanedText = cleanedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
-						commitText.setText(cleanedText);
-					}
-				}
+				refreshChangeIdText();
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -390,13 +376,31 @@ public class CommitDialog extends Dialog {
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items);
 		filesViewer.getTable().setMenu(getContextMenu());
+		if (!allowToChangeSelection) {
+			amendingButton.setSelection(false);
+			amendingButton.setEnabled(false);
+			showUntrackedButton.setSelection(false);
+			showUntrackedButton.setEnabled(false);
 
-		// pre-emptively check any preselected files
-		for (IFile selectedFile : preselectedFiles) {
-			for (CommitItem item : items) {
-				if (item.file.equals(selectedFile)) {
-					filesViewer.setChecked(item, true);
-					break;
+			filesViewer.addCheckStateListener(new ICheckStateListener() {
+
+				public void checkStateChanged(CheckStateChangedEvent event) {
+				       if( !event.getChecked() ) {
+				    	   filesViewer.setAllChecked(true);
+				       }
+				}
+			});
+			filesViewer.setAllGrayed(true);
+			filesViewer.setAllChecked(true);
+		}
+		else {
+			// pre-emptively check any preselected files
+			for (IFile selectedFile : preselectedFiles) {
+				for (CommitItem item : items) {
+					if (item.file.equals(selectedFile)) {
+						filesViewer.setChecked(item, true);
+						break;
+					}
 				}
 			}
 		}
@@ -499,6 +503,8 @@ public class CommitDialog extends Dialog {
 	}
 
 	private Menu getContextMenu() {
+		if (!allowToChangeSelection)
+			return null;
 		Menu menu = new Menu(filesViewer.getTable());
 		MenuItem item = new MenuItem(menu, SWT.PUSH);
 		item.setText(UIText.CommitDialog_AddFileOnDiskToIndex);
@@ -581,7 +587,7 @@ public class CommitDialog extends Dialog {
 	 * @return The message the user entered
 	 */
 	public String getCommitMessage() {
-		return commitMessage;
+		return commitMessage.replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$;
 	}
 
 	/**
@@ -601,6 +607,7 @@ public class CommitDialog extends Dialog {
 	private boolean amendAllowed = true;
 	private boolean showUntracked = true;
 	private boolean createChangeId = false;
+	private boolean allowToChangeSelection = true;
 
 	private ArrayList<IFile> selectedFiles = new ArrayList<IFile>();
 	private String previousCommitMessage = ""; //$NON-NLS-1$
@@ -692,13 +699,13 @@ public class CommitDialog extends Dialog {
 			}
 			Repository repository = mapping.getRepository();
 
-			Commit headCommit;
 			try {
-				headCommit = repository.mapCommit(Constants.HEAD);
+				ObjectId id = repository.resolve(Constants.HEAD);
+				if (id == null
+						|| repository.open(id, Constants.OBJ_COMMIT).getType() != Constants.OBJ_COMMIT) {
+					return;
+				}
 			} catch (IOException e1) {
-				headCommit = null;
-			}
-			if (headCommit == null) {
 				return;
 			}
 
@@ -713,7 +720,7 @@ public class CommitDialog extends Dialog {
 			ITypedElement base = new FileRevisionTypedElement(baseFile);
 			ITypedElement next = new FileRevisionTypedElement(nextFile);
 
-			GitCompareFileRevisionEditorInput input = new GitCompareFileRevisionEditorInput(base, next, null);
+			GitCompareFileRevisionEditorInput input = new GitCompareFileRevisionEditorInput(next, base, null);
 			CompareUI.openCompareDialog(input);
 		}
 
@@ -721,7 +728,7 @@ public class CommitDialog extends Dialog {
 
 	@Override
 	protected void okPressed() {
-		commitMessage = commitText.getCommitMessage();
+		commitMessage = commitText.getText();
 		author = authorText.getText().trim();
 		committer = committerText.getText().trim();
 		signedOff = signedOffButton.getSelection();
@@ -739,12 +746,7 @@ public class CommitDialog extends Dialog {
 
 		boolean authorValid = false;
 		if (author.length() > 0) {
-			try {
-				new PersonIdent(author);
-				authorValid = true;
-			} catch (IllegalArgumentException e) {
-				authorValid = false;
-			}
+			authorValid = RawParseUtils.parsePersonIdent(author) != null;
 		}
 		if (!authorValid) {
 			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidAuthorSpecified);
@@ -753,12 +755,7 @@ public class CommitDialog extends Dialog {
 
 		boolean committerValid = false;
 		if (committer.length() > 0) {
-			try {
-				new PersonIdent(committer);
-				committerValid = true;
-			} catch (IllegalArgumentException e) {
-				committerValid = false;
-			}
+			committerValid = RawParseUtils.parsePersonIdent(committer)!=null;
 		}
 		if (!committerValid) {
 			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidCommitterSpecified);
@@ -898,6 +895,14 @@ public class CommitDialog extends Dialog {
 		this.amendAllowed = amendAllowed;
 	}
 
+	/**
+	 * Set whether is is allowed to change the set of selected files
+	 * @param allowToChangeSelection
+	 */
+	public void setAllowToChangeSelection(boolean allowToChangeSelection) {
+		this.allowToChangeSelection = allowToChangeSelection;
+	}
+
 	@Override
 	protected int getShellStyle() {
 		return super.getShellStyle() | SWT.RESIZE;
@@ -908,6 +913,28 @@ public class CommitDialog extends Dialog {
 	 */
 	public boolean getCreateChangeId() {
 		return createChangeId;
+	}
+
+	private void refreshChangeIdText() {
+		createChangeId = changeIdButton.getSelection();
+		String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
+		if (createChangeId) {
+			String changedText = ChangeIdUtil.insertId(text,
+					originalChangeId != null ? originalChangeId : ObjectId.zeroId(), true);
+			if (!text.equals(changedText)) {
+				changedText = changedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
+				commitText.setText(changedText);
+			}
+		} else {
+			int changeIdOffset = findOffsetOfChangeIdLine(text);
+			if (changeIdOffset > 0) {
+				int endOfChangeId = findNextEOL(changeIdOffset, text);
+				String cleanedText = text.substring(0, changeIdOffset)
+						+ text.substring(endOfChangeId);
+				cleanedText = cleanedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
+				commitText.setText(cleanedText);
+			}
+		}
 	}
 
 }

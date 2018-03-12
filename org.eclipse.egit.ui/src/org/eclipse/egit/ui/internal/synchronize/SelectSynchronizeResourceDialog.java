@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -7,6 +8,10 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
+
+import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
+import static org.eclipse.jgit.lib.Constants.HEAD;
+import static org.eclipse.jgit.lib.Constants.MASTER;
 
 import java.io.File;
 import java.util.List;
@@ -19,6 +24,8 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -105,19 +112,35 @@ public class SelectSynchronizeResourceDialog extends TitleAreaDialog {
 		new Label(composite, SWT.WRAP)
 				.setText(UIText.SelectSynchronizeResourceDialog_srcRef);
 
-		srcRefCombo = new RemoteSelectionCombo(composite, syncRepos);
+		srcRefCombo = new RemoteSelectionCombo(composite, syncRepos,
+				UIText.RemoteSelectionCombo_sourceName,
+				UIText.RemoteSelectionCombo_sourceRef);
+		srcRefCombo.setDefaultValue(UIText.SynchronizeWithAction_localRepoName, HEAD);
 		srcRefCombo.setLayoutData(data);
 		srcRefCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
 				false).create());
 
 		shouldIncludeLocalButton = new Button(composite, SWT.CHECK | SWT.WRAP);
 		shouldIncludeLocalButton
-				.setText(UIText.SelectSynchronizeResourceDialog_includeUncommitedChnages);
+				.setText(UIText.SelectSynchronizeResourceDialog_includeUncommitedChanges);
+		shouldIncludeLocalButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				boolean includeLocal = shouldIncludeLocalButton.getSelection();
+				srcRefCombo.setEnabled(!includeLocal);
+				if (includeLocal)
+					srcRefCombo.setDefaultValue(
+							UIText.SynchronizeWithAction_localRepoName, HEAD);
+			}
+		});
 
 		new Label(composite, SWT.WRAP)
 				.setText(UIText.SelectSynchronizeResourceDialog_dstRef);
 
-		dstRefCombo = new RemoteSelectionCombo(composite, syncRepos);
+		dstRefCombo = new RemoteSelectionCombo(composite, syncRepos,
+				UIText.RemoteSelectionCombo_destinationName,
+				UIText.RemoteSelectionCombo_destinationRef);
+		dstRefCombo.setDefaultValue(getDefaultRemoteName(), MASTER);
 		dstRefCombo.setLayoutData(data);
 		dstRefCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
 				false).create());
@@ -128,6 +151,18 @@ public class SelectSynchronizeResourceDialog extends TitleAreaDialog {
 		setTitleImage(UIIcons.WIZBAN_CONNECT_REPO.createImage());
 
 		return composite;
+	}
+
+	private String getDefaultRemoteName() {
+		boolean onlyOneRemote = syncRepos.size() == 2;
+		if (onlyOneRemote)
+			return syncRepos.get(1).getName();
+		else {
+			for (SyncRepoEntity repo : syncRepos)
+				if (repo.getName().equals(DEFAULT_REMOTE_NAME))
+					return DEFAULT_REMOTE_NAME;
+		}
+		return ""; //$NON-NLS-1$
 	}
 
 	@Override

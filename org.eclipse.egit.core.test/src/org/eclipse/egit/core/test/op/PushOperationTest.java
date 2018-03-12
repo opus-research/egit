@@ -64,8 +64,8 @@ public class PushOperationTest extends DualRepositoryTestCase {
 	@Before
 	public void setUp() throws Exception {
 
-		workdir = testUtils.getTempDir("Repository1");
-		workdir2 = testUtils.getTempDir("Repository2");
+		workdir = testUtils.createTempDir("Repository1");
+		workdir2 = testUtils.createTempDir("Repository2");
 
 		repository1 = new TestRepository(new File(workdir, Constants.DOT_GIT));
 
@@ -102,7 +102,7 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		URIish uri = new URIish("file:///"
 				+ repository1.getRepository().getDirectory().toString());
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir2,
-				"refs/heads/master", "origin");
+				"refs/heads/master", "origin", 0);
 		clop.run(null);
 
 		repository2 = new TestRepository(new FileRepository(new File(workdir2,
@@ -121,8 +121,7 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		repository2.dispose();
 		repository1 = null;
 		repository2 = null;
-		testUtils.deleteRecursive(workdir);
-		testUtils.deleteRecursive(workdir2);
+		testUtils.deleteTempDirs();
 	}
 
 	/**
@@ -230,10 +229,10 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		spec.addURIRefUpdates(remote, refUpdates);
 
 		PushOperation pop = new PushOperation(repository1.getRepository(),
-				spec, false, null);
+				spec, false, null, 0);
 		pop.run(null);
 
-		pop = new PushOperation(repository1.getRepository(), spec, false, null);
+		pop = new PushOperation(repository1.getRepository(), spec, false, null, 0);
 		try {
 			pop.run(null);
 			fail("Expected Exception not thrown");
@@ -263,7 +262,7 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		spec.addURIRefUpdates(remote, refUpdates);
 		// now we can construct the push operation
 		PushOperation pop = new PushOperation(repository1.getRepository(),
-				spec, false, null);
+				spec, false, null, 0);
 		return pop;
 	}
 

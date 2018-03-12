@@ -21,6 +21,8 @@ import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
@@ -134,18 +136,37 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		new Eclipse().reset();
 		// cleanup
 		deleteAllProjects();
+		shutDownRepositories();
 		deleteRecursive(testDirectory);
+		Activator.getDefault().getRepositoryCache().clear();
 	}
 
-	protected static void deleteRecursive(File dirOrFile) {
+	private static void shutDownRepositories() {
+		RepositoryCache cache = Activator.getDefault().getRepositoryCache();
+		for(Repository repository:cache.getAllRepositories())
+			repository.close();
+		cache.clear();
+	}
+
+	protected static void deleteRecursive(File dirOrFile) throws IOException {
 		if (dirOrFile.isDirectory()) {
 			for (File file : dirOrFile.listFiles()) {
 				deleteRecursive(file);
 			}
 		}
-		boolean deleted = dirOrFile.delete();
+		boolean deleted = false;
+		for(int i=0; i<10; i++) {
+			deleted = dirOrFile.delete();
+			if (deleted)
+				break;
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// ignore
+			}
+		}
 		if (!deleted) {
-			dirOrFile.deleteOnExit();
+			throw new IOException("could not delete " + dirOrFile.getPath());
 		}
 	}
 
@@ -309,7 +330,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		URIish uri = new URIish("file:///" + myRepository.getDirectory());
 		File workdir = new File(testDirectory, CHILDREPO);
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir,
-				"refs/heads/master", "origin");
+				"refs/heads/master", "origin", 0);
 		clop.run(null);
 		return new File(workdir, Constants.DOT_GIT);
 	}
@@ -330,16 +351,20 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		updateRef.update();
 	}
 
-	protected void assertClickOpens(SWTBotTree tree, String menu, String window)
-			throws InterruptedException {
+	protected void assertClickOpens(SWTBotTree tree, String menu, String window) {
 		ContextMenuHelper.clickContextMenu(tree, menu);
 		SWTBotShell shell = bot.shell(window);
 		shell.activate();
-		waitInUI();
 		shell.bot().button(IDialogConstants.CANCEL_LABEL).click();
 		shell.close();
 	}
 
+	/**
+	 *  This method should only be used in exceptional cases.
+	 *  Try to avoid using it e.g. by joining execution jobs
+	 *  instead of waiting a given amount of time {@link TestUtil#joinJobs(Object)}
+	 * @throws InterruptedException
+	 */
 	protected static void waitInUI() throws InterruptedException {
 		Thread.sleep(1000);
 	}
@@ -404,7 +429,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		String message = commitMessage;
 		if (message == null)
 			message = newContent;
-		waitInUI();
 		CommitOperation op = new CommitOperation(commitables,
 				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
 				TestUtil.TESTCOMMITTER, message);
@@ -498,16 +522,4 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		display.post(evt);
 	}
 
-	/**
-	 * Activates the item by "pressing" ALT + the character after '&'
-	 * 
-	 * @param shell
-	 * @param itemWithShortcut
-	 */
-	protected void activateItemByKeyboard(SWTBotShell shell,
-			String itemWithShortcut) {
-		int index = itemWithShortcut.indexOf('&');
-		if (index >= 0 && index < itemWithShortcut.length())
-			pressAltAndChar(shell, itemWithShortcut.charAt(index + 1));
-	}
 }

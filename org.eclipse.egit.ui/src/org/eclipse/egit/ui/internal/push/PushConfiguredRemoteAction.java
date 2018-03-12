@@ -13,7 +13,9 @@ package org.eclipse.egit.ui.internal.push;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -23,6 +25,8 @@ import org.eclipse.egit.core.op.PushOperation;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jgit.lib.Repository;
@@ -74,7 +78,12 @@ public class PushConfiguredRemoteAction {
 		final PushOperation op;
 		try {
 			config = new RemoteConfig(repository.getConfig(), remoteName);
-			if (config.getPushURIs().isEmpty()) {
+			// config.getPushURIs returns a unmodifiable list
+			List<URIish> pushURIs = new ArrayList<URIish>();
+			pushURIs.addAll(config.getPushURIs());
+			if (pushURIs.isEmpty() && !config.getURIs().isEmpty())
+				pushURIs.add(config.getURIs().get(0));
+			if (pushURIs.isEmpty()) {
 				throw new IOException(NLS.bind(
 						UIText.PushConfiguredRemoteAction_NoUrisMessage,
 						remoteName));
@@ -95,11 +104,12 @@ public class PushConfiguredRemoteAction {
 			}
 
 			spec = new PushOperationSpecification();
-			for (final URIish uri : config.getPushURIs())
+			for (final URIish uri : pushURIs)
 				spec.addURIRefUpdates(uri,
 						ConfirmationPage.copyUpdates(updates));
-
-			op = new PushOperation(repository, spec, dryRun, config);
+			int timeout = Activator.getDefault().getPreferenceStore().getInt(
+					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
+			op = new PushOperation(repository, spec, dryRun, config, timeout);
 
 		} catch (URISyntaxException e) {
 			pushException = e;
@@ -141,6 +151,15 @@ public class PushConfiguredRemoteAction {
 							.getCause().getMessage(), e);
 				}
 			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				if (family.equals(JobFamilies.PUSH))
+					return true;
+				return super.belongsTo(family);
+			}
+
+
 
 		};
 

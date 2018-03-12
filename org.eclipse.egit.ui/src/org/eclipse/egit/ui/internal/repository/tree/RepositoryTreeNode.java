@@ -51,15 +51,6 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		myObject = treeObject;
 	}
 
-	@SuppressWarnings("unchecked")
-	private RepositoryTreeNode<Repository> getRepositoryNode() {
-		if (myType == RepositoryTreeNodeType.REPO) {
-			return (RepositoryTreeNode<Repository>) this;
-		} else {
-			return getParent().getRepositoryNode();
-		}
-	}
-
 	/**
 	 * @return the parent, or null
 	 */
@@ -92,11 +83,11 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 	 * <td>{@link String}</td>
 	 * </tr>
 	 * <tr>
-	 * <td>{@link RepositoryTreeNodeType#LOCALBRANCHES}</td>
+	 * <td>{@link RepositoryTreeNodeType#LOCAL}</td>
 	 * <td>{@link String}</td>
 	 * </tr>
 	 * <tr>
-	 * <td>{@link RepositoryTreeNodeType#REMOTEBRANCHES}</td>
+	 * <td>{@link RepositoryTreeNodeType#REMOTETRACKING}</td>
 	 * <td>{@link String}</td>
 	 * </tr>
 	 * <tr>
@@ -132,9 +123,9 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case REMOTES:
 			// fall through
-		case LOCALBRANCHES:
+		case LOCAL:
 			// fall through
-		case REMOTEBRANCHES:
+		case REMOTETRACKING:
 			// fall through
 		case BRANCHES:
 			// fall through
@@ -171,6 +162,8 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		case PUSH:
 			// fall through
 		case FETCH:
+			// fall through
+		case BRANCHHIERARCHY:
 			// fall through
 		case ERROR:
 			result = prime * result
@@ -237,10 +230,13 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 
 		case BRANCHES:
 			// fall through
-		case LOCALBRANCHES:
+		case LOCAL:
 			// fall through
-		case REMOTEBRANCHES:
+		case REMOTETRACKING:
 			// fall through
+		case BRANCHHIERARCHY:
+			return myObject.toString().compareTo(
+					otherNode.getObject().toString());
 		case REMOTES:
 			// fall through
 		case SYMBOLICREFS:
@@ -297,9 +293,9 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case BRANCHES:
 			// fall through
-		case LOCALBRANCHES:
+		case LOCAL:
 			// fall through
-		case REMOTEBRANCHES:
+		case REMOTETRACKING:
 			// fall through
 		case SYMBOLICREFS:
 			// fall through
@@ -325,6 +321,8 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		case FETCH:
 			// fall through
 		case PUSH:
+			// fall through
+		case BRANCHHIERARCHY:
 			// fall through
 		case TAGS:
 			return myObject.equals(otherObject);

@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Chris Aniszczyk <caniszczyk@gmail.com> - tag API changes
  *******************************************************************************/
 package org.eclipse.egit.ui.test.team.actions;
 
@@ -22,16 +23,17 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
-import org.eclipse.egit.ui.internal.repository.tree.LocalBranchesNode;
+import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.Tag;
+import org.eclipse.jgit.lib.TagBuilder;
+import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -64,17 +66,17 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		perspective = bot.activePerspective();
 		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
 
-		Tag tag = new Tag(repo);
+		TagBuilder tag = new TagBuilder();
 		tag.setTag("SomeTag");
-		tag.setAuthor(new PersonIdent(TestUtil.TESTAUTHOR));
+		tag.setTagger(RawParseUtils.parsePersonIdent(TestUtil.TESTAUTHOR));
 		tag.setMessage("I'm just a little tag");
-		tag.setObjId(repo.resolve(repo.getFullBranch()));
+		tag.setObjectId(repo.resolve(repo.getFullBranch()), Constants.OBJ_COMMIT);
 		TagOperation top = new TagOperation(repo, tag, false);
 		top.execute(null);
 		touchAndSubmit(null);
 
 		RepositoriesViewLabelProvider provider = new RepositoriesViewLabelProvider();
-		LOCAL_BRANCHES = provider.getText(new LocalBranchesNode(
+		LOCAL_BRANCHES = provider.getText(new LocalNode(
 				new RepositoryNode(null, repo), repo));
 		TAGS = provider.getText(new TagsNode(new RepositoryNode(null, repo),
 				repo));
@@ -115,8 +117,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		SWTBotShell resetDialog = openResetDialog();
 		resetDialog.bot().tree().getTreeItem(LOCAL_BRANCHES).getNode("stable")
 				.select();
-		activateItemByKeyboard(resetDialog,
-				UIText.ResetTargetSelectionDialog_ResetTypeHardButton);
+		resetDialog.bot().radio(UIText.ResetTargetSelectionDialog_ResetTypeHardButton).click();
 
 		resetDialog.bot().button(UIText.ResetTargetSelectionDialog_ResetButton)
 				.click();

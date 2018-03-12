@@ -14,8 +14,8 @@ import java.io.File;
 
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
-import org.eclipse.egit.ui.internal.repository.tree.LocalBranchesNode;
-import org.eclipse.egit.ui.internal.repository.tree.RemoteBranchesNode;
+import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
+import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemotesNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.SymbolicRefsNode;
@@ -34,15 +34,15 @@ public class GitRepositoriesViewTestUtils {
 		Repository repository = lookupRepository(repo);
 		RepositoryNode root = new RepositoryNode(null, repository);
 		BranchesNode branches = new BranchesNode(root, repository);
-		LocalBranchesNode localBranches = new LocalBranchesNode(branches,
+		LocalNode localBranches = new LocalNode(branches,
 				repository);
 
-		String rootText = labelProvider.getText(root);
+		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
 		SWTBotTreeItem branchesItem = rootItem.expand().getNode(
-				labelProvider.getText(branches));
+				labelProvider.getStyledText(branches).getString());
 		SWTBotTreeItem localItem = branchesItem.expand().getNode(
-				labelProvider.getText(localBranches));
+				labelProvider.getStyledText(localBranches).getString());
 		return localItem;
 	}
 
@@ -52,10 +52,10 @@ public class GitRepositoriesViewTestUtils {
 		RepositoryNode root = new RepositoryNode(null, repository);
 		TagsNode tags = new TagsNode(root, repository);
 
-		String rootText = labelProvider.getText(root);
+		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
 		SWTBotTreeItem tagsItem = rootItem.expand().getNode(
-				labelProvider.getText(tags));
+				labelProvider.getStyledText(tags).getString());
 		return tagsItem;
 	}
 
@@ -64,15 +64,15 @@ public class GitRepositoriesViewTestUtils {
 		Repository repository = lookupRepository(repositoryFile);
 		RepositoryNode root = new RepositoryNode(null, repository);
 		BranchesNode branches = new BranchesNode(root, repository);
-		RemoteBranchesNode remoteBranches = new RemoteBranchesNode(branches,
+		RemoteTrackingNode remoteBranches = new RemoteTrackingNode(branches,
 				repository);
 
-		String rootText = labelProvider.getText(root);
+		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
 		SWTBotTreeItem branchesItem = rootItem.expand().getNode(
-				labelProvider.getText(branches));
+				labelProvider.getStyledText(branches).getString());
 		SWTBotTreeItem remoteItem = branchesItem.expand().getNode(
-				labelProvider.getText(remoteBranches));
+				labelProvider.getStyledText(remoteBranches).getString());
 		return remoteItem;
 	}
 
@@ -83,10 +83,10 @@ public class GitRepositoriesViewTestUtils {
 
 		WorkingDirNode workdir = new WorkingDirNode(root, repository);
 
-		String rootText = labelProvider.getText(root);
+		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
 		SWTBotTreeItem workdirItem = rootItem.expand().getNode(
-				labelProvider.getText(workdir));
+				labelProvider.getStyledText(workdir).getString());
 		return workdirItem;
 	}
 
@@ -94,7 +94,7 @@ public class GitRepositoriesViewTestUtils {
 			throws Exception {
 		Repository repository = lookupRepository(repositoryFile);
 		RepositoryNode root = new RepositoryNode(null, repository);
-		String rootText = labelProvider.getText(root);
+		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
 		return rootItem;
 	}
@@ -104,8 +104,8 @@ public class GitRepositoriesViewTestUtils {
 		Repository repository = lookupRepository(repositoryFile);
 		RepositoryNode root = new RepositoryNode(null, repository);
 		SymbolicRefsNode symrefsnode = new SymbolicRefsNode(root, repository);
-		SWTBotTreeItem rootItem = tree.getTreeItem(labelProvider.getText(root))
-				.expand();
+		SWTBotTreeItem rootItem = tree.getTreeItem(
+				labelProvider.getStyledText(root).getString()).expand();
 		SWTBotTreeItem symrefsitem = rootItem.getNode(labelProvider
 				.getText(symrefsnode));
 		return symrefsitem;
@@ -117,10 +117,10 @@ public class GitRepositoriesViewTestUtils {
 		RepositoryNode root = new RepositoryNode(null, repository);
 		RemotesNode remotes = new RemotesNode(root, repository);
 
-		String rootText = labelProvider.getText(root);
+		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
 		SWTBotTreeItem remotesItem = rootItem.expand().getNode(
-				labelProvider.getText(remotes));
+				labelProvider.getStyledText(remotes).getString());
 		return remotesItem;
 	}
 

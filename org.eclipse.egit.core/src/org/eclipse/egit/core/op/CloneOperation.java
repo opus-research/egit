@@ -25,13 +25,13 @@ import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
-import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.WorkDirCheckout;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
@@ -58,6 +58,8 @@ public class CloneOperation {
 
 	private final String remoteName;
 
+	private final int timeout;
+
 	private FileRepository local;
 
 	private RemoteConfig remoteConfig;
@@ -83,10 +85,11 @@ public class CloneOperation {
 	 * @param remoteName
 	 *            name of created remote config as source remote (typically
 	 *            named "origin").
+	 * @param timeout timeout in seconds
 	 */
 	public CloneOperation(final URIish uri, final boolean allSelected,
 			final Collection<Ref> selectedBranches, final File workdir,
-			final String branch, final String remoteName) {
+			final String branch, final String remoteName, int timeout) {
 		this.uri = uri;
 		this.allSelected = allSelected;
 		this.selectedBranches = selectedBranches;
@@ -94,6 +97,7 @@ public class CloneOperation {
 		this.gitdir = new File(workdir, Constants.DOT_GIT);
 		this.branch = branch;
 		this.remoteName = remoteName;
+		this.timeout = timeout;
 	}
 
 	/**
@@ -195,6 +199,7 @@ public class CloneOperation {
 	private void doFetch(final IProgressMonitor monitor)
 			throws NotSupportedException, TransportException {
 		final Transport tn = Transport.open(local, remoteConfig);
+		tn.setTimeout(this.timeout);
 		try {
 			final EclipseGitProgressTransformer pm;
 			pm = new EclipseGitProgressTransformer(monitor);
@@ -210,17 +215,24 @@ public class CloneOperation {
 			return;
 
 		final GitIndex index = new GitIndex(local);
-		final Commit mapCommit = local.mapCommit(head.getObjectId());
-		final Tree tree = mapCommit.getTree();
+		final RevWalk rw = new RevWalk(local);
+		final RevCommit mapCommit;
+		try {
+			mapCommit = rw.parseCommit(head.getObjectId());
+		} finally {
+			rw.release();
+		}
+
 		final RefUpdate u;
 		final WorkDirCheckout co;
 
 		u = local.updateRef(Constants.HEAD);
-		u.setNewObjectId(mapCommit.getCommitId());
+		u.setNewObjectId(mapCommit.getId());
 		u.forceUpdate();
 
 		monitor.setTaskName(CoreText.CloneOperation_checkingOutFiles);
-		co = new WorkDirCheckout(local, local.getWorkTree(), index, tree);
+		co = new WorkDirCheckout(local, local.getWorkTree(), index, local
+				.mapTree(mapCommit.getTree()));
 		co.checkout();
 		monitor.setTaskName(CoreText.CloneOperation_writingIndex);
 		index.write();

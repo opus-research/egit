@@ -40,7 +40,7 @@ import org.eclipse.ui.IEditorInput;
  * ).
  * </ul>
  */
-class LocalResourceTypedElement extends ResourceNode implements
+public class LocalResourceTypedElement extends ResourceNode implements
 		IAdaptable {
 
 	private boolean fDirty = false;
@@ -278,10 +278,6 @@ class LocalResourceTypedElement extends ResourceNode implements
 	 */
 	public boolean exists() {
 		return exists;
-	}
-
-	protected void fireContentChanged() {
-		super.fireContentChanged();
 	}
 
 	/**
