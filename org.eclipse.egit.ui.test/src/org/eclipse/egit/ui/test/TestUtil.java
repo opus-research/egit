@@ -37,6 +37,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
+import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -60,6 +61,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
+import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -163,7 +165,37 @@ public class TestUtil {
 	 * @throws InterruptedException
 	 */
 	public static void joinJobs(Object family) throws InterruptedException  {
+		// join() returns immediately if the job is not yet scheduled.
+		// To avoid unstable tests, let us first wait some time
+		TestUtil.waitForJobs(100, 1000);
 		Job.getJobManager().join(family, null);
+		TestUtil.processUIEvents();
+	}
+
+	/**
+	 * Utility for waiting until the execution of jobs of any family has
+	 * finished or timeout is reached. If no jobs are running, the method waits
+	 * given minimum wait time. While this method is waiting for jobs, UI events
+	 * are processed.
+	 *
+	 * @param minTimeMs
+	 *            minimum wait time in milliseconds
+	 * @param maxTimeMs
+	 *            maximum wait time in milliseconds
+	 */
+	public static void waitForJobs(long minTimeMs, long maxTimeMs) {
+		if (maxTimeMs < minTimeMs) {
+			throw new IllegalArgumentException(
+					"Max time is smaller as min time!");
+		}
+		final long start = System.currentTimeMillis();
+		while (System.currentTimeMillis() - start < minTimeMs) {
+			processUIEvents();
+		}
+		while (!Job.getJobManager().isIdle()
+				&& System.currentTimeMillis() - start < maxTimeMs) {
+			processUIEvents();
+		}
 	}
 
 	/**
@@ -171,9 +203,35 @@ public class TestUtil {
 	 * until all pending events are processed in UI thread.
 	 */
 	public static void processUIEvents() {
+		processUIEvents(0);
+	}
+
+	/**
+	 * Process all queued UI events. If called from background thread, blocks
+	 * until all pending events are processed in UI thread.
+	 *
+	 * @param timeInMillis
+	 *            time to wait. During this time all UI events are processed but
+	 *            the current thread is blocked
+	 */
+	public static void processUIEvents(final long timeInMillis) {
 		if (Display.getCurrent() != null) {
-			while (Display.getCurrent().readAndDispatch()) {
-				// process queued ui events
+			if (timeInMillis <= 0) {
+				while (Display.getCurrent().readAndDispatch()) {
+					// process queued ui events at least once
+				}
+			} else {
+				long start = System.currentTimeMillis();
+				while (System.currentTimeMillis() - start <= timeInMillis) {
+					while (Display.getCurrent().readAndDispatch()) {
+						// process queued ui events
+						try {
+							Thread.sleep(10);
+						} catch (InterruptedException e) {
+							break;
+						}
+					}
+				}
 			}
 		} else {
 			// synchronously refresh UI
@@ -613,26 +671,29 @@ public class TestUtil {
 	public static void hideView(final String viewId) {
 		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
-				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow();
-				IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
-				IViewReference[] views = workbenchPage.getViewReferences();
-				for (int i = 0; i < views.length; i++) {
-					IViewReference view = views[i];
-					if (viewId.equals(view.getId())) {
-						workbenchPage.hideView(view);
+				IWorkbenchWindow[] windows = PlatformUI.getWorkbench()
+						.getWorkbenchWindows();
+				for (IWorkbenchWindow window : windows) {
+					IWorkbenchPage workbenchPage = window.getActivePage();
+					IViewReference[] views = workbenchPage.getViewReferences();
+					for (int i = 0; i < views.length; i++) {
+						IViewReference view = views[i];
+						if (viewId.equals(view.getId())) {
+							workbenchPage.hideView(view);
+						}
 					}
+					processUIEvents();
 				}
 			}
 		});
 	}
 
 	public static SWTBotView showHistoryView() {
-		return showView("org.eclipse.team.ui.GenericHistoryView");
+		return showView(IHistoryView.VIEW_ID);
 	}
 
 	public static SWTBotView showExplorerView() {
-		return showView("org.eclipse.jdt.ui.PackageExplorer");
+		return showView(JavaUI.ID_PACKAGES);
 	}
 
 	public static SWTBotTree getExplorerTree() {
