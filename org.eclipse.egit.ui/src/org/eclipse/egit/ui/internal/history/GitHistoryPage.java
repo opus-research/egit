@@ -947,7 +947,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		for (IWorkbenchAction action : actions.actionsToDispose)
 			action.dispose();
 		actions.actionsToDispose.clear();
-		releaseGenerateHistoryJob();
+		cancelRefreshJob();
 		if (popupMgr != null) {
 			for (final IContributionItem i : popupMgr.getItems())
 				if (i instanceof IWorkbenchAction)
@@ -1079,6 +1079,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			if (this.input != null)
 				return true;
 
+			cancelRefreshJob();
 			Object o = super.getInput();
 			if (o == null) {
 				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
@@ -1412,7 +1413,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		if (trace)
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation(),
-					new Object[] { list.size()});
+					new Object[] { list, asArray });
 		if (job != j || graph.getControl().isDisposed())
 			return;
 
@@ -1458,6 +1459,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				GitTraceLocation.getTrace().traceEntry(
 						GitTraceLocation.HISTORYVIEW.getLocation());
 
+			cancelRefreshJob();
+
 			if (input == null)
 				return;
 			Repository db = input.getRepository();
@@ -1477,8 +1480,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					.getFileList(), db);
 
 			if (forceNewWalk || shouldRedraw(db, headId, paths)) {
-				releaseGenerateHistoryJob();
-
 				SWTWalk walk = createNewWalk(db, headId);
 				setWalkStartPoints(walk, db, headId);
 
@@ -1855,11 +1856,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 	}
 
-	private void releaseGenerateHistoryJob() {
-		if (job != null) {
-			if (job.getState() != Job.NONE)
-				job.cancel();
-			job.release();
+	private void cancelRefreshJob() {
+		if (job != null && job.getState() != Job.NONE) {
+			job.cancel();
 			job = null;
 		}
 	}
