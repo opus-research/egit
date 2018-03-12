@@ -22,8 +22,6 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
@@ -75,8 +73,7 @@ public class FindToolbar extends Composite {
 	 */
 	public final FindResults findResults = new FindResults();
 
-	private IPersistentPreferenceStore store = (IPersistentPreferenceStore) Activator
-			.getDefault().getPreferenceStore();
+	private IPersistentPreferenceStore store = (IPersistentPreferenceStore) Activator.getDefault().getPreferenceStore();
 
 	private List<Listener> eventList = new ArrayList<Listener>();
 
@@ -95,8 +92,6 @@ public class FindToolbar extends Composite {
 	private ProgressBar progressBar;
 
 	private String lastErrorPattern;
-
-	private Menu prefsMenu;
 
 	private MenuItem commitIdItem;
 
@@ -168,7 +163,7 @@ public class FindToolbar extends Composite {
 		new ToolItem(toolBar, SWT.SEPARATOR);
 
 		final ToolItem prefsItem = new ToolItem(toolBar, SWT.DROP_DOWN);
-		prefsMenu = new Menu(getShell(), SWT.POP_UP);
+		final Menu prefsMenu = new Menu(this.getShell(), SWT.POP_UP);
 		final MenuItem caseItem = new MenuItem(prefsMenu, SWT.CHECK);
 		caseItem.setText(UIText.HistoryPage_findbar_ignorecase);
 		new MenuItem(prefsMenu, SWT.SEPARATOR);
@@ -319,7 +314,7 @@ public class FindToolbar extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				store.setValue(UIPreferences.FINDTOOLBAR_IGNORE_CASE,
 						caseItem.getSelection());
-				if (store.needsSaving()) {
+				if (store.needsSaving()){
 					try {
 						store.save();
 					} catch (IOException e1) {
@@ -393,29 +388,11 @@ public class FindToolbar extends Composite {
 			prefsItem
 					.setToolTipText(UIText.HistoryPage_findbar_changeto_comments);
 		}
-
-		registerDisposal();
-	}
-
-	private void registerDisposal() {
-		addDisposeListener(new DisposeListener() {
-
-			public void widgetDisposed(DisposeEvent e) {
-				prefsMenu.dispose();
-				errorBackgroundColor.dispose();
-				nextIcon.dispose();
-				previousIcon.dispose();
-				commitIdIcon.dispose();
-				commentsIcon.dispose();
-				authorIcon.dispose();
-				committerIcon.dispose();
-			}
-		});
 	}
 
 	private void prefsItemChanged(int findin, MenuItem item) {
 		store.setValue(UIPreferences.FINDTOOLBAR_FIND_IN, findin);
-		if (store.needsSaving()) {
+		if (store.needsSaving()){
 			try {
 				store.save();
 			} catch (IOException e) {
@@ -428,6 +405,18 @@ public class FindToolbar extends Composite {
 		committerItem.setSelection(false);
 		item.setSelection(true);
 		clear();
+	}
+
+	@Override
+	public void dispose() {
+		errorBackgroundColor.dispose();
+		nextIcon.dispose();
+		previousIcon.dispose();
+		commitIdIcon.dispose();
+		commentsIcon.dispose();
+		authorIcon.dispose();
+		committerIcon.dispose();
+		super.dispose();
 	}
 
 	/**
