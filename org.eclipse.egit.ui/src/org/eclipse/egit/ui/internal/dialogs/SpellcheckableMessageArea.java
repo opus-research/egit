@@ -203,8 +203,9 @@ public class SpellcheckableMessageArea extends Composite {
 
 			@Override
 			public IReconciler getReconciler(ISourceViewer viewer) {
-				if (!isEditable(viewer))
+				if (!isEditable(viewer)) {
 					return null;
+				}
 				return super.getReconciler(sourceViewer);
 			}
 
