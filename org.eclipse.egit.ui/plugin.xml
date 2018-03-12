@@ -4669,7 +4669,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.FetchGerritChange"
-            icon="icons/obj16/gerrit_fetch.png">
+            icon="icons/obj16/gerrit_fetch.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.AddToIndex"
@@ -4785,11 +4785,11 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.PushHeadToGerrit"
-            icon="icons/obj16/gerrit_push.png">
+            icon="icons/obj16/gerrit_push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote"
-            icon="icons/obj16/gerrit_obj.png">
+            icon="icons/obj16/gerrit_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.GarbageCollect"
