@@ -28,7 +28,6 @@ import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -95,8 +94,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
-								new MergeResultDialog(shell, repository, op
-										.getResult()).open();
+								new MergeResultDialog(shell, repository, op.getResult()).open();
 							}
 						});
 					}
@@ -109,9 +107,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		Repository repo = getRepository();
-		return repo != null
-				&& repo.getRepositoryState() != RepositoryState.MERGING
-				&& repo.getRepositoryState() != RepositoryState.MERGING_RESOLVED;
+		return getRepository() != null;
 	}
+
 }
