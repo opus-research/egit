@@ -13,6 +13,7 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.compare.CompareConfiguration;
 import org.eclipse.compare.IEditableContent;
+import org.eclipse.compare.IResourceProvider;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.compare.structuremergeviewer.DiffNode;
 import org.eclipse.compare.structuremergeviewer.Differencer;
@@ -104,8 +105,9 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	}
 
 	private IResource getResource(@SuppressWarnings("unused") ICompareInput input) {
-		if (getLocalElement() != null) {
-			return getLocalElement().getResource();
+		if (left instanceof IResourceProvider) {
+			IResourceProvider resourceProvider = (IResourceProvider) left;
+			return resourceProvider.getResource();
 		}
 		return null;
 	}
@@ -271,10 +273,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	 */
 	public Object getAdapter(Class adapter) {
 		if (adapter == IFile.class || adapter == IResource.class) {
-			if (getLocalElement() != null) {
-				return getLocalElement().getResource();
-			}
-			return null;
+			return getResource(getCompareInput());
 		}
 		return super.getAdapter(adapter);
 	}
@@ -332,15 +331,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 
 	@Override
 	protected void fireInputChange() {
-		// have the diff node notify its listeners of a change
-		((NotifiableDiffNode) getCompareResult()).fireChange();
-	}
-
-	private LocalResourceTypedElement getLocalElement() {
-		if (left instanceof LocalResourceTypedElement) {
-			return (LocalResourceTypedElement) left;
-		}
-		return null;
+		// nothing
 	}
 
 	@Override
@@ -355,8 +346,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 
 		// The compare editor (Structure Compare) will show the diff filenames
 		// with their project relative path. So, no need to also show directory entries.
-		DiffNode flatDiffNode = new NotifiableDiffNode(null,
-				Differencer.CHANGE, null, left, right);
+		DiffNode flatDiffNode = new DiffNode(null,Differencer.CHANGE,null,left,right);
 		flatDiffView(flatDiffNode, (DiffNode) input);
 
 		return flatDiffNode;

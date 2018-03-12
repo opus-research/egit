@@ -1765,6 +1765,9 @@ public class UIText extends NLS {
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
+	public static String CommitDialog_ContentAssist;
+
+	/** */
 	public static String CommitDialog_Files;
 
 	/** */
@@ -2851,6 +2854,12 @@ public class UIText extends NLS {
 	public static String GitImportWizard_WizardTitle;
 
 	/** */
+	public static String GitScopeOperation_couldNotDetermineState;
+
+	/** */
+	public static String GitScopeOperation_GitScopeManager;
+
+	/** */
 	public static String GitSelectRepositoryPage_AddButton;
 
 	/** */
@@ -3123,6 +3132,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitActionHandler_calculatingChanges;
+
+	/** */
+	public static String CommitActionHandler_errorBuildingScope;
+
+	/** */
+	public static String CommitActionHandler_lookingForChanges;
 
 	/** */
 	public static String CommitActionHandler_repository;
