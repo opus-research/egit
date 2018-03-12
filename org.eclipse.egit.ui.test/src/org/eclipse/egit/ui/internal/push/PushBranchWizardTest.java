@@ -238,7 +238,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	private Repository createRemoteRepository() throws IOException {
 		File gitDir = new File(getTestDirectory(), "pushbranchremote");
 		Repository repo = FileRepositoryBuilder.create(gitDir);
-		repo.create(true);
+		repo.create();
 		assertTrue(repo.isBare());
 		return repo;
 	}

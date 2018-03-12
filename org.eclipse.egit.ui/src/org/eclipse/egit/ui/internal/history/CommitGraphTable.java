@@ -680,16 +680,12 @@ class CommitGraphTable {
 		public void menuDetected(MenuDetectEvent e) {
 			popupMgr.removeAll();
 
-			final HistoryPageInput lastInput = this.input;
-			if (lastInput == null)
-				return;
-
 			int selectionSize = ((IStructuredSelection) selectionProvider
 					.getSelection()).size();
 
-			if (lastInput.isSingleFile()) {
+			if (input.isSingleFile()) {
 				if (selectionSize == 1)
-					if (lastInput.getSingleFile() instanceof IResource)
+					if (input.getSingleFile() instanceof IResource)
 						popupMgr
 								.add(getCommandContributionItem(
 										HistoryViewCommands.COMPARE_WITH_TREE,
@@ -721,8 +717,8 @@ class CommitGraphTable {
 
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (!lastInput.getRepository().isBare()) {
-					if (hasMultipleRefNodes(lastInput)) {
+				if (!input.getRepository().isBare()) {
+					if (hasMultipleRefNodes()) {
 						popupMgr.add(getCommandContributionItem(
 								HistoryViewCommands.CHECKOUT,
 								UIText.GitHistoryPage_CheckoutMenuLabel2));
@@ -757,9 +753,6 @@ class CommitGraphTable {
 						HistoryViewCommands.CREATE_PATCH,
 						UIText.GitHistoryPage_CreatePatchMenuLabel));
 				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.CHERRYPICK,
-						UIText.GitHistoryPage_cherryPickMenuItem));
-				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.MERGE,
 						UIText.GitHistoryPage_mergeMenuItem));
 				popupMgr.add(getCommandContributionItem(
@@ -776,7 +769,7 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.COMPARE_VERSIONS,
 						UIText.GitHistoryPage_CompareWithEachOtherMenuLabel));
-				if (!lastInput.isSingleFile())
+				if (!input.isSingleFile())
 					popupMgr
 							.add(getCommandContributionItem(
 									HistoryViewCommands.COMPARE_VERSIONS_IN_TREE,
@@ -785,6 +778,9 @@ class CommitGraphTable {
 
 			popupMgr.add(new Separator());
 
+			popupMgr.add(getCommandContributionItem(
+					HistoryViewCommands.CHERRYPICK,
+					UIText.GitHistoryPage_cherryPickMenuItem));
 			popupMgr.add(getCommandContributionItem(HistoryViewCommands.REVERT,
 					UIText.GitHistoryPage_revertMenuItem));
 
@@ -840,9 +836,9 @@ class CommitGraphTable {
 			popupMgr.add(new Separator());
 		}
 
-		private boolean hasMultipleRefNodes(HistoryPageInput lastInput) {
+		private boolean hasMultipleRefNodes() {
 			try {
-				Map<String, Ref> branches = lastInput.getRepository()
+				Map<String, Ref> branches = input.getRepository()
 						.getRefDatabase().getRefs(Constants.R_HEADS);
 				int count = 0;
 				for (Ref branch : branches.values()) {
