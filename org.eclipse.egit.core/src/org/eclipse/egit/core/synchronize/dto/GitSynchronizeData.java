@@ -17,6 +17,7 @@ import java.util.Set;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.ObjectWalk;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -54,9 +55,12 @@ public class GitSynchronizeData {
 			String dstRev, boolean includeLocal) throws IOException {
 		repo = repository;
 
+		Ref srcRef = repo.getRef(srcRev);
+		Ref dstRef = repo.getRef(dstRev);
 		ObjectWalk ow = new ObjectWalk(repo);
-		this.srcRev = ow.parseCommit(repo.resolve(srcRev));
-		this.dstRev = ow.parseCommit(repo.resolve(dstRev));
+
+		this.srcRev = ow.parseCommit(srcRef.getObjectId());
+		this.dstRev = ow.parseCommit(dstRef.getObjectId());
 
 		this.includeLocal = includeLocal;
 		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();

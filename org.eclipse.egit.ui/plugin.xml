@@ -41,7 +41,7 @@
          </action>
          <action
                class="org.eclipse.egit.ui.internal.actions.FetchAction"
-               definitionId="org.eclipse.egit.ui.team.Fetch"
+               definitionId="org.eclipse.egit.ui.RepositoriesViewFetch"
                icon="$nl$/icons/obj16/pull.gif"
                id="org.eclipse.egit.ui.internal.actions.FetchAction"
                label="%FetchAction_label"
@@ -1092,28 +1092,6 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
-               label="%RepoViewRenameBranch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <iterate>
-                     <and>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                           </instanceof>
-                           <test
-                                 property="GitRepository.isLocalBranch">
-                           </test>
-                        </or>
-                     </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
                commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
                label="%RepoViewRemoveRemote.label"
                style="push">
@@ -1271,17 +1249,17 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewAddRepository"
                style="push"
-               tooltip="%RepoViewAddRepository.tooltip">
+               tooltip="Add an existing local Git Repository to this view">
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewClone"
                style="push"
-               tooltip="%RepoViewCloneRepository.tooltip">
+               tooltip="Clone a Git Repository and add the clone to this view">
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewCreateRepository"
                style="push"
-               tooltip="%RepoViewCreateRepository.tooltip">
+               tooltip="Create a new Git Repository and add it to this view">
          </command>
          <separator
                name="org.eclipse.egit.ui.viewActions"
@@ -1300,17 +1278,17 @@
             locationURI="menu:org.eclipse.egit.ui.RepositoriesView">
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewAddRepository"
-               label="%RepoAddRepositoryViewMenu.label"
+               label="&amp;Add a Repository"
                style="push">
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewClone"
-               label="%RepoCloneRepositoryViewMenu.label"
+               label="&amp;Clone a Repository"
                style="push">
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewCreateRepository"
-               label="%RepoCreateRepositoryViewMenu.label"
+               label="&amp;Create a Repository"
                style="push">
          </command>
          <separator
@@ -1319,12 +1297,12 @@
          </separator>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
-               label="%RepoViewRefreshViewMenu.label"
+               label="&amp;Refresh"
                style="push">
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
-               label="%RepoViewLinkWithSelectionMenu.label"
+               label="Link with &amp;Selection"
                style="toggle">
          </command>
       </menuContribution>
@@ -1361,12 +1339,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.FetchCommand"
             id="org.eclipse.egit.ui.RepositoriesViewFetch"
             name="%FetchCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
-            name="%RenameBranchCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -1516,7 +1488,7 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CreateRepositoryCommand"
             id="org.eclipse.egit.ui.RepositoriesViewCreateRepository"
-            name="%RepoViewCreateRepositoryCommand.name">
+            name="Create a Repository">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -1704,8 +1676,7 @@
       <participant
             class="org.eclipse.egit.ui.internal.synchronize.GitModelSynchronizeParticipant"
             id="org.eclipse.egit.ui.modelCompareParticipant"
-            name="%Synchronize_Name"
-            icon="icons/obj16/gitrepository.gif"
+            name="%Synchronize_ModelName"
             persistent="false"/>
    </extension>
    <extension
@@ -1929,7 +1900,7 @@
             hasPages="true"
             icon="icons/etool16/createRepository.gif"
             id="org.eclipse.egit.ui.CreateRepositoryWizard"
-            name="%CreateRepositoryWizard.name">
+            name="Git Repository">
       </wizard>
       <category
             id="org.eclipse.egit.ui.wizardCategory"
