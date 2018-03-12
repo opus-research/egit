@@ -11,8 +11,6 @@ package org.eclipse.egit.ui.internal.fetch;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -20,7 +18,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.PlatformUI;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.FetchResult;
 
 /**
  * Dialog displaying result of fetch operation.
@@ -31,30 +30,6 @@ public class FetchResultDialog extends Dialog {
 	private final FetchResult result;
 
 	private final String sourceString;
-
-	/**
-	 * Shows this dialog asynchronously
-	 *
-	 * @param repository
-	 * @param result
-	 * @param sourceString
-	 */
-	public static void show(final Repository repository,
-			final FetchResult result, final String sourceString) {
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				PlatformUI.getWorkbench().getDisplay().asyncExec(
-						new Runnable() {
-							public void run() {
-								Shell shell = PlatformUI.getWorkbench()
-										.getActiveWorkbenchWindow().getShell();
-								new FetchResultDialog(shell, repository,
-										result, sourceString).open();
-							}
-						});
-			}
-		});
-	}
 
 	/**
 	 * @param parentShell
