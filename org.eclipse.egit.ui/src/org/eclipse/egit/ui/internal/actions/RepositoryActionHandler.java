@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -98,7 +97,8 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		for (ResourceMapping mapping : (ResourceMapping[]) getSelectedAdaptables(
 				selection, ResourceMapping.class)) {
 			IProject[] projects = mapping.getProjects();
-			ret.addAll(Arrays.asList(projects));
+			if (projects != null)
+				ret.addAll(Arrays.asList(projects));
 		}
 		return ret;
 	}
@@ -291,12 +291,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	protected Repository[] getRepositories(ExecutionEvent event)
 			throws ExecutionException {
-		IProject[] selectedProjects = getSelectedProjects(event);
+		IProject[] selectedProjects = getProjectsForSelectedResources(event);
 		if (selectedProjects.length > 0)
 			return getRepositoriesFor(selectedProjects);
 		IStructuredSelection selection = getSelection(event);
 		if (!selection.isEmpty()) {
-			Set<Repository> repos = new HashSet<Repository>();
+			Set<Repository> repos = new LinkedHashSet<Repository>();
 			for (Object o : selection.toArray())
 				if (o instanceof Repository)
 					repos.add((Repository) o);
@@ -318,12 +318,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * @return repositories for selection, or an empty array
 	 */
 	protected Repository[] getRepositories() {
-		IProject[] selectedProjects = getSelectedProjects(getSelection());
+		IProject[] selectedProjects = getProjectsForSelectedResources();
 		if (selectedProjects.length > 0)
 			return getRepositoriesFor(selectedProjects);
 		IStructuredSelection selection = getSelection();
 		if (!selection.isEmpty()) {
-			Set<Repository> repos = new HashSet<Repository>();
+			Set<Repository> repos = new LinkedHashSet<Repository>();
 			for (Object o : selection.toArray())
 				if (o instanceof Repository)
 					repos.add((Repository) o);
@@ -388,7 +388,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		Object selection;
 		if (aSelection == null && ctx != null) {
 			selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-			if (selection == null)
+			if (!(selection instanceof ISelection))
 				selection = ctx
 						.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
 		} else if (aSelection != null)
@@ -461,25 +461,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				return adapter;
 		}
 		return null;
-	}
-
-	private IProject[] getSelectedProjects(ExecutionEvent event)
-			throws ExecutionException {
-		IStructuredSelection selection = getSelection(event);
-		return getSelectedProjects(selection);
-	}
-
-	private IProject[] getSelectedProjects(IStructuredSelection selection) {
-		IResource[] selectedResources = getSelectedResources(selection);
-		if (selectedResources.length == 0)
-			return new IProject[0];
-		ArrayList<IProject> projects = new ArrayList<IProject>();
-		for (int i = 0; i < selectedResources.length; i++) {
-			IResource resource = selectedResources[i];
-			if (resource.getType() == IResource.PROJECT)
-				projects.add((IProject) resource);
-		}
-		return projects.toArray(new IProject[projects.size()]);
 	}
 
 	/**
