@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,13 +9,15 @@
 package org.eclipse.egit.ui.internal.actions;
 
 /**
- * An action that launch workspace synchronization.
+ * Compares the index content of a file with the version of the file in
+ * the HEAD commit.
  */
-public class SynchronizeWorkspaceAction extends RepositoryAction {
+public class CompareIndexWithHeadAction extends RepositoryAction {
+
 	/**
 	 *
 	 */
-	public SynchronizeWorkspaceAction() {
-		super(ActionCommands.SYNC_WORKSPACE_ACTION, new SynchronizeWorkspaceActionHandler());
+	public CompareIndexWithHeadAction() {
+		super(ActionCommands.COMPARE_INDEX_WITH_HEAD_ACTION, new CompareIndexWithHeadActionHandler());
 	}
 }
