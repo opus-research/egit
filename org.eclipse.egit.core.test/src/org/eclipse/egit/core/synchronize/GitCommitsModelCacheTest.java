@@ -13,6 +13,8 @@ import static org.eclipse.compare.structuremergeviewer.Differencer.CHANGE;
 import static org.eclipse.compare.structuremergeviewer.Differencer.DELETION;
 import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
 import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
+import static org.eclipse.jgit.junit.JGitTestUtil.deleteTrashFile;
+import static org.eclipse.jgit.junit.JGitTestUtil.writeTrashFile;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -55,7 +57,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		List<Commit> result = GitCommitsModelCache.build(db, initialTagId(), c,
 				null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(result, notNullValue());
 		assertThat(result.size(), is(0));
 	}
@@ -64,7 +66,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 	public void shouldListAdditionOrDeletionInCommit() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("a.txt", "content");
+		writeTrashFile(db, "a.txt", "content");
 		git.add().addFilepattern("a.txt").call();
 		RevCommit c = commit(git, "first commit");
 		// when
@@ -73,12 +75,12 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c,
 				initialTagId(), null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c, 1);
 		assertFileDeletion(c, leftResult.get(0).getChildren().get("a.txt"),
 				"a.txt", LEFT);
-		// right asserts, after changing sides addition becomes deletion
+		// right assertions, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c, 1);
 		assertFileAddition(c, rightResult.get(0).getChildren().get("a.txt"),
@@ -90,7 +92,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 			throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "content");
+		writeTrashFile(db, "folder/a.txt", "content");
 		git.add().addFilepattern("folder/a.txt").call();
 		RevCommit c = commit(git, "first commit");
 		// when
@@ -99,14 +101,14 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c,
 				initialTagId(), null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c, 1);
 		assertThat(leftResult.get(0).getChildren().size(), is(1));
 		assertFileDeletion(c,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
-		// right asserts, after changing sides addition becomes deletion
+		// right assertions, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c, 1);
 		assertThat(rightResult.get(0).getChildren().size(), is(1));
@@ -120,8 +122,8 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 			throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "content");
-		writeTrashFile("folder2/b.txt", "b content");
+		writeTrashFile(db, "folder/a.txt", "content");
+		writeTrashFile(db, "folder2/b.txt", "b content");
 		git.add().addFilepattern("folder/a.txt").call();
 		git.add().addFilepattern("folder2/b.txt").call();
 		RevCommit c = commit(git, "first commit");
@@ -131,7 +133,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c,
 				initialTagId(), null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertThat(leftResult.get(0).getShortMessage(), is("first commit"));
@@ -143,7 +145,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertFileDeletion(c,
 				leftResult.get(0).getChildren().get("folder2/b.txt"), "b.txt",
 				LEFT);
-		// right asserts, after changing sides addition becomes deletion
+		// right assertions, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
 		assertThat(Integer.valueOf(rightResult.size()), is(Integer.valueOf(1)));
 		assertThat(rightResult.get(0).getShortMessage(), is("first commit"));
@@ -161,8 +163,8 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 	public void shouldApplyPathFilter() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "content");
-		writeTrashFile("folder2/b.txt", "b content");
+		writeTrashFile(db, "folder/a.txt", "content");
+		writeTrashFile(db, "folder2/b.txt", "b content");
 		git.add().addFilepattern("folder/a.txt").call();
 		git.add().addFilepattern("folder2/b.txt").call();
 		RevCommit c = commit(git, "first commit");
@@ -187,8 +189,8 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 			throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "content");
-		writeTrashFile("folder/b.txt", "b content");
+		writeTrashFile(db, "folder/a.txt", "content");
+		writeTrashFile(db, "folder/b.txt", "b content");
 		git.add().addFilepattern("folder").call();
 		RevCommit c = commit(git, "first commit");
 		// when
@@ -197,7 +199,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c,
 				initialTagId(), null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertCommit(leftResult.get(0), c, 2);
@@ -208,7 +210,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertFileDeletion(c,
 				leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt",
 				LEFT);
-		// right asserts, after changing sides addition becomes deletion
+		// right assertions, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
 		assertThat(Integer.valueOf(rightResult.size()), is(Integer.valueOf(1)));
 		assertCommit(rightResult.get(0), c, 2);
@@ -225,21 +227,21 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 	public void shouldListChangeInCommit() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("a.txt", "content");
+		writeTrashFile(db, "a.txt", "content");
 		git.add().addFilepattern("a.txt").call();
 		RevCommit c1 = commit(git, "first commit");
-		writeTrashFile("a.txt", "new content");
+		writeTrashFile(db, "a.txt", "new content");
 		RevCommit c2 = commit(git, "second commit");
 		// when
 		List<Commit> leftResult = GitCommitsModelCache.build(db, c1, c2, null);
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1, null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 1);
 		assertFileChange(c1, c2, leftResult.get(0).getChildren().get("a.txt"),
 				"a.txt", LEFT);
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c2, 1);
 		assertFileChange(c2, c1, rightResult.get(0).getChildren().get("a.txt"),
@@ -250,22 +252,22 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 	public void shouldListChangeInsideFolderInCommit() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "content");
+		writeTrashFile(db, "folder/a.txt", "content");
 		git.add().addFilepattern("folder/a.txt").call();
 		RevCommit c1 = commit(git, "first commit");
-		writeTrashFile("folder/a.txt", "new content");
+		writeTrashFile(db, "folder/a.txt", "new content");
 		RevCommit c2 = commit(git, "second commit");
 		// when
 		List<Commit> leftResult = GitCommitsModelCache.build(db, c1, c2, null);
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1, null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 1);
 		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt",
 				LEFT);
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c2, 1);
 		assertFileChange(c2, c1,
@@ -278,19 +280,19 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 			throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "content");
-		writeTrashFile("folder2/b.txt", "b content");
+		writeTrashFile(db, "folder/a.txt", "content");
+		writeTrashFile(db, "folder2/b.txt", "b content");
 		git.add().addFilepattern("folder/a.txt").call();
 		git.add().addFilepattern("folder2/b.txt").call();
 		RevCommit c1 = commit(git, "first commit");
-		writeTrashFile("folder/a.txt", "new content");
-		writeTrashFile("folder2/b.txt", "new b content");
+		writeTrashFile(db, "folder/a.txt", "new content");
+		writeTrashFile(db, "folder2/b.txt", "new b content");
 		RevCommit c2 = commit(git, "second commit");
 		// when
 		List<Commit> leftResult = GitCommitsModelCache.build(db, c1, c2, null);
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1, null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertThat(leftResult.get(0).getShortMessage(), is("second commit"));
@@ -302,7 +304,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder2/b.txt"), "b.txt",
 				LEFT);
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertThat(Integer.valueOf(rightResult.size()), is(Integer.valueOf(1)));
 		assertThat(rightResult.get(0).getShortMessage(), is("second commit"));
@@ -319,18 +321,18 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 	public void shouldListChangesInsideFolderInCommit() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "content");
-		writeTrashFile("folder/b.txt", "b content");
+		writeTrashFile(db, "folder/a.txt", "content");
+		writeTrashFile(db, "folder/b.txt", "b content");
 		git.add().addFilepattern("folder").call();
 		RevCommit c1 = commit(git, "first commit");
-		writeTrashFile("folder/a.txt", "new content");
-		writeTrashFile("folder/b.txt", "new b content");
+		writeTrashFile(db, "folder/a.txt", "new content");
+		writeTrashFile(db, "folder/b.txt", "new b content");
 		RevCommit c2 = commit(git, "second commit");
 		// when
 		List<Commit> leftResult = GitCommitsModelCache.build(db, c1, c2, null);
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1, null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertCommit(leftResult.get(0), c2, 2);
@@ -340,7 +342,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt",
 				LEFT);
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertThat(Integer.valueOf(rightResult.size()), is(Integer.valueOf(1)));
 		assertCommit(rightResult.get(0), c2, 2);
@@ -356,21 +358,21 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 	public void shouldListAllTypeOfChangesInOneCommit() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("a.txt", "a content");
-		writeTrashFile("c.txt", "c content");
+		writeTrashFile(db, "a.txt", "a content");
+		writeTrashFile(db, "c.txt", "c content");
 		git.add().addFilepattern("a.txt").call();
 		git.add().addFilepattern("c.txt").call();
 		RevCommit c1 = commit(git, "first commit");
-		deleteTrashFile("a.txt");
-		writeTrashFile("b.txt", "b content");
-		writeTrashFile("c.txt", "new c content");
+		deleteTrashFile(db, "a.txt");
+		writeTrashFile(db, "b.txt", "b content");
+		writeTrashFile(db, "c.txt", "new c content");
 		git.add().addFilepattern("b.txt").call();
 		RevCommit c2 = commit(git, "second commit");
 		// when
 		List<Commit> leftResult = GitCommitsModelCache.build(db, c1, c2, null);
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1, null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 3);
 		assertFileAddition(c1, c2,
@@ -379,7 +381,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 				leftResult.get(0).getChildren().get("b.txt"), "b.txt", LEFT);
 		assertFileChange(c1, c2, leftResult.get(0).getChildren().get("c.txt"),
 				"c.txt", LEFT);
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c2, 3);
 		assertFileDeletion(c2, c1, rightResult.get(0).getChildren()
@@ -395,21 +397,21 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 			throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "a content");
-		writeTrashFile("folder/c.txt", "c content");
+		writeTrashFile(db, "folder/a.txt", "a content");
+		writeTrashFile(db, "folder/c.txt", "c content");
 		git.add().addFilepattern("folder/a.txt").call();
 		git.add().addFilepattern("folder/c.txt").call();
 		RevCommit c1 = commit(git, "first commit");
-		deleteTrashFile("folder/a.txt");
-		writeTrashFile("folder/b.txt", "b content");
-		writeTrashFile("folder/c.txt", "new c content");
+		deleteTrashFile(db, "folder/a.txt");
+		writeTrashFile(db, "folder/b.txt", "b content");
+		writeTrashFile(db, "folder/c.txt", "new c content");
 		git.add().addFilepattern("folder/b.txt").call();
 		RevCommit c2 = commit(git, "second commit");
 		// when
 		List<Commit> leftResult = GitCommitsModelCache.build(db, c1, c2, null);
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1, null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 3);
 		assertFileAddition(c1, c2,
@@ -421,7 +423,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder/c.txt"), "c.txt",
 				LEFT);
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c2, 3);
 		assertFileDeletion(c2, c1,
@@ -440,21 +442,21 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 			throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "a content");
-		writeTrashFile("folder2/c.txt", "c content");
+		writeTrashFile(db, "folder/a.txt", "a content");
+		writeTrashFile(db, "folder2/c.txt", "c content");
 		git.add().addFilepattern("folder/a.txt").call();
 		git.add().addFilepattern("folder2/c.txt").call();
 		RevCommit c1 = commit(git, "first commit");
-		deleteTrashFile("folder/a.txt");
-		writeTrashFile("folder1/b.txt", "b content");
-		writeTrashFile("folder2/c.txt", "new c content");
+		deleteTrashFile(db, "folder/a.txt");
+		writeTrashFile(db, "folder1/b.txt", "b content");
+		writeTrashFile(db, "folder2/c.txt", "new c content");
 		git.add().addFilepattern("folder1/b.txt").call();
 		RevCommit c2 = commit(git, "second commit");
 		// when
 		List<Commit> leftResult = GitCommitsModelCache.build(db, c1, c2, null);
 		List<Commit> rightResult = GitCommitsModelCache.build(db, c2, c1, null);
 		// then
-		// left asserts
+		// left assertions
 		assertThat(leftResult, notNullValue());
 		assertThat(Integer.valueOf(leftResult.size()), is(Integer.valueOf(1)));
 		assertThat(leftResult.get(0).getShortMessage(), is("second commit"));
@@ -469,7 +471,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 		assertFileChange(c1, c2,
 				leftResult.get(0).getChildren().get("folder2/c.txt"), "c.txt",
 				LEFT);
-		// right asserts
+		// right assertions
 		assertThat(rightResult, notNullValue());
 		assertThat(Integer.valueOf(rightResult.size()), is(Integer.valueOf(1)));
 		assertThat(rightResult.get(0).getShortMessage(), is("second commit"));
@@ -535,13 +537,13 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 			Change change, String name, int direction) {
 		commonFileAssertations(actual, parent, change, name);
 		if (direction == Differencer.LEFT) {
-			assertThat(change.getKind(), is(LEFT | ADDITION));
 			assertThat(change.getRemoteCommitId(), not(ZERO_ID));
 			assertThat(change.getObjectId(), nullValue());
-		} else { // should be Differencer.Right
-			assertThat(change.getKind(), is(RIGHT | ADDITION));
+			assertThat(change.getKind(), is(LEFT | ADDITION));
+		} else { // should be Differencer.RIGHT
 			assertThat(change.getObjectId(), not(ZERO_ID));
 			assertThat(change.getRemoteObjectId(), nullValue());
+			assertThat(change.getKind(), is(RIGHT | ADDITION));
 		}
 	}
 
@@ -557,7 +559,7 @@ public class GitCommitsModelCacheTest extends AbstractCacheTest {
 			assertThat(change.getRemoteObjectId(), nullValue());
 			assertThat(change.getObjectId(), not(ZERO_ID));
 			assertThat(change.getKind(), is(LEFT | DELETION));
-		} else { // should be Differencer.Right
+		} else { // should be Differencer.RIGHT
 			assertThat(change.getKind(), is(RIGHT | DELETION));
 			assertThat(change.getObjectId(), nullValue());
 			assertThat(change.getRemoteObjectId(), not(ZERO_ID));

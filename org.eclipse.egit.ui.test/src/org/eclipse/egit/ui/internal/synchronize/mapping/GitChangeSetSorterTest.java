@@ -12,6 +12,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Date;
+
 import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Commit;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache;
@@ -379,6 +381,8 @@ public class GitChangeSetSorterTest {
 		GitModelCommit commit2 = mock(GitModelCommit.class);
 		Commit mockCommit1 = mock(Commit.class);
 		Commit mockCommit2 = mock(Commit.class);
+		when(mockCommit1.getCommitDate()).thenReturn(new Date(333333L));
+		when(mockCommit2.getCommitDate()).thenReturn(new Date(555555L));
 		when(commit1.getCachedCommitObj()).thenReturn(mockCommit1);
 		when(commit2.getCachedCommitObj()).thenReturn(mockCommit2);
 

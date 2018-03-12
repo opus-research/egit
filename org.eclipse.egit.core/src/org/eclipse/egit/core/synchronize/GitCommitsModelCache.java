@@ -36,7 +36,7 @@ import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
- * Retrieves list of checked in commits and changes associated with each commit
+ * Retrieves list of commits and the changes associated with each commit
  */
 public class GitCommitsModelCache {
 
@@ -115,13 +115,6 @@ public class GitCommitsModelCache {
 		 */
 		public Map<String, Change> getChildren() {
 			return children;
-		}
-
-		/**
-		 * Disposes nested resources
-		 */
-		public void dispose() {
-			children.clear();
 		}
 
 	}
@@ -413,12 +406,9 @@ public class GitCommitsModelCache {
 	static void calculateAndSetChangeKind(final int direction, Change change) {
 		if (ZERO_ID.equals(change.objectId)) { // missing locally
 			change.objectId = null; // clear zero id;
-			change.kind = direction | Differencer.DELETION;
-		} else if (ZERO_ID.equals(change.remoteObjectId)) {
 			if (direction == Differencer.LEFT)
 				change.kind = direction | Differencer.ADDITION;
-			else
-				// should be Differencer.RIGHT
+			else // should be Differencer.RIGHT
 				change.kind = direction | Differencer.DELETION;
 		} else if (ZERO_ID.equals(change.remoteObjectId)) { // missing remotely
 			change.remoteObjectId = null; // clear zero id;

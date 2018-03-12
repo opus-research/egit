@@ -9,7 +9,7 @@
 package org.eclipse.egit.core.synchronize;
 
 /**
- * Thrown when cannot determinate commit direction during
+ * Thrown when commit direction cannot be determined in
  * {@link GitCommitsModelCache#build(org.eclipse.jgit.lib.Repository, org.eclipse.jgit.lib.ObjectId, org.eclipse.jgit.lib.ObjectId, org.eclipse.jgit.treewalk.filter.TreeFilter)}
  *
  */
