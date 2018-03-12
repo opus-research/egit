@@ -191,7 +191,7 @@ public class ConnectProviderOperation implements IEGitOperation {
 				}
 			}, IResource.NONE);
 		} catch (CoreException e) {
-			Activator.logError(e.getMessage(), e);
+			Activator.error(e.getMessage(), e);
 		}
 	}
 

@@ -33,9 +33,9 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.internal.gerrit.GerritUtil;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
@@ -448,7 +448,7 @@ public class CommitMessageComponent {
 		// Check format of commit message. The soft-wrapped text in the SWT
 		// control must be converted to a hard-wrapped text, since this will be
 		// the resulting commit message.
-		if (Activator.getDefault().getPreferenceStore()
+		if (org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE)) {
 			String message = commitText.getCommitMessage();
 			String formatIssue = formatIssuesInCommitMessage(message);
@@ -583,7 +583,7 @@ public class CommitMessageComponent {
 		if (repository != null)
 			createChangeId = GerritUtil.getCreateChangeId(repository
 					.getConfig());
-		signedOff = Activator.getDefault()
+		signedOff = org.eclipse.egit.ui.Activator.getDefault()
 				.getPreferenceStore()
 				.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
 	}
@@ -687,8 +687,7 @@ public class CommitMessageComponent {
 						.getMessage(resourcesArray);
 			}
 		} catch (CoreException coreException) {
-			Activator.logError(coreException.getLocalizedMessage(),
-					coreException);
+			Activator.error(coreException.getLocalizedMessage(), coreException);
 		}
 		if (calculatedCommitMessage != null)
 			return calculatedCommitMessage;
