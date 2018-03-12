@@ -3023,13 +3023,10 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_description;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_projects;
+	public static String GitBranchSynchronizeWizardPage_repositories;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_destination;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
+	public static String GitBranchSynchronizeWizardPage_branches;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
@@ -3527,6 +3524,9 @@ public class UIText extends NLS {
 	public static String CommitSearchPage_CaseSensitive;
 
 	/** */
+	public static String CommitSearchPage_CheckAll;
+
+	/** */
 	public static String CommitSearchPage_CommitId;
 
 	/** */
@@ -3558,6 +3558,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitSearchPage_TreeId;
+
+	/** */
+	public static String CommitSearchPage_UncheckAll;
 
 	/** */
 	public static String CommitSearchQuery_Label;
@@ -3651,9 +3654,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_Commit;
-
-	/** */
-	public static String SynchronizeWithMenu_custom;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
