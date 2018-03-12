@@ -26,14 +26,14 @@
 							ifEmpty="false"
 							operator="and">
 						<and>
-							<adapt type="org.eclipse.jgit.lib.Repository">
-								<not>
+							<not>
+								<adapt type="org.eclipse.jgit.lib.Repository">
 									<test
 											forcePluginActivation="true"
 											property="GitFlowRepository.isInitialized">
 									</test>
-								</not>
-							</adapt>
+								</adapt>
+							</not>
 						</and>
 					</iterate>
 				</visibleWhen>
@@ -207,14 +207,14 @@
 						ifEmpty="false"
 						operator="and">
 					<and>
-						<adapt type="org.eclipse.jgit.lib.Repository">
-							<not>
+						<not>
+							<adapt type="org.eclipse.jgit.lib.Repository">
 								<test
 										forcePluginActivation="true"
 										property="GitFlowRepository.isInitialized">
 								</test>
-							</not>
-						</adapt>
+							</adapt>
+						</not>
 					</and>
 				</iterate>
 			</enabledWhen>
@@ -739,14 +739,14 @@
 							<instanceof
 									value="org.eclipse.core.resources.IProject">
 							</instanceof>
-							<adapt type="org.eclipse.jgit.lib.Repository">
-								<not>
+							<not>
+								<adapt type="org.eclipse.jgit.lib.Repository">
 									<test
 											forcePluginActivation="true"
 											property="GitFlowRepository.isInitialized">
 									</test>
-								</not>
-							</adapt>
+								</adapt>
+							</not>
 						</and>
 					</iterate>
 				</visibleWhen>
