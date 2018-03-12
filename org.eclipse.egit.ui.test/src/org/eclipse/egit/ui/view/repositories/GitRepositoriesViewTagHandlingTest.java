@@ -138,8 +138,7 @@ public class GitRepositoriesViewTagHandlingTest extends
 
 			SWTBotShell resetDialog = bot
 					.shell(UIText.ResetCommand_WizardTitle);
-			resetDialog.bot().radio(UIText.ResetTargetSelectionDialog_ResetTypeHardButton).click();
-			waitInUI();
+			pressAltAndChar(resetDialog, 'H');
 			resetDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 			waitInUI();
 
@@ -173,9 +172,10 @@ public class GitRepositoriesViewTagHandlingTest extends
 		myRepoViewUtil.getTagsItem(tree, repositoryFile).select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("CreateTagCommand"));
-		String shellTitle = UIText.CreateTagDialog_NewTag;
+		String branchName = repository.getBranch();
+		String shellTitle = NLS.bind(
+				UIText.CreateTagDialog_questionNewTagTitle, branchName);
 		SWTBotShell createDialog = bot.shell(shellTitle).activate();
-		waitInUI();
 		createDialog.bot().textWithLabel(UIText.CreateTagDialog_tagName)
 				.setText(name);
 		createDialog.bot().textWithLabel(UIText.CreateTagDialog_tagMessage)

@@ -52,7 +52,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.DECORATOR_SHOW_STAGED_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON, true);
-		store.setDefault(UIPreferences.DECORATOR_SHOW_DIRTY_ICON, false);
 
 		w = new int[] { 500, 500 };
 		store.setDefault(UIPreferences.RESOURCEHISTORY_GRAPH_SPLIT, UIPreferences.intArrayToString(w));
@@ -62,6 +61,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.FINDTOOLBAR_IGNORE_CASE, true);
 		store.setDefault(UIPreferences.FINDTOOLBAR_FIND_IN, 2);
 
+		store.setDefault(UIPreferences.REFESH_ON_HEAD_CHANGE, true);
 		store.setDefault(UIPreferences.REFESH_ON_INDEX_CHANGE, true);
 		store.setDefault(UIPreferences.REFESH_ONLY_WHEN_ACTIVE, true);
 	}

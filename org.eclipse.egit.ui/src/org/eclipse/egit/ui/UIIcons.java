@@ -38,9 +38,6 @@ public class UIIcons {
 	/** Decoration for tracked resources that we want to ignore changes in. */
 	public static final ImageDescriptor OVR_ASSUMEVALID;
 
-	/** Decoration for tracked resources that are dirty. */
-	public static final ImageDescriptor OVR_DIRTY;
-
 	/** Find icon */
 	public static final ImageDescriptor ELCL16_FIND;
 	/** Compare / View icon */
@@ -78,8 +75,7 @@ public class UIIcons {
 	public static final ImageDescriptor CHECKBOX_DISABLED_CHECKED;
 	/** Disabled, unchecked, checkbox image */
 	public static final ImageDescriptor CHECKBOX_DISABLED_UNCHECKED;
-	/** Edit configuration */
-	public static final ImageDescriptor EDITCONFIG;
+
 	/** Create Patch Wizard banner */
 	public static final ImageDescriptor WIZBAN_CREATE_PATCH;
 
@@ -89,14 +85,14 @@ public class UIIcons {
 	/** Connect Wizard banner */
 	public static final ImageDescriptor WIZBAN_CONNECT_REPO;
 
-	/** History view, select all version in same project */
+	/** History filter, select all version in repo */
+	public static ImageDescriptor FILTERREPO;
+
+	/** History filter, select all version in same project */
 	public static ImageDescriptor FILTERPROJECT;
 
-	/** History view, select all version in same folder */
+	/** History filter, select all version in same folder */
 	public static ImageDescriptor FILTERFOLDER;
-
-	/** History view, select all version of resource */
-	public static ImageDescriptor FILTERRESOURCE;
 
 	/** Import button */
 	public static ImageDescriptor FETCH;
@@ -115,9 +111,6 @@ public class UIIcons {
 
 	/** Remote Repository tree node */
 	public static ImageDescriptor REMOTE_REPOSITORY;
-
-	/** Reset */
-	public static ImageDescriptor RESET;
 
 	/** Remote Repository tree node */
 	public static ImageDescriptor REMOTE_SPEC;
@@ -140,11 +133,7 @@ public class UIIcons {
 	/** Clone Icon */
 	public static ImageDescriptor CLONEGIT;
 
-	/** Changeset Icon */
-	public static final ImageDescriptor CHANGESET;
-
 	private static final URL base;
-
 
 	static {
 		base = init();
@@ -154,7 +143,6 @@ public class UIIcons {
 		OVR_UNTRACKED = map("ovr/untracked.gif"); //$NON-NLS-1$
 		OVR_CONFLICT = map("ovr/conflict.gif"); //$NON-NLS-1$
 		OVR_ASSUMEVALID = map("ovr/assume_valid.gif"); //$NON-NLS-1$
-		OVR_DIRTY = map("ovr/dirty.gif"); //$NON-NLS-1$
 		ELCL16_FIND = map("elcl16/find.gif"); //$NON-NLS-1$
 		ELCL16_COMPARE_VIEW = map("elcl16/compare_view.gif"); //$NON-NLS-1$
 		ELCL16_NEXT = map("elcl16/next.gif"); //$NON-NLS-1$
@@ -162,7 +150,6 @@ public class UIIcons {
 		WIZBAN_CREATE_PATCH = map("wizban/createpatch_wizban.png"); //$NON-NLS-1$
 		WIZBAN_IMPORT_REPO = map("wizban/import_wiz.png"); //$NON-NLS-1$
 		WIZBAN_CONNECT_REPO = map("wizban/newconnect_wizban.png"); //$NON-NLS-1$
-		EDITCONFIG = map("obj16/editconfig.gif"); //$NON-NLS-1$
 		ELCL16_COMMIT = map("elcl16/commit.gif"); //$NON-NLS-1$
 		ELCL16_COMMENTS = map("elcl16/comment.gif"); //$NON-NLS-1$
 		ELCL16_AUTHOR = map("elcl16/author.gif"); //$NON-NLS-1$
@@ -177,7 +164,7 @@ public class UIIcons {
 		CHECKBOX_ENABLED_UNCHECKED = map("checkboxes/enabled_unchecked.gif"); //$NON-NLS-1$
 		CHECKBOX_DISABLED_CHECKED = map("checkboxes/disabled_checked.gif"); //$NON-NLS-1$
 		CHECKBOX_DISABLED_UNCHECKED = map("checkboxes/disabled_unchecked.gif"); //$NON-NLS-1$
-		FILTERRESOURCE = map("elcl16/filterresource.gif"); //$NON-NLS-1$
+		FILTERREPO = map("elcl16/filterrepo.gif"); //$NON-NLS-1$
 		FILTERPROJECT = map("elcl16/filterproject.gif"); //$NON-NLS-1$
 		FILTERFOLDER = map("elcl16/filterfolder.gif"); //$NON-NLS-1$
 		FETCH = map("obj16/pull.gif"); //$NON-NLS-1$
@@ -193,8 +180,6 @@ public class UIIcons {
 		BRANCH = map("obj16/branch_obj.gif"); //$NON-NLS-1$
 		COLLAPSEALL = map("elcl16/collapseall.gif"); //$NON-NLS-1$
 		CLONEGIT = map("obj16/cloneGit.gif"); //$NON-NLS-1$
-		RESET = map("obj16/reset.gif"); //$NON-NLS-1$
-		CHANGESET = map("obj16/changelog_obj.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

@@ -12,27 +12,26 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import org.eclipse.core.resources.IEncodedStorage;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.AnyObjectId;
+import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
 
@@ -47,9 +46,10 @@ class GitDocument extends Document implements RefsChangedListener {
 	static Map<GitDocument,Repository> doc2repo = new WeakHashMap<GitDocument, Repository>();
 
 	static GitDocument create(final IResource resource) throws IOException {
-		if (GitTraceLocation.QUICKDIFF.isActive())
+		// TODO is this the right location?
+		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.QUICKDIFF.getLocation(),
+					GitTraceLocation.UI.getLocation(),
 					"(GitDocument) create: " + resource); //$NON-NLS-1$
 		GitDocument ret = null;
 		if (RepositoryProvider.getProvider(resource.getProject()) instanceof GitProvider) {
@@ -74,23 +74,26 @@ class GitDocument extends Document implements RefsChangedListener {
 		lastBlob = blob != null ? blob.copy() : null;
 		set(value);
 		if (blob != null)
-			if (GitTraceLocation.QUICKDIFF.isActive())
+			// TODO is this the right location?
+			if (GitTraceLocation.UI.isActive())
 				GitTraceLocation
 						.getTrace()
 						.trace(
-								GitTraceLocation.QUICKDIFF.getLocation(),
+								GitTraceLocation.UI.getLocation(),
 								"(GitDocument) resolved " + resource + " to " + lastBlob + " in " + lastCommit + "/" + lastTree); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			else
-			if (GitTraceLocation.QUICKDIFF.isActive())
+			// TODO is this the right location?
+			if (GitTraceLocation.UI.isActive())
 				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.QUICKDIFF.getLocation(),
+						GitTraceLocation.UI.getLocation(),
 						"(GitDocument) unresolved " + resource); //$NON-NLS-1$
 	}
 
 	void populate() throws IOException {
-		if (GitTraceLocation.QUICKDIFF.isActive())
+		// TODO is this the right location?
+		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.QUICKDIFF.getLocation(),"(GitDocument) populate: " + resource); //$NON-NLS-1$
+					GitTraceLocation.UI.getLocation(),"(GitDocument) populate: " + resource); //$NON-NLS-1$
 		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
 		if (mapping == null) {
 			setResolved(null, null, null, ""); //$NON-NLS-1$
@@ -104,9 +107,10 @@ class GitDocument extends Document implements RefsChangedListener {
 		ObjectId commitId = repository.resolve(baseline);
 		if (commitId != null) {
 			if (commitId.equals(lastCommit)) {
-				if (GitTraceLocation.QUICKDIFF.isActive())
+				// TODO is this the right location?
+				if (GitTraceLocation.UI.isActive())
 					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.QUICKDIFF.getLocation(),
+							GitTraceLocation.UI.getLocation(),
 							"(GitDocument) already resolved"); //$NON-NLS-1$
 				return;
 			}
@@ -117,28 +121,24 @@ class GitDocument extends Document implements RefsChangedListener {
 			setResolved(null, null, null, ""); //$NON-NLS-1$
 			return;
 		}
-		RevWalk rw = new RevWalk(repository);
-		RevCommit baselineCommit;
-		try {
-			baselineCommit = rw.parseCommit(commitId);
-		} catch (IOException err) {
+		Commit baselineCommit = repository.mapCommit(commitId);
+		if (baselineCommit == null) {
 			String msg = NLS.bind(UIText.GitDocument_errorLoadCommit,
 					new Object[] { commitId, baseline, resource, repository });
-			Activator.logError(msg, err);
+			Activator.logError(msg, new Throwable());
 			setResolved(null, null, null, ""); //$NON-NLS-1$
 			return;
-		} finally {
-			rw.release();
 		}
-		RevTree treeId = baselineCommit.getTree();
+		ObjectId treeId = baselineCommit.getTreeId();
 		if (treeId.equals(lastTree)) {
-			if (GitTraceLocation.QUICKDIFF.isActive())
+			// TODO is this the right location?
+			if (GitTraceLocation.UI.isActive())
 				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.QUICKDIFF.getLocation(),
+						GitTraceLocation.UI.getLocation(),
 						"(GitDocument) already resolved"); //$NON-NLS-1$
 			return;
 		}
-		Tree baselineTree = repository.mapTree(treeId);
+		Tree baselineTree = baselineCommit.getTree();
 		if (baselineTree == null) {
 			String msg = NLS.bind(UIText.GitDocument_errorLoadTree,
 					new Object[] { treeId, baseline, resource, repository });
@@ -148,40 +148,55 @@ class GitDocument extends Document implements RefsChangedListener {
 		}
 		TreeEntry blobEntry = baselineTree.findBlobMember(gitPath);
 		if (blobEntry != null && !blobEntry.getId().equals(lastBlob)) {
-			if (GitTraceLocation.QUICKDIFF.isActive())
+			// TODO is this the right location?
+			if (GitTraceLocation.UI.isActive())
 				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.QUICKDIFF.getLocation(),
+						GitTraceLocation.UI.getLocation(),
 						"(GitDocument) compareTo: " + baseline); //$NON-NLS-1$
 			ObjectLoader loader = repository.open(blobEntry.getId(),
 					Constants.OBJ_BLOB);
 			byte[] bytes = loader.getBytes();
 			String charset;
-			charset = CompareUtils.getResourceEncoding(resource);
+			// Get the encoding for the current version. As a matter of
+			// principle one might want to use the eclipse settings for the
+			// version we are retrieving as that may be defined by the
+			// project settings, but there is no historic API for this.
+			IEncodedStorage encodedStorage = ((IEncodedStorage)resource);
+			try {
+				charset = encodedStorage.getCharset();
+				if (charset != null)
+					charset = resource.getParent().getDefaultCharset();
+			} catch (CoreException e) {
+				charset = Constants.CHARACTER_ENCODING;
+			}
 			// Finally we could consider validating the content with respect
 			// to the content. We don't do that here.
 			String s = new String(bytes, charset);
 			setResolved(commitId, baselineTree.getId(), blobEntry.getId(), s);
-			if (GitTraceLocation.QUICKDIFF.isActive())
+			// TODO is this the right location?
+			if (GitTraceLocation.UI.isActive())
 				GitTraceLocation
 						.getTrace()
 						.trace(
-								GitTraceLocation.QUICKDIFF.getLocation(),
+								GitTraceLocation.UI.getLocation(),
 								"(GitDocument) has reference doc, size=" + s.length() + " bytes"); //$NON-NLS-1$ //$NON-NLS-2$
 		} else {
 			if (blobEntry == null)
 				setResolved(null, null, null, ""); //$NON-NLS-1$
 			else
-			if (GitTraceLocation.QUICKDIFF.isActive())
+			// TODO is this the right location?
+			if (GitTraceLocation.UI.isActive())
 				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.QUICKDIFF.getLocation(),
+						GitTraceLocation.UI.getLocation(),
 						"(GitDocument) already resolved"); //$NON-NLS-1$
 		}
 	}
 
 	void dispose() {
-		if (GitTraceLocation.QUICKDIFF.isActive())
+		// TODO is this the right location?
+		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.QUICKDIFF.getLocation(),
+					GitTraceLocation.UI.getLocation(),
 					"(GitDocument) dispose: " + resource); //$NON-NLS-1$
 		doc2repo.remove(this);
 

@@ -17,8 +17,8 @@ import java.util.List;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
@@ -97,8 +97,6 @@ public class LinkHelper implements ILinkHelper {
 			} catch (IOException e) {
 				continue;
 			}
-			if (repository.isBare())
-				continue;
 			if (file.getPath().startsWith(repository.getWorkTree().getPath())) {
 				RepositoriesViewContentProvider cp = new RepositoriesViewContentProvider();
 

@@ -65,17 +65,22 @@ public class CompareWithHeadActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		final IResource[] selectedResources = getSelectedResources();
-		if (selectedResources.length != 1)
-			return false;
+		try {
+			final IResource[] selectedResources = getSelectedResources(null);
+			if (selectedResources.length != 1)
+				return false;
 
-		final IResource resource = selectedResources[0];
-		if (!(resource instanceof IFile)) {
+			final IResource resource = selectedResources[0];
+			if (!(resource instanceof IFile)) {
+				return false;
+			}
+			final RepositoryMapping mapping = RepositoryMapping
+					.getMapping(resource.getProject());
+			return mapping != null;
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, false);
 			return false;
 		}
-		final RepositoryMapping mapping = RepositoryMapping.getMapping(resource
-				.getProject());
-		return mapping != null;
 	}
 
 }

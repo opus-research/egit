@@ -84,10 +84,11 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 				closeStream(remoteStream);
 			}
 		} else if (local instanceof IContainer) {
-			GitResourceVariant gitVariant = (GitResourceVariant) remote;
-			if (!remote.isContainer() || (local.exists() ^ gitVariant.exists()))
+			if (!remote.isContainer()) {
 				return false;
+			}
 
+			GitResourceVariant gitVariant = (GitResourceVariant) remote;
 			return local.getFullPath().equals(gitVariant.getFullPath());
 		}
 		return false;
@@ -98,11 +99,7 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 		GitResourceVariant gitRemote = (GitResourceVariant) remote;
 
 		boolean exists = gitBase.exists() && gitRemote.exists();
-		boolean equalType = !(gitBase.isContainer() ^ gitRemote.isContainer());
-		boolean equalSha1 = gitBase.getObjectId().getName()
-				.equals(gitRemote.getObjectId().getName());
-
-		return equalType && exists && equalSha1;
+		return exists && gitBase.getObjectId().equals(gitRemote.getObjectId());
 	}
 
 	public boolean isThreeWay() {
@@ -114,14 +111,10 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 			return ((IFile) resource).getContents();
 		else
 			try {
-				if (resource.getType() == IResource.FILE) {
-					IFile file = ((IFile) resource);
-					if (!file.isSynchronized(0))
-						file.refreshLocal(0, null);
-
-					return file.getContents();
-				} else
-					return new ByteArrayInputStream(new byte[0]);
+				if (resource.getType() == IResource.FILE)
+					return ((IFile) resource).getContents();
+				else
+					return new ByteArrayInputStream(null);
 			} catch (TeamException e) {
 				throw new CoreException(e.getStatus());
 			}

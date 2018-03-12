@@ -26,7 +26,6 @@ import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.MergeTargetSelectionDialog;
-import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Constants;
@@ -35,8 +34,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Action for selecting a commit and merging it with the current branch.
@@ -71,7 +68,6 @@ public class MergeActionHandler extends RepositoryActionHandler {
 				}
 			};
 			job.setUser(true);
-			job.setRule(op.getSchedulingRule());
 			job.addJobChangeListener(new JobChangeAdapter() {
 				@Override
 				public void done(IJobChangeEvent cevent) {
@@ -79,16 +75,18 @@ public class MergeActionHandler extends RepositoryActionHandler {
 					if (result.getSeverity() == IStatus.CANCEL) {
 						Display.getDefault().asyncExec(new Runnable() {
 							public void run() {
-								// don't use getShell(event) here since
-								// the active shell has changed since the
-								// execution has been triggered.
-								Shell shell = PlatformUI.getWorkbench()
-										.getActiveWorkbenchWindow().getShell();
-								MessageDialog
-										.openInformation(
-												shell,
-												UIText.MergeAction_MergeCanceledTitle,
-												UIText.MergeAction_MergeCanceledMessage);
+								try {
+									MessageDialog
+											.openInformation(
+													getShell(event),
+													UIText.MergeAction_MergeCanceledTitle,
+													UIText.MergeAction_MergeCanceledMessage);
+								} catch (ExecutionException e) {
+									Activator
+											.handleError(
+													UIText.MergeAction_MergeCanceledMessage,
+													null, true);
+								}
 							}
 						});
 					} else if (!result.isOK()) {
@@ -97,9 +95,16 @@ public class MergeActionHandler extends RepositoryActionHandler {
 					} else {
 						Display.getDefault().asyncExec(new Runnable() {
 							public void run() {
-								Shell shell = PlatformUI.getWorkbench()
-										.getActiveWorkbenchWindow().getShell();
-								new MergeResultDialog(shell, repository, op.getResult()).open();
+								try {
+									MessageDialog
+											.openInformation(
+													getShell(event),
+													UIText.MergeAction_MergeResultTitle,
+													op.getResult().toString());
+								} catch (ExecutionException e) {
+									Activator.handleError(op.getResult()
+											.toString(), null, true);
+								}
 							}
 						});
 					}
@@ -135,7 +140,12 @@ public class MergeActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return getRepository() != null;
+		try {
+			return getRepository(false, null) != null;
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, false);
+			return false;
+		}
 	}
 
 }

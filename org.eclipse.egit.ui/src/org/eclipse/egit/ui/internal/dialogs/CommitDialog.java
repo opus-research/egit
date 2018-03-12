@@ -53,15 +53,16 @@ import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
+import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
-import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.util.ChangeIdUtil;
-import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -699,13 +700,13 @@ public class CommitDialog extends Dialog {
 			}
 			Repository repository = mapping.getRepository();
 
+			Commit headCommit;
 			try {
-				ObjectId id = repository.resolve(Constants.HEAD);
-				if (id == null
-						|| repository.open(id, Constants.OBJ_COMMIT).getType() != Constants.OBJ_COMMIT) {
-					return;
-				}
+				headCommit = repository.mapCommit(Constants.HEAD);
 			} catch (IOException e1) {
+				headCommit = null;
+			}
+			if (headCommit == null) {
 				return;
 			}
 
@@ -720,7 +721,7 @@ public class CommitDialog extends Dialog {
 			ITypedElement base = new FileRevisionTypedElement(baseFile);
 			ITypedElement next = new FileRevisionTypedElement(nextFile);
 
-			GitCompareFileRevisionEditorInput input = new GitCompareFileRevisionEditorInput(next, base, null);
+			GitCompareFileRevisionEditorInput input = new GitCompareFileRevisionEditorInput(base, next, null);
 			CompareUI.openCompareDialog(input);
 		}
 
@@ -746,7 +747,12 @@ public class CommitDialog extends Dialog {
 
 		boolean authorValid = false;
 		if (author.length() > 0) {
-			authorValid = RawParseUtils.parsePersonIdent(author) != null;
+			try {
+				new PersonIdent(author);
+				authorValid = true;
+			} catch (IllegalArgumentException e) {
+				authorValid = false;
+			}
 		}
 		if (!authorValid) {
 			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidAuthorSpecified);
@@ -755,7 +761,12 @@ public class CommitDialog extends Dialog {
 
 		boolean committerValid = false;
 		if (committer.length() > 0) {
-			committerValid = RawParseUtils.parsePersonIdent(committer)!=null;
+			try {
+				new PersonIdent(committer);
+				committerValid = true;
+			} catch (IllegalArgumentException e) {
+				committerValid = false;
+			}
 		}
 		if (!committerValid) {
 			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidCommitterSpecified);

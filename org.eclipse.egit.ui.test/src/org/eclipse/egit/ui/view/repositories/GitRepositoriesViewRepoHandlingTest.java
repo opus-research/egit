@@ -11,18 +11,14 @@
 package org.eclipse.egit.ui.view.repositories;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.swt.dnd.Clipboard;
@@ -37,6 +33,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -209,6 +206,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 	}
 
 	@Test
+	@Ignore
 	public void testShowIn() throws Exception {
 		SWTBotPerspective perspective = null;
 		try {
@@ -226,8 +224,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 
 			SWTBotTree explorerTree = bot.viewById(
 					"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
-			SWTBotTreeItem projectItem = getProjectItem(explorerTree, PROJ1)
-					.select();
+			SWTBotTreeItem projectItem = getProjectItem(explorerTree, PROJ1).select();
 			ContextMenuHelper.clickContextMenu(explorerTree, "Show In",
 					viewName);
 			refreshAndWait();
@@ -264,11 +261,8 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		clearView();
 		refreshAndWait();
 		assertEmpty();
-		getOrOpenView()
-				.toolbarButton(
-						myUtil
-								.getPluginLocalizedValue("RepoViewAddRepository.tooltip"))
-				.click();
+		getOrOpenView().toolbarButton(
+				myUtil.getPluginLocalizedValue("AddRepositoryCommand")).click();
 		SWTBotShell shell = bot.shell(
 				UIText.RepositorySearchDialog_AddGitRepositories).activate();
 		shell.bot().textWithLabel(UIText.RepositorySearchDialog_directory)
@@ -280,73 +274,33 @@ public class GitRepositoriesViewRepoHandlingTest extends
 	}
 
 	@Test
+	@Ignore
 	public void testCloneRepoButton() throws Exception {
 		clearView();
 		refreshAndWait();
 		assertEmpty();
-		getOrOpenView()
-				.toolbarButton(
-						myUtil
-								.getPluginLocalizedValue("RepoViewCloneRepository.tooltip"))
+		getOrOpenView().toolbarButton(
+				myUtil.getPluginLocalizedValue("CloneRepositoryCommand"))
 				.click();
 		SWTBotShell shell = bot.shell(UIText.GitCloneWizard_title).activate();
 		// for some reason, textWithLabel doesn't seem to work
 		shell.bot()
 				.textInGroup(UIText.RepositorySelectionPage_groupLocation, 0)
 				.setText(repositoryFile.getPath());
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		// for some reason, buttonWithLabel doesn't work; 2 is next
+		shell.bot().button(2).click();
 		waitInUI();
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		// for some reason, buttonWithLabel doesn't work; 3 is next
+		shell.bot().button(3).click();
 		waitInUI();
 		// for some reason textWithLabel doesn't work; 0 is path text
 		SWTBotText pathText = shell.bot().text(0);
 		pathText.setText(pathText.getText() + "Cloned");
-		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
+		// for some reason, buttonWithLabel doesn't work; 3 is finish
+		shell.bot().button(3).click();
 		waitInUI();
 		refreshAndWait();
 		assertHasClonedRepo();
-	}
-
-	@Test
-	public void testCreateRepository() throws Exception {
-		clearView();
-		refreshAndWait();
-		assertEmpty();
-		// create a non-bare repository
-		getOrOpenView()
-				.toolbarButton(
-						myUtil
-								.getPluginLocalizedValue("RepoViewCreateRepository.tooltip"))
-				.click();
-		SWTBotShell shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle)
-				.activate();
-		IPath newPath = new Path(testDirectory.getPath())
-				.append("NewRepository");
-		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
-				.setText(newPath.toOSString());
-		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
-		refreshAndWait();
-		File repoFile = new File(newPath.toFile(), Constants.DOT_GIT);
-		myRepoViewUtil.getRootItem(getOrOpenView().bot().tree(), repoFile);
-		assertFalse(myRepoViewUtil.lookupRepository(repoFile).isBare());
-
-		// create a bare repository
-		getOrOpenView()
-				.toolbarButton(
-						myUtil
-								.getPluginLocalizedValue("RepoViewCreateRepository.tooltip"))
-				.click();
-		shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle).activate();
-		newPath = new Path(testDirectory.getPath()).append("bare").append(
-				"NewBareRepository");
-		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
-				.setText(newPath.toOSString());
-		shell.bot().checkBox(UIText.CreateRepositoryPage_BareCheckbox).select();
-		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
-		refreshAndWait();
-		repoFile = newPath.toFile();
-		myRepoViewUtil.getRootItem(getOrOpenView().bot().tree(), repoFile);
-		assertTrue(myRepoViewUtil.lookupRepository(repoFile).isBare());
 	}
 
 	private void assertHasClonedRepo() throws Exception {

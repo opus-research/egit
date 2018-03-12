@@ -11,28 +11,24 @@
 package org.eclipse.egit.ui.internal.repository;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * Used for "remote" configuration of a Repository
  *
  */
 public class NewRemoteWizard extends Wizard {
+
 	final StoredConfig myConfiguration;
 
 	private SelectRemoteNamePage selNamePage;
@@ -47,6 +43,7 @@ public class NewRemoteWizard extends Wizard {
 
 	@Override
 	public IWizardPage getNextPage(IWizardPage page) {
+
 		if (page == selNamePage)
 			if (selNamePage.configureFetch.getSelection())
 				return configureFetchUriPage;
@@ -56,62 +53,21 @@ public class NewRemoteWizard extends Wizard {
 		if (page == configureFetchSpecPage)
 			if (!selNamePage.configurePush.getSelection())
 				return null;
-			else
-				configurePushUriPage.setURI(configureFetchUriPage.getUri());
 
-		if (page == configureFetchUriPage) {
-			try {
-				getContainer().run(false, false, new IRunnableWithProgress() {
-					public void run(IProgressMonitor monitor)
-							throws InvocationTargetException,
-							InterruptedException {
-						String taskName = NLS.bind(
-								UIText.NewRemoteWizard_CheckingUriTaskName,
-								configureFetchUriPage.getUri()
-										.toPrivateString());
-						monitor.beginTask(taskName, IProgressMonitor.UNKNOWN);
-						configureFetchSpecPage
-								.setSelection(new RepositorySelection(
-										configureFetchUriPage.getUri(), null));
-						monitor.done();
-
-					}
-				});
-			} catch (InvocationTargetException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			} catch (InterruptedException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			}
-		}
+		if (page == configureFetchUriPage)
+			configureFetchSpecPage.setSelection(new RepositorySelection(
+					configureFetchUriPage.getUri(), null));
 
 		if (page == configurePushUriPage)
-			try {
-				getContainer().run(false, false, new IRunnableWithProgress() {
-					public void run(IProgressMonitor monitor)
-							throws InvocationTargetException,
-							InterruptedException {
-						String taskName = NLS.bind(
-								UIText.NewRemoteWizard_CheckingUriTaskName,
-								configurePushUriPage.getAllUris().get(0)
-										.toPrivateString());
-						monitor.beginTask(taskName, IProgressMonitor.UNKNOWN);
-						configurePushSpecPage
-								.setSelection(new RepositorySelection(
-										configurePushUriPage.getAllUris()
-												.get(0), null));
-						monitor.done();
-					}
-				});
-			} catch (InvocationTargetException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			} catch (InterruptedException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			}
+			configurePushSpecPage.setSelection(new RepositorySelection(
+					configurePushUriPage.getUris().get(0), null));
+
 		return super.getNextPage(page);
 	}
 
 	@Override
 	public boolean canFinish() {
+
 		if (selNamePage.isPageComplete()) {
 			boolean complete = true;
 			if (selNamePage.configureFetch.getSelection())
@@ -129,25 +85,26 @@ public class NewRemoteWizard extends Wizard {
 	 * @param repository
 	 */
 	public NewRemoteWizard(Repository repository) {
-		super.setNeedsProgressMonitor(true);
+
 		myConfiguration = repository.getConfig();
 
 		selNamePage = new SelectRemoteNamePage();
 		addPage(selNamePage);
 
-		configureFetchUriPage = new ConfigureUriPage(true, null);
+		configureFetchUriPage = new ConfigureUriPage(true);
 		addPage(configureFetchUriPage);
 
 		configureFetchSpecPage = new RefSpecPage(repository, false);
 		addPage(configureFetchSpecPage);
 
-		configurePushUriPage = new ConfigureUriPage(false, null);
+		configurePushUriPage = new ConfigureUriPage(false);
 		addPage(configurePushUriPage);
 
 		configurePushSpecPage = new RefSpecPage(repository, true);
 		addPage(configurePushSpecPage);
 
 		setWindowTitle(UIText.ConfigureRemoteWizard_WizardTitle_New);
+
 	}
 
 	/**
@@ -160,6 +117,7 @@ public class NewRemoteWizard extends Wizard {
 
 	@Override
 	public boolean performFinish() {
+
 		RemoteConfig config;
 
 		try {
@@ -192,4 +150,5 @@ public class NewRemoteWizard extends Wizard {
 			return false;
 		}
 	}
+
 }

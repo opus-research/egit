@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.net.proxy.IProxyService;
@@ -34,7 +35,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -42,6 +42,8 @@ import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.events.IndexChangedListener;
 import org.eclipse.jgit.events.ListenerHandle;
+import org.eclipse.jgit.events.RefsChangedEvent;
+import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.events.RepositoryEvent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.SshSessionFactory;
@@ -79,6 +81,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * Property constant indicating the decorator configuration has changed.
 	 */
 	public static final String DECORATORS_CHANGED = "org.eclipse.egit.ui.DECORATORS_CHANGED"; //$NON-NLS-1$
+
+	private RepositoryUtil repositoryUtil;
 
 	/**
 	 * @return the {@link Activator} singleton.
@@ -161,9 +165,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	private RepositoryChangeScanner rcs;
 	private ResourceRefreshJob refreshJob;
 	private ListenerHandle refreshHandle;
-	private DebugOptions debugOptions;
-
-	private IWindowListener focusListener;
 
 	/**
 	 * Constructor for the egit ui plugin singleton
@@ -174,6 +175,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
+		repositoryUtil = new RepositoryUtil();
 
 		// we want to be notified about debug options changes
 		Dictionary<String, String> props = new Hashtable<String, String>(4);
@@ -201,7 +203,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 	private void setupFocusHandling() {
-		focusListener = new IWindowListener() {
+		PlatformUI.getWorkbench().addWindowListener(new IWindowListener() {
 
 			public void windowOpened(IWorkbenchWindow window) {
 				// nothing
@@ -218,23 +220,14 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			public void windowActivated(IWorkbenchWindow window) {
 				if (rcs.doReschedule)
 					rcs.schedule();
-				refreshJob.triggerRefresh();
+				refreshJob.schedule();
 			}
-		};
-		PlatformUI.getWorkbench().addWindowListener(focusListener);
+		});
 	}
 
 	public void optionsChanged(DebugOptions options) {
 		// initialize the trace stuff
-		debugOptions = options;
 		GitTraceLocation.initializeFromOptions(options, isDebugging());
-	}
-
-	/**
-	 * @return the {@link DebugOptions}
-	 */
-	public DebugOptions getDebugOptions() {
-		return debugOptions;
 	}
 
 	private void setupRepoIndexRefresh() {
@@ -276,18 +269,14 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			listener.propertyChange(event);
 	}
 
-	/**
-	 * Refresh projects in repositories that we suspect may have resource
-	 * changes.
-	 */
-	static class ResourceRefreshJob extends Job implements IndexChangedListener {
+	static class ResourceRefreshJob extends Job implements IndexChangedListener, RefsChangedListener {
 
 		ResourceRefreshJob() {
 			super(UIText.Activator_refreshJobName);
 		}
 
 		private Set<IProject> projectsToScan = new LinkedHashSet<IProject>();
-		private Set<Repository> repositoriesChanged = new HashSet<Repository>();
+		private List<Repository> repositoriesChanged = new Vector<Repository>();
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
@@ -324,13 +313,15 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				mayTriggerRefresh(e);
 		}
 
-		/**
-		 * Record which projects have changes. Initiate a resource refresh job
-		 * if the user settings allow it.
-		 *
-		 * @param e
-		 *            The {@link RepositoryEvent} that triggered this refresh
-		 */
+		public void onRefsChanged(RefsChangedEvent e) {
+			// Any ref change will trigger the refresh. An optimal change
+			// would only look at changes in HEAD or the branch references by
+			// HEAD
+			if (Activator.getDefault().getPreferenceStore()
+					.getBoolean(UIPreferences.REFESH_ON_HEAD_CHANGE))
+				mayTriggerRefresh(e);
+		}
+
 		private void mayTriggerRefresh(RepositoryEvent e) {
 			repositoriesChanged.add(e.getRepository());
 			if (!Activator.getDefault().getPreferenceStore()
@@ -339,11 +330,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				triggerRefresh();
 		}
 
-		/**
-		 * Figure which projects belong to a repository, add them to a set of
-		 * project to refresh and schedule the refresh as a job.
-		 */
-		void triggerRefresh() {
+		private void triggerRefresh() {
 			if (GitTraceLocation.UI.isActive())
 				GitTraceLocation.getTrace().trace(
 						GitTraceLocation.UI.getLocation(), "Triggered refresh"); //$NON-NLS-1$
@@ -390,7 +377,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
 			Repository[] repos = org.eclipse.egit.core.Activator.getDefault()
-					.getRepositoryCache().getAllRepositories();
+					.getRepositoryCache().getAllReposiotries();
 			if (repos.length == 0)
 				return Status.OK_STATUS;
 
@@ -478,11 +465,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			refreshHandle = null;
 		}
 
-		if (focusListener != null) {
-			PlatformUI.getWorkbench().removeWindowListener(focusListener);
-			focusListener = null;
-		}
-
 		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(),
@@ -504,6 +486,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(), "Jobs terminated"); //$NON-NLS-1$
 
+		repositoryUtil.dispose();
+		repositoryUtil = null;
 		super.stop(context);
 		plugin = null;
 	}
@@ -540,7 +524,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * @return the {@link RepositoryUtil} instance
 	 */
 	public RepositoryUtil getRepositoryUtil() {
-		return org.eclipse.egit.core.Activator.getDefault().getRepositoryUtil();
+		return repositoryUtil;
 	}
-
 }

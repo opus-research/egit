@@ -36,6 +36,9 @@ public class RefreshPreferencesPage extends FieldEditorPreferencePage implements
 		addField(new BooleanFieldEditor(UIPreferences.REFESH_ON_INDEX_CHANGE,
 				UIText.RefreshPreferencesPage_RefreshWhenIndexChange,
 				getFieldEditorParent()));
+		addField(new BooleanFieldEditor(UIPreferences.REFESH_ON_HEAD_CHANGE,
+				UIText.RefreshPreferencesPage_RefreshWhenHeadChange,
+				getFieldEditorParent()));
 		addField(new BooleanFieldEditor(UIPreferences.REFESH_ONLY_WHEN_ACTIVE,
 				UIText.RefreshPreferencesPage_RefreshOnlyWhenActive,
 				getFieldEditorParent()));

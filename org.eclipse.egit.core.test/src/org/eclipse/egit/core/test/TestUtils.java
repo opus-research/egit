@@ -47,30 +47,13 @@ public class TestUtils {
 			for (int i = 0; i < files.length; ++i) {
 				if (files[i].isDirectory())
 					deleteRecursive(files[i]);
-				else
-					deleteFile(files[i]);
+				else if (!files[i].delete())
+					throw new IOException(files[i] + " in use or undeletable");
 			}
 		}
-		deleteFile(d);
+		if (!d.delete())
+			throw new IOException(d + " in use or undeletable");
 		assert !d.exists();
-	}
-
-	private void deleteFile(File file) throws IOException{
-		boolean deleted = false;
-		for (int i = 0; i < 10; i++) {
-			if (file.delete()) {
-				deleted = true;
-				break;
-			}
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// ignore
-			}
-			System.out.println(">>> retried deleting " + file.getAbsolutePath());
-		}
-		if (!deleted)
-			throw new IOException("Retried 10 times. Could not delete " + file.getAbsolutePath());
 	}
 
 	/**
@@ -183,10 +166,10 @@ public class TestUtils {
 	 */
 	public IProject createProjectInLocalFileSystem(File parentFile,
 			String projectName) throws Exception {
-		IProject project = ResourcesPlugin.getWorkspace().getRoot()
+		IProject firstProject = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName);
-		if (project.exists()) {
-			project.delete(true, null);
+		if (firstProject.exists()) {
+			firstProject.delete(true, null);
 		}
 		File testFile = new File(parentFile, projectName);
 		if (testFile.exists())
@@ -195,8 +178,8 @@ public class TestUtils {
 		IProjectDescription desc = ResourcesPlugin.getWorkspace()
 				.newProjectDescription(projectName);
 		desc.setLocation(new Path(new File(parentFile, projectName).getPath()));
-		project.create(desc, null);
-		project.open(null);
-		return project;
+		firstProject.create(desc, null);
+		firstProject.open(null);
+		return firstProject;
 	}
 }
