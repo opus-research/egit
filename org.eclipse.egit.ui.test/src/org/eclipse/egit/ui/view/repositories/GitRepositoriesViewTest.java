@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -72,10 +71,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	@BeforeClass
 	public static void beforeClass() throws Exception {
 		setVerboseBranchMode(false);
-		Activator
-				.getDefault()
-				.getPreferenceStore()
-				.setValue(UIPreferences.DECORATOR_REPOSITORYTEXT_DECORATION, "");
 		repositoryFile = createProjectAndCommitToRepository();
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				repositoryFile);

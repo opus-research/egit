@@ -516,10 +516,7 @@
             location="BOTTOM_RIGHT"
             id="org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator">
             <enablement>
-              <or>
-                <objectClass name="org.eclipse.core.resources.mapping.ResourceMapping"/>
-                <objectClass name="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode"/>
-              </or>
+              <objectClass name="org.eclipse.core.resources.mapping.ResourceMapping"/>
             </enablement>
          <description>
             %Decorator_description
