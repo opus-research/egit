@@ -48,9 +48,6 @@ public class ValidationUtils {
 					return NLS.bind(
 							UIText.ValidationUtils_InvalidRefNameMessage,
 							testFor);
-				if (testFor.indexOf("\"") >= 0) //$NON-NLS-1$
-					return NLS.bind(
-							UIText.ValidationUtils_NotAllowedCharMessage, "\""); //$NON-NLS-1$
 				return null;
 			}
 		};
