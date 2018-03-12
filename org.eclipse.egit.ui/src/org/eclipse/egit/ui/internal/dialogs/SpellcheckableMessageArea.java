@@ -363,10 +363,10 @@ public class SpellcheckableMessageArea extends Composite {
 		sourceViewer.configure(configuration);
 		sourceViewer.setDocument(document, annotationModel);
 
-		StyleRange[] styleRanges = UIUtils
+		for (StyleRange styleRange : UIUtils
 				.getHyperlinkDetectorStyleRanges(sourceViewer,
-						configuration.getHyperlinkDetectors(sourceViewer));
-		sourceViewer.getTextWidget().setStyleRanges(styleRanges);
+						configuration.getHyperlinkDetectors(sourceViewer)))
+			sourceViewer.getTextWidget().setStyleRange(styleRange);
 
 		configureContextMenu();
 
@@ -730,12 +730,12 @@ public class SpellcheckableMessageArea extends Composite {
 				public void textChanged(TextEvent event) {
 					textWidget.setStyleRanges(
 							new StyleRange[0]);
-					StyleRange[] styleRanges = UIUtils
+					for (StyleRange styleRange : UIUtils
 							.getHyperlinkDetectorStyleRanges(
 									sourceViewer,
 									configuration
-											.getHyperlinkDetectors(sourceViewer));
-					textWidget.setStyleRanges(styleRanges);
+											.getHyperlinkDetectors(sourceViewer)))
+						textWidget.setStyleRange(styleRange);
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)

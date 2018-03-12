@@ -414,7 +414,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.CLONE.equals(family))
+				if (family.equals(JobFamilies.CLONE))
 					return true;
 				return super.belongsTo(family);
 			}

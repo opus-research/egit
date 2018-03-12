@@ -121,6 +121,8 @@ class CommitMessageViewer extends SourceViewer implements
 
 	private ListenerHandle refsChangedListener;
 
+	private StyleRange[] styleRanges;
+
 	private BooleanPrefAction showTagSequencePrefAction;
 
 	private BooleanPrefAction wrapCommentsPrefAction;
@@ -144,6 +146,10 @@ class CommitMessageViewer extends SourceViewer implements
 					t.setCursor(SYS_LINK_CURSOR);
 				else
 					t.setCursor(sys_normalCursor);
+				if (styleRanges != null) {
+					for (StyleRange sr : styleRanges)
+						getTextWidget().setStyleRange(sr);
+				}
 			}
 		});
 		// react on link click
@@ -307,8 +313,7 @@ class CommitMessageViewer extends SourceViewer implements
 						for (StyleRange styleRange : hyperlinkDetectorStyleRanges)
 							styleRangeList.add(styleRange);
 
-						StyleRange[] styleRanges = new StyleRange[styleRangeList
-								.size()];
+						styleRanges = new StyleRange[styleRangeList.size()];
 						styleRangeList.toArray(styleRanges);
 
 						// Style ranges must be in order.
@@ -322,7 +327,9 @@ class CommitMessageViewer extends SourceViewer implements
 							}
 						});
 
-						text.setStyleRanges(styleRanges);
+						text.setStyleRanges(new StyleRange[0]);
+						for (StyleRange sr : styleRanges)
+							text.setStyleRange(sr);
 					}
 				});
 			}
@@ -362,6 +369,7 @@ class CommitMessageViewer extends SourceViewer implements
 		if (input == commit)
 			return;
 		currentDiffs.clear();
+		styleRanges = null;
 		commit = (PlotCommit<?>) input;
 		allRefs = getBranches();
 		if (refsChangedListener != null)
