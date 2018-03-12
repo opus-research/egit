@@ -182,28 +182,33 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 				}
 			}
 		});
-		createResetButton(g,
-				UIText.ResetTargetSelectionDialog_ResetTypeSoftButton,
-				ResetType.SOFT);
-		createResetButton(g,
-				UIText.ResetTargetSelectionDialog_ResetTypeMixedButton,
-				ResetType.MIXED).setSelection(true);
-		createResetButton(g,
-				UIText.ResetTargetSelectionDialog_ResetTypeHardButton,
-				ResetType.HARD);
-	}
-
-	private Button createResetButton(Composite parent, String text,
-			final ResetType type) {
-		Button button = new Button(parent, SWT.RADIO);
-		button.setText(text);
-		button.addListener(SWT.Selection, new Listener() {
+		Button soft = new Button(g, SWT.RADIO);
+		soft.setText(UIText.ResetTargetSelectionDialog_ResetTypeSoftButton);
+		soft.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				if (((Button) event.widget).getSelection())
-					resetType = type;
+					resetType = ResetType.SOFT;
 			}
 		});
-		return button;
+
+		Button medium = new Button(g, SWT.RADIO);
+		medium.setSelection(true);
+		medium.setText(UIText.ResetTargetSelectionDialog_ResetTypeMixedButton);
+		medium.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event event) {
+				if (((Button) event.widget).getSelection())
+					resetType = ResetType.MIXED;
+			}
+		});
+
+		Button hard = new Button(g, SWT.RADIO);
+		hard.setText(UIText.ResetTargetSelectionDialog_ResetTypeHardButton);
+		hard.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event event) {
+				if (((Button) event.widget).getSelection())
+					resetType = ResetType.HARD;
+			}
+		});
 	}
 
 	@Override
