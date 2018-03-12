@@ -28,8 +28,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.internal.core.history.LocalFileRevision;
 import org.eclipse.team.internal.ui.TeamUIMessages;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
@@ -335,7 +335,10 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 						return TeamUIMessages.CompareFileRevisionEditorInput_1;
 					}
 				} catch (CoreException e) {
-					Activator.logError("Problem getting content identifier", e);
+					Activator
+							.logError(
+									UIText.GitCompareFileRevisionEditorInput_contentIdentifier,
+									e);
 				}
 			} else {
 				return fileRevisionElement.getContentIdentifier();
@@ -407,34 +410,5 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			}
 		}
 	}
-	/**
-	 * ITypedElement without content. May be used to indicate that a file is not
-	 * available.
-	 */
-	public static class EmptyTypedElement implements ITypedElement{
-
-		private String name;
-
-		/**
-		 * @param name the name used for display
-		 */
-		public EmptyTypedElement(String name) {
-			this.name = name;
-		}
-
-		public Image getImage() {
-			return null;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public String getType() {
-			return null;
-		}
-
-	}
-
 
 }
