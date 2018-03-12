@@ -1147,12 +1147,6 @@ public class UIText extends NLS {
 	public static String ReflogView_ToColumnHeader;
 
 	/** */
-	public static String RefSelectionDialog_Messsage;
-
-	/** */
-	public static String RefSelectionDialog_Title;
-
-	/** */
 	public static String RefSpecDialog_AutoSuggestCheckbox;
 
 	/** */
