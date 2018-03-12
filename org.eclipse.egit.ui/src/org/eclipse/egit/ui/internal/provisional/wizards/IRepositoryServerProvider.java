@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011 SAP AG.
+ * Copyright (c) 2012 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -26,10 +26,7 @@ public interface IRepositoryServerProvider {
 
 	/**
 	 * @return List of server infos
-	 * @throws NoRepositoryServerInfoException
-	 *             if an error occured when constructing a
-	 *             {@code RepositoryServerInfo} object
 	 */
-	public Collection<RepositoryServerInfo> getRepositoryServerInfos() throws NoRepositoryServerInfoException;
+	public Collection<RepositoryServerInfo> getRepositoryServerInfos();
 
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2011 SAP AG.
+ * Copyright (c) 2010-2012 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -38,7 +38,6 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
-import org.eclipse.egit.ui.internal.provisional.wizards.NoRepositoryInfoException;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.IWizardPage;
@@ -74,10 +73,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 						}});
 				} catch (URISyntaxException e) {
 					Activator.error(UIText.GitImportWizard_errorParsingURI, e);
-				} catch (NoRepositoryInfoException e) {
-					Activator.error(UIText.GitImportWizard_noRepositoryInfo, e);
-				} catch (Exception e) {
-					Activator.error(e.getMessage(), e);
 				}
 			}
 			super.setVisible(visible);
@@ -124,26 +119,12 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		} catch (URISyntaxException e) {
 			Activator.error(UIText.GitImportWizard_errorParsingURI, e);
 			return null;
-		} catch (NoRepositoryInfoException e) {
-			Activator.error(UIText.GitImportWizard_noRepositoryInfo, e);
-			return null;
-		} catch (Exception e) {
-			Activator.error(e.getMessage(), e);
-			return null;
 		}
 	}
 
 	@Override
 	protected UserPasswordCredentials getCredentials() {
-		try {
-			return currentSearchResult.getGitRepositoryInfo().getCredentials();
-		} catch (NoRepositoryInfoException e) {
-			Activator.error(UIText.GitImportWizard_noRepositoryInfo, e);
-			return null;
-		} catch (Exception e) {
-			Activator.error(e.getMessage(), e);
-			return null;
-		}
+		return currentSearchResult.getGitRepositoryInfo().getCredentials();
 	}
 
 	@Override
