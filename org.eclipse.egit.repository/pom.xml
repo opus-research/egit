@@ -26,10 +26,6 @@
 
   <name>EGit P2 Repository</name>
 
-  <properties>
-    <p2repo-zip-path>${project.build.directory}/org.eclipse.egit.repository.zip</p2repo-zip-path>
-  </properties>
-
   <profiles>
     <profile>
      <id>build-server</id>
@@ -42,7 +38,7 @@
              <execution>
                <id>pack</id>
                <configuration>
-                 <inputFile>${p2repo-zip-path}</inputFile>
+                 <inputFile>${project.build.directory}/org.eclipse.egit-updatesite-${project.version}-site.zip</inputFile>
                </configuration>
                <phase>package</phase>
                <goals>
@@ -52,7 +48,7 @@
              <execution>
                <id>sign</id>
                <configuration>
-                 <inputFile>${p2repo-zip-path}</inputFile>
+                 <inputFile>${project.build.directory}/org.eclipse.egit-updatesite-${project.version}-site.zip</inputFile>
                  <signerInputDirectory>${signer-input-directory}</signerInputDirectory>
                </configuration>
                <phase>package</phase>

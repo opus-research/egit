@@ -388,7 +388,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		Object selection;
 		if (aSelection == null && ctx != null) {
 			selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-			if (!(selection instanceof ISelection))
+			if (selection == null)
 				selection = ctx
 						.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
 		} else if (aSelection != null)
