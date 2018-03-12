@@ -1668,12 +1668,10 @@ public class RefSpecPanel {
 	private void updateAddPredefinedButton(final Button button,
 			final List<RefSpec> predefined) {
 		boolean enable = false;
-		if (predefined != null) {
-			for (final RefSpec pre : predefined) {
-				if (!specs.contains(pre)) {
-					enable = true;
-					break;
-				}
+		for (final RefSpec pre : predefined) {
+			if (!specs.contains(pre)) {
+				enable = true;
+				break;
 			}
 		}
 		button.setEnabled(enable);

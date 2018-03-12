@@ -83,7 +83,8 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 
 	@Override
 	public void addPages() {
-		mySelectionPage = new GitSelectWizardPage(myRepository, myGitDir);
+
+		mySelectionPage = new GitSelectWizardPage();
 		addPage(mySelectionPage);
 		myCreateGeneralProjectPage = new GitCreateGeneralProjectPage(myGitDir);
 		addPage(myCreateGeneralProjectPage);
@@ -91,7 +92,7 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 
 			@Override
 			public void setVisible(boolean visible) {
-				setProjectsList(mySelectionPage.getPath());
+				setProjectsList(myGitDir);
 				super.setVisible(visible);
 			}
 

@@ -161,7 +161,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 			switch (f.getType()) {
 			case IResource.FILE:
-				if (FS.DETECTED.canExecute(asFile()))
+				if (FS.INSTANCE.canExecute(asFile()))
 					mode = FileMode.EXECUTABLE_FILE;
 				else
 					mode = FileMode.REGULAR_FILE;
