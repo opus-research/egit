@@ -117,11 +117,6 @@ public class PushBranchWizardTester {
 				.isSelected());
 	}
 
-	public boolean isUpstreamConfigOverwriteWarningShown() {
-		return wizard.text(1).getText()
-				.contains(UIText.PushBranchPage_UpstreamConfigOverwriteWarning);
-	}
-
 	public void next() {
 		wizard.button(IDialogConstants.NEXT_LABEL).click();
 	}

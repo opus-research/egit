@@ -7,7 +7,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,7 +70,6 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 				selectProject(), "bar");
 		wizard.selectRemote("fetch");
 		wizard.selectRebase();
-		assertFalse(wizard.isUpstreamConfigOverwriteWarningShown());
 		wizard.next();
 		wizard.finish();
 
@@ -155,8 +156,6 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 		// Existing configuration
 		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
 				"foo", ConfigConstants.CONFIG_KEY_REMOTE, "fetch");
-		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				"foo", ConfigConstants.CONFIG_KEY_MERGE, "refs/heads/foo");
 		repository.getConfig().setBoolean(
 				ConfigConstants.CONFIG_BRANCH_SECTION, "foo",
 				ConfigConstants.CONFIG_KEY_REBASE, true);
@@ -169,16 +168,10 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 				selectProject(), "foo");
 		wizard.selectRemote("fetch");
 		wizard.assertRebaseSelected();
-		assertFalse(wizard.isUpstreamConfigOverwriteWarningShown());
-		wizard.selectMerge();
-		assertTrue(wizard.isUpstreamConfigOverwriteWarningShown());
-		wizard.deselectConfigureUpstream();
-		assertFalse(wizard.isUpstreamConfigOverwriteWarningShown());
 		wizard.next();
 		wizard.finish();
 
 		assertBranchPushed("foo", remoteRepository);
-		// Still configured
 		assertBranchConfig("foo", "fetch", "refs/heads/foo", "true");
 	}
 

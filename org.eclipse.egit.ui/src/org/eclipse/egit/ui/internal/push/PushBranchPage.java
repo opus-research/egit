@@ -26,6 +26,7 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.lib.BranchConfig;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -66,8 +67,6 @@ public class PushBranchPage extends WizardPage {
 	private UpstreamConfig upstreamConfig = UpstreamConfig.NONE;
 
 	private UpstreamConfigComponent upstreamConfigComponent;
-
-	private boolean forceUpdateSelected = false;
 
 	/** Only set if user selected "New Remote" */
 	private AddRemotePage addRemotePage;
@@ -119,10 +118,6 @@ public class PushBranchPage extends WizardPage {
 
 	boolean isRebaseSelected() {
 		return upstreamConfig == UpstreamConfig.REBASE;
-	}
-
-	boolean isForceUpdateSelected() {
-		return forceUpdateSelected;
 	}
 
 	public void createControl(Composite parent) {
@@ -193,17 +188,6 @@ public class PushBranchPage extends WizardPage {
 						checkPage();
 					}
 				});
-
-		final Button forceUpdateButton = new Button(inputPanel, SWT.CHECK);
-		forceUpdateButton.setText(UIText.PushBranchPage_ForceUpdateButton);
-		forceUpdateButton.setSelection(false);
-		forceUpdateButton.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, false).span(3, 1).create());
-		forceUpdateButton.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				forceUpdateSelected = forceUpdateButton.getSelection();
-			}
-		});
 
 		setDefaultUpstreamConfig();
 
@@ -282,8 +266,8 @@ public class PushBranchPage extends WizardPage {
 				setErrorMessage(UIText.PushBranchPage_InvalidBranchNameError);
 				return;
 			}
-			if (isConfigureUpstreamSelected()
-					&& hasDifferentUpstreamConfiguration()) {
+			if (branchAlreadyHasUpstreamConfiguration()
+					&& isConfigureUpstreamSelected()) {
 				setMessage(
 						UIText.PushBranchPage_UpstreamConfigOverwriteWarning,
 						IMessageProvider.WARNING);
@@ -314,30 +298,11 @@ public class PushBranchPage extends WizardPage {
 		return Repository.shortenRefName(ref.getName());
 	}
 
-	private boolean hasDifferentUpstreamConfiguration() {
+	private boolean branchAlreadyHasUpstreamConfiguration() {
 		StoredConfig config = repository.getConfig();
-		String branchName = Repository.shortenRefName(ref.getName());
-
-		String remote = config.getString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				branchName, ConfigConstants.CONFIG_KEY_REMOTE);
-		// No upstream config -> don't show warning
-		if (remote == null)
-			return false;
-		if (!remote.equals(remoteConfig.getName()))
-			return true;
-
-		String merge = config.getString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				branchName, ConfigConstants.CONFIG_KEY_MERGE);
-		if (merge == null || !merge.equals(Constants.R_HEADS + getBranchName()))
-			return true;
-
-		boolean rebase = config.getBoolean(
-				ConfigConstants.CONFIG_BRANCH_SECTION, branchName,
-				ConfigConstants.CONFIG_KEY_REBASE, false);
-		if (rebase != isRebaseSelected())
-			return true;
-
-		return false;
+		BranchConfig branchConfig = new BranchConfig(config, Repository.shortenRefName(ref.getName()));
+		String trackingBranch = branchConfig.getTrackingBranch();
+		return trackingBranch != null;
 	}
 
 	private void handleError(URISyntaxException e) {
