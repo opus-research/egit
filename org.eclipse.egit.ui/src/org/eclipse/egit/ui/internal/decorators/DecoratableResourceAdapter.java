@@ -4,7 +4,7 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Google Inc.
- * Copyright (C) 2008, Tor Arne VestbÃ¸ <torarnv@gmail.com>
+ * Copyright (C) 2008, Tor Arne Vestbø <torarnv@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -350,12 +349,12 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			treeWalk.addTree(new EmptyTreeIterator());
 
 		// Index
-		treeWalk.addTree(new DirCacheIterator(DirCache.read(repository)));
+		treeWalk.addTree(new DirCacheIterator(repository.readDirCache()));
 
 		// Working directory
 		IProject project = resource.getProject();
 		IWorkspaceRoot workspaceRoot = resource.getWorkspace().getRoot();
-		File repoRoot = repository.getWorkDir();
+		File repoRoot = repository.getWorkTree();
 
 		if (repoRoot.equals(project.getLocation().toFile()))
 			treeWalk.addTree(new ContainerTreeIterator(project));
