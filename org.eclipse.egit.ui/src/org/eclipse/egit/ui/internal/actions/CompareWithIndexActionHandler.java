@@ -64,7 +64,6 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return selectionMapsToSingleRepository()
-				&& selectionContainsTrackedFiles();
+		return selectionMapsToSingleRepository();
 	}
 }

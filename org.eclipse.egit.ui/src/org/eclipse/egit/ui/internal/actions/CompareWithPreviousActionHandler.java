@@ -93,9 +93,8 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 	@Override
 	public boolean isEnabled() {
 		IResource[] selectedResources = getSelectedResources();
-		return super.isEnabled() && selectedResources.length == 1
-				&& selectionMapsToSingleRepository()
-				&& selectionContainsTrackedFiles();
+		return super.isEnabled() && selectedResources.length == 1 &&
+				selectionMapsToSingleRepository();
 	}
 
 	private PreviousCommit getPreviousRevision(final ExecutionEvent event,

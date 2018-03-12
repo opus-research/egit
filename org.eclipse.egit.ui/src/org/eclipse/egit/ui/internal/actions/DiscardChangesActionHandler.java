@@ -83,8 +83,7 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 			if (!repository.getRepositoryState().equals(RepositoryState.SAFE))
 				return false;
 		}
-
-		return selectionContainsTrackedFiles();
+		return true;
 	}
 
 	private DiscardChangesOperation createOperation(IWorkbenchPart part,

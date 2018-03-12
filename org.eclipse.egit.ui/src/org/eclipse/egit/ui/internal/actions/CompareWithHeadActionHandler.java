@@ -50,7 +50,6 @@ public class CompareWithHeadActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return selectionMapsToSingleRepository()
-				&& selectionContainsTrackedFiles();
+		return selectionMapsToSingleRepository();
 	}
 }
