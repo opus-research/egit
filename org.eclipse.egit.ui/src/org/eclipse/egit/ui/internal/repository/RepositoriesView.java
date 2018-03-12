@@ -461,7 +461,7 @@ public class RepositoriesView extends CommonNavigator {
 							tv.setInput(ResourcesPlugin.getWorkspace()
 									.getRoot());
 						} else
-							tv.refresh(false);
+							tv.refresh();
 						tv.setExpandedElements(expanded);
 
 						Object selected = sel.getFirstElement();
