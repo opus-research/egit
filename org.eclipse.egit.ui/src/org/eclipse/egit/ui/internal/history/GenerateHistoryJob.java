@@ -20,7 +20,6 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Control;
@@ -122,8 +121,7 @@ class GenerateHistoryJob extends Job {
 
 			final SWTCommit[] asArray = new SWTCommit[allCommits.size()];
 			allCommits.toArray(asArray);
-			RevFlag highlightFlag = walk.newFlag("highlight"); //$NON-NLS-1$
-			page.showCommitList(this, allCommits, asArray, incomplete, highlightFlag);
+			page.showCommitList(this, allCommits, asArray, incomplete);
 			lastUpdateCnt = allCommits.size();
 		} finally {
 			if (trace)
