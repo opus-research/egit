@@ -5,8 +5,7 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
- * Copyright (C) 2011, Stefan Lay <stefan.lay@sap.com>
- * Copyright (C) 2011, Sascha Scholz <sascha.scholz@gmail.com>
+ * Copyright (C) 2012, Stefan Lay <stefan.lay@sap.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -56,7 +55,6 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
-import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.URIish;
@@ -97,23 +95,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	private CloneOperation cloneOperation;
 
 	/**
-	 * Construct the clone wizard based on given repository search result. If
-	 * the search result is an instance of org.eclipse.jface.wizard.WizardPage,
-	 * then the page is shown in the wizard before the repository info is read.
-	 * The repository location page that allows the repository info to be
-	 * provided by different search providers is not shown.
-	 *
-	 * @param searchResult
-	 *            the search result to initialize the clone wizard with.
-	 */
-	public AbstractGitCloneWizard(IRepositorySearchResult searchResult) {
-		this();
-		this.currentSearchResult = searchResult;
-	}
-
-	/**
-	 * Construct the clone wizard with a repository location page that allows
-	 * the repository info to be provided by different search providers.
+	 * adds some basic functionality
 	 */
 	public AbstractGitCloneWizard() {
 		setNeedsProgressMonitor(true);
@@ -153,10 +135,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 
 	@Override
 	final public void addPages() {
-		if (hasSearchResult())
-			addRepositorySearchPage();
-		else
-			addRepositoryLocationPage();
+		addPage(new RepositoryLocationPage(getCloneSourceProvider()));
 		addPreClonePages();
 		addPage(validSource);
 		addPage(cloneDestination);
@@ -164,39 +143,9 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	}
 
 	/**
-	 * @return if the search result is set
-	 */
-	protected boolean hasSearchResult() {
-		return currentSearchResult != null;
-	}
-	
-	private void addRepositorySearchPage() {
-		if (currentSearchResult instanceof WizardPage) {
-			addPage((WizardPage)currentSearchResult);
-		}
-	}
-
-	private void addRepositoryLocationPage() {
-		List<CloneSourceProvider> cloneSourceProviders = getCloneSourceProviders();
-		if (hasSingleCloneSourceProviderWithFixedLocation(cloneSourceProviders))
-			try {
-				addPage(cloneSourceProviders.get(0).getRepositorySearchPage());
-			} catch (CoreException e) {
-				Activator.logError(e.getLocalizedMessage(), e);
-			}
-		else
-			addPage(new RepositoryLocationPage(cloneSourceProviders));
-	}
-
-	private boolean hasSingleCloneSourceProviderWithFixedLocation(
-			List<CloneSourceProvider> cloneSourceProviders) {
-		return cloneSourceProviders.size() == 1 && cloneSourceProviders.get(0).hasFixLocation();
-	}
-
-	/**
 	 * @return a list of CloneSourceProviders, may be extended by a subclass
 	 */
-	protected List<CloneSourceProvider> getCloneSourceProviders() {
+	protected List<CloneSourceProvider> getCloneSourceProvider() {
 		return GitCloneSourceProviderExtension.getCloneSourceProvider();
 	}
 
