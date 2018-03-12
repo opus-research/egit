@@ -128,10 +128,8 @@ public class PushActionTest extends LocalRepositoryTestCase {
 				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String menuString = util.getPluginLocalizedValue("PushAction_label");
-		String submenuString = util
-				.getPluginLocalizedValue("RemoteSubMenu.label");
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
-				submenuString, menuString);
+				menuString);
 		SWTBotShell dialog = bot.shell(UIText.PushWizard_windowTitleDefault);
 		return dialog;
 	}

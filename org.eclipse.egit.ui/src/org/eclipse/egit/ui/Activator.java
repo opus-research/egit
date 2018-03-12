@@ -552,17 +552,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 	/**
-	 * Creates an error status
-	 *
-	 * @param message
-	 *            a localized message
-	 * @return a new Status object
-	 */
-	public static IStatus createErrorStatus(String message) {
-		return new Status(IStatus.ERROR, getPluginId(), message);
-	}
-
-	/**
 	 * @return the {@link RepositoryUtil} instance
 	 */
 	public RepositoryUtil getRepositoryUtil() {
