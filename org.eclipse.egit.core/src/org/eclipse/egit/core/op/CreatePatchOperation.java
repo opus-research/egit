@@ -9,6 +9,7 @@
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
  *    Benjamin Muskalla (Tasktop Technologies) - extract into operation
+ *    Tomasz Zarna (IBM Corporation) - bug 370332
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -19,30 +20,23 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Stack;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
-import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.DiffFormatter;
-import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Creates a patch for a specific commit
@@ -58,11 +52,6 @@ public class CreatePatchOperation implements IEGitOperation {
 		 * No header
 		 */
 		NONE(CoreText.DiffHeaderFormat_None, false, null),
-
-		/**
-		 * Workspace patch
-		 */
-		WORKSPACE(CoreText.DiffHeaderFormat_Workspace, false, "### Eclipse Workspace Patch 1.0\n#P ${project}\n"), //$NON-NLS-1$
 
 		/**
 		 * Email header
@@ -109,7 +98,7 @@ public class CreatePatchOperation implements IEGitOperation {
 	}
 
 	enum DiffHeaderKeyword{
-		SHA1, AUTHOR_DATE, AUTHOR, DATE, TITLE_LINE, FULL_COMMIT_MESSAGE, PROJECT
+		SHA1, AUTHOR_DATE, AUTHOR, DATE, TITLE_LINE, FULL_COMMIT_MESSAGE
 	}
 
 	/**
@@ -119,36 +108,18 @@ public class CreatePatchOperation implements IEGitOperation {
 
 	private final RevCommit commit;
 
-	private IResource resource;
-
 	private final Repository repository;
 
 	private DiffHeaderFormat headerFormat = DiffHeaderFormat.EMAIL;
 
 	// the encoding for the currently processed file
-	 private String currentEncoding = null;
+	private String currentEncoding = null;
 
 	private String patchContent;
 
 	private int contextLines = DEFAULT_CONTEXT_LINES;
 
-
-	/**
-	 * Creates the new operation.
-	 *
-	 * @param repository
-	 * @param commit
-	 * @param resource
-	 */
-	public CreatePatchOperation(Repository repository, RevCommit commit, IResource resource) {
-		if (repository == null)
-			throw new IllegalArgumentException(
-					CoreText.CreatePatchOperation_repoRequired);
-		this.repository = repository;
-		this.commit = commit;
-		this.resource = resource;
-	}
-
+	private TreeFilter pathFilter = null;
 	/**
 	 * Creates the new operation.
 	 *
@@ -156,7 +127,11 @@ public class CreatePatchOperation implements IEGitOperation {
 	 * @param commit
 	 */
 	public CreatePatchOperation(Repository repository, RevCommit commit) {
-		this(repository, commit, null);
+		if (repository == null)
+			throw new IllegalArgumentException(
+					CoreText.CreatePatchOperation_repoRequired);
+		this.repository = repository;
+		this.commit = commit;
 	}
 
 	public void execute(IProgressMonitor monitor) throws CoreException {
@@ -192,6 +167,7 @@ public class CreatePatchOperation implements IEGitOperation {
 			writeGitPatchHeader(sb);
 
 		diffFmt.setRepository(repository);
+		diffFmt.setPathFilter(pathFilter);
 
 		try {
 			if (commit != null) {
@@ -213,23 +189,18 @@ public class CreatePatchOperation implements IEGitOperation {
 					currentEncoding = CompareCoreUtils.getResourceEncoding(repository, path);
 					diffFmt.format(ent);
 				}
-			} else {
+			} else
 				diffFmt.format(
 						new DirCacheIterator(repository.readDirCache()),
 						new FileTreeIterator(repository));
-			}
 		} catch (IOException e) {
 			Activator.logError(CoreText.CreatePatchOperation_patchFileCouldNotBeWritten, e);
 		}
 
-		if (DiffHeaderFormat.WORKSPACE == headerFormat)
-			updateWorkspacePatchPrefixes(sb, resource, diffFmt);
-
-		// trim newline
-		if (sb.charAt(sb.length() - 1) == '\n')
-			sb.setLength(sb.length() - 1);
-
 		patchContent = sb.toString();
+		// trim newline
+		if (patchContent.endsWith("\n")) //$NON-NLS-1$
+			patchContent = patchContent.substring(0, patchContent.length() - 1);
 	}
 
 	/**
@@ -257,7 +228,7 @@ public class CreatePatchOperation implements IEGitOperation {
 			if (brace > 0) {
 				String keyword = segment.substring(0, brace);
 				keyword = keyword.toUpperCase().replaceAll(" ", "_"); //$NON-NLS-1$ //$NON-NLS-2$
-				value = processKeyword(commit, resource, DiffHeaderKeyword.valueOf(keyword));
+				value = processKeyword(commit, DiffHeaderKeyword.valueOf(keyword));
 			}
 
 			String trailingCharacters = segment.substring(brace + 1);
@@ -274,8 +245,7 @@ public class CreatePatchOperation implements IEGitOperation {
 		sb.append(buffer);
 	}
 
-	private static String processKeyword(RevCommit commit, IResource resource,
-			DiffHeaderKeyword keyword) {
+	private static String processKeyword(RevCommit commit, DiffHeaderKeyword keyword) {
 		final SimpleDateFormat dtfmt = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.US); //$NON-NLS-1$
 		switch (keyword) {
 		case SHA1:
@@ -293,93 +263,10 @@ public class CreatePatchOperation implements IEGitOperation {
 		case FULL_COMMIT_MESSAGE:
 			return commit.getFullMessage().substring(
 					commit.getShortMessage().length());
-		case PROJECT:
-			return resource.getProject().getName();
 		default:
 			return null;
 		}
 	}
-
-	/**
-	 * Updates prefixes to workspace paths
-	 *
-	 * @param sb
-	 * @param resource
-	 * @param diffFmt
-	 */
-	public static void updateWorkspacePatchPrefixes(StringBuilder sb, IResource resource, DiffFormatter diffFmt) {
-		RawText rt = new RawText(sb.toString().getBytes());
-
-		final String oldPrefix = diffFmt.getOldPrefix();
-		final String newPrefix = diffFmt.getNewPrefix();
-
-		StringBuilder newSb = new StringBuilder();
-		final String eol = rt.getEOL();
-
-		final Pattern diffPattern = Pattern
-				.compile("^diff --git (" + oldPrefix + ".+) (" + newPrefix + ".+)$"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		final Pattern oldPattern = Pattern
-				.compile("^--- (" + oldPrefix + ".+)$"); //$NON-NLS-1$ //$NON-NLS-2$
-		final Pattern newPattern = Pattern
-				.compile("^\\+\\+\\+ (" + newPrefix + ".+)$"); //$NON-NLS-1$ //$NON-NLS-2$
-
-		int i = 0;
-		while (i < rt.size()) {
-			String line = rt.getString(i);
-
-			Matcher diffMatcher = diffPattern.matcher(line);
-			Matcher oldMatcher = oldPattern.matcher(line);
-			Matcher newMatcher = newPattern.matcher(line);
-			if (diffMatcher.find()) {
-				String group = diffMatcher.group(1); // old path
-				IPath newPath = processPath(new Path(group), resource.getProject(), new Path(oldPrefix));
-				line = line.replaceAll(group, newPath.toString());
-				group = diffMatcher.group(2); // new path
-				newPath = processPath(new Path(group), resource.getProject(), new Path(newPrefix));
-				line = line.replaceAll(group, newPath.toString());
-			} else if (oldMatcher.find()) {
-				String group = oldMatcher.group(1);
-				IPath newPath = processPath(new Path(group), resource.getProject(), new Path(oldPrefix));
-				line = line.replaceAll(group, newPath.toString());
-			} else if (newMatcher.find()) {
-				String group = newMatcher.group(1);
-				IPath newPath = processPath(new Path(group), resource.getProject(), new Path(newPrefix));
-				line = line.replaceAll(group, newPath.toString());
-			}
-			newSb.append(line);
-
-			i++;
-			if (i < rt.size() || !rt.isMissingNewlineAtEnd()) {
-				newSb.append(eol);
-			}
-		}
-		// reset sb to newSb
-		sb.setLength(0);
-		sb.append(newSb);
-	}
-
-	/**
-	 * Returns a workspace path
-	 *
-	 * @param path
-	 * @param project
-	 * @param prefix
-	 * @return path
-	 */
-	public static IPath processPath(final IPath path, final IProject project, final IPath prefix) {
-		RepositoryMapping rm = RepositoryMapping.getMapping(project);
-		String repoRelativePath = rm.getRepoRelativePath(project);
-		// the relative path cannot be determined, return unchanged
-		if (repoRelativePath == null)
-			return path;
-		IPath result = path.removeFirstSegments(prefix.segmentCount());
-		// repository and project at the same level
-		if (repoRelativePath.equals("")) //$NON-NLS-1$
-			return result;
-		return result.removeFirstSegments(result
-				.matchingFirstSegments(new Path(repoRelativePath)));
-	}
-
 
 	/**
 	 * Change the format of diff header
@@ -431,4 +318,12 @@ public class CreatePatchOperation implements IEGitOperation {
 		return null;
 	}
 
+	/**
+	 * Set the filter to produce patch for specified paths only.
+	 *
+	 * @param pathFilter the filter
+	 */
+	public void setPathFilter(TreeFilter pathFilter) {
+		this.pathFilter = pathFilter;
+	}
 }
