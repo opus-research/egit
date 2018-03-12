@@ -853,9 +853,6 @@
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
                         </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                        </instanceof>
                      </or>
                   </iterate>
                </and>
