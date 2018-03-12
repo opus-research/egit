@@ -65,8 +65,7 @@ public class SelectRemoteNamePage extends WizardPage {
 		});
 
 		configureFetch = new Button(main, SWT.CHECK);
-		configureFetch
-				.setText(UIText.SelectRemoteNamePage_ConfigureFetch_button);
+		configureFetch.setText("Configure Fetch");
 		configureFetch.addSelectionListener(new SelectionAdapter() {
 
 			@Override
@@ -79,7 +78,7 @@ public class SelectRemoteNamePage extends WizardPage {
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(configureFetch);
 
 		configurePush = new Button(main, SWT.CHECK);
-		configurePush.setText(UIText.SelectRemoteNamePage_ConfigurePush_button);
+		configurePush.setText("Configure Push");
 		configurePush.addSelectionListener(new SelectionAdapter() {
 
 			@Override
@@ -103,7 +102,7 @@ public class SelectRemoteNamePage extends WizardPage {
 				return;
 			}
 
-			NewRemoteWizard wizard = (NewRemoteWizard) getWizard();
+			ConfigureRemoteWizard wizard = (ConfigureRemoteWizard) getWizard();
 			if (wizard.getConfiguration().getSubsections(
 					RepositoriesView.REMOTE).contains(remoteName.getText())) {
 				setErrorMessage(UIText.SelectRemoteNamePage_NameInUseMessage);
@@ -111,7 +110,7 @@ public class SelectRemoteNamePage extends WizardPage {
 			}
 
 			if (!configureFetch.getSelection() && !configurePush.getSelection()) {
-				setErrorMessage(UIText.SelectRemoteNamePage_MustConfigureSomething_message);
+				setErrorMessage("You must select one configuration checkbox");
 				return;
 			}
 

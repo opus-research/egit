@@ -178,13 +178,9 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 					+ " - " //$NON-NLS-1$
 					+ node.getRepository().getWorkDir().getAbsolutePath();
 
-		case PUSH: // fall through
-		case FETCH:
-			return (String) node.getObject();
-
+		default:
+			return null;
 		}
-
-		return null;
 	}
 
 	@Override
