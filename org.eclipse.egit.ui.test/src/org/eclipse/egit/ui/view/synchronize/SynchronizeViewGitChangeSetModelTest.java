@@ -295,7 +295,7 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		assertEquals(2, syncViewTree.getAllItems().length);
 		workingTree.expand().getNode(name).doubleClick();
 
-		SWTBotEditor editor = getCompareEditorForNonWorkspaceFileInGitChangeSet(name);
+		SWTBotEditor editor = bot.editorByTitle(name);
 		editor.setFocus();
 
 		// the WidgetNotFoundException will be thrown when widget with given content cannot be not found
