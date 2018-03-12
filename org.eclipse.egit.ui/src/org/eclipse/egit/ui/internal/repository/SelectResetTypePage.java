@@ -38,19 +38,13 @@ public class SelectResetTypePage extends WizardPage {
 	 *            current ref (which will be overwritten)
 	 * @param targetRef
 	 *            target ref (which contains the new content)
-	 * @param targetCommit
-	 *            target commit
 	 */
 	public SelectResetTypePage(String repoName, String currentRef,
-			String targetRef, String targetCommit) {
+			String targetRef) {
 		super(SelectResetTypePage.class.getName());
 		setTitle(NLS.bind(UIText.SelectResetTypePage_PageTitle, repoName));
-		if (currentRef.equals(targetRef))
-			setMessage(NLS.bind(UIText.SelectResetTypePage_PageMessage,
-					new String[] { currentRef, "HEAD", targetCommit })); //$NON-NLS-1$
-		else
-			setMessage(NLS.bind(UIText.SelectResetTypePage_PageMessage,
-					new String[] { currentRef, targetRef, targetCommit }));
+		setMessage(NLS.bind(UIText.SelectResetTypePage_PageMessage, currentRef,
+				targetRef));
 	}
 
 	public void createControl(Composite parent) {
