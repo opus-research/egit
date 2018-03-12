@@ -136,7 +136,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommanndHandler {
 							final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 									left, right, null);
 							openInCompare(event, in);
-						} catch (IOException e) {
+						} catch (Exception e) {
 							errorOccured = true;
 						}
 					} else {
