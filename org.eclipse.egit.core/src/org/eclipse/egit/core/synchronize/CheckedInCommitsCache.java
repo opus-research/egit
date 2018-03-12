@@ -192,6 +192,40 @@ public class CheckedInCommitsCache {
 			return remoteObjectId;
 		}
 
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((objectId == null) ? 0 : objectId.hashCode());
+			result = prime
+					* result
+					+ ((remoteObjectId == null) ? 0 : remoteObjectId.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Change other = (Change) obj;
+			if (objectId == null) {
+				if (other.objectId != null)
+					return false;
+			} else if (!objectId.equals(other.objectId))
+				return false;
+			if (remoteObjectId == null) {
+				if (other.remoteObjectId != null)
+					return false;
+			} else if (!remoteObjectId.equals(other.remoteObjectId))
+				return false;
+			return true;
+		}
+
 	}
 
 	static final AbbreviatedObjectId ZERO_ID = AbbreviatedObjectId
@@ -277,8 +311,8 @@ public class CheckedInCommitsCache {
 		tw.setFilter(TreeFilter.ANY_DIFF);
 		tw.setRecursive(true);
 
-		final int localTreeId = direction == LEFT ? 0 : 1;
-		final int remoteTreeId = direction == LEFT ? 1 : 0;
+		final int localTreeId = direction == LEFT ? 1 : 0;
+		final int remoteTreeId = direction == LEFT ? 0 : 1;
 		final Map<String, Change> result = new HashMap<String, CheckedInCommitsCache.Change>();
 		final AbbreviatedObjectId actualCommit = AbbreviatedObjectId
 				.fromObjectId(parentCommit);

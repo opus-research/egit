@@ -13,12 +13,14 @@ import static org.eclipse.compare.structuremergeviewer.Differencer.CHANGE;
 import static org.eclipse.compare.structuremergeviewer.Differencer.DELETION;
 import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
 import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
+import static org.eclipse.jgit.lib.ObjectId.zeroId;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -26,12 +28,35 @@ import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
 import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Commit;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.errors.AmbiguousObjectException;
+import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
+import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.util.FileUtils;
+import org.junit.Before;
 import org.junit.Test;
 
 @SuppressWarnings("boxing")
-public class CheckedInCommitsCacheTest extends AbstractCacheTest {
+public class CheckedInCommitsCacheTest extends LocalDiskRepositoryTestCase {
+
+	private FileRepository db;
+
+	private static final String INITIAL_TAG = "initial-tag";
+
+	private static final AbbreviatedObjectId ZERO_ID = AbbreviatedObjectId
+			.fromObjectId(zeroId());
+
+	@Before
+	@Override
+	// copied from org.eclipse.jgit.lib.RepositoryTestCase
+	public void setUp() throws Exception {
+		super.setUp();
+		db = createWorkRepository();
+		Git git = new Git(db);
+		git.commit().setMessage("initial commit").call();
+		git.tag().setName(INITIAL_TAG).call();
+	}
 
 	@Test
 	public void shouldReturnEmptyListForSameSrcAndDstCommit() throws Exception {
@@ -108,12 +133,12 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 		// left asserts
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c, 1);
-		assertFileAddition(c, leftResult.get(0).getChildren().get("a.txt"), "a.txt", LEFT | ADDITION);
+		assertFileDeletion(c, leftResult.get(0).getChildren().get("a.txt"), "a.txt", LEFT | DELETION);
 
 		// right asserts, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c, 1);
-		assertFileDeletion(c, rightResult.get(0).getChildren().get("a.txt"), "a.txt", RIGHT | DELETION);
+		assertFileAddition(c, rightResult.get(0).getChildren().get("a.txt"), "a.txt", RIGHT | ADDITION);
 	}
 
 	@Test
@@ -133,13 +158,13 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c, 1);
 		assertThat(leftResult.get(0).getChildren().size(), is(1));
-		assertFileAddition(c, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | ADDITION);
+		assertFileDeletion(c, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | DELETION);
 
 		// right asserts, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c, 1);
 		assertThat(rightResult.get(0).getChildren().size(), is(1));
-		assertFileDeletion(c, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | DELETION);
+		assertFileAddition(c, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | ADDITION);
 	}
 
 	@Test
@@ -165,8 +190,8 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 		assertThat(leftResult.get(0).getChildren(), notNullValue());
 		assertThat(leftResult.get(0).getChildren().size(), is(2));
 
-		assertFileAddition(c, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | ADDITION);
-		assertFileAddition(c, leftResult.get(0).getChildren().get("folder2/b.txt"), "b.txt",LEFT | ADDITION);
+		assertFileDeletion(c, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | DELETION);
+		assertFileDeletion(c, leftResult.get(0).getChildren().get("folder2/b.txt"), "b.txt",LEFT | DELETION);
 
 		// right asserts, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
@@ -176,8 +201,8 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 		assertThat(rightResult.get(0).getChildren(), notNullValue());
 		assertThat(rightResult.get(0).getChildren().size(), is(2));
 
-		assertFileDeletion(c, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | DELETION);
-		assertFileDeletion(c, rightResult.get(0).getChildren().get("folder2/b.txt"), "b.txt",RIGHT | DELETION);
+		assertFileAddition(c, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | ADDITION);
+		assertFileAddition(c, rightResult.get(0).getChildren().get("folder2/b.txt"), "b.txt",RIGHT | ADDITION);
 	}
 
 	@Test
@@ -201,8 +226,8 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 
 		assertThat(leftResult.get(0).getChildren().size(), is(2));
 
-		assertFileAddition(c, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | ADDITION);
-		assertFileAddition(c, leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt", LEFT | ADDITION);
+		assertFileDeletion(c, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | DELETION);
+		assertFileDeletion(c, leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt", LEFT | DELETION);
 
 		// right asserts, after changing sides addition becomes deletion
 		assertThat(rightResult, notNullValue());
@@ -211,8 +236,8 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 
 		assertThat(rightResult.get(0).getChildren().size(), is(2));
 
-		assertFileDeletion(c, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | DELETION);
-		assertFileDeletion(c, rightResult.get(0).getChildren().get("folder/b.txt"), "b.txt", RIGHT | DELETION);
+		assertFileAddition(c, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | ADDITION);
+		assertFileAddition(c, rightResult.get(0).getChildren().get("folder/b.txt"), "b.txt", RIGHT | ADDITION);
 	}
 
 	@Test
@@ -366,15 +391,15 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 		// left asserts
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 3);
-		assertFileDeletion(c2, c1, leftResult.get(0).getChildren().get("a.txt"), "a.txt", LEFT | DELETION);
-		assertFileAddition(c2, c1, leftResult.get(0).getChildren().get("b.txt"), "b.txt", LEFT | ADDITION);
+		assertFileAddition(c2, c1, leftResult.get(0).getChildren().get("a.txt"), "a.txt", LEFT | ADDITION);
+		assertFileDeletion(c2, c1, leftResult.get(0).getChildren().get("b.txt"), "b.txt", LEFT | DELETION);
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("c.txt"), "c.txt", LEFT | CHANGE);
 
 		// right asserts
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c2, 3);
-		assertFileAddition(c2, c1, rightResult.get(0).getChildren().get("a.txt"), "a.txt", RIGHT | ADDITION);
-		assertFileDeletion(c2, c1, rightResult.get(0).getChildren().get("b.txt"), "b.txt", RIGHT | DELETION);
+		assertFileDeletion(c2, c1, rightResult.get(0).getChildren().get("a.txt"), "a.txt", RIGHT | DELETION);
+		assertFileAddition(c2, c1, rightResult.get(0).getChildren().get("b.txt"), "b.txt", RIGHT | ADDITION);
 		assertFileChange(c2, c1, rightResult.get(0).getChildren().get("c.txt"), "c.txt", RIGHT | CHANGE);
 	}
 
@@ -401,15 +426,15 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 		// left asserts
 		assertThat(leftResult, notNullValue());
 		assertCommit(leftResult.get(0), c2, 3);
-		assertFileDeletion(c2, c1, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | DELETION);
-		assertFileAddition(c2, c1, leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt", LEFT | ADDITION);
+		assertFileAddition(c2, c1, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | ADDITION);
+		assertFileDeletion(c2, c1, leftResult.get(0).getChildren().get("folder/b.txt"), "b.txt", LEFT | DELETION);
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("folder/c.txt"), "c.txt", LEFT | CHANGE);
 
 		// right asserts
 		assertThat(rightResult, notNullValue());
 		assertCommit(rightResult.get(0), c2, 3);
-		assertFileAddition(c2, c1, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | ADDITION);
-		assertFileDeletion(c2, c1, rightResult.get(0).getChildren().get("folder/b.txt"), "b.txt", RIGHT | DELETION);
+		assertFileDeletion(c2, c1, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | DELETION);
+		assertFileAddition(c2, c1, rightResult.get(0).getChildren().get("folder/b.txt"), "b.txt", RIGHT | ADDITION);
 		assertFileChange(c2, c1, rightResult.get(0).getChildren().get("folder/c.txt"), "c.txt", RIGHT | CHANGE);
 	}
 
@@ -442,8 +467,8 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 		assertThat(leftResult.get(0).getChildren(), notNullValue());
 		assertThat(leftResult.get(0).getChildren().size(), is(3));
 
-		assertFileDeletion(c2, c1, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | DELETION);
-		assertFileAddition(c2, c1, leftResult.get(0).getChildren().get("folder1/b.txt"), "b.txt", LEFT | ADDITION);
+		assertFileAddition(c2, c1, leftResult.get(0).getChildren().get("folder/a.txt"), "a.txt", LEFT | ADDITION);
+		assertFileDeletion(c2, c1, leftResult.get(0).getChildren().get("folder1/b.txt"), "b.txt", LEFT | DELETION);
 		assertFileChange(c2, c1, leftResult.get(0).getChildren().get("folder2/c.txt"), "c.txt", LEFT | CHANGE);
 
 		// right asserts
@@ -454,8 +479,8 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 		assertThat(rightResult.get(0).getChildren(), notNullValue());
 		assertThat(rightResult.get(0).getChildren().size(), is(3));
 
-		assertFileAddition(c2, c1, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | ADDITION);
-		assertFileDeletion(c2, c1, rightResult.get(0).getChildren().get("folder1/b.txt"), "b.txt",RIGHT | DELETION);
+		assertFileDeletion(c2, c1, rightResult.get(0).getChildren().get("folder/a.txt"), "a.txt", RIGHT | DELETION);
+		assertFileAddition(c2, c1, rightResult.get(0).getChildren().get("folder1/b.txt"), "b.txt",RIGHT | ADDITION);
 		assertFileChange(c2, c1, rightResult.get(0).getChildren().get("folder2/c.txt"), "c.txt", RIGHT | CHANGE);
 	}
 
@@ -531,6 +556,19 @@ public class CheckedInCommitsCacheTest extends AbstractCacheTest {
 					is(parent.getId()));
 		assertThat(change.getName(), is(name));
 		assertThat(change.getKind(), is(direction));
+	}
+
+	// copied from org.eclipse.jgit.lib.RepositoryTestCase
+	private File writeTrashFile(final String name, final String data)
+			throws IOException {
+		File path = new File(db.getWorkTree(), name);
+		write(path, data);
+		return path;
+	}
+
+	private void deleteTrashFile(final String name) throws IOException {
+		File path = new File(db.getWorkTree(), name);
+		FileUtils.delete(path);
 	}
 
 }
