@@ -80,7 +80,6 @@ import org.eclipse.ui.navigator.CommonViewer;
 import org.eclipse.ui.part.IPage;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
-import org.eclipse.ui.progress.UIJob;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
 import org.eclipse.ui.views.properties.PropertySheet;
 import org.eclipse.ui.views.properties.PropertySheetPage;
@@ -426,10 +425,10 @@ public class RepositoriesView extends CommonNavigator {
 					GitTraceLocation.REPOSITORIESVIEW.getLocation(),
 					"New input required: " + needsNewInput); //$NON-NLS-1$
 
-		Job job = new UIJob("Refreshing Git Repositories view") { //$NON-NLS-1$
+		Job job = new Job("Refreshing Git Repositories view") { //$NON-NLS-1$
 
 			@Override
-			public IStatus runInUIThread(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				boolean actTrace = GitTraceLocation.REPOSITORIESVIEW.isActive();
 				if (actTrace)
 					GitTraceLocation.getTrace().trace(
@@ -438,17 +437,9 @@ public class RepositoriesView extends CommonNavigator {
 				lastInputUpdate = System.currentTimeMillis();
 				if (needsNewInput)
 					initRepositoriesAndListeners();
-				if (lastInputChange > lastInputUpdate
-						|| lastRepositoryChange > lastInputUpdate) {
-					if (actTrace)
-						GitTraceLocation.getTrace()
-								.trace(
-										GitTraceLocation.REPOSITORIESVIEW
-												.getLocation(),
-										"Rescheduling refresh job"); //$NON-NLS-1$
-					// schedule(DEFAULT_REFRESH_DELAY);
-				}
 
+				Display.getDefault().asyncExec(new Runnable() {
+					public void run() {
 						long start = 0;
 						boolean traceActive = GitTraceLocation.REPOSITORIESVIEW
 								.isActive();
@@ -493,7 +484,19 @@ public class RepositoriesView extends CommonNavigator {
 											GitTraceLocation.REPOSITORIESVIEW
 													.getLocation(),
 											"Ending async update job after " + (System.currentTimeMillis() - start) + " ms"); //$NON-NLS-1$ //$NON-NLS-2$
+					}
+				});
 
+				if (lastInputChange > lastInputUpdate
+						|| lastRepositoryChange > lastInputUpdate) {
+					if (actTrace)
+						GitTraceLocation.getTrace()
+								.trace(
+										GitTraceLocation.REPOSITORIESVIEW
+												.getLocation(),
+										"Rescheduling refresh job"); //$NON-NLS-1$
+					schedule(DEFAULT_REFRESH_DELAY);
+				}
 				return Status.OK_STATUS;
 			}
 
