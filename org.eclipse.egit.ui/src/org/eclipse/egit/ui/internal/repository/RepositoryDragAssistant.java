@@ -46,7 +46,7 @@ public class RepositoryDragAssistant extends CommonDragAdapterAssistant {
 		}
 
 		if (FileTransfer.getInstance().isSupportedType(event.dataType)) {
-			final List<String> files = new ArrayList<>();
+			final List<String> files = new ArrayList<String>();
 			for (Object selected : selection.toList())
 				if (selected instanceof FileNode) {
 					File file = ((FileNode) selected).getObject();
