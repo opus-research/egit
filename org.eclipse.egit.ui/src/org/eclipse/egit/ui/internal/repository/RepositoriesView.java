@@ -41,6 +41,7 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.ConfigurationChecker;
+import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -378,9 +379,9 @@ public class RepositoriesView extends CommonNavigator {
 				TreeSelection sel = (TreeSelection) event.getSelection();
 				RepositoryTreeNode element = (RepositoryTreeNode) sel
 						.getFirstElement();
-				if (element instanceof FileNode) {
+				if (element instanceof FileNode
+						|| element instanceof StashedCommitNode)
 					executeOpenCommand();
-				}
 			}
 		});
 		// react on selection changes
@@ -484,6 +485,9 @@ public class RepositoriesView extends CommonNavigator {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
 			if (mapping == null)
 				return;
+			String repoPath = mapping.getRepoRelativePath(resource);
+			if( repoPath == null)
+				return;
 
 			boolean added = repositoryUtil.addConfiguredRepository(mapping
 					.getRepository().getDirectory());
@@ -518,7 +522,7 @@ public class RepositoriesView extends CommonNavigator {
 				}
 			}
 
-			IPath relPath = new Path(mapping.getRepoRelativePath(resource));
+			IPath relPath = new Path(repoPath);
 
 			for (String segment : relPath.segments()) {
 				for (Object child : cp.getChildren(currentNode)) {
