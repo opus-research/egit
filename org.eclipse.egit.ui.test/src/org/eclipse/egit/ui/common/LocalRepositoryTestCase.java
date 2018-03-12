@@ -309,7 +309,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		Repository myRepository = lookupRepository(repositoryDir);
 		File gitDir = new File(testDirectory, REPO2);
 		Repository myRemoteRepository = FileRepositoryBuilder.create(gitDir);
-		myRemoteRepository.create(true);
+		myRemoteRepository.create();
 		// double-check that this is bare
 		assertTrue(myRemoteRepository.isBare());
 
