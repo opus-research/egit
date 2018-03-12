@@ -424,9 +424,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
 
 	/** */
-	public static String GitPreferenceRoot_fetchBeforeSynchronization;
-
-	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
 
 	/** */
@@ -1549,9 +1546,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_ErrorNoMessage;
 
 	/** */
-	public static String CommitDialog_File;
-
-	/** */
 	public static String CommitDialog_SelectAll;
 
 	/** */
@@ -1597,13 +1591,22 @@ public class UIText extends NLS {
 	public static String CommitDialog_AddChangeIdLabel;
 
 	/** */
-	public static String CommitDialog_AddChangeIdTooltip;
-
-	/** */
 	public static String CommitDialog_WrongTypeOfCommitMessageProvider;
 
 	/** */
 	public static String CommitDialog_ConfigureLink;
+
+	/** */
+	public static String CommitDialog_Files;
+
+	/** */
+	public static String CommitDialog_Message;
+
+	/** */
+	public static String CommitDialog_Path;
+
+	/** */
+	public static String CommitDialog_Title;
 
 	/** */
 	public static String ConfigurationChecker_checkHomeDirectory;
@@ -3669,12 +3672,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SynchronizeFetchJob_SubTaskName;
-
-	/** */
-	public static String SynchronizeFetchJob_FetchFailedTitle;
-
-	/** */
-	public static String SynchronizeFetchJob_FetchFailedMessage;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
