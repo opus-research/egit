@@ -22,8 +22,8 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
@@ -55,7 +55,7 @@ public class CompareCoreUtils {
 		if (db.isBare()) {
 			return null;
 		}
-		IFile resource = ResourceUtil.getFileForLocation(db, repoPath);
+		IFile resource = ResourceUtil.getFileForLocation(db, repoPath, false);
 		if (resource == null) {
 			return null;
 		}

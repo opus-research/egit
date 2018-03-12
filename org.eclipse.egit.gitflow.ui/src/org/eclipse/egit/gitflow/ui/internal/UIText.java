@@ -214,6 +214,12 @@ public class UIText extends NLS {
 	public static String FeatureCheckoutHandler_cleanupDialog_text;
 
 	/** */
+	public static String FinishFeatureDialog_keepBranch;
+
+	/** */
+	public static String FinishFeatureDialog_saveAsDefault;
+
+	/** */
 	public static String FinishFeatureDialog_squashCheck;
 
 	/** */

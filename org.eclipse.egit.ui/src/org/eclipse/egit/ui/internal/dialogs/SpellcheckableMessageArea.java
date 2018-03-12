@@ -52,7 +52,6 @@ import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.WhitespaceCharacterPainter;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistant;
-import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.text.presentation.IPresentationReconciler;
 import org.eclipse.jface.text.presentation.PresentationReconciler;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
@@ -267,8 +266,8 @@ public class SpellcheckableMessageArea extends Composite {
 		setLayout(new FillLayout());
 
 		AnnotationModel annotationModel = new AnnotationModel();
-		sourceViewer = new SourceViewer(this, null, null, true, SWT.MULTI
-				| SWT.V_SCROLL | SWT.WRAP);
+		sourceViewer = new HyperlinkSourceViewer(this, null, null, true,
+				SWT.MULTI | SWT.V_SCROLL | SWT.WRAP);
 		getTextWidget().setAlwaysShowScrollBars(false);
 		getTextWidget().setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
@@ -318,7 +317,6 @@ public class SpellcheckableMessageArea extends Composite {
 					});
 				}
 			}
-
 		};
 		JFacePreferences.getPreferenceStore()
 				.addPropertyChangeListener(syntaxColoringChangeListener);
@@ -329,24 +327,20 @@ public class SpellcheckableMessageArea extends Composite {
 
 		Document document = new Document(initialText);
 
-		configuration = new TextSourceViewerConfiguration(
-				EditorsUI
-				.getPreferenceStore()) {
+		configuration = new HyperlinkSourceViewer.Configuration(
+				EditorsUI.getPreferenceStore()) {
 
 			@Override
 			public int getHyperlinkStateMask(ISourceViewer targetViewer) {
-				return SWT.NONE;
+				if (!targetViewer.isEditable()) {
+					return SWT.NONE;
+				}
+				return super.getHyperlinkStateMask(targetViewer);
 			}
 
 			@Override
 			protected Map getHyperlinkDetectorTargets(ISourceViewer targetViewer) {
 				return getHyperlinkTargets();
-			}
-
-			@Override
-			public IHyperlinkDetector[] getHyperlinkDetectors(
-					ISourceViewer targetViewer) {
-				return getRegisteredHyperlinkDetectors(sourceViewer);
 			}
 
 			@Override
@@ -372,11 +366,9 @@ public class SpellcheckableMessageArea extends Composite {
 					ISourceViewer viewer) {
 				PresentationReconciler reconciler = new PresentationReconciler();
 				reconciler.setDocumentPartitioning(
-						getConfiguredDocumentPartitioning(sourceViewer));
+						getConfiguredDocumentPartitioning(viewer));
 				DefaultDamagerRepairer hyperlinkDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(
-								getHyperlinkDetectors(sourceViewer),
-								sourceViewer));
+						new HyperlinkTokenScanner(this, viewer));
 				reconciler.setDamager(hyperlinkDamagerRepairer,
 						IDocument.DEFAULT_CONTENT_TYPE);
 				reconciler.setRepairer(hyperlinkDamagerRepairer,
@@ -433,6 +425,14 @@ public class SpellcheckableMessageArea extends Composite {
 				hardWrapSegmentListener = new BidiSegmentListener() {
 					@Override
 					public void lineGetSegments(BidiSegmentEvent e) {
+						if (e.widget == textWidget) {
+							int footerOffset = CommonUtils
+									.getFooterOffset(textWidget.getText());
+							if (footerOffset >= 0
+									&& e.lineOffset >= footerOffset) {
+								return;
+							}
+						}
 						int[] segments = calculateWrapOffsets(e.lineText, MAX_LINE_WIDTH);
 						if (segments != null) {
 							char[] segmentsChars = new char[segments.length];
@@ -929,18 +929,43 @@ public class SpellcheckableMessageArea extends Composite {
 	public String getCommitMessage() {
 		String text = getText();
 		text = Utils.normalizeLineEndings(text);
-		if (shouldHardWrap())
-			text = hardWrap(text);
+		if (shouldHardWrap()) {
+			text = wrapCommitMessage(text);
+		}
 		return text;
+	}
+
+	/**
+	 * Wraps a commit message, leaving the footer as defined by
+	 * {@link CommonUtils#getFooterOffset(String)} unwrapped.
+	 *
+	 * @param text
+	 *            of the whole commit message, including footer, using '\n' as
+	 *            line delimiter
+	 * @return the wrapped text
+	 */
+	protected static String wrapCommitMessage(String text) {
+		// protected in order to be easily testable
+		int footerStart = CommonUtils.getFooterOffset(text);
+		if (footerStart < 0) {
+			return hardWrap(text);
+		} else {
+			// Do not wrap footer lines.
+			String footer = text.substring(footerStart);
+			text = hardWrap(text.substring(0, footerStart));
+			return text + footer;
+		}
 	}
 
 	/**
 	 * Hard-wraps the given text.
 	 *
-	 * @param text the text to wrap, must use '\n' as line delimiter
+	 * @param text
+	 *            the text to wrap, must use '\n' as line delimiter
 	 * @return the wrapped text
 	 */
-	public static String hardWrap(String text) {
+	protected static String hardWrap(String text) {
+		// protected for testing
 		int[] wrapOffsets = calculateWrapOffsets(text, MAX_LINE_WIDTH);
 		if (wrapOffsets != null) {
 			StringBuilder builder = new StringBuilder(text.length() + wrapOffsets.length);
@@ -964,7 +989,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @return map of targets
 	 */
 	protected Map<String, IAdaptable> getHyperlinkTargets() {
-		return Collections.singletonMap("org.eclipse.ui.DefaultTextEditor", //$NON-NLS-1$
+		return Collections.singletonMap(EditorsUI.DEFAULT_TEXT_EDITOR_ID,
 				getDefaultTarget());
 	}
 

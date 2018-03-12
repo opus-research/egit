@@ -8,9 +8,17 @@
  *******************************************************************************/
 package org.eclipse.egit.gitflow.ui.internal.dialogs;
 
+import static org.eclipse.egit.gitflow.ui.internal.UIPreferences.FEATURE_FINISH_KEEP_BRANCH;
+import static org.eclipse.egit.gitflow.ui.internal.UIPreferences.FEATURE_FINISH_SQUASH;
+
+import org.eclipse.egit.gitflow.ui.Activator;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
+import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -28,9 +36,15 @@ public class FinishFeatureDialog extends TitleAreaDialog {
 
 	private boolean squash;
 
+	private boolean keepBranch;
+
 	private Button squashButton;
 
+	private Button keepBranchButton;
+
 	private String featureBranch;
+
+	private Button rememberOptionsButton;
 
 	/**
 	 * @param parentShell
@@ -61,13 +75,52 @@ public class FinishFeatureDialog extends TitleAreaDialog {
 		squashButton = new Button(container, SWT.CHECK);
 		squashButton.setText(UIText.FinishFeatureDialog_squashCheck);
 
+		keepBranchButton = new Button(container, SWT.CHECK);
+		keepBranchButton.setText(UIText.FinishFeatureDialog_keepBranch);
+
+		restoreInput();
+
 		return area;
+	}
+
+	private void restoreInput() {
+		IPreferenceStore prefStore = Activator
+				.getDefault()
+				.getPreferenceStore();
+		squashButton.setSelection(prefStore.getBoolean(FEATURE_FINISH_SQUASH));
+		keepBranchButton.setSelection(prefStore.getBoolean(FEATURE_FINISH_KEEP_BRANCH));
 	}
 
 	@Override
 	protected Control createButtonBar(Composite parent) {
-		// TODO: we should have options to persist the selected configuration
-		return super.createButtonBar(parent);
+		final Composite customButtonBar = new Composite(parent, SWT.NONE);
+
+		int horizontalSpacing = convertHorizontalDLUsToPixels(IDialogConstants.HORIZONTAL_SPACING);
+		GridLayoutFactory.swtDefaults().numColumns(2).equalWidth(false)
+				.spacing(horizontalSpacing, 0).applyTo(customButtonBar);
+
+		GridDataFactory.swtDefaults().grab(true, false)
+				.align(SWT.FILL, SWT.BOTTOM).applyTo(customButtonBar);
+
+		customButtonBar.setFont(parent.getFont());
+
+		rememberOptionsButton = new Button(customButtonBar, SWT.CHECK);
+		rememberOptionsButton.setText(UIText.FinishFeatureDialog_saveAsDefault);
+
+		// TODO: Checkbox "Don't ask again"
+
+		int horizontlIndent = convertHorizontalDLUsToPixels(IDialogConstants.HORIZONTAL_MARGIN);
+		GridDataFactory.swtDefaults().grab(true, true)
+				.align(SWT.FILL, SWT.CENTER).indent(horizontlIndent, 0)
+				.applyTo(rememberOptionsButton);
+
+		// add the dialog's button bar to the right
+		final Control buttonControl = super.createButtonBar(customButtonBar);
+		GridDataFactory.swtDefaults().grab(true, false)
+				.align(SWT.RIGHT, SWT.CENTER).applyTo(buttonControl);
+
+
+		return customButtonBar;
 	}
 
 	@Override
@@ -83,6 +136,15 @@ public class FinishFeatureDialog extends TitleAreaDialog {
 	private void saveInput() {
 		this.squash = squashButton.getSelection();
 
+		this.keepBranch = keepBranchButton.getSelection();
+		if (rememberOptionsButton.getSelection()) {
+			IPreferenceStore preferenceStore = Activator
+					.getDefault()
+					.getPreferenceStore();
+			preferenceStore.setValue(FEATURE_FINISH_SQUASH, squashButton.getSelection());
+			preferenceStore.setValue(FEATURE_FINISH_KEEP_BRANCH, keepBranchButton.getSelection());
+		}
+
 	}
 
 	@Override
@@ -96,5 +158,12 @@ public class FinishFeatureDialog extends TitleAreaDialog {
 	 */
 	public boolean isSquash() {
 		return squash;
+	}
+
+	/**
+	 * @return Whether or not the branch should be kept after the operation is finished
+	 */
+	public boolean isKeepBranch() {
+		return keepBranch;
 	}
 }

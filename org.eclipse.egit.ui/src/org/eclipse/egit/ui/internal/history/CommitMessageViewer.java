@@ -23,12 +23,13 @@ import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
+import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.history.FormatJob.FormatResult;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -46,11 +47,11 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.TextUtilities;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
+import org.eclipse.jface.text.hyperlink.IHyperlinkDetectorExtension2;
 import org.eclipse.jface.text.rules.FastPartitioner;
 import org.eclipse.jface.text.rules.IPartitionTokenScanner;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.rules.Token;
-import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.events.ListenerHandle;
@@ -72,7 +73,7 @@ import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
-class CommitMessageViewer extends SourceViewer {
+class CommitMessageViewer extends HyperlinkSourceViewer {
 
 	static final String HEADER_CONTENT_TYPE = "__egit_commit_msg_header"; //$NON-NLS-1$
 
@@ -128,16 +129,17 @@ class CommitMessageViewer extends SourceViewer {
 			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				String property = event.getProperty();
-				if (property.equals(
-						UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL)) {
+				if (UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL
+						.equals(property)) {
 					setFill(((Boolean) event.getNewValue()).booleanValue());
-					return;
-				}
-				if (property.equals(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE)
-						|| property.equals(
-								UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE)) {
+				} else
+					if (UIPreferences.HISTORY_SHOW_TAG_SEQUENCE.equals(property)
+							|| UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE
+									.equals(property)
+							|| UIPreferences.DATE_FORMAT.equals(property)
+							|| UIPreferences.DATE_FORMAT_CHOICE
+									.equals(property)) {
 					format();
-					return;
 				}
 			}
 		};
@@ -375,7 +377,7 @@ class CommitMessageViewer extends SourceViewer {
 	}
 
 	private void scheduleFormatJob() {
-		IWorkbenchSiteProgressService siteService = CommonUtils.getAdapter(partSite, IWorkbenchSiteProgressService.class);
+		IWorkbenchSiteProgressService siteService = AdapterUtils.adapt(partSite, IWorkbenchSiteProgressService.class);
 		if (siteService == null)
 			return;
 		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(
@@ -537,7 +539,8 @@ class CommitMessageViewer extends SourceViewer {
 
 	}
 
-	static class KnownHyperlinksDetector implements IHyperlinkDetector {
+	static class KnownHyperlinksDetector
+			implements IHyperlinkDetector, IHyperlinkDetectorExtension2 {
 
 		@Override
 		public IHyperlink[] detectHyperlinks(ITextViewer textViewer,
@@ -558,6 +561,11 @@ class CommitMessageViewer extends SourceViewer {
 				}
 			}
 			return null;
+		}
+
+		@Override
+		public int getStateMask() {
+			return -1;
 		}
 
 	}

@@ -79,7 +79,7 @@ import org.eclipse.swt.widgets.Text;
  * Dialog to gather inputs for the git flow init operation.
  */
 public class InitDialog extends TitleAreaDialog {
-	private final class BranchValidator implements IValidator {
+	private static final class BranchValidator implements IValidator {
 		@Override
 		public IStatus validate(Object value) {
 			if (value == null || !isValidRefName(R_HEADS + value)) {
@@ -89,7 +89,7 @@ public class InitDialog extends TitleAreaDialog {
 		}
 	}
 
-	private final class BranchExistsValidator implements IValidator {
+	private static final class BranchExistsValidator implements IValidator {
 		private List<String> list;
 
 		public BranchExistsValidator(List<Ref> branchList) {
@@ -123,8 +123,6 @@ public class InitDialog extends TitleAreaDialog {
 	private Text versionTagText;
 
 	private static final String DUMMY_POSTFIX = "dummy"; //$NON-NLS-1$
-
-	private static final int TEXT_HEIGHT = 15;
 
 	private static final int TEXT_WIDTH = 100;
 
@@ -198,7 +196,7 @@ public class InitDialog extends TitleAreaDialog {
 	private Text createLabeledText(Composite container, String label) {
 		new Label(container, SWT.NONE).setText(label);
 		Text result = new Text(container, SWT.BORDER);
-		GridDataFactory.swtDefaults().hint(TEXT_WIDTH, TEXT_HEIGHT).applyTo(result);
+		GridDataFactory.swtDefaults().hint(TEXT_WIDTH, SWT.DEFAULT).applyTo(result);
 		return result;
 	}
 
