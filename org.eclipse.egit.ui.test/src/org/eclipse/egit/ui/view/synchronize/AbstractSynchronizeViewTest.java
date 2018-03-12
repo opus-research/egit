@@ -207,7 +207,6 @@ public abstract class AbstractSynchronizeViewTest extends
 	protected void createEmptyRepository() throws Exception {
 		File gitDir = new File(new File(getTestDirectory(), EMPTY_REPOSITORY),
 				Constants.DOT_GIT);
-		gitDir.mkdir();
 		Repository myRepository = new FileRepository(gitDir);
 		myRepository.create();
 
@@ -252,7 +251,10 @@ public abstract class AbstractSynchronizeViewTest extends
 		SWTBotTreeItem folderNode = waitForNodeWithText(projNode, FOLDER);
 		waitForNodeWithText(folderNode, fileName).doubleClick();
 
-		return bot.editorByTitle(fileName);
+		SWTBotEditor editor = bot.editorByTitle(fileName);
+		// Ensure that both StyledText widgets are enabled
+		editor.toTextEditor().setFocus();
+		return editor;
 	}
 
 	protected SWTBotTreeItem waitForNodeWithText(SWTBotTree tree, String name) {
