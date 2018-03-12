@@ -56,12 +56,18 @@ class PushResultDialog extends TitleAreaDialog {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				Shell shell = PlatformUI.getWorkbench()
-						.getModalDialogShellProvider().getShell();
-				PushResultDialog dialog = new PushResultDialog(shell,
-						repository, result, sourceString, modal);
-				dialog.showConfigureButton(showConfigureButton);
-				dialog.open();
+				PlatformUI.getWorkbench().getDisplay().asyncExec(
+						new Runnable() {
+							@Override
+							public void run() {
+								Shell shell = PlatformUI.getWorkbench()
+										.getActiveWorkbenchWindow().getShell();
+								PushResultDialog dialog = new PushResultDialog(
+										shell, repository, result, sourceString, modal);
+								dialog.showConfigureButton(showConfigureButton);
+								dialog.open();
+							}
+						});
 			}
 		});
 	}
@@ -99,9 +105,8 @@ class PushResultDialog extends TitleAreaDialog {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					Dialog dlg = SimpleConfigurePushDialog.getDialog(
-							PlatformUI.getWorkbench()
-									.getModalDialogShellProvider().getShell(),
+					Dialog dlg = SimpleConfigurePushDialog.getDialog(PlatformUI
+							.getWorkbench().getDisplay().getActiveShell(),
 							localDb);
 					dlg.open();
 				}

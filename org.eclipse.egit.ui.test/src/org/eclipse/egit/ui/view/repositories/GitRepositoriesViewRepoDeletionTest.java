@@ -32,7 +32,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.RepositoryCacheRule;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
@@ -145,9 +144,6 @@ public class GitRepositoriesViewRepoDeletionTest extends
 	@Test
 	public void testRemoveRepositoryRemoveFromCachesBug483664()
 			throws Exception {
-		Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.ALWAYS_USE_STAGING_VIEW, false);
-
 		deleteAllProjects();
 		assertProjectExistence(PROJ1, false);
 		clearView();
@@ -268,9 +264,6 @@ public class GitRepositoriesViewRepoDeletionTest extends
 				configuredRepos.isEmpty());
 		assertEquals("Expected no cached repositories", "[]", results[0]);
 		assertEquals("Expected no IndexDiffCache entries", "[]", results[1]);
-
-		Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.ALWAYS_USE_STAGING_VIEW, true);
 	}
 
 	@Test
@@ -298,10 +291,11 @@ public class GitRepositoriesViewRepoDeletionTest extends
 		refreshAndWait();
 
 		SWTBotTree tree = getOrOpenView().bot().tree();
-		SWTBotTreeItem item = TestUtil.expandAndWait(tree.getAllItems()[0]);
-		item = TestUtil.expandAndWait(item.getNode(
-				UIText.RepositoriesViewLabelProvider_SubmodulesNodeText));
-		item.getItems()[0].select();
+		tree.getAllItems()[0]
+				.expand()
+				.expandNode(
+						UIText.RepositoriesViewLabelProvider_SubmodulesNodeText)
+				.getItems()[0].select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue(DELETE_REPOSITORY_CONTEXT_MENU_LABEL));
 		SWTBotShell shell = bot

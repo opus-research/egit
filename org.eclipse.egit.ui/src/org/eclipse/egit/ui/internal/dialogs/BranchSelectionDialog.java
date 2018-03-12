@@ -70,7 +70,7 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 
 	private FilteredCheckboxTree fTree;
 
-	private List<T> selected = new ArrayList<>();
+	private List<T> selected = new ArrayList<T>();
 
 	private final int style;
 
@@ -212,7 +212,7 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 	}
 
 	private Set<Ref> getLocalBranches(List<T> list) {
-		Set<Ref> branches = new HashSet<>();
+		Set<Ref> branches = new HashSet<Ref>();
 		for (Object o : list) {
 			if (o instanceof Ref) {
 				Ref r = (Ref) o;
