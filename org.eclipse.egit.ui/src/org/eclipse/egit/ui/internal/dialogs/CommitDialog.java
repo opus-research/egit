@@ -768,7 +768,6 @@ public class CommitDialog extends Dialog {
 		}
 
 		applyDialogFont(container);
-		resourceCol.pack();
 		container.pack();
 		return container;
 	}
