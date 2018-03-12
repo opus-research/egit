@@ -25,14 +25,16 @@
 					<iterate
 							ifEmpty="false"
 							operator="and">
-						<adapt type="org.eclipse.jgit.lib.Repository">
+						<and>
 							<not>
-								<test
-										forcePluginActivation="true"
-										property="GitFlowRepository.isInitialized">
-								</test>
+								<adapt type="org.eclipse.jgit.lib.Repository">
+									<test
+											forcePluginActivation="true"
+											property="GitFlowRepository.isInitialized">
+									</test>
+								</adapt>
 							</not>
-						</adapt>
+						</and>
 					</iterate>
 				</visibleWhen>
 			</command>
@@ -200,22 +202,22 @@
 					</or>
 				</iterate>
 			</activeWhen>
-			<!-- <enabledWhen>
+			<enabledWhen>
 				<iterate
 						ifEmpty="false"
 						operator="and">
 					<and>
-						<adapt type="org.eclipse.jgit.lib.Repository">
-							<not>
+						<not>
+							<adapt type="org.eclipse.jgit.lib.Repository">
 								<test
 										forcePluginActivation="true"
 										property="GitFlowRepository.isInitialized">
 								</test>
-							</not>
-						</adapt>
+							</adapt>
+						</not>
 					</and>
 				</iterate>
-			</enabledWhen>-->
+			</enabledWhen>
 		</handler>
 		<handler
 				commandId="org.eclipse.egit.gitflow.ui.command.featureStart">
@@ -604,9 +606,9 @@
 				<instanceof
 						value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
 				</instanceof>
-				<adapt
-						type="org.eclipse.core.resources.IResource">
-				</adapt>
+				<instanceof
+						value="org.eclipse.core.resources.IResource">
+				</instanceof>
 			</or>
 		</definition>
 	</extension>
@@ -616,6 +618,9 @@
 				class="org.eclipse.egit.gitflow.ui.internal.factories.GitFlowAdapterFactory">
 			<adapter type="org.eclipse.jgit.lib.Repository"/>
 		</factory>
+	</extension>
+	<extension
+			point="org.eclipse.core.runtime.adapters">
 		<factory adaptableType="org.eclipse.team.ui.history.IHistoryView"
 				class="org.eclipse.egit.gitflow.ui.internal.factories.GitFlowAdapterFactory">
 			<adapter type="org.eclipse.jgit.lib.Repository"/>
@@ -730,16 +735,19 @@
 					<iterate
 							ifEmpty="false"
 							operator="and">
-						<adapt type="org.eclipse.core.resources.IProject">
-							<adapt type="org.eclipse.jgit.lib.Repository">
-								<not>
+						<and>
+							<instanceof
+									value="org.eclipse.core.resources.IProject">
+							</instanceof>
+							<not>
+								<adapt type="org.eclipse.jgit.lib.Repository">
 									<test
 											forcePluginActivation="true"
 											property="GitFlowRepository.isInitialized">
 									</test>
-								</not>
-							</adapt>
-						</adapt>
+								</adapt>
+							</not>
+						</and>
 					</iterate>
 				</visibleWhen>
 			</command>
