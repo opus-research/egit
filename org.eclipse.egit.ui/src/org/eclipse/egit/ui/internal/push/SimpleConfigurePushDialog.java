@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.SelectUriWizard;
 import org.eclipse.jface.dialogs.Dialog;
@@ -168,18 +169,13 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			allRemotes = new ArrayList<RemoteConfig>();
 		}
 
-		RemoteConfig defaultConfig = null;
 		RemoteConfig configuredConfig = null;
 		for (RemoteConfig config : allRemotes) {
-			if (config.getName().equals(Constants.DEFAULT_REMOTE_NAME))
-				defaultConfig = config;
 			if (remoteName != null && config.getName().equals(remoteName))
 				configuredConfig = config;
 		}
 
-		RemoteConfig configToUse = configuredConfig != null ? configuredConfig
-				: defaultConfig;
-		return configToUse;
+		return configuredConfig;
 	}
 
 	/**
@@ -573,8 +569,13 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 							public void run(IProgressMonitor monitor)
 									throws InvocationTargetException,
 									InterruptedException {
+								int timeout = Activator
+										.getDefault()
+										.getPreferenceStore()
+										.getInt(
+												UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 								PushOperationUI op = new PushOperationUI(
-										repository, config, true);
+										repository, config, timeout, true);
 								try {
 									PushOperationResult result = op
 											.execute(monitor);
@@ -620,9 +621,13 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 								public void run(IProgressMonitor monitor)
 										throws InvocationTargetException,
 										InterruptedException {
+									int timeout = Activator
+											.getDefault()
+											.getPreferenceStore()
+											.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 									PushOperationUI op = new PushOperationUI(
 											repository, config.getName(),
-											false);
+											timeout, false);
 									op.start();
 								}
 							});

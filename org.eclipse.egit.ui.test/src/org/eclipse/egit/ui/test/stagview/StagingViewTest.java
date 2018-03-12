@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
+ * Copyright (C) 2011, 2013 Jens Baumgart <jens.baumgart@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@ import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.common.StagingViewTester;
+import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.test.CommitMessageUtil;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
@@ -28,39 +29,45 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class StagingViewTest extends LocalRepositoryTestCase {
 
 	private static final GitRepositoriesViewTestUtils repoViewUtil = new GitRepositoriesViewTestUtils();
 
-	private static File repositoryFile;
+	private File repositoryFile;
 
-	private static Repository repository;
+	private Repository repository;
 
-	private static SWTBotView repositoriesView;
+	private SWTBotView repositoriesView;
 
-	private static SWTBotTree repoViewTree;
+	private SWTBotTree repoViewTree;
 
-	@BeforeClass
-	public static void setup() throws Exception {
+	@Before
+	public void before() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		repository = lookupRepository(repositoryFile);
 		TestUtil.configureTestCommitterAsUser(repository);
 		Activator.getDefault().getRepositoryUtil()
 				.addConfiguredRepository(repositoryFile);
-		repositoriesView = repoViewUtil.openRepositoriesView(bot);
+		repositoriesView = TestUtil.showView(RepositoriesView.VIEW_ID);
 		repoViewTree = repositoriesView.bot().tree();
+	}
+
+	@After
+	public void after() {
+		Activator.getDefault().getRepositoryUtil().removeDir(repositoryFile);
 	}
 
 	@Test
 	public void testCommitSingleFile() throws Exception {
-		setTestFileContent("I have changed this");
-		new Git(repository).add().addFilepattern(".").call();
 		StagingViewTester stagingViewTester = StagingViewTester
 				.openStagingView();
 		selectRepositoryNode();
+		setTestFileContent("I have changed this");
+		new Git(repository).add().addFilepattern(".").call();
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		stagingViewTester.setAuthor(TestUtil.TESTAUTHOR);
 		stagingViewTester.setCommitter(TestUtil.TESTCOMMITTER);

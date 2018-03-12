@@ -78,6 +78,7 @@ public class GitMoveDeleteHookTest {
 				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
 						.getAbsoluteFile().toString());
 		workspaceSupplement = testUtils.createTempDir("wssupplement");
+		testDirs.add(testUtils.getBaseTempDir());
 		workspace = ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile().getAbsoluteFile();
 	}
 
@@ -90,6 +91,7 @@ public class GitMoveDeleteHookTest {
 		for (File d : testDirs)
 			if (d.exists())
 				FileUtils.delete(d, FileUtils.RECURSIVE | FileUtils.RETRY);
+		SystemReader.setInstance(null);
 	}
 
 	private TestProject initRepoInsideProjectInsideWorkspace() throws IOException,
