@@ -204,15 +204,9 @@ public class RecursiveModelMerger extends RecursiveMerger {
 						modifiedFiles.add(filePath);
 						handledPaths.add(filePath);
 
-						/*
-						 * The merge failed. If some parts of the model were
-						 * auto-mergeable, the model merger told us so through
-						 * GitMergeContext#markAsMerged() (stored within
-						 * #makeInSync). All other components of the logical
-						 * model should be marked as conflicts.
-						 */
-						if (status.getSeverity() != IStatus.OK
-								&& !makeInSync.contains(filePath)) {
+						// If the merge failed, mark all parts of the logical
+						// model as conflicting
+						if (status.getSeverity() != IStatus.OK) {
 							unmergedPaths.add(filePath);
 							mergeResults.put(
 									filePath,

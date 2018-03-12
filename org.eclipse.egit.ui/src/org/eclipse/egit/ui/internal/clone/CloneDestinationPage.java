@@ -57,7 +57,7 @@ import org.eclipse.ui.dialogs.WorkingSetGroup;
  * Wizard page that allows the user entering the location of a repository to be
  * cloned.
  */
-class CloneDestinationPage extends WizardPage {
+public class CloneDestinationPage extends WizardPage {
 
 	private final List<Ref> availableRefs = new ArrayList<Ref>();
 
@@ -94,6 +94,7 @@ class CloneDestinationPage extends WizardPage {
 		setTitle(UIText.CloneDestinationPage_title);
 	}
 
+	@Override
 	public void createControl(final Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NULL);
 		final GridLayout layout = new GridLayout();
@@ -120,6 +121,16 @@ class CloneDestinationPage extends WizardPage {
 			directoryText.setFocus();
 	}
 
+	/**
+	 * @param repositorySelection
+	 *            selection of remote repository made by user
+	 * @param availableRefs
+	 *            all available refs
+	 * @param branches
+	 *            branches selected to be cloned
+	 * @param head
+	 *            HEAD in source repository
+	 */
 	public void setSelection(RepositorySelection repositorySelection, List<Ref> availableRefs, List<Ref> branches, Ref head){
 		this.availableRefs.clear();
 		this.availableRefs.addAll(availableRefs);
@@ -154,6 +165,7 @@ class CloneDestinationPage extends WizardPage {
 		directoryText = new Text(p, SWT.BORDER);
 		directoryText.setLayoutData(createFieldGridData());
 		directoryText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(final ModifyEvent e) {
 				checkPage();
 			}
@@ -161,6 +173,7 @@ class CloneDestinationPage extends WizardPage {
 		final Button b = new Button(p, SWT.PUSH);
 		b.setText(UIText.CloneDestinationPage_browseButton);
 		b.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				final FileDialog d;
 
@@ -210,6 +223,7 @@ class CloneDestinationPage extends WizardPage {
 		remoteText.setText(Constants.DEFAULT_REMOTE_NAME);
 		remoteText.setLayoutData(createFieldGridData());
 		remoteText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -227,6 +241,7 @@ class CloneDestinationPage extends WizardPage {
 				.getPreferenceStore()
 				.getBoolean(UIPreferences.CLONE_WIZARD_IMPORT_PROJECTS));
 		importProjectsButton.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Activator
 						.getDefault()
@@ -388,7 +403,11 @@ class CloneDestinationPage extends WizardPage {
 		clonedRemote = getRemote();
 	}
 
-	boolean cloneSettingsChanged() {
+	/**
+	 * @return whether user updated clone settings
+	 * @since 4.0.0
+	 */
+	public boolean cloneSettingsChanged() {
 		boolean cloneSettingsChanged = false;
 		if (clonedDestination == null || !clonedDestination.equals(getDestinationFile()) ||
 				clonedInitialBranch == null || !clonedInitialBranch.equals(getInitialBranch()) ||

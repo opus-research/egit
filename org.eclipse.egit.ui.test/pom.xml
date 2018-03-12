@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>3.7.0-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.ui.test</artifactId>
@@ -82,23 +82,23 @@
               </requirement>
               <requirement>
                 <type>eclipse-feature</type>
-                <id>org.eclipse.jgit.java7</id>
-                <versionRange>0.0.0</versionRange>
-              </requirement>
-              <requirement>
-                <type>eclipse-feature</type>
                 <id>org.eclipse.egit</id>
                 <versionRange>0.0.0</versionRange>
               </requirement>
               <requirement>
                 <type>eclipse-feature</type>
+                <id>org.eclipse.e4.rcp</id>
+                <versionRange>0.0.0</versionRange>
+              </requirement>
+              <requirement>
+                <type>eclipse-feature</type>
                 <id>org.eclipse.pde</id>
-                <versionRange>${platform-version}</versionRange>
+                <versionRange>0.0.0</versionRange>
               </requirement>
               <requirement>
                 <type>eclipse-feature</type>
                 <id>org.eclipse.cvs</id>
-                <versionRange>[1.1.2,2.0.0)</versionRange>
+                <versionRange>0.0.0</versionRange>
               </requirement>
             </extraRequirements>
           </dependency-resolution>
