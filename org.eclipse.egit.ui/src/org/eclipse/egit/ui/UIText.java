@@ -2551,6 +2551,9 @@ public class UIText extends NLS {
 	public static String WindowCachePreferencePage_packedGitMMAP;
 
 	/** */
+	public static String WindowCachePreferencePage_streamFileThreshold;
+
+	/** */
 	public static String BasicConfigurationDialog_DialogMessage;
 
 	/** */
@@ -2582,6 +2585,24 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchOperationUI_DetachedHeadMessage;
+
+	/** */
+	public static String BranchRenameDialog_Message;
+
+	/** */
+	public static String BranchRenameDialog_NewNameLabel;
+
+	/** */
+	public static String BranchRenameDialog_RenameExceptionMessage;
+
+	/** */
+	public static String BranchRenameDialog_Title;
+
+	/** */
+	public static String BranchRenameDialog_WindowTitle;
+
+	/** */
+	public static String BranchRenameDialog_WrongPrefixErrorMessage;
 
 	/** */
 	public static String BranchResultDialog_buttonCommit;
@@ -3542,6 +3563,9 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_OpenCommitLabel;
 
 	/** */
+	public static String CommitGraphTable_RenameBranchMenuLabel;
+
+	/** */
 	public static String CommitGraphTable_UnableToCreatePatch;
 
 	/** */
@@ -3750,6 +3774,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RenameBranchDialog_WindowTitle;
+
+	/** */
+	public static String RenameBranchOnCommitHandler_SelectBranchDialogMessage;
+
+	/** */
+	public static String RenameBranchOnCommitHandler_SelectBranchDialogTitle;
 
 	/** */
 	public static String RevertFailureDialog_Message;
