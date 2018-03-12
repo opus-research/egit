@@ -11,7 +11,9 @@
 package org.eclipse.egit.ui.internal.rebase;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
@@ -36,8 +38,9 @@ import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
+import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceResources;
@@ -75,10 +78,10 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
-import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -138,7 +141,7 @@ public class RebaseInteractiveView extends ViewPart implements
 	/** these columns are dynamically resized to fit their contents */
 	private TreeViewerColumn[] dynamicColumns;
 
-	private RebasePlanIndexer planIndexer;
+	private List<PlanContextMenuAction> contextMenuItems;
 
 	/**
 	 * View for handling interactive rebase
@@ -205,41 +208,10 @@ public class RebaseInteractiveView extends ViewPart implements
 				selectionChangedListener);
 		if (currentPlan != null)
 			currentPlan.removeRebaseInteractivePlanChangeListener(this);
-
-		if (planIndexer != null)
-			planIndexer.dispose();
 	}
 
 	@Override
 	public void createPartControl(Composite parent) {
-		class InverseHistoryAction extends Action {
-			private boolean reversed;
-
-			public InverseHistoryAction() {
-				setText("Display in reverse order"); //$NON-NLS-1$
-
-				reversed = RebaseInteractivePreferences.isOrderReversed();
-				setChecked(reversed);
-			}
-
-			@Override
-			public void run() {
-				reversed = !reversed;
-
-				RebaseInteractivePreferences.setOrderReversed(reversed);
-				setChecked(reversed);
-
-				TreeItem topmostVisibleItem = planTreeViewer.getTree()
-						.getTopItem();
-				refreshUI();
-				if (topmostVisibleItem != null)
-					planTreeViewer.getTree().showItem(topmostVisibleItem);
-			}
-		}
-
-		IMenuManager menuMngr = getViewSite().getActionBars().getMenuManager();
-		menuMngr.add(new InverseHistoryAction());
-
 		GridLayoutFactory.fillDefaults().applyTo(parent);
 		final FormToolkit toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
@@ -582,18 +554,6 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn orderColumn = createColumn("Order", 55); //$NON-NLS-1$
-		orderColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
-			@Override
-			public String getText(Object element) {
-				if (element instanceof PlanElement) {
-					PlanElement planLine = (PlanElement) element;
-					return Integer.toString(planIndexer.indexOf(planLine) + 1);
-				}
-				return super.getText(element);
-			}
-		});
-
 		TreeViewerColumn actionColumn = createColumn(headings[1], 90);
 		actionColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 
@@ -710,7 +670,6 @@ public class RebaseInteractiveView extends ViewPart implements
 						return super.getText(element);
 					}
 				});
-
 		dynamicColumns = new TreeViewerColumn[] { commitMessageColumn,
 				authorColumn, authoredDateColumn, committerColumn,
 				commitDateColumn };
@@ -749,12 +708,7 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		if (currentPlan != null)
 			currentPlan.removeRebaseInteractivePlanChangeListener(this);
-
-		if (planIndexer != null)
-			planIndexer.dispose();
-
 		currentPlan = RebaseInteractivePlan.getPlan(repository);
-		planIndexer = new RebasePlanIndexer(currentPlan);
 		currentPlan.addRebaseInteractivePlanChangeListener(this);
 		form.setText(getRepositoryName(repository));
 		refresh();
@@ -765,13 +719,8 @@ public class RebaseInteractiveView extends ViewPart implements
 			return;
 		asyncExec(new Runnable() {
 			public void run() {
-				planTreeViewer.getTree().setRedraw(false);
-				try {
-					planTreeViewer.setInput(currentPlan);
-					refreshUI();
-				} finally {
-					planTreeViewer.getTree().setRedraw(true);
-				}
+				planTreeViewer.setInput(currentPlan);
+				refreshUI();
 			}
 		});
 
@@ -821,16 +770,58 @@ public class RebaseInteractiveView extends ViewPart implements
 			skipItem.setEnabled(true);
 			abortItem.setEnabled(true);
 		}
-
-		if (RebaseInteractivePreferences.isOrderReversed()) {
-			Tree tree = planTreeViewer.getTree();
-			TreeItem bottomItem = tree.getItem(tree.getItemCount() - 1);
-			tree.showItem(bottomItem);
-		}
 	}
 
-	private void createPopupMenu(TreeViewer planViewer) {
-		// TODO create popup menu
+	private void createPopupMenu(final TreeViewer planViewer) {
+		createContextMenuItems(planViewer);
+
+		MenuManager manager = new MenuManager();
+		manager.addMenuListener(new IMenuListener() {
+			public void menuAboutToShow(IMenuManager menuManager) {
+				boolean selectionNotEmpty = !planViewer.getSelection()
+						.isEmpty();
+				boolean rebaseNotStarted = !currentPlan
+						.hasRebaseBeenStartedYet();
+				boolean menuEnabled = selectionNotEmpty && rebaseNotStarted;
+				for (PlanContextMenuAction item : contextMenuItems)
+					item.setEnabled(menuEnabled);
+			}
+		});
+
+		for (PlanContextMenuAction item : contextMenuItems)
+			manager.add(item);
+
+		Menu menu = manager.createContextMenu(planViewer.getControl());
+		planViewer.getControl().setMenu(menu);
+	}
+
+	private void createContextMenuItems(final TreeViewer planViewer) {
+		contextMenuItems = new ArrayList<PlanContextMenuAction>();
+
+		contextMenuItems.add(new PlanContextMenuAction(
+				UIText.RebaseInteractiveStepActionToolBarProvider_PickText,
+				UIIcons.CHERRY_PICK, RebaseInteractivePlan.ElementAction.PICK,
+				planViewer, actionToolBarProvider));
+		contextMenuItems.add(new PlanContextMenuAction(
+				UIText.RebaseInteractiveStepActionToolBarProvider_SkipText,
+				UIIcons.REBASE_SKIP, RebaseInteractivePlan.ElementAction.SKIP,
+				planViewer, actionToolBarProvider));
+		contextMenuItems.add(new PlanContextMenuAction(
+				UIText.RebaseInteractiveStepActionToolBarProvider_EditText,
+				UIIcons.EDITCONFIG, RebaseInteractivePlan.ElementAction.EDIT,
+				planViewer, actionToolBarProvider));
+		contextMenuItems.add(new PlanContextMenuAction(
+				UIText.RebaseInteractiveStepActionToolBarProvider_SquashText,
+				UIIcons.SQUASH, RebaseInteractivePlan.ElementAction.SQUASH,
+				planViewer, actionToolBarProvider));
+		contextMenuItems.add(new PlanContextMenuAction(
+				UIText.RebaseInteractiveStepActionToolBarProvider_FixupText,
+				UIIcons.FIXUP, RebaseInteractivePlan.ElementAction.FIXUP,
+				planViewer, actionToolBarProvider));
+		contextMenuItems.add(new PlanContextMenuAction(
+				UIText.RebaseInteractiveStepActionToolBarProvider_RewordText,
+				UIIcons.REWORD, RebaseInteractivePlan.ElementAction.REWORD,
+				planViewer, actionToolBarProvider));
 	}
 
 	private static GitDateFormatter getNewDateFormatter() {
