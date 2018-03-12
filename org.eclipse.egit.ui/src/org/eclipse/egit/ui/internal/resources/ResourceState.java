@@ -34,8 +34,7 @@ public class ResourceState implements IResourceState {
 	/**
 	 * Staged state of the resource
 	 */
-	@NonNull
-	private StagingState staged = StagingState.NOT_STAGED;
+	private Staged staged = Staged.NOT_STAGED;
 
 	/**
 	 * Flag indicating whether or not the resource has merge conflicts
@@ -63,13 +62,8 @@ public class ResourceState implements IResourceState {
 	}
 
 	@Override
-	public StagingState getStagingState() {
+	public Staged staged() {
 		return staged;
-	}
-
-	@Override
-	public final boolean isStaged() {
-		return staged != StagingState.NOT_STAGED;
 	}
 
 	@Override
@@ -88,7 +82,7 @@ public class ResourceState implements IResourceState {
 	 * @param staged
 	 *            value to set.
 	 */
-	protected void setStagingState(@NonNull StagingState staged) {
+	protected void setStaged(@NonNull Staged staged) {
 		this.staged = staged;
 	}
 

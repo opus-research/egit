@@ -7,7 +7,6 @@
  * Copyright (C) 2008, Tor Arne Vestbø <torarnv@gmail.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Christian Halstrick <christian.halstrick@sap.com>
- * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -59,7 +58,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			setDirty(baseState.isDirty());
 			setConflicts(baseState.hasConflicts());
 			setAssumeValid(baseState.isAssumeValid());
-			setStagingState(baseState.getStagingState());
+			setStaged(baseState.staged());
 			if (resource.getType() == IResource.PROJECT) {
 				// We only need this very expensive info for project decoration
 				repositoryName = DecoratableResourceHelper
@@ -84,7 +83,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 				+ (isIgnored() ? ", ignored" : "") //$NON-NLS-1$ //$NON-NLS-2$
 				+ (isDirty() ? ", dirty" : "") //$NON-NLS-1$//$NON-NLS-2$
 				+ (hasConflicts() ? ",conflicts" : "")//$NON-NLS-1$//$NON-NLS-2$
-				+ ", staged=" + getStagingState() //$NON-NLS-1$
+				+ ", staged=" + staged() //$NON-NLS-1$
 				+ "]"; //$NON-NLS-1$
 	}
 

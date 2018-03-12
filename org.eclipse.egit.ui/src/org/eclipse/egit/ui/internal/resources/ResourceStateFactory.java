@@ -34,7 +34,7 @@ import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.internal.resources.IResourceState.StagingState;
+import org.eclipse.egit.ui.internal.resources.IResourceState.Staged;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Repository;
@@ -44,15 +44,13 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class ResourceStateFactory {
 
-	@NonNull
-	private static final ResourceStateFactory INSTANCE = new ResourceStateFactory();
+	private static ResourceStateFactory INSTANCE = new ResourceStateFactory();
 
 	/**
 	 * Retrieves the singleton instance of the {@link ResourceStateFactory}.
 	 *
 	 * @return the factory singleton
 	 */
-	@NonNull
 	public static ResourceStateFactory getInstance() {
 		return INSTANCE;
 	}
@@ -109,8 +107,7 @@ public class ResourceStateFactory {
 	}
 
 	/**
-	 * Computes an {@link IResourceState} for the given {@link IResource} from
-	 * the given {@link IndexDiffData}.
+	 * Computes an {@link IResourceState} for the given {@link IResource}.
 	 *
 	 * @param indexDiffData
 	 *            to compute the state from
@@ -118,7 +115,6 @@ public class ResourceStateFactory {
 	 *            to get the state of
 	 * @return the state
 	 */
-	@NonNull
 	public IResourceState get(@NonNull IndexDiffData indexDiffData,
 			@NonNull IResource resource) {
 		ResourceState result = new ResourceState();
@@ -160,13 +156,13 @@ public class ResourceStateFactory {
 		Set<String> removed = indexDiffData.getRemoved();
 		Set<String> changed = indexDiffData.getChanged();
 		if (added.contains(repoRelativePath)) {
-			state.setStagingState(StagingState.ADDED);
+			state.setStaged(Staged.ADDED);
 		} else if (removed.contains(repoRelativePath)) {
-			state.setStagingState(StagingState.REMOVED);
+			state.setStaged(Staged.REMOVED);
 		} else if (changed.contains(repoRelativePath)) {
-			state.setStagingState(StagingState.MODIFIED);
+			state.setStaged(Staged.MODIFIED);
 		} else {
-			state.setStagingState(StagingState.NOT_STAGED);
+			state.setStaged(Staged.NOT_STAGED);
 		}
 
 		// conflicting
@@ -215,9 +211,9 @@ public class ResourceStateFactory {
 		changed.addAll(indexDiffData.getAdded());
 		changed.addAll(indexDiffData.getRemoved());
 		if (containsPrefix(changed, repoRelativePath)) {
-			state.setStagingState(StagingState.MODIFIED);
+			state.setStaged(Staged.MODIFIED);
 		} else {
-			state.setStagingState(StagingState.NOT_STAGED);
+			state.setStaged(Staged.NOT_STAGED);
 		}
 		// conflicting
 		Set<String> conflicting = indexDiffData.getConflicting();

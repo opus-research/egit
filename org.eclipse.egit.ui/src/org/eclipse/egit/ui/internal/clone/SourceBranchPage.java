@@ -47,7 +47,6 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -360,22 +359,15 @@ class SourceBranchPage extends WizardPage {
 		final String masterBranchRef = Constants.R_HEADS + Constants.MASTER;
 		for (final Ref r : listRemoteOp.getRemoteRefs()) {
 			final String n = r.getName();
-			if (!n.startsWith(Constants.R_HEADS)) {
+			if (!n.startsWith(Constants.R_HEADS))
 				continue;
-			}
 			availableRefs.add(r);
-			if (idHEAD == null || headIsMaster) {
+			if (idHEAD == null || headIsMaster)
 				continue;
-			}
-			ObjectId objectId = r.getObjectId();
-			if (objectId == null) {
-				continue;
-			}
-			if (objectId.equals(idHEAD.getObjectId())) {
+			if (r.getObjectId().equals(idHEAD.getObjectId())) {
 				headIsMaster = masterBranchRef.equals(r.getName());
-				if (head == null || headIsMaster) {
+				if (head == null || headIsMaster)
 					head = r;
-				}
 			}
 		}
 		Collections.sort(availableRefs, new Comparator<Ref>() {
