@@ -32,7 +32,6 @@ import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
@@ -141,9 +140,9 @@ public abstract class GitRepositoriesViewTestBase extends
 		untracked.addAll(Arrays.asList(commitables));
 		// commit to stable
 		CommitOperation op = new CommitOperation(commitables,
-				untracked, "Test Author <test.author@test.com>",
-				"Test Committer <test.commiter@test.com>",
-				"Initial commit");
+				new ArrayList<IFile>(), untracked,
+				"Test Author <test.author@test.com>",
+				"Test Committer <test.commiter@test.com>", "Initial commit");
 		op.execute(null);
 
 		// now create a stable branch (from master)
@@ -237,7 +236,8 @@ public abstract class GitRepositoriesViewTestBase extends
 
 	protected void assertEmpty() throws Exception {
 		final SWTBotView view = getOrOpenView();
-		view.bot().label(UIText.RepositoriesView_messsageEmpty);
+		final SWTBotTreeItem[] items = view.bot().tree().getAllItems();
+		assertTrue("Tree should have no items", items.length == 0);
 	}
 
 	protected void refreshAndWait() throws Exception {

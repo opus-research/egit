@@ -15,9 +15,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -32,6 +35,7 @@ import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.events.IndexChangedListener;
 import org.eclipse.jgit.events.RefsChangedEvent;
@@ -42,6 +46,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.Team;
 
 /**
  * This class caches the {@link IndexDiff} for a given repository. The cache
@@ -50,6 +55,8 @@ import org.eclipse.osgi.util.NLS;
  *
  */
 public class IndexDiffCacheEntry {
+
+	private static final String GITIGNORE_NAME = ".gitignore"; //$NON-NLS-1$
 
 	private static final int RESOURCE_LIST_UPDATE_LIMIT = 1000;
 
@@ -65,6 +72,15 @@ public class IndexDiffCacheEntry {
 	private Set<IndexDiffChangedListener> listeners = new HashSet<IndexDiffChangedListener>();
 
 	private IResourceChangeListener resourceChangeListener;
+
+	/**
+	 * Bit-mask describing interesting changes for IResourceChangeListener
+	 * events
+	 */
+	private static int INTERESTING_CHANGES = IResourceDelta.CONTENT
+			| IResourceDelta.MOVED_FROM | IResourceDelta.MOVED_TO
+			| IResourceDelta.OPEN | IResourceDelta.REPLACED
+			| IResourceDelta.TYPE;
 
 	/**
 	 * @param repository
@@ -170,7 +186,7 @@ public class IndexDiffCacheEntry {
 			private String getTraceMessage(long time) {
 				return NLS
 						.bind("\nUpdated IndexDiffData in {0} ms\nReason: {1}\nRepository: {2}\n", //$NON-NLS-1$
-						new Object[] { Long.valueOf(time), trigger,
+						new Object[] { new Long(time), trigger,
 								repository.getWorkTree().getName() });
 			}
 
@@ -212,7 +228,7 @@ public class IndexDiffCacheEntry {
 	}
 
 	private void scheduleUpdateJob(final Collection<String> filesToUpdate,
-			final Collection<IResource> resourcesToUpdate) {
+			final Collection<IFile> fileResourcesToUpdate) {
 		if (!checkRepository())
 			return;
 		Job job = new Job(getReloadJobName()) {
@@ -225,7 +241,7 @@ public class IndexDiffCacheEntry {
 				try {
 					long startTime = System.currentTimeMillis();
 					IndexDiffData result = calcIndexDiffData(monitor,
-							getName(), filesToUpdate, resourcesToUpdate);
+							getName(), filesToUpdate, fileResourcesToUpdate);
 					if (monitor.isCanceled())
 						return Status.CANCEL_STATUS;
 					indexDiffData = result;
@@ -234,8 +250,8 @@ public class IndexDiffCacheEntry {
 						StringBuilder message = new StringBuilder(
 								NLS.bind(
 										"Updated IndexDiffData based on resource list (length = {0}) in {1} ms\n", //$NON-NLS-1$
-										Integer.valueOf(resourcesToUpdate
-												.size()), Long.valueOf(time)));
+										new Integer(fileResourcesToUpdate
+												.size()), new Long(time)));
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
 								message.append(indexDiffData.toString())
@@ -268,7 +284,7 @@ public class IndexDiffCacheEntry {
 
 	private IndexDiffData calcIndexDiffData(IProgressMonitor monitor,
 			String jobName, Collection<String> filesToUpdate,
-			Collection<IResource> resourcesToUpdate) {
+			Collection<IFile> fileResourcesToUpdate) {
 		EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(
 				monitor);
 		final IndexDiff diffForChangedResources;
@@ -284,7 +300,7 @@ public class IndexDiffCacheEntry {
 			throw new RuntimeException(e);
 		}
 		return new IndexDiffData(indexDiffData, filesToUpdate,
-				resourcesToUpdate, diffForChangedResources);
+				fileResourcesToUpdate, diffForChangedResources);
 	}
 
 	private void notifyListeners() {
@@ -322,21 +338,65 @@ public class IndexDiffCacheEntry {
 	private void createResourceChangeListener() {
 		resourceChangeListener = new IResourceChangeListener() {
 			public void resourceChanged(IResourceChangeEvent event) {
-				GitResourceDeltaVisitor visitor = new GitResourceDeltaVisitor(repository);
+				final Collection<String> filesToUpdate = new HashSet<String>();
+				final Collection<IFile> fileResourcesToUpdate = new HashSet<IFile>();
+				final boolean[] gitIgnoreChanged = new boolean[1];
+				gitIgnoreChanged[0] = false;
+
 				try {
-					event.getDelta().accept(visitor);
+					event.getDelta().accept(new IResourceDeltaVisitor() {
+						public boolean visit(IResourceDelta delta)
+								throws CoreException {
+							final IResource resource = delta.getResource();
+							// Don't include ignored resources
+							if (Team.isIgnoredHint(resource))
+								return false;
+
+							// If the file has changed but not in a way that we
+							// care about (e.g. marker changes to files) then
+							// ignore
+							if (delta.getKind() == IResourceDelta.CHANGED
+									&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
+								return true;
+
+							// skip any non-FILE resources
+							if (resource.getType() != IResource.FILE)
+								return true;
+
+							// If the resource is not part of a project under
+							// Git revision control
+							final RepositoryMapping mapping = RepositoryMapping
+									.getMapping(resource);
+							if (mapping == null
+									|| mapping.getRepository() != repository)
+								// Ignore the change
+								return true;
+
+							if (resource.getName().equals(GITIGNORE_NAME)) {
+								gitIgnoreChanged[0] = true;
+								return false;
+							}
+
+							String repoRelativePath = mapping
+									.getRepoRelativePath(resource);
+							filesToUpdate.add(repoRelativePath);
+							fileResourcesToUpdate.add((IFile) resource);
+
+							return true;
+						}
+					});
 				} catch (CoreException e) {
 					Activator.logError(e.getMessage(), e);
 					return;
 				}
-				Collection<String> filesToUpdate = visitor.getFilesToUpdate();
-				if (visitor.getGitIgnoreChanged())
+
+				if (gitIgnoreChanged[0])
 					scheduleReloadJob("A .gitignore changed"); //$NON-NLS-1$
 				else if (indexDiffData == null)
 					scheduleReloadJob("Resource changed, no diff available"); //$NON-NLS-1$
 				else if (!filesToUpdate.isEmpty())
 					if (filesToUpdate.size() < RESOURCE_LIST_UPDATE_LIMIT)
-						scheduleUpdateJob(filesToUpdate, visitor.getResourcesToUpdate());
+						scheduleUpdateJob(filesToUpdate, fileResourcesToUpdate);
 					else
 						// Calculate new IndexDiff if too many resources changed
 						// This happens e.g. when a project is opened
