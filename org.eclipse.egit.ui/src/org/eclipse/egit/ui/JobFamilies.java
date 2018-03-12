@@ -110,11 +110,6 @@ public class JobFamilies {
 	public static final Object REMOVE_FROM_INDEX = new Object();
 
 	/**
-	 * Updates staging view repository on selection change
-	 */
-	public static final Object UPDATE_SELECTION = new Object();
-
-	/**
 	 * Cherry pick commit job
 	 */
 	public static final Object CHERRY_PICK = new Object();
@@ -128,11 +123,6 @@ public class JobFamilies {
 	 * Reword commit job
 	 */
 	public static final Object REWORD = new Object();
-
-	/**
-	 * Edit commit job
-	 */
-	public static final Object EDIT = new Object();
 
 	/**
 	 * Revert commit job

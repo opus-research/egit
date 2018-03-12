@@ -150,13 +150,13 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	public void pushWithRemoteUpstreamConfiguration() throws Exception {
+	public void pushWithExistingUpstreamConfiguration() throws Exception {
 		checkoutNewLocalBranch("foo");
 		// Existing configuration
 		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
 				"foo", ConfigConstants.CONFIG_KEY_REMOTE, "fetch");
 		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				"foo", ConfigConstants.CONFIG_KEY_MERGE, "refs/heads/foo-on-remote");
+				"foo", ConfigConstants.CONFIG_KEY_MERGE, "refs/heads/foo");
 		repository.getConfig().setBoolean(
 				ConfigConstants.CONFIG_BRANCH_SECTION, "foo",
 				ConfigConstants.CONFIG_KEY_REBASE, true);
@@ -168,7 +168,6 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 		PushBranchWizardTester wizard = PushBranchWizardTester.startWizard(
 				selectProject(), "foo");
 		wizard.selectRemote("fetch");
-		wizard.assertBranchName("foo-on-remote");
 		wizard.assertRebaseSelected();
 		assertFalse(wizard.isUpstreamConfigOverwriteWarningShown());
 		wizard.selectMerge();
@@ -178,41 +177,9 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 		wizard.next();
 		wizard.finish();
 
-		ObjectId remoteId = remoteRepository.resolve("foo-on-remote");
-		ObjectId localId = repository.resolve("foo");
-		assertEquals(localId, remoteId);
-
+		assertBranchPushed("foo", remoteRepository);
 		// Still configured
-		assertBranchConfig("foo", "fetch", "refs/heads/foo-on-remote", "true");
-	}
-
-	@Test
-	public void pushWithLocalUpstreamConfiguration() throws Exception {
-		checkoutNewLocalBranch("foo");
-		// Existing configuration
-		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				"foo", ConfigConstants.CONFIG_KEY_REMOTE, ".");
-		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				"foo", ConfigConstants.CONFIG_KEY_MERGE, "refs/heads/master");
-
-		PushBranchWizardTester wizard = PushBranchWizardTester.startWizard(
-				selectProject(), "foo");
-		wizard.selectRemote("fetch");
-		wizard.assertBranchName("foo");
-		wizard.assertMergeSelected();
-		assertTrue(wizard.isUpstreamConfigOverwriteWarningShown());
-		wizard.deselectConfigureUpstream();
-		assertFalse(wizard.isUpstreamConfigOverwriteWarningShown());
-		wizard.selectMerge();
-		wizard.next();
-		wizard.finish();
-
-		ObjectId remoteId = remoteRepository.resolve("foo");
-		ObjectId localId = repository.resolve("foo");
-		assertEquals(localId, remoteId);
-
-		// Newly configured
-		assertBranchConfig("foo", "fetch", "refs/heads/foo", null);
+		assertBranchConfig("foo", "fetch", "refs/heads/foo", "true");
 	}
 
 	private void removeExistingRemotes() throws IOException {
@@ -238,7 +205,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	private Repository createRemoteRepository() throws IOException {
 		File gitDir = new File(getTestDirectory(), "pushbranchremote");
 		Repository repo = FileRepositoryBuilder.create(gitDir);
-		repo.create(true);
+		repo.create();
 		assertTrue(repo.isBare());
 		return repo;
 	}

@@ -125,16 +125,11 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	/** A folder obtained by checking in a project without .project */
 	protected static final String PROJ2 = "ProjectWithoutDotProject";
 
-	protected static final String FOLDER = "folder";
-
 	protected static final String FILE1 = "test.txt";
-
-	protected static final String FILE1_PATH = PROJ1 + "/" + FOLDER + "/"
-			+ FILE1;
 
 	protected static final String FILE2 = "test2.txt";
 
-
+	protected static final String FOLDER = "folder";
 
 	protected final static TestUtils testUtils = new TestUtils();
 
@@ -309,7 +304,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		Repository myRepository = lookupRepository(repositoryDir);
 		File gitDir = new File(testDirectory, REPO2);
 		Repository myRemoteRepository = FileRepositoryBuilder.create(gitDir);
-		myRemoteRepository.create(true);
+		myRemoteRepository.create();
 		// double-check that this is bare
 		assertTrue(myRemoteRepository.isBare());
 
@@ -558,7 +553,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (!prj.isAccessible())
 			throw new IllegalStateException("No project found");
 		IFile file = prj.getFile(new Path("folder/test.txt"));
-		file.refreshLocal(0, null);
 		file.setContents(new ByteArrayInputStream(newContent.getBytes(prj
 				.getDefaultCharset())), 0, null);
 	}

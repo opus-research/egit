@@ -10,13 +10,13 @@ package org.eclipse.egit.core;
 import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -99,42 +99,8 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	 * @param thr The exception through which we noticed the error
 	 */
 	public static void logError(final String message, final Throwable thr) {
-		getDefault().getLog().log(error(message, thr));
-	}
-
-	/**
-	 * Log an info message for this plug-in
-	 *
-	 * @param message
-	 */
-	public static void logInfo(final String message) {
 		getDefault().getLog().log(
-				new Status(IStatus.INFO, getPluginId(), 0, message, null));
-	}
-
-	/**
-	 * Utility to create a warning status for this plug-in.
-	 *
-	 * @param message
-	 *            User comprehensible message
-	 * @param thr
-	 *            cause
-	 * @return an initialized warning status
-	 */
-	public static IStatus warning(final String message, final Throwable thr) {
-		return new Status(IStatus.WARNING, getPluginId(), 0, message, thr);
-	}
-
-	/**
-	 * Utility method to log warnings for this plug-in.
-	 *
-	 * @param message
-	 *            User comprehensible message
-	 * @param thr
-	 *            The exception through which we noticed the warning
-	 */
-	public static void logWarning(final String message, final Throwable thr) {
-		getDefault().getLog().log(warning(message, thr));
+				new Status(IStatus.ERROR, getPluginId(), 0, message, thr));
 	}
 
 	/**
@@ -352,7 +318,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			if (provider != null)
 				return false;
 			RepositoryFinder f = new RepositoryFinder(project);
-			f.setFindInChildren(false);
 			Collection<RepositoryMapping> mappings = f.find(new NullProgressMonitor());
 			if (mappings.size() != 1)
 				return false;
@@ -417,7 +382,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 				if (d == null || !autoIgnoreDerived())
 					return;
 
-				final Set<IPath> toBeIgnored = new LinkedHashSet<IPath>();
+				final List<IPath> toBeIgnored = new ArrayList<IPath>();
 
 				d.accept(new IResourceDeltaVisitor() {
 

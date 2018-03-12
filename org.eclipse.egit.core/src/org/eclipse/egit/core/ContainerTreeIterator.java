@@ -13,7 +13,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +27,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
@@ -283,7 +281,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		final IResource rsrc;
 		final boolean hasInheritedResourceFilters;
 
-		private final FileMode fileMode;
+		private final FileMode mode;
 
 		private long length = -1;
 
@@ -294,9 +292,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			FileMode mode = null;
 			try {
 				File file = asFile();
-				if (file == null)
-					mode = FileMode.MISSING;
-				else if (FS.DETECTED.supportsSymlinks()
+				if (FS.DETECTED.supportsSymlinks() && file != null
 						&& FS.DETECTED.isSymLink(file))
 					mode = FileMode.SYMLINK;
 				else {
@@ -325,12 +321,12 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			} catch (IOException e) {
 				mode = FileMode.MISSING;
 			}
-			this.fileMode = mode;
+			this.mode = mode;
 		}
 
 		@Override
 		public FileMode getMode() {
-			return fileMode;
+			return mode;
 		}
 
 		@Override
@@ -344,12 +340,11 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		@Override
 		public long getLength() {
 			if (length < 0)
-				if (rsrc instanceof IFile || fileMode == FileMode.SYMLINK
-						|| fileMode == FileMode.GITLINK) {
+				if (rsrc instanceof IFile || mode == FileMode.SYMLINK) {
 					try {
 						File file = asFile();
 						if (file != null)
-							length = FS.DETECTED.length(file);
+							length = FS.DETECTED.length(asFile());
 						else
 							length = 0;
 					} catch (IOException e) {
@@ -362,12 +357,9 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 		@Override
 		public long getLastModified() {
-			if (fileMode == FileMode.SYMLINK) {
+			if (mode == FileMode.SYMLINK) {
 				try {
-					File file = asFile();
-					if (file != null)
-						return FS.DETECTED.lastModified(file);
-					return 0;
+					return FS.DETECTED.lastModified(asFile());
 				} catch (IOException e) {
 					return 0;
 				}
@@ -377,13 +369,9 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 		@Override
 		public InputStream openInputStream() throws IOException {
-			if (fileMode == FileMode.SYMLINK) {
-				File file = asFile();
-				if (file == null)
-					throw new IOException(MessageFormat.format(
-							CoreText.ContainerTreeIterator_DeletedFile, rsrc));
-				return new ByteArrayInputStream(FS.DETECTED.readSymLink(file)
-						.getBytes(Constants.CHARACTER_ENCODING));
+			if (mode == FileMode.SYMLINK) {
+				return new ByteArrayInputStream(FS.DETECTED.readSymLink(
+						asFile()).getBytes(Constants.CHARACTER_ENCODING));
 			} else {
 				if (rsrc.getType() == IResource.FILE)
 					try {

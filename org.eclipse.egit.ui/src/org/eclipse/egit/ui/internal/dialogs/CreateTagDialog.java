@@ -300,7 +300,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 		Job job = new Job(UIText.CreateTagDialog_GetTagJobName) {
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.FILL_TAG_LIST.equals(family))
+				if (family.equals(JobFamilies.FILL_TAG_LIST))
 					return true;
 				return super.belongsTo(family);
 			}
@@ -630,19 +630,22 @@ public class CreateTagDialog extends TitleAreaDialog {
 	}
 
 	private void setExistingTagFromText(String tagName) {
+		RevWalk revWalk = null;
 		try {
 			ObjectId tagObjectId = repo.resolve(Constants.R_TAGS + tagName);
 			if (tagObjectId != null) {
-				try (RevWalk revWalk = new RevWalk(repo)) {
-					RevObject tagObject = revWalk.parseAny(tagObjectId);
-					setExistingTag(tagObject);
-				}
+				revWalk = new RevWalk(repo);
+				RevObject tagObject = revWalk.parseAny(tagObjectId);
+				setExistingTag(tagObject);
 				return;
 			}
 		} catch (IOException e) {
-			// ignore
+			// See below
 		} catch (RevisionSyntaxException e) {
-			// ignore
+			// See below
+		} finally {
+			if (revWalk != null)
+				revWalk.release();
 		}
 		setNoExistingTag();
 	}
@@ -671,7 +674,8 @@ public class CreateTagDialog extends TitleAreaDialog {
 	}
 
 	private void getRevCommits(Collection<RevCommit> commits) {
-		try (final RevWalk revWalk = new RevWalk(repo)) {
+		final RevWalk revWalk = new RevWalk(repo);
+		try {
 			revWalk.sort(RevSort.COMMIT_TIME_DESC, true);
 			revWalk.sort(RevSort.BOUNDARY, true);
 			AnyObjectId headId = repo.resolve(Constants.HEAD);
@@ -688,6 +692,8 @@ public class CreateTagDialog extends TitleAreaDialog {
 		} catch (IOException e) {
 			Activator.logError(UIText.TagAction_errorWhileGettingRevCommits, e);
 			setErrorMessage(UIText.TagAction_errorWhileGettingRevCommits);
+		} finally {
+			revWalk.release();
 		}
 	}
 

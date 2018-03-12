@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2014 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2010, 2012 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -50,14 +50,17 @@ public class HistoryViewCommands {
 	/** "Create Tag" */
 	public static final String CREATE_TAG = "org.eclipse.egit.ui.history.CreateTag"; //$NON-NLS-1$
 
-	/** "Delete Tag" */
-	public static final String DELETE_TAG = "org.eclipse.egit.ui.history.DeleteTag"; //$NON-NLS-1$
-
 	/** "Push Commit" */
 	public static final String PUSH_COMMIT = "org.eclipse.egit.ui.history.PushCommit"; //$NON-NLS-1$
 
 	/** "Open" */
 	public static final String OPEN = "org.eclipse.egit.ui.history.ShowVersions"; //$NON-NLS-1$
+
+	/** "Reset" (with parameter {@link #RESET_MODE}) */
+	public static final String RESET = "org.eclipse.egit.ui.history.Reset"; //$NON-NLS-1$
+
+	/** "Reset" mode (soft, mixed, hard) */
+	public static final String RESET_MODE = "org.eclipse.egit.ui.history.ResetMode"; //$NON-NLS-1$
 
 	/** "Reset quickdiff baseline" (with parameter {@link #BASELINE_TARGET}) */
 	public static final String RESET_QUICKDIFF_BASELINE = "org.eclipse.egit.ui.history.ResetQuickdiffBaseline"; //$NON-NLS-1$
@@ -79,9 +82,6 @@ public class HistoryViewCommands {
 
 	/** reword a commit's message */
 	public static final String REWORD = "org.eclipse.egit.ui.history.Reword"; //$NON-NLS-1$
-
-	/** edit an existing commit */
-	public static final String EDIT = "org.eclipse.egit.ui.history.Edit"; //$NON-NLS-1$
 
 	/** revert a commit */
 	public static final String REVERT = "org.eclipse.egit.ui.history.Revert"; //$NON-NLS-1$

@@ -14,25 +14,19 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
-
-import org.eclipse.core.expressions.EvaluationContext;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.ISources;
-import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.services.IServiceLocator;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,21 +35,21 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 
 	private SwitchToMenu switchToMenu;
 
-	private IHandlerService handlerService;
+	private ISelectionService selectionService;
 
 	@Before
 	public void setUp() throws Exception {
 		switchToMenu = new SwitchToMenu();
-		handlerService = mock(IHandlerService.class);
+		selectionService = mock(ISelectionService.class);
 		IServiceLocator serviceLocator = mock(IServiceLocator.class);
-		when(serviceLocator.getService(IHandlerService.class)).thenReturn(
-				handlerService);
+		when(serviceLocator.getService(ISelectionService.class)).thenReturn(
+				selectionService);
 		switchToMenu.initialize(serviceLocator);
 	}
 
 	@Test
 	public void emptySelection() {
-		mockSelection(new EmptySelection());
+		when(selectionService.getSelection()).thenReturn(new EmptySelection());
 
 		MenuItem[] items = fillMenu();
 
@@ -64,7 +58,7 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void selectionNotAdaptableToRepository() {
-		mockSelection(
+		when(selectionService.getSelection()).thenReturn(
 				new StructuredSelection(new Object()));
 
 		MenuItem[] items = fillMenu();
@@ -75,28 +69,10 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 	@Test
 	public void selectionWithProj1() throws Exception {
 		createProjectAndCommitToRepository();
-		selectionWithProj1Common();
-	}
-
-	@Test
-	public void selectionWithProj1AndReflog() throws Exception {
-		File gitDir = createProjectAndCommitToRepository();
-
-		// create additional reflog entries
-		Git git = new Git(lookupRepository(gitDir));
-		git.checkout().setName("stable").call();
-		git.checkout().setName("master").call();
-
-		selectionWithProj1Common();
-
-		// delete reflog again to not confuse other tests
-		new File(gitDir, Constants.LOGS + "/" + Constants.HEAD).delete();
-	}
-
-	private void selectionWithProj1Common() {
 		IProject project = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(PROJ1);
-		mockSelection(new StructuredSelection(project));
+		when(selectionService.getSelection()).thenReturn(
+				new StructuredSelection(project));
 
 		MenuItem[] items = fillMenu();
 
@@ -117,7 +93,8 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 		}
 		IProject project = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(PROJ1);
-		mockSelection(new StructuredSelection(project));
+		when(selectionService.getSelection()).thenReturn(
+				new StructuredSelection(project));
 
 		MenuItem[] items = fillMenu();
 
@@ -147,12 +124,6 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 		// "master" and "stable" didn't make it
 		assertStyleEquals(SWT.SEPARATOR, items[22]);
 		assertTextEquals(UIText.SwitchToMenu_OtherMenuLabel, items[23]);
-	}
-
-	private void mockSelection(ISelection selection) {
-		EvaluationContext context = new EvaluationContext(null, new Object());
-		context.addVariable(ISources.ACTIVE_MENU_SELECTION_NAME, selection);
-		when(handlerService.getCurrentState()).thenReturn(context);
 	}
 
 	private MenuItem[] fillMenu() {
