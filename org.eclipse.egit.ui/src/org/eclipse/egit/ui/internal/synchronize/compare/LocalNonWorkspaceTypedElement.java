@@ -8,7 +8,7 @@
  *
  * Contributors:
  *     IBM Corporation - initial implementation of some methods
- *     Thomas Wolf <thomas.wolf@paranor.ch> - Bugs 474981, 481682
+ *     Thomas Wolf <thomas.wolf@paranor.ch> - Bug 474981
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.compare;
 
@@ -18,7 +18,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 
 import org.eclipse.compare.ISharedDocumentAdapter;
 import org.eclipse.core.resources.IResource;
@@ -28,15 +27,12 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.events.IndexChangedEvent;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
 import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
@@ -48,8 +44,6 @@ import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
 public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 
 	private final IPath path;
-
-	private final Repository repository;
 
 	private boolean exists;
 
@@ -66,15 +60,11 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace().getRoot();
 
 	/**
-	 * @param repository
-	 *            the file belongs to
-	 * @param path
-	 *            absolute path to non-workspace file
+	 * @param path absolute path to non-workspace file
 	 */
-	public LocalNonWorkspaceTypedElement(Repository repository, IPath path) {
+	public LocalNonWorkspaceTypedElement(IPath path) {
 		super(ROOT.getFile(path));
 		this.path = path;
-		this.repository = repository;
 
 		File file = path.toFile();
 		exists = file.exists();
@@ -175,25 +165,8 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 				} finally {
 					fireContentChanged();
 					RepositoryMapping mapping = RepositoryMapping.getMapping(path);
-					if (mapping != null) {
+					if (mapping != null)
 						mapping.getRepository().fireEvent(new IndexChangedEvent());
-					} else {
-						Repository myRepository = repository;
-						if (myRepository != null) {
-							IPath repositoryRoot = new Path(
-									myRepository.getWorkTree().getPath());
-							IPath relativePath = path
-									.makeRelativeTo(repositoryRoot);
-							IndexDiffCacheEntry indexDiffCacheForRepository = org.eclipse.egit.core.Activator
-									.getDefault().getIndexDiffCache()
-									.getIndexDiffCacheEntry(myRepository);
-							if (indexDiffCacheForRepository != null) {
-								indexDiffCacheForRepository
-										.refreshFiles(Collections.singleton(
-												relativePath.toString()));
-							}
-						}
-					}
 				}
 			}
 			refreshTimestamp();
