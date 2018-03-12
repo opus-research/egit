@@ -2440,9 +2440,6 @@ public class UIText extends NLS {
 	public static String CommitMessageComponent_AmendingCommitInRemoteBranch;
 
 	/** */
-	public static String CommitMessageEditorDialog_EditCommitMessageTitle;
-
-	/** */
 	public static String CommitMessageViewer_author;
 
 	/** */
