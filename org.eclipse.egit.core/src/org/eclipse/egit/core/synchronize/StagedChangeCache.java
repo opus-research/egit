@@ -45,11 +45,13 @@ public class StagedChangeCache {
 		try (TreeWalk tw = new TreeWalk(repo)) {
 			tw.addTree(new DirCacheIterator(repo.readDirCache()));
 			ObjectId headId = repo.resolve(HEAD);
-			RevCommit headCommit = null;
+			RevCommit headCommit;
 			if (headId != null) {
 				try (RevWalk rw = new RevWalk(repo)) {
 					headCommit = rw.parseCommit(headId);
 				}
+			} else {
+				headCommit = null;
 			}
 
 			AbbreviatedObjectId commitId;
