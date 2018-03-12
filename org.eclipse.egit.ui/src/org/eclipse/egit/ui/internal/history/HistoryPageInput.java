@@ -69,9 +69,9 @@ public class HistoryPageInput {
 	public HistoryPageInput(final Repository repository, final File[] fileItems) {
 		this.repo = repository;
 		list = null;
-		if (fileItems.length == 1 && fileItems[0].isFile()) {
+		if (fileItems.length == 1) {
 			singleItem = fileItems[0];
-			singleFile = fileItems[0];
+			singleFile = Boolean.valueOf(fileItems[0].isFile());
 		} else {
 			singleItem = null;
 			singleFile = null;
