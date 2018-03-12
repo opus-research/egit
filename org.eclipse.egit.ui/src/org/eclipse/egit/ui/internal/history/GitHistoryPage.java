@@ -139,10 +139,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private IAction fillCommentAction;
 
 	/** Compare mode toggle */
-	private BooleanPrefAction compareModeAction;
+	private IAction compareModeAction;
 
 	/** Show all branches toggle */
-	private BooleanPrefAction showAllBranchesAction;
+	private IAction showAllBranchesAction;
 
 	/** An error text to be shown instead of the control */
 	private StyledText errorText;
@@ -371,8 +371,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				// nothing, just switch the preference
 			}
 		};
-		actionsToDispose.add(compareModeAction);
-
 		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
 		compareModeAction.setToolTipText(UIText.GitHistoryPage_compareMode);
 
@@ -385,8 +383,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				refresh();
 			}
 		};
-		actionsToDispose.add(showAllBranchesAction);
-
 		showAllBranchesAction.setImageDescriptor(UIIcons.BRANCH);
 		showAllBranchesAction
 				.setToolTipText(UIText.GitHistoryPage_showAllBranches);
