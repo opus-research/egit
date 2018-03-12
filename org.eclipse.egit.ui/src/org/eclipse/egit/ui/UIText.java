@@ -865,9 +865,6 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_browse;
 
 	/** */
-	public static String RepositorySearchDialog_CheckAllRepositories;
-
-	/** */
 	public static String RepositorySearchDialog_directory;
 
 	/** */
@@ -886,7 +883,7 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_searchRepositoriesMessage;
 
 	/** */
-	public static String RepositorySearchDialog_UncheckAllRepositories;
+	public static String RepositorySearchDialog_ToggleSelectionButton;
 
 	/** */
 	public static String RepositorySelectionPage_BrowseLocalFile;
@@ -3789,12 +3786,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_LinkSelection;
-
-	/** */
-	public static String StagingView_exceptionTitle;
-
-	/** */
-	public static String StagingView_exceptionMessage;
 
 	/** */
 	public static String SynchronizeWithMenu_custom;
