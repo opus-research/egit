@@ -163,7 +163,7 @@ public class CreateBranchPage extends WizardPage {
 			setPageComplete(false);
 		}
 
-		if (this.myBaseBranch != null && this.nameText.getText().length() == 0)
+		if (this.myBaseBranch != null && this.nameText.getText().isEmpty())
 			setMessage(UIText.CreateBranchPage_ChooseNameMessage);
 		else
 			setMessage(UIText.CreateBranchPage_ChooseBranchAndNameMessage);
