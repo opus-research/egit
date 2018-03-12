@@ -112,12 +112,6 @@ public class GitModelRepository extends GitModelObject {
 		return location;
 	}
 
-	@Override
-	public boolean isContainer() {
-		return true;
-	}
-
-
 	private void getChildrenImpl() {
 		List<GitModelCommit> result = new ArrayList<GitModelCommit>();
 
