@@ -9,8 +9,6 @@
 package org.eclipse.egit.core.test;
 
 import org.eclipse.core.runtime.Plugin;
-import org.eclipse.jgit.junit.MockSystemReader;
-import org.eclipse.jgit.util.SystemReader;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -38,7 +36,6 @@ public class Activator extends Plugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		SystemReader.setInstance(new MockSystemReader());
 	}
 
 	/*
