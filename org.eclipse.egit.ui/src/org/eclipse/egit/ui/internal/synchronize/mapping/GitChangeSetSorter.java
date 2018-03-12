@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.mapping;
 
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Commit;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Commit;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
@@ -62,7 +62,7 @@ public class GitChangeSetSorter extends ViewerSorter {
 			Commit rc1 = ((GitModelCommit) e1).getCachedCommitObj();
 			Commit rc2 = ((GitModelCommit) e2).getCachedCommitObj();
 
-			return rc2.getCommitTime() - rc1.getCommitTime();
+			return rc2.getCommitDate().compareTo(rc1.getCommitDate());
 		}
 
 		return super.compare(viewer, e1, e2);

@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache.FileModelFactory;
 import org.eclipse.jgit.lib.Repository;
 

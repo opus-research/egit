@@ -17,7 +17,7 @@ import java.util.Map.Entry;
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.lib.Repository;
 
@@ -172,15 +172,6 @@ public class GitModelCache extends GitModelObjectContainer {
 	@Override
 	public String toString() {
 		return "ModelCache"; //$NON-NLS-1$
-	}
-
-	@Override
-	public void dispose() {
-		for (GitModelTree modelTree : cacheTreeMap.values())
-			modelTree.dispose();
-
-		cache.clear();
-		cacheTreeMap.clear();
 	}
 
 	private GitModelObject extractFromCache(Change change, String path) {

@@ -49,6 +49,7 @@ import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
@@ -71,8 +72,6 @@ public class CommitUI  {
 	private Set<String> notTracked;
 
 	private Set<String> files;
-
-	private boolean amendAllowed = true;
 
 	private boolean amending;
 
@@ -153,6 +152,7 @@ public class CommitUI  {
 					commitHelper.getCannotCommitMessage());
 			return;
 		}
+		boolean amendAllowed = commitHelper.amendAllowed();
 		if (files.isEmpty()) {
 			if (amendAllowed && commitHelper.getPreviousCommit() != null) {
 				boolean result = MessageDialog.openQuestion(shell,
@@ -187,9 +187,8 @@ public class CommitUI  {
 		try {
 			commitOperation= new CommitOperation(
 					repo,
-					commitDialog.getSelectedFiles(), notIndexed, notTracked,
-					commitDialog.getAuthor(), commitDialog.getCommitter(),
-					commitDialog.getCommitMessage());
+					commitDialog.getSelectedFiles(), notTracked, commitDialog.getAuthor(),
+					commitDialog.getCommitter(), commitDialog.getCommitMessage());
 		} catch (CoreException e1) {
 			Activator.handleError(UIText.CommitUI_commitFailed, e1, true);
 			return;
@@ -227,6 +226,9 @@ public class CommitUI  {
 					if (mapping != null)
 						mapping.fireRepositoryChanged();
 				} catch (CoreException e) {
+					if (e.getCause() instanceof JGitInternalException)
+						return Activator.createErrorStatus(
+								e.getLocalizedMessage(), e.getCause());
 					return Activator.createErrorStatus(
 							UIText.CommitAction_CommittingFailed, e);
 				} finally {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, 2011 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -45,7 +45,10 @@ public class GitSynchronizeData {
 	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace()
 					.getRoot();
 
-	private static final Pattern BRANCH_NAME_PATTERN = Pattern.compile("^" + R_HEADS + ".*?"); //$NON-NLS-1$ //$NON-NLS-2$
+	/**
+	 * Matches all strings that start from R_HEADS
+	 */
+	public static final Pattern BRANCH_NAME_PATTERN = Pattern.compile("^" + R_HEADS + ".*?"); //$NON-NLS-1$ //$NON-NLS-2$
 
 	private final boolean includeLocal;
 
@@ -135,8 +138,12 @@ public class GitSynchronizeData {
 	 */
 	public void updateRevs() throws IOException {
 		ObjectWalk ow = new ObjectWalk(repo);
-		srcRevCommit = getCommit(srcRev, ow);
-		dstRevCommit = getCommit(dstRev, ow);
+		try {
+			srcRevCommit = getCommit(srcRev, ow);
+			dstRevCommit = getCommit(dstRev, ow);
+		} finally {
+			ow.release();
+		}
 
 		if (this.dstRevCommit != null || this.srcRevCommit != null)
 			this.ancestorRevCommit = getCommonAncestor(repo, this.srcRevCommit,
@@ -250,16 +257,6 @@ public class GitSynchronizeData {
 	 */
 	public Set<IContainer> getIncludedPaths() {
 		return includedPaths;
-	}
-
-	/**
-	 * Disposes all nested resources
-	 */
-	public void dispose() {
-		if (projects != null)
-			projects.clear();
-		if (includedPaths != null)
-			includedPaths.clear();
 	}
 
 	/**

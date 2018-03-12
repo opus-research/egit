@@ -23,7 +23,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
-import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand;
@@ -34,6 +33,7 @@ import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -63,10 +63,7 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 	private ResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
 
-	private Image tagImage = UIIcons.TAG.createImage();
-
-	private Image lightweightTagImage = SWTUtils.getDecoratedImage(tagImage,
-			UIIcons.OVR_LIGHTTAG);
+	private Image annotatedTagImage = UIIcons.TAG_ANNOTATED.createImage();
 
 	private final State verboseBranchModeState;
 
@@ -110,9 +107,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 				Activator.logError(e.getMessage(), e);
 				return null;
 			}
-			if (any instanceof RevCommit)
-				// lightweight tag
-				return decorateImage(lightweightTagImage, element);
+			if (any instanceof RevTag)
+				return decorateImage(annotatedTagImage, element);
 		} else if (type == RepositoryTreeNodeType.FILE) {
 			Object object = node.getObject();
 			if (object instanceof File) {
@@ -145,8 +141,7 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 		}
 		resourceManager.dispose();
 		decoratedImages.clear();
-		tagImage.dispose();
-		lightweightTagImage.dispose();
+		annotatedTagImage.dispose();
 		super.dispose();
 	}
 
@@ -183,9 +178,12 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 					if (id == null)
 						return image;
 					RevWalk rw = new RevWalk(node.getRepository());
-					RevTag tag = rw.parseTag(id);
-					compareString = tag.getObject().name();
-
+					try {
+						compareString = rw.parseTag(id).getObject().name();
+					} catch (IncorrectObjectTypeException e) {
+						// Ref is a lightweight tag, not an annotated tag
+						compareString = id.name();
+					}
 				} else if (refName.startsWith(Constants.R_REMOTES)) {
 					// remote branch: HEAD would be on the commit id to which
 					// the branch is pointing
@@ -263,6 +261,52 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 		}
 	}
 
+	/**
+	 * Get styled text for submodule repository node
+	 *
+	 * @param node
+	 * @return styled string
+	 */
+	protected StyledString getStyledTextForSubmodule(RepositoryTreeNode node) {
+		StyledString string = new StyledString();
+		Repository repository = (Repository) node.getObject();
+		String path = Repository.stripWorkDir(node.getParent().getRepository()
+				.getWorkTree(), repository.getWorkTree());
+		string.append(path);
+
+		Ref head;
+		try {
+			head = repository.getRef(Constants.HEAD);
+		} catch (IOException e) {
+			return string;
+		}
+		if (head != null) {
+			string.append(' ');
+			string.append('[', StyledString.DECORATIONS_STYLER);
+			if (head.isSymbolic())
+				string.append(
+						Repository.shortenRefName(head.getLeaf().getName()),
+						StyledString.DECORATIONS_STYLER);
+			else
+				string.append(head.getObjectId().abbreviate(7).name(),
+						StyledString.DECORATIONS_STYLER);
+			string.append(']', StyledString.DECORATIONS_STYLER);
+			if (verboseBranchMode) {
+				RevWalk walk = new RevWalk(repository);
+				RevCommit commit;
+				try {
+					commit = walk.parseCommit(head.getObjectId());
+					string.append(' ');
+					string.append(commit.getShortMessage(),
+							StyledString.QUALIFIER_STYLER);
+				} catch (IOException ignored) {
+					// Ignored
+				}
+			}
+		}
+		return string;
+	}
+
 	public StyledString getStyledText(Object element) {
 		if (!(element instanceof RepositoryTreeNode))
 			return null;
@@ -272,8 +316,10 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 		try {
 			switch (node.getType()) {
 			case REPO:
-				Repository repository = (Repository) node.getObject();
-				return getStyledTextFor(repository);
+				if (node.getParent() != null
+						&& node.getParent().getType() == RepositoryTreeNodeType.SUBMODULES)
+					return getStyledTextForSubmodule(node);
+				return getStyledTextFor((Repository) node.getObject());
 			case ADDITIONALREF:
 				Ref ref = (Ref) node.getObject();
 				// shorten the name
@@ -297,15 +343,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 				StyledString dirString = new StyledString(
 						UIText.RepositoriesView_WorkingDir_treenode);
 				dirString.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-				if (node.getRepository().isBare()) {
-					dirString
-							.append(
-									UIText.RepositoriesViewLabelProvider_BareRepositoryMessage,
-									StyledString.QUALIFIER_STYLER);
-				} else {
-					dirString.append(node.getRepository().getWorkTree()
-							.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
-				}
+				dirString.append(node.getRepository().getWorkTree()
+						.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
 				return dirString;
 
 			case REF:
@@ -348,6 +387,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 				// fall through
 			case REMOTE:
 				// fall through
+			case SUBMODULES:
+				// fall through
 			case ERROR: {
 				String label = getSimpleText(node);
 				if (label != null)
@@ -387,6 +428,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 			return UIText.RepositoriesViewLabelProvider_SymbolicRefNodeText;
 		case REMOTES:
 			return UIText.RepositoriesView_RemotesNodeText;
+		case SUBMODULES:
+			return UIText.RepositoriesViewLabelProvider_SubmodulesNodeText;
 		case REF:
 			// fall through
 		case TAG: {
@@ -415,13 +458,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 			return refName;
 		}
 		case WORKINGDIR:
-			if (node.getRepository().isBare())
-				return UIText.RepositoriesView_WorkingDir_treenode
-						+ " - " //$NON-NLS-1$
-						+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
-			else
-				return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
-						+ node.getRepository().getWorkTree().getAbsolutePath();
+			return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
+					+ node.getRepository().getWorkTree().getAbsolutePath();
 		case REMOTE:
 			// fall through
 		case PUSH:

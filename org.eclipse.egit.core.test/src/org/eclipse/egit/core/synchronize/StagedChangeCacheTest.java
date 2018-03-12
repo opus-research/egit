@@ -13,7 +13,7 @@ import static org.junit.Assert.assertThat;
 
 import java.util.Map;
 
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.jgit.api.Git;
 import org.junit.Test;
 

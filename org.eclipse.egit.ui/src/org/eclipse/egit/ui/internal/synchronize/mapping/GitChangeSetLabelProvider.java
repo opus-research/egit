@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Commit;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Commit;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;

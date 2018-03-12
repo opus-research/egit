@@ -23,7 +23,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
@@ -58,8 +58,8 @@ public class GitModelBlobTest extends GitModelTestCase {
 	}
 
 	@Ignore
-	// this test case relays on
-	// org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change#equals()
+	// this test case relies on
+	// org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change#equals()
 	// implementation. Unfortunately in mockito we can't execute real
 	// implementation of equals() method, therefore this test will fail
 	@Test public void shouldReturnEqualForSameData() throws Exception {
@@ -77,8 +77,8 @@ public class GitModelBlobTest extends GitModelTestCase {
 	}
 
 	@Ignore
-	// this test case relays on
-	// org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change#equals()
+	// this test case relies on
+	// org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change#equals()
 	// implementation. Unfortunately in mockito we can't execute real
 	// implementation of equals() method, therefore this test will fail
 	@Test public void shouldReturnEqualSameData1() throws Exception {

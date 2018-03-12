@@ -13,7 +13,7 @@ import java.util.Map;
 
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.lib.Repository;
 

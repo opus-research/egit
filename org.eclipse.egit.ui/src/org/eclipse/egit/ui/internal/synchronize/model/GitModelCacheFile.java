@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,8 +8,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCacheCompareInput;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
@@ -30,8 +31,8 @@ public class GitModelCacheFile extends GitModelBlob {
 			ComparisonDataSource remoteData, ComparisonDataSource ancestorData) {
 		String gitPath = Repository.stripWorkDir(repo.getWorkTree(), path.toFile());
 
-		return new GitCacheCompareInput(repo, ancestorData,
-				baseData, remoteData, gitPath);
+		return new GitCacheCompareInput(repo, (IFile) getResource(),
+				ancestorData, baseData, remoteData, gitPath);
 	}
 
 	@Override

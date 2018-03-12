@@ -18,8 +18,8 @@ import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Commit;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Commit;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -98,14 +98,6 @@ public class GitModelCommit extends GitModelObjectContainer implements
 	 */
 	public Commit getCachedCommitObj() {
 		return commit;
-	}
-
-	@Override
-	public void dispose() {
-		for (GitModelObject value : cachedTreeMap.values())
-			value.dispose();
-
-		cachedTreeMap.clear();
 	}
 
 	@Override

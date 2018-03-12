@@ -16,7 +16,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
@@ -74,7 +74,7 @@ public class GitModelCacheFileTest extends GitModelTestCase {
 	}
 
 	@Ignore
-	// this test case relays on hashCode() implementation. Unfortunately in
+	// this test case relies on hashCode() implementation. Unfortunately in
 	// mockito is changing hashCode() implementation and we cannot do anything
 	// about this
 	@Test public void shouldReturnNotEqualForDifferentCacheIds()
@@ -95,7 +95,7 @@ public class GitModelCacheFileTest extends GitModelTestCase {
 	}
 
 	@Ignore
-	// this test case relays on hashCode() implementation. Unfortunately in
+	// this test case relies on hashCode() implementation. Unfortunately in
 	// mockito is changing hashCode() implementation and we cannot do anything
 	// about this
 	@Test public void shouldReturnNotEqualForDifferentLocations()

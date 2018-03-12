@@ -26,7 +26,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
@@ -107,14 +107,23 @@ public class GitModelBlob extends GitModelObject implements
 		return change.getKind();
 	}
 
-	@Override
-	public int repositoryHashCode() {
-		return repo.getWorkTree().hashCode();
+	/**
+	 * @return abbreviated object id of base commit
+	 */
+	public AbbreviatedObjectId getBaseCommitId() {
+		return change.getCommitId();
+	}
+
+	/**
+	 * @return abbreviated object id of remote commit
+	 */
+	public AbbreviatedObjectId getRemoteCommitId() {
+		return change.getRemoteCommitId();
 	}
 
 	@Override
-	public void dispose() {
-		// there is nothing to dispose
+	public int repositoryHashCode() {
+		return repo.getWorkTree().hashCode();
 	}
 
 	@Override
