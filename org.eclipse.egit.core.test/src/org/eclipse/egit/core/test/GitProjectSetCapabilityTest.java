@@ -19,7 +19,6 @@ import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -57,7 +56,6 @@ public class GitProjectSetCapabilityTest {
 
 	@After
 	public void tearDown() throws Exception {
-		ResourcesPlugin.getWorkspace().getRoot().delete(IResource.FORCE, null);
 		Activator.getDefault().getRepositoryCache().clear();
 		for (IProject project : createdProjects)
 			if (project.exists())
