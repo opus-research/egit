@@ -18,6 +18,8 @@ import java.net.URISyntaxException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.internal.push.SimpleConfigurePushDialog;
@@ -42,7 +44,9 @@ public class PushConfiguredRemoteCommand extends
 					UIText.SimplePushActionHandler_NothingToPushDialogMessage);
 			return null;
 		}
-		new PushOperationUI(node.getRepository(), config.getName(), false)
+		int timeout = Activator.getDefault().getPreferenceStore()
+				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
+		new PushOperationUI(node.getRepository(), config.getName(), timeout, false)
 				.start();
 		return null;
 	}

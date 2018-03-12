@@ -42,12 +42,12 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * SWTBot Tests for the Git Repositories View (repository handling)
+ * SWTBot Tests for the Git Repositories View (repsitory handling)
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class GitRepositoriesViewRepoHandlingTest extends
@@ -55,10 +55,10 @@ public class GitRepositoriesViewRepoHandlingTest extends
 
 	private static final String REMOVE_REPOSITORY_CONTEXT_MENU_LABEL = "RepoViewRemove.label";
 
-	private File repositoryFile;
+	private static File repositoryFile;
 
-	@Before
-	public void before() throws Exception {
+	@BeforeClass
+	public static void beforeClass() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 	}
 

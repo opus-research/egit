@@ -534,6 +534,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_rebaseMenuItem;
 
 	/** */
+	public static String GitHistoryPage_rebaseInteractiveMenuItem;
+
+	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
@@ -621,6 +624,12 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_SecureStoreUseByDefault;
 
 	/** */
+	public static String ProcessStepsRebaseCommand_CancelDialogMessage;
+
+	/** */
+	public static String ProcessStepsRebaseCommand_JobName;
+
+	/** */
 	public static String ProjectsPreferencePage_AutoShareProjects;
 
 	/** */
@@ -672,6 +681,66 @@ public class UIText extends NLS {
 	public static String RebaseCurrentRefCommand_ErrorGettingCurrentBranchMessage;
 
 	/** */
+	public static String RebaseInteractiveHandler_EditMessageDialogText;
+
+	/** */
+	public static String RebaseInteractiveHandler_EditMessageDialogTitle;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_SkipText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_EditText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_FixupText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_MoveDownText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_MoveUpText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_PickText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_RedoText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_RewordText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_SquashText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_UndoText;
+
+	/** */
+	public static String RebaseInteractiveView_HeadingAction;
+
+	/** */
+	public static String RebaseInteractiveView_HeadingCommitId;
+
+	/** */
+	public static String RebaseInteractiveView_HeadingMessage;
+
+	/** */
+	public static String RebaseInteractiveView_HeadingStatus;
+
+	/** */
+	public static String RebaseInteractiveView_NoSelection;
+
+	/** */
+	public static String RebaseInteractiveView_StatusCurrent;
+
+	/** */
+	public static String RebaseInteractiveView_StatusDone;
+
+	/** */
+	public static String RebaseInteractiveView_StatusTodo;
+
+	/** */
 	public static String RebaseResultDialog_Aborted;
 
 	/** */
@@ -705,10 +774,16 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_DoNothingRadioText;
 
 	/** */
+	public static String RebaseResultDialog_Edit;
+
+	/** */
 	public static String RebaseResultDialog_FastForward;
 
 	/** */
 	public static String RebaseResultDialog_Failed;
+
+	/** */
+	public static String RebaseResultDialog_InteractivePrepared;
 
 	/** */
 	public static String RebaseResultDialog_JobNameAbortRebase;
@@ -3030,15 +3105,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_Branches_Nodetext;
 
 	/** */
-	public static String RepositoriesView_CheckoutConfirmationMessage;
-
-	/** */
-	public static String RepositoriesView_CheckoutConfirmationTitle;
-
-	/** */
-	public static String RepositoriesView_CheckoutConfirmationToggleMessage;
-
-	/** */
 	public static String RepositoriesView_ClipboardContentNoGitRepoMessage;
 
 	/** */
@@ -3133,9 +3199,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
-
-	/** */
-	public static String DialogsPreferencePage_ShowCheckoutConfirmation;
 
 	/** */
 	public static String DialogsPreferencePage_ShowCloneFailedDialog;
@@ -3908,6 +3971,24 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ImportProjectsSelectionInRepositoryRequired;
+
+	/** */
+	public static String InteractiveRebaseView_abortItem_text;
+
+	/** */
+	public static String InteractiveRebaseView_continueItem_text;
+
+	/** */
+	public static String InteractiveRebaseView_refreshItem_text;
+
+	/** */
+	public static String InteractiveRebaseView_skipItem_text;
+
+	/** */
+	public static String InteractiveRebaseView_startItem_text;
+
+	/** */
+	public static String InteractiveRebaseView_this_partName;
 
 	/** */
 	public static String LocalFileRevision_CurrentVersion;
