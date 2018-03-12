@@ -64,7 +64,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			if (visible && (cloneDestination.cloneSettingsChanged())) {
 				setCallerRunsCloneOperation(true);
 				try {
-					performClone(currentSearchResult.getGitRepositoryInfo());
+					performClone(new URIish(currentSearchResult.getGitRepositoryInfo().getCloneUri()), getCredentials());
 					importWithDirectoriesPage.getControl().getDisplay().asyncExec(new Runnable() {
 
 						public void run() {
