@@ -187,6 +187,13 @@ public class RecursiveModelMerger extends RecursiveMerger {
 					Activator.logError(message, e);
 					cleanUp();
 					return false;
+				} catch (InterruptedException e) {
+					final String message = NLS
+							.bind(CoreText.RecursiveModelMerger_ScopeInitializationInterrupted,
+									pathString);
+					Activator.logError(message, e);
+					cleanUp();
+					return false;
 				}
 				try {
 					final IStatus status = modelMerger.merge(mergeContext,
@@ -381,10 +388,13 @@ public class RecursiveModelMerger extends RecursiveMerger {
 	 *             context.
 	 * @throws OperationCanceledException
 	 *             Thrown if the user cancelled the initialization.
+	 * @throws InterruptedException
+	 *             Thrown if the initialization is interrupted somehow.
 	 */
 	private IMergeContext prepareMergeContext(Subscriber subscriber,
 			Set<IResource> model, RemoteResourceMappingContext mappingContext)
-			throws CoreException, OperationCanceledException {
+			throws CoreException, OperationCanceledException,
+			InterruptedException {
 		final Set<ResourceMapping> allMappings = LogicalModels
 				.getResourceMappings(model, mappingContext);
 		final ResourceMapping[] mappings = allMappings
@@ -403,23 +413,9 @@ public class RecursiveModelMerger extends RecursiveMerger {
 		final IMergeContext context = new GitMergeContext(subscriber, manager);
 		// Wait for the asynchronous scope expanding to end (started from the
 		// initialization of our merge context)
-		waitForScope(context);
+		Job.getJobManager().join(context, new NullProgressMonitor());
 
 		return context;
-	}
-
-	private void waitForScope(IMergeContext context) {
-		// The UILockListener might prevent us from properly joining.
-		boolean joined = false;
-		while (!joined) {
-			try {
-				Job.getJobManager().join(context, new NullProgressMonitor());
-				joined = true;
-			} catch (InterruptedException e) {
-				// Some other UI threads were trying to run. Let the syncExecs
-				// do their jobs and re-try to join on ours.
-			}
-		}
 	}
 
 	private class GitMergeContext extends SubscriberMergeContext {
