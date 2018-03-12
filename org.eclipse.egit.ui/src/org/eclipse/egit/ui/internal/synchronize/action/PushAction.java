@@ -58,20 +58,20 @@ public class PushAction extends SynchronizeModelAction {
 
 				String remoteName = gsd.getSrcRemoteName();
 				if (remoteName == null)
-					return;
+					remoteName = gsd.getDstRemoteName();
 
 				RemoteConfig rc;
 				try {
-					rc = new RemoteConfig(gsd.getRepository().getConfig(),
-							remoteName);
+					rc = new RemoteConfig(gsd.getRepository()
+							.getConfig(), gsd.getDstRemoteName());
 					PushOperationUI push = new PushOperationUI(gsd.getRepository(),
 							rc, timeout, false);
 					push.setCredentialsProvider(new EGitCredentialsProvider());
 					push.execute(monitor);
 				} catch (URISyntaxException e) {
-					throw new InvocationTargetException(e);
+					new InvocationTargetException(e);
 				} catch (CoreException e) {
-					throw new InvocationTargetException(e);
+					new InvocationTargetException(e);
 				}
 			}
 		};
