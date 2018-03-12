@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2008, Tor Arne Vestbø <torarnv@gmail.com>
- * Copyright (C) 2016, Andre Bossert <anb0s@anbos.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,7 +8,6 @@
  *
  * Contributors:
  *    Thomas Wolf <thomas.wolf@paranor.ch> - Factored out IResourceState
- *    Andre Bossert <anb0s@anbos.de> - added nested git repository support
  *******************************************************************************/
 
 package org.eclipse.egit.ui.internal.decorators;
@@ -66,10 +64,5 @@ public interface IDecoratableResource extends IResourceState {
 	 *         tracking branch, or <code>null</code> if not applicable
 	 */
 	String getBranchStatus();
-
-	/**
-	 * @return is the resource a repository root ?
-	 */
-	boolean isWorkingTreeRoot();
 
 }

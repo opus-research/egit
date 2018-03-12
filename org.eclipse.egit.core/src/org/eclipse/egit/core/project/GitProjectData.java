@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Google Inc.
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
- * Copyright (C) 2016, Andre Bossert <anb0s@anbos.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -283,7 +282,8 @@ public class GitProjectData {
 					}
 					// Files & folders
 					if ((delta.getKind() & (IResourceDelta.ADDED
-							| IResourceDelta.CHANGED)) == 0) {
+							| IResourceDelta.CHANGED)) == 0
+							|| resource.isLinked()) {
 						return false;
 					}
 					IPath location = resource.getLocation();
@@ -381,7 +381,7 @@ public class GitProjectData {
 
 	private final Map<IPath, RepositoryMapping> mappings = new HashMap<>();
 
-	private final Set<IResource> nestedProtectedResources = new HashSet<IResource>();
+	private final Set<IResource> protectedResources = new HashSet<IResource>();
 
 	/**
 	 * Construct a {@link GitProjectData} for the mapping
@@ -414,15 +414,6 @@ public class GitProjectData {
 	}
 
 	/**
-	 * Get repository mappings
-	 *
-	 * @return the repository mappings for a project
-	 */
-	public Map<IPath, RepositoryMapping> getRepositoryMappings() {
-		return mappings;
-	}
-
-	/**
 	 * Hide our private parts from the navigators other browsers.
 	 *
 	 * @throws CoreException
@@ -439,6 +430,9 @@ public class GitProjectData {
 					final Repository r = rm.getRepository();
 					final File dotGitDir = dotGit.getLocation().toFile()
 							.getCanonicalFile();
+					// TODO: .git *files* with gitdir: "redirect"
+					// TODO: check whether Repository.getDirectory() is
+					// canonicalized! If not, this check will fail anyway.
 					if (dotGitDir.equals(r.getDirectory())) {
 						trace("teamPrivate " + dotGit);  //$NON-NLS-1$
 						dotGit.setTeamPrivateMember(true);
@@ -457,8 +451,8 @@ public class GitProjectData {
 	 * @return {@code true} if the project has submodules; {@code false}
 	 *         otherwise.
 	 */
-	public boolean hasNestedRepositories() {
-		return !nestedProtectedResources.isEmpty();
+	public boolean hasSubmodules() {
+		return !protectedResources.isEmpty();
 	}
 
 	/**
@@ -466,7 +460,7 @@ public class GitProjectData {
 	 * @return true if a resource is protected in this repository
 	 */
 	public boolean isProtected(final IResource f) {
-		return nestedProtectedResources.contains(f);
+		return protectedResources.contains(f);
 	}
 
 	/**
@@ -586,7 +580,7 @@ public class GitProjectData {
 	}
 
 	private void remapAll() {
-		nestedProtectedResources.clear();
+		protectedResources.clear();
 		for (final RepositoryMapping repoMapping : mappings.values()) {
 			map(repoMapping);
 		}
@@ -670,7 +664,7 @@ public class GitProjectData {
 		}
 		while (c != null && !c.equals(getProject())) {
 			trace("protect " + c);  //$NON-NLS-1$
-			nestedProtectedResources.add(c);
+			protectedResources.add(c);
 			c = c.getParent();
 		}
 	}
