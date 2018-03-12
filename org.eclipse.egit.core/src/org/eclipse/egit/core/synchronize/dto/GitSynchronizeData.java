@@ -234,7 +234,7 @@ public class GitSynchronizeData {
 			String name = remoteWithBranchName.substring(firstSeparator,
 					remoteWithBranchName.length());
 
-			return new RemoteConfig(remote, name);
+			return new RemoteConfig(remote, R_HEADS + name);
 		} else {
 			String realName;
 			Ref ref;
