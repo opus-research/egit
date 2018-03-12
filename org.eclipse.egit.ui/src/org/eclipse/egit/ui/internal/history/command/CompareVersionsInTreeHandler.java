@@ -11,6 +11,8 @@ package org.eclipse.egit.ui.internal.history.command;
 import java.io.File;
 import java.util.Iterator;
 
+import org.eclipse.compare.CompareEditorInput;
+import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
@@ -21,6 +23,7 @@ import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.history.HistoryPageInput;
+import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -34,7 +37,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public class CompareVersionsInTreeHandler extends
 		AbstractHistoryCommandHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IStructuredSelection selection = getSelection(event);
 		if (selection.size() == 2) {
@@ -53,23 +55,29 @@ public class CompareVersionsInTreeHandler extends
 				IFile resource = (IFile) input;
 				final RepositoryMapping map = RepositoryMapping
 						.getMapping(resource);
-				if (map != null) {
-					final String gitPath = map.getRepoRelativePath(resource);
-					final String commit1Path = getRenamedPath(gitPath, commit1);
-					final String commit2Path = getRenamedPath(gitPath, commit2);
+				final String gitPath = map.getRepoRelativePath(resource);
 
-					CompareUtils.openInCompare(commit1, commit2, commit1Path,
-							commit2Path, map.getRepository(), workBenchPage);
-				}
+				final ITypedElement base = CompareUtils
+						.getFileRevisionTypedElement(gitPath, commit1, map
+								.getRepository());
+				final ITypedElement next = CompareUtils
+						.getFileRevisionTypedElement(gitPath, commit2, map
+								.getRepository());
+				CompareEditorInput in = new GitCompareFileRevisionEditorInput(
+						base, next, null);
+				CompareUtils.openInCompare(workBenchPage, in);
 			} else if (input instanceof File) {
 				File fileInput = (File) input;
 				Repository repo = getRepository(event);
 				final String gitPath = getRepoRelativePath(repo, fileInput);
-				final String commit1Path = getRenamedPath(gitPath, commit1);
-				final String commit2Path = getRenamedPath(gitPath, commit2);
 
-				CompareUtils.openInCompare(commit1, commit2, commit1Path,
-						commit2Path, repo, workBenchPage);
+				final ITypedElement base = CompareUtils
+						.getFileRevisionTypedElement(gitPath, commit1, repo);
+				final ITypedElement next = CompareUtils
+						.getFileRevisionTypedElement(gitPath, commit2, repo);
+				CompareEditorInput in = new GitCompareFileRevisionEditorInput(
+						base, next, null);
+				CompareUtils.openInCompare(workBenchPage, in);
 			} else if (input instanceof IResource) {
 				CompareTreeView view;
 				try {

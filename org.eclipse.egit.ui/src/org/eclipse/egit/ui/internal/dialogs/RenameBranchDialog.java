@@ -5,7 +5,6 @@
  * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,15 +13,18 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.ValidationUtils;
+import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.window.Window;
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * The branch and reset selection dialog
@@ -39,22 +41,49 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 				| EXPAND_LOCAL_BRANCHES_NODE);
 	}
 
+	private InputDialog getRefNameInputDialog(String prompt,
+			final String refPrefix, String initialValue) {
+		InputDialog branchNameDialog = new InputDialog(
+				getShell(),
+				UIText.RenameBranchDialog_RenameBranchDialogNewNameInputWindowTitle,
+				prompt, initialValue, ValidationUtils.getRefNameInputValidator(
+						repo, refPrefix, true));
+		branchNameDialog.setBlockOnOpen(true);
+		return branchNameDialog;
+	}
+
 	@Override
 	protected void okPressed() {
-		final Ref toRename = refFromDialog();
+		String refName = refNameFromDialog();
+		String refPrefix;
 
-		if (toRename != null) {
-			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+		if (refName.startsWith(Constants.R_HEADS))
+			refPrefix = Constants.R_HEADS;
+		else if (refName.startsWith(Constants.R_REMOTES))
+			refPrefix = Constants.R_REMOTES;
+		else if (refName.startsWith(Constants.R_TAGS))
+			refPrefix = Constants.R_TAGS;
+		else {
+			// the button should be disabled anyway, but we check again
+			return;
+		}
 
-				@Override
-				public void run() {
-					BranchRenameDialog dialog = new BranchRenameDialog(
-							PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-									.getShell(),
-							repo, toRename);
-					dialog.open();
-				}
-			});
+		String branchName = refName.substring(refPrefix.length());
+
+		InputDialog labelDialog = getRefNameInputDialog(NLS.bind(
+				UIText.RenameBranchDialog_NewNameInputDialogPrompt, branchName,
+				refPrefix), refPrefix, branchName);
+		if (labelDialog.open() == Window.OK) {
+			String newRefName = refPrefix + labelDialog.getValue();
+			try {
+				new Git(repo).branchRename().setOldName(refName).setNewName(
+						labelDialog.getValue()).call();
+				branchTree.refresh();
+				markRef(newRefName);
+			} catch (Throwable e1) {
+				reportError(e1, UIText.RenameBranchDialog_RenameErrorMessage,
+						refName, newRefName, e1.getMessage());
+			}
 		}
 		super.okPressed();
 	}
@@ -72,7 +101,6 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	/**
 	 * @return the message shown above the refs tree
 	 */
-	@Override
 	protected String getMessageText() {
 		return UIText.RenameBranchDialog_DialogMessage;
 	}
@@ -82,7 +110,6 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	 *
 	 * @param parent
 	 */
-	@Override
 	protected void createCustomArea(Composite parent) {
 		// do nothing
 	}
@@ -92,7 +119,6 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	 *
 	 * @return the title of the dialog
 	 */
-	@Override
 	protected String getTitle() {
 		return UIText.RenameBranchDialog_DialogTitle;
 	}
@@ -107,12 +133,20 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 		return super.getShellStyle() | SWT.RESIZE;
 	}
 
+	private void reportError(Throwable e, String message, Object... args) {
+		String msg = NLS.bind(message, args);
+		Activator.handleError(msg, e, true);
+	}
+
 	@Override
 	protected void refNameSelected(String refName) {
+		boolean tagSelected = refName != null
+				&& refName.startsWith(Constants.R_TAGS);
+
 		boolean branchSelected = refName != null
 				&& (refName.startsWith(Constants.R_HEADS) || refName
 						.startsWith(Constants.R_REMOTES));
 
-		getButton(Window.OK).setEnabled(branchSelected);
+		getButton(Window.OK).setEnabled(branchSelected || tagSelected);
 	}
 }

@@ -31,7 +31,6 @@ public class MylynCommitMessageProvider implements ICommitMessageProvider {
 	/**
 	 * @return the mylyn commit message template defined in the preferences
 	 */
-	@Override
 	public String getMessage(IResource[] resources) {
 		String message = ""; //$NON-NLS-1$
 		if (resources == null)

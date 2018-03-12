@@ -27,7 +27,7 @@ import org.eclipse.ui.model.IWorkbenchAdapter;
 public class RepositoryMatch extends PlatformObject implements
 		IWorkbenchAdapter {
 
-	private List<RepositoryCommit> commits = new ArrayList<>();
+	private List<RepositoryCommit> commits = new ArrayList<RepositoryCommit>();
 
 	private Repository repository;
 
@@ -41,12 +41,10 @@ public class RepositoryMatch extends PlatformObject implements
 		this.repository = repository;
 	}
 
-	@Override
 	public int hashCode() {
 		return 31 * repository.hashCode();
 	}
 
-	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
@@ -87,17 +85,14 @@ public class RepositoryMatch extends PlatformObject implements
 		return this.commits.size();
 	}
 
-	@Override
 	public Object[] getChildren(Object o) {
 		return this.commits.toArray();
 	}
 
-	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		return UIIcons.REPOSITORY;
 	}
 
-	@Override
 	public String getLabel(Object o) {
 		if (repository.isBare())
 			return repository.getDirectory().getName();
@@ -105,7 +100,6 @@ public class RepositoryMatch extends PlatformObject implements
 			return repository.getDirectory().getParentFile().getName();
 	}
 
-	@Override
 	public Object getParent(Object o) {
 		return null;
 	}

@@ -47,14 +47,12 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.TraverseEvent;
 import org.eclipse.swt.events.TraverseListener;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -118,7 +116,7 @@ class CreateBranchPage extends WizardPage {
 
 	private Label sourceIcon;
 
-	private StyledText sourceNameLabel;
+	private Label sourceNameLabel;
 
 	private String sourceRefName = ""; //$NON-NLS-1$
 
@@ -144,7 +142,7 @@ class CreateBranchPage extends WizardPage {
 			this.myBaseRef = null;
 		this.myBaseCommit = null;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
-				myRepository, Constants.R_HEADS, false);
+				myRepository, Constants.R_HEADS, true);
 		if (baseRef != null)
 			this.upstreamConfig = UpstreamConfig.getDefault(repo, baseRef.getName());
 		else
@@ -169,13 +167,12 @@ class CreateBranchPage extends WizardPage {
 		this.myBaseRef = null;
 		this.myBaseCommit = baseCommit;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
-				myRepository, Constants.R_HEADS, false);
+				myRepository, Constants.R_HEADS, true);
 		this.upstreamConfig = UpstreamConfig.NONE;
 		setTitle(UIText.CreateBranchPage_Title);
 		setMessage(UIText.CreateBranchPage_ChooseNameMessage);
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(4, false));
@@ -189,9 +186,7 @@ class CreateBranchPage extends WizardPage {
 		sourceIcon.setLayoutData(GridDataFactory.fillDefaults()
 				.align(SWT.END, SWT.CENTER).create());
 
-		sourceNameLabel = new StyledText(main, SWT.NONE);
-		sourceNameLabel.setBackground(main.getBackground());
-		sourceNameLabel.setEditable(false);
+		sourceNameLabel = new Label(main, SWT.NONE);
 		sourceNameLabel.setLayoutData(GridDataFactory.fillDefaults()
 				.align(SWT.FILL, SWT.CENTER)
 				.grab(true, false).create());
@@ -215,14 +210,12 @@ class CreateBranchPage extends WizardPage {
 		nameText = new Text(main, SWT.BORDER);
 		// give focus to the nameText if label is activated using the mnemonic
 		nameLabel.addTraverseListener(new TraverseListener() {
-			@Override
 			public void keyTraversed(TraverseEvent e) {
 				nameText.setFocus();
 			}
 		});
 
 		nameText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				nameIsSuggestion = false;
 			}
@@ -239,7 +232,6 @@ class CreateBranchPage extends WizardPage {
 
 		upstreamConfigComponent
 				.addUpstreamConfigSelectionListener(new UpstreamConfigSelectionListener() {
-					@Override
 					public void upstreamConfigSelected(
 							UpstreamConfig newUpstreamConfig) {
 						upstreamConfig = newUpstreamConfig;
@@ -276,7 +268,6 @@ class CreateBranchPage extends WizardPage {
 		nameText.setFocus();
 		// add the listener just now to avoid unneeded checkPage()
 		nameText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -343,7 +334,6 @@ class CreateBranchPage extends WizardPage {
 				gd.exclude = !showUpstreamConfig;
 				container.setVisible(showUpstreamConfig);
 				container.getParent().layout(true);
-				ensurePreferredHeight(getShell());
 			}
 
 			boolean basedOnLocalBranch = sourceRefName
@@ -351,9 +341,15 @@ class CreateBranchPage extends WizardPage {
 			if (basedOnLocalBranch && upstreamConfig != UpstreamConfig.NONE)
 				setMessage(UIText.CreateBranchPage_LocalBranchWarningMessage,
 						IMessageProvider.INFORMATION);
+			else
+				setMessage(null);
 
 			if (sourceRefName.length() == 0) {
 				setErrorMessage(UIText.CreateBranchPage_MissingSourceMessage);
+				return;
+			}
+			if (nameText.getText().length() == 0) {
+				setErrorMessage(UIText.CreateBranchPage_ChooseNameMessage);
 				return;
 			}
 			String message = this.myValidator.isValid(nameText.getText());
@@ -364,8 +360,7 @@ class CreateBranchPage extends WizardPage {
 
 			setErrorMessage(null);
 		} finally {
-			setPageComplete(getErrorMessage() == null
-					&& nameText.getText().length() > 0);
+			setPageComplete(getErrorMessage() == null);
 		}
 	}
 
@@ -373,23 +368,17 @@ class CreateBranchPage extends WizardPage {
 		return nameText.getText();
 	}
 
-	public boolean checkoutNewBranch() {
-		return checkout.getSelection();
-	}
-
 	/**
-	 * @param newRefName
-	 * @param checkoutNewBranch
 	 * @param monitor
 	 * @throws CoreException
 	 * @throws IOException
 	 */
-	public void createBranch(String newRefName, boolean checkoutNewBranch,
-			IProgressMonitor monitor)
-			throws CoreException,
+	public void createBranch(IProgressMonitor monitor) throws CoreException,
 			IOException {
 		monitor.beginTask(UIText.CreateBranchPage_CreatingBranchMessage,
 				IProgressMonitor.UNKNOWN);
+
+		String newRefName = getBranchName();
 
 		final CreateLocalBranchOperation cbop;
 
@@ -399,12 +388,12 @@ class CreateBranchPage extends WizardPage {
 					myBaseCommit);
 		else
 			cbop = new CreateLocalBranchOperation(myRepository, newRefName,
-					myRepository.findRef(this.sourceRefName),
+					myRepository.getRef(this.sourceRefName),
 					upstreamConfig);
 
 		cbop.execute(monitor);
 
-		if (checkoutNewBranch) {
+		if (checkout.getSelection()) {
 			if (monitor.isCanceled())
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
@@ -448,23 +437,15 @@ class CreateBranchPage extends WizardPage {
 	}
 
 	private String getBranchNameSuggestionFromProvider() {
-		final AtomicReference<String> ref = new AtomicReference<>();
+		final AtomicReference<String> ref = new AtomicReference<String>();
 		final IBranchNameProvider branchNameProvider = getBranchNameProvider();
 		if (branchNameProvider != null)
 			SafeRunner.run(new SafeRunnable() {
-				@Override
 				public void run() throws Exception {
 					ref.set(branchNameProvider.getBranchNameSuggestion());
 				}
 			});
 		return ref.get();
-	}
-
-	private static void ensurePreferredHeight(Shell shell) {
-		int preferredHeight = shell.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
-		Point size = shell.getSize();
-		if (size.y < preferredHeight)
-			shell.setSize(size.x, preferredHeight);
 	}
 
 	private static class SourceSelectionDialog extends

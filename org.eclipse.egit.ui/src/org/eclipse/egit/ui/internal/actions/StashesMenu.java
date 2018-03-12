@@ -16,11 +16,9 @@ import java.util.List;
 
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.egit.ui.internal.stash.StashCreateUI;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
@@ -45,7 +43,6 @@ public class StashesMenu extends CompoundContributionItem implements
 
 	private IServiceLocator serviceLocator;
 
-	@Override
 	public void initialize(IServiceLocator locator) {
 		this.serviceLocator = locator;
 	}
@@ -54,7 +51,7 @@ public class StashesMenu extends CompoundContributionItem implements
 	protected IContributionItem[] getContributionItems() {
 		Repository repository = getRepository();
 
-		List<IContributionItem> items = new ArrayList<>();
+		List<IContributionItem> items = new ArrayList<IContributionItem>();
 
 		items.add(createStashChangesItem(repository));
 		items.add(new Separator());
@@ -94,7 +91,7 @@ public class StashesMenu extends CompoundContributionItem implements
 			if (stashCommits.isEmpty())
 				return Collections.singleton(createNoStashedChangesItem());
 
-			List<IContributionItem> items = new ArrayList<>(
+			List<IContributionItem> items = new ArrayList<IContributionItem>(
 					stashCommits.size());
 
 			int index = 0;
@@ -125,12 +122,13 @@ public class StashesMenu extends CompoundContributionItem implements
 		if (serviceLocator == null)
 			return null;
 
-		IHandlerService handlerService = CommonUtils.getService(serviceLocator, IHandlerService.class);
+		IHandlerService handlerService = (IHandlerService) serviceLocator
+				.getService(IHandlerService.class);
 		if (handlerService == null)
 			return null;
 
 		IEvaluationContext evaluationContext = handlerService.getCurrentState();
-		return SelectionUtils.getRepository(evaluationContext);
+		return RepositoryActionHandler.getRepository(evaluationContext);
 	}
 
 	private static ActionContributionItem createStashItem(

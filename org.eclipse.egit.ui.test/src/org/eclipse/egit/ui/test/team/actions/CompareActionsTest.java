@@ -56,7 +56,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
 import org.eclipse.team.ui.synchronize.ISynchronizeManager;
-import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -162,8 +161,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 		// use the tag -> should have a change
 		dialog = openCompareWithDialog(compareWithRefActionLabel, dialogTitle);
-		SWTBotTreeItem tags = TestUtil
-				.expandAndWait(dialog.bot().tree().getTreeItem(TAGS));
+		SWTBotTreeItem tags = dialog.bot().tree().getTreeItem(TAGS).expand();
 		TestUtil.getChildNode(tags, "SomeTag").select();
 
 		jobJoiner = JobJoiner.startListening(
@@ -252,7 +250,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		String compareWithHeadMenuLabel = util
 				.getPluginLocalizedValue("CompareWithHeadAction_label");
 		clickCompareWithAndWaitForSync(compareWithHeadMenuLabel);
-		closeFirstEmptySynchronizeDialog();
+
 		assertSynchronizeNoChange();
 
 		// change test file -> should have one change
@@ -332,31 +330,26 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 	private void assertSynchronizeNoChange() {
 		// 0 => title, 1 => ?, 2 => "no result" Label
-		SWTBotLabel syncViewLabel = bot.viewById(ISynchronizeView.VIEW_ID).bot()
-				.label(0);
+		SWTBotLabel syncViewLabel = bot.viewByTitle("Synchronize").bot()
+				.label(2);
 
 		String noResultLabel = syncViewLabel.getText();
-		String expected = "No changes in 'Git (" + PROJ1 + ")'.";
-		if (!noResultLabel.contains(expected)) {
-			syncViewLabel = bot.viewById(ISynchronizeView.VIEW_ID).bot().label(2);
-			noResultLabel = syncViewLabel.getText();
-			assertTrue(noResultLabel.contains(expected));
-		}
+		assertTrue(noResultLabel.contains("No changes in 'Git (" + PROJ1
+				+ ")'."));
 	}
 
 	private void assertSynchronizeFile1Changed() {
-		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertEquals(syncItems.length, 1);
-		String text = syncItems[0].getText();
-		assertTrue("Received unexpected text: " + text, text.contains(PROJ1));
+		assertTrue(syncItems[0].getText().contains(PROJ1));
 
-		TestUtil.expandAndWait(syncItems[0]);
+		syncItems[0].expand();
 		SWTBotTreeItem[] level1Children = syncItems[0].getItems();
 		assertEquals(level1Children.length, 1);
 		assertTrue(level1Children[0].getText().contains(FOLDER));
 
-		TestUtil.expandAndWait(level1Children[0]);
+		level1Children[0].expand();
 		SWTBotTreeItem[] level2Children = level1Children[0].getItems();
 		assertEquals(level2Children.length, 1);
 		assertTrue(level2Children[0].getText().contains(FILE1));

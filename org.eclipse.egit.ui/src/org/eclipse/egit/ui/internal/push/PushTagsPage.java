@@ -52,11 +52,11 @@ public class PushTagsPage extends WizardPage {
 
 	private final Repository repository;
 
-	private final Set<String> tagRefNamesToSelect = new HashSet<>();
+	private final Set<String> tagRefNamesToSelect = new HashSet<String>();
 
 	private RemoteConfig selectedRemoteConfig = null;
 
-	private List<TagNode> selectedTags = new ArrayList<>();
+	private List<TagNode> selectedTags = new ArrayList<TagNode>();
 
 	private boolean forceUpdateSelected = false;
 
@@ -81,7 +81,6 @@ public class PushTagsPage extends WizardPage {
 		}
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(GridLayoutFactory.swtDefaults()
@@ -98,7 +97,6 @@ public class PushTagsPage extends WizardPage {
 				.setItems(getRemoteConfigs());
 		remoteSelectionCombo
 				.addRemoteSelectionListener(new RemoteSelectionCombo.IRemoteSelectionListener() {
-					@Override
 					public void remoteSelected(RemoteConfig remoteConfig) {
 						selectedRemoteConfig = remoteConfig;
 					}
@@ -121,7 +119,6 @@ public class PushTagsPage extends WizardPage {
 		forceUpdateButton.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).span(2, 1).create());
 		forceUpdateButton.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				forceUpdateSelected = forceUpdateButton.getSelection();
 			}
@@ -142,7 +139,6 @@ public class PushTagsPage extends WizardPage {
 		initiallySelectTags(tagNodes, treeViewer);
 
 		treeViewer.addCheckStateListener(new ICheckStateListener() {
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				setSelectedTags(treeViewer.getCheckedElements());
 			}
@@ -170,7 +166,7 @@ public class PushTagsPage extends WizardPage {
 
 	private void initiallySelectTags(Object[] tagNodes,
 			CheckboxTreeViewer viewer) {
-		List<TagNode> checkedTags = new ArrayList<>();
+		List<TagNode> checkedTags = new ArrayList<TagNode>();
 		for (Object node : tagNodes) {
 			if (node instanceof TagNode) {
 				TagNode tagNode = (TagNode) node;

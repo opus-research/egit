@@ -29,6 +29,7 @@ import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -36,7 +37,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
-import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -82,11 +82,12 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 
 		String oldContent = getTestFileContent();
 		fetch();
-		final String title = NLS.bind(UIText.FetchResultDialog_title,
-				childRepositoryFile.getParentFile().getName() + " - origin");
-		bot.waitUntil(Conditions.shellIsActive(title));
 
-		SWTBotShell confirm = bot.shell(title);
+		String uri = lookupRepository(childRepositoryFile).getConfig()
+				.getString(ConfigConstants.CONFIG_REMOTE_SECTION, "origin",
+						ConfigConstants.CONFIG_KEY_URL);
+		SWTBotShell confirm = bot.shell(NLS.bind(
+				UIText.FetchResultDialog_title, uri));
 		SWTBotTree tree = confirm.bot().tree();
 		String branch = tree.getAllItems()[0].getText();
 		assertTrue("Wrong result",
@@ -98,8 +99,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		assertEquals(oldContent, newContent);
 
 		fetch();
-		bot.waitUntil(Conditions.shellIsActive(title));
-		confirm = bot.shell(title);
+		confirm = bot.shell(NLS.bind(UIText.FetchResultDialog_title, uri));
 		int count = confirm.bot().tree().rowCount();
 
 		confirm.close();
@@ -111,8 +111,8 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 
 		SWTBotShell mergeDialog = openMergeDialog();
 
-		SWTBotTreeItem remoteBranches = TestUtil.expandAndWait(
-				mergeDialog.bot().tree().getTreeItem(REMOTE_BRANCHES));
+		SWTBotTreeItem remoteBranches = mergeDialog.bot().tree()
+				.getTreeItem(REMOTE_BRANCHES).expand();
 		TestUtil.getChildNode(remoteBranches, "origin/master").select();
 		mergeDialog.bot().button(UIText.MergeTargetSelectionDialog_ButtonMerge)
 				.click();
@@ -140,16 +140,16 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 
 	private RevCommit getCommitForHead() throws Exception {
 		Repository repo = lookupRepository(repositoryFile);
-		try (RevWalk rw = new RevWalk(repo)) {
-			ObjectId id = repo.resolve(repo.getFullBranch());
-			return rw.parseCommit(id);
-		}
+		RevWalk rw = new RevWalk(repo);
+		ObjectId id = repo.resolve(repo.getFullBranch());
+		return rw.parseCommit(id);
 	}
 
 	private void mergeBranch(String branchToMerge, boolean squash) throws Exception {
 		SWTBotShell mergeDialog = openMergeDialog();
-		TestUtil.navigateTo(mergeDialog.bot().tree(),
-				new String[] { LOCAL_BRANCHES, branchToMerge }).select();
+		SWTBotTreeItem localBranches = mergeDialog.bot().tree()
+				.getTreeItem(LOCAL_BRANCHES).expand();
+		TestUtil.getChildNode(localBranches, branchToMerge).select();
 		if (squash)
 			mergeDialog.bot().radio(UIText.MergeTargetSelectionDialog_MergeTypeSquashButton).click();
 		mergeDialog.bot().button(UIText.MergeTargetSelectionDialog_ButtonMerge).click();
@@ -165,14 +165,23 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 	}
 
 	private void fetch() throws Exception {
+		SWTBotShell fetchDialog = openFetchDialog();
+		fetchDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
+		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.FETCH, 20, TimeUnit.SECONDS);
+		fetchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+		jobJoiner.join();
+	}
+
+	private SWTBotShell openFetchDialog() throws Exception {
 		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
-		String menuString = util
-				.getPluginLocalizedValue("FetchFromUpstreamAction.label");
-		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.FETCH, 20, TimeUnit.SECONDS);
+		String menuString = util.getPluginLocalizedValue("FetchAction_label");
+		String submenuString = util
+				.getPluginLocalizedValue("RemoteSubMenu.label");
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
-				menuString);
-		jobJoiner.join();
+				submenuString, menuString);
+		SWTBotShell dialog = bot.shell(UIText.FetchWizard_windowTitleDefault);
+		return dialog;
 	}
 
 	private SWTBotShell openMergeDialog() throws Exception {

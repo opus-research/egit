@@ -19,7 +19,6 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.SWTBot;
@@ -33,19 +32,16 @@ public class PushBranchWizardTester {
 
 	public static PushBranchWizardTester startWizard(SWTBotTree projectTree,
 			String branchName) {
-		String pushBranchMenu = branchName.equals(Constants.HEAD)
-				? UIText.PushMenu_PushHEAD
-				: NLS.bind(UIText.PushMenu_PushBranch, branchName);
+		String pushBranchMenu = NLS
+				.bind(UIText.PushMenu_PushBranch, branchName);
 		ContextMenuHelper.clickContextMenu(projectTree, "Team", pushBranchMenu);
 		return forBranchName(branchName);
 	}
 
 	public static PushBranchWizardTester forBranchName(String branchName) {
 		SWTWorkbenchBot bot = new SWTWorkbenchBot();
-		String title = branchName.equals(Constants.HEAD)
-				? UIText.PushCommitHandler_pushCommitTitle
-				: MessageFormat.format(UIText.PushBranchWizard_WindowTitle,
-						branchName);
+		String title = MessageFormat.format(
+				UIText.PushBranchWizard_WindowTitle, branchName);
 		SWTBot wizard = bot.shell(title).bot();
 		return new PushBranchWizardTester(wizard);
 	}
@@ -121,20 +117,10 @@ public class PushBranchWizardTester {
 		wizard.radio(UIText.UpstreamConfigComponent_RebaseRadio).click();
 	}
 
-	public void assertConfigureUpstreamSelected() {
+	public void assertRebaseSelected() {
 		assertTrue(wizard.checkBox(
 				UIText.UpstreamConfigComponent_ConfigureUpstreamCheck)
 				.isChecked());
-	}
-
-	public void assertMergeSelected() {
-		assertConfigureUpstreamSelected();
-		assertTrue(wizard.radio(UIText.UpstreamConfigComponent_MergeRadio)
-				.isSelected());
-	}
-
-	public void assertRebaseSelected() {
-		assertConfigureUpstreamSelected();
 		assertTrue(wizard.radio(UIText.UpstreamConfigComponent_RebaseRadio)
 				.isSelected());
 	}

@@ -47,10 +47,10 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 
 	SWTCommitList(final Control control, final ResourceManager resources) {
 		this.control = control;
-		allColors = new ArrayList<>(COMMIT_RGB.length);
+		allColors = new ArrayList<Color>(COMMIT_RGB.length);
 		for (RGB rgb : COMMIT_RGB)
 			allColors.add(resources.createColor(rgb));
-		availableColors = new LinkedList<>();
+		availableColors = new LinkedList<Color>();
 		repackColors();
 		control.addDisposeListener(this);
 	}
@@ -89,7 +89,6 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 		availableColors.add(lane.color);
 	}
 
-	@Override
 	public void widgetDisposed(DisposeEvent e) {
 		dispose();
 	}

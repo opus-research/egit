@@ -144,7 +144,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 			IMG_LIGHTTAG = UIIcons.TAG.createImage();
 		}
 
-		@Override
 		public Image getColumnImage(Object element, int columnIndex) {
 			// initially, we just display a single String ("Loading...")
 			if (element instanceof String)
@@ -155,7 +154,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 				return IMG_TAG;
 		}
 
-		@Override
 		public String getColumnText(Object element, int columnIndex) {
 			// initially, we just display a single String ("Loading...")
 			if (element instanceof String)
@@ -166,7 +164,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 				return ((RevTag) element).getTagName();
 		}
 
-		@Override
 		public void dispose() {
 			IMG_TAG.dispose();
 			IMG_LIGHTTAG.dispose();
@@ -303,7 +300,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 		Job job = new Job(UIText.CreateTagDialog_GetTagJobName) {
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.FILL_TAG_LIST.equals(family))
+				if (family.equals(JobFamilies.FILL_TAG_LIST))
 					return true;
 				return super.belongsTo(family);
 			}
@@ -315,7 +312,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 					final List<Object> tags = getRevTags();
 					PlatformUI.getWorkbench().getDisplay()
 							.asyncExec(new Runnable() {
-								@Override
 								public void run() {
 									if (!tagViewer.getTable().isDisposed()) {
 										tagViewer.setInput(tags);
@@ -415,7 +411,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 				| GridData.HORIZONTAL_ALIGN_FILL));
 		tagNameText.addModifyListener(new ModifyListener() {
 
-			@Override
 			public void modifyText(ModifyEvent e) {
 				String tagNameValue = tagNameText.getText();
 				tagNamePattern = Pattern.compile(Pattern.quote(tagNameValue),
@@ -443,7 +438,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 
 		// allow to tag with ctrl-enter
 		tagMessageText.addKeyListener(new KeyAdapter() {
-			@Override
 			public void keyPressed(KeyEvent e) {
 				if (UIUtils.isSubmitKeyEvent(e)) {
 					Control button = getButton(IDialogConstants.OK_ID);
@@ -455,7 +449,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 		});
 
 		tagMessageText.getTextWidget().addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				validateInput();
 			}
@@ -504,17 +497,15 @@ public class CreateTagDialog extends TitleAreaDialog {
 
 		advanced.setClient(advancedComposite);
 		advanced.addExpansionListener(new ExpansionAdapter() {
-			@Override
 			public void expansionStateChanged(ExpansionEvent e) {
 				// fill the Combo lazily to improve UI responsiveness
 				if (((Boolean) e.data).booleanValue()
 						&& commitCombo.getItemCount() == 0) {
-					final Collection<RevCommit> commits = new ArrayList<>();
+					final Collection<RevCommit> commits = new ArrayList<RevCommit>();
 					try {
 						PlatformUI.getWorkbench().getProgressService()
 								.busyCursorWhile(new IRunnableWithProgress() {
 
-									@Override
 									public void run(IProgressMonitor monitor)
 											throws InvocationTargetException,
 											InterruptedException {
@@ -559,7 +550,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 		tagViewer.setLabelProvider(new TagLabelProvider());
 		tagViewer.setContentProvider(ArrayContentProvider.getInstance());
 		tagViewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				fillTagDialog(event.getSelection());
 			}
@@ -640,19 +630,22 @@ public class CreateTagDialog extends TitleAreaDialog {
 	}
 
 	private void setExistingTagFromText(String tagName) {
+		RevWalk revWalk = null;
 		try {
 			ObjectId tagObjectId = repo.resolve(Constants.R_TAGS + tagName);
 			if (tagObjectId != null) {
-				try (RevWalk revWalk = new RevWalk(repo)) {
-					RevObject tagObject = revWalk.parseAny(tagObjectId);
-					setExistingTag(tagObject);
-				}
+				revWalk = new RevWalk(repo);
+				RevObject tagObject = revWalk.parseAny(tagObjectId);
+				setExistingTag(tagObject);
 				return;
 			}
 		} catch (IOException e) {
-			// ignore
+			// See below
 		} catch (RevisionSyntaxException e) {
-			// ignore
+			// See below
+		} finally {
+			if (revWalk != null)
+				revWalk.release();
 		}
 		setNoExistingTag();
 	}
@@ -681,7 +674,8 @@ public class CreateTagDialog extends TitleAreaDialog {
 	}
 
 	private void getRevCommits(Collection<RevCommit> commits) {
-		try (final RevWalk revWalk = new RevWalk(repo)) {
+		final RevWalk revWalk = new RevWalk(repo);
+		try {
 			revWalk.sort(RevSort.COMMIT_TIME_DESC, true);
 			revWalk.sort(RevSort.BOUNDARY, true);
 			AnyObjectId headId = repo.resolve(Constants.HEAD);
@@ -698,6 +692,8 @@ public class CreateTagDialog extends TitleAreaDialog {
 		} catch (IOException e) {
 			Activator.logError(UIText.TagAction_errorWhileGettingRevCommits, e);
 			setErrorMessage(UIText.TagAction_errorWhileGettingRevCommits);
+		} finally {
+			revWalk.release();
 		}
 	}
 
@@ -706,7 +702,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 	 * @throws IOException
 	 */
 	private List<Object> getRevTags() throws IOException {
-		List<Object> result = new ArrayList<>();
+		List<Object> result = new ArrayList<Object>();
 		Collection<Ref> refs = repo.getRefDatabase().getRefs(Constants.R_TAGS)
 				.values();
 		for (Ref ref : refs) {

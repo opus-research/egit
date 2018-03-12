@@ -66,7 +66,6 @@ public class UntrackOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -95,6 +94,8 @@ public class UntrackOperation implements IEGitOperation {
 		} catch (IOException e) {
 			throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, e));
 		} finally {
+			for (final RepositoryMapping rm : mappings.keySet())
+				rm.fireRepositoryChanged();
 			for (DirCacheEditor editor:edits.values())
 				if (editor.getDirCache() != null)
 					editor.getDirCache().unlock();
@@ -107,16 +108,12 @@ public class UntrackOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
 	 */
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRuleForRepositories(rsrcList.toArray(new IResource[rsrcList.size()]));
 	}
 
 	private void remove(final IResource path) throws CoreException {
 		final IProject proj = path.getProject();
-		if (proj == null) {
-			return;
-		}
 		final GitProjectData pd = GitProjectData.get(proj);
 		if (pd == null)
 			return;

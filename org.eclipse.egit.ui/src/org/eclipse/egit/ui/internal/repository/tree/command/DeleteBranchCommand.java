@@ -10,13 +10,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -29,39 +25,32 @@ import org.eclipse.egit.core.op.DeleteBranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.UnmergedBranchDialog;
-import org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.widgets.Shell;
 
 /**
  * Deletes a branch.
  */
 public class DeleteBranchCommand extends
-		RepositoriesViewCommandHandler<RepositoryTreeNode> {
+		RepositoriesViewCommandHandler<RefNode> {
 
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
-		final List<RepositoryTreeNode> nodes = getSelectedNodes(event);
-		final Map<Ref, Repository> refs = getRefsToDelete(nodes);
-		final AtomicReference<Map<Ref, Repository>> unmergedNodesRef = new AtomicReference<>();
+		final List<RefNode> nodes = getSelectedNodes(event);
+		final AtomicReference<List<RefNode>> unmergedNodesRef = new AtomicReference<List<RefNode>>();
 		final Shell shell = getShell(event);
 
 		try {
 			new ProgressMonitorDialog(shell).run(true, false,
 					new IRunnableWithProgress() {
-						@Override
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
-							Map<Ref, Repository> unmergedNodes = deleteBranches(
-									refs, false, monitor);
+							List<RefNode> unmergedNodes = deleteBranches(nodes, false, monitor);
 							unmergedNodesRef.set(unmergedNodes);
 						}
 					});
@@ -74,14 +63,13 @@ public class DeleteBranchCommand extends
 		}
 		if (unmergedNodesRef.get().isEmpty())
 			return null;
-		MessageDialog messageDialog = new UnmergedBranchDialog<>(
-					shell, new ArrayList<>(unmergedNodesRef.get().keySet()));
+		MessageDialog messageDialog = new UnmergedBranchDialog<RefNode>(
+					shell, unmergedNodesRef.get());
 		if (messageDialog.open() != Window.OK)
 			return null;
 		try {
 			new ProgressMonitorDialog(shell).run(true, false,
 					new IRunnableWithProgress() {
-						@Override
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
@@ -99,43 +87,18 @@ public class DeleteBranchCommand extends
 		return null;
 	}
 
-	private Map<Ref, Repository> getRefsToDelete(
-			List<RepositoryTreeNode> nodes) {
-		LinkedHashMap<Ref, Repository> refs = new LinkedHashMap<>();
-		for (RepositoryTreeNode node : nodes) {
-			if (node instanceof BranchHierarchyNode) {
-				try {
-					for (Ref ref : ((BranchHierarchyNode) node)
-							.getChildRefsRecursive()) {
-						refs.put(ref, node.getRepository());
-					}
-				} catch (IOException e) {
-					// ignore
-				}
-			} else if (node instanceof RefNode) {
-				refs.put((Ref) node.getObject(), node.getRepository());
-			}
-		}
-		return refs;
-	}
-
-	private Map<Ref, Repository> deleteBranches(final Map<Ref, Repository> refs,
+	private List<RefNode> deleteBranches(final List<RefNode> nodes,
 			final boolean forceDeletionOfUnmergedBranches,
 			IProgressMonitor progressMonitor) throws InvocationTargetException {
-		final Map<Ref, Repository> unmergedNodes = new LinkedHashMap<>();
+		final List<RefNode> unmergedNodes = new ArrayList<RefNode>();
 		try {
 			ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
 
-				@Override
 				public void run(IProgressMonitor monitor) throws CoreException {
-					monitor.beginTask(
-							UIText.DeleteBranchCommand_DeletingBranchesProgress,
-							refs.size());
-					for (Entry<Ref, Repository> entry : refs.entrySet()) {
-						Repository repository = entry.getValue();
-						Ref ref = entry.getKey();
-						int result = deleteBranch(repository, ref,
-								forceDeletionOfUnmergedBranches);
+					monitor.beginTask(UIText.DeleteBranchCommand_DeletingBranchesProgress, nodes.size());
+					for (RefNode refNode : nodes) {
+						int result = deleteBranch(refNode, refNode
+								.getObject(), forceDeletionOfUnmergedBranches);
 						if (result == DeleteBranchOperation.REJECTED_CURRENT) {
 							throw new CoreException(
 									Activator
@@ -143,7 +106,7 @@ public class DeleteBranchCommand extends
 											UIText.DeleteBranchCommand_CannotDeleteCheckedOutBranch,
 											null));
 						} else if (result == DeleteBranchOperation.REJECTED_UNMERGED) {
-							unmergedNodes.put(ref, repository);
+							unmergedNodes.add(refNode);
 						} else
 							monitor.worked(1);
 					}
@@ -158,10 +121,10 @@ public class DeleteBranchCommand extends
 		return unmergedNodes;
 	}
 
-	private int deleteBranch(final Repository repo, final Ref ref,
-			boolean force) throws CoreException {
-		DeleteBranchOperation dbop = new DeleteBranchOperation(repo, ref,
-				force);
+	private int deleteBranch(final RefNode node, final Ref ref, boolean force)
+			throws CoreException {
+		DeleteBranchOperation dbop = new DeleteBranchOperation(node
+				.getRepository(), ref, force);
 		dbop.execute(null);
 		return dbop.getStatus();
 	}

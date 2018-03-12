@@ -68,9 +68,9 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 
 	private List<Repository> repositories;
 
-	private Map<Repository, ConfigurationEditorComponent> repoConfigEditors = new HashMap<>();
+	private Map<Repository, ConfigurationEditorComponent> repoConfigEditors = new HashMap<Repository, ConfigurationEditorComponent>();
 
-	private Set<Repository> dirtyRepositories = new HashSet<>();
+	private Set<Repository> dirtyRepositories = new HashSet<Repository>();
 
 	private boolean userIsDirty;
 
@@ -89,7 +89,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				SWTUtils.MARGINS_NONE);
 		TabFolder tabFolder = new TabFolder(composite, SWT.NONE);
 		tabFolder.setLayoutData(SWTUtils.createHVFillGridData());
-		userConfigEditor = new ConfigurationEditorComponent(tabFolder, userConfig, true) {
+		userConfigEditor = new ConfigurationEditorComponent(tabFolder, userConfig, true, false) {
 			@Override
 			protected void setErrorMessage(String message) {
 				GlobalConfigurationPreferencePage.this.setErrorMessage(message);
@@ -101,7 +101,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				updateApplyButton();
 			}
 		};
-		sysConfigEditor = new ConfigurationEditorComponent(tabFolder, sysConfig, true) {
+		sysConfigEditor = new ConfigurationEditorComponent(tabFolder, sysConfig, true, true) {
 			@Override
 			protected void setErrorMessage(String message) {
 				GlobalConfigurationPreferencePage.this.setErrorMessage(message);
@@ -112,6 +112,14 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				sysIsDirty = dirty;
 				updateApplyButton();
 			}
+			@Override
+			protected void setChangeSystemPrefix(String prefix) throws IOException {
+				FS.DETECTED.setGitPrefix(new File(prefix));
+				sysConfig = SystemReader.getInstance().openSystemConfig(null,
+						FS.DETECTED);
+				setConfig(sysConfig);
+			}
+
 		};
 		Control result = userConfigEditor.createContents();
 		Dialog.applyDialogFont(result);
@@ -138,7 +146,6 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 
 		Combo repoCombo = new Combo(repositoryComposite, SWT.READ_ONLY);
 		repoCombo.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Combo combo = (Combo) e.widget;
 				showRepositoryConfiguration(combo.getSelectionIndex());
@@ -230,14 +237,13 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 		super.performDefaults();
 	}
 
-	@Override
 	public void init(IWorkbench workbench) {
 		if (sysConfig == null)
 			sysConfig = SystemReader.getInstance().openSystemConfig(null, FS.DETECTED);
 		if (userConfig == null)
 			userConfig = SystemReader.getInstance().openUserConfig(null, FS.DETECTED); // no inherit here!
 		if (repositories == null) {
-			repositories = new ArrayList<>();
+			repositories = new ArrayList<Repository>();
 			List<String> repoPaths = Activator.getDefault().getRepositoryUtil().getConfiguredRepositories();
 			RepositoryCache repositoryCache = org.eclipse.egit.core.Activator.getDefault().getRepositoryCache();
 			for (String repoPath : repoPaths) {
@@ -262,7 +268,6 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 	private void sortRepositoriesByName() {
 		Collections.sort(repositories, new Comparator<Repository>() {
 
-			@Override
 			public int compare(Repository repo1, Repository repo2) {
 				return getName(repo1).compareTo(getName(repo2));
 			}
@@ -270,7 +275,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 	}
 
 	private String[] getRepositoryComboItems() {
-		List<String> items = new ArrayList<>();
+		List<String> items = new ArrayList<String>();
 		for (Repository repository : repositories) {
 			String repoName = getName(repository);
 			if (repoName.length() > 0)
@@ -298,7 +303,6 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 					.getFS());
 			repositoryConfig.addChangeListener(new ConfigChangedListener() {
 
-				@Override
 				public void onConfigChanged(ConfigChangedEvent event) {
 					repository.getListenerList().dispatch(
 							new ConfigChangedEvent());
@@ -307,8 +311,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 		} else {
 			repositoryConfig = repository.getConfig();
 		}
-		ConfigurationEditorComponent editorComponent = new ConfigurationEditorComponent(
-				repoConfigComposite, repositoryConfig, true) {
+		ConfigurationEditorComponent editorComponent = new ConfigurationEditorComponent(repoConfigComposite, repositoryConfig, true, false) {
 			@Override
 			protected void setErrorMessage(String message) {
 				GlobalConfigurationPreferencePage.this.setErrorMessage(message);

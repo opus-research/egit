@@ -130,7 +130,6 @@ public class CloneOperationTest extends DualRepositoryTestCase {
 		final File[] repoDir = new File[1];
 		clop.addPostCloneTask(new PostCloneTask() {
 
-			@Override
 			public void execute(Repository repository, IProgressMonitor monitor)
 					throws CoreException {
 				repoDir[0] = repository.getDirectory();
@@ -188,7 +187,6 @@ public class CloneOperationTest extends DualRepositoryTestCase {
 						"origin", "fetch")[1].equals("refs/notes/review:refs/notes/review"));
 		Git clonedGit = new Git(clonedRepo);
 		assertEquals(1, clonedGit.notesList().setNotesRef("refs/notes/review").call().size());
-		clonedGit.close();
 	}
 
 	protected void createNoteInOrigin() throws GitAPIException {

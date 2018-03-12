@@ -45,13 +45,12 @@ public class PullAction extends SynchronizeModelAction {
 
 		return new SynchronizeModelOperation(configuration, elements) {
 
-			@Override
 			public void run(IProgressMonitor monitor)
 					throws InvocationTargetException, InterruptedException {
 				GitSynchronizeDataSet gsds = (GitSynchronizeDataSet) getConfiguration()
 						.getProperty(SYNCHRONIZATION_DATA);
 
-				Set<Repository> repositories = new HashSet<>();
+				Set<Repository> repositories = new HashSet<Repository>();
 				for (GitSynchronizeData gsd : gsds)
 					repositories.add(gsd.getRepository());
 

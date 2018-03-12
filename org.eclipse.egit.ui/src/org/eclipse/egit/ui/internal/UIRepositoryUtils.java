@@ -46,12 +46,9 @@ public final class UIRepositoryUtils {
 	 */
 	public static boolean handleUncommittedFiles(Repository repo, Shell shell)
 			throws GitAPIException {
-		Status status = null;
-		try (Git git = new Git(repo)) {
-			status = git.status().call();
-		}
-		if (status != null && status.hasUncommittedChanges()) {
-			List<String> files = new ArrayList<>(status.getModified());
+		Status status = new Git(repo).status().call();
+		if (status.hasUncommittedChanges()) {
+			List<String> files = new ArrayList<String>(status.getModified());
 			Collections.sort(files);
 			String repoName = Activator.getDefault().getRepositoryUtil()
 					.getRepositoryName(repo);

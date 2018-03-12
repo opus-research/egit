@@ -30,7 +30,6 @@ import org.eclipse.osgi.util.NLS;
  */
 public class ResetActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(true, event);
 		if (repository == null)

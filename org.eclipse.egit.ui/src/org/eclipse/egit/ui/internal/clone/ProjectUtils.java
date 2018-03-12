@@ -81,7 +81,6 @@ public class ProjectUtils {
 			final IWorkingSet[] selectedWorkingSets, IProgressMonitor monitor)
 			throws InvocationTargetException, InterruptedException {
 		IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				IWorkingSetManager workingSetManager = PlatformUI
 						.getWorkbench().getWorkingSetManager();
@@ -89,7 +88,7 @@ public class ProjectUtils {
 					actMonitor.beginTask("", projectsToCreate.size() * 2 + 1); //$NON-NLS-1$
 					if (actMonitor.isCanceled())
 						throw new OperationCanceledException();
-					Map<IProject, File> projectsToConnect = new HashMap<>();
+					Map<IProject, File> projectsToConnect = new HashMap<IProject, File>();
 					for (ProjectRecord projectRecord : projectsToCreate) {
 						if (actMonitor.isCanceled())
 							throw new OperationCanceledException();
@@ -106,12 +105,8 @@ public class ProjectUtils {
 						if (!mappings.isEmpty()) {
 							RepositoryMapping mapping = mappings.iterator()
 									.next();
-							IPath absolutePath = mapping
-									.getGitDirAbsolutePath();
-							if (absolutePath != null) {
-								projectsToConnect.put(project,
-										absolutePath.toFile());
-							}
+							projectsToConnect.put(project, mapping
+									.getGitDirAbsolutePath().toFile());
 						}
 
 						if (selectedWorkingSets != null

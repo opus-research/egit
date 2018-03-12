@@ -2,15 +2,11 @@
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Andre Bossert <anb0s@anbos.de> - Cleaning up the DecoratableResourceAdapter
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
@@ -21,58 +17,52 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 
 
 /**
  * A staged/unstaged entry in the table
  */
-public class StagingEntry extends PlatformObject
-		implements IProblemDecoratable, IDecoratableResource {
+public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
 
 	/**
 	 * State of the node
 	 */
 	public static enum State {
-		/** in index, not in HEAD */
+		/** added to the index, not in the tree */
 		ADDED(EnumSet.of(Action.UNSTAGE)),
 
-		/** changed in index compared to HEAD */
+		/** changed from tree to index */
 		CHANGED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.UNSTAGE)),
 
-		/** removed from index, but in HEAD */
+		/** removed from index, but in tree */
 		REMOVED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.UNSTAGE)),
 
-		/** in index (unchanged), missing from working tree */
+		/** in index (unchanged), but not filesystem */
 		MISSING(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
-		/** changed in index compared to HEAD, missing from working tree */
+		/** in index (changed from tree to index), but not filesystem */
 		MISSING_AND_CHANGED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX,
 				Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
-		/** modified in working tree compared to index */
+		/** modified on disk relative to the index */
 		MODIFIED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
-		/** modified in working tree compared to index, changed in index compared to HEAD */
-		MODIFIED_AND_CHANGED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
-
-		/** modified in working tree compared to index, added in index (not in HEAD) */
-		MODIFIED_AND_ADDED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.STAGE)),
+		/** partially staged, modified in workspace and in index */
+		PARTIALLY_MODIFIED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** not ignored, and not in the index */
 		UNTRACKED(EnumSet.of(Action.STAGE, Action.DELETE, Action.IGNORE)),
 
 		/** in conflict */
-		CONFLICTING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX,
-				Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE,
-				Action.LAUNCH_MERGE_TOOL, Action.REPLACE_WITH_OURS_THEIRS_MENU));
+		CONFLICTING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION,
+					Action.STAGE, Action.LAUNCH_MERGE_TOOL));
 
 		private final Set<Action> availableActions;
 
@@ -99,7 +89,6 @@ public class StagingEntry extends PlatformObject
 		DELETE,
 		IGNORE,
 		LAUNCH_MERGE_TOOL,
-		REPLACE_WITH_OURS_THEIRS_MENU
 	}
 
 	private final Repository repository;
@@ -113,8 +102,6 @@ public class StagingEntry extends PlatformObject
 
 	private boolean submodule;
 
-	private boolean symlink;
-
 	/**
 	 * @param repository
 	 *            repository for this entry
@@ -126,7 +113,7 @@ public class StagingEntry extends PlatformObject
 		this.repository = repository;
 		this.state = state;
 		this.path = path;
-		this.file = ResourceUtil.getFileForLocation(repository, path, false);
+		this.file = ResourceUtil.getFileForLocation(repository, path);
 	}
 
 	/**
@@ -141,20 +128,6 @@ public class StagingEntry extends PlatformObject
 	 */
 	public boolean isSubmodule() {
 		return submodule;
-	}
-
-	/**
-	 * @param symlink
-	 */
-	public void setSymlink(boolean symlink) {
-		this.symlink = symlink;
-	}
-
-	/**
-	 * @return true if symlink, false otherwise
-	 */
-	public boolean isSymlink() {
-		return symlink;
 	}
 
 	/**
@@ -200,7 +173,6 @@ public class StagingEntry extends PlatformObject
 	/**
 	 * @return the location (path) of the entry
 	 */
-	@NonNull
 	public IPath getLocation() {
 		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
 		return absolutePath;
@@ -221,7 +193,6 @@ public class StagingEntry extends PlatformObject
 		this.parent = parent;
 	}
 
-	@Override
 	public int getProblemSeverity() {
 		if (file == null)
 			return SEVERITY_NONE;
@@ -233,12 +204,18 @@ public class StagingEntry extends PlatformObject
 		}
 	}
 
-	@Override
+	public Object getAdapter(Class adapter) {
+		if (adapter == IResource.class)
+			return getFile();
+		else if (adapter == IPath.class)
+			return getLocation();
+		return null;
+	}
+
 	public int getType() {
 		return IResource.FILE;
 	}
 
-	@Override
 	public String getName() {
 		if (name == null) {
 			IPath parsed = Path.fromOSString(getPath());
@@ -247,87 +224,52 @@ public class StagingEntry extends PlatformObject
 		return name;
 	}
 
-	@Override
 	public String getRepositoryName() {
 		return null;
 	}
 
-	@Override
 	public String getBranch() {
 		return null;
 	}
 
-	@Override
 	public String getBranchStatus() {
 		return null;
 	}
 
-	@Override
-	public String getCommitMessage() {
-		return null;
-	}
-
-	@Override
 	public boolean isTracked() {
 		return state != State.UNTRACKED;
 	}
 
-	@Override
 	public boolean isIgnored() {
 		return false;
 	}
 
-	@Override
 	public boolean isDirty() {
-		return state == State.MODIFIED || state == State.MODIFIED_AND_CHANGED
-				|| state == State.MODIFIED_AND_ADDED;
+		return state == State.MODIFIED || state == State.PARTIALLY_MODIFIED;
 	}
 
-	@Override
-	public boolean isMissing() {
-		return state == State.MISSING || state == State.MISSING_AND_CHANGED;
-	}
-
-	@Override
-	public boolean hasUnstagedChanges() {
-		return !isTracked() || isDirty() || isMissing() || hasConflicts();
-	}
-
-	@Override
-	public StagingState getStagingState() {
+	public Staged staged() {
 		switch (state) {
 		case ADDED:
-			return StagingState.ADDED;
+			return Staged.ADDED;
 		case CHANGED:
-			return StagingState.MODIFIED;
+			return Staged.MODIFIED;
 		case REMOVED:
-			return StagingState.REMOVED;
+			return Staged.REMOVED;
 		case MISSING:
 		case MISSING_AND_CHANGED:
-			return StagingState.REMOVED;
+			return Staged.REMOVED;
 		default:
-			return StagingState.NOT_STAGED;
+			return Staged.NOT_STAGED;
 		}
 	}
 
-	@Override
-	public boolean isStaged() {
-		return getStagingState() != StagingState.NOT_STAGED;
-	}
-
-	@Override
 	public boolean hasConflicts() {
 		return state == State.CONFLICTING;
 	}
 
-	@Override
-	public boolean isAssumeUnchanged() {
+	public boolean isAssumeValid() {
 		return false;
-	}
-
-	@Override
-	public String toString() {
-		return "StagingEntry[" + state + " " + path + "]"; //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
 	}
 
 	@Override
@@ -356,10 +298,5 @@ public class StagingEntry extends PlatformObject
 		if (state != other.state)
 			return false;
 		return true;
-	}
-
-	@Override
-	public boolean isRepositoryContainer() {
-		return false;
 	}
 }

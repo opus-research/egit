@@ -1,13 +1,10 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 355809
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
@@ -21,7 +18,6 @@ import static org.eclipse.egit.ui.internal.actions.ActionCommands.IGNORE_ACTION;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.MERGE_TOOL_ACTION;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.CREATE_PATCH;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.PUSH_ACTION;
-import static org.eclipse.egit.ui.internal.actions.ActionCommands.REMOVE_FROM_INDEX;
 import static org.eclipse.egit.ui.internal.synchronize.model.SupportedContextActionsHelper.canPush;
 import static org.eclipse.team.internal.ui.synchronize.SynchronizePageConfiguration.P_OPEN_ACTION;
 import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.NAVIGATE_GROUP;
@@ -32,11 +28,7 @@ import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.resources.IResourceState;
-import org.eclipse.egit.ui.internal.resources.ResourceStateFactory;
 import org.eclipse.egit.ui.internal.synchronize.action.ExpandAllModelAction;
 import org.eclipse.egit.ui.internal.synchronize.action.GitOpenInCompareAction;
 import org.eclipse.egit.ui.internal.synchronize.action.OpenWorkingFileAction;
@@ -68,7 +60,6 @@ class GitActionContributor extends SynchronizePageActionGroup {
 
 	private OpenWorkingFileAction openWorkingFileAction;
 
-	@Override
 	public void fillContextMenu(IMenuManager menu) {
 		IStructuredSelection selection = (IStructuredSelection) getContext()
 				.getSelection();
@@ -80,22 +71,12 @@ class GitActionContributor extends SynchronizePageActionGroup {
 		if (resource != null) {
 			// add standard git action for 'workspace' models
 			menu.appendToGroup(GIT_ACTIONS, createItem(COMMIT_ACTION));
-			IResourceState state = ResourceStateFactory.getInstance()
-					.get(resource);
-			if (state.hasUnstagedChanges()) {
-				menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
-			}
-			if (state.isStaged()) {
-				menu.appendToGroup(GIT_ACTIONS, createItem(REMOVE_FROM_INDEX));
-			}
-			if (!state.isIgnored()) {
-				menu.appendToGroup(GIT_ACTIONS, createItem(IGNORE_ACTION));
-			}
+			menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
+			menu.appendToGroup(GIT_ACTIONS, createItem(IGNORE_ACTION));
 			menu.appendToGroup(GIT_ACTIONS, createItem(MERGE_TOOL_ACTION));
 			menu.appendToGroup(GIT_ACTIONS, createItem(CREATE_PATCH));
-		} else if (element instanceof GitModelObject && selection.size() == 1) {
+		} else if (element instanceof GitModelObject && selection.size() == 1)
 			createMenuForGitModelObject(menu, (GitModelObject) element);
-		}
 
 		IContributionItem fileGroup = findGroup(menu,
 				ISynchronizePageConfiguration.FILE_GROUP);
@@ -111,33 +92,19 @@ class GitActionContributor extends SynchronizePageActionGroup {
 
 	private void createMenuForGitModelObject(IMenuManager menu,
 			GitModelObject object) {
-		if (SupportedContextActionsHelper.canCommit(object)) {
+		if (SupportedContextActionsHelper.canCommit(object))
 			menu.appendToGroup(GIT_ACTIONS, createItem(COMMIT_ACTION));
-		}
-		if (SupportedContextActionsHelper.canStage(object)) {
-			// We know we have a model object for a working tree file here.
-			IPath path = object.getLocation();
-			if (path != null) {
-				IResourceState state = ResourceStateFactory.getInstance()
-						.get(path.toFile());
-				if (state.hasUnstagedChanges()) {
-					menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
-				}
-				if (state.isStaged()) {
-					menu.appendToGroup(GIT_ACTIONS,
-							createItem(REMOVE_FROM_INDEX));
-				}
-				if (!state.isIgnored()) {
-					menu.appendToGroup(GIT_ACTIONS, createItem(IGNORE_ACTION));
-				}
-			}
-		}
-		if (SupportedContextActionsHelper.canUseMergeTool(object)) {
+
+		if (SupportedContextActionsHelper.canUseMergeTool(object))
 			menu.appendToGroup(GIT_ACTIONS, createItem(MERGE_TOOL_ACTION));
+
+		if (SupportedContextActionsHelper.canStage(object)) {
+			menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
+			menu.appendToGroup(GIT_ACTIONS, createItem(IGNORE_ACTION));
 		}
-		if (canPush(object)) {
+
+		if (canPush(object))
 			menu.appendToGroup(GIT_ACTIONS, createItem(PUSH_ACTION));
-		}
 	}
 
 	private CommandContributionItem createItem(String itemAction) {
@@ -147,7 +114,8 @@ class GitActionContributor extends SynchronizePageActionGroup {
 
 		IWorkbenchWindow activeWorkbenchWindow = workbench
 				.getActiveWorkbenchWindow();
-		IHandlerService hsr = CommonUtils.getService(activeWorkbenchWindow, IHandlerService.class);
+		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
+				.getService(IHandlerService.class);
 		IEvaluationContext ctx = hsr.getCurrentState();
 		ctx.addVariable(ACTIVE_MENU_SELECTION_NAME, getContext().getSelection());
 

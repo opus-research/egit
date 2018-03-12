@@ -60,9 +60,8 @@ public class CommitCombo extends Composite {
 	private class CommitContentProposalProvider implements
 			IContentProposalProvider {
 
-		@Override
 		public IContentProposal[] getProposals(String contents, int position) {
-			List<IContentProposal> list = new ArrayList<>();
+			List<IContentProposal> list = new ArrayList<IContentProposal>();
 			Pattern pattern = Pattern.compile(contents,
 					Pattern.CASE_INSENSITIVE);
 			for (int i = 0; i < commits.size(); i++) {
@@ -80,22 +79,18 @@ public class CommitCombo extends Composite {
 		 */
 		private IContentProposal makeContentProposal(final String proposal) {
 			return new IContentProposal() {
-				@Override
 				public String getContent() {
 					return proposal;
 				}
 
-				@Override
 				public String getDescription() {
 					return null;
 				}
 
-				@Override
 				public String getLabel() {
 					return null;
 				}
 
-				@Override
 				public int getCursorPosition() {
 					return proposal.length();
 				}
@@ -117,7 +112,7 @@ public class CommitCombo extends Composite {
 		super(parent, style);
 
 		combo = new Combo(this, SWT.DROP_DOWN);
-		commits = new ArrayList<>();
+		commits = new ArrayList<ComboCommitEnt>();
 
 		setLayout(GridLayoutFactory.swtDefaults().create());
 		setLayoutData(GridDataFactory.fillDefaults().create());

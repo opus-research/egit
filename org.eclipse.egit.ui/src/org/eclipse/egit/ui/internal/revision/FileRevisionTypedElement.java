@@ -1,17 +1,17 @@
 /*******************************************************************************
- * Copyright (c) 2006, 2015 IBM Corporation and others.
+ * Copyright (c) 2006 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *    IBM Corporation - initial API and implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248
+ * IBM Corporation - initial API and implementation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.revision;
 
 import java.net.URI;
+import java.text.DateFormat;
 import java.util.Date;
 
 import org.eclipse.compare.ITypedElement;
@@ -19,7 +19,6 @@ import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.IEditorInput;
 
@@ -47,12 +46,10 @@ public class FileRevisionTypedElement extends StorageTypedElement {
 		this.fileRevision = fileRevision;
 	}
 
-	@Override
 	public String getName() {
 		return fileRevision.getName();
 	}
 
-	@Override
 	protected IStorage fetchContents(IProgressMonitor monitor)
 			throws CoreException {
 		return fileRevision.getStorage(monitor);
@@ -72,7 +69,7 @@ public class FileRevisionTypedElement extends StorageTypedElement {
 	public String getTimestamp() {
 		long date = fileRevision.getTimestamp();
 		Date dateFromLong = new Date(date);
-		return PreferenceBasedDateFormatter.create().formatDate(dateFromLong);
+		return DateFormat.getDateTimeInstance().format(dateFromLong);
 	}
 
 	/**
@@ -92,7 +89,6 @@ public class FileRevisionTypedElement extends StorageTypedElement {
 		return getName();
 	}
 
-	@Override
 	public IEditorInput getDocumentKey(Object element) {
 		if (element == this && getBufferedStorage() != null) {
 			return new FileRevisionEditorInput(fileRevision,
@@ -101,12 +97,10 @@ public class FileRevisionTypedElement extends StorageTypedElement {
 		return null;
 	}
 
-	@Override
 	public int hashCode() {
 		return fileRevision.hashCode();
 	}
 
-	@Override
 	public boolean equals(Object obj) {
 		if (obj == this)
 			return true;

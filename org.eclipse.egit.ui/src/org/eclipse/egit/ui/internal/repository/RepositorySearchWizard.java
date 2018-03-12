@@ -25,25 +25,20 @@ public class RepositorySearchWizard extends Wizard {
 
 	private RepositorySearchDialog searchPage;
 
-	private boolean allowBare;
-
 	/**
 	 * Create repository search wizard
 	 *
 	 * @param existingDirs
-	 * @param allowBare
 	 */
-	public RepositorySearchWizard(Collection<String> existingDirs,
-			boolean allowBare) {
+	public RepositorySearchWizard(Collection<String> existingDirs) {
 		dirs = existingDirs;
-		this.allowBare = allowBare;
 		setWindowTitle(UIText.RepositorySearchDialog_AddGitRepositories);
 		setNeedsProgressMonitor(true);
 	}
 
 	@Override
 	public void addPages() {
-		searchPage = new RepositorySearchDialog(dirs, true, allowBare);
+		searchPage = new RepositorySearchDialog(dirs, true);
 		addPage(searchPage);
 	}
 
@@ -56,7 +51,6 @@ public class RepositorySearchWizard extends Wizard {
 		return searchPage.getDirectories();
 	}
 
-	@Override
 	public boolean performFinish() {
 		return true;
 	}

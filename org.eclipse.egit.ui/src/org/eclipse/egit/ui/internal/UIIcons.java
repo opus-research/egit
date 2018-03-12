@@ -5,9 +5,6 @@
  * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
- * Copyright (C) 2015, Denis Zygann <d.zygann@web.de>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +19,6 @@ import java.net.URL;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.swt.graphics.Image;
 
 /**
@@ -49,16 +45,13 @@ public class UIIcons {
 	public final static ImageDescriptor OVR_CONFLICT;
 
 	/** Decoration for tracked resources that we want to ignore changes in. */
-	public final static ImageDescriptor OVR_ASSUMEUNCHANGED;
+	public final static ImageDescriptor OVR_ASSUMEVALID;
 
 	/** Decoration for tracked resources that are dirty. */
 	public final static ImageDescriptor OVR_DIRTY;
 
 	/** Decoration for warning **/
 	public final static ImageDescriptor OVR_ERROR;
-
-	/** Decoration for symlink **/
-	public final static ImageDescriptor OVR_SYMLINK;
 
 	/** Find icon */
 	public final static ImageDescriptor ELCL16_FIND;
@@ -111,33 +104,6 @@ public class UIIcons {
 
 	/** Connect Wizard banner */
 	public final static ImageDescriptor WIZBAN_CONNECT_REPO;
-
-	/**
-	 * Commit Wizard banner
-	 * @TODO make use of this wizban
-	 */
-	public final static ImageDescriptor WIZBAN_COMMIT;
-
-	/** Fetch from Gerrit Wizard banner */
-	public final static ImageDescriptor WIZBAN_FETCH_GERRIT;
-
-	/** Fetch Wizard banner */
-	public final static ImageDescriptor WIZBAN_FETCH;
-
-	/**
-	 * Pull Wizard banner
-	 * @TODO make use of this wizban
-	 */
-	public final static ImageDescriptor WIZBAN_PULL;
-
-	/** Push to Gerrit Wizard banner */
-	public final static ImageDescriptor WIZBAN_PUSH_GERRIT;
-
-	/** Push Wizard banner */
-	public final static ImageDescriptor WIZBAN_PUSH;
-
-	/** Synchronize Wizard banner */
-	public final static ImageDescriptor WIZBAN_SYNCHRONIZE;
 
 	/** History view, select all version in same project */
 	public final static ImageDescriptor FILTERPROJECT;
@@ -274,9 +240,6 @@ public class UIIcons {
 	/** Stash icon */
 	public final static ImageDescriptor STASH;
 
-	/** History view icon */
-	public final static ImageDescriptor HISTORY;
-
 	/** Search commit icon */
 	public final static ImageDescriptor SEARCH_COMMIT;
 
@@ -289,17 +252,11 @@ public class UIIcons {
 	/** Compact tree presentation icon */
 	public final static ImageDescriptor COMPACT;
 
-	/** Squash icon arrow up */
-	public final static ImageDescriptor SQUASH_UP;
+	/** Squash icon */
+	public final static ImageDescriptor SQUASH;
 
-	/** Squash icon arrow down */
-	public final static ImageDescriptor SQUASH_DOWN;
-
-	/** Fixup icon arrow up */
-	public final static ImageDescriptor FIXUP_UP;
-
-	/** Fixup icon arrow down */
-	public final static ImageDescriptor FIXUP_DOWN;
+	/** Fixup icon */
+	public final static ImageDescriptor FIXUP;
 
 	/** Reword icon */
 	public final static ImageDescriptor REWORD;
@@ -310,14 +267,8 @@ public class UIIcons {
 	/** Reword for current rebase step */
 	public final static ImageDescriptor CURRENT_STEP;
 
-	/** Sort alphabetically icon */
-	public final static ImageDescriptor ALPHABETICALLY_SORT;
-
-	/** Sort by state icon */
-	public final static ImageDescriptor STATE_SORT;
-
-	/** {@link #BRANCH} overlaid with {@link #OVR_CHECKEDOUT}. */
-	public final static ImageDescriptor CHECKED_OUT_BRANCH;
+	/** Reword for todo rebase step */
+	public final static ImageDescriptor TODO_STEP;
 
 	/** base URL */
 	public final static URL base;
@@ -330,9 +281,8 @@ public class UIIcons {
 		OVR_STAGED_RENAME = map("ovr/staged_renamed.gif"); //$NON-NLS-1$
 		OVR_UNTRACKED = map("ovr/untracked.gif"); //$NON-NLS-1$
 		OVR_CONFLICT = map("ovr/conflict.gif"); //$NON-NLS-1$
-		OVR_ASSUMEUNCHANGED = map("ovr/assume_unchanged.gif"); //$NON-NLS-1$
+		OVR_ASSUMEVALID = map("ovr/assume_valid.gif"); //$NON-NLS-1$
 		OVR_DIRTY = map("ovr/dirty.gif"); //$NON-NLS-1$
-		OVR_SYMLINK = map("ovr/symlink_ovr.gif"); //$NON-NLS-1$
 		ELCL16_FIND = map("elcl16/find.gif"); //$NON-NLS-1$
 		ELCL16_COMPARE_VIEW = map("elcl16/compare_view.gif"); //$NON-NLS-1$
 		ELCL16_NEXT = map("elcl16/next.gif"); //$NON-NLS-1$
@@ -340,13 +290,6 @@ public class UIIcons {
 		WIZBAN_CREATE_PATCH = map("wizban/createpatch_wizban.png"); //$NON-NLS-1$
 		WIZBAN_IMPORT_REPO = map("wizban/import_wiz.png"); //$NON-NLS-1$
 		WIZBAN_CONNECT_REPO = map("wizban/newconnect_wizban.png"); //$NON-NLS-1$
-		WIZBAN_COMMIT = map("wizban/commit_wizban.png"); //$NON-NLS-1$
-		WIZBAN_FETCH_GERRIT = map("wizban/fetch_gerrit_wizban.png"); //$NON-NLS-1$
-		WIZBAN_FETCH = map("wizban/fetch_wizban.png"); //$NON-NLS-1$
-		WIZBAN_PULL = map("wizban/pull_wizban.png"); //$NON-NLS-1$
-		WIZBAN_PUSH_GERRIT = map("wizban/push_gerrit_wizban.png"); //$NON-NLS-1$
-		WIZBAN_PUSH = map("wizban/push_wizban.png"); //$NON-NLS-1$
-		WIZBAN_SYNCHRONIZE = map("wizban/synchronize_wizban.png"); //$NON-NLS-1$
 		EDITCONFIG = map("obj16/editconfig.gif"); //$NON-NLS-1$
 		ELCL16_COMMIT = map("elcl16/commit.gif"); //$NON-NLS-1$
 		ELCL16_COMMENTS = map("elcl16/comment.gif"); //$NON-NLS-1$
@@ -357,7 +300,7 @@ public class UIIcons {
 		ELCL16_TRASH = map("elcl16/trash.gif"); //$NON-NLS-1$
 		ELCL16_CLEAR = map("elcl16/clear.gif"); //$NON-NLS-1$
 		ELCL16_REFRESH = map("elcl16/refresh.gif"); //$NON-NLS-1$
-		ELCL16_SYNCED = map("elcl16/synced.png"); //$NON-NLS-1$
+		ELCL16_SYNCED = map("elcl16/synced.gif"); //$NON-NLS-1$
 		ELCL16_FILTER = map("elcl16/filter_ps.gif"); //$NON-NLS-1$
 		ELCL16_ID = map("elcl16/sha1.gif"); //$NON-NLS-1$
 		CHECKBOX_ENABLED_CHECKED = map("checkboxes/enabled_checked.gif"); //$NON-NLS-1$
@@ -367,14 +310,14 @@ public class UIIcons {
 		FILTERRESOURCE = map("elcl16/filterresource.gif"); //$NON-NLS-1$
 		FILTERPROJECT = map("elcl16/filterproject.gif"); //$NON-NLS-1$
 		FILTERFOLDER = map("elcl16/filterfolder.gif"); //$NON-NLS-1$
-		FETCH = map("obj16/fetch.png"); //$NON-NLS-1$
-		PUSH = map("obj16/push.png"); //$NON-NLS-1$
-		PULL = map("obj16/pull.png"); //$NON-NLS-1$
+		FETCH = map("obj16/fetch.gif"); //$NON-NLS-1$
+		PUSH = map("obj16/push.gif"); //$NON-NLS-1$
+		PULL = map("obj16/pull.gif"); //$NON-NLS-1$
 		REPOSITORY = map("obj16/repository_rep.gif"); //$NON-NLS-1$
 		REPOSITORY_GERRIT = map("obj16/repository_gerrit.gif"); //$NON-NLS-1$
 		NEW_REPOSITORY = map("etool16/newlocation_wiz.gif"); //$NON-NLS-1$
 		REMOTE_REPOSITORY = map("obj16/remote_entry_tbl.gif"); //$NON-NLS-1$
-		REMOTE_SPEC = map("obj16/synchronize.png"); //$NON-NLS-1$
+		REMOTE_SPEC = map("obj16/remotespec.gif"); //$NON-NLS-1$
 		BRANCHES = map("obj16/branches_obj.gif"); //$NON-NLS-1$
 		OVR_CHECKEDOUT = map("ovr/checkedout_ov.gif"); //$NON-NLS-1$
 		TAGS = map("obj16/tags.gif"); //$NON-NLS-1$
@@ -396,7 +339,7 @@ public class UIIcons {
 		UNTRACKED_FILE = map("obj16/untracked_file.gif"); //$NON-NLS-1$
 		NOTE = map("obj16/note.png"); //$NON-NLS-1$
 		ANNOTATE = map("etool16/annotate.gif"); //$NON-NLS-1$
-		COMMIT = map("obj16/commit.png"); //$NON-NLS-1$
+		COMMIT = map("obj16/commit.gif"); //$NON-NLS-1$
 		CHERRY_PICK = map("obj16/cherry-pick.png"); //$NON-NLS-1$
 		REBASE = map("obj16/rebase.gif"); //$NON-NLS-1$
 		REBASE_CONTINUE = map("elcl16/continue.gif"); //$NON-NLS-1$
@@ -410,22 +353,16 @@ public class UIIcons {
 		SUBMODULES = map("obj16/submodules.gif"); //$NON-NLS-1$
 		CLEAN = map("obj16/clean_obj.gif"); //$NON-NLS-1$
 		STASH = map("obj16/stash.png"); //$NON-NLS-1$
-		HISTORY = map("obj16/history.gif"); //$NON-NLS-1$
 		SEARCH_COMMIT = map("obj16/search-commit.gif"); //$NON-NLS-1$
 		HIERARCHY = map("elcl16/hierarchicalLayout.gif"); //$NON-NLS-1$
 		FLAT = map("elcl16/flatLayout.gif"); //$NON-NLS-1$
 		COMPACT = map("elcl16/compactLayout.gif"); //$NON-NLS-1$
-		SQUASH_UP = map("obj16/squash-up.png"); //$NON-NLS-1$
-		SQUASH_DOWN = map("obj16/squash-down.png"); //$NON-NLS-1$
-		FIXUP_UP = map("obj16/fixup-up.png"); //$NON-NLS-1$
-		FIXUP_DOWN = map("obj16/fixup-down.png"); //$NON-NLS-1$
+		SQUASH = map("obj16/squash.gif"); //$NON-NLS-1$
+		FIXUP = map("obj16/fixup.gif"); //$NON-NLS-1$
 		REWORD = map("obj16/reword.gif"); //$NON-NLS-1$
 		DONE_STEP = map("obj16/done_step.gif"); //$NON-NLS-1$
 		CURRENT_STEP = map("obj16/current_step.gif"); //$NON-NLS-1$
-		ALPHABETICALLY_SORT = map("obj16/alphab_sort_co.gif"); //$NON-NLS-1$
-		STATE_SORT = map("obj16/state_sort_co.png"); //$NON-NLS-1$
-		CHECKED_OUT_BRANCH = new DecorationOverlayDescriptor(BRANCH,
-				OVR_CHECKEDOUT, IDecoration.TOP_LEFT);
+		TODO_STEP = map("obj16/todo_step.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

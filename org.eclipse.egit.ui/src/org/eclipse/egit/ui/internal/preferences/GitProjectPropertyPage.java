@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2015 Tomi Pakarinen <tomi.pakarinen@iki.fi> and others.
+ * Copyright (C) 2008, 2011 Tomi Pakarinen <tomi.pakarinen@iki.fi> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,7 +16,6 @@ import java.io.IOException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
@@ -86,28 +85,25 @@ public class GitProjectPropertyPage extends PropertyPage {
 		if (element instanceof IResource) {
 			project = ((IResource) element).getProject();
 		} else {
-			IResource adapter = AdapterUtils.adapt(element, IResource.class);
-			if (adapter != null) {
-				project = adapter.getProject();
+			Object adapter = element.getAdapter(IResource.class);
+			if (adapter instanceof IResource) {
+				project = ((IResource) adapter).getProject();
 			}
 		}
 
-		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-		if (mapping != null) {
-			Repository repository = mapping.getRepository();
+		Repository repository = RepositoryMapping.getMapping(project)
+				.getRepository();
 
-			if (repository != null) {
-				try {
-					createHeadLink(repository, composite);
-					fillValues(repository);
-				} catch (IOException e) {
-					if (GitTraceLocation.UI.isActive())
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.UI.getLocation(),
-								e.getMessage(), e);
-				}
+		if (repository != null) {
+			try {
+				createHeadLink(repository, composite);
+				fillValues(repository);
+			} catch (IOException e) {
+				if (GitTraceLocation.UI.isActive())
+					GitTraceLocation.getTrace().trace(GitTraceLocation.UI.getLocation(), e.getMessage(), e);
 			}
 		}
+
 		return composite;
 	}
 
@@ -147,7 +143,8 @@ public class GitProjectPropertyPage extends PropertyPage {
 	}
 
 	private RepositoryCommit getCommit(Repository repository, ObjectId objectId) {
-		try (RevWalk walk = new RevWalk(repository)) {
+		RevWalk walk = new RevWalk(repository);
+		try {
 			RevCommit commit = walk.parseCommit(objectId);
 			for (RevCommit parent : commit.getParents())
 				walk.parseBody(parent);
@@ -156,6 +153,8 @@ public class GitProjectPropertyPage extends PropertyPage {
 			Activator.showError(NLS.bind(
 					UIText.GitProjectPropertyPage_UnableToGetCommit,
 					objectId.name()), e);
+		} finally {
+			walk.release();
 		}
 		return null;
 	}

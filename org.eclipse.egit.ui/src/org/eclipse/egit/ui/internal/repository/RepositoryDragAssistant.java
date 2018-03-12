@@ -27,13 +27,11 @@ import org.eclipse.ui.navigator.CommonDragAdapterAssistant;
  */
 public class RepositoryDragAssistant extends CommonDragAdapterAssistant {
 
-	@Override
 	public Transfer[] getSupportedTransferTypes() {
 		return new Transfer[] { LocalSelectionTransfer.getTransfer(),
 				FileTransfer.getInstance() };
 	}
 
-	@Override
 	public boolean setDragData(final DragSourceEvent event,
 			final IStructuredSelection selection) {
 		if (selection == null || selection.isEmpty())
@@ -46,7 +44,7 @@ public class RepositoryDragAssistant extends CommonDragAdapterAssistant {
 		}
 
 		if (FileTransfer.getInstance().isSupportedType(event.dataType)) {
-			final List<String> files = new ArrayList<>();
+			final List<String> files = new ArrayList<String>();
 			for (Object selected : selection.toList())
 				if (selected instanceof FileNode) {
 					File file = ((FileNode) selected).getObject();
@@ -60,7 +58,6 @@ public class RepositoryDragAssistant extends CommonDragAdapterAssistant {
 		return false;
 	}
 
-	@Override
 	public void dragFinished(final DragSourceEvent event,
 			final IStructuredSelection selection) {
 		if (LocalSelectionTransfer.getTransfer()

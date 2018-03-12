@@ -45,7 +45,6 @@ public abstract class AbstractRebaseHistoryCommandHandler extends
 		return repository.getRepositoryState().equals(RepositoryState.SAFE);
 	}
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 
 		PlotCommit commit = (PlotCommit) getSelection(event).getFirstElement();

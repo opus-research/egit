@@ -17,7 +17,6 @@ import java.util.Set;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
@@ -103,8 +102,6 @@ public class PushBranchWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
-
-		setDefaultPageImageDescriptor(UIIcons.WIZBAN_PUSH);
 	}
 
 	@Override
@@ -126,8 +123,7 @@ public class PushBranchWizard extends Wizard {
 
 	@Override
 	public boolean canFinish() {
-		return getContainer().getCurrentPage() == confirmationPage
-				&& confirmationPage.isPageComplete();
+		return getContainer().getCurrentPage() == confirmationPage;
 	}
 
 	@Override
@@ -171,7 +167,7 @@ public class PushBranchWizard extends Wizard {
 
 	private List<RefSpec> getRefSpecs() {
 		String src = this.ref != null ? this.ref.getName() : this.commitToPush.getName();
-		String dst = pushBranchPage.getFullRemoteReference();
+		String dst = Constants.R_HEADS + pushBranchPage.getRemoteBranchName();
 		RefSpec refSpec = new RefSpec().setSourceDestination(src, dst)
 				.setForceUpdate(pushBranchPage.isForceUpdateSelected());
 		return Arrays.asList(refSpec);
@@ -206,20 +202,21 @@ public class PushBranchWizard extends Wizard {
 			return;
 		}
 		String remoteName = getRemoteName();
-		String fullRemoteBranchName = pushBranchPage.getFullRemoteReference();
-		String localBranchName = Repository.shortenRefName(this.ref.getName());
+		String remoteBranchName = pushBranchPage.getRemoteBranchName();
+		String branchName = Repository.shortenRefName(this.ref.getName());
 
 		StoredConfig config = repository.getConfig();
-		config.setString(ConfigConstants.CONFIG_BRANCH_SECTION, localBranchName,
+		config.setString(ConfigConstants.CONFIG_BRANCH_SECTION, branchName,
 				ConfigConstants.CONFIG_KEY_REMOTE, remoteName);
-		config.setString(ConfigConstants.CONFIG_BRANCH_SECTION, localBranchName,
-				ConfigConstants.CONFIG_KEY_MERGE, fullRemoteBranchName);
+		config.setString(ConfigConstants.CONFIG_BRANCH_SECTION, branchName,
+				ConfigConstants.CONFIG_KEY_MERGE, Constants.R_HEADS
+						+ remoteBranchName);
 		if (pushBranchPage.isRebaseSelected()) {
 			config.setBoolean(ConfigConstants.CONFIG_BRANCH_SECTION,
-					localBranchName, ConfigConstants.CONFIG_KEY_REBASE, true);
+					branchName, ConfigConstants.CONFIG_KEY_REBASE, true);
 		} else {
 			// Make sure we overwrite any previous configuration
-			config.unset(ConfigConstants.CONFIG_BRANCH_SECTION, localBranchName,
+			config.unset(ConfigConstants.CONFIG_BRANCH_SECTION, branchName,
 					ConfigConstants.CONFIG_KEY_REBASE);
 		}
 
