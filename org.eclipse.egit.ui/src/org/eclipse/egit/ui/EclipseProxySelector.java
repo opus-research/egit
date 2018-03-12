@@ -35,11 +35,11 @@ class EclipseProxySelector extends ProxySelector {
 		final String host = uri.getHost();
 
 		String type = IProxyData.SOCKS_PROXY_TYPE;
-		if ("http".equals(uri.getScheme())) //$NON-NLS-1$
+		if ("http".equals(uri.getScheme()))
 			type = IProxyData.HTTP_PROXY_TYPE;
-		else if ("ftp".equals(uri.getScheme())) //$NON-NLS-1$
+		else if ("ftp".equals(uri.getScheme()))
 			type = IProxyData.HTTP_PROXY_TYPE;
-		else if ("https".equals(uri.getScheme())) //$NON-NLS-1$
+		else if ("https".equals(uri.getScheme()))
 			type = IProxyData.HTTPS_PROXY_TYPE;
 
 		final IProxyData data = service.getProxyDataForHost(host, type);

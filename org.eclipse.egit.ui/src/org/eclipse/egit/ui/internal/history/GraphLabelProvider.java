@@ -27,7 +27,7 @@ class GraphLabelProvider extends BaseLabelProvider implements
 	private PersonIdent lastAuthor;
 
 	GraphLabelProvider() {
-		fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
+		fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	}
 
 	public String getColumnText(final Object element, final int columnIndex) {
@@ -39,13 +39,13 @@ class GraphLabelProvider extends BaseLabelProvider implements
 		if (author != null) {
 			switch (columnIndex) {
 			case 1:
-				return author.getName() + " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+				return author.getName() + " <" + author.getEmailAddress() + ">";
 			case 2:
 				return fmt.format(author.getWhen());
 			}
 		}
 
-		return ""; //$NON-NLS-1$
+		return "";
 	}
 
 	private PersonIdent authorOf(final RevCommit c) {

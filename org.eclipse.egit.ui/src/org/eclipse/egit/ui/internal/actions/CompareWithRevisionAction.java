@@ -38,12 +38,12 @@ public class CompareWithRevisionAction extends TeamAction {
 	@Override
 	public void run(IAction action) {
 		super.run(action);
-		System.out.println("Run:" + action); //$NON-NLS-1$
-		System.out.println("Selection resources:" //$NON-NLS-1$
+		System.out.println("Run:" + action);
+		System.out.println("Selection resources:"
 				+ Arrays.asList(getSelectedResources()));
 		IResource[] r = getSelectedResources();
 		Hashtable providerMapping = this.getProviderMapping(r);
-		System.out.println("Mapping:" + providerMapping); //$NON-NLS-1$
+		System.out.println("Mapping:" + providerMapping);
 		TeamUI.getHistoryView().showHistoryFor(getSelectedResources()[0]);
 
 	}

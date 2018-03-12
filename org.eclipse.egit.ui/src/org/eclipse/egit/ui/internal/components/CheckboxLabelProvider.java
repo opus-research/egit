@@ -33,14 +33,14 @@ public abstract class CheckboxLabelProvider extends CenteredImageLabelProvider {
 	private static Image createCheckboxImage(final Control control,
 			boolean checked, boolean enabled) {
 
-		String checkboxhack = System.getProperty("egit.swt.checkboxhack"); //$NON-NLS-1$
+		String checkboxhack = System.getProperty("egit.swt.checkboxhack");
 		if (checkboxhack == null)
 			if (Platform.getOS().equals(Platform.OS_MACOSX))
-				checkboxhack = "hardwired"; //$NON-NLS-1$
+				checkboxhack = "hardwired";
 			else
-				checkboxhack = "screenshot"; //$NON-NLS-1$
+				checkboxhack = "screenshot";
 
-		if (checkboxhack == "hardwired") { //$NON-NLS-1$
+		if (checkboxhack == "hardwired") {
 			if (enabled) {
 				if (checked)
 					return UIIcons.CHECKBOX_ENABLED_CHECKED.createImage();

@@ -59,7 +59,7 @@ public class FindToolbarThread extends Thread {
 	 * to return.
 	 */
 	public FindToolbarThread() {
-		super("history_find_thread" + ++globalThreadIx); //$NON-NLS-1$
+		super("history_find_thread" + ++globalThreadIx);
 		currentThreadIx = globalThreadIx;
 	}
 
