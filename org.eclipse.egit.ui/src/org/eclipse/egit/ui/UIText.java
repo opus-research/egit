@@ -978,6 +978,9 @@ public class UIText extends NLS {
 	public static String CompareTreeView_AnalyzingRepositoryTaskText;
 
 	/** */
+	public static String CompareTreeView_ExpandAllTooltip;
+
+	/** */
 	public static String CompareTreeView_CollapseAllTooltip;
 
 	/** */
@@ -3739,9 +3742,6 @@ public class UIText extends NLS {
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
-	public static String GitChangeSetModelProviderLabel;
-
-	/** */
 	public static String GitBranchSynchronizeWizardPage_title;
 
 	/** */
@@ -4451,6 +4451,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_CommitMessage;
+
+	/** */
+	public static String StagingView_CommitAndPush;
 
 	/** */
 	public static String StagingView_Committer;
