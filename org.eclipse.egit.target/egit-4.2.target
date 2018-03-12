@@ -7,7 +7,7 @@
    which accompanies this distribution, and is available at
    http://www.eclipse.org/legal/epl-v10.html
 -->
-<?pde version="3.8"?>
+<?pde version="3.6"?>
 <target name="egit-4.2.target" sequenceNumber="53">
   <locations>
     <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
@@ -22,6 +22,8 @@
       <unit id="org.eclipse.jetty.server.source" version="0.0.0"/>
       <unit id="org.eclipse.jetty.servlet" version="0.0.0"/>
       <unit id="org.eclipse.jetty.servlet.source" version="0.0.0"/>
+      <unit id="org.eclipse.jetty.util" version="0.0.0"/>
+      <unit id="org.eclipse.jetty.util.source" version="0.0.0"/>
     </location>
     <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
       <repository location="http://download.eclipse.org/tools/orbit/downloads/drops/R20120119162704/repository/"/>
