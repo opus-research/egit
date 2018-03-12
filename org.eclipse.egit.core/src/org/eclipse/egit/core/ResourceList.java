@@ -1,48 +1,43 @@
 /*******************************************************************************
  * Copyright (C) 2006, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.history;
+package org.eclipse.egit.core;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.core.runtime.IAdaptable;
 
-/**
- * Input for the {@link GitHistoryPage}
- **/
-public class HistoryPageInput {
+/** A list of IResource, adaptable to the first item. */
+public class ResourceList implements IAdaptable {
 	private final IResource[] list;
 
-	private final Repository repo;
-
 	/**
-	 * @param repository
-	 *            the {@link Repository}
+	 * Create a new list of resources.
+	 *
 	 * @param items
 	 *            the items to contain in this list.
 	 */
-	public HistoryPageInput(final Repository repository, final IResource[] items) {
-		this.repo = repository;
+	public ResourceList(final IResource[] items) {
 		list = items;
 	}
 
 	/**
-	 * @return the {@link Repository} provided to the constructor
-	 */
-	public Repository getRepository() {
-		return repo;
-	}
-
-	/**
+	 * Get the items stored in this list.
+	 *
 	 * @return the list provided to our constructor.
 	 */
 	public IResource[] getItems() {
 		return list;
+	}
+
+	public Object getAdapter(final Class adapter) {
+		if (adapter == IResource.class && list != null && list.length > 0)
+			return list[0];
+		return null;
 	}
 }
