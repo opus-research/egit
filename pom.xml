@@ -21,7 +21,7 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>4.3.0-SNAPSHOT</version>
+  <version>4.4.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>EGit Parent</name>
@@ -62,7 +62,7 @@
   </licenses>
 
   <properties>
-    <egit-version>4.3.0-SNAPSHOT</egit-version>
+    <egit-version>4.4.0-SNAPSHOT</egit-version>
     <tycho-version>0.23.0</tycho-version>
     <tycho-extras-version>${tycho-version}</tycho-extras-version>
     <jboss-tycho-plugins-version>0.22.0</jboss-tycho-plugins-version>
@@ -77,7 +77,6 @@
     <test.vmparams></test.vmparams>
     <coretest.vmparams></coretest.vmparams>
     <uitest.vmparams>-Dorg.eclipse.swtbot.search.timeout=30000 -Dorg.eclipse.swtbot.screenshots.dir=target/screenshots -Xmx1024m -XX:MaxPermSize=150m</uitest.vmparams>
-    <eclipse-with-smartimport>http://download.eclipse.org/eclipse/updates/4.6milestones/S-4.6M6-201603170200</eclipse-with-smartimport>
   </properties>
 
   <profiles>
@@ -253,7 +252,6 @@
     <module>org.eclipse.egit.ui</module>
 
     <module>org.eclipse.egit.ui.importer</module>
-    <module>org.eclipse.egit.ui.smartimport</module>
 
     <module>org.eclipse.egit.mylyn.ui</module>
     <module>org.eclipse.egit.mylyn-feature</module>
