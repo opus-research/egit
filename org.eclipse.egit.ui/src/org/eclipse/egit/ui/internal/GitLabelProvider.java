@@ -161,8 +161,7 @@ public class GitLabelProvider extends LabelProvider implements
 		else
 			string.append(directory.getName());
 
-		String branch = Activator.getDefault().getRepositoryUtil()
-				.getShortBranch(repository);
+		String branch = repository.getBranch();
 		if (branch != null) {
 			string.append(' ');
 			string.append('[', StyledString.DECORATIONS_STYLER);
