@@ -11,8 +11,10 @@
 package org.eclipse.egit.ui.internal.actions;
 
 import org.eclipse.jface.action.IAction;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.team.internal.ui.actions.TeamAction;
 import org.eclipse.team.ui.TeamUI;
+import org.eclipse.team.ui.history.HistoryPageSaveablePart;
 
 /**
  *	Compare the resources filtered in the history view with the current
@@ -34,7 +36,12 @@ public class CompareWithRevisionAction extends TeamAction {
 		TeamUI.getHistoryView().showHistoryFor(getSelectedResources()[0]);
 	}
 
+	void showCompareInDialog(Shell shell, Object object) {
+		HistoryPageSaveablePart.showHistoryInDialog(shell, object);
+	}
+
 	public boolean isEnabled() {
 		return !getSelection().isEmpty();
 	}
+
 }

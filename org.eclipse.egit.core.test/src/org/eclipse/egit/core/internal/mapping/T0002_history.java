@@ -101,7 +101,7 @@ public class T0002_history extends GitTestCase {
 		assertEquals(RefUpdate.Result.NEW, lck.forceUpdate());
 
 		ConnectProviderOperation operation = new ConnectProviderOperation(
-				project.getProject(), new File("../.git"));
+				project.getProject());
 		operation.run(null);
 	}
 
