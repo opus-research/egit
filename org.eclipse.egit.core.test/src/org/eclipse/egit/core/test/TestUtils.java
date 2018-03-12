@@ -65,7 +65,7 @@ public class TestUtils {
 	 *         directory; may or may not exist
 	 * @throws IOException
 	 */
-	public File getTempDir(String name) throws IOException {
+	public File createTempDir(String name) throws IOException {
 		File userHome = FS.DETECTED.userHome();
 		File rootDir = new File(userHome, "EGitCoreTestTempDir");
 		File result = new File(rootDir, name);
@@ -139,6 +139,22 @@ public class TestUtils {
 	}
 
 	/**
+	 * Change the content of a file
+	 *
+	 * @param project
+	 * @param file
+	 * @param newContent
+	 * @return the file
+	 * @throws Exception
+	 */
+	public IFile changeContentOfFile(IProject project, IFile file, String newContent)
+			throws Exception {
+		file.setContents(new ByteArrayInputStream(newContent.getBytes(project
+				.getDefaultCharset())), 0, null);
+		return file;
+	}
+
+	/**
 	 * Create a project in the local file system
 	 *
 	 * @param parentFile
@@ -150,10 +166,10 @@ public class TestUtils {
 	 */
 	public IProject createProjectInLocalFileSystem(File parentFile,
 			String projectName) throws Exception {
-		IProject firstProject = ResourcesPlugin.getWorkspace().getRoot()
+		IProject project = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName);
-		if (firstProject.exists()) {
-			firstProject.delete(true, null);
+		if (project.exists()) {
+			project.delete(true, null);
 		}
 		File testFile = new File(parentFile, projectName);
 		if (testFile.exists())
@@ -162,8 +178,8 @@ public class TestUtils {
 		IProjectDescription desc = ResourcesPlugin.getWorkspace()
 				.newProjectDescription(projectName);
 		desc.setLocation(new Path(new File(parentFile, projectName).getPath()));
-		firstProject.create(desc, null);
-		firstProject.open(null);
-		return firstProject;
+		project.create(desc, null);
+		project.open(null);
+		return project;
 	}
 }

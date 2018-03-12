@@ -21,13 +21,9 @@ import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IObjectActionDelegate;
-import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
 
@@ -36,6 +32,7 @@ import org.eclipse.ui.handlers.IHandlerService;
  */
 public abstract class RepositoryAction extends AbstractHandler implements
 		IObjectActionDelegate {
+	private ISelection mySelection;
 
 	/**
 	 * The command id
@@ -58,19 +55,6 @@ public abstract class RepositoryAction extends AbstractHandler implements
 		this.handler = handler;
 	}
 
-	/**
-	 * @return the current selection
-	 */
-	protected IStructuredSelection getSelection() {
-		// TODO Synchronize CommitOperation overwrites this, can we get rid
-		// of it?
-		ISelectionService srv = (ISelectionService) PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getService(ISelectionService.class);
-		if (srv == null)
-			return new StructuredSelection();
-		return (IStructuredSelection) srv.getSelection();
-	}
-
 	public void setActivePart(IAction action, IWorkbenchPart targetPart) {
 		part = targetPart;
 	}
@@ -86,7 +70,7 @@ public abstract class RepositoryAction extends AbstractHandler implements
 		ExecutionEvent event = hsrv.createExecutionEvent(command, null);
 		if (event.getApplicationContext() instanceof IEvaluationContext) {
 			((IEvaluationContext) event.getApplicationContext()).addVariable(
-					ISources.ACTIVE_CURRENT_SELECTION_NAME, getSelection());
+					ISources.ACTIVE_CURRENT_SELECTION_NAME, mySelection);
 		}
 
 		try {
@@ -97,6 +81,7 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	}
 
 	public final void selectionChanged(IAction action, ISelection selection) {
+		mySelection = selection;
 		action.setEnabled(isEnabled());
 	}
 

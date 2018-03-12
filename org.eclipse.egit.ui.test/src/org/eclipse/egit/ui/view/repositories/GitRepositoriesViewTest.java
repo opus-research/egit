@@ -149,7 +149,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	public void testExpandWorkDir() throws Exception {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		Repository myRepository = lookupRepository(repositoryFile);
-		List<String> children = Arrays.asList(myRepository.getWorkTree().list());
+		List<String> children = Arrays
+				.asList(myRepository.getWorkTree().list());
 		List<String> treeChildren = myRepoViewUtil.getWorkdirItem(tree,
 				repositoryFile).expand().getNodes();
 		assertTrue(children.containsAll(treeChildren)
@@ -213,13 +214,9 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("ImportProjectsCommand"));
 		SWTBotShell shell = bot.shell(wizardTitle);
-		// we can't find the check box, so let's use the keyboard activator
-		// to select the import as existing project button
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_ImportExistingButton);
+		bot.radio(UIText.GitSelectWizardPage_ImportExistingButton).click();
 		// auto share
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_AutoShareButton);
+		bot.radio(UIText.GitSelectWizardPage_AutoShareButton).click();
 		TableCollection selected = shell.bot().tree().selection();
 		String wizardNode = selected.get(0, 0);
 		// wizard directory should be working dir
@@ -273,11 +270,9 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// try import existing project first
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_ImportExistingButton);
+		bot.radio(UIText.GitSelectWizardPage_ImportExistingButton).click();
 		// auto share
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_AutoShareButton);
+		bot.radio(UIText.GitSelectWizardPage_AutoShareButton).click();
 		TableCollection selected = shell.bot().tree().selection();
 		String wizardNode = selected.get(0, 0);
 		// wizard directory should be PROJ2
@@ -287,11 +282,25 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertTrue(shell.bot().tree().getAllItems().length == 0);
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// import as general
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_ImportAsGeneralButton);
+		shell.bot().radio(UIText.GitSelectWizardPage_ImportAsGeneralButton).click();
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
 				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
+		// switch to a sub directory and see if this is used
+		shell.bot().button(IDialogConstants.BACK_LABEL).click();
+		shell.bot().tree().getAllItems()[0].expand().getNode(PROJ2).expand()
+				.getNode(FOLDER).select();
+		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		String name = shell.bot().textWithLabel(
+				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText();
+		assertEquals(FOLDER, name);
+		shell.bot().button(IDialogConstants.BACK_LABEL).click();
+		// switch back to the root directory
+		shell.bot().tree().getAllItems()[0].expand().getNode(PROJ2).select();
+		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		assertEquals(PROJ2, shell.bot().textWithLabel(
+				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
+
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		waitInUI();
 		assertProjectExistence(PROJ2, true);
@@ -313,11 +322,9 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// try import existing project first
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_ImportExistingButton);
+		bot.radio(UIText.GitSelectWizardPage_ImportExistingButton).click();
 		// auto share
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_AutoShareButton);
+		bot.radio(UIText.GitSelectWizardPage_AutoShareButton).click();
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		waitInUI();
 		shell.bot().tree().getAllItems()[0].check();
@@ -372,11 +379,9 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// import as general
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_ImportAsGeneralButton);
+		bot.radio(UIText.GitSelectWizardPage_ImportAsGeneralButton).click();
 		// share manual
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_InteractiveShareButton);
+		bot.radio(UIText.GitSelectWizardPage_InteractiveShareButton).click();
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
 				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
@@ -408,11 +413,9 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// import as general
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_ImportAsGeneralButton);
+		bot.radio(UIText.GitSelectWizardPage_ImportAsGeneralButton).click();
 		// share manual
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_InteractiveShareButton);
+		bot.radio(UIText.GitSelectWizardPage_InteractiveShareButton).click();
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
 				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
@@ -584,8 +587,9 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTreeItem masterNode = localBranchesItem.getNode("master");
 		masterNode.select();
 		ContextMenuHelper.clickContextMenu(tree, "Create Branch...");
-		SWTBotShell createBranchShell = bot.shell("Create Branch");
-		createBranchShell.bot().text("").setText("abc");
+		SWTBotShell createBranchShell = bot
+				.shell(UIText.CreateBranchWizard_NewBranchTitle);
+		createBranchShell.bot().textWithId("BranchName").setText("abc");
 		createBranchShell.bot().checkBox().deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
@@ -616,14 +620,15 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		// create first branch (abc)
 		masterNode.select();
 		ContextMenuHelper.clickContextMenu(tree, "Create Branch...");
-		SWTBotShell createBranchShell = bot.shell("Create Branch");
-		createBranchShell.bot().text("").setText("abc");
+		SWTBotShell createBranchShell = bot
+				.shell(UIText.CreateBranchWizard_NewBranchTitle);
+		createBranchShell.bot().textWithId("BranchName").setText("abc");
 		createBranchShell.bot().checkBox().deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		// create second branch (123)
 		ContextMenuHelper.clickContextMenu(tree, "Create Branch...");
-		createBranchShell = bot.shell("Create Branch");
-		createBranchShell.bot().text("").setText("123");
+		createBranchShell = bot.shell(UIText.CreateBranchWizard_NewBranchTitle);
+		createBranchShell.bot().textWithId("BranchName").setText("123");
 		createBranchShell.bot().checkBox().deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();

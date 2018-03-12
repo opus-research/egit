@@ -23,15 +23,16 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
-import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.Tag;
-import org.eclipse.jgit.lib.Tree;
+import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.lib.WorkDirCheckout;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 
@@ -63,8 +64,8 @@ public class ResetOperation implements IEGitOperation {
 	private final String refName;
 	private final ResetType type;
 
-	private Commit commit;
-	private Tree newTree;
+	private RevCommit commit;
+	private RevTree newTree;
 	private GitIndex index;
 
 	/**
@@ -120,52 +121,60 @@ public class ResetOperation implements IEGitOperation {
 		IProject[] validProjects = null;
 		if (type == ResetType.HARD)
 			validProjects = ProjectUtil.getValidProjects(repository);
+		boolean merging = false;
+		if (repository.getRepositoryState().equals(RepositoryState.MERGING)
+				|| repository.getRepositoryState().equals(
+						RepositoryState.MERGING_RESOLVED))
+			merging = true;
+
 		mapObjects();
 		monitor.worked(1);
 
 		writeRef();
 		monitor.worked(1);
 
-		if (type != ResetType.SOFT) {
-			if (type == ResetType.MIXED)
-				resetIndex();
-			else
-				readIndex();
-			writeIndex();
-		}
-		monitor.worked(1);
-
-		if (type == ResetType.HARD) {
+		switch (type) {
+		case HARD:
+			readIndex();
+			monitor.worked(1);
 			checkoutIndex();
-		}
-		monitor.worked(1);
-
-		if (type != ResetType.SOFT) {
-			refreshIndex();
-		}
-		monitor.worked(1);
-
-		monitor.worked(1);
-
-		if (type == ResetType.HARD)
+			monitor.worked(1);
+			writeIndex();
+			monitor.worked(1);
+			if (merging)
+				resetMerge();
+			monitor.worked(1);
 			// only refresh if working tree changes
 			ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
 					monitor, 1));
+			monitor.worked(1);
+			break;
+
+		case MIXED:
+			// Change the
+			resetIndex();
+			monitor.worked(1);
+			writeIndex();
+			monitor.worked(3);
+			if (merging)
+				resetMerge();
+			monitor.worked(1);
+			break;
+
+		case SOFT:
+			// only change the ref
+			monitor.worked(5);
+		}
 
 		monitor.done();
 	}
 
-	private void refreshIndex() throws TeamException {
-//		File workdir = repository.getDirectory().getParentFile();
-//		for (Entry e : newIndex.getMembers()) {
-//			try {
-//				e.update(new File(workdir, e.getName()));
-//			} catch (IOException ignore) {}
-//		}
+	private void resetMerge() throws CoreException {
 		try {
-			index.write();
-		} catch (IOException e1) {
-			throw new TeamException(CoreText.ResetOperation_writingIndex, e1);
+			repository.writeMergeHeads(null);
+			repository.writeMergeCommitMsg(null);
+		} catch (IOException e) {
+			throw new TeamException(CoreText.ResetOperation_resetMergeFailed, e);
 		}
 	}
 
@@ -177,24 +186,21 @@ public class ResetOperation implements IEGitOperation {
 			throw new TeamException(NLS.bind(
 					CoreText.ResetOperation_lookingUpRef, refName), e);
 		}
+		RevWalk rw = new RevWalk(repository);
 		try {
-			commit = repository.mapCommit(commitId);
+			commit = rw.parseCommit(commitId);
 		} catch (IOException e) {
-			try {
-				Tag t = repository.mapTag(refName, commitId);
-				commit = repository.mapCommit(t.getObjId());
-			} catch (IOException e2) {
-				throw new TeamException(NLS.bind(
-						CoreText.ResetOperation_lookingUpCommit, commitId), e2);
-			}
+			throw new TeamException(NLS.bind(
+					CoreText.ResetOperation_lookingUpCommit, commitId), e);
+		} finally {
+			rw.release();
 		}
-
 	}
 
 	private void writeRef() throws TeamException {
 		try {
 			final RefUpdate ru = repository.updateRef(Constants.HEAD);
-			ru.setNewObjectId(commit.getCommitId());
+			ru.setNewObjectId(commit.getId());
 			String name = refName;
 			if (name.startsWith("refs/heads/"))  //$NON-NLS-1$
 				name = name.substring(11);
@@ -225,7 +231,8 @@ public class ResetOperation implements IEGitOperation {
 		try {
 			newTree = commit.getTree();
 			index = repository.getIndex();
-			index.readTree(newTree);
+			// FIXME: reads index twice
+			index.readTree(repository.mapTree(newTree));
 		} catch (IOException e) {
 			throw new TeamException(CoreText.ResetOperation_readingIndex, e);
 		}
@@ -243,7 +250,7 @@ public class ResetOperation implements IEGitOperation {
 		final File parentFile = repository.getWorkTree();
 		try {
 			WorkDirCheckout workDirCheckout =
-				new WorkDirCheckout(repository, parentFile, index, newTree);
+				new WorkDirCheckout(repository, parentFile, index, repository.mapTree(newTree));
 			workDirCheckout.setFailOnConflict(false);
 			workDirCheckout.checkout();
 		} catch (IOException e) {

@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -7,6 +8,10 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
+
+import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
+import static org.eclipse.jgit.lib.Constants.HEAD;
+import static org.eclipse.jgit.lib.Constants.MASTER;
 
 import java.io.File;
 import java.util.List;
@@ -105,19 +110,25 @@ public class SelectSynchronizeResourceDialog extends TitleAreaDialog {
 		new Label(composite, SWT.WRAP)
 				.setText(UIText.SelectSynchronizeResourceDialog_srcRef);
 
-		srcRefCombo = new RemoteSelectionCombo(composite, syncRepos);
+		srcRefCombo = new RemoteSelectionCombo(composite, syncRepos,
+				UIText.RemoteSelectionCombo_sourceName,
+				UIText.RemoteSelectionCombo_sourceRef);
+		srcRefCombo.setDefautlValue(UIText.SynchronizeWithAction_localRepoName, HEAD);
 		srcRefCombo.setLayoutData(data);
 		srcRefCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
 				false).create());
 
 		shouldIncludeLocalButton = new Button(composite, SWT.CHECK | SWT.WRAP);
 		shouldIncludeLocalButton
-				.setText(UIText.SelectSynchronizeResourceDialog_includeUncommitedChnages);
+				.setText(UIText.SelectSynchronizeResourceDialog_includeUncommitedChanges);
 
 		new Label(composite, SWT.WRAP)
 				.setText(UIText.SelectSynchronizeResourceDialog_dstRef);
 
-		dstRefCombo = new RemoteSelectionCombo(composite, syncRepos);
+		dstRefCombo = new RemoteSelectionCombo(composite, syncRepos,
+				UIText.RemoteSelectionCombo_destinationName,
+				UIText.RemoteSelectionCombo_destinationRef);
+		dstRefCombo.setDefautlValue(DEFAULT_REMOTE_NAME, MASTER);
 		dstRefCombo.setLayoutData(data);
 		dstRefCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
 				false).create());

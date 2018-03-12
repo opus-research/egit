@@ -69,8 +69,7 @@ public class PushActionTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	@Ignore
-	// TODO fails because of a NPE
+	@Ignore // should be fixed with http://egit.eclipse.org/r/#change,1413
 	public void testPushToPushDestination() throws Exception {
 		pushTo("push", true);
 		pushTo("push", false);
@@ -81,8 +80,7 @@ public class PushActionTest extends LocalRepositoryTestCase {
 			IncorrectObjectTypeException, IOException {
 		Repository repo = lookupRepository(remoteRepositoryFile);
 		RevWalk rw = new RevWalk(repo);
-		String previous = rw.parseCommit(repo.resolve("HEAD")).asCommit(rw)
-				.getCommitId().name();
+		String previous = rw.parseCommit(repo.resolve("HEAD")).name();
 
 		touchAndSubmit(null);
 		SWTBotShell pushDialog = openPushDialog();
