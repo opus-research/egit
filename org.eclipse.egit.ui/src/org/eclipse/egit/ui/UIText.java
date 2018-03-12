@@ -97,15 +97,6 @@ public class UIText extends NLS {
 	public static String AddToIndexCommand_addingFilesFailed;
 
 	/** */
-	public static String BlameInformationControl_Author;
-
-	/** */
-	public static String BlameInformationControl_Commit;
-
-	/** */
-	public static String BlameInformationControl_Committer;
-
-	/** */
 	public static String AssumeUnchanged_assumeUnchanged;
 
 	/** */
@@ -158,9 +149,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SharingWizard_MoveProjectActionLabel;
-
-	/** */
-	public static String ShowBlameHandler_JobName;
 
 	/** */
 	public static String GenerateHistoryJob_BuildingListMessage;
