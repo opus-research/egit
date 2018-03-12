@@ -202,7 +202,22 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FileNotInCommit;
 
 	/** */
+	public static String GitHistoryPage_fileNotFound;
+
+	/** */
 	public static String GitHistoryPage_find;
+
+	/** */
+	public static String GitHistoryPage_notContainedInCommits;
+
+	/** */
+	public static String GitHistoryPage_open;
+
+	/** */
+	public static String GitHistoryPage_openFailed;
+
+	/** */
+	public static String GitHistoryPage_seeLog;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -850,9 +865,6 @@ public class UIText extends NLS {
 	public static String CommitAction_failedToUpdate;
 
 	/** */
-	public static String CommitAction_InternalError;
-
-	/** */
 	public static String CommitAction_noFilesToCommit;
 
 	/** */
@@ -916,9 +928,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_SelectAll;
 
 	/** */
-	public static String CommitDialog_ShowUntrackedFiles;
-
-	/** */
 	public static String CommitDialog_Status;
 
 	/** */
@@ -944,9 +953,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_StatusUnknown;
-
-	/** */
-	public static String CommitDialog_StatusUntracked;
 
 	/** */
 	public static String ConfigureKeysDialog_AddStandardButton;
