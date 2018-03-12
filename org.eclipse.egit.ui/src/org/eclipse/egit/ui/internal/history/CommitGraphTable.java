@@ -825,13 +825,13 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_TAG,
 						UIText.GitHistoryPage_CreateTagMenuLabel));
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.DELETE_TAG,
-						UIText.CommitGraphTable_DeleteTagAction));
 				popupMgr.add(new Separator());
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_PATCH,
 						UIText.GitHistoryPage_CreatePatchMenuLabel));
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.REVERT,
+						UIText.GitHistoryPage_revertMenuItem));
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.MERGE,
 						UIText.GitHistoryPage_mergeMenuItem));
@@ -855,14 +855,11 @@ class CommitGraphTable {
 									HistoryViewCommands.COMPARE_VERSIONS_IN_TREE,
 									UIText.CommitGraphTable_CompareWithEachOtherInTreeMenuLabel));
 			}
-
 			popupMgr.add(new Separator());
 
 			popupMgr.add(getCommandContributionItem(
 					HistoryViewCommands.CHERRYPICK,
 					UIText.GitHistoryPage_cherryPickMenuItem));
-			popupMgr.add(getCommandContributionItem(HistoryViewCommands.REVERT,
-					UIText.GitHistoryPage_revertMenuItem));
 
 			popupMgr.add(new Separator());
 
