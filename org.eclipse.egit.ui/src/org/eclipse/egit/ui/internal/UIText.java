@@ -4465,21 +4465,6 @@ public class UIText extends NLS {
 	public static String StagingView_ColumnLayout;
 
 	/** */
-	public static String StagingView_ReadDirCacheFailed;
-
-	/** */
-	public static String StagingView_RebaseAbort;
-
-	/** */
-	public static String StagingView_RebaseContinue;
-
-	/** */
-	public static String StagingView_RebaseLabel;
-
-	/** */
-	public static String StagingView_RebaseSkip;
-
-	/** */
 	public static String StagingView_Refresh;
 
 	/** */
@@ -4516,19 +4501,7 @@ public class UIText extends NLS {
 	public static String StagingView_CompactTree;
 
 	/** */
-	public static String StagingView_ConflictsWarning;
-
-	/** */
 	public static String StagingView_Find;
-
-	/** */
-	public static String StagingView_JobNameRebaseAbort;
-
-	/** */
-	public static String StagingView_JobNameRebaseContinue;
-
-	/** */
-	public static String StagingView_JobNameRebaseSkip;
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
