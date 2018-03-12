@@ -364,7 +364,7 @@ public class TestRepository {
 	 * @throws NoFilepatternException
 	 */
 	public void addToIndex(IResource resource) throws CoreException, IOException, NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(resource.getLocation().toString());
+		String repoPath = getRepoRelativePath(resource.getLocation().toOSString());
 		new Git(repository).add().addFilepattern(repoPath).call();
 	}
 

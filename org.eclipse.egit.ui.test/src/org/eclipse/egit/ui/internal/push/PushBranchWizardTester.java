@@ -1,14 +1,11 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (c) 2013 Robin Stocker <robin@nibor.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -93,12 +90,6 @@ public class PushBranchWizardTester {
 				branchName);
 	}
 
-	public void assertBranchName(String branchName) {
-		assertEquals(branchName,
-				wizard.textWithLabel(UIText.PushBranchPage_BranchNameLabel)
-						.getText());
-	}
-
 	public void deselectConfigureUpstream() {
 		wizard.checkBox(UIText.UpstreamConfigComponent_ConfigureUpstreamCheck)
 				.deselect();
@@ -114,19 +105,6 @@ public class PushBranchWizardTester {
 		wizard.checkBox(UIText.UpstreamConfigComponent_ConfigureUpstreamCheck)
 				.select();
 		wizard.radio(UIText.UpstreamConfigComponent_RebaseRadio).click();
-	}
-
-	public void assertRebaseSelected() {
-		assertTrue(wizard.checkBox(
-				UIText.UpstreamConfigComponent_ConfigureUpstreamCheck)
-				.isChecked());
-		assertTrue(wizard.radio(UIText.UpstreamConfigComponent_RebaseRadio)
-				.isSelected());
-	}
-
-	public boolean isUpstreamConfigOverwriteWarningShown() {
-		return wizard.text(1).getText()
-				.contains(UIText.PushBranchPage_UpstreamConfigOverwriteWarning);
 	}
 
 	public void next() {

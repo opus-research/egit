@@ -369,7 +369,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			synchronized (lock) {
 				if (currentThreadIx < globalThreadIndex)
 					return;
-				stagingView.refreshViewersPreservingExpandedElements();
+				stagingView.refreshViewers();
 			}
 		}
 
@@ -1203,7 +1203,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				final boolean enable = isChecked();
 				getLabelProvider(stagedViewer).setFileNameMode(enable);
 				getLabelProvider(unstagedViewer).setFileNameMode(enable);
-				refreshViewersPreservingExpandedElements();
+				refreshViewers();
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
 			}
@@ -1217,8 +1217,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		listPresentationAction = new Action(UIText.StagingView_List,
 				IAction.AS_RADIO_BUTTON) {
 			public void run() {
-				if (!isChecked())
-					return;
 				presentation = Presentation.LIST;
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_PRESENTATION,
@@ -1235,8 +1233,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		treePresentationAction = new Action(UIText.StagingView_Tree,
 				IAction.AS_RADIO_BUTTON) {
 			public void run() {
-				if (!isChecked())
-					return;
 				presentation = Presentation.TREE;
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_PRESENTATION,
@@ -1253,8 +1249,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		compactTreePresentationAction = new Action(UIText.StagingView_CompactTree,
 				IAction.AS_RADIO_BUTTON) {
 			public void run() {
-				if (!isChecked())
-					return;
 				presentation = Presentation.COMPACT_TREE;
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_PRESENTATION,
@@ -1542,44 +1536,28 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 *         no filter
 	 */
 	String getFilterString() {
-		if (filterText != null && !filterText.isDisposed())
+		if (filterText != null)
 			return filterText.getText().trim();
 		else
 			return ""; //$NON-NLS-1$
 	}
 
 	/**
-	 * Refresh the unstaged and staged viewers without preserving expanded
-	 * elements
+	 * Refresh the unstaged and staged viewers
 	 */
 	public void refreshViewers() {
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				refreshViewersInternal();
-			}
-		});
-	}
-
-	/**
-	 * Refresh the unstaged and staged viewers, preserving expanded elements
-	 */
-	public void refreshViewersPreservingExpandedElements() {
 		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
 				Object[] unstagedExpanded = unstagedViewer
 						.getExpandedElements();
 				Object[] stagedExpanded = stagedViewer.getExpandedElements();
-				refreshViewersInternal();
+				unstagedViewer.refresh();
+				stagedViewer.refresh();
+				updateSectionText();
 				unstagedViewer.setExpandedElements(unstagedExpanded);
 				stagedViewer.setExpandedElements(stagedExpanded);
 			}
 		});
-	}
-
-	private void refreshViewersInternal() {
-		unstagedViewer.refresh();
-		stagedViewer.refresh();
-		updateSectionText();
 	}
 
 	private IContributionItem createShowInMenu() {
@@ -2046,7 +2024,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (form.isDisposed())
 			return;
 		if (repository == null) {
-			syncExec(new Runnable() {
+			asyncExec(new Runnable() {
 				public void run() {
 					clearRepository();
 				}
@@ -2059,7 +2037,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		final boolean repositoryChanged = currentRepository != repository;
 
-		syncExec(new Runnable() {
+		asyncExec(new Runnable() {
 
 			public void run() {
 				if (form.isDisposed())
@@ -2142,10 +2120,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (viewer.getAutoExpandLevel() == AbstractTreeViewer.ALL_LEVELS)
 			return;
 
-		// No need to expand anything
-		if (getPresentation() == Presentation.LIST)
-			return;
-
 		Set<IPath> paths = new HashSet<IPath>(additionalPaths);
 		// Instead of just expanding the previous elements directly, also expand
 		// all parent paths. This makes it work in case of "re-folding" of
@@ -2153,29 +2127,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 		for (Object element : previous)
 			if (element instanceof StagingFolderEntry)
 				addPathAndParentPaths(((StagingFolderEntry) element).getPath(), paths);
-		List<StagingFolderEntry> expand = new ArrayList<StagingFolderEntry>();
+		List<Object> expand = new ArrayList<Object>();
 		StagingViewContentProvider stagedContentProvider = getContentProvider(viewer);
-		calculateNodesToExpand(paths, stagedContentProvider.getElements(null),
-				expand);
-		viewer.setExpandedElements(expand.toArray());
-	}
-
-	private void calculateNodesToExpand(Set<IPath> paths, Object[] elements,
-			List<StagingFolderEntry> result) {
-		if (elements == null)
-			return;
-
-		for (Object element : elements) {
-			if (element instanceof StagingFolderEntry) {
-				StagingFolderEntry folder = (StagingFolderEntry) element;
-				if (paths.contains(folder.getPath())) {
-					result.add(folder);
-					// Only recurs if folder matched (i.e. don't try to expand
-					// children of unexpanded parents)
-					calculateNodesToExpand(paths, folder.getChildren(), result);
-				}
-			}
+		for (StagingFolderEntry folder : stagedContentProvider
+				.getStagingFolderEntries()) {
+			if (paths.contains(folder.getPath()))
+				expand.add(folder);
 		}
+		viewer.setExpandedElements(expand.toArray());
 	}
 
 	private void clearCommitMessageToggles() {
@@ -2185,19 +2144,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
-		if (repositoryChanged)
+		CommitHelper helper = new CommitHelper(currentRepository);
+		CommitMessageComponentState oldState = null;
+		if (repositoryChanged) {
 			if (userEnteredCommmitMessage())
 				saveCommitMessageComponentState();
 			else
 				deleteCommitMessageComponentState();
-		if (!indexDiffAvailable)
-			return; // only try to restore the stored repo commit message if
-					// indexDiff is ready
-
-		CommitHelper helper = new CommitHelper(currentRepository);
-		CommitMessageComponentState oldState = null;
-		if (repositoryChanged
-				|| commitMessageComponent.getRepository() != currentRepository) {
 			oldState = loadCommitMessageComponentState();
 			commitMessageComponent.setRepository(currentRepository);
 			if (oldState == null)
@@ -2214,7 +2167,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadInitialState(helper);
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
-		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
+		amendPreviousCommitAction.setEnabled(indexDiffAvailable && helper.amendAllowed());
 		updateMessage();
 	}
 
@@ -2356,8 +2309,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
 
-		if (!UIUtils.saveAllEditors(currentRepository,
-				UIText.StagingView_cancelCommitAfterSaving))
+		if (!UIUtils.saveAllEditors(currentRepository))
 			return;
 
 		String commitMessage = commitMessageComponent.getCommitMessage();
@@ -2419,8 +2371,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 			refsChangedListener.remove();
 	}
 
-	private void syncExec(Runnable runnable) {
-		PlatformUI.getWorkbench().getDisplay().syncExec(runnable);
+	private void asyncExec(Runnable runnable) {
+		PlatformUI.getWorkbench().getDisplay().asyncExec(runnable);
 	}
 
 }

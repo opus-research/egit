@@ -18,7 +18,6 @@ import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -35,10 +34,10 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
@@ -60,7 +59,7 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 	}
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		ObjectId commitId = getSelectedCommitId(event);
+		RevCommit commit = (RevCommit) getSelection(getPage()).getFirstElement();
 		final Repository repository = getRepository(event);
 		if (repository == null)
 			return null;
@@ -68,11 +67,10 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 		if (!canMerge(repository))
 			return null;
 
-		List<RefNode> nodes = getRefNodes(commitId, repository,
-				Constants.R_REFS);
+		List<RefNode> nodes = getRefNodes(commit, repository, Constants.R_REFS);
 		String refName;
 		if (nodes.isEmpty())
-			refName = commitId.getName();
+			refName = commit.getName();
 		else if (nodes.size() == 1)
 			refName = nodes.get(0).getObject().getName();
 		else {
@@ -87,10 +85,9 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 		}
 		String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
 		final MergeOperation op = new MergeOperation(repository, refName);
-		Job job = new WorkspaceJob(jobname) {
-
+		Job job = new Job(jobname) {
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					op.execute(monitor);
 				} catch (final CoreException e) {

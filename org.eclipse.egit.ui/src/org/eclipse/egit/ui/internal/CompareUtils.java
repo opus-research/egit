@@ -34,7 +34,6 @@ import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -452,7 +451,7 @@ public class CompareUtils {
 	private static void compareLocalWithRef(Repository repository,
 			IPath location, String refName, IWorkbenchPage page)
 			throws IOException {
-		final String gitPath = getRepoRelativePath(location, repository);
+		final String gitPath = RepositoryMapping.getMapping(location).getRepoRelativePath(location);
 		final ITypedElement base = new LocalNonWorkspaceTypedElement(location);
 
 		CompareEditorInput in = prepareCompareInput(repository, gitPath, base,
@@ -587,7 +586,8 @@ public class CompareUtils {
 		if (includeLocal)
 			compareLocalWithRef(repository, location, rightRev, page);
 		else {
-			String gitPath = getRepoRelativePath(location, repository);
+			final String gitPath = RepositoryMapping.getMapping(location)
+					.getRepoRelativePath(location);
 			compareBetween(repository, gitPath, leftRev, rightRev, page);
 		}
 	}
@@ -617,19 +617,6 @@ public class CompareUtils {
 			openInCompare(page, in);
 		else
 			CompareUI.openCompareEditor(in);
-	}
-
-	private static String getRepoRelativePath(IPath location,
-			Repository repository) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-		final String gitPath;
-		if (mapping != null)
-			gitPath = mapping.getRepoRelativePath(location);
-		else {
-			IPath repoRoot = new Path(repository.getWorkTree().getPath());
-			gitPath = location.makeRelativeTo(repoRoot).toString();
-		}
-		return gitPath;
 	}
 
 	private static ITypedElement getTypedElementFor(Repository repository, String gitPath, String rev) throws IOException {
