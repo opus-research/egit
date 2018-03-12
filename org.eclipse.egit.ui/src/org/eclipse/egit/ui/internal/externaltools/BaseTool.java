@@ -38,12 +38,12 @@ public class BaseTool implements ITool {
 	}
 
 	@Override
-	public String getOptions(int... optionsNr) {
+	public String getOptions() {
 		return null;
 	}
 
 	@Override
-	public String getCommand(int... optionsNr) {
+	public String getCommand() {
 		return null;
 	}
 
