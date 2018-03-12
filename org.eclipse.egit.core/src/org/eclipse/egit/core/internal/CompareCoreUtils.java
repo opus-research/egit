@@ -55,7 +55,7 @@ public class CompareCoreUtils {
 		if (db.isBare()) {
 			return null;
 		}
-		IFile resource = ResourceUtil.getFileForLocation(db, repoPath, false);
+		IFile resource = ResourceUtil.getFileForLocation(db, repoPath);
 		if (resource == null) {
 			return null;
 		}

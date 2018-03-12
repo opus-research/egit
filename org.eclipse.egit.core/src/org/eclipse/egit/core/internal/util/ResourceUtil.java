@@ -77,52 +77,39 @@ public class ResourceUtil {
 	 *
 	 * @param location
 	 *            the path to check
-	 * @param innerMost
-	 *            check if there are multiple candidates in the workspace and
-	 *            return innermost resource. <b>Note</b>, this check is
-	 *            expensive and should not be used in performance critical code.
 	 * @return the resources, or null
 	 */
 	@Nullable
-	public static IResource getResourceForLocation(@NonNull IPath location, boolean innerMost) {
-		IFile file = getFileForLocation(location, innerMost);
+	public static IResource getResourceForLocation(@NonNull IPath location) {
+		IFile file = getFileForLocation(location);
 		if (file != null) {
 			return file;
 		}
-		return getContainerForLocation(location, innerMost);
+		return getContainerForLocation(location);
 	}
 
 	/**
 	 * Return the corresponding file if it exists and has the Git repository
 	 * provider.
 	 * <p>
-	 * If checkNested argument is true, the returned file will be relative to
-	 * the most nested non-closed Git-managed project.
+	 * The returned file will be relative to the most nested non-closed
+	 * Git-managed project.
 	 *
 	 * @param location
-	 * @param innerMost
-	 *            check if there are multiple candidates in the workspace and
-	 *            return innermost resource. <b>Note</b>, this check is
-	 *            expensive and should not be used in performance critical code.
 	 * @return the file, or null
 	 */
 	@Nullable
-	public static IFile getFileForLocation(@NonNull IPath location,
-			boolean innerMost) {
+	public static IFile getFileForLocation(@NonNull IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IFile file = root.getFileForLocation(location);
 		if (file == null) {
 			return null;
 		}
-		if (!innerMost && isValid(file)) {
+		if (isValid(file)) {
 			return file;
 		}
 		URI uri = URIUtil.toURI(location);
-		IFile file2 = getFileForLocationURI(root, uri);
-		if (file2 == null && isValid(file)) {
-			return file;
-		}
-		return file2;
+		return getFileForLocationURI(root, uri);
 	}
 
 	/**
@@ -276,29 +263,20 @@ public class ResourceUtil {
 	 * Git-managed project.
 	 *
 	 * @param location
-	 * @param innerMost
-	 *            check if there are multiple candidates in the workspace and
-	 *            return innermost resource. <b>Note</b>, this check is
-	 *            expensive and should not be used in performance critical code.
 	 * @return the container, or null
 	 */
 	@Nullable
-	public static IContainer getContainerForLocation(@NonNull IPath location,
-			boolean innerMost) {
+	public static IContainer getContainerForLocation(@NonNull IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IContainer dir = root.getContainerForLocation(location);
 		if (dir == null) {
 			return null;
 		}
-		if (!innerMost && isValid(dir)) {
+		if (isValid(dir)) {
 			return dir;
 		}
 		URI uri = URIUtil.toURI(location);
-		IContainer dir2 = getContainerForLocationURI(root, uri);
-		if (dir2 == null && isValid(dir)) {
-			return dir;
-		}
-		return dir2;
+		return getContainerForLocationURI(root, uri);
 	}
 
 	/**
@@ -312,17 +290,13 @@ public class ResourceUtil {
 	 *            the repository of the file
 	 * @param repoRelativePath
 	 *            the repository-relative path of the file to search for
-	 * @param innerMost
-	 *            check if there are multiple candidates in the workspace and
-	 *            return innermost resource. <b>Note</b>, this check is
-	 *            expensive and should not be used in performance critical code.
 	 * @return the IFile corresponding to this path, or null
 	 */
 	@Nullable
 	public static IFile getFileForLocation(@NonNull Repository repository,
-			@NonNull String repoRelativePath, boolean innerMost) {
+			@NonNull String repoRelativePath) {
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
-		return getFileForLocation(path, innerMost);
+		return getFileForLocation(path);
 	}
 
 	/**

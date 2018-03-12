@@ -18,7 +18,6 @@ import java.util.List;
 
 import org.eclipse.egit.gitflow.internal.CoreText;
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -159,17 +158,12 @@ public class GitFlowRepository {
 
 	/**
 	 * @param branchName
-	 * @return HEAD commit on branch branchName or {@literal null} if
-	 *         {@code branchName} could not be resolved.
+	 * @return HEAD commit on branch branchName
 	 */
-	public @Nullable RevCommit findHead(String branchName) {
+	public RevCommit findHead(String branchName) {
 		try (RevWalk walk = new RevWalk(repository)) {
 			try {
-				String revstr = R_HEADS + branchName;
-				ObjectId head = repository.resolve(revstr);
-				if (head == null) {
-					return null;
-				}
+				ObjectId head = repository.resolve(R_HEADS + branchName);
 				return walk.parseCommit(head);
 			} catch (RevisionSyntaxException | IOException e) {
 				throw new RuntimeException(e);
