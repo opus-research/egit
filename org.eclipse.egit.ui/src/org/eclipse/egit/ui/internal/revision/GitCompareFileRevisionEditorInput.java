@@ -69,7 +69,6 @@ import org.eclipse.ui.texteditor.ITextEditor;
  * The input provider for the compare editor when working on resources
  * under Git control.
  */
-@SuppressWarnings("restriction")
 public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInput {
 
 	private ITypedElement left;

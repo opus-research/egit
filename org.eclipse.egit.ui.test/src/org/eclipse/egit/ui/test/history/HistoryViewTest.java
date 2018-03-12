@@ -245,22 +245,25 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 			explorerItem = TestUtil.getChildNode(childItem.expand(), path[2]);
 		}
 		explorerItem.select();
-		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
-				"Show in History");
+		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Show In",
+				"History");
 		// join GenerateHistoryJob
 		Job.getJobManager().join(JobFamilies.GENERATE_HISTORY, null);
 		// join UI update triggered by GenerateHistoryJob
 		projectExplorerTree.widget.getDisplay().syncExec(new Runnable() {
+
 			public void run() {
 				// empty
 			}
 		});
-
 		return getHistoryViewBot().table();
 	}
 
 	private SWTBot getHistoryViewBot() {
-		return TestUtil.showHistoryView().bot();
+		String genericHistoryViewId = "org.eclipse.team.ui.GenericHistoryView";
+		TestUtil.waitUntilViewWithGivenIdShows(genericHistoryViewId);
+		SWTBot historyView = bot.viewById(genericHistoryViewId).bot();
+		return historyView;
 	}
 
 	@Test
