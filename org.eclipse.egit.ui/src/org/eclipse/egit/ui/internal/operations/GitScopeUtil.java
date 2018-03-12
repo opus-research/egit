@@ -17,16 +17,11 @@ import java.util.List;
 
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
@@ -34,6 +29,7 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.team.core.subscribers.Subscriber;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.ui.IContributorResourceAdapter;
 import org.eclipse.ui.IWorkbenchPart;
@@ -98,24 +94,7 @@ public class GitScopeUtil {
 		ResourceMapping[] mappings = GitScopeUtil
 				.getResourceMappings(resources);
 		GitSynchronizeDataSet set = new GitSynchronizeDataSet();
-		final GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
-				set);
-		Job initJob = new WorkspaceJob(
-				UIText.GitModelSynchronize_fetchGitDataJobName) {
-			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
-				subscriber.init(monitor);
-				return Status.OK_STATUS;
-			}
-		};
-		initJob.setUser(true);
-		initJob.setRule(RuleUtil.getRuleForRepositories(resources));
-		initJob.schedule();
-		try {
-			initJob.join();
-		} catch (InterruptedException e) {
-			Activator.logError(UIText.GitModelSynchronize_fetchInterrupted, e);
-		}
+		Subscriber subscriber = new GitResourceVariantTreeSubscriber(set);
 		SubscriberScopeManager manager = new SubscriberScopeManager(
 				UIText.GitScopeOperation_GitScopeManager, mappings, subscriber,
 				true);
