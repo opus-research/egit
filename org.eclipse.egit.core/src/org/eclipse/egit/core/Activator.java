@@ -12,16 +12,16 @@ package org.eclipse.egit.core;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Plugin;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.project.GitProjectData;
-import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
 /**
  * The plugin class for the org.eclipse.egit.core plugin. This
  * is a singleton class.
  */
-public class Activator extends AbstractUIPlugin {
+public class Activator extends Plugin {
 	private static Activator plugin;
 
 	/**
@@ -64,7 +64,7 @@ public class Activator extends AbstractUIPlugin {
 	private static boolean isOptionSet(final String optionId) {
 		final String option = getPluginId() + optionId;
 		final String value = Platform.getDebugOption(option);
-		return value != null && value.equals("true");
+		return value != null && value.equals("true");  //$NON-NLS-1$
 	}
 
 	/**
@@ -74,7 +74,7 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	public static void trace(final String what) {
 		if (getDefault().traceVerbose) {
-			System.out.println("[" + getPluginId() + "] " + what);
+			System.out.println("[" + getPluginId() + "] " + what);   //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}
 
@@ -89,7 +89,7 @@ public class Activator extends AbstractUIPlugin {
 
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
-		traceVerbose = isOptionSet("/trace/verbose");
+		traceVerbose = isOptionSet("/trace/verbose");  //$NON-NLS-1$
 		GitProjectData.reconfigureWindowCache();
 		GitProjectData.attachToWorkspace(true);
 	}
