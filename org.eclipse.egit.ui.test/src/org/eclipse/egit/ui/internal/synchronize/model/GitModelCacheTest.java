@@ -86,7 +86,8 @@ public class GitModelCacheTest extends GitModelTestCase {
 		// given
 		GitModelCache left = new GitModelCache(createModelRepository(),
 				getCommit(leftRepoFile, HEAD));
-		GitModelCache right = new GitModelWorkingTree(createModelRepository());
+		GitModelCache right = new GitModelWorkingTree(createModelRepository(),
+				getCommit(leftRepoFile, HEAD));
 
 		// when
 		boolean actual = left.equals(right);
