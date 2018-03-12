@@ -100,7 +100,7 @@ public class PushBranchPage extends WizardPage {
 	/** Only set if user selected "New Remote" */
 	private AddRemotePage addRemotePage;
 
-	private Set<Resource> disposables = new HashSet<>();
+	private Set<Resource> disposables = new HashSet<Resource>();
 
 	/**
 	 * Create the page.
@@ -174,7 +174,7 @@ public class PushBranchPage extends WizardPage {
 				}
 			});
 		} catch (URISyntaxException e) {
-			this.remoteConfigs = new ArrayList<>();
+			this.remoteConfigs = new ArrayList<RemoteConfig>();
 			handleError(e);
 		}
 

@@ -1487,9 +1487,6 @@
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
                            </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode">
-                           </instanceof>
                            <test
                                  property="GitRepository.isLocalBranch">
                            </test>
@@ -2396,9 +2393,6 @@
                         <or>
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode">
                            </instanceof>
                            <test
                                  property="GitRepository.isLocalBranch">
@@ -3586,24 +3580,6 @@
                </and>
             </visibleWhen>
          </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewOpen"
-               label="%OpenInCommitViewerCommand.name"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode">
-                        </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
       </menuContribution>
       <menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=repo-4">
@@ -4753,7 +4729,7 @@
             locationURI="popup:org.eclipse.ui.popup.any?after=additions">
          <menu
                id="compareWithMenu"
-               label="%CompareWithMenu.label">
+               label="Compare With">
             <separator
                   name="compareWithGroup">
             </separator>
@@ -4772,7 +4748,7 @@
             locationURI="popup:org.eclipse.ui.popup.any?after=additions">
          <menu
                id="replaceWithMenu"
-               label="%ReplaceWithMenu.label">
+               label="Replace With">
             <separator
                   name="replaceWithGroup">
             </separator>
@@ -5298,10 +5274,6 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.OpenInCommitViewerCommand"
-            icon="icons/obj16/open-commit.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewOpen"
             icon="icons/obj16/open-commit.gif">
       </image>
       <image

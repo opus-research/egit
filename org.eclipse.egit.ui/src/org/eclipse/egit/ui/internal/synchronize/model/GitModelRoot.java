@@ -54,7 +54,7 @@ public class GitModelRoot {
 	}
 
 	private GitModelObject[] getChildrenImpl() {
-		List<GitModelObject> result = new ArrayList<>();
+		List<GitModelObject> result = new ArrayList<GitModelObject>();
 		try {
 			if (gsds.size() == 1) {
 				GitSynchronizeData gsd = gsds.iterator().next();

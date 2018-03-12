@@ -76,7 +76,7 @@ public class FeatureTrackHandler extends AbstractHandler {
 				HandlerUtil.getActiveShell(event), refs,
 				UIText.FeatureCheckoutHandler_selectFeature,
 				UIText.FeatureTrackHandler_remoteFeatures,
-				R_REMOTES + DEFAULT_REMOTE_NAME + SEP + gfRepo.getConfig().getFeaturePrefix(), gfRepo);
+				R_REMOTES + DEFAULT_REMOTE_NAME + SEP + gfRepo.getConfig().getFeaturePrefix());
 
 		if (dialog.open() != Window.OK) {
 			return Status.CANCEL_STATUS;
