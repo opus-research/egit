@@ -84,29 +84,19 @@ public class ContextMenuHelper {
 	private static MenuItem getMenuItem(final AbstractSWTBot<?> bot,
 			final String... texts) {
 		MenuItem theItem = null;
-		// try three times to get the menu item
-		for (int i = 0; i < 3; i++) {
-			Control control = (Control) bot.widget;
-			// for dynamic menus, we need to issue this event
-			control.notifyListeners(SWT.MenuDetect, new Event());
-			Menu menu = control.getMenu();
-			for (String text : texts) {
-				Matcher<Object> matcher = allOf(instanceOf(MenuItem.class),
-						withMnemonic(text));
-				theItem = show(menu, matcher);
-				if (theItem != null) {
-					menu = theItem.getMenu();
-				} else {
-					hide(menu);
-					break;
-				}
-			}
-			if (theItem != null)
+		Control control = (Control) bot.widget;
+		// for dynamic menus, we need to issue this event
+		control.notifyListeners(SWT.MenuDetect, new Event());
+		Menu menu = control.getMenu();
+		for (String text : texts) {
+			Matcher<Object> matcher = allOf(instanceOf(MenuItem.class),
+					withMnemonic(text));
+			theItem = show(menu, matcher);
+			if (theItem != null) {
+				menu = theItem.getMenu();
+			} else {
+				hide(menu);
 				break;
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				// ignore
 			}
 		}
 		return theItem;

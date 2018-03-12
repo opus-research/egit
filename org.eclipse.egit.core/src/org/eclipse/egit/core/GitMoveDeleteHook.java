@@ -164,11 +164,11 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		try {
 			final String sPath = srcm.getRepoRelativePath(srcf);
 			if (dstm != null && dstm.getRepository() == srcm.getRepository()) {
-				final String dPath =
-					srcm.getRepoRelativePath(dstf) + "/"; //$NON-NLS-1$
+				final String dPath = srcm.getRepoRelativePath(dstf) + "/"; //$NON-NLS-1$
 				if (!moveIndexContent(dPath, srcm, sPath))
-					tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(),
-							0, CoreText.MoveDeleteHook_operationError, null));
+					tree.failed(new Status(IStatus.ERROR, Activator
+							.getPluginId(), 0,
+							CoreText.MoveDeleteHook_operationError, null));
 				tree.standardMoveFolder(srcf, dstf, updateFlags, monitor);
 			}
 		} catch (IOException e) {
@@ -188,26 +188,17 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		if (description.getLocationURI() != null)
 			newLocation = URIUtil.toPath(description.getLocationURI());
 		else
-			newLocation = source.getWorkspace().getRoot().getLocation()
-					.append(description.getName());
+			newLocation = source.getProject().getWorkspace().getRoot().getLocation().append(description.getName());
 		IPath sourceLocation = source.getLocation();
 		if (sourceLocation.isPrefixOf(newLocation)) {
 			// Graceful handling of bug. Require lots of work to handle
-			tree.failed(new Status(
-					IStatus.ERROR,
-					Activator.getPluginId(),
-					0,
-					"Cannot move project. " + //$NON-NLS-1$
-					"See https://bugs.eclipse.org/bugs/show_bug.cgi?id=339814", null)); //$NON-NLS-1$
+			tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(), 0, "Cannot move project. See https://bugs.eclipse.org/bugs/show_bug.cgi?id=339814", null)); //$NON-NLS-1$
 			return true;
 		}
 		if (!srcm.getGitDir().startsWith("../")) { //$NON-NLS-1$
-			// Graceful handling of bug. We can probably handle this with some
-			// more work
-			tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(), 0,
-					"Cannot move project. Project contains Git Repo", null)); //$NON-NLS-1$
-			return true;
-		}
+			// Graceful handling of bug. We can probably handle this with some more work
+			tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(), 0, "Cannot move project. Project contains Git Repo", null)); //$NON-NLS-1$
+			return true;		}
 		File newLocationFile = newLocation.toFile();
 		// check if new location is below the same repository
 		if (newLocationFile.getAbsolutePath().contains(
@@ -269,7 +260,8 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 	}
 
 	private boolean moveIndexContent(String dPath,
-			final RepositoryMapping srcm, final String sPath) throws IOException {
+			final RepositoryMapping srcm, final String sPath)
+			throws IOException {
 		final DirCache sCache = srcm.getRepository().lockDirCache();
 		final DirCacheEntry[] sEnt = sCache.getEntriesWithin(sPath);
 		if (sEnt.length == 0) {

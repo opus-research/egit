@@ -621,8 +621,7 @@ public class CommitDialog extends Dialog {
 						commitText.setText(previousCommitMessage.replaceAll(
 								"\n", Text.DELIMITER)); //$NON-NLS-1$
 					}
-					if (previousAuthor != null)
-						authorText.setText(previousAuthor);
+					authorText.setText(previousAuthor);
 				}
 				refreshChangeIdText();
 			}
@@ -637,8 +636,7 @@ public class CommitDialog extends Dialog {
 
 		signedOffButton = new Button(container, SWT.CHECK);
 		signedOffButton.setSelection(signedOff);
-		if (!amending)
-			refreshSignedOffBy();
+		refreshSignedOffBy();
 		signedOffButton.setText(UIText.CommitDialog_AddSOB);
 		signedOffButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
 
@@ -669,8 +667,7 @@ public class CommitDialog extends Dialog {
 
 		changeIdButton.setSelection( org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.COMMIT_DIALOG_CREATE_CHANGE_ID));
-		if (!amending)
-			refreshChangeIdText();
+		refreshChangeIdText();
 
 		showUntrackedButton = new Button(container, SWT.CHECK);
 		showUntrackedButton.setText(UIText.CommitDialog_ShowUntrackedFiles);
