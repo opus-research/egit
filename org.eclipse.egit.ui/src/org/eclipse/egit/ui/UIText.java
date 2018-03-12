@@ -3208,13 +3208,7 @@ public class UIText extends NLS {
 	public static String MergeTargetSelectionDialog_SelectRef;
 
 	/** */
-	public static String MergeTargetSelectionDialog_SelectRefWithBranch;
-
-	/** */
 	public static String MergeTargetSelectionDialog_TitleMerge;
-
-	/** */
-	public static String MergeTargetSelectionDialog_TitleMergeWithBranch;
 
 	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
@@ -4356,6 +4350,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchChangeFromGerritCommand_noRepositorySelectedMessage;
+
+	/** */
+	public static String RebasePulldownAction_Continue;
+
+	/** */
+	public static String RebasePulldownAction_Skip;
+
+	/** */
+	public static String RebasePulldownAction_Abort;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
