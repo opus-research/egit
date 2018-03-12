@@ -42,7 +42,6 @@ import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -137,12 +136,10 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (testDirectory.exists())
 			FileUtils.delete(testDirectory, FileUtils.RECURSIVE
 					| FileUtils.RETRY);
-		if (!testDirectory.exists())
-			FileUtils.mkdir(testDirectory, true);
+		testDirectory.mkdir();
 		// we don't want to clone into <user_home> but into our test directory
 		File repoRoot = new File(testDirectory, "RepositoryRoot");
-		if (!repoRoot.exists())
-			FileUtils.mkdir(repoRoot, true);
+		repoRoot.mkdir();
 		// make sure the default directory for Repos is not the user home
 		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
@@ -154,7 +151,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				.getDefault()
 				.getPreferenceStore()
 				.setValue(UIPreferences.SHOW_DETACHED_HEAD_WARNING,
-						MessageDialogWithToggle.ALWAYS);
+						false);
 	}
 
 	@AfterClass
@@ -199,6 +196,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		File gitDir = new File(new File(testDirectory, repoName),
 				Constants.DOT_GIT);
+		gitDir.mkdir();
 		Repository myRepository = new FileRepository(gitDir);
 		myRepository.create();
 
@@ -338,9 +336,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		Repository myRepository = lookupRepository(repositoryDir);
 		URIish uri = new URIish("file:///" + myRepository.getDirectory());
 		File workdir = new File(testDirectory, CHILDREPO);
-		Ref master = myRepository.getRef("refs/heads/master");
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir,
-				master, "origin", 0);
+				"refs/heads/master", "origin", 0);
 		clop.run(null);
 		return new File(workdir, Constants.DOT_GIT);
 	}
