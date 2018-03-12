@@ -24,6 +24,8 @@ import java.util.List;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
@@ -32,6 +34,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
+import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
@@ -48,7 +51,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -62,6 +64,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.PatternFilter;
+import org.eclipse.ui.progress.WorkbenchJob;
 
 class SourceBranchPage extends WizardPage {
 
@@ -123,17 +126,27 @@ class SourceBranchPage extends WizardPage {
 		label = new Label(panel, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-		PatternFilter filter = new PatternFilter() {
-			@Override
-			public boolean isElementVisible(Viewer viewer, Object element) {
-				if (getSelectedBranches().contains(element))
-					return true;
-				return super.isElementVisible(viewer, element);
+		FilteredCheckboxTree fTree = new FilteredCheckboxTree(panel, null,
+				SWT.NONE, new PatternFilter()) {
+			/*
+			 * Overridden to check page when refreshing is done.
+			 */
+			protected WorkbenchJob doCreateRefreshJob() {
+				WorkbenchJob refreshJob = super.doCreateRefreshJob();
+				refreshJob.addJobChangeListener(new JobChangeAdapter() {
+					public void done(IJobChangeEvent event) {
+						if (event.getResult().isOK()) {
+							getDisplay().asyncExec(new Runnable() {
+								public void run() {
+									checkPage();
+								}
+							});
+						}
+					}
+				});
+				return refreshJob;
 			}
 		};
-
-		FilteredCheckboxTree fTree = new FilteredCheckboxTree(panel, null, SWT.NONE,
-				filter);
 		refsViewer = fTree.getCheckboxTreeViewer();
 
 		ITreeContentProvider provider = new ITreeContentProvider() {
@@ -301,8 +314,9 @@ class SourceBranchPage extends WizardPage {
 			listRemoteOp = new ListRemoteOperation(db, uri, timeout);
 			if (credentials != null)
 				listRemoteOp
-						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
-								credentials.getUser(), credentials.getPassword()));
+						.setCredentialsProvider(new EGitCredentialsProvider(
+								credentials.getUser(), credentials
+										.getPassword()));
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {

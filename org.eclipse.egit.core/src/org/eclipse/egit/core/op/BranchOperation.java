@@ -73,7 +73,7 @@ public class BranchOperation implements IEGitOperation {
 
 			public void run(IProgressMonitor pm) throws CoreException {
 				IProject[] validProjects = ProjectUtil
-						.getValidProjects(repository);
+						.getValidOpenProjects(repository);
 				pm.beginTask(NLS.bind(
 						CoreText.BranchOperation_performingBranch, target), 1);
 
@@ -123,8 +123,11 @@ public class BranchOperation implements IEGitOperation {
 			File fileToDelete = new File(repository.getWorkTree(), path);
 			if (fileToDelete.exists())
 				try {
-					FileUtils.delete(fileToDelete, FileUtils.RETRY
-							| FileUtils.RECURSIVE);
+					// Only files should be passed here, thus
+					// we ignore attempt to delete submodules when
+					// we switch to a branch without a submodule
+					if (!fileToDelete.isFile())
+						FileUtils.delete(fileToDelete, FileUtils.RETRY);
 				} catch (IOException e) {
 					// ignore here
 				}

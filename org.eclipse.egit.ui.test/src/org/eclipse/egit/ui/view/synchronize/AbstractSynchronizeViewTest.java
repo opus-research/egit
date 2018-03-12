@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,9 @@ import static org.eclipse.team.internal.ui.IPreferenceIds.SYNCHRONIZING_COMPLETE
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -29,9 +32,11 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.op.ResetOperation.ResetType;
@@ -81,16 +86,18 @@ public abstract class AbstractSynchronizeViewTest extends
 	@Before public void setupViews() {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
-		Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, false);
 	}
 
 	@BeforeClass public static void setupEnvironment() throws Exception {
 		// disable perspective synchronize selection
 		TeamUIPlugin.getPlugin().getPreferenceStore().setValue(
 				SYNCHRONIZING_COMPLETE_PERSPECTIVE, NEVER);
+		Activator.getDefault().getPreferenceStore()
+				.setValue(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, false);
 
 		repositoryFile = createProjectAndCommitToRepository();
+		createAndCommitDotGitignore();
+
 		createChildRepository(repositoryFile);
 		Activator.getDefault().getRepositoryUtil()
 				.addConfiguredRepository(repositoryFile);
@@ -165,6 +172,7 @@ public abstract class AbstractSynchronizeViewTest extends
 
 		GitModelSynchronize.launch(data, new IResource[] { project });
 
+		Job.getJobManager().join(JobFamilies.SYNCHRONIZE_READ_DATA, null);
 		Job.getJobManager().join(
 				ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, null);
 	}
@@ -249,6 +257,20 @@ public abstract class AbstractSynchronizeViewTest extends
 		return getCompareEditor(projNode, fileName);
 	}
 
+	protected SWTBotEditor getCompareEditorForNonWorkspaceFileInGitChangeSet(
+			final String fileName) {
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+
+		SWTBotTreeItem rootTree = waitForNodeWithText(syncViewTree,
+					GitModelWorkingTree_workingTree);
+		waitForNodeWithText(rootTree, fileName).doubleClick();
+
+		SWTBotEditor editor = bot
+				.editor(new CompareEditorTitleMatcher(fileName));
+
+		return editor;
+	}
+
 	protected SWTBotTreeItem waitForNodeWithText(SWTBotTree tree, String name) {
 		waitUntilTreeHasNodeContainsText(bot, tree, name, 10000);
 		return getTreeItemContainingText(tree.getAllItems(), name).expand();
@@ -269,7 +291,7 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	protected SWTBotEditor getCompareEditorForFileInGitChangeSetModel()
 			throws Exception {
-		SWTBotTree syncViewTree = setPresentationModel("Git Change Set")
+		SWTBotTree syncViewTree = setPresentationModel("Git Commits")
 				.tree();
 		SWTBotTreeItem commitNode = syncViewTree.getAllItems()[0];
 		commitNode.expand();
@@ -287,6 +309,26 @@ public abstract class AbstractSynchronizeViewTest extends
 		return editor;
 	}
 
+	private static void createAndCommitDotGitignore() throws CoreException,
+			UnsupportedEncodingException {
+		IProject secondPoject = ResourcesPlugin.getWorkspace().getRoot()
+				.getProject(PROJ2);
+
+		IFile gitignore = secondPoject.getFile(".gitignore");
+		gitignore.create(
+				new ByteArrayInputStream("/.project\n".getBytes(secondPoject
+						.getDefaultCharset())), false, null);
+
+		IFile[] commitables = new IFile[] { gitignore };
+		ArrayList<IFile> untracked = new ArrayList<IFile>();
+		untracked.addAll(Arrays.asList(commitables));
+
+		CommitOperation op = new CommitOperation(commitables,
+				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
+				"Add .gitignore file");
+		op.execute(null);
+	}
+
 	private void commit(String projectName) throws InterruptedException {
 		showDialog(projectName, "Team", CommitAction_commit);
 
@@ -298,11 +340,12 @@ public abstract class AbstractSynchronizeViewTest extends
 	}
 
 	private SWTBotEditor getCompareEditor(SWTBotTreeItem projectNode,
-			String fileName) {
+			final String fileName) {
 		SWTBotTreeItem folderNode = waitForNodeWithText(projectNode, FOLDER);
 		waitForNodeWithText(folderNode, fileName).doubleClick();
 
-		SWTBotEditor editor = bot.editorByTitle(fileName);
+		SWTBotEditor editor = bot
+				.editor(new CompareEditorTitleMatcher(fileName));
 		// Ensure that both StyledText widgets are enabled
 		SWTBotStyledText styledText = editor.toTextEditor().getStyledText();
 		bot.waitUntil(Conditions.widgetIsEnabled(styledText));

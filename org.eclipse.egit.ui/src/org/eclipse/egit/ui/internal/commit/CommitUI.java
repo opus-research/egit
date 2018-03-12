@@ -72,8 +72,6 @@ public class CommitUI  {
 
 	private Set<String> files;
 
-	private boolean amendAllowed = true;
-
 	private boolean amending;
 
 	private Shell shell;
@@ -153,6 +151,7 @@ public class CommitUI  {
 					commitHelper.getCannotCommitMessage());
 			return;
 		}
+		boolean amendAllowed = commitHelper.amendAllowed();
 		if (files.isEmpty()) {
 			if (amendAllowed && commitHelper.getPreviousCommit() != null) {
 				boolean result = MessageDialog.openQuestion(shell,
@@ -187,9 +186,8 @@ public class CommitUI  {
 		try {
 			commitOperation= new CommitOperation(
 					repo,
-					commitDialog.getSelectedFiles(), notIndexed, notTracked,
-					commitDialog.getAuthor(), commitDialog.getCommitter(),
-					commitDialog.getCommitMessage());
+					commitDialog.getSelectedFiles(), notTracked, commitDialog.getAuthor(),
+					commitDialog.getCommitter(), commitDialog.getCommitMessage());
 		} catch (CoreException e1) {
 			Activator.handleError(UIText.CommitUI_commitFailed, e1, true);
 			return;

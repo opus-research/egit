@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011 SAP AG.
+ * Copyright (c) 2011 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -43,7 +41,7 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.EditableRevision;
+import org.eclipse.egit.ui.internal.FileEditableRevision;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.LocalFileRevision;
@@ -220,34 +218,8 @@ public class CompareTreeView extends ViewPart {
 			return;
 		} else if (selected instanceof IFile) {
 			final IFile res = (IFile) selected;
-			left = new EditableRevision(new LocalFileRevision(res)) {
-				@Override
-				public void setContent(final byte[] newContent) {
-					try {
-						PlatformUI.getWorkbench().getProgressService().run(
-								false, false, new IRunnableWithProgress() {
-									public void run(IProgressMonitor myMonitor)
-											throws InvocationTargetException,
-											InterruptedException {
-										try {
-											res.setContents(
-													new ByteArrayInputStream(
-															newContent), false,
-													true, myMonitor);
-										} catch (CoreException e) {
-											throw new InvocationTargetException(
-													e);
-										}
-									}
-								});
-					} catch (InvocationTargetException e) {
-						Activator.handleError(e.getTargetException()
-								.getMessage(), e.getTargetException(), true);
-					} catch (InterruptedException e) {
-						// ignore here
-					}
-				}
-			};
+			LocalFileRevision revision = new LocalFileRevision(res);
+			left = new FileEditableRevision(revision, res, PlatformUI.getWorkbench().getProgressService());
 			GitFileRevision rightRevision = compareVersionMap.get(new Path(
 					repositoryMapping.getRepoRelativePath(res)));
 			if (rightRevision == null) {
@@ -260,11 +232,6 @@ public class CompareTreeView extends ViewPart {
 				String encoding = CompareCoreUtils.getResourceEncoding(res);
 				right = new FileRevisionTypedElement(rightRevision, encoding);
 			}
-			GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
-					left, right, PlatformUI.getWorkbench()
-							.getActiveWorkbenchWindow().getActivePage());
-			CompareUtils.openInCompare(PlatformUI.getWorkbench()
-					.getActiveWorkbenchWindow().getActivePage(), compareInput);
 		} else if (selected instanceof GitFileRevision) {
 			GitFileRevision rightRevision = (GitFileRevision) selected;
 			left = new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS
