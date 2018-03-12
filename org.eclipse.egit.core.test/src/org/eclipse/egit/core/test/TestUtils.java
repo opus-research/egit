@@ -151,13 +151,8 @@ public class TestUtils {
 			String projectName) throws Exception {
 		IProject firstProject = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName);
-		if (firstProject.exists()) {
-			firstProject.delete(true, null);
-		}
-		File testFile = new File(parentFile, projectName);
-		if (testFile.exists())
-			deleteRecursive(testFile);
-
+		if (firstProject.exists())
+			firstProject.delete(false, null);
 		IProjectDescription desc = ResourcesPlugin.getWorkspace()
 				.newProjectDescription(projectName);
 		desc.setLocation(new Path(new File(parentFile, projectName).getPath()));
