@@ -1254,32 +1254,6 @@
          </activeWhen>
       </handler>
       <handler
-            class="org.eclipse.egit.ui.internal.repository.tree.command.AddToIndexCommand"
-            commandId="org.eclipse.egit.ui.team.AddToIndex">
-         <activeWhen>
-            <and>
-               <count
-                     value="+">
-               </count>
-               <iterate
-                     ifEmpty="false"
-                     operator="and">
-                  <or>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
-                     </instanceof>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
-                     </instanceof>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode">
-                     </instanceof>
-                  </or>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-      <handler
             commandId="org.eclipse.ui.edit.delete">
          <class
                class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteFileCommand">
@@ -1899,7 +1873,7 @@
       <view
             category="org.eclipse.egit.ui.GitCategory"
             class="org.eclipse.egit.ui.internal.rebase.RebaseInteractiveView"
-            icon="icons/eview16/rebase_interactive.gif"
+            icon="icons/eview16/rebase.gif"
             id="org.eclipse.egit.ui.InteractiveRebaseView"
             name="%GitInteractiveRebaseView_name">
       </view>
@@ -3293,7 +3267,7 @@
       <menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=repo-3">
          <command
-               commandId="org.eclipse.egit.ui.team.AddToIndex"
+               commandId="org.eclipse.egit.ui.RepositoriesViewAddToIndex"
                icon="/icons/obj16/add.gif"
                label="%RepoViewAddToIndex.label"
                style="push">
@@ -4308,6 +4282,12 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.AddToIndexCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewAddToIndex"
+            name="%AddToIndexCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.OpenCommand"
             id="org.eclipse.egit.ui.RepositoriesViewOpen"
             name="%OpenCommand">
@@ -4662,10 +4642,6 @@
       <image
             commandId="org.eclipse.egit.ui.internal.reflog.OpenInCommitViewerCommand"
             icon="icons/obj16/open-commit.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RebaseInteractiveCurrent"
-            icon="icons/obj16/rebase_interactive.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.OpenInCommitViewerCommand"
