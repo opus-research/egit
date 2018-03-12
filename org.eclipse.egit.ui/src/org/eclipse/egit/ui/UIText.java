@@ -445,9 +445,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_OpenMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_PreferencesLink;
-
-	/** */
 	public static String GitHistoryPage_ProjectType;
 
 	/** */
@@ -668,18 +665,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseTargetSelectionDialog_RebaseTitle;
-
-	/** */
-	public static String ReplaceTargetSelectionDialog_ReplaceButton;
-
-	/** */
-	public static String ReplaceTargetSelectionDialog_ReplaceMessage;
-
-	/** */
-	public static String ReplaceTargetSelectionDialog_ReplaceTitle;
-
-	/** */
-	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
 
 	/** */
 	public static String RepositoryPropertySource_EditConfigButton;
@@ -2077,9 +2062,6 @@ public class UIText extends NLS {
 	public static String PushResultTable_columnMode;
 
 	/** */
-	public static String PushResultTable_MesasgeText;
-
-	/** */
 	public static String PushResultTable_statusUnexpected;
 
 	/** */
@@ -3327,15 +3309,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefreshPreferencesPage_RefreshWhenIndexChange;
-
-	/** */
-	public static String RefUpdateElement_CommitCountDecoration;
-
-	/** */
-	public static String RefUpdateElement_CommitRangeDecoration;
-
-	/** */
-	public static String RefUpdateElement_UrisDecoration;
 
 	/** */
 	public static String RemoteSelectionCombo_destinationName;

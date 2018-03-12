@@ -11,7 +11,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.WorkbenchStyledLabelProvider;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -20,6 +19,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
+import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -32,7 +32,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.notes.NoteMap;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.FetchResult;
@@ -52,6 +51,7 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.model.WorkbenchAdapter;
 import org.eclipse.ui.model.WorkbenchContentProvider;
+import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
  * Component displaying table with results of fetch operation.
@@ -150,23 +150,14 @@ class FetchResultTable {
 			return children;
 		}
 
-		/**
-		 * Shorten ref name
-		 *
-		 * @param ref
-		 * @return shortened ref name
-		 */
-		protected String shortenRef(final String ref) {
-			return NoteMap.shortenRefName(Repository.shortenRefName(ref));
-		}
-
 		public StyledString getStyledText(Object object) {
 			StyledString styled = new StyledString();
 			final String remote = update.getRemoteName();
 			final String local = update.getLocalName();
-			styled.append(shortenRef(remote));
+			styled.append(Repository.shortenRefName(remote));
 			styled.append(" : ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-			styled.append(shortenRef(local), StyledString.QUALIFIER_STYLER);
+			styled.append(Repository.shortenRefName(local),
+					StyledString.QUALIFIER_STYLER);
 			styled.append(' ');
 			switch (update.getResult()) {
 			case LOCK_FAILURE:
@@ -227,7 +218,25 @@ class FetchResultTable {
 
 		addToolbar(treePanel);
 
-		final IStyledLabelProvider styleProvider = new WorkbenchStyledLabelProvider() {
+		final IStyledLabelProvider styleProvider = new IStyledLabelProvider() {
+
+			private final WorkbenchLabelProvider wrapped = new WorkbenchLabelProvider();
+
+			public void removeListener(ILabelProviderListener listener) {
+				// Empty
+			}
+
+			public boolean isLabelProperty(Object element, String property) {
+				return false;
+			}
+
+			public void dispose() {
+				wrapped.dispose();
+			}
+
+			public void addListener(ILabelProviderListener listener) {
+				// Empty
+			}
 
 			public StyledString getStyledText(Object element) {
 				// TODO Replace with use of IWorkbenchAdapter3 when is no longer
@@ -238,7 +247,11 @@ class FetchResultTable {
 				if (element instanceof RepositoryCommit)
 					return ((RepositoryCommit) element).getStyledText(element);
 
-				return super.getStyledText(element);
+				return new StyledString(wrapped.getText(element));
+			}
+
+			public Image getImage(Object element) {
+				return wrapped.getImage(element);
 			}
 		};
 		treeViewer.setLabelProvider(new DelegatingStyledCellLabelProvider(
