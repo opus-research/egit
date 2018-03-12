@@ -669,9 +669,6 @@ public class UIText extends NLS {
 	public static String GitProjectsImportPage_NoProjectsMessage;
 
 	/** */
-	public static String GitProjectsImportPage_SearchForNestedProjects;
-
-	/** */
 	public static String RebaseCurrentRefCommand_RebaseCanceledMessage;
 
 	/** */
