@@ -151,6 +151,27 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_NoCommits;
 
 	/** */
+	public static String GerritConfigurationPage_configurePushToGerrit;
+
+	/** */
+	public static String GerritConfigurationPage_errorBranchName;
+
+	/** */
+	public static String GerritConfigurationPage_groupPush;
+
+	/** */
+	public static String GerritConfigurationPage_labelDestinationBranch;
+
+	/** */
+	public static String GerritConfigurationPage_PageDescription;
+
+	/** */
+	public static String GerritConfigurationPage_pushUri;
+
+	/** */
+	public static String GerritConfigurationPage_title;
+
+	/** */
 	public static String EGitCredentialsProvider_errorReadingCredentials;
 
 	/** */
@@ -662,6 +683,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickHandler_NoCherryPickPerformedTitle;
+
+	/** */
+	public static String CherryPickHandler_CherryPickConflictsMessage;
+
+	/** */
+	public static String CherryPickHandler_CherryPickConflictsTitle;
 
 	/** */
 	public static String CherryPickOperation_Failed;
@@ -1339,10 +1366,7 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_notFound;
 
 	/** */
-	public static String PullOperationUI_BranchNotConfiguredForPullMessage;
-
-	/** */
-	public static String PullOperationUI_NoLocalBranchMessage;
+	public static String PullOperationUI_NotTriedMessage;
 
 	/** */
 	public static String PullOperationUI_PullCanceledWindowTitle;
@@ -1351,13 +1375,13 @@ public class UIText extends NLS {
 	public static String PullOperationUI_PullErrorWindowTitle;
 
 	/** */
+	public static String PullOperationUI_PullingMultipleTaskName;
+
+	/** */
 	public static String PullOperationUI_PullingTaskName;
 
 	/** */
 	public static String PullOperationUI_PullOperationCanceledMessage;
-
-	/** */
-	public static String PullOperationUI_UnexpectedExceptionGettingBranchMessage;
 
 	/** */
 	public static String PullResultDialog_DialogTitle;
@@ -2200,6 +2224,39 @@ public class UIText extends NLS {
 	public static String BranchResultDialog_CheckoutConflictsTitle;
 
 	/** */
+	public static String BranchSelectionDialog_TitleCheckout;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotCreateNewRef;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotDeleteRef;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
+
+	/** */
+	public static String BranchSelectionDialog_QuestionNewBranchTitle;
+
+	/** */
+	public static String BranchSelectionDialog_QuestionNewBranchNameMessage;
+
+	/** */
+	public static String BranchSelectionDialog_NewBranch;
+
+	/** */
+	public static String BranchSelectionDialog_OkCheckout;
+
+	/** */
+	public static String BranchSelectionDialog_Refs;
+
+	/** */
+	public static String BranchSelectionDialog_Rename;
+
+	/** */
+	public static String BranchSelectionDialog_Delete;
+
+	/** */
 	public static String CommitDialogPreferencePage_title;
 
 	/** */
@@ -2339,15 +2396,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
-
-	/** */
-	public static String DeleteBranchDialog_DialogMessage;
-
-	/** */
-	public static String DeleteBranchDialog_DialogTitle;
-
-	/** */
-	public static String DeleteBranchDialog_WindowTitle;
 
 	/** */
 	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;
@@ -2710,6 +2758,45 @@ public class UIText extends NLS {
 	public static String MixedResetToRevisionAction_mixedReset;
 
 	/** */
+	public static String MultiPullResultDialog_DetailsButton;
+
+	/** */
+	public static String MultiPullResultDialog_FetchStatusColumnHeader;
+
+	/** */
+	public static String MultiPullResultDialog_MergeResultMessage;
+
+	/** */
+	public static String MultiPullResultDialog_NothingFetchedStatus;
+
+	/** */
+	public static String MultiPullResultDialog_NothingUpdatedStatus;
+
+	/** */
+	public static String MultiPullResultDialog_OkStatus;
+
+	/** */
+	public static String MultiPullResultDialog_OverallStatusColumnHeader;
+
+	/** */
+	public static String MultiPullResultDialog_RebaseResultMessage;
+
+	/** */
+	public static String MultiPullResultDialog_RepositoryColumnHeader;
+
+	/** */
+	public static String MultiPullResultDialog_UnknownStatus;
+
+	/** */
+	public static String MultiPullResultDialog_UpdatedMessage;
+
+	/** */
+	public static String MultiPullResultDialog_UpdateStatusColumnHeader;
+
+	/** */
+	public static String MultiPullResultDialog_WindowTitle;
+
+	/** */
 	public static String UIIcons_errorDeterminingIconBase;
 
 	/** */
@@ -3033,27 +3120,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RenameBranchCommand_WrongNameMessage;
-
-	/** */
-	public static String RenameBranchDialog_DialogMessage;
-
-	/** */
-	public static String RenameBranchDialog_DialogTitle;
-
-	/** */
-	public static String RenameBranchDialog_NewNameInputDialogPrompt;
-
-	/** */
-	public static String RenameBranchDialog_RenameBranchDialogNewNameInputWindowTitle;
-
-	/** */
-	public static String RenameBranchDialog_RenameButtonLabel;
-
-	/** */
-	public static String RenameBranchDialog_RenameErrorMessage;
-
-	/** */
-	public static String RenameBranchDialog_WindowTitle;
 
 	/** */
 	public static String RevertHandler_AlreadyRevertedMessae;
