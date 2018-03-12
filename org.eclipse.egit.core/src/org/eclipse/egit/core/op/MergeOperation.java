@@ -1,11 +1,7 @@
 /*******************************************************************************
  * Copyright (c) 2010, 2014 SAP AG and others.
  * Copyright (C) 2012, 2013 Tomasz Zarna <tzarna@gmail.com>
-<<<<<<< HEAD
  * Copyright (C) 2014 Axel Richard <axel.richard@obeo.fr>
-=======
- * Copyright (c) 2014, Obeo.
->>>>>>> Use a workspace-aware merging strategy when working from EGit
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +31,6 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.egit.core.internal.merge.StrategyRecursiveModel;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
@@ -164,10 +159,9 @@ public class MergeOperation implements IEGitOperation {
 					merge.setCommit(commit.booleanValue());
 				if (squash != null)
 					merge.setSquash(squash.booleanValue());
-				if (mergeStrategy != null)
+				if (mergeStrategy != null) {
 					merge.setStrategy(mergeStrategy);
-				else
-					merge.setStrategy(new StrategyRecursiveModel());
+				}
 				if (message != null)
 					merge.setMessage(message);
 				try {

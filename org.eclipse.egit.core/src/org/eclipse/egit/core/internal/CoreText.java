@@ -179,6 +179,9 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
+	public static String RepositoryMapping_ExceptionSubmoduleWalk;
+
+	/** */
 	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
 
 	/** */
@@ -408,15 +411,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String SquashCommitsOperation_squashing;
-
-	/** */
-	public static String RecursiveModelMerger_RefreshError;
-
-	/** */
-	public static String RecursiveModelMerger_ScopeInitializationError;
-
-	/** */
-	public static String RecursiveModelMerger_ScopeInitializationInterrupted;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);

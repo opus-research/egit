@@ -21,7 +21,7 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>3.7.0-SNAPSHOT</version>
+  <version>4.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>EGit Parent</name>
@@ -62,7 +62,7 @@
   </licenses>
 
   <properties>
-    <egit-version>3.7.0-SNAPSHOT</egit-version>
+    <egit-version>4.0.0-SNAPSHOT</egit-version>
     <tycho-version>0.22.0</tycho-version>
     <tycho-extras-version>${tycho-version}</tycho-extras-version>
     <mockito-version>1.8.4</mockito-version>
@@ -71,7 +71,6 @@
     <signer-input-directory>/home/data/httpd/download-staging.priv/egit</signer-input-directory>
     <download-publish-path>/home/data/httpd/download.eclipse.org/egit/updates-nightly</download-publish-path>
     <target-platform>egit-4.3</target-platform>
-    <platform-version>[3.9,4.0)</platform-version>
     <tycho.scmUrl>scm:git:https://git.eclipse.org/r/p/egit/egit.git</tycho.scmUrl>
     <test.vmparams></test.vmparams>
   </properties>
@@ -87,7 +86,6 @@
       </activation>
       <properties>
         <target-platform>egit-4.2</target-platform>
-        <platform-version>[3.8,3.9)</platform-version>
       </properties>
     </profile>
     <profile>
@@ -100,7 +98,6 @@
       </activation>
       <properties>
         <target-platform>egit-4.3</target-platform>
-        <platform-version>[3.9,4.0)</platform-version>
       </properties>
     </profile>
     <profile>
@@ -114,7 +111,6 @@
       </activation>
       <properties>
         <target-platform>egit-4.4</target-platform>
-        <platform-version>[3.10,4.0)</platform-version>
       </properties>
     </profile>
     <profile>
@@ -127,7 +123,6 @@
       </activation>
       <properties>
         <target-platform>egit-4.5</target-platform>
-        <platform-version>[3.10,4.0)</platform-version>
       </properties>
     </profile>
     <profile>
@@ -140,7 +135,6 @@
       </activation>
       <properties>
         <target-platform>egit-4.5-staging</target-platform>
-        <platform-version>[3.10,4.0)</platform-version>
       </properties>
     </profile>
     <profile>
@@ -365,11 +359,6 @@
             <environment>
               <os>macosx</os>
               <ws>cocoa</ws>
-              <arch>x86</arch>
-            </environment>
-            <environment>
-              <os>macosx</os>
-              <ws>cocoa</ws>
               <arch>x86_64</arch>
             </environment>
           </environments>
@@ -385,6 +374,8 @@
           <version>${tycho-version}</version>
           <configuration>
             <encoding>UTF-8</encoding>
+            <source>1.7</source>
+            <target>1.7</target>
           </configuration>
         </plugin>
         <plugin>
@@ -480,7 +471,7 @@
           <configuration>
             <sourceEncoding>utf-8</sourceEncoding>
             <minimumTokens>100</minimumTokens>
-            <targetJdk>1.5</targetJdk>
+            <targetJdk>1.7</targetJdk>
             <format>xml</format>
             <failOnViolation>false</failOnViolation>
           </configuration>
