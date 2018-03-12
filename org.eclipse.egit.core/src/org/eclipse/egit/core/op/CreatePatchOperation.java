@@ -51,7 +51,6 @@ import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.MissingObjectException;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
@@ -219,13 +218,11 @@ public class CreatePatchOperation implements IEGitOperation {
 				if (parents.length > 1)
 					throw new IllegalStateException(
 							CoreText.CreatePatchOperation_cannotCreatePatchForMergeCommit);
+				if (parents.length == 0)
+					throw new IllegalStateException(
+							CoreText.CreatePatchOperation_cannotCreatePatchForFirstCommit);
 
-				ObjectId parentId;
-				if (parents.length > 0)
-					parentId = parents[0].getId();
-				else
-					parentId = null;
-				List<DiffEntry> diffs = diffFmt.scan(parentId, commit.getId());
+				List<DiffEntry> diffs = diffFmt.scan(parents[0].getId(),commit.getId());
 				for (DiffEntry ent : diffs) {
 					String path;
 					if (ChangeType.DELETE.equals(ent.getChangeType()))
