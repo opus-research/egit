@@ -1774,9 +1774,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_Message;
 
 	/** */
-	public static String CommitDialog_MessageNoFilesSelected;
-
-	/** */
 	public static String CommitDialog_Path;
 
 	/** */
@@ -1886,12 +1883,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SpellCheckingMessageArea_selectAll;
-
-	/** */
-	public static String CommitMessageComponent_MessageInvalidAuthor;
-
-	/** */
-	public static String CommitMessageComponent_MessageInvalidCommitter;
 
 	/** */
 	public static String CommitMessageViewer_author;
@@ -3764,9 +3755,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
-	public static String CommitHelper_couldNotFindMergeMsg;
-
-	/** */
 	public static String CommitResultLabelProvider_SectionAuthor;
 
 	/** */
@@ -3996,9 +3984,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
-
-	/** */
-	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
