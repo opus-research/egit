@@ -1,3 +1,17 @@
+/*******************************************************************************
+ * Copyright (C) 2007, Dave Watson <dwatson@mimvista.com>
+ * Copyright (C) 2007, Jing Xue <jingxue@digizenstudio.com>
+ * Copyright (C) 2007, Robin Rosenberg <me@lathund.dewire.com>
+ * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
+ * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2010, Stefan Lay <stefan.lay@sap.com>
+ * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
 import java.io.BufferedReader;
@@ -19,22 +33,31 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * @author d020964
+ * Helper class for preparing a commit in EGit UI
  *
  */
 public class CommitHelper {
 
-
 	private Repository repository;
+
 	boolean canCommit;
+
 	String cannotCommitMessage;
+
 	private RevCommit previousCommit;
+
 	String author;
+
 	String committer;
-	boolean isMergeResolved;
+
+	boolean isMergedResolved;
+
 	boolean isCherryPickResolved;
+
 	private String previousCommitMessage;
+
 	private String previousAuthor;
+
 	private String commitMessage;
 
 	/**
@@ -47,14 +70,13 @@ public class CommitHelper {
 
 	private void calculateCommitInfo() {
 		Repository mergeRepository = null;
-		boolean isMergedResolved = false;
-		boolean isCherryPickResolved = false;
+		isMergedResolved = false;
+		isCherryPickResolved = false;
 		RepositoryState state = repository.getRepositoryState();
 		canCommit = state.canCommit();
 		if (!canCommit) {
-			cannotCommitMessage =
-					NLS.bind(UIText.CommitAction_repositoryState,
-							state.getDescription());
+			cannotCommitMessage = NLS.bind(UIText.CommitAction_repositoryState,
+					state.getDescription());
 			return;
 		}
 		if (state.equals(RepositoryState.MERGING_RESOLVED)) {
@@ -101,7 +123,8 @@ public class CommitHelper {
 	}
 
 	private String getMergeResolveMessage(Repository mergeRepository) {
-		File mergeMsg = new File(mergeRepository.getDirectory(), Constants.MERGE_MSG);
+		File mergeMsg = new File(mergeRepository.getDirectory(),
+				Constants.MERGE_MSG);
 		FileReader reader;
 		try {
 			reader = new FileReader(mergeMsg);
@@ -131,15 +154,15 @@ public class CommitHelper {
 	private static String getCherryPickOriginalAuthor(Repository mergeRepository) {
 		try {
 			ObjectId cherryPickHead = mergeRepository.readCherryPickHead();
-			PersonIdent author = new RevWalk(mergeRepository).parseCommit(cherryPickHead).getAuthorIdent();
-			return author.getName() + " <" + author.getEmailAddress() + ">";  //$NON-NLS-1$//$NON-NLS-2$
+			PersonIdent author = new RevWalk(mergeRepository).parseCommit(
+					cherryPickHead).getAuthorIdent();
+			return author.getName() + " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$//$NON-NLS-2$
 		} catch (IOException e) {
 			Activator.handleError(UIText.CommitAction_errorRetrievingCommit, e,
 					true);
 			throw new IllegalStateException(e);
 		}
 	}
-
 
 	private String newLine() {
 		return System.getProperty("line.separator"); //$NON-NLS-1$
@@ -192,6 +215,27 @@ public class CommitHelper {
 	 */
 	public String getCommitMessage() {
 		return commitMessage;
+	}
+
+	/**
+	 * @return isMergedResolved
+	 */
+	public boolean isMergedResolved() {
+		return isMergedResolved;
+	}
+
+	/**
+	 * @return isCherryPickResolved
+	 */
+	public boolean isCherryPickResolved() {
+		return isCherryPickResolved;
+	}
+
+	/**
+	 * @return previous commit
+	 */
+	public RevCommit getPreviousCommit() {
+		return previousCommit;
 	}
 
 }

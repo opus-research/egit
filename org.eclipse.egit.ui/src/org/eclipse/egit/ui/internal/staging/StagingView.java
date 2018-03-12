@@ -15,7 +15,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ParameterizedCommand;
@@ -23,16 +22,9 @@ import org.eclipse.core.commands.common.CommandException;
 import org.eclipse.core.expressions.EvaluationContext;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -108,7 +100,6 @@ import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.forms.IFormColors;
@@ -118,7 +109,6 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.part.ViewPart;
-import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /**
  * A GitX style staging view with embedded commit dialog.
@@ -258,7 +248,7 @@ public class StagingView extends ViewPart {
 				.extendedMargins(2, 2, 2, 2).applyTo(commitMessageComposite);
 
 		commitMessageText = new SpellcheckableMessageArea(
-				commitMessageComposite, EMPTY_STRING, SWT.NONE);
+				commitMessageComposite, EMPTY_STRING, toolkit.getBorderStyle());
 		commitMessageText.setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TEXT_BORDER);
 		GridDataFactory.fillDefaults().grab(true, true)
@@ -668,81 +658,44 @@ public class StagingView extends ViewPart {
 		return false;
 	}
 
-	private void reload(final Repository repository) {
-		final AtomicReference<IndexDiff> results = new AtomicReference<IndexDiff>();
-
-		final String jobTitle = MessageFormat.format(UIText.StagingView_IndexDiffReload,
-				StagingView.getRepositoryName(repository));
-
-		Job job = new Job(jobTitle) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				IndexDiff indexDiff = doReload(repository, monitor, jobTitle);
-				results.set(indexDiff);
-				return Status.OK_STATUS;
-			}
-		};
-
-		job.setUser(true);
-		job.setRule(ResourcesPlugin.getWorkspace().getRoot());
-
-		job.addJobChangeListener(new JobChangeAdapter() {
-			public void done(final IJobChangeEvent event) {
-				form.getDisplay().asyncExec(new Runnable() {
-					public void run() {
-						if (form.isDisposed())
-							return;
-
-						IndexDiff indexDiff = results.get();
-						unstagedTableViewer.setInput(new Object[] { repository,
-								indexDiff });
-						stagedTableViewer
-								.setInput(new Object[] { repository, indexDiff });
-						commitAction.setEnabled(repository.getRepositoryState()
-								.canCommit());
-						form.setText(StagingView.getRepositoryName(repository));
-						updateCommitMessageComponent();
-						clearCommitMessageToggles();
-						updateSectionText();
-					}
-				});
-			}
-		});
-
-		schedule(job);
-	}
-
-	private void schedule(final Job j) {
-		IWorkbenchPartSite site = getSite();
-		if (site != null) {
-			final IWorkbenchSiteProgressService p;
-			p = (IWorkbenchSiteProgressService) site
-					.getAdapter(IWorkbenchSiteProgressService.class);
-			if (p != null) {
-				p.schedule(j, 0, true /* use half-busy cursor */);
-				return;
-			}
-		}
-		j.schedule();
-	}
-
-	private IndexDiff doReload(Repository repository, IProgressMonitor monitor, String jobTitle) {
+	// TODO move to a Job?
+	private IndexDiff reload(final Repository repository) {
+		final boolean repositoryChanged = repository != currentRepository;
 		currentRepository = repository;
 
-		EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(
-				monitor);
 
 		final IndexDiff indexDiff;
 		try {
 			WorkingTreeIterator iterator = IteratorService.createInitialIterator(repository);
 			indexDiff = new IndexDiff(repository, Constants.HEAD, iterator);
-			indexDiff.diff(jgitMonitor, 0, 0, jobTitle);
+			indexDiff.diff();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 
 		removeListeners();
 		attachListeners(repository);
+
+		form.getDisplay().asyncExec(new Runnable() {
+			public void run() {
+				if (form.isDisposed())
+					return;
+
+				unstagedTableViewer.setInput(new Object[] { repository,
+						indexDiff });
+				stagedTableViewer
+						.setInput(new Object[] { repository, indexDiff });
+				commitAction.setEnabled(repository.getRepositoryState()
+						.canCommit());
+				form.setText(StagingView.getRepositoryName(repository));
+				if (repositoryChanged) {
+					updateCommitMessageComponent();
+					clearCommitMessageToggles();
+					updateSectionText();
+				}
+			}
+
+		});
 
 		return indexDiff;
 	}
@@ -766,15 +719,14 @@ public class StagingView extends ViewPart {
 
 	void updateCommitMessageComponent() {
 		CommitHelper helper = new CommitHelper(currentRepository);
-		// commitMessageComponent.setAmendAllowed(true); // TODO)
+		commitMessageComponent.setRepository(currentRepository);
 		commitMessageComponent.setAuthor(helper.getAuthor());
-		commitMessageComponent
-				.setCommitMessage(helper.getCannotCommitMessage());
+		commitMessageComponent.setCommitMessage(helper.getCommitMessage());
 		commitMessageComponent.setCommitter(helper.getCommitter());
 		commitMessageComponent.setPreviousAuthor(helper.getPreviousAuthor());
 		commitMessageComponent.setPreviousCommitMessage(helper
 				.getPreviousCommitMessage());
-		commitMessageComponent.updateFields();
+		commitMessageComponent.updateUI();
 	}
 
 	private static String getRepositoryName(Repository repository) {
