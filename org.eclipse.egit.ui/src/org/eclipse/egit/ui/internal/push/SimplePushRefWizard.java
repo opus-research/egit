@@ -111,8 +111,6 @@ public class SimplePushRefWizard extends Wizard {
 										.getSelection().getURI(true), getShell());
 
 					} finally {
-						// pre-fetch to avoid interrupting the user later
-						assist.getRefsForContentAssist(false, true);
 						updateDestinationField();
 					}
 			}

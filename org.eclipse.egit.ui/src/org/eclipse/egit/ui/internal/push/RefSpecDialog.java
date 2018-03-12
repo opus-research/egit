@@ -205,8 +205,6 @@ public class RefSpecDialog extends TitleAreaDialog {
 						return assistProvider.getRefsForContentAssist(false, pushMode);
 					}
 				});
-		// pre-fetch to avoid interrupting the user later
-		assistProvider.getRefsForContentAssist(false, pushMode);
 
 		// force update
 		forceButton = new Button(main, SWT.CHECK);
