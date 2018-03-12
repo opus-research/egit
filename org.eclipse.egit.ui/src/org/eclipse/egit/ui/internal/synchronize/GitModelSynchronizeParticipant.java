@@ -297,7 +297,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 			ResourceMapping[] mappings) {
 		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
 				gsds);
-		subscriber.init(new NullProgressMonitor());
 		GitSubscriberResourceMappingContext context = new GitSubscriberResourceMappingContext(
 				subscriber, gsds);
 		return new SynchronizationScopeManager(
