@@ -217,6 +217,10 @@ class CommitGraphTable {
 		});
 
 		Control c = getControl();
+		menuMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
+		// TODO extract this as a constant in the future
+		site.registerContextMenu("org.eclipse.egit.history.popup", menuMgr,table); //$NON-NLS-1$
+
 		c.setMenu(menuMgr.createContextMenu(c));
 		c.addMenuDetectListener(menuListener = new MenuListener(menuMgr,
 				getTableView(), site, copy));
@@ -435,11 +439,6 @@ class CommitGraphTable {
 								.add(getCommandContributionItem(
 										HistoryViewCommands.COMPARE_WITH_TREE,
 										UIText.GitHistoryPage_CompareWithCurrentHeadMenu));
-				else if (selectionSize == 2)
-					popupMgr
-							.add(getCommandContributionItem(
-									HistoryViewCommands.COMPARE_VERSIONS,
-									UIText.GitHistoryPage_CompareWithEachOtherMenuLabel));
 				if (selectionSize > 0) {
 					popupMgr.add(getCommandContributionItem(
 							HistoryViewCommands.OPEN,
@@ -467,6 +466,15 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CHERRYPICK,
 						UIText.GitHistoryPage_cherryPickMenuItem));
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.REVERT,
+						UIText.GitHistoryPage_revertMenuItem));
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.MERGE,
+						UIText.GitHistoryPage_mergeMenuItem));
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.REBASECURRENT,
+						UIText.GitHistoryPage_rebaseMenuItem));
 				popupMgr.add(new Separator());
 
 				MenuManager resetManager = new MenuManager(
@@ -490,6 +498,10 @@ class CommitGraphTable {
 				resetManager.add(getCommandContributionItem(
 						HistoryViewCommands.RESET,
 						UIText.GitHistoryPage_ResetHardMenuLabel, parameters));
+			} else if (selectionSize == 2) {
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.COMPARE_VERSIONS,
+						UIText.GitHistoryPage_CompareWithEachOtherMenuLabel));
 			}
 			popupMgr.add(new Separator());
 
