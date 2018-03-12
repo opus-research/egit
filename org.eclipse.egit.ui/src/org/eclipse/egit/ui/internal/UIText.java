@@ -624,12 +624,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_SecureStoreUseByDefault;
 
 	/** */
-	public static String ProcessStepsRebaseCommand_CancelDialogMessage;
-
-	/** */
-	public static String ProcessStepsRebaseCommand_JobName;
-
-	/** */
 	public static String ProjectsPreferencePage_AutoShareProjects;
 
 	/** */
@@ -4559,6 +4553,21 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_Pull;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionFetchHead;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionHead;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionHeadSymbolic;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionOrigHead;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionStash;
 
 	/** */
 	public static String GitLabelProvider_UnableToRetrieveLabel;
