@@ -59,17 +59,18 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			repository = mapping.getRepository();
 			if (repository == null)
 				return;
-
-			switch (resource.getType()) {
-			case IResource.FILE:
-				extractResourceProperties();
-				break;
-			case IResource.PROJECT:
+			if (resource.getType() == IResource.PROJECT) {
 				// We only need this very expensive info for project decoration
 				repositoryName = DecoratableResourceHelper
 						.getRepositoryName(repository);
 				branch = DecoratableResourceHelper.getShortBranch(repository);
 				branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
+			}
+			switch (resource.getType()) {
+			case IResource.FILE:
+				extractResourceProperties();
+				break;
+			case IResource.PROJECT:
 				tracked = true;
 				//$FALL-THROUGH$
 			case IResource.FOLDER:
@@ -151,10 +152,8 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		// locally modified / untracked
 		Set<String> modified = indexDiffData.getModified();
 		Set<String> untracked = indexDiffData.getUntracked();
-		Set<String> missing = indexDiffData.getMissing();
 		dirty = containsPrefix(modified, repoRelativePath)
-				|| containsPrefix(untracked, repoRelativePath)
-				|| containsPrefix(missing, repoRelativePath);
+				|| containsPrefix(untracked, repoRelativePath);
 	}
 
 	private String makeRepoRelative(IResource res) {
