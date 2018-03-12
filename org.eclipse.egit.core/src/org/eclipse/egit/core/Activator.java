@@ -182,7 +182,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		} catch (RuntimeException e) {
 			logError(CoreText.Activator_ReconfigureWindowCacheError, e);
 		}
-		GitProjectData.attachToWorkspace();
+		GitProjectData.attachToWorkspace(true);
 
 		repositoryUtil = new RepositoryUtil();
 
@@ -324,7 +324,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	@Override
 	public void stop(final BundleContext context) throws Exception {
 		GitProjectData.detachFromWorkspace();
-		repositoryCache.clear();
+		repositoryCache.dispose();
 		repositoryCache = null;
 		indexDiffCache.dispose();
 		indexDiffCache = null;
