@@ -43,6 +43,12 @@ public class UIText extends NLS {
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
+	public static String AbstractRebaseCommandHandler_cleanupDialog_text;
+
+	/** */
+	public static String AbstractRebaseCommandHandler_cleanupDialog_title;
+
+	/** */
 	public static String AbstractReflogCommandHandler_NoInput;
 
 	/** */
@@ -835,6 +841,9 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_StartMergeRadioText;
 
 	/** */
+	public static String RebaseResultDialog_stashApplyConflicts;
+
+	/** */
 	public static String RebaseResultDialog_StatusAborted;
 
 	/** */
@@ -869,6 +878,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseResultDialog_ToggleShowButton;
+
+	/** */
+	public static String RebaseResultDialog_UncommittedChanges;
 
 	/** */
 	public static String RebaseResultDialog_UpToDate;
@@ -2416,6 +2428,9 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_BranchNameLabel;
 
 	/** */
+	public static String CreateBranchPage_BranchNameToolTip;
+
+	/** */
 	public static String CreateBranchPage_CheckingOutMessage;
 
 	/** */
@@ -2437,16 +2452,19 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_MissingSourceMessage;
 
 	/** */
-	public static String CreateBranchPage_SourceBranchLabel;
+	public static String CreateBranchPage_SourceLabel;
 
 	/** */
-	public static String CreateBranchPage_SourceBranchTooltip;
+	public static String CreateBranchPage_SourceSelectButton;
 
 	/** */
-	public static String CreateBranchPage_SourceCommitLabel;
+	public static String CreateBranchPage_SourceSelectionDialogMessage;
 
 	/** */
-	public static String CreateBranchPage_SourceCommitTooltip;
+	public static String CreateBranchPage_SourceSelectionDialogTitle;
+
+	/** */
+	public static String CreateBranchPage_SourceTooltip;
 
 	/** */
 	public static String CreateBranchPage_Title;
@@ -2956,34 +2974,34 @@ public class UIText extends NLS {
 	public static String BranchSelectionAndEditDialog_Delete;
 
 	/** */
-	public static String CommitDialogPreferencePage_commitMessageHistory;
+	public static String CommittingPreferencePage_commitMessageHistory;
 
 	/** */
-	public static String CommitDialogPreferencePage_title;
+	public static String CommittingPreferencePage_title;
 
 	/** */
-	public static String CommitDialogPreferencePage_hardWrapMessage;
+	public static String CommittingPreferencePage_hardWrapMessage;
 
 	/** */
-	public static String CommitDialogPreferencePage_hardWrapMessageTooltip;
+	public static String CommittingPreferencePage_hardWrapMessageTooltip;
 
 	/** */
-	public static String CommitDialogPreferencePage_footers;
+	public static String CommittingPreferencePage_footers;
 
 	/** */
-	public static String CommitDialogPreferencePage_formatting;
+	public static String CommittingPreferencePage_formatting;
 
 	/** */
-	public static String CommitDialogPreferencePage_includeUntrackedFiles;
+	public static String CommittingPreferencePage_includeUntrackedFiles;
 
 	/** */
-	public static String CommitDialogPreferencePage_includeUntrackedFilesTooltip;
+	public static String CommittingPreferencePage_includeUntrackedFilesTooltip;
 
 	/** */
-	public static String CommitDialogPreferencePage_signedOffBy;
+	public static String CommittingPreferencePage_signedOffBy;
 
 	/** */
-	public static String CommitDialogPreferencePage_signedOffByTooltip;
+	public static String CommittingPreferencePage_signedOffByTooltip;
 
 	/** */
 	public static String Decorator_exceptionMessage;
