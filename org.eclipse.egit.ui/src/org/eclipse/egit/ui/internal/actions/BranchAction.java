@@ -14,18 +14,15 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.op.BranchOperation;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
-import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.team.core.TeamException;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -35,16 +32,15 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class BranchAction extends RepositoryAction {
 	@Override
-	public void execute(IAction action) throws InvocationTargetException, InterruptedException {
+	public void run(IAction action) {
 		final Repository repository = getRepository(true);
 		if (repository == null)
 			return;
 
 		if (!repository.getRepositoryState().canCheckout()) {
-			MessageDialog.openError(getShell(),
-					UIText.BranchAction_cannotCheckout, NLS.bind(
-							UIText.BranchAction_repositoryState, repository
-									.getRepositoryState().getDescription()));
+			MessageDialog.openError(getShell(), "Cannot checkout now",
+					"Repository state:"
+							+ repository.getRepositoryState().getDescription());
 			return;
 		}
 
@@ -64,27 +60,22 @@ public class BranchAction extends RepositoryAction {
 						new BranchOperation(repository, refName).run(monitor);
 						GitLightweightDecorator.refresh();
 					} catch (final CoreException e) {
-						if (GitTraceLocation.UI.isActive())
-							GitTraceLocation.getTrace().trace(GitTraceLocation.UI.getLocation(), e.getMessage(), e);
+						if (GitTraceLocation.CORE.isActive())
+							GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 						Display.getDefault().asyncExec(new Runnable() {
 							public void run() {
-								handle(
-										new TeamException(e.getStatus()),
-										UIText.BranchAction_errorSwitchingBranches,
-										UIText.BranchAction_unableToSwitchBranches);
+								handle(e, "Error while switching branches", "Unable to switch branches");
 							}
 						});
 					}
 				}
 			});
 		} catch (InvocationTargetException e) {
-			if (GitTraceLocation.UI.isActive())
-				GitTraceLocation.getTrace().trace(GitTraceLocation.UI.getLocation(), e.getMessage(), e);
-			throw e;
+			if (GitTraceLocation.CORE.isActive())
+				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 		} catch (InterruptedException e) {
-			if (GitTraceLocation.UI.isActive())
-				GitTraceLocation.getTrace().trace(GitTraceLocation.UI.getLocation(), e.getMessage(), e);
-			throw new InvocationTargetException(e);
+			if (GitTraceLocation.CORE.isActive())
+				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 		}
 	}
 

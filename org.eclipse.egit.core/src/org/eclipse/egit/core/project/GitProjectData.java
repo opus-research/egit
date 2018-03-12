@@ -218,7 +218,11 @@ public class GitProjectData {
 	private synchronized static Repository lookupRepository(final File gitDir)
 			throws IOException {
 		Reference<Repository> r = repositoryCache.get(gitDir);
-		Repository d = r != null ? r.get() : null;
+		Repository d;
+		if (r != null)
+			d = r.get();
+		else
+			d = null;
 		if (d == null) {
 			d = new Repository(gitDir);
 			repositoryCache.put(gitDir, new WeakReference<Repository>(d));
@@ -230,8 +234,10 @@ public class GitProjectData {
 	private static <K, V> void prune(Map<K, Reference<V>> map) {
 		for (final Iterator<Map.Entry<K, Reference<V>>> i = map.entrySet()
 				.iterator(); i.hasNext();) {
-			if (i.next().getValue().get() == null)
+			final Map.Entry<K, Reference<V>> e = i.next();
+			if (e.getValue().get() == null) {
 				i.remove();
+			}
 		}
 	}
 
@@ -305,7 +311,7 @@ public class GitProjectData {
 						dotGit.setTeamPrivateMember(true);
 					}
 				} catch (IOException err) {
-					throw new CoreException(Activator.error(CoreText.Error_CanonicalFile, err));
+					throw Activator.error(CoreText.Error_CanonicalFile, err);
 				}
 			}
 		}
@@ -389,15 +395,15 @@ public class GitProjectData {
 				}
 			}
 		} catch (IOException ioe) {
-			throw new CoreException(Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
-					dat), ioe));
+			throw Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
+					dat), ioe);
 		}
 
 		dat.delete();
 		if (!tmp.renameTo(dat)) {
 			tmp.delete();
-			throw new CoreException(Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
-					dat), null));
+			throw Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
+					dat), null);
 		}
 	}
 

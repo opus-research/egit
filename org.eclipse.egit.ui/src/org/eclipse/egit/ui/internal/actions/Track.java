@@ -30,7 +30,7 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
 public class Track extends RepositoryAction {
 
 	@Override
-	public void execute(IAction action) {
+	public void run(IAction action) {
 		try {
 			final TrackOperation op = new TrackOperation(Arrays
 					.asList(getSelectedResources()));

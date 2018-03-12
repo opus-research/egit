@@ -824,11 +824,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// TODO the ExternalProjectImportWizard
-				// does not allow to set a path in 3.4
-				// use the GitCloneWizard page in a new
-				// GitImportWizard instead
-				Wizard wiz = new ExternalProjectImportWizard() {
+				Wizard wiz = new ExternalProjectImportWizard(path) {
 
 					@Override
 					public void addPages() {
