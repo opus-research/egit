@@ -10,6 +10,7 @@ package org.eclipse.egit.ui.internal.synchronize.model;
 
 import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
 import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
+import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import java.io.IOException;
 
@@ -18,11 +19,13 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
-import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
+import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * Git blob object representation in Git ChangeSet
@@ -42,8 +45,6 @@ public class GitModelBlob extends GitModelCommit {
 	private final String gitPath;
 
 	private static final GitModelObject[] empty = new GitModelObject[0];
-
-	private GitCompareInput compareInput;
 
 	/**
 	 *
@@ -97,39 +98,49 @@ public class GitModelBlob extends GitModelCommit {
 
 	@Override
 	public ITypedElement getAncestor() {
-		createCompareInput();
-		return compareInput.getAncestor();
+		if (objectExist(getAncestorCommit(), ancestorId))
+			return CompareUtils.getFileRevisionTypedElement(gitPath,
+					getAncestorCommit(), getRepository(), ancestorId);
+
+		return null;
 	}
 
 	@Override
 	public ITypedElement getLeft() {
-		createCompareInput();
-		return compareInput.getLeft();
+		return CompareUtils.getFileRevisionTypedElement(gitPath,
+				getRemoteCommit(), getRepository(), remoteId);
 	}
 
 	@Override
 	public ITypedElement getRight() {
-		createCompareInput();
-		return compareInput.getRight();
+			return CompareUtils.getFileRevisionTypedElement(gitPath,
+					getBaseCommit(), getRepository(), baseId);
+
 	}
 
 	@Override
 	public void prepareInput(CompareConfiguration configuration,
 			IProgressMonitor monitor) throws CoreException {
-		createCompareInput();
-		compareInput.prepareInput(configuration, monitor);
+		configuration.setLeftLabel(getFileRevisionLabel(getLeft()));
+		configuration.setRightLabel(getFileRevisionLabel(getRight()));
+
 	}
 
-	private void createCompareInput() {
-		if (compareInput == null) {
-			ComparisonDataSource baseData = new ComparisonDataSource(
-					baseCommit, baseId);
-			ComparisonDataSource remoteData = new ComparisonDataSource(
-					remoteCommit, remoteId);
-			ComparisonDataSource ancestorData = new ComparisonDataSource(
-					ancestorCommit, ancestorId);
-			compareInput = new GitCompareInput(getRepository(), ancestorData,
-					baseData, remoteData, gitPath);
-		}
+	private boolean objectExist(RevCommit commit, ObjectId id) {
+		return commit != null && id != null && !id.equals(zeroId());
 	}
+
+	private String getFileRevisionLabel(ITypedElement element) {
+		if (element instanceof FileRevisionTypedElement) {
+			FileRevisionTypedElement castElement = (FileRevisionTypedElement)element;
+			return NLS.bind(UIText.GitCompareFileRevisionEditorInput_RevisionLabel,
+					new Object[]{element.getName(),
+					CompareUtils.truncatedRevision(castElement.getContentIdentifier()),
+					castElement.getAuthor()});
+
+		}
+		else
+			return element.getName();
+	}
+
 }

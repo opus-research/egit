@@ -17,7 +17,6 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.instanceOf;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
@@ -55,7 +54,23 @@ public class ContextMenuHelper {
 				.syncExec(new WidgetResult<MenuItem>() {
 					@SuppressWarnings("unchecked")
 					public MenuItem run() {
-						MenuItem theItem = getMenuItem(bot, texts);
+						MenuItem theItem = null;
+						Control control = (Control) bot.widget;
+						// for dynamic menus, we need to issue this event
+						control.notifyListeners(SWT.MenuDetect, new Event());
+						Menu menu = control.getMenu();
+						for (String text : texts) {
+							Matcher<?> matcher = allOf(
+									instanceOf(MenuItem.class),
+									withMnemonic(text));
+							theItem = show(menu, matcher);
+							if (theItem != null) {
+								menu = theItem.getMenu();
+							} else {
+								hide(menu);
+								break;
+							}
+						}
 						if (theItem != null && !theItem.isEnabled())
 							throw new IllegalStateException(
 									"Menu item is diabled");
@@ -79,65 +94,6 @@ public class ContextMenuHelper {
 		});
 	}
 
-	private static MenuItem getMenuItem(final AbstractSWTBot<?> bot,
-			final String... texts) {
-		MenuItem theItem = null;
-		Control control = (Control) bot.widget;
-		// for dynamic menus, we need to issue this event
-		control.notifyListeners(SWT.MenuDetect, new Event());
-		Menu menu = control.getMenu();
-		for (String text : texts) {
-			Matcher<?> matcher = allOf(instanceOf(MenuItem.class),
-					withMnemonic(text));
-			theItem = show(menu, matcher);
-			if (theItem != null) {
-				menu = theItem.getMenu();
-			} else {
-				hide(menu);
-				break;
-			}
-		}
-		return theItem;
-	}
-
-	/**
-	 * Checks if the context menu matching the text is enabled
-	 *
-	 * @param bot
-	 *
-	 * @param texts
-	 *            the text on the context menu.
-	 * @return true if the context menu is enabled
-	 * @throws WidgetNotFoundException
-	 *             if the widget is not found.
-	 */
-	public static boolean isContextMenuItemEnabled(final AbstractSWTBot<?> bot,
-			final String... texts) {
-
-		final AtomicBoolean enabled = new AtomicBoolean(false);
-		// show
-		final MenuItem menuItem = UIThreadRunnable
-				.syncExec(new WidgetResult<MenuItem>() {
-					@SuppressWarnings("unchecked")
-					public MenuItem run() {
-						MenuItem theItem = getMenuItem(bot, texts);
-						if (theItem != null && theItem.isEnabled())
-							enabled.set(true);
-						return theItem;
-					}
-				});
-		if (menuItem == null) {
-			throw new WidgetNotFoundException("Could not find menu: "
-					+ Arrays.asList(texts));
-		}
-		// hide
-		UIThreadRunnable.syncExec(new VoidResult() {
-			public void run() {
-				hide(menuItem.getParent());
-			}
-		});
-		return enabled.get();
-	}
 
 	private static MenuItem show(final Menu menu, final Matcher<?> matcher) {
 		if (menu != null) {
