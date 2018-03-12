@@ -60,11 +60,9 @@ public class StashCreateOperationTest extends GitTestCase {
 		StashCreateOperation stashCreateOperation = new StashCreateOperation(repository);
 		stashCreateOperation.execute(null);
 
-		try (RevWalk revWalk = new RevWalk(repository)) {
-			RevCommit commit = revWalk
-					.parseCommit(repository.resolve("stash@{0}"));
-			assertTrue(commit.getFullMessage().length() > 0);
-		}
+		RevWalk revWalk = new RevWalk(repository);
+		RevCommit commit = revWalk.parseCommit(repository.resolve("stash@{0}"));
+		assertTrue(commit.getFullMessage().length() > 0);
 	}
 
 	@Test
@@ -76,11 +74,9 @@ public class StashCreateOperationTest extends GitTestCase {
 		StashCreateOperation stashCreateOperation = new StashCreateOperation(repository, message);
 		stashCreateOperation.execute(null);
 
-		try (RevWalk revWalk = new RevWalk(repository)) {
-			RevCommit commit = revWalk
-					.parseCommit(repository.resolve("stash@{0}"));
-			assertEquals(message, commit.getFullMessage());
-		}
+		RevWalk revWalk = new RevWalk(repository);
+		RevCommit commit = revWalk.parseCommit(repository.resolve("stash@{0}"));
+		assertEquals(message, commit.getFullMessage());
 	}
 
 	@Test
@@ -92,12 +88,10 @@ public class StashCreateOperationTest extends GitTestCase {
 				repository, message, true);
 		stashCreateOperation.execute(null);
 
-		try (RevWalk revWalk = new RevWalk(repository)) {
-			RevCommit commit = revWalk
-					.parseCommit(repository.resolve("stash@{0}"));
-			// untracked commit is the third parent
-			assertEquals(commit.getParentCount(), 3);
-		}
+		RevWalk revWalk = new RevWalk(repository);
+		RevCommit commit = revWalk.parseCommit(repository.resolve("stash@{0}"));
+		// untracked commit is the third parent
+		assertEquals(commit.getParentCount(), 3);
 	}
 
 }
