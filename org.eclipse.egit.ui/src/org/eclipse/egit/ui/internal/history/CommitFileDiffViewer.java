@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2008, 2012 Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,26 +11,21 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.job.JobUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
@@ -77,8 +71,6 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.part.IPageSite;
-import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.ShowInContext;
 
 /**
  * Viewer to display {@link FileDiff} objects in a table.
@@ -265,12 +257,6 @@ public class CommitFileDiffViewer extends TableViewer {
 		mgr.add(compareWorkingTreeVersion);
 		mgr.add(blame);
 
-		MenuManager showInSubMenu = UIUtils.createShowInMenu(
-				site.getWorkbenchWindow());
-
-		mgr.add(new Separator());
-		mgr.add(showInSubMenu);
-
 		mgr.add(new Separator());
 		mgr.add(selectAll = createStandardAction(ActionFactory.SELECT_ALL));
 		mgr.add(copy = createStandardAction(ActionFactory.COPY));
@@ -374,28 +360,6 @@ public class CommitFileDiffViewer extends TableViewer {
 		if (oldInput == null && input == null)
 			return;
 		super.inputChanged(input, oldInput);
-	}
-
-	/**
-	 * @return the show in context or null
-	 * @see IShowInSource#getShowInContext()
-	 */
-	public ShowInContext getShowInContext() {
-		if (db.isBare())
-			return null;
-		IPath workTreePath = new Path(db.getWorkTree().getAbsolutePath());
-		IStructuredSelection selection = (IStructuredSelection) getSelection();
-		List<Object> elements = new ArrayList<Object>();
-		for (Object selectedElement : selection.toList()) {
-			FileDiff fileDiff = (FileDiff) selectedElement;
-			IPath path = workTreePath.append(fileDiff.getPath());
-			IFile file = ResourceUtil.getFileForLocation(path);
-			if (file != null)
-				elements.add(file);
-			else
-				elements.add(path);
-		}
-		return new ShowInContext(null, new StructuredSelection(elements));
 	}
 
 	private void openFileInEditor(String filePath) {
@@ -506,10 +470,10 @@ public class CommitFileDiffViewer extends TableViewer {
 		final ITypedElement base;
 		final ITypedElement next;
 
-		IPath path = new Path(getRepository().getWorkTree().getAbsolutePath())
-				.append(p);
+		String path = new Path(getRepository().getWorkTree().getAbsolutePath())
+				.append(p).toOSString();
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IFile[] files = root.findFilesForLocationURI(path.toFile().toURI());
+		IFile[] files = root.findFilesForLocationURI(new File(path).toURI());
 		if (files.length > 0)
 			next = SaveableCompareEditorInput.createFileElement(files[0]);
 		else
