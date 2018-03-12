@@ -39,7 +39,7 @@ import org.eclipse.jgit.lib.Tree;
 import org.eclipse.team.core.RepositoryProvider;
 import org.junit.Test;
 
-public class ConnectProviderOperationTest extends GitTestCase {
+public class T0001_ConnectProviderOperationTest extends GitTestCase {
 
 	@Test
 	public void testNoRepository() throws CoreException {
@@ -111,6 +111,7 @@ public class ConnectProviderOperationTest extends GitTestCase {
 		new Job("wait") {
 			protected IStatus run(IProgressMonitor monitor) {
 
+				System.out.println("MyJob");
 				f[0] = true;
 				return null;
 			}
@@ -121,8 +122,10 @@ public class ConnectProviderOperationTest extends GitTestCase {
 			}
 		};
 		while (!f[0]) {
+			System.out.println("Waiting");
 			Thread.sleep(1000);
 		}
+		System.out.println("DONE");
 
 		assertNotNull(RepositoryProvider.getProvider(project.getProject()));
 

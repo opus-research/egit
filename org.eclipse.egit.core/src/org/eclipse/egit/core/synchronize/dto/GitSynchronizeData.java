@@ -94,7 +94,7 @@ public class GitSynchronizeData {
 	}
 
 	/**
-	 * @return source Tree
+	 * @return source {@link Tree}
 	 * @throws IOException
 	 */
 	public Tree mapSrcTree() throws IOException {
@@ -102,7 +102,7 @@ public class GitSynchronizeData {
 	}
 
 	/**
-	 * @return destination Tree
+	 * @return destination {@link Tree}
 	 * @throws IOException
 	 */
 	public Tree mapDstTree() throws IOException {
