@@ -34,7 +34,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -74,6 +73,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * Property constant indicating the decorator configuration has changed.
 	 */
 	public static final String DECORATORS_CHANGED = "org.eclipse.egit.ui.DECORATORS_CHANGED"; //$NON-NLS-1$
+
+	private RepositoryUtil repositoryUtil;
 
 	/**
 	 * @return the {@link Activator} singleton.
@@ -166,6 +167,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
+		repositoryUtil = new RepositoryUtil();
 
 		// we want to be notified about debug options changes
 		Dictionary<String, String> props = new Hashtable<String, String>(4);
@@ -302,7 +304,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
 			Repository[] repos = org.eclipse.egit.core.Activator.getDefault()
-					.getRepositoryCache().getAllRepositories();
+					.getRepositoryCache().getAllReposiotries();
 			if (repos.length == 0)
 				return Status.OK_STATUS;
 			monitor.beginTask(UIText.Activator_scanningRepositories,
@@ -396,6 +398,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(), "Jobs terminated"); //$NON-NLS-1$
 
+		repositoryUtil.dispose();
+		repositoryUtil = null;
 		super.stop(context);
 		plugin = null;
 	}
@@ -432,7 +436,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * @return the {@link RepositoryUtil} instance
 	 */
 	public RepositoryUtil getRepositoryUtil() {
-		return org.eclipse.egit.core.Activator.getDefault().getRepositoryUtil();
+		return repositoryUtil;
 	}
-
 }

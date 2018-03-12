@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Chris Aniszczyk <caniszczyk@gmail.com> - tag API changes
  *******************************************************************************/
 package org.eclipse.egit.ui.test.team.actions;
 
@@ -23,10 +22,9 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.TagBuilder;
+import org.eclipse.jgit.lib.Tag;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
@@ -55,11 +53,11 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 		ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ2).delete(
 				false, null);
 
-		TagBuilder tag = new TagBuilder();
+		Tag tag = new Tag(repo);
 		tag.setTag("SomeTag");
-		tag.setTagger(new PersonIdent(TestUtil.TESTAUTHOR));
+		tag.setAuthor(new PersonIdent(TestUtil.TESTAUTHOR));
 		tag.setMessage("I'm just a little tag");
-		tag.setObjectId(repo.resolve(repo.getFullBranch()), Constants.OBJ_COMMIT);
+		tag.setObjId(repo.resolve(repo.getFullBranch()));
 		TagOperation top = new TagOperation(repo, tag, false);
 		top.execute(null);
 		touchAndSubmit(null);

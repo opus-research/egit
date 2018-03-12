@@ -25,13 +25,13 @@ import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
+import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.WorkDirCheckout;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
@@ -210,24 +210,17 @@ public class CloneOperation {
 			return;
 
 		final GitIndex index = new GitIndex(local);
-		final RevWalk rw = new RevWalk(local);
-		final RevCommit mapCommit;
-		try {
-			mapCommit = rw.parseCommit(head.getObjectId());
-		} finally {
-			rw.release();
-		}
-
+		final Commit mapCommit = local.mapCommit(head.getObjectId());
+		final Tree tree = mapCommit.getTree();
 		final RefUpdate u;
 		final WorkDirCheckout co;
 
 		u = local.updateRef(Constants.HEAD);
-		u.setNewObjectId(mapCommit.getId());
+		u.setNewObjectId(mapCommit.getCommitId());
 		u.forceUpdate();
 
 		monitor.setTaskName(CoreText.CloneOperation_checkingOutFiles);
-		co = new WorkDirCheckout(local, local.getWorkTree(), index, local
-				.mapTree(mapCommit.getTree()));
+		co = new WorkDirCheckout(local, local.getWorkTree(), index, tree);
 		co.checkout();
 		monitor.setTaskName(CoreText.CloneOperation_writingIndex);
 		index.write();

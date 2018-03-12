@@ -58,7 +58,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
  * Check out of a commit.
  */
 public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
-	private static final class BranchMessageDialog extends MessageDialog {
+	private final class BranchMessageDialog extends MessageDialog {
 		private final List<RefNode> nodes;
 
 		TableViewer branchesList;
@@ -115,7 +115,7 @@ public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
 		}
 	}
 
-	private static final class BranchLabelProvider extends LabelProvider {
+	private final class BranchLabelProvider extends LabelProvider {
 		@Override
 		public String getText(Object element) {
 			RefNode refNode = (RefNode) element;
@@ -129,7 +129,7 @@ public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
 	}
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		PlotCommit commit = (PlotCommit) getSelection(getPage()).getFirstElement();
+		PlotCommit commit = (PlotCommit) getSelection(event).getFirstElement();
 		Repository repo = getRepository(event);
 		List<Ref> availableBranches = new ArrayList<Ref>();
 

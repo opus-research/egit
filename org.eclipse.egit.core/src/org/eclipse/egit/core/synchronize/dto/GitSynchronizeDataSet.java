@@ -62,14 +62,6 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	}
 
 	/**
-	 * @return number of {@link GitSynchronizeData} that are included in this
-	 *         set
-	 */
-	public int size() {
-		return gsd.size();
-	}
-
-	/**
 	 * @param projectName
 	 * @return <code>null</code> if project does not have corresponding data
 	 */

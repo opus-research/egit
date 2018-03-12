@@ -8,12 +8,13 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import static org.eclipse.compare.structuremergeviewer.Differencer.ADDITION;
-import static org.eclipse.compare.structuremergeviewer.Differencer.CHANGE;
-import static org.eclipse.compare.structuremergeviewer.Differencer.DELETION;
-import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
-import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
+import static org.eclipse.team.core.synchronize.SyncInfo.ADDITION;
+import static org.eclipse.team.core.synchronize.SyncInfo.CHANGE;
+import static org.eclipse.team.core.synchronize.SyncInfo.CONFLICTING;
+import static org.eclipse.team.core.synchronize.SyncInfo.DELETION;
+import static org.eclipse.team.core.synchronize.SyncInfo.INCOMING;
+import static org.eclipse.team.core.synchronize.SyncInfo.OUTGOING;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,7 +22,6 @@ import java.util.List;
 
 import org.eclipse.compare.CompareConfiguration;
 import org.eclipse.compare.ITypedElement;
-import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.compare.structuremergeviewer.ICompareInputChangeListener;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -31,7 +31,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -42,8 +41,7 @@ import org.eclipse.team.ui.mapping.SaveableComparison;
 /**
  * Git commit object representation in Git ChangeSet
  */
-public class GitModelCommit extends GitModelObject implements
-		ISynchronizationCompareInput {
+public class GitModelCommit extends GitModelObject implements ISynchronizationCompareInput {
 
 	private final RevCommit baseCommit;
 
@@ -51,7 +49,7 @@ public class GitModelCommit extends GitModelObject implements
 
 	private final RevCommit ancestorCommit;
 
-	private int kind;
+	private int kind = -1;
 
 	private String name;
 
@@ -64,13 +62,11 @@ public class GitModelCommit extends GitModelObject implements
 	 * @param commit
 	 *            instance of commit that will be associated with this model
 	 *            object
-	 * @param direction
 	 * @throws IOException
 	 */
-	public GitModelCommit(GitModelRepository parent, RevCommit commit,
-			int direction) throws IOException {
+	public GitModelCommit(GitModelRepository parent, RevCommit commit)
+			throws IOException {
 		super(parent);
-		kind = direction;
 		remoteCommit = commit;
 		ancestorCommit = calculateAncestor(remoteCommit);
 
@@ -91,15 +87,11 @@ public class GitModelCommit extends GitModelObject implements
 	 * @param commit
 	 *            instance of commit that will be associated with this model
 	 *            object
-	 * @param direction
-	 *            use {@link Differencer#LEFT} and {@link Differencer#RIGHT} to
-	 *            determinate commit direction (is it incoming or outgoing)
 	 * @throws IOException
 	 */
-	protected GitModelCommit(GitModelObject parent, RevCommit commit,
-			int direction) throws IOException {
+	protected GitModelCommit(GitModelObject parent, RevCommit commit)
+			throws IOException {
 		super(parent);
-		kind = direction;
 		remoteCommit = commit;
 		ancestorCommit = calculateAncestor(remoteCommit);
 
@@ -169,35 +161,12 @@ public class GitModelCommit extends GitModelObject implements
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof GitModelCommit) {
-			GitModelCommit objCommit = (GitModelCommit) obj;
-
-			boolean equalsBaseCommit;
-			RevCommit objBaseCommit = objCommit.getBaseCommit();
-			if (objBaseCommit != null)
-				equalsBaseCommit = objBaseCommit.equals(baseCommit);
-			else
-				equalsBaseCommit = baseCommit == null;
-
-			// it is impossible to have different common ancestor commit if
-			// remote and base commit are equal, therefore we don't compare
-			// common ancestor's
-
-			return equalsBaseCommit
-					&& objCommit.getRemoteCommit().equals(remoteCommit)
-					&& objCommit.getLocation().equals(getLocation());
-		}
-
-		return false;
+		return remoteCommit.equals(obj);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = getLocation().hashCode() ^ remoteCommit.hashCode();
-		if (baseCommit != null)
-			result ^= baseCommit.hashCode();
-
-		return result;
+		return remoteCommit.hashCode();
 	}
 
 	public Image getImage() {
@@ -206,8 +175,8 @@ public class GitModelCommit extends GitModelObject implements
 	}
 
 	public int getKind() {
-		if (kind == -1 || kind == LEFT || kind == RIGHT)
-			calculateKind(getBaseObjectId(), getRemoteObjectId());
+		if (kind == -1)
+			calculateKind(getAncestorSha1(), getBaseSha1(), getRemoteSha1());
 
 		return kind;
 	}
@@ -240,23 +209,25 @@ public class GitModelCommit extends GitModelObject implements
 		// do nothing, we should disallow coping content between commits
 	}
 
-	@Override
-	public boolean isContainer() {
-		return true;
+	/**
+	 * @return SHA1 of ancestor object
+	 */
+	protected String getAncestorSha1() {
+		return ancestorCommit.getId().getName();
 	}
 
 	/**
-	 * @return base object ObjectId
+	 * @return SHA1 of base object
 	 */
-	protected ObjectId getBaseObjectId() {
-		return baseCommit != null ? baseCommit.getId() : zeroId();
+	protected String getBaseSha1() {
+		return baseCommit.getId().getName();
 	}
 
 	/**
-	 * @return remote object ObjectId
+	 * @return SHA1 of remote object
 	 */
-	protected ObjectId getRemoteObjectId() {
-		return remoteCommit.getId();
+	protected String getRemoteSha1() {
+		return remoteCommit.getId().getName();
 	}
 
 	private RevCommit calculateAncestor(RevCommit actual) throws IOException {
@@ -277,21 +248,14 @@ public class GitModelCommit extends GitModelObject implements
 	private void getChildrenImpl() {
 		TreeWalk tw = createTreeWalk();
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
-
 		try {
-			RevTree actualTree = remoteCommit.getTree();
-			List<String> notIgnored = getNotIgnoredNodes(actualTree);
-
-			int actualNth = tw.addTree(actualTree);
+			int ancestorNth = tw.addTree(ancestorCommit.getTree());
 			int baseNth = -1;
 			if (baseCommit != null)
 				baseNth = tw.addTree(baseCommit.getTree());
-			int ancestorNth = tw.addTree(ancestorCommit.getTree());
+			int actualNth = tw.addTree(remoteCommit.getTree());
 
 			while (tw.next()) {
-				if (!notIgnored.contains(tw.getNameString()))
-					continue;
-
 				GitModelObject obj = getModelObject(tw, ancestorNth, baseNth,
 						actualNth);
 				if (obj != null)
@@ -328,10 +292,18 @@ public class GitModelCommit extends GitModelObject implements
 		return null;
 	}
 
-	private void calculateKind(ObjectId baseId, ObjectId remoteId) {
-		if (baseId.equals(zeroId()))
+	private void calculateKind(String ancestorSha1, String baseSha1,
+			String remoteSha1) {
+		if (ancestorSha1.equals(baseSha1))
+			kind = INCOMING;
+		else if (ancestorSha1.equals(baseSha1))
+			kind = OUTGOING;
+		else
+			kind = CONFLICTING;
+
+		if (baseSha1.equals(zeroId().getName()))
 			kind = kind | ADDITION;
-		else if (remoteId.equals(zeroId()))
+		else if (remoteSha1.equals(zeroId().getName()))
 			kind = kind | DELETION;
 		else
 			kind = kind | CHANGE;
@@ -348,7 +320,8 @@ public class GitModelCommit extends GitModelObject implements
 	}
 
 	public String getFullPath() {
-		return getLocation().toPortableString();
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	public boolean isCompareInputFor(Object object) {

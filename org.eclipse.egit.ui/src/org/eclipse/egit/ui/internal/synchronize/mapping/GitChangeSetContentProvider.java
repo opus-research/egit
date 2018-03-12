@@ -18,7 +18,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.synchronize.GitSubscriberMergeContext;
 import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRoot;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.team.core.mapping.ISynchronizationContext;
@@ -34,14 +33,6 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 	private ITreeContentProvider provider;
 
 	private GitModelRoot modelRoot;
-
-	@Override
-	public boolean hasChildren(Object element) {
-		if (element instanceof GitModelBlob)
-			return false;
-
-		return super.hasChildren(element);
-	}
 
 	@Override
 	protected ITreeContentProvider getDelegateContentProvider() {

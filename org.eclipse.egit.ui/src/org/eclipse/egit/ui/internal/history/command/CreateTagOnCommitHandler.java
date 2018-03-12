@@ -13,13 +13,15 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.op.TagOperation;
+import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.dialogs.CreateTagDialog;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.TagBuilder;
+import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -29,23 +31,27 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public class CreateTagOnCommitHandler extends AbstractHistoryCommanndHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		PlotCommit commit = (PlotCommit) getSelection(getPage()).getFirstElement();
+		PlotCommit commit = (PlotCommit) getSelection(event).getFirstElement();
 		final Repository repo = getRepository(event);
 
 		CreateTagDialog dialog = new CreateTagDialog(HandlerUtil
-				.getActiveShellChecked(event), commit.getId(), repo);
+				.getActiveShellChecked(event), ValidationUtils
+				.getRefNameInputValidator(repo, Constants.R_TAGS), commit
+				.getId());
 
+		dialog.setExistingTags(getRevTags(event));
 		if (dialog.open() != Window.OK)
 			return null;
 
-		final TagBuilder tag = new TagBuilder();
+		final Tag tag = new Tag(repo);
 		PersonIdent personIdent = new PersonIdent(repo);
 		String tagName = dialog.getTagName();
 
 		tag.setTag(tagName);
 		tag.setTagger(personIdent);
 		tag.setMessage(dialog.getTagMessage());
-		tag.setObjectId(commit);
+
+		tag.setObjId(commit.getId());
 
 		try {
 			new TagOperation(repo, tag, false)

@@ -29,7 +29,6 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -82,7 +81,7 @@ class CommitFileDiffViewer extends TableViewer {
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				final FileDiff d = (FileDiff) iss.getFirstElement();
-				if (walker != null && d.getBlobs().length <= 2)
+				if (walker != null && d.blobs.length <= 2)
 					if (compareMode)
 						showTwoWayFileDiff(d);
 					else
@@ -103,18 +102,15 @@ class CommitFileDiffViewer extends TableViewer {
 			IWorkbenchWindow window = PlatformUI.getWorkbench()
 					.getActiveWorkbenchWindow();
 			IWorkbenchPage page = window.getActivePage();
-			IFileRevision rev = CompareUtils.getFileRevision(d.getPath(),
-					d.getChange().equals(ChangeType.DELETE)?
-							d.getCommit().getParent(0) : d.getCommit(),
-					db, d.getChange().equals(ChangeType.DELETE)?
-							d.getBlobs()[0] : d.getBlobs()[1]);
+			IFileRevision rev = CompareUtils.getFileRevision(d.path, d.commit,
+					db, d.blobs[0]);
 			if (rev != null)
 				EgitUiEditorUtils.openEditor(page, rev,
 						new NullProgressMonitor());
 			else {
 				String message = NLS.bind(
-						UIText.CommitFileDiffViewer_notContainedInCommit, d.getPath(),
-						d.getCommit().getId().getName());
+						UIText.CommitFileDiffViewer_notContainedInCommit, d.path,
+						d.commit.getId().getName());
 				Activator.showError(message, null);
 			}
 		} catch (IOException e) {
@@ -129,21 +125,19 @@ class CommitFileDiffViewer extends TableViewer {
 	void showTwoWayFileDiff(final FileDiff d) {
 		final GitCompareFileRevisionEditorInput in;
 
-		final String p = d.getPath();
-		final RevCommit c = d.getCommit();
+		final String p = d.path;
+		final RevCommit c = d.commit;
 		final ITypedElement base;
 		final ITypedElement next;
 
-		if (d.getBlobs().length == 2 && !d.getChange().equals(ChangeType.ADD))
-			base = CompareUtils.getFileRevisionTypedElement(p, c.getParent(0), db, d.getBlobs()[0]);
-		else
+		if (d.blobs.length == 2) {
+			base = CompareUtils.getFileRevisionTypedElement(p, c.getParent(0), db, d.blobs[0]);
+			next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.blobs[1]);
+		} else {
 			// Initial import
 			base = new GitCompareFileRevisionEditorInput.EmptyTypedElement(""); //$NON-NLS-1$
-
-		if (d.getChange().equals(ChangeType.DELETE))
-			next = new GitCompareFileRevisionEditorInput.EmptyTypedElement(""); //$NON-NLS-1$
-		else
-			next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.getBlobs()[1]);
+			next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.blobs[0]);
+		}
 
 		in = new GitCompareFileRevisionEditorInput(next, base, null);
 		CompareUI.openCompareEditor(in);
@@ -183,7 +177,7 @@ class CommitFileDiffViewer extends TableViewer {
 			final FileDiff d = itr.next();
 			if (r.length() > 0)
 				r.append(LINESEP);
-			r.append(d.getPath());
+			r.append(d.path);
 		}
 
 		clipboard.setContents(new Object[] { r.toString() },
