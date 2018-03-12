@@ -176,13 +176,13 @@ public class CommitEditorPage extends FormPage {
 
 		boolean signedOff = isSignedOffBy(person);
 
-		Text userText = new Text(userArea, SWT.FLAT | SWT.READ_ONLY);
-		userText.setText(MessageFormat.format(
-				author ? UIText.CommitEditorPage_LabelAuthor
-						: UIText.CommitEditorPage_LabelCommitter, person
-						.getName(), person.getEmailAddress(), person.getWhen()));
-		toolkit.adapt(userText, false, false);
-		userText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
+		Text userText = toolkit
+				.createText(userArea, MessageFormat.format(
+						author ? UIText.CommitEditorPage_LabelAuthor
+								: UIText.CommitEditorPage_LabelCommitter,
+						person.getName(), person.getEmailAddress(), person
+								.getWhen()));
+		userText.setEditable(false);
 
 		GridDataFactory.fillDefaults().span(signedOff ? 1 : 2, 1)
 				.applyTo(userText);
@@ -369,8 +369,6 @@ public class CommitEditorPage extends FormPage {
 
 		});
 		branchViewer.setContentProvider(ArrayContentProvider.getInstance());
-		branchViewer.setData(FormToolkit.KEY_DRAW_BORDER,
-				FormToolkit.TREE_BORDER);
 
 		fillBranches();
 
@@ -417,12 +415,10 @@ public class CommitEditorPage extends FormPage {
 
 		CommitFileDiffViewer viewer = new CommitFileDiffViewer(filesArea,
 				getSite(), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
-						| SWT.FULL_SELECTION | toolkit.getBorderStyle());
+						| SWT.FULL_SELECTION);
 		// commit file diff viewer uses a nested composite with a stack layout
 		// and so margins need to be applied to have form toolkit style borders
 		toolkit.paintBordersFor(viewer.getTable().getParent());
-		viewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
-				FormToolkit.TREE_BORDER);
 		StackLayout viewerLayout = (StackLayout) viewer.getControl()
 				.getParent().getLayout();
 		viewerLayout.marginHeight = 2;
