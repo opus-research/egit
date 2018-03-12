@@ -23,6 +23,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
+import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand;
@@ -33,7 +34,6 @@ import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.StyledString;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -63,7 +63,10 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 	private ResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
 
-	private Image annotatedTagImage = UIIcons.TAG_ANNOTATED.createImage();
+	private Image tagImage = UIIcons.TAG.createImage();
+
+	private Image lightweightTagImage = SWTUtils.getDecoratedImage(tagImage,
+			UIIcons.OVR_LIGHTTAG);
 
 	private final State verboseBranchModeState;
 
@@ -107,8 +110,9 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 				Activator.logError(e.getMessage(), e);
 				return null;
 			}
-			if (any instanceof RevTag)
-				return decorateImage(annotatedTagImage, element);
+			if (any instanceof RevCommit)
+				// lightweight tag
+				return decorateImage(lightweightTagImage, element);
 		} else if (type == RepositoryTreeNodeType.FILE) {
 			Object object = node.getObject();
 			if (object instanceof File) {
@@ -141,7 +145,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 		}
 		resourceManager.dispose();
 		decoratedImages.clear();
-		annotatedTagImage.dispose();
+		tagImage.dispose();
+		lightweightTagImage.dispose();
 		super.dispose();
 	}
 
@@ -178,12 +183,9 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 					if (id == null)
 						return image;
 					RevWalk rw = new RevWalk(node.getRepository());
-					try {
-						compareString = rw.parseTag(id).getObject().name();
-					} catch (IncorrectObjectTypeException e) {
-						// Ref is a lightweight tag, not an annotated tag
-						compareString = id.name();
-					}
+					RevTag tag = rw.parseTag(id);
+					compareString = tag.getObject().name();
+
 				} else if (refName.startsWith(Constants.R_REMOTES)) {
 					// remote branch: HEAD would be on the commit id to which
 					// the branch is pointing
