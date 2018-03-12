@@ -56,8 +56,7 @@ public class CompareWithWorkingTreeHandler extends
 			final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 					SaveableCompareEditorInput.createFileElement(file), right,
 					null);
-			CompareUtils.openInCompare(workBenchPage, mapping.getRepository(),
-					in);
+			CompareUtils.openInCompare(workBenchPage, in);
 		} else if (input instanceof File) {
 			File file = (File) input;
 			// TODO can we create a ITypedElement from the local file?
