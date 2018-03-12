@@ -114,7 +114,6 @@ public class GitRepositoriesViewTagHandlingTest extends
 		SWTBotShell resetDialog = bot.shell(UIText.ResetCommand_WizardTitle);
 		pressAltAndChar(resetDialog, 'H');
 		resetDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-		waitInUI();
 
 		bot.shell(UIText.ResetTargetSelectionDialog_ResetQuestion).bot()
 				.button(IDialogConstants.YES_LABEL).click();
