@@ -2160,12 +2160,6 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_parent;
 
 	/** */
-	public static String CompareWithHeadActionHandler_NoHeadTitle;
-
-	/** */
-	public static String CompareWithHeadActionHandler_NoHeadMessage;
-
-	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
