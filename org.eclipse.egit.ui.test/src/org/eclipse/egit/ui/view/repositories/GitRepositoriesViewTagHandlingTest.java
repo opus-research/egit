@@ -23,7 +23,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -89,9 +88,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 		String newObject = getObjectIdOfCommit();
 		createTag("SecondTag", "The second tag");
 		refreshAndWait();
-		SWTBotTreeItem tagsItem = myRepoViewUtil.getTagsItem(tree,
-				repositoryFile).expand();
-		SWTBotTreeItem[] items = tagsItem.getItems();
+		SWTBotTreeItem[] items = myRepoViewUtil.getTagsItem(tree,
+				repositoryFile).expand().getItems();
 		assertEquals("Wrong number of tags", initialCount + 2, items.length);
 
 		assertTrue("Wrong commit id", initialObjid
@@ -120,8 +118,9 @@ public class GitRepositoriesViewTagHandlingTest extends
 		SWTBotShell resetDialog = bot.shell(UIText.ResetCommand_WizardTitle);
 		resetDialog.bot().radio(
 				UIText.ResetTargetSelectionDialog_ResetTypeHardButton).click();
+		waitInUI();
 		resetDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-		TestUtil.joinJobs(JobFamilies.RESET);
+		waitInUI();
 
 		bot.shell(UIText.ResetTargetSelectionDialog_ResetQuestion).bot()
 				.button(IDialogConstants.YES_LABEL).click();
@@ -145,17 +144,18 @@ public class GitRepositoriesViewTagHandlingTest extends
 				.getPluginLocalizedValue("CreateTagCommand"));
 		String shellTitle = UIText.CreateTagDialog_NewTag;
 		SWTBotShell createDialog = bot.shell(shellTitle).activate();
-		TestUtil.joinJobs(JobFamilies.FILL_TAG_LIST);
+		waitInUI();
 		createDialog.bot().textWithLabel(UIText.CreateTagDialog_tagName)
 				.setText(name);
 		createDialog.bot()
 				.styledTextWithLabel(UIText.CreateTagDialog_tagMessage)
 				.setText(message);
+		waitInUI();
 		createDialog.bot().button(IDialogConstants.OK_LABEL).click();
-		TestUtil.joinJobs(JobFamilies.TAG);
 	}
 
 	private String getObjectIdOfCommit() throws Exception {
+
 		String branch = repository.getFullBranch();
 		if (ObjectId.isId(branch))
 			return branch;
