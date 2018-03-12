@@ -95,11 +95,10 @@ class CommitFileRevision extends GitFileRevision {
 	public ITag[] getTags() {
 		final Collection<GitTag> ret = new ArrayList<GitTag>();
 		for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
-			Ref ref = db.peel(tag.getValue());
-			final ObjectId refId = ref.getPeeledObjectId();
-			if (refId == null)
+			final ObjectId ref = tag.getValue().getPeeledObjectId();
+			if (ref == null)
 				continue;
-			if (!AnyObjectId.equals(refId, commit))
+			if (!AnyObjectId.equals(ref, commit))
 				continue;
 			ret.add(new GitTag(tag.getKey()));
 		}
