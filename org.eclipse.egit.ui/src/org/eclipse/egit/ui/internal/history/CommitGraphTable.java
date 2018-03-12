@@ -86,7 +86,6 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
@@ -231,9 +230,8 @@ class CommitGraphTable {
 						Ref ref = commit.getRef(i);
 						Point textSpan = renderer.getRefHSpan(ref);
 						if ((textSpan != null)
-								&& (relativeX >= textSpan.x && relativeX <= textSpan.y)) {
+								&& (relativeX >= textSpan.x && relativeX <= textSpan.y))
 							showHover(ref, e);
-						}
 					}
 				}
 			}
@@ -253,9 +251,8 @@ class CommitGraphTable {
 
 			private Point getHoverLocation(MouseEvent e) {
 				Point tableLocation = getTableView().getTable().toControl(0, 0);
-				Point cursorSize = Display.getCurrent().getCursorSizes()[0];
-				return new Point(-tableLocation.x + e.x + cursorSize.x,
-						-tableLocation.y + e.y + cursorSize.y);
+				return new Point(-tableLocation.x + e.x,
+						-tableLocation.y + e.y - renderer.getTextHeight());
 			}
 
 			private String getHoverText(Ref r) {
