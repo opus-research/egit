@@ -23,6 +23,7 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
@@ -134,15 +135,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 	private RepositoryMapping findActualRepository(
 			Collection<RepositoryMapping> repos, File suggestedRepo) {
 		for (RepositoryMapping rm : repos) {
-			String mappingDir = rm.getGitDir();
-			if (!rm.getContainerPath().isEmpty()) {
-				mappingDir = rm.getContainerPath() + "/" + mappingDir;
-			}
-			if (File.separatorChar != '/') {
-				mappingDir = mappingDir.replace('/', File.separatorChar);
-			}
-			String suggestedDir = suggestedRepo.getPath();
-			if (mappingDir.equals(suggestedDir))
+			if (Path.fromOSString(rm.getGitDir()).equals(Path.fromOSString(suggestedRepo.getPath())))
 				return rm;
 		}
 		return null;
