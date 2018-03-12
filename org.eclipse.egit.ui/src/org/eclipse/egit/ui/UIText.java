@@ -40,6 +40,9 @@ public class UIText extends NLS {
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
+	public static String AbstractReflogCommandHandler_NoInput;
+
+	/** */
 	public static String Activator_DefaultRepoFolderIsFile;
 
 	/** */
@@ -1177,13 +1180,10 @@ public class UIText extends NLS {
 	public static String ReflogView_ErrorOnOpenCommit;
 
 	/** */
-	public static String ReflogView_FromColumnHeader;
-
-	/** */
 	public static String ReflogView_MessageColumnHeader;
 
 	/** */
-	public static String ReflogView_ToColumnHeader;
+	public static String ReflogView_CommitColumnHeader;
 
 	/** */
 	public static String RefSelectionDialog_Messsage;
@@ -1913,12 +1913,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
-
-	/** */
-	public static String SpellcheckableMessageArea_redo;
-
-	/** */
-	public static String SpellcheckableMessageArea_undo;
 
 	/** */
 	public static String SpellCheckingMessageArea_copy;
