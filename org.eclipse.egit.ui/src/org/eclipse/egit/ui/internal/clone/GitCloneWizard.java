@@ -164,7 +164,7 @@ public class GitCloneWizard extends Wizard {
 			selectedBranches = validSource.getSelectedBranches();
 		}
 		final File workdir = cloneDestination.getDestinationFile();
-		final Ref ref = cloneDestination.getInitialBranch();
+		final String branch = cloneDestination.getInitialBranch();
 		final String remoteName = cloneDestination.getRemote();
 
 		workdir.mkdirs();
@@ -182,7 +182,7 @@ public class GitCloneWizard extends Wizard {
 		int timeout = Activator.getDefault().getPreferenceStore().getInt(
 				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		final CloneOperation op = new CloneOperation(uri, allSelected,
-				selectedBranches, workdir, ref, remoteName, timeout);
+				selectedBranches, workdir, branch, remoteName, timeout);
 		UserPasswordCredentials credentials = cloneSource.getCredentials();
 		if (credentials != null)
 			op.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
