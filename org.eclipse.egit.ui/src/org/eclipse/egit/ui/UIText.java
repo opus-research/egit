@@ -139,18 +139,6 @@ public class UIText extends NLS {
 	public static String SharingWizard_failed;
 
 	/** */
-	public static String ShowAnnotationHandler_HoverAuthor;
-
-	/** */
-	public static String ShowAnnotationHandler_HoverCommit;
-
-	/** */
-	public static String ShowAnnotationHandler_HoverCommitter;
-
-	/** */
-	public static String ShowAnnotationHandler_JobName;
-
-	/** */
 	public static String GenerateHistoryJob_BuildingListMessage;
 
 	/** */
@@ -430,6 +418,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_ShowSubMenuLabel;
 
 	/** */
+	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
+
+	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
 
 	/** */
@@ -464,6 +455,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_SynchronizeView;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -1753,6 +1747,15 @@ public class UIText extends NLS {
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
+	public static String CompareWithPreviousActionHandler_MessageRevisionNotFound;
+
+	/** */
+	public static String CompareWithPreviousActionHandler_TaskGeneratingInput;
+
+	/** */
+	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
+
+	/** */
 	public static String ConfirmationPage_cantConnectToAnyTitle;
 
 	/** */
@@ -2374,6 +2377,9 @@ public class UIText extends NLS {
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
 
 	/** */
+	public static String DeleteBranchCommand_DeletingBranchesProgress;
+
+	/** */
 	public static String DeleteBranchDialog_DialogMessage;
 
 	/** */
@@ -2498,6 +2504,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
+
+	/** */
+	public static String DiffEditorPage_TaskGeneratingDiff;
+
+	/** */
+	public static String DiffEditorPage_TaskUpdatingViewer;
+
+	/** */
+	public static String DiffEditorPage_Title;
 
 	/** */
 	public static String DiscardChangesAction_confirmActionTitle;
@@ -2909,6 +2924,33 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_repository;
 
 	/** */
+	public static String CommitEditor_TitleHeader;
+
+	/** */
+	public static String CommitEditorInput_Name;
+
+	/** */
+	public static String CommitEditorInput_ToolTip;
+
+	/** */
+	public static String CommitEditorPage_LabelAuthor;
+
+	/** */
+	public static String CommitEditorPage_LabelCommitter;
+
+	/** */
+	public static String CommitEditorPage_LabelParent;
+
+	/** */
+	public static String CommitEditorPage_SectionFiles;
+
+	/** */
+	public static String CommitEditorPage_SectionMessage;
+
+	/** */
+	public static String CommitEditorPage_Title;
+
+	/** */
 	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
 
 	/** */
@@ -2937,6 +2979,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitGraphTable_CompareWithEachOtherInTreeMenuLabel;
+
+	/** */
+	public static String CommitGraphTable_OpenCommitLabel;
 
 	/** */
 	public static String GitSynchronizeWizard_synchronize;
@@ -3434,6 +3479,27 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
+	public static String CommitResultLabelProvider_SectionAuthor;
+
+	/** */
+	public static String CommitResultLabelProvider_SectionMessage;
+
+	/** */
+	public static String CommitResultLabelProvider_SectionRepository;
+
+	/** */
+	public static String CommitSearchQuery_Label;
+
+	/** */
+	public static String CommitSearchQuery_TaskSearchCommits;
+
+	/** */
+	public static String CommitSearchResult_LabelPlural;
+
+	/** */
+	public static String CommitSearchResult_LabelSingle;
+
+	/** */
 	public static String CommitSelectionDialog_BuildingCommitListMessage;
 
 	/** */
@@ -3452,15 +3518,50 @@ public class UIText extends NLS {
 	public static String CommitSelectionDialog_WindowTitle;
 
 	/** */
+	public static String CommitUI_commitFailed;
+
+	/** */
 	public static String EgitUiEditorUtils_openFailed;
 
 	/** */
 	public static String GitActionContributor_ExpandAll;
 
 	/** */
+	public static String GitActionContributor_Push;
+
+	/** */
+	public static String GitActionContributor_Pull;
+
+	/** */
 	public static String DecoratableResourceHelper_noHead;
 
 	/** */
+	public static String StagingView_UnstagedChanges;
+
+	/** */
+	public static String StagingView_StagedChanges;
+
+	/** */
+	public static String StagingView_CommitMessage;
+
+	/** */
+	public static String StagingView_Committer;
+
+	/** */
+	public static String StagingView_Author;
+
+	/** */
+	public static String StagingView_Ammend_Previous_Commit;
+
+	/** */
+	public static String StagingView_Add_Signed_Off_By;
+
+	/** */
+	public static String StagingView_Add_Change_ID;
+
+	/** */
+	public static String StagingView_Commit;
+
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
