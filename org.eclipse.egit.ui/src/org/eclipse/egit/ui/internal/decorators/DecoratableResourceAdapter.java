@@ -8,7 +8,6 @@
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Christian Halstrick <christian.halstrick@sap.com>
  * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
- * Copyright (C) 2016, Andre Bossert <anb0s@anbos.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +27,7 @@ import org.eclipse.egit.ui.internal.resources.ResourceStateFactory;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 
 class DecoratableResourceAdapter extends DecoratableResource {
 
@@ -49,15 +49,10 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			if (mapping == null) {
 				return;
 			}
-			Repository repository = mapping.getSubmoduleRepository(resource);
-			if (repository == null) {
-				repository = mapping.getRepository();
-			}
+			Repository repository = mapping.getRepository();
 			if (repository == null) {
 				return;
 			}
-			setIsWorkingTreeRoot(
-					mapping.isWorkTreeRoot(resourceToWrap, repository));
 			IResourceState baseState = ResourceStateFactory.getInstance()
 					.get(indexDiffData, resourceToWrap);
 			setTracked(baseState.isTracked());
@@ -67,13 +62,18 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			setAssumeUnchanged(baseState.isAssumeUnchanged());
 			setStagingState(baseState.getStagingState());
 			if (resource.getType() == IResource.PROJECT
-					|| isWorkingTreeRoot()) {
-				// We only need this very expensive info for project and other "repository root"
-				// container decoration
+					|| resource.equals(mapping.getContainer())) {
+				// We only need this very expensive info for project decoration,
+				// and for decorating folders that are submodule roots.
 				repositoryName = DecoratableResourceHelper
 						.getRepositoryName(repository);
 				branch = DecoratableResourceHelper.getShortBranch(repository);
 				branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
+				RevCommit headCommit = DecoratableResourceHelper
+						.getHeadCommit(repository);
+				if (headCommit != null) {
+					commitMessage = headCommit.getShortMessage();
+				}
 			}
 		} finally {
 			if (trace)

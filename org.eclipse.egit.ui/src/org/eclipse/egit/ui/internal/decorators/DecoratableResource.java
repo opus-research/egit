@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2011, 2015 Philipp Thun <philipp.thun@sap.com> and others
- * Copyright (C) 2016, Andre Bossert <anb0s@anbos.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,7 +8,6 @@
  *
  * Contributors:
  *    Thomas Wolf <thomas.wolf@paranor.ch> - Factored out ResourceState
- *    Andre Bossert <anb0s@anbos.de> - added nested git repository support
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.decorators;
 
@@ -35,6 +33,11 @@ public class DecoratableResource extends ResourceState
 	protected String repositoryName = null;
 
 	/**
+	 * Head commit of the repository of the resource
+	 */
+	protected String commitMessage = null;
+
+	/**
 	 * Current branch of the resource
 	 */
 	protected String branch = null;
@@ -43,11 +46,6 @@ public class DecoratableResource extends ResourceState
 	 * Branch status relative to remote tracking branch
 	 */
 	protected String branchStatus = null;
-
-	/**
-	 * is resource a working tree root
-	 */
-	protected boolean isWorkingTreeRoot = false;
 
 	/**
 	 * Constructs a new decoratable resource
@@ -60,14 +58,6 @@ public class DecoratableResource extends ResourceState
 	 */
 	protected DecoratableResource(IResource resource) {
 		this.resource = resource;
-	}
-
-	/**
-	 * @param isWorkTreeRoot
-	 *            set to true if the resource is a work-tree-root
-	 */
-	protected void setIsWorkingTreeRoot(boolean isWorkTreeRoot) {
-		isWorkingTreeRoot = isWorkTreeRoot;
 	}
 
 	@Override
@@ -86,6 +76,11 @@ public class DecoratableResource extends ResourceState
 	}
 
 	@Override
+	public String getCommitMessage() {
+		return commitMessage;
+	}
+
+	@Override
 	public String getBranch() {
 		return branch;
 	}
@@ -93,11 +88,6 @@ public class DecoratableResource extends ResourceState
 	@Override
 	public String getBranchStatus() {
 		return branchStatus;
-	}
-
-	@Override
-	public boolean isWorkingTreeRoot() {
-		return isWorkingTreeRoot;
 	}
 
 }

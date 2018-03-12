@@ -3,7 +3,6 @@
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
- * Copyright (C) 2016, Andre Bossert <anb0s@anbos.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -261,6 +260,11 @@ public class StagingEntry extends PlatformObject
 	}
 
 	@Override
+	public String getCommitMessage() {
+		return null;
+	}
+
+	@Override
 	public boolean isTracked() {
 		return state != State.UNTRACKED;
 	}
@@ -349,11 +353,5 @@ public class StagingEntry extends PlatformObject
 		if (state != other.state)
 			return false;
 		return true;
-	}
-
-	@Override
-	public boolean isWorkingTreeRoot() {
-		// TODO Auto-generated method stub
-		return false;
 	}
 }

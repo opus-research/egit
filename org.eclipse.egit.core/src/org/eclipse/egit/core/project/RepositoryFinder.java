@@ -6,7 +6,6 @@
  * Copyright (C) 2013, Carsten Pfeiffer <carsten.pfeiffer@gebit.de>
  * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
  * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
- * Copyright (C) 2016, Andre Bossert <anb0s@anbos.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -103,7 +102,7 @@ public class RepositoryFinder {
 	 */
 	public Collection<RepositoryMapping> find(IProgressMonitor m)
 			throws CoreException {
-		return find(m, true);
+		return find(m, false);
 	}
 
 	/**
