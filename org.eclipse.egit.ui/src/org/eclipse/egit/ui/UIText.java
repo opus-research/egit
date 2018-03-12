@@ -1912,9 +1912,6 @@ public class UIText extends NLS {
 	public static String CreateRepositoryPage_DirectoryLabel;
 
 	/** */
-	public static String CreateRepositoryPage_MissingNameMessage;
-
-	/** */
 	public static String CreateRepositoryPage_NotADirectoryMessage;
 
 	/** */
@@ -1931,9 +1928,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateRepositoryPage_PleaseUseAbsoluePathMessage;
-
-	/** */
-	public static String CreateRepositoryPage_RepositoryNameLabel;
 
 	/** */
 	public static String PushResultDialog_ConfigureButton;
@@ -3047,7 +3041,10 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_repositories;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_branches;
+	public static String GitBranchSynchronizeWizardPage_destination;
+
+	/** */
+	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
