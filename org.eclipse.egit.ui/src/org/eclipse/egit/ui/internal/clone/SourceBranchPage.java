@@ -45,7 +45,6 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -235,7 +234,7 @@ class SourceBranchPage extends WizardPage {
 		checkPage();
 	}
 
-	public void setSelection(@NonNull RepositorySelection selection) {
+	public void setSelection(RepositorySelection selection){
 		revalidate(selection);
 	}
 
@@ -290,7 +289,7 @@ class SourceBranchPage extends WizardPage {
 		}
 	}
 
-	private void revalidate(@NonNull final RepositorySelection newRepoSelection) {
+	private void revalidate(final RepositorySelection newRepoSelection) {
 		if (newRepoSelection.equals(validatedRepoSelection)) {
 			// URI hasn't changed, no need to refill the page with new data
 			checkPage();
