@@ -2170,6 +2170,9 @@ public class UIText extends NLS {
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
 
 	/** */
+	public static String CompareUtils_errorCommonAncestor;
+
+	/** */
 	public static String ConfirmationPage_cantConnectToAnyTitle;
 
 	/** */
@@ -3705,6 +3708,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_OpenInEditorMenuLabel;
+
+	/** */
+	public static String CommitFileDiffViewer_ShowInMenuLabel;
 
 	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
