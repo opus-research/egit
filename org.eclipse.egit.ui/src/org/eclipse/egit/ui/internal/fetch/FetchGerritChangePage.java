@@ -441,6 +441,8 @@ public class FetchGerritChangePage extends WizardPage {
 
 									monitor.worked(1);
 								}
+							} catch (RuntimeException e) {
+								throw e;
 							} catch (Exception e) {
 								throw new InvocationTargetException(e);
 							} finally {
