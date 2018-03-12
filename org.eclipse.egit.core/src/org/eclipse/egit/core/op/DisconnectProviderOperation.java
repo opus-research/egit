@@ -1,14 +1,10 @@
 /*******************************************************************************
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Stephan Hackstedt - Bug 477695
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -19,7 +15,8 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.internal.CoreText;
@@ -52,11 +49,14 @@ public class DisconnectProviderOperation implements IEGitOperation {
 	 */
 	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 
-		SubMonitor progress = SubMonitor.convert(m,
-				CoreText.DisconnectProviderOperation_disconnecting,
+		monitor.beginTask(CoreText.DisconnectProviderOperation_disconnecting,
 				projectList.size() * 200);
-
 		try {
 			for (IProject p : projectList) {
 				// TODO is this the right location?
@@ -66,15 +66,13 @@ public class DisconnectProviderOperation implements IEGitOperation {
 							"disconnect " + p.getName()); //$NON-NLS-1$
 				unmarkTeamPrivate(p);
 				RepositoryProvider.unmap(p);
-				progress.worked(100);
+				monitor.worked(100);
 
 				p.refreshLocal(IResource.DEPTH_INFINITE,
-						progress.newChild(100));
+						new SubProgressMonitor(monitor, 100));
 			}
 		} finally {
-			// TODO really necassary @Stephan!? Wird done wenn 100% ticks
-			// erreicht sind.
-			progress.done();
+			monitor.done();
 		}
 	}
 

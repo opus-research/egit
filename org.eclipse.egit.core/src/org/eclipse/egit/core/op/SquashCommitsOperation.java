@@ -9,10 +9,10 @@
  * Contributors:
  *    Maik Schreiber - initial implementation
  *    Laurent Delaigue (Obeo) - use of preferred merge strategy
- *    Stephan Hackstedt <stephan.hackstedt@googlemail.com - Bug 477695
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
+import java.text.MessageFormat;
 import java.util.List;
 
 import org.eclipse.core.resources.IWorkspace;
@@ -21,10 +21,11 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CommitUtil;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
@@ -71,7 +72,12 @@ public class SquashCommitsOperation implements IEGitOperation {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
-				SubMonitor progress = SubMonitor.convert(pm, 2);
+				pm.beginTask("", 2); //$NON-NLS-1$
+
+				pm.subTask(MessageFormat.format(
+						CoreText.SquashCommitsOperation_squashing,
+						Integer.valueOf(commits.size())));
+
 				InteractiveHandler handler = new InteractiveHandler() {
 					@Override
 					public void prepareSteps(List<RebaseTodoLine> steps) {
@@ -120,11 +126,13 @@ public class SquashCommitsOperation implements IEGitOperation {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				}
-				progress.worked(1);
+				pm.worked(1);
 
 				ProjectUtil.refreshValidProjects(
 						ProjectUtil.getValidOpenProjects(repository),
-						progress.newChild(1));
+						new SubProgressMonitor(pm, 1));
+
+				pm.done();
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
