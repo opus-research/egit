@@ -8,6 +8,7 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Dariusz Luksza <dariusz@luksza.org> - add synchronization feature
+ *    Daniel Megert <daniel_megert@ch.ibm.com> - Only check out on double-click
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -40,6 +41,7 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.ConfigurationChecker;
+import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -50,6 +52,8 @@ import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceColors;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -71,6 +75,7 @@ import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
@@ -147,11 +152,11 @@ public class RepositoriesView extends CommonNavigator {
 
 	private StackLayout layout;
 
-	private long lastInputChange = 0L;
+	private volatile long lastInputChange = 0L;
 
-	private long lastRepositoryChange = 0L;
+	private volatile long lastRepositoryChange = 0L;
 
-	private long lastInputUpdate = -1L;
+	private volatile long lastInputUpdate = -1L;
 
 	private boolean reactOnSelection = false;
 
@@ -209,9 +214,8 @@ public class RepositoriesView extends CommonNavigator {
 						reactOnSelection(new StructuredSelection(
 								((IFileEditorInput) input).getFile()));
 
-				} else {
+				} else
 					reactOnSelection(selection);
-				}
 			}
 		};
 	}
@@ -256,7 +260,9 @@ public class RepositoriesView extends CommonNavigator {
 				.getDisplay());
 
 		Label addLabel = new Label(optionsArea, SWT.NONE);
-		addLabel.setImage(UIIcons.CREATE_REPOSITORY.createImage());
+		Image addImage = UIIcons.CREATE_REPOSITORY.createImage();
+		UIUtils.hookDisposal(addLabel, addImage);
+		addLabel.setImage(addImage);
 		Hyperlink addLink = toolkit.createHyperlink(optionsArea,
 				UIText.RepositoriesView_linkAdd, SWT.WRAP);
 		addLink.setForeground(linkColor);
@@ -272,7 +278,9 @@ public class RepositoriesView extends CommonNavigator {
 				.grab(true, false).applyTo(addLink);
 
 		Label cloneLabel = new Label(optionsArea, SWT.NONE);
-		cloneLabel.setImage(UIIcons.CLONEGIT.createImage());
+		Image cloneImage = UIIcons.CLONEGIT.createImage();
+		UIUtils.hookDisposal(cloneLabel, cloneImage);
+		cloneLabel.setImage(cloneImage);
 		Hyperlink cloneLink = toolkit.createHyperlink(optionsArea,
 				UIText.RepositoriesView_linkClone, SWT.WRAP);
 		cloneLink.setForeground(linkColor);
@@ -288,7 +296,9 @@ public class RepositoriesView extends CommonNavigator {
 				.grab(true, false).applyTo(cloneLink);
 
 		Label createLabel = new Label(optionsArea, SWT.NONE);
-		createLabel.setImage(UIIcons.NEW_REPOSITORY.createImage());
+		Image createImage = UIIcons.NEW_REPOSITORY.createImage();
+		UIUtils.hookDisposal(createLabel, createImage);
+		createLabel.setImage(createImage);
 		Hyperlink createLink = toolkit.createHyperlink(optionsArea,
 				UIText.RepositoriesView_linkCreate, SWT.WRAP);
 		createLink.setForeground(linkColor);
@@ -358,25 +368,25 @@ public class RepositoriesView extends CommonNavigator {
 	protected CommonViewer createCommonViewer(Composite aParent) {
 		ConfigurationChecker.checkConfiguration();
 		CommonViewer viewer = super.createCommonViewer(aParent);
-		// handle the double-click event
+		// handle the double-click event for tags and branches
+		viewer.addDoubleClickListener(new IDoubleClickListener() {
+			public void doubleClick(DoubleClickEvent event) {
+				TreeSelection sel = (TreeSelection) event.getSelection();
+				RepositoryTreeNode element = (RepositoryTreeNode) sel
+						.getFirstElement();
+				if (element instanceof RefNode || element instanceof TagNode)
+					executeOpenCommand();
+			}
+		});
+		// handle open event for the working directory
 		viewer.addOpenListener(new IOpenListener() {
-
 			public void open(OpenEvent event) {
 				TreeSelection sel = (TreeSelection) event.getSelection();
 				RepositoryTreeNode element = (RepositoryTreeNode) sel
 						.getFirstElement();
-
-				if (element instanceof RefNode || element instanceof FileNode
-						|| element instanceof TagNode) {
-					IHandlerService srv = (IHandlerService) getViewSite()
-							.getService(IHandlerService.class);
-
-					try {
-						srv.executeCommand("org.eclipse.egit.ui.RepositoriesViewOpen", null); //$NON-NLS-1$
-					} catch (Exception e) {
-						Activator.handleError(e.getMessage(), e, false);
-					}
-				}
+				if (element instanceof FileNode
+						|| element instanceof StashedCommitNode)
+					executeOpenCommand();
 			}
 		});
 		// react on selection changes
@@ -396,6 +406,17 @@ public class RepositoriesView extends CommonNavigator {
 			layout.topControl = emptyArea;
 
 		return viewer;
+	}
+
+	private void executeOpenCommand() {
+		IHandlerService srv = (IHandlerService) getViewSite()
+				.getService(IHandlerService.class);
+
+		try {
+			srv.executeCommand("org.eclipse.egit.ui.RepositoriesViewOpen", null); //$NON-NLS-1$
+		} catch (Exception e) {
+			Activator.handleError(e.getMessage(), e, false);
+		}
 	}
 
 	private void activateContextService() {
@@ -469,20 +490,21 @@ public class RepositoriesView extends CommonNavigator {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
 			if (mapping == null)
 				return;
+			String repoPath = mapping.getRepoRelativePath(resource);
+			if( repoPath == null)
+				return;
 
 			boolean added = repositoryUtil.addConfiguredRepository(mapping
 					.getRepository().getDirectory());
-			if (added) {
+			if (added)
 				scheduleRefresh(0);
-			}
 
-			if (this.scheduledJob != null) {
+			if (this.scheduledJob != null)
 				try {
 					this.scheduledJob.join();
 				} catch (InterruptedException e) {
 					Activator.handleError(e.getMessage(), e, false);
 				}
-			}
 
 			RepositoryTreeNode currentNode = null;
 			ITreeContentProvider cp = (ITreeContentProvider) getCommonViewer()
@@ -503,9 +525,9 @@ public class RepositoriesView extends CommonNavigator {
 				}
 			}
 
-			IPath relPath = new Path(mapping.getRepoRelativePath(resource));
+			IPath relPath = new Path(repoPath);
 
-			for (String segment : relPath.segments()) {
+			for (String segment : relPath.segments())
 				for (Object child : cp.getChildren(currentNode)) {
 					RepositoryTreeNode<File> childNode = (RepositoryTreeNode<File>) child;
 					if (childNode.getObject().getName().equals(segment)) {
@@ -513,7 +535,6 @@ public class RepositoriesView extends CommonNavigator {
 						break;
 					}
 				}
-			}
 
 			final RepositoryTreeNode selNode = currentNode;
 
@@ -592,7 +613,7 @@ public class RepositoriesView extends CommonNavigator {
 
 				Display.getDefault().asyncExec(new Runnable() {
 					public void run() {
-						if (tv.getTree().isDisposed())
+						if (!UIUtils.isUsable(tv))
 							return;
 						long start = 0;
 						boolean traceActive = GitTraceLocation.REPOSITORIESVIEW
@@ -611,10 +632,10 @@ public class RepositoriesView extends CommonNavigator {
 						IStructuredSelection sel = (IStructuredSelection) tv
 								.getSelection();
 
-						if (needsNewInput) {
+						if (needsNewInput)
 							tv.setInput(ResourcesPlugin.getWorkspace()
 									.getRoot());
-						} else
+						else
 							tv.refresh(true);
 						tv.setExpandedElements(expanded);
 

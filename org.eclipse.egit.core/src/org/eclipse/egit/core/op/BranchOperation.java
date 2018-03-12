@@ -29,10 +29,11 @@ import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CheckoutResult;
-import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.CheckoutResult.Status;
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -43,12 +44,13 @@ import org.eclipse.osgi.util.NLS;
  * This class implements checkouts of a specific revision. A check is made that
  * this can be done without data loss.
  */
-public class BranchOperation implements IEGitOperation {
-	private final Repository repository;
+public class BranchOperation extends BaseOperation {
 
 	private final String target;
 
 	private CheckoutResult result;
+
+	private boolean delete;
 
 	/**
 	 * Construct a {@link BranchOperation} object for a {@link Ref}.
@@ -58,8 +60,23 @@ public class BranchOperation implements IEGitOperation {
 	 *            a {@link Ref} name or {@link RevCommit} id
 	 */
 	public BranchOperation(Repository repository, String target) {
-		this.repository = repository;
+		this(repository, target, true);
+	}
+
+	/**
+	 * Construct a {@link BranchOperation} object for a {@link Ref}.
+	 *
+	 * @param repository
+	 * @param target
+	 *            a {@link Ref} name or {@link RevCommit} id
+	 * @param delete
+	 *            true to delete missing projects on new branch, false to close
+	 *            them
+	 */
+	public BranchOperation(Repository repository, String target, boolean delete) {
+		super(repository);
 		this.target = target;
+		this.delete = delete;
 	}
 
 	public void execute(IProgressMonitor m) throws CoreException {
@@ -72,6 +89,8 @@ public class BranchOperation implements IEGitOperation {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
 			public void run(IProgressMonitor pm) throws CoreException {
+				preExecute(pm);
+
 				IProject[] validProjects = ProjectUtil
 						.getValidOpenProjects(repository);
 				pm.beginTask(NLS.bind(
@@ -82,6 +101,8 @@ public class BranchOperation implements IEGitOperation {
 
 				try {
 					co.call();
+				} catch (CheckoutConflictException e) {
+					return;
 				} catch (JGitInternalException e) {
 					throw new CoreException(Activator.error(e.getMessage(), e));
 				} catch (GitAPIException e) {
@@ -92,9 +113,11 @@ public class BranchOperation implements IEGitOperation {
 				if (result.getStatus() == Status.NONDELETED)
 					retryDelete(result.getUndeletedList());
 				pm.worked(1);
-				ProjectUtil.refreshValidProjects(validProjects,
+				ProjectUtil.refreshValidProjects(validProjects, delete,
 						new SubProgressMonitor(pm, 1));
 				pm.worked(1);
+
+				postExecute(pm);
 
 				pm.done();
 			}

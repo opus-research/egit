@@ -9,6 +9,7 @@
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
  *    Benjamin Muskalla (Tasktop Technologies) - extract into operation
+ *    Tomasz Zarna (IBM Corporation) - bug 370332
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -18,6 +19,7 @@ import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Stack;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -28,15 +30,76 @@ import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
+import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Creates a patch for a specific commit
  */
 public class CreatePatchOperation implements IEGitOperation {
+
+	/**
+	 * Diff header format
+	 *
+	 */
+	public enum DiffHeaderFormat {
+		/**
+		 * No header
+		 */
+		NONE(CoreText.DiffHeaderFormat_None, false, null),
+
+		/**
+		 * Email header
+		 */
+		EMAIL(CoreText.DiffHeaderFormat_Email, true, "From ${sha1} ${date}\nFrom: ${author}\nDate: ${author date}\nSubject: [PATCH] ${title line}\n${full commit message}\n"), //$NON-NLS-1$
+
+		/**
+		 * Header designed to be as compact as possible
+		 */
+		ONELINE(CoreText.DiffHeaderFormat_Oneline, true, "${sha1} ${title line}\n"); //$NON-NLS-1$
+
+		private final String description;
+
+		private final boolean commitRequired;
+
+		private final String template;
+
+		private DiffHeaderFormat(final String d, final boolean c, final String t) {
+			description = d;
+			commitRequired = c;
+			template = t;
+		}
+
+		/**
+		 * @return if this format requires a commit.
+		 */
+		public boolean isCommitRequired() {
+			return commitRequired;
+		}
+
+		/**
+		 * @return the template
+		 */
+		public String getTemplate() {
+			return template;
+		}
+
+		/**
+		 * @return the description
+		 */
+		public String getDescription() {
+			return description;
+		}
+	}
+
+	enum DiffHeaderKeyword{
+		SHA1, AUTHOR_DATE, AUTHOR, DATE, TITLE_LINE, FULL_COMMIT_MESSAGE
+	}
 
 	/**
 	 * The default number of lines to use as context
@@ -47,15 +110,16 @@ public class CreatePatchOperation implements IEGitOperation {
 
 	private final Repository repository;
 
-	private boolean useGitFormat = true;
+	private DiffHeaderFormat headerFormat = DiffHeaderFormat.EMAIL;
 
 	// the encoding for the currently processed file
-	 private String currentEncoding = null;
+	private String currentEncoding = null;
 
 	private String patchContent;
 
 	private int contextLines = DEFAULT_CONTEXT_LINES;
 
+	private TreeFilter pathFilter = null;
 	/**
 	 * Creates the new operation.
 	 *
@@ -66,9 +130,6 @@ public class CreatePatchOperation implements IEGitOperation {
 		if (repository == null)
 			throw new IllegalArgumentException(
 					CoreText.CreatePatchOperation_repoRequired);
-		if (commit == null)
-			throw new IllegalArgumentException(
-					CoreText.CreatePatchOperation_commitRequired);
 		this.repository = repository;
 		this.commit = commit;
 	}
@@ -102,32 +163,38 @@ public class CreatePatchOperation implements IEGitOperation {
 		diffFmt.setProgressMonitor(gitMonitor);
 		diffFmt.setContext(contextLines);
 
-		RevCommit[] parents = commit.getParents();
-		if (parents.length > 1)
-			throw new IllegalStateException(
-					"Cannot create patch for merge commit"); //$NON-NLS-1$
-
-		if (parents.length == 0)
-			throw new IllegalStateException(
-					"Cannot create patch for first commit"); //$NON-NLS-1$
-
-		if (useGitFormat)
+		if (headerFormat != null && headerFormat != DiffHeaderFormat.NONE)
 			writeGitPatchHeader(sb);
 
+		diffFmt.setRepository(repository);
+		diffFmt.setPathFilter(pathFilter);
+
 		try {
-			diffFmt.setRepository(repository);
-			List<DiffEntry> diffs = diffFmt.scan(parents[0].getId(), commit.getId());
-			for (DiffEntry ent : diffs) {
-				String path;
-				if (ChangeType.DELETE.equals(ent.getChangeType()))
-					path = ent.getOldPath();
-				else
-					path = ent.getNewPath();
-				currentEncoding = CompareCoreUtils.getResourceEncoding(repository, path);
-				diffFmt.format(ent);
-			}
+			if (commit != null) {
+				RevCommit[] parents = commit.getParents();
+				if (parents.length > 1)
+					throw new IllegalStateException(
+							CoreText.CreatePatchOperation_cannotCreatePatchForMergeCommit);
+				if (parents.length == 0)
+					throw new IllegalStateException(
+							CoreText.CreatePatchOperation_cannotCreatePatchForFirstCommit);
+
+				List<DiffEntry> diffs = diffFmt.scan(parents[0].getId(),commit.getId());
+				for (DiffEntry ent : diffs) {
+					String path;
+					if (ChangeType.DELETE.equals(ent.getChangeType()))
+						path = ent.getOldPath();
+					else
+						path = ent.getNewPath();
+					currentEncoding = CompareCoreUtils.getResourceEncoding(repository, path);
+					diffFmt.format(ent);
+				}
+			} else
+				diffFmt.format(
+						new DirCacheIterator(repository.readDirCache()),
+						new FileTreeIterator(repository));
 		} catch (IOException e) {
-			Activator.logError("Patch file could not be written", e); //$NON-NLS-1$
+			Activator.logError(CoreText.CreatePatchOperation_patchFileCouldNotBeWritten, e);
 		}
 
 		patchContent = sb.toString();
@@ -149,36 +216,65 @@ public class CreatePatchOperation implements IEGitOperation {
 	}
 
 	private void writeGitPatchHeader(StringBuilder sb) {
-		final SimpleDateFormat dtfmt;
-		dtfmt = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.US); //$NON-NLS-1$
-		dtfmt.setTimeZone(commit.getAuthorIdent().getTimeZone());
-		sb.append("From").append(" ") //$NON-NLS-1$ //$NON-NLS-2$
-				.append(commit.getId().getName()).append(" ") //$NON-NLS-1$
-				.append(dtfmt.format(Long.valueOf(System.currentTimeMillis())))
-				.append("\n"); //$NON-NLS-1$
-		sb.append("From") //$NON-NLS-1$
-				.append(": ") //$NON-NLS-1$
-				.append(commit.getAuthorIdent().getName())
-				.append(" <").append(commit.getAuthorIdent().getEmailAddress()) //$NON-NLS-1$
-				.append(">\n"); //$NON-NLS-1$
-		sb.append("Date").append(": ") //$NON-NLS-1$ //$NON-NLS-2$
-				.append(dtfmt.format(commit.getAuthorIdent().getWhen()))
-				.append("\n"); //$NON-NLS-1$
-		sb.append("Subject").append(": [PATCH] ") //$NON-NLS-1$ //$NON-NLS-2$
-				.append(commit.getShortMessage());
+		String template = headerFormat.getTemplate();
+		String[] segments = template.split("\\$\\{"); //$NON-NLS-1$
+		Stack<String> evaluated = new Stack<String>();
+		evaluated.add(segments[0]);
 
-		String message = commit.getFullMessage().substring(
-				commit.getShortMessage().length());
-		sb.append(message).append("\n\n"); //$NON-NLS-1$
+		for (int i = 1; i < segments.length; i++) {
+			String segment = segments[i];
+			String value = null;
+			int brace = segment.indexOf('}');
+			if (brace > 0) {
+				String keyword = segment.substring(0, brace);
+				keyword = keyword.toUpperCase().replaceAll(" ", "_"); //$NON-NLS-1$ //$NON-NLS-2$
+				value = processKeyword(commit, DiffHeaderKeyword.valueOf(keyword));
+			}
+
+			String trailingCharacters = segment.substring(brace + 1);
+			if (value != null) {
+				evaluated.add(value);
+				evaluated.add(trailingCharacters);
+			} else if (!evaluated.isEmpty())
+				evaluated.add(trailingCharacters);
+		}
+		StringBuffer buffer = new StringBuffer();
+		for (String string : evaluated)
+			buffer.append(string);
+
+		sb.append(buffer);
+	}
+
+	private static String processKeyword(RevCommit commit, DiffHeaderKeyword keyword) {
+		final SimpleDateFormat dtfmt = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.US); //$NON-NLS-1$
+		switch (keyword) {
+		case SHA1:
+			return commit.getId().getName();
+		case AUTHOR:
+			return commit.getAuthorIdent().getName()
+					+ " <" + commit.getAuthorIdent().getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+		case AUTHOR_DATE:
+			dtfmt.setTimeZone(commit.getAuthorIdent().getTimeZone());
+			return dtfmt.format(commit.getAuthorIdent().getWhen());
+		case DATE:
+			return dtfmt.format(Long.valueOf(System.currentTimeMillis()));
+		case TITLE_LINE:
+			return commit.getShortMessage();
+		case FULL_COMMIT_MESSAGE:
+			return commit.getFullMessage().substring(
+					commit.getShortMessage().length());
+		default:
+			return null;
+		}
 	}
 
 	/**
-	 * Decides whether to use the git format for patches.
+	 * Change the format of diff header
 	 *
-	 * @param useFormat
+	 * @param format header format
 	 */
-	public void useGitFormat(boolean useFormat) {
-		this.useGitFormat = useFormat;
+	public void setHeaderFormat(DiffHeaderFormat format) {
+		this.headerFormat = format;
 	}
 
 	/**
@@ -222,4 +318,12 @@ public class CreatePatchOperation implements IEGitOperation {
 		return null;
 	}
 
+	/**
+	 * Set the filter to produce patch for specified paths only.
+	 *
+	 * @param pathFilter the filter
+	 */
+	public void setPathFilter(TreeFilter pathFilter) {
+		this.pathFilter = pathFilter;
+	}
 }
