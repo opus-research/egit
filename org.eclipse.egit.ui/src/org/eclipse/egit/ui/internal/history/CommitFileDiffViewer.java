@@ -336,10 +336,8 @@ public class CommitFileDiffViewer extends TableViewer {
 				String path = new Path(getRepository().getWorkTree()
 						.getAbsolutePath()).append(diff.getNewPath())
 						.toOSString();
-				boolean workTreeFileExists = new File(path).exists();
-				compareWorkingTreeVersion.setEnabled(workTreeFileExists);
-				openWorkingTreeVersion.setEnabled(openWorkingTreeVersion
-						.isEnabled() && workTreeFileExists);
+				compareWorkingTreeVersion.setEnabled(new File(path).exists()
+						&& !submoduleSelected);
 			} else
 				compareWorkingTreeVersion.setEnabled(false);
 		} else {
