@@ -2955,13 +2955,10 @@ public class UIText extends NLS {
 	public static String DeleteTagCommand_titleConfirm;
 
 	/** */
-	public static String DeleteResourcesOperationUI_confirmActionTitle;
+	public static String DeleteResourcesAction_confirmActionTitle;
 
 	/** */
-	public static String DeleteResourcesOperationUI_confirmActionMessage;
-
-	/** */
-	public static String DeleteResourcesOperationUI_deleteFailed;
+	public static String DeleteResourcesAction_confirmActionMessage;
 
 	/** */
 	public static String IgnoreActionHandler_addToGitignore;
@@ -3397,15 +3394,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeTargetSelectionDialog_TitleMergeWithBranch;
-
-	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeGroup;
-
-	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeCommitButton;
-
-	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeSquashButton;
 
 	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
@@ -3934,27 +3922,6 @@ public class UIText extends NLS {
 	public static String RenameBranchOnCommitHandler_SelectBranchDialogTitle;
 
 	/** */
-	public static String RepositoryStatistics_Description;
-
-	/** */
-	public static String RepositoryStatistics_LooseObjects;
-
-	/** */
-	public static String RepositoryStatistics_NrOfObjects;
-
-	/** */
-	public static String RepositoryStatistics_NrOfPackfiles;
-
-	/** */
-	public static String RepositoryStatistics_NrOfRefs;
-
-	/** */
-	public static String RepositoryStatistics_PackedObjects;
-
-	/** */
-	public static String RepositoryStatistics_SpaceNeededOnFilesystem;
-
-	/** */
 	public static String RevertFailureDialog_Message;
 
 	/** */
@@ -4459,6 +4426,9 @@ public class UIText extends NLS {
 	public static String StagingView_checkoutFailed;
 
 	/** */
+	public static String StagingView_deleteFailed;
+
+	/** */
 	public static String StagingView_commitFailed;
 
 	/** */
@@ -4637,12 +4607,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CloneFailureDialog_checkList;
-
-	/** */
-	public static String GarbageCollectCommand_jobTitle;
-
-	/** */
-	public static String GarbageCollectCommand_failed;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
