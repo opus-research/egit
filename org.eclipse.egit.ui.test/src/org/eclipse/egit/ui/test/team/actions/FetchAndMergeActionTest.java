@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -26,6 +26,7 @@ import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
+import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -35,12 +36,11 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,22 +49,20 @@ import org.junit.runner.RunWith;
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
-	private static File repositoryFile;
+	private File repositoryFile;
 
-	private static File childRepositoryFile;
+	private File childRepositoryFile;
 
-	private static SWTBotPerspective perspective;
+	private String REMOTE_BRANCHES;
 
-	private static String REMOTE_BRANCHES;
+	private String LOCAL_BRANCHES;
 
-	private static String LOCAL_BRANCHES;
+	private String initialCommitId;
 
-	@BeforeClass
-	public static void setup() throws Exception {
+	@Before
+	public void setup() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		childRepositoryFile = createChildRepository(repositoryFile);
-		perspective = bot.activePerspective();
-		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
 		RepositoriesViewLabelProvider provider = GitRepositoriesViewTestUtils
 				.createLabelProvider();
 		Repository repo = lookupRepository(childRepositoryFile);
@@ -72,30 +70,16 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 				new RepositoryNode(null, repo), repo));
 		LOCAL_BRANCHES = provider.getText(new LocalNode(new RepositoryNode(
 				null, repo), repo));
-	}
-
-	@AfterClass
-	public static void shutdown() {
-		perspective.activate();
-	}
-
-	private String prepare() throws Exception {
-		deleteAllProjects();
-		shareProjects(repositoryFile);
-		Repository repo = lookupRepository(repositoryFile);
-		RevWalk rw = new RevWalk(repo);
 		ObjectId id = repo.resolve(repo.getFullBranch());
-		String commitId = rw.parseCommit(id).name();
-		touchAndSubmit(null);
-		deleteAllProjects();
-		shareProjects(childRepositoryFile);
-		waitInUI();
-		return commitId;
+		initialCommitId = id.name();
 	}
 
 	@Test
 	public void testFetchFromOriginThenMerge() throws Exception {
-		String previousCommit = prepare();
+		touchAndSubmit(null);
+		deleteAllProjects();
+		shareProjects(childRepositoryFile);
+
 		String oldContent = getTestFileContent();
 		fetch();
 
@@ -107,7 +91,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		SWTBotTree tree = confirm.bot().tree();
 		String branch = tree.getAllItems()[0].getText();
 		assertTrue("Wrong result",
-				branch.contains(previousCommit.substring(0, 7)));
+				branch.contains(initialCommitId.substring(0, 7)));
 
 		confirm.close();
 
@@ -127,8 +111,9 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 
 		SWTBotShell mergeDialog = openMergeDialog();
 
-		mergeDialog.bot().tree().getTreeItem(REMOTE_BRANCHES).expand().getNode(
-				"origin/master").select();
+		SWTBotTreeItem remoteBranches = mergeDialog.bot().tree()
+				.getTreeItem(REMOTE_BRANCHES).expand();
+		TestUtil.getChildNode(remoteBranches, "origin/master").select();
 		mergeDialog.bot().button(UIText.MergeTargetSelectionDialog_ButtonMerge)
 				.click();
 		bot.shell(UIText.MergeAction_MergeResultTitle).close();
@@ -138,7 +123,6 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void testMergeSquash() throws Exception {
-		prepare();
 		String oldContent = getTestFileContent();
 		RevCommit oldCommit = getCommitForHead();
 		createNewBranch("newBranch", true);
@@ -163,7 +147,9 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 
 	private void mergeBranch(String branchToMerge, boolean squash) throws Exception {
 		SWTBotShell mergeDialog = openMergeDialog();
-		mergeDialog.bot().tree().getTreeItem(LOCAL_BRANCHES).expand().getNode(branchToMerge).select();
+		SWTBotTreeItem localBranches = mergeDialog.bot().tree()
+				.getTreeItem(LOCAL_BRANCHES).expand();
+		TestUtil.getChildNode(localBranches, branchToMerge).select();
 		if (squash)
 			mergeDialog.bot().radio(UIText.MergeTargetSelectionDialog_MergeTypeSquashButton).click();
 		mergeDialog.bot().button(UIText.MergeTargetSelectionDialog_ButtonMerge).click();
@@ -188,8 +174,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 	}
 
 	private SWTBotShell openFetchDialog() throws Exception {
-		SWTBotTree projectExplorerTree = bot.viewById(
-				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
+		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String menuString = util.getPluginLocalizedValue("FetchAction_label");
 		String submenuString = util
@@ -201,8 +186,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 	}
 
 	private SWTBotShell openMergeDialog() throws Exception {
-		SWTBotTree projectExplorerTree = bot.viewById(
-				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
+		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String menuString = util.getPluginLocalizedValue("MergeAction_label");
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
@@ -215,8 +199,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 	}
 
 	private SWTBotShell openCreateBranchDialog() {
-		SWTBotTree projectExplorerTree = bot
-				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
+		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String[] menuPath = new String[] {
 				util.getPluginLocalizedValue("TeamMenu.label"),
@@ -229,8 +212,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 	}
 
 	private void checkoutBranch(String branchToCheckout) {
-		SWTBotTree projectExplorerTree = bot
-				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
+		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String[] menuPath = new String[] {
 				util.getPluginLocalizedValue("TeamMenu.label"),
