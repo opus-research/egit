@@ -5,7 +5,7 @@
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  * Copyright (C) 2013, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2014, Obeo.
+ * Copyright (C) 2015, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
