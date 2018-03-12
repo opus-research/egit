@@ -73,9 +73,11 @@ class GitSyncInfo extends SyncInfo {
 			File local = getLocal().getLocation().toFile();
 			localPath = Repository.stripWorkDir(repo.getWorkTree(), local);
 		} else if (getRemote() != null)
-			localPath = ((GitRemoteResource) getRemote()).getCachePath();
+			localPath = ((GitResourceVariant) getRemote()).getLocation()
+					.toString();
 		else if (getBase() != null)
-			localPath = ((GitRemoteResource) getBase()).getCachePath();
+			localPath = ((GitResourceVariant) getBase()).getLocation()
+					.toString();
 		else
 			// we cannot determinate local path therefore we cannot set proper
 			// value for PathFilter, so we use standard calulateKind()
