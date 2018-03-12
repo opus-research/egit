@@ -57,7 +57,6 @@ import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.ICommitMessageEditor;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
@@ -80,11 +79,12 @@ import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
-import org.eclipse.egit.ui.internal.dialogs.CommitEditorProvider;
+import org.eclipse.egit.ui.internal.dialogs.CommitMessageArea;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications;
+import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -129,8 +129,6 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
@@ -139,6 +137,8 @@ import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -203,6 +203,7 @@ import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Section;
+import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.operations.UndoRedoActionGroup;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
@@ -252,7 +253,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private Text filterText;
 
-	private ICommitMessageEditor commitMessageText;
+	private SpellcheckableMessageArea commitMessageText;
 
 	private Text committerText;
 
@@ -841,15 +842,22 @@ public class StagingView extends ViewPart implements IShowInSource {
 				return CommitMessageHistory.getCommitHistory();
 			}
 		};
-		commitMessageText = CommitEditorProvider.getCommitMessageProvider(commitMessageTextComposite,
- EMPTY_STRING,
-				toolkit.getBorderStyle(), commitProposalProcessor);
-
+		commitMessageText = new CommitMessageArea(commitMessageTextComposite,
+				EMPTY_STRING, toolkit.getBorderStyle()) {
+			@Override
+			protected CommitProposalProcessor getCommitProposalProcessor() {
+				return commitProposalProcessor;
+			}
+			@Override
+			protected IHandlerService getHandlerService() {
+				return CommonUtils.getService(getSite(), IHandlerService.class);
+			}
+		};
 		commitMessageText.setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TEXT_BORDER);
 		GridDataFactory.fillDefaults().grab(true, true)
-				.applyTo(commitMessageText.getEditorWidget());
-		UIUtils.addBulbDecorator(commitMessageText.getCommentWidget(),
+				.applyTo(commitMessageText);
+		UIUtils.addBulbDecorator(commitMessageText.getTextWidget(),
 				UIText.CommitDialog_ContentAssist);
 
 		Composite composite = toolkit.createComposite(commitMessageComposite);
@@ -1063,7 +1071,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				committerText);
 
 		// allow to commit with ctrl-enter
-		commitMessageText.addVerifyKeyListener(new VerifyKeyListener() {
+		commitMessageText.getTextWidget().addVerifyKeyListener(new VerifyKeyListener() {
 			@Override
 			public void verifyKey(VerifyEvent event) {
 				if (UIUtils.isSubmitKeyEvent(event)) {
@@ -1073,7 +1081,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 		});
 
-		commitMessageText.getCommentWidget().addFocusListener(new FocusListener() {
+		commitMessageText.getTextWidget().addFocusListener(new FocusListener() {
 			@Override
 			public void focusGained(FocusEvent e) {
 				// Ctrl+Enter shortcut only works when the focus is on the commit message text

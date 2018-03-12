@@ -36,8 +36,6 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.internal.gerrit.GerritUtil;
-import org.eclipse.egit.ui.ICommitMessageEditor;
-import org.eclipse.egit.ui.ICommitMessageEditor.CommitMessageChangeListener;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
@@ -49,7 +47,9 @@ import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -112,7 +112,8 @@ public class CommitMessageComponent {
 		}
 	}
 
-	private static final String EMPTY_STRING = ""; //$NON-NLS-1$
+
+	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
 	/**
 	 * Constant for the extension point for the commit message provider
@@ -125,7 +126,7 @@ public class CommitMessageComponent {
 
 	ICommitMessageComponentNotifications listener;
 
-	ICommitMessageEditor commitText;
+	SpellcheckableMessageArea commitText;
 
 	Text authorText;
 
@@ -184,8 +185,7 @@ public class CommitMessageComponent {
 	/**
 	 * @param listener
 	 */
-	public CommitMessageComponent(
-			ICommitMessageComponentNotifications listener) {
+	public CommitMessageComponent(ICommitMessageComponentNotifications listener) {
 		this.listener = listener;
 	}
 
@@ -308,6 +308,7 @@ public class CommitMessageComponent {
 		this.amending = amending;
 	}
 
+
 	/**
 	 * Set whether commit is allowed at the moment.
 	 *
@@ -422,8 +423,7 @@ public class CommitMessageComponent {
 	 */
 	public CommitStatus getStatus() {
 		if (!commitAllowed)
-			return new CommitStatus(cannotCommitMessage,
-					IMessageProvider.ERROR);
+			return new CommitStatus(cannotCommitMessage, IMessageProvider.ERROR);
 
 		String authorValue = authorText.getText();
 		if (authorValue.length() == 0
@@ -449,8 +449,7 @@ public class CommitMessageComponent {
 		// control must be converted to a hard-wrapped text, since this will be
 		// the resulting commit message.
 		if (org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
-				.getBoolean(
-						UIPreferences.COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE)) {
+				.getBoolean(UIPreferences.COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE)) {
 			String message = commitText.getCommitMessage();
 			String formatIssue = formatIssuesInCommitMessage(message);
 			if (formatIssue != null) {
@@ -516,15 +515,15 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * @param commitTextComponent
-	 * @param authorTextComponent
-	 * @param committerTextComponent
+	 * @param commitText
+	 * @param authorText
+	 * @param committerText
 	 */
-	public void attachControls(ICommitMessageEditor commitTextComponent,
-			Text authorTextComponent, Text committerTextComponent) {
-		this.commitText = commitTextComponent;
-		this.authorText = authorTextComponent;
-		this.committerText = committerTextComponent;
+	public void attachControls(SpellcheckableMessageArea commitText,
+			Text authorText, Text committerText) {
+		this.commitText = commitText;
+		this.authorText = authorText;
+		this.committerText = committerText;
 		addListeners();
 	}
 
@@ -561,17 +560,19 @@ public class CommitMessageComponent {
 		});
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
 				committerText, COMMITTER_VALUES_PREF);
-		commitText.addValueChangeListener(new CommitMessageChangeListener() {
-
+		commitText.getDocument().addDocumentListener(new IDocumentListener() {
 			@Override
-			public void commitMessageChanged() {
+			public void documentChanged(DocumentEvent event) {
 				if (!listenersEnabled || !commitText.isEnabled())
 					return;
 				updateSignedOffButton();
 				updateChangeIdButton();
 				listener.statusUpdated();
 			}
-
+			@Override
+			public void documentAboutToBeChanged(DocumentEvent event) {
+				// nothing to do
+			}
 		});
 	}
 
@@ -580,8 +581,8 @@ public class CommitMessageComponent {
 	 */
 	public void setDefaults() {
 		if (repository != null)
-			createChangeId = GerritUtil
-					.getCreateChangeId(repository.getConfig());
+			createChangeId = GerritUtil.getCreateChangeId(repository
+					.getConfig());
 		signedOff = org.eclipse.egit.ui.Activator.getDefault()
 				.getPreferenceStore()
 				.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
@@ -595,8 +596,7 @@ public class CommitMessageComponent {
 			getHeadCommitInfo();
 
 		String calculatedCommitMessage = calculateCommitMessage(filesToCommit);
-		boolean calculatedMessageHasChangeId = findOffsetOfChangeIdLine(
-				calculatedCommitMessage) > 0;
+		boolean calculatedMessageHasChangeId = findOffsetOfChangeIdLine(calculatedCommitMessage) > 0;
 		commitText.setText(calculatedCommitMessage);
 		authorText.setText(getSafeString(author));
 		committerText.setText(getSafeString(committer));
@@ -616,7 +616,8 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * update signed off and change id button from the commit message
+	 * update signed off and change id button from the
+	 * commit message
 	 */
 	public void updateSignedOffAndChangeIdButton() {
 		updateSignedOffButton();
@@ -630,16 +631,15 @@ public class CommitMessageComponent {
 		}
 		RevCommit previousCommit = headCommitInfo.getCommit();
 
-		amendingCommitInRemoteBranch = isContainedInAnyRemoteBranch(
-				previousCommit);
+		amendingCommitInRemoteBranch = isContainedInAnyRemoteBranch(previousCommit);
 		previousCommitMessage = headCommitInfo.getCommitMessage();
 		previousAuthor = headCommitInfo.getAuthor();
 	}
 
 	private boolean isContainedInAnyRemoteBranch(RevCommit commit) {
 		try {
-			Collection<Ref> refs = repository.getRefDatabase()
-					.getRefs(Constants.R_REMOTES).values();
+			Collection<Ref> refs = repository.getRefDatabase().getRefs(
+					Constants.R_REMOTES).values();
 			return RevUtils.isContainedInAnyRef(repository, commit, refs);
 		} catch (IOException e) {
 			// The result only affects a warning, so pretend there was no
@@ -753,10 +753,10 @@ public class CommitMessageComponent {
 		if (createChangeId) {
 			// ChangeIdUtil uses \n line endings
 			String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
-			String changedText = ChangeIdUtil.insertId(text,
-					originalChangeId != null ? originalChangeId
-							: ObjectId.zeroId(),
-					true);
+			String changedText = ChangeIdUtil.insertId(
+					text,
+					originalChangeId != null ? originalChangeId : ObjectId
+							.zeroId(), true);
 			if (!text.equals(changedText)) {
 				changedText = changedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
 				commitText.setText(changedText);
@@ -809,9 +809,8 @@ public class CommitMessageComponent {
 
 		// get the last line
 		lastIndexOfLineBreak = output.lastIndexOf(Text.DELIMITER);
-		return lastIndexOfLineBreak == -1 ? output
-				: output.substring(lastIndexOfLineBreak + breakLength,
-						output.length());
+		return lastIndexOfLineBreak == -1 ? output : output.substring(
+				lastIndexOfLineBreak + breakLength, output.length());
 	}
 
 	private void updateSignedOffButton() {
@@ -833,8 +832,8 @@ public class CommitMessageComponent {
 			if (s != null) {
 				curText = replaceSignOff(curText, s, EMPTY_STRING);
 				if (curText.endsWith(Text.DELIMITER + Text.DELIMITER))
-					curText = curText.substring(0,
-							curText.length() - Text.DELIMITER.length());
+					curText = curText.substring(0, curText.length()
+							- Text.DELIMITER.length());
 				commitText.setText(curText);
 			}
 		}
@@ -854,7 +853,8 @@ public class CommitMessageComponent {
 		if (indexOfSignOff == -1)
 			return input;
 
-		return input.substring(0, indexOfSignOff) + newSignOff
+		return input.substring(0, indexOfSignOff)
+				+ newSignOff
 				+ input.substring(indexOfSignOff + oldSignOff.length(),
 						input.length());
 	}
@@ -902,8 +902,7 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * @param id
-	 *            the id of the current head commit
+	 * @param id the id of the current head commit
 	 */
 	public void setHeadCommit(ObjectId id) {
 		headCommitId = id;
@@ -915,5 +914,4 @@ public class CommitMessageComponent {
 	public ObjectId getHeadCommit() {
 		return headCommitId;
 	}
-
 }
