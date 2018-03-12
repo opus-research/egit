@@ -114,8 +114,7 @@ public class JobFamilies {
 	public static final Object REVERT_COMMIT = new Object();
 
 	/**
-	 * Fetch data from git job
+	 * Clone repository job
 	 */
-	public static final Object SYNCHRONIZE_READ_DATA = new Object();
-
+	public static final Object CLONE = new Object();
 }
