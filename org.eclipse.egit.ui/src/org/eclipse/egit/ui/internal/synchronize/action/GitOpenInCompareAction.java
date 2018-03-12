@@ -86,7 +86,7 @@ public class GitOpenInCompareAction extends Action {
 		if (obj instanceof GitModelWorkingFile) {
 			IFile file = ResourceUtil.getFileForLocation(obj.getLocation());
 			if (file == null)
-				left = new LocalNonWorkspaceTypedElement(obj.getLocation());
+				left = new LocalNonWorkspaceTypedElement(obj.getLocation().toOSString().toString());
 			else
 				left = SaveableCompareEditorInput.createFileElement(file);
 			right = getCachedFileElement(obj);
