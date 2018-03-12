@@ -685,9 +685,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_MergeToolTooltip;
 
 	/** */
-	public static String GitPreferenceRoot_MergeToolAutoAddLabel;
-
-	/** */
 	public static String GitPreferenceRoot_DiffGroupHeader;
 
 	/** */
