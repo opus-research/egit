@@ -38,6 +38,11 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public class CreatePatchOperation implements IEGitOperation {
 
+	/**
+	 * The default number of lines to use as context
+	 */
+	public static final int DEFAULT_CONTEXT_LINES = 3;
+
 	private final RevCommit commit;
 
 	private final Repository repository;
@@ -48,6 +53,8 @@ public class CreatePatchOperation implements IEGitOperation {
 	 private String currentEncoding = null;
 
 	private String patchContent;
+
+	private int contextLines = DEFAULT_CONTEXT_LINES;
 
 	/**
 	 * Creates the new operation.
@@ -93,6 +100,7 @@ public class CreatePatchOperation implements IEGitOperation {
 				});
 
 		diffFmt.setProgressMonitor(gitMonitor);
+		diffFmt.setContext(contextLines);
 
 		RevCommit[] parents = commit.getParents();
 		if (parents.length > 1)
@@ -171,6 +179,15 @@ public class CreatePatchOperation implements IEGitOperation {
 	 */
 	public void useGitFormat(boolean useFormat) {
 		this.useGitFormat = useFormat;
+	}
+
+	/**
+	 * Change the number of lines of context to display.
+	 *
+	 * @param contextLines line count
+	 */
+	public void setContextLines(int contextLines) {
+		this.contextLines = contextLines;
 	}
 
 	/**
