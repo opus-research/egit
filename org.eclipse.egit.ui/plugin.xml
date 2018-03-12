@@ -3493,7 +3493,17 @@
             commandId="org.eclipse.egit.ui.team.Commit"
             contextId="org.eclipse.ui.contexts.window"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+#">
+            sequence="M1+M3+C">
+      </key>
+      <key
+            commandId="org.eclipse.egit.ui.team.Ignore"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+M3+I">
+      </key>
+      <key
+            commandId="org.eclipse.egit.ui.team.Merge"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+M3+M">
       </key>
       <key
             commandId="org.eclipse.egit.ui.RepositoriesViewPaste"
