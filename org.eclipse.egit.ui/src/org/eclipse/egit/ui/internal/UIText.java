@@ -4042,18 +4042,6 @@ public class UIText extends NLS {
 	public static String RemoveCommand_RemoveRepositoriesJob;
 
 	/** */
-	public static String RemoveOrDeleteRepositoryCommand_DeleteRepositoryButton;
-
-	/** */
-	public static String RemoveOrDeleteRepositoryCommand_DialogMessage;
-
-	/** */
-	public static String RemoveOrDeleteRepositoryCommand_DialogTitle;
-
-	/** */
-	public static String RemoveOrDeleteRepositoryCommand_RemoveFromViewButton;
-
-	/** */
 	public static String RenameBranchDialog_DialogMessage;
 
 	/** */
@@ -4667,18 +4655,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_DeleteItemMenuLabel;
-
-	/** */
-	public static String StagingView_Presentation;
-
-	/** */
-	public static String StagingView_List;
-
-	/** */
-	public static String StagingView_Tree;
-
-	/** */
-	public static String StagingView_CompactTree;
 
 	/** */
 	public static String StagingView_Find;
