@@ -3827,9 +3827,6 @@ public class UIText extends NLS {
 	public static String StagingView_UnstagedChanges;
 
 	/** */
-	public static String StagingView_ShowFileNamesFirst;
-
-	/** */
 	public static String StagingView_StagedChanges;
 
 	/** */
@@ -3870,9 +3867,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_OpenNewCommits;
-
-	/** */
-	public static String StagingView_ColumnLayout;
 
 	/** */
 	public static String StagingView_IndexDiffReload;
