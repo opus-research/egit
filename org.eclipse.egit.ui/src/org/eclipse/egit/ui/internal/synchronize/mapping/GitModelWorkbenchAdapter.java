@@ -9,7 +9,6 @@
 package org.eclipse.egit.ui.internal.synchronize.mapping;
 
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRoot;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.graphics.Image;
@@ -49,9 +48,6 @@ public class GitModelWorkbenchAdapter implements IWorkbenchAdapter {
 	}
 
 	public Object getParent(Object o) {
-		if (o instanceof GitModelRepository)
-			return null; // repository node has no parent
-
 		if (o instanceof GitModelObject)
 			return ((GitModelObject) o).getParent();
 
