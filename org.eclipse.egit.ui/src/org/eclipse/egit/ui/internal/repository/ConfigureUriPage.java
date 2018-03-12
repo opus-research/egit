@@ -17,13 +17,14 @@ import java.util.List;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
@@ -134,7 +135,7 @@ public class ConfigureUriPage extends WizardPage {
 					tv.getTable());
 
 			tv.setLabelProvider(new LabelProvider());
-			tv.setContentProvider(ArrayContentProvider.getInstance());
+			tv.setContentProvider(new ContentProvider());
 
 			ToolBar tb = new ToolBar(main, SWT.HORIZONTAL);
 			ToolItem add = new ToolItem(tb, SWT.PUSH);
@@ -224,6 +225,23 @@ public class ConfigureUriPage extends WizardPage {
 		} finally {
 			setPageComplete(getErrorMessage() == null);
 		}
+	}
+
+	private static final class ContentProvider implements
+			IStructuredContentProvider {
+
+		public Object[] getElements(Object inputElement) {
+			return ((List) inputElement).toArray();
+		}
+
+		public void dispose() {
+			// nothing
+		}
+
+		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+			// nothing
+		}
+
 	}
 
 	private static final class LabelProvider extends BaseLabelProvider
