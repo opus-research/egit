@@ -13,7 +13,6 @@ import static org.eclipse.ui.ISources.ACTIVE_MENU_SELECTION_NAME;
 import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -85,7 +84,6 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.LocalSelectionTransfer;
-import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jface.viewers.ContentViewer;
 import org.eclipse.jface.viewers.DecoratingLabelProvider;
 import org.eclipse.jface.viewers.IBaseLabelProvider;
@@ -95,30 +93,24 @@ import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.ITreeViewerListener;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jface.viewers.TreeExpansionEvent;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.RmCommand;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheEditor;
-import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
@@ -506,7 +498,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
 
 		commitMessageSection = toolkit.createSection(
 				horizontalSashForm, ExpandableComposite.TITLE_BAR);
@@ -718,7 +709,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		addListenerToDisableAutoExpandOnCollapse(stagedViewer);
 
 		selectionChangedListener = new ISelectionListener() {
 			public void selectionChanged(IWorkbenchPart part,
@@ -764,6 +754,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 			public void updateChangeIdToggleSelection(boolean selection) {
 				addChangeIdAction.setChecked(selection);
 			}
+
+			public void statusUpdated() {
+				updateMessage();
+			}
 		};
 		commitMessageComponent = new CommitMessageComponent(listener);
 		commitMessageComponent.attachControls(commitMessageText, authorText,
@@ -792,14 +786,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				commitButton.setToolTipText(null);
 			}
 		});
-
-		ModifyListener modifyListener = new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				updateMessage();
-			}
-		};
-		authorText.addModifyListener(modifyListener);
-		committerText.addModifyListener(modifyListener);
 
 		// react on selection changes
 		IWorkbenchPartSite site = getSite();
@@ -844,7 +830,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				unstagedViewer.expandAll();
-				enableAutoExpand(unstagedViewer);
 			}
 		};
 		unstagedExpandAllAction.setImageDescriptor(UIIcons.EXPAND_ALL);
@@ -853,7 +838,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				unstagedViewer.collapseAll();
-				disableAutoExpand(unstagedViewer);
 			}
 		};
 		unstagedCollapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
@@ -877,7 +861,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				stagedViewer.expandAll();
-				enableAutoExpand(stagedViewer);
 			}
 		};
 		stagedExpandAllAction.setImageDescriptor(UIIcons.EXPAND_ALL);
@@ -886,7 +869,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				stagedViewer.collapseAll();
-				disableAutoExpand(stagedViewer);
 			}
 		};
 		stagedCollapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
@@ -908,27 +890,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		layout.marginLeft = 0;
 		layout.marginRight = 0;
 		return layout;
-	}
-
-	private static void addListenerToDisableAutoExpandOnCollapse(
-			TreeViewer treeViewer) {
-		treeViewer.addTreeListener(new ITreeViewerListener() {
-			public void treeCollapsed(TreeExpansionEvent event) {
-				disableAutoExpand(event.getTreeViewer());
-			}
-
-			public void treeExpanded(TreeExpansionEvent event) {
-				// Nothing to do
-			}
-		});
-	}
-
-	private static void enableAutoExpand(AbstractTreeViewer treeViewer) {
-		treeViewer.setAutoExpandLevel(AbstractTreeViewer.ALL_LEVELS);
-	}
-
-	private static void disableAutoExpand(AbstractTreeViewer treeViewer) {
-		treeViewer.setAutoExpandLevel(0);
 	}
 
 	/**
@@ -1270,7 +1231,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			warningLabel.showMessage(message);
 			needsRedraw = true;
 		} else {
-			needsRedraw = warningLabel.isVisible();
+			needsRedraw = warningLabel.getVisible();
 			warningLabel.hideMessage();
 		}
 		// Without this explicit redraw, the ControlDecoration of the
@@ -1783,100 +1744,49 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (selection.isEmpty())
 			return;
 
-		RevCommit headRev = null;
-		try {
-			final Ref head = currentRepository.getRef(Constants.HEAD);
-			// head.getObjectId() is null if the repository does not contain any
-			// commit
-			if (head.getObjectId() != null)
-				headRev = new RevWalk(currentRepository).parseCommit(head
-						.getObjectId());
-		} catch (IOException e1) {
-			// TODO fix text
-			MessageDialog.openError(getSite().getShell(),
-					UIText.CommitAction_MergeHeadErrorTitle,
-					UIText.CommitAction_ErrorReadingMergeMsg);
+		List<String> paths = processUnstageSelection(selection);
+		if (paths.isEmpty())
 			return;
-		}
-
-		final DirCache dirCache;
-		final DirCacheEditor edit;
-		try {
-			dirCache = currentRepository.lockDirCache();
-			edit = dirCache.editor();
-		} catch (IOException e) {
-			// TODO fix text
-			MessageDialog.openError(getSite().getShell(),
-					UIText.CommitAction_MergeHeadErrorTitle,
-					UIText.CommitAction_ErrorReadingMergeMsg);
-			return;
-		}
 
 		try {
-			processUnstageSelection(selection, headRev, edit);
-
-			try {
-				edit.commit();
-			} catch (IOException e) {
-				// TODO fix text
-				MessageDialog.openError(getSite().getShell(),
-						UIText.CommitAction_MergeHeadErrorTitle,
-						UIText.CommitAction_ErrorReadingMergeMsg);
-			}
-		} finally {
-			dirCache.unlock();
+			Git git = new Git(currentRepository);
+			ResetCommand reset = git.reset();
+			for (String path : paths)
+				reset.addPath(path);
+			reset.call();
+		} catch (GitAPIException e) {
+			Activator.handleError(e.getMessage(), e, true);
 		}
 	}
 
-	private void processUnstageSelection(IStructuredSelection selection,
-			final RevCommit headRev, final DirCacheEditor edit) {
+	private List<String> processUnstageSelection(IStructuredSelection selection) {
+		List<String> paths = new ArrayList<String>();
 		resetPathsToExpand();
 		for (Object element : selection.toList()) {
 			if (element instanceof StagingEntry) {
 				StagingEntry entry = (StagingEntry) element;
-				updateDirCache(headRev, edit, entry);
+				addUnstagePath(entry, paths);
 				addPathAndParentPaths(entry.getParentPath(), pathsToExpandInUnstaged);
 			} else if (element instanceof StagingFolderEntry) {
 				StagingFolderEntry folder = (StagingFolderEntry) element;
 				List<StagingEntry> entries = getContentProvider(stagedViewer)
 						.getStagingEntriesFiltered(folder);
 				for (StagingEntry entry : entries)
-					updateDirCache(headRev, edit, entry);
+					addUnstagePath(entry, paths);
 				addExpandedPathsBelowFolder(folder, stagedViewer,
 						pathsToExpandInUnstaged);
 			}
 		}
+		return paths;
 	}
 
-	private void updateDirCache(final RevCommit headRev,
-			final DirCacheEditor edit, final StagingEntry entry) {
+	private void addUnstagePath(StagingEntry entry, List<String> paths) {
 		switch (entry.getState()) {
 		case ADDED:
-			edit.add(new DirCacheEditor.DeletePath(entry.getPath()));
-			break;
 		case CHANGED:
 		case REMOVED:
-			// set the index object id/file mode back to our head revision
-			try {
-				final TreeWalk tw = TreeWalk.forPath(currentRepository,
-						entry.getPath(), headRev.getTree());
-				if (tw != null)
-					edit.add(new DirCacheEditor.PathEdit(entry.getPath()) {
-						@Override
-						public void apply(DirCacheEntry ent) {
-							ent.setFileMode(tw.getFileMode(0));
-							ent.setObjectId(tw.getObjectId(0));
-							// for index & working tree compare
-							ent.setLastModified(0);
-						}
-					});
-			} catch (IOException e) {
-				// TODO fix text
-				MessageDialog.openError(getSite().getShell(),
-						UIText.CommitAction_MergeHeadErrorTitle,
-						UIText.CommitAction_ErrorReadingMergeMsg);
-			}
-			break;
+			paths.add(entry.getPath());
+			return;
 		default:
 			// unstaged
 		}
@@ -1999,10 +1909,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private void expandPreviousExpandedAndPaths(Object[] previous,
 			TreeViewer viewer, Set<IPath> additionalPaths) {
-		// Auto-expand is on, so don't change expanded items
-		if (viewer.getAutoExpandLevel() == AbstractTreeViewer.ALL_LEVELS)
-			return;
-
 		Set<IPath> paths = new HashSet<IPath>(additionalPaths);
 		// Instead of just expanding the previous elements directly, also expand
 		// all parent paths. This makes it work in case of "re-folding" of
