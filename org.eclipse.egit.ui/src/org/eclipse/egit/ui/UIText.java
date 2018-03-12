@@ -6,6 +6,8 @@
  * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
+ * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -901,6 +903,9 @@ public class UIText extends NLS {
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
+	public static String CheckoutConflictDialog_conflictMessage;
+
+	/** */
 	public static String CheckoutDialog_Message;
 
 	/** */
@@ -1621,12 +1626,6 @@ public class UIText extends NLS {
 	public static String ResetTargetSelectionDialog_ResetTypeSoftButton;
 
 	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeHEADHardButton;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeHEADMixedButton;
-
-	/** */
 	public static String ResetTargetSelectionDialog_SelectBranchForResetMessage;
 
 	/** */
@@ -2162,6 +2161,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
+
+	/** */
+	public static String CompareWithRefAction_errorOnSynchronize;
 
 	/** */
 	public static String CompareWithPreviousActionHandler_MessageRevisionNotFound;
@@ -2759,6 +2761,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchResultDialog_CheckoutConflictsTitle;
+
+	/** */
+	public static String BranchResultDialog_dontShowAgain;
 
 	/** */
 	public static String CheckoutDialog_ErrorCouldNotCreateNewRef;
@@ -3394,6 +3399,9 @@ public class UIText extends NLS {
 	public static String MergeResultDialog_id;
 
 	/** */
+	public static String MergeResultDialog_failed;
+
+	/** */
 	public static String MergeResultDialog_mergeInput;
 
 	/** */
@@ -3401,6 +3409,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeResultDialog_newHead;
+
+	/** */
+	public static String MergeResultDialog_nMore;
 
 	/** */
 	public static String MergeResultDialog_result;
