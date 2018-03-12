@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ import org.eclipse.egit.core.op.RemoveFromIndexOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Action for removing resource from the git index
@@ -34,7 +35,9 @@ public class RemoveFromIndexActionHandler extends RepositoryActionHandler {
 		if (sel.length == 0)
 			return null;
 
-		final RemoveFromIndexOperation removeOperation = new RemoveFromIndexOperation(sel);
+		Repository repo = getRepository();
+		final RemoveFromIndexOperation removeOperation = new RemoveFromIndexOperation(
+				repo, sel);
 		Job job = new Job(UIText.RemoveFromIndexAction_removingFiles) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
