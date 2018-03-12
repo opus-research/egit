@@ -32,14 +32,4 @@ public class JobFamilies {
 	 * Push job
 	 */
 	public final static Object PUSH = new Object();
-
-	/**
-	 * Repositories View refresh
-	 */
-	public final static Object REPO_VIEW_REFRESH = new Object();
-
-	/**
-	 * Tag job
-	 */
-	public final static Object TAG = new Object();
 }

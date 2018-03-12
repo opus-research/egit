@@ -35,10 +35,6 @@ public class UIPreferences {
 	/** */
 	public final static String RESOURCEHISTORY_SHOW_FINDTOOLBAR = "resourcehistory_show_findtoolbar"; //$NON-NLS-1$
 	/** */
-	public final static String RESOURCEHISTORY_SHOW_ALL_BRANCHES = "resourcehistory_show_all_branches"; //$NON-NLS-1$
-	/** */
-	public final static String RESOURCEHISTORY_COMPARE_MODE = "resourcehistory_compare_mode"; //$NON-NLS-1$
-	/** */
 	public final static String FINDTOOLBAR_IGNORE_CASE = "findtoolbar_ignore_case"; //$NON-NLS-1$
 	/** */
 	public final static String FINDTOOLBAR_COMMIT_ID = "findtoolbar_commit_id"; //$NON-NLS-1$
@@ -94,8 +90,6 @@ public class UIPreferences {
 	public static final String REMOTE_CONNECTION_TIMEOUT = "remote_connection_timeout"; //$NON-NLS-1$
 	/** */
 	public static final String DEFAULT_REPO_DIR = "default_repository_dir"; //$NON-NLS-1$
-	/** */
-	public static final String MERGE_MODE = "merge_mode"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array

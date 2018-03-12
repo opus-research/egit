@@ -25,11 +25,11 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class TestUtil {
 
-	public final static String TESTAUTHOR = "Test Author <test.author@test.com>";
+	public static String TESTAUTHOR = "Test Author <test.author@test.com>";
 
-	public final static String TESTCOMMITTER = "Test Committer <test.committer@test.com>";
+	public static String TESTCOMMITTER = "Test Committer <test.committer@test.com>";
 
-	private final static char AMPERSAND = '&';
+	private static final char AMPERSAND = '&';
 
 	private ResourceBundle myBundle;
 
