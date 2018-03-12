@@ -67,7 +67,7 @@ public class InitOperationTest extends AbstractGitFlowOperationTest {
 				.createInitialCommit("testInitLocalMasterMissing\n\nfirst commit\n");
 
 		Repository repository = testRepository.getRepository();
-		new RenameBranchOperation(repository, repository.findRef(repository
+		new RenameBranchOperation(repository, repository.getRef(repository
 				.getBranch()), "foobar").execute(null);
 
 		new InitOperation(repository).execute(null);
