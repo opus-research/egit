@@ -6,17 +6,19 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
+
 package org.eclipse.egit.ui.internal.actions;
 
 /**
- * Configure Fetch
+ * The "compare with ref" action. This action opens a Ref selection dialog to
+ * select a branch or tag and then a compare editor comparing the version.
  */
-public class ConfigureFetchAction extends RepositoryAction {
-
+public class CompareWithCommitAction extends RepositoryAction {
 	/**
-	 * Constructs this action
+	 *
 	 */
-	public ConfigureFetchAction() {
-		super(ActionCommands.CONFIGURE_FETCH, new ConfigureFetchActionHandler());
+	public CompareWithCommitAction() {
+		super(ActionCommands.COMPARE_WITH_COMMIT_ACTION,
+				new CompareWithCommitActionHandler());
 	}
 }
