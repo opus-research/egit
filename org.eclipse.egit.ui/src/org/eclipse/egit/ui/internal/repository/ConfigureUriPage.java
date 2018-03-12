@@ -105,7 +105,7 @@ public class ConfigureUriPage extends WizardPage {
 
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					SelectUriWizard slwz = new SelectUriWizard(false, uriText
+					SelectUriWiazrd slwz = new SelectUriWiazrd(false, uriText
 							.getText());
 					WizardDialog dlg = new WizardDialog(getShell(), slwz);
 					if (dlg.open() == Window.OK) {
@@ -145,7 +145,7 @@ public class ConfigureUriPage extends WizardPage {
 
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					SelectUriWizard slwz = new SelectUriWizard(false);
+					SelectUriWiazrd slwz = new SelectUriWiazrd(false);
 					WizardDialog dlg = new WizardDialog(getShell(), slwz);
 					if (dlg.open() == Window.OK) {
 						URIish uri = slwz.getUri();
