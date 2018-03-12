@@ -2377,9 +2377,6 @@ public class UIText extends NLS {
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
 
 	/** */
-	public static String DeleteBranchCommand_DeletingBranchesProgress;
-
-	/** */
 	public static String DeleteBranchDialog_DialogMessage;
 
 	/** */
@@ -3479,15 +3476,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
-	public static String CommitResultLabelProvider_SectionAuthor;
-
-	/** */
-	public static String CommitResultLabelProvider_SectionMessage;
-
-	/** */
-	public static String CommitResultLabelProvider_SectionRepository;
-
-	/** */
 	public static String CommitSearchQuery_Label;
 
 	/** */
@@ -3518,47 +3506,15 @@ public class UIText extends NLS {
 	public static String CommitSelectionDialog_WindowTitle;
 
 	/** */
-	public static String CommitUI_commitFailed;
-
-	/** */
 	public static String EgitUiEditorUtils_openFailed;
 
 	/** */
 	public static String GitActionContributor_ExpandAll;
 
 	/** */
-	public static String GitActionContributor_Push;
-
-	/** */
 	public static String DecoratableResourceHelper_noHead;
 
 	/** */
-	public static String StagingView_UnstagedChanges;
-
-	/** */
-	public static String StagingView_StagedChanges;
-
-	/** */
-	public static String StagingView_CommitMessage;
-
-	/** */
-	public static String StagingView_Committer;
-
-	/** */
-	public static String StagingView_Author;
-
-	/** */
-	public static String StagingView_Ammend_Previous_Commit;
-
-	/** */
-	public static String StagingView_Add_Signed_Off_By;
-
-	/** */
-	public static String StagingView_Add_Change_ID;
-
-	/** */
-	public static String StagingView_Commit;
-
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
