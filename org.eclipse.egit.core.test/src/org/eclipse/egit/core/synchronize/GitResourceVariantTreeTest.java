@@ -25,10 +25,10 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.DisconnectProviderOperation;
+import org.eclipse.egit.core.op.TrackOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
@@ -42,7 +42,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.team.core.variants.IResourceVariant;
 import org.eclipse.team.core.variants.ResourceVariantByteStore;
 import org.eclipse.team.core.variants.SessionResourceVariantByteStore;
@@ -61,7 +60,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 	public void createGitRepository() throws Exception {
 		IProject iProject = project.project;
 		if (!gitDir.exists())
-			new FileRepository(gitDir).create();
+			new Repository(gitDir).create();
 
 		new ConnectProviderOperation(iProject, gitDir).execute(null);
 		repo = RepositoryMapping.getMapping(iProject).getRepository();
@@ -110,7 +109,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 	public void shouldReturnTwoRoots() throws Exception {
 		// when
 		// create second project
-		TestProject secondProject = new TestProject(true, "Project-2");
+		TestProject secondProject = new TestProject(false, "Project-2");
 		IProject secondIProject = secondProject.project;
 		// add connect project with repository
 		new ConnectProviderOperation(secondIProject, gitDir).execute(null);
@@ -342,7 +341,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 			throws Exception {
 		List<IResource> resources = new ArrayList<IResource>();
 		resources.add(mainJava.getResource());
-		new AddToIndexOperation(resources).execute(null); // add resource to git
+		IResource[] track = resources.toArray(new IResource[resources.size()]);
+		new TrackOperation(track).execute(null); // add resource to git
 		new Git(repo).commit().setMessage(commitMsg).call(); // make commit
 	}
 

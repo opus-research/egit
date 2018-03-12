@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
 import org.eclipse.egit.ui.internal.repository.tree.ErrorNode;
@@ -67,7 +66,6 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 		List<RepositoryTreeNode> nodes = new ArrayList<RepositoryTreeNode>();
 		List<String> directories = new ArrayList<String>();
-		RepositoryUtil repositoryUtil = Activator.getDefault().getRepositoryUtil();
 
 		if (inputElement instanceof Collection) {
 			for (Iterator it = ((Collection) inputElement).iterator(); it
@@ -79,18 +77,15 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 					directories.add((String) next);
 			}
 		} else if (inputElement instanceof IWorkspaceRoot) {
-			directories.addAll(repositoryUtil.getConfiguredRepositories());
+			directories.addAll(Activator.getDefault().getRepositoryUtil()
+					.getConfiguredRepositories());
 		}
 
 		for (String directory : directories) {
 			try {
-				File gitDir = new File(directory);
-				if (gitDir.exists()) {
-					RepositoryNode rNode = new RepositoryNode(null, repositoryCache
-							.lookupRepository(gitDir));
-					nodes.add(rNode);
-				} else
-					repositoryUtil.removeDir(gitDir);
+				RepositoryNode rNode = new RepositoryNode(null, repositoryCache
+						.lookupRepository(new File(directory)));
+				nodes.add(rNode);
 			} catch (IOException e) {
 				// ignore for now
 			}
@@ -221,7 +216,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 			if (node.getRepository().isBare())
 				return children.toArray();
-			File workingDir = repo.getWorkTree();
+			File workingDir = repo.getWorkDir();
 			if (workingDir == null || !workingDir.exists())
 				return children.toArray();
 
@@ -376,7 +371,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 		case WORKINGDIR:
 			if (node.getRepository().isBare())
 				return false;
-			File workingDir = repo.getWorkTree();
+			File workingDir = repo.getWorkDir();
 			if (workingDir == null || !workingDir.exists())
 				return false;
 			return workingDir.listFiles().length > 0;

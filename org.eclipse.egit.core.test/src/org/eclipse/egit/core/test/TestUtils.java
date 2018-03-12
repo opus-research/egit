@@ -129,8 +129,7 @@ public class TestUtils {
 			} else {
 				folder = folder.getFolder(filePath.segment(i));
 			}
-			if (!folder.exists())
-				folder.create(false, true, null);
+			folder.create(false, true, null);
 		}
 		IFile file = project.getFile(filePath);
 		file.create(new ByteArrayInputStream(content.getBytes(project
@@ -152,13 +151,8 @@ public class TestUtils {
 			String projectName) throws Exception {
 		IProject firstProject = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName);
-		if (firstProject.exists()) {
-			firstProject.delete(true, null);
-		}
-		File testFile = new File(parentFile, projectName);
-		if (testFile.exists())
-			deleteRecursive(testFile);
-
+		if (firstProject.exists())
+			firstProject.delete(false, null);
 		IProjectDescription desc = ResourcesPlugin.getWorkspace()
 				.newProjectDescription(projectName);
 		desc.setLocation(new Path(new File(parentFile, projectName).getPath()));

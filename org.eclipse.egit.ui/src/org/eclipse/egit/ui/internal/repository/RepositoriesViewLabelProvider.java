@@ -23,9 +23,6 @@ import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTag;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
@@ -101,7 +98,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 						+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
 			else
 				return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
-						+ node.getRepository().getWorkTree().getAbsolutePath();
+						+ node.getRepository().getWorkDir().getAbsolutePath();
 		case PUSH:
 			// fall through
 		case FETCH:
@@ -148,18 +145,13 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 				} else if (refName.startsWith(Constants.R_TAGS)) {
 					// tag: HEAD would be on the commit id to which the tag is
 					// pointing
-					RevWalk rw = new RevWalk(node.getRepository());
-					RevTag tag = rw.parseTag(node.getRepository().resolve(
-							refName));
-					compareString = tag.getObject().name();
-
+					compareString = node.getRepository().mapTag(refName)
+							.getObjId().getName();
 				} else if (refName.startsWith(Constants.R_REMOTES)) {
 					// remote branch: HEAD would be on the commit id to which
 					// the branch is pointing
-					RevWalk rw = new RevWalk(node.getRepository());
-					RevCommit commit = rw.parseCommit(node.getRepository()
-							.resolve(refName));
-					compareString = commit.getId().name();
+					compareString = node.getRepository().mapCommit(refName)
+							.getCommitId().getName();
 				} else {
 					// some other symbolic reference
 					return image;

@@ -32,7 +32,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -82,6 +81,7 @@ import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
 import org.eclipse.team.core.history.IFileHistoryProvider;
 import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.team.internal.ui.history.FileRevisionTypedElement;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
@@ -517,8 +517,8 @@ public class CommitDialog extends Dialog {
 						index = repo.getIndex();
 						String repoRelativePath = map.getRepoRelativePath(commitItem.file);
 						Entry entry = index.getEntry(repoRelativePath);
-						if (entry != null && entry.isModified(map.getWorkTree())) {
-							entry.update(new File(map.getWorkTree(), entry.getName()));
+						if (entry != null && entry.isModified(map.getWorkDir())) {
+							entry.update(new File(map.getWorkDir(), entry.getName()));
 							if (!changedIndexes.contains(index))
 								changedIndexes.add(index);
 							commitItem.status = UIText.CommitDialog_StatusModified;
@@ -526,7 +526,7 @@ public class CommitDialog extends Dialog {
 							final Tree headTree = repo.mapTree(Constants.HEAD);
 							TreeEntry  headEntry = (headTree == null ? null : headTree.findBlobMember(repoRelativePath));
 							if (headEntry == null){
-								entry = index.add(map.getWorkTree(), new File(map.getWorkTree(), repoRelativePath));
+								entry = index.add(map.getWorkDir(), new File(map.getWorkDir(), repoRelativePath));
 								if (!changedIndexes.contains(index))
 									changedIndexes.add(index);
 								commitItem.status = UIText.CommitDialog_StatusAdded;
@@ -570,7 +570,7 @@ public class CommitDialog extends Dialog {
 				if (indexEntry == null) {
 					prefix = UIText.CommitDialog_StatusUntracked;
 				}
-				else if (indexEntry.isModified(repositoryMapping.getWorkTree()))
+				else if (indexEntry.isModified(repositoryMapping.getWorkDir()))
 					prefix = UIText.CommitDialog_StatusAddedIndexDiff;
 			} else if (indexEntry == null) {
 				prefix = UIText.CommitDialog_StatusRemoved;
@@ -578,12 +578,12 @@ public class CommitDialog extends Dialog {
 					&& !headEntry.getId().equals(indexEntry.getObjectId())) {
 				prefix = UIText.CommitDialog_StatusModified;
 
-				if (indexEntry.isModified(repositoryMapping.getWorkTree()))
+				if (indexEntry.isModified(repositoryMapping.getWorkDir()))
 					prefix = UIText.CommitDialog_StatusModifiedIndexDiff;
-			} else if (!new File(repositoryMapping.getWorkTree(), indexEntry
+			} else if (!new File(repositoryMapping.getWorkDir(), indexEntry
 					.getName()).isFile()) {
 				prefix = UIText.CommitDialog_StatusRemovedNotStaged;
-			} else if (indexEntry.isModified(repositoryMapping.getWorkTree())) {
+			} else if (indexEntry.isModified(repositoryMapping.getWorkDir())) {
 				prefix = UIText.CommitDialog_StatusModifiedNotStaged;
 			}
 

@@ -35,11 +35,11 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -146,11 +146,11 @@ class ExistingOrNewPage extends WizardPage {
 		button = new Button(g, SWT.PUSH);
 		button.setLayoutData(GridDataFactory.fillDefaults().create());
 		button.setText(UIText.ExistingOrNewPage_CreateButton);
-		button.addSelectionListener(new SelectionAdapter() {
+		button.addSelectionListener(new SelectionListener() {
 			public void widgetSelected(SelectionEvent e) {
 				File gitDir = new File(repositoryToCreate.getText(),Constants.DOT_GIT);
 				try {
-					Repository repository = new FileRepository(gitDir);
+					Repository repository = new Repository(gitDir);
 					repository.create();
 					for (IProject project : getProjects().keySet()) {
 						// If we don't refresh the project directories right
@@ -187,6 +187,8 @@ class ExistingOrNewPage extends WizardPage {
 				updateCreateOptions();
 				getContainer().updateButtons();
 			}
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
 		});
 		repositoryToCreate = new Text(g, SWT.SINGLE | SWT.BORDER);
 		repositoryToCreate.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(1,1).create());
@@ -206,9 +208,12 @@ class ExistingOrNewPage extends WizardPage {
 		dotGitSegment.setText(File.separatorChar + Constants.DOT_GIT);
 		dotGitSegment.setLayoutData(GridDataFactory.fillDefaults().align(SWT.LEFT, SWT.CENTER).create());
 
-		tree.addSelectionListener(new SelectionAdapter() {
+		tree.addSelectionListener(new SelectionListener() {
 			public void widgetSelected(SelectionEvent e) {
 				updateCreateOptions();
+			}
+			public void widgetDefaultSelected(SelectionEvent e) {
+				// Empty
 			}
 		});
 		updateCreateOptions();

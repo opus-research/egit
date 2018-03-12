@@ -998,13 +998,11 @@ public class RefSpecPanel {
 				return modeCellEditor;
 			}
 
-			@SuppressWarnings("boxing")
 			@Override
 			protected Object getValue(final Object element) {
 				return isDeleteRefSpec(element);
 			}
 
-			@SuppressWarnings("boxing")
 			@Override
 			protected void setValue(final Object element, final Object value) {
 				final RefSpec oldSpec = (RefSpec) element;
@@ -1209,13 +1207,11 @@ public class RefSpecPanel {
 				return forceUpdateCellEditor;
 			}
 
-			@SuppressWarnings("boxing")
 			@Override
 			protected Object getValue(final Object element) {
 				return ((RefSpec) element).isForceUpdate();
 			}
 
-			@SuppressWarnings("boxing")
 			@Override
 			protected void setValue(final Object element, final Object value) {
 				final RefSpec oldSpec = (RefSpec) element;

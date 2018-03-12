@@ -26,7 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ResetOperationTest extends GitTestCase {
+public class T0005_ResetOperationTest extends GitTestCase {
 
 	TestRepository testRepository;
 
@@ -58,7 +58,7 @@ public class ResetOperationTest extends GitTestCase {
 	@Test
 	public void testHardReset() throws Exception {
 		setupRepository();
-		String fileInIndexPath = fileInIndex.getLocation().toPortableString();
+		String fileInIndexPath = fileInIndex.getLocation().toOSString();
 		new ResetOperation(repository, initialCommit.getName(),
 				ResetOperation.ResetType.HARD).execute(null);
 		// .project must disappear, related Eclipse project must be deleted
@@ -77,7 +77,7 @@ public class ResetOperationTest extends GitTestCase {
 	@Test
 	public void testSoftReset() throws Exception {
 		setupRepository();
-		String fileInIndexPath = fileInIndex.getLocation().toPortableString();
+		String fileInIndexPath = fileInIndex.getLocation().toOSString();
 		new ResetOperation(repository, initialCommit.getName(),
 				ResetOperation.ResetType.SOFT).execute(null);
 		// .project must remain
@@ -97,7 +97,7 @@ public class ResetOperationTest extends GitTestCase {
 	@Test
 	public void testMixedReset() throws Exception {
 		setupRepository();
-		String fileInIndexPath = fileInIndex.getLocation().toPortableString();
+		String fileInIndexPath = fileInIndex.getLocation().toOSString();
 		new ResetOperation(repository, initialCommit.getName(),
 				ResetOperation.ResetType.MIXED).execute(null);
 		// .project must remain
