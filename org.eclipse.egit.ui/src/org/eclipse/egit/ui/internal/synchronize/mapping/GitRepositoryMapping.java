@@ -19,6 +19,8 @@ import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 
 class GitRepositoryMapping extends GitObjectMapping {
 
+	private ResourceTraversal[] traversals;
+
 	protected GitRepositoryMapping(GitModelRepository gitRepo) {
 		super(gitRepo);
 	}
@@ -26,8 +28,11 @@ class GitRepositoryMapping extends GitObjectMapping {
 	@Override
 	public ResourceTraversal[] getTraversals(ResourceMappingContext context,
 			IProgressMonitor monitor) throws CoreException {
-		return new ResourceTraversal[] { new ResourceTraversal(
+		if (traversals == null)
+			traversals = new ResourceTraversal[] { new ResourceTraversal(
 					getProjects(), DEPTH_INFINITE, NONE) };
+
+		return traversals;
 	}
 
 }

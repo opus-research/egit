@@ -18,7 +18,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.ConfigurationChecker;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.team.ui.IConfigurationWizard;
@@ -41,7 +40,6 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 	public SharingWizard() {
 		setWindowTitle(UIText.SharingWizard_windowTitle);
 		setNeedsProgressMonitor(true);
-		ConfigurationChecker.checkConfiguration();
 	}
 
 	public void init(IWorkbench workbench, IProject[] p) {
@@ -60,7 +58,7 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 
 	public boolean performFinish() {
 		final ConnectProviderOperation op = new ConnectProviderOperation(
-				existingPage.getProjects(true));
+				existingPage.getProjects());
 		try {
 			getContainer().run(true, false, new IRunnableWithProgress() {
 				public void run(final IProgressMonitor monitor)

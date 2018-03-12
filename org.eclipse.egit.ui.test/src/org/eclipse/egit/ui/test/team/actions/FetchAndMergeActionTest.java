@@ -23,7 +23,6 @@ import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -89,12 +88,8 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		SWTBotShell fetchDialog = openFetchDialog();
 		fetchDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
 		fetchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-		
-		String uri = lookupRepository(childRepositoryFile).getConfig()
-				.getString(ConfigConstants.CONFIG_REMOTE_SECTION, "origin",
-						ConfigConstants.CONFIG_KEY_URL);
 		SWTBotShell confirm = bot.shell(NLS.bind(
-				UIText.FetchResultDialog_title, uri));
+				UIText.FetchResultDialog_title, "origin"));
 		SWTBotTable table = confirm.bot().table();
 		String branch = table.getTableItem(0).getText(2);
 		assertTrue("Wrong result", previousCommit.startsWith(branch.substring(
@@ -108,7 +103,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		fetchDialog = openFetchDialog();
 		fetchDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
 		fetchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-		confirm = bot.shell(NLS.bind(UIText.FetchResultDialog_title, uri));
+		confirm = bot.shell(NLS.bind(UIText.FetchResultDialog_title, "origin"));
 		int count = confirm.bot().table().rowCount();
 
 		confirm.close();

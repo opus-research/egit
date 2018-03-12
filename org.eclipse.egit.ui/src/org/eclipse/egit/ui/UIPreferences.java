@@ -12,7 +12,6 @@
 package org.eclipse.egit.ui;
 
 
-
 /**
  * Preferences used by the EGit UI plug-in.
  * <p>
@@ -105,8 +104,6 @@ public class UIPreferences {
 	public static final String REBASE_HIDE_CONFIRM = "rebase_hide_confirm"; //$NON-NLS-1$
 	/** */
 	public static final String SHOW_INITIAL_CONFIG_DIALOG = "show_initial_config_dialog"; //$NON-NLS-1$
-	/** */
-	public static final String SHOW_HOME_DIR_WARNING = "show_home_drive_warning"; //$NON-NLS-1$
 	/** */
 	public static final String TREE_COMPARE_ADDED_ONLY = "CompareTreeView_ShowAddedOnly"; //$NON-NLS-1$
 	/** */
