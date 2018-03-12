@@ -23,12 +23,9 @@ import org.eclipse.egit.ui.internal.synchronize.compare.GitLocalCompareInput;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 
-/**
- * Representation of working file in Git Change Set model
- */
-public class GitModelWorkingFile extends GitModelBlob {
+class GitModelWorkingFile extends GitModelBlob {
 
-	GitModelWorkingFile(GitModelObjectContainer parent,
+	public GitModelWorkingFile(GitModelObjectContainer parent,
 			RevCommit commit, ObjectId repoId, IPath location) throws IOException {
 		super(parent, commit, null, repoId, repoId, null, location);
 	}
