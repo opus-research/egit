@@ -268,9 +268,8 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 				// empty
 			}
 		});
-		String genericHistoryViewId = "org.eclipse.team.ui.GenericHistoryView";
-		TestUtil.waitUntilViewWithGivenIdShows(genericHistoryViewId);
-		return bot.viewById(genericHistoryViewId).bot().table();
+		return bot.viewById("org.eclipse.team.ui.GenericHistoryView").bot()
+				.table();
 	}
 
 	@Test
