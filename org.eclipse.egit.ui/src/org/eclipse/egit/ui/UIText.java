@@ -229,6 +229,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_openFailed;
 
 	/** */
+	public static String GitHistoryPage_seeLog;
+
+	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -1298,6 +1301,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotRenameRef2;
+
+	/** */
+	public static String BranchSelectionDialog_BranchSelectionDialog_CreateFailedTitle;
+
+	/** */
+	public static String BranchSelectionDialog_BranchSelectionDialog_RenamedFailedTitle;
 
 	/** */
 	public static String BranchSelectionDialog_BranchSuffix_Current;
