@@ -30,13 +30,15 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public class GitModelBlob extends GitModelCommit {
 
-	private final IPath location;
+	private final String name;
 
 	private final ObjectId baseId;
 
 	private final ObjectId remoteId;
 
 	private final ObjectId ancestorId;
+
+	private final IPath location;
 
 	private static final GitModelObject[] empty = new GitModelObject[0];
 
@@ -61,20 +63,21 @@ public class GitModelBlob extends GitModelCommit {
 	 *            id of base object variant
 	 * @param remoteId
 	 *            id of remote object variants
-	 * @param location
-	 *            absolute blob location
+	 * @param name
+	 *            human readable blob name (file name)
 	 * @throws IOException
 	 */
 	public GitModelBlob(GitModelObjectContainer parent, RevCommit commit,
-			RevCommit ancestorCommit, ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, IPath location)
+			RevCommit ancestorCommit, ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, String name)
 			throws IOException {
 		// only direction is important for us, therefore we mask rest of bits in
 		// kind
 		super(parent, commit, ancestorCommit, parent.getKind() & (LEFT | RIGHT));
+		this.name = name;
 		this.baseId = baseId;
 		this.remoteId = remoteId;
 		this.ancestorId = ancestorId;
-		this.location = location;
+		location = getParent().getLocation().append(name);
 		gitPath = Repository.stripWorkDir(getRepository().getWorkTree(),
 				getLocation().toFile());
 	}
@@ -86,7 +89,7 @@ public class GitModelBlob extends GitModelCommit {
 
 	@Override
 	public String getName() {
-		return location.lastSegment();
+		return name;
 	}
 
 	@Override
