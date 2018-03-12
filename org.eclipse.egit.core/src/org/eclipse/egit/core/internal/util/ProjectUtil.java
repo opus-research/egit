@@ -255,7 +255,7 @@ public class ProjectUtil {
 	 * @throws CoreException
 	 */
 	public static IProject[] getProjectsContaining(Repository repository,
-			List<String> fileList) throws CoreException {
+			Collection<String> fileList) throws CoreException {
 		List<IProject> result = new ArrayList<IProject>();
 
 		/*

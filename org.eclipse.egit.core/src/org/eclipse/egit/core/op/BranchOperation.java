@@ -14,7 +14,6 @@ package org.eclipse.egit.core.op;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
@@ -92,6 +91,8 @@ public class BranchOperation extends BaseOperation {
 			public void run(IProgressMonitor pm) throws CoreException {
 				preExecute(pm);
 
+				IProject[] validProjects = ProjectUtil
+						.getValidOpenProjects(repository);
 				pm.beginTask(NLS.bind(
 						CoreText.BranchOperation_performingBranch, target), 1);
 
@@ -112,12 +113,6 @@ public class BranchOperation extends BaseOperation {
 				if (result.getStatus() == Status.NONDELETED)
 					retryDelete(result.getUndeletedList());
 				pm.worked(1);
-
-				List<String> pathsToHandle = new ArrayList<String>();
-				pathsToHandle.addAll(co.getResult().getModifiedList());
-				pathsToHandle.addAll(co.getResult().getRemovedList());
-				IProject[] validProjects = ProjectUtil
-						.getProjectsContaining(repository, pathsToHandle);
 				ProjectUtil.refreshValidProjects(validProjects, delete,
 						new SubProgressMonitor(pm, 1));
 				pm.worked(1);
