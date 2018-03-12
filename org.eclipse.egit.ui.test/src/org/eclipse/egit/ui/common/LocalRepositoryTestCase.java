@@ -37,7 +37,7 @@ import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
+import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -48,6 +48,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
@@ -181,8 +182,13 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	}
 
 	protected static File createProjectAndCommitToRepository() throws Exception {
+		return createProjectAndCommitToRepository(REPO1);
+	}
 
-		File gitDir = new File(new File(testDirectory, REPO1),
+	protected static File createProjectAndCommitToRepository(String repoName)
+			throws Exception {
+
+		File gitDir = new File(new File(testDirectory, repoName),
 				Constants.DOT_GIT);
 		gitDir.mkdir();
 		Repository myRepository = new FileRepository(gitDir);
@@ -299,10 +305,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		myRepository.getConfig().save();
 		// and push
-		PushConfiguredRemoteAction pa = new PushConfiguredRemoteAction(
-				myRepository, "push");
-
-		pa.run(null, false);
+		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
+		PushOperationUI pa = new PushOperationUI(myRepository, config, 0, false);
+		pa.execute(null);
 
 		try {
 			// delete the stable branch again
