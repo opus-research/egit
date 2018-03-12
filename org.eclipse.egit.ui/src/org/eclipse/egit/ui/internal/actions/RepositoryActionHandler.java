@@ -98,8 +98,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		for (ResourceMapping mapping : (ResourceMapping[]) getSelectedAdaptables(
 				selection, ResourceMapping.class)) {
 			IProject[] projects = mapping.getProjects();
-			if (projects != null)
-				ret.addAll(Arrays.asList(projects));
+			ret.addAll(Arrays.asList(projects));
 		}
 		return ret;
 	}
