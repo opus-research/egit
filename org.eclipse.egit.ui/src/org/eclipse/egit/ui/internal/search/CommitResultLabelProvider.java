@@ -7,11 +7,12 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248
+ *    Thomas Wolf <thomas.wolf@paranor.ch>- Bug 477248
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.search;
 
 import java.text.MessageFormat;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
@@ -36,7 +37,7 @@ public class CommitResultLabelProvider extends WorkbenchLabelProvider {
 
 	private final IPropertyChangeListener uiPrefsListener;
 
-	private PreferenceBasedDateFormatter dateFormatter;
+	private final AtomicReference<PreferenceBasedDateFormatter> dateFormatter = new AtomicReference<>();
 
 	/**
 	 * Create commit result label provider
@@ -45,14 +46,14 @@ public class CommitResultLabelProvider extends WorkbenchLabelProvider {
 	 */
 	public CommitResultLabelProvider(int layout) {
 		this.layout = layout;
-		dateFormatter = PreferenceBasedDateFormatter.create();
+		dateFormatter.set(PreferenceBasedDateFormatter.create());
 		uiPrefsListener = new IPropertyChangeListener() {
 			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				String property = event.getProperty();
 				if (UIPreferences.DATE_FORMAT.equals(property)
 						|| UIPreferences.DATE_FORMAT_CHOICE.equals(property)) {
-					dateFormatter = PreferenceBasedDateFormatter.create();
+					dateFormatter.set(PreferenceBasedDateFormatter.create());
 					fireLabelProviderChanged(new LabelProviderChangedEvent(
 							CommitResultLabelProvider.this));
 				}
@@ -80,7 +81,8 @@ public class CommitResultLabelProvider extends WorkbenchLabelProvider {
 			if (author != null)
 				styled.append(MessageFormat.format(
 						UIText.CommitResultLabelProvider_SectionAuthor,
-						author.getName(), dateFormatter.formatDate(author)),
+								author.getName(),
+								dateFormatter.get().formatDate(author)),
 						StyledString.QUALIFIER_STYLER);
 
 			if (layout == AbstractTextSearchViewPage.FLAG_LAYOUT_FLAT)

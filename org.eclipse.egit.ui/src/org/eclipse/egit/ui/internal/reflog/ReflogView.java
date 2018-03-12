@@ -15,6 +15,7 @@
 package org.eclipse.egit.ui.internal.reflog;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
@@ -126,11 +127,11 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 	private IPropertyChangeListener uiPrefsListener;
 
-	private PreferenceBasedDateFormatter dateFormatter;
+	private final AtomicReference<PreferenceBasedDateFormatter> dateFormatter = new AtomicReference<>();
 
 	@Override
 	public void createPartControl(Composite parent) {
-		dateFormatter = PreferenceBasedDateFormatter.create();
+		dateFormatter.set(PreferenceBasedDateFormatter.create());
 		GridLayoutFactory.fillDefaults().applyTo(parent);
 
 		toolkit = new FormToolkit(parent.getDisplay());
@@ -232,7 +233,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				final ReflogEntry entry = (ReflogEntry) element;
 				final PersonIdent who = entry.getWho();
 				// TODO add option to use RelativeDateFormatter
-				return dateFormatter.formatDate(who);
+				return dateFormatter.get().formatDate(who);
 			}
 
 			@Override
@@ -329,7 +330,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				String property = event.getProperty();
 				if (UIPreferences.DATE_FORMAT.equals(property)
 						|| UIPreferences.DATE_FORMAT_CHOICE.equals(property)) {
-					dateFormatter = PreferenceBasedDateFormatter.create();
+					dateFormatter.set(PreferenceBasedDateFormatter.create());
 					refLogTableTreeViewer.refresh();
 				}
 			}
