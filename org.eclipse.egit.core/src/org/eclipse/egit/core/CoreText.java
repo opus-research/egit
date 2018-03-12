@@ -174,6 +174,9 @@ public class CoreText extends NLS {
 	public static String ResetOperation_updatingFailed;
 
 	/** */
+	public static String MergeOperation_CheckoutConflict;
+
+	/** */
 	public static String MergeOperation_InternalError;
 
 	/** */
@@ -210,16 +213,10 @@ public class CoreText extends NLS {
 	public static String CreateLocalBranchOperation_CreatingBranchMessage;
 
 	/** */
+	public static String CreatePatchOperation_commitRequired;
+
+	/** */
 	public static String CreatePatchOperation_repoRequired;
-
-	/** */
-	public static String CreatePatchOperation_cannotCreatePatchForMergeCommit;
-
-	/** */
-	public static String CreatePatchOperation_cannotCreatePatchForFirstCommit;
-
-	/** */
-	public static String CreatePatchOperation_patchFileCouldNotBeWritten;
 
 	/** */
 	public static String IndexDiffCacheEntry_reindexing;

@@ -2920,12 +2920,6 @@ public class UIText extends NLS {
 	public static String GitCreateGeneralProjectPage_ProjectNameLabel;
 
 	/** */
-	public static String GitCreatePatchAction_cannotCreatePatch;
-
-	/** */
-	public static String GitCreatePatchAction_workingTreeClean;
-
-	/** */
 	public static String GitCreatePatchWizard_Browse;
 
 	/** */
@@ -3603,6 +3597,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RevertFailureDialog_Message;
+
+	/** */
+	public static String RevertFailureDialog_MessageNoFiles;
 
 	/** */
 	public static String RevertFailureDialog_ReasonChangesInIndex;
