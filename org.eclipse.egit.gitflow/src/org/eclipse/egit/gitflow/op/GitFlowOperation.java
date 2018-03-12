@@ -102,15 +102,13 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 *
 	 * @param monitor
 	 * @param branchName
-	 * @param squash
 	 * @throws CoreException
 	 */
-	protected void finish(IProgressMonitor monitor, String branchName,
-			boolean squash)
+	protected void finish(IProgressMonitor monitor, String branchName)
 			throws CoreException {
 		try {
-			mergeResult = mergeTo(monitor, branchName, repository.getConfig()
-					.getDevelop(), squash);
+			mergeResult = mergeTo(monitor, branchName,
+					repository.getConfig().getDevelop());
 			if (!mergeResult.getMergeStatus().isSuccessful()) {
 				return;
 			}
@@ -120,8 +118,7 @@ abstract public class GitFlowOperation implements IEGitOperation {
 				throw new IllegalStateException(String.format(
 						CoreText.GitFlowOperation_branchMissing, branchName));
 			}
-			boolean forceDelete = squash;
-			new DeleteBranchOperation(repository.getRepository(), branch, forceDelete)
+			new DeleteBranchOperation(repository.getRepository(), branch, false)
 					.execute(monitor);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -131,23 +128,12 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	/**
 	 * @param monitor
 	 * @param branchName
-	 * @throws CoreException
-	 */
-	protected void finish(IProgressMonitor monitor, String branchName)
-			throws CoreException {
-		finish(monitor, branchName, false);
-	}
-
-	/**
-	 * @param monitor
-	 * @param branchName
 	 * @param targetBranchName
-	 * @param squash
 	 * @return result of merging back to targetBranchName
 	 * @throws CoreException
 	 */
 	protected MergeResult mergeTo(IProgressMonitor monitor, String branchName,
-			String targetBranchName, boolean squash) throws CoreException {
+			String targetBranchName) throws CoreException {
 		try {
 			if (!repository.hasBranch(targetBranchName)) {
 				throw new RuntimeException(String.format(
@@ -167,31 +153,11 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			}
 			MergeOperation mergeOperation = new MergeOperation(
 					repository.getRepository(), branchName);
-			mergeOperation.setSquash(squash);
-			if (squash) {
-				mergeOperation.setCommit(true);
-			}
 			mergeOperation.execute(monitor);
-
 			return mergeOperation.getResult();
 		} catch (GitAPIException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	/**
-	 * Merge without squash:
-	 * {@link org.eclipse.egit.gitflow.op.GitFlowOperation#mergeTo(IProgressMonitor, String, String, boolean)}
-	 *
-	 * @param monitor
-	 * @param branchName
-	 * @param targetBranchName
-	 * @return result of merging back to targetBranchName
-	 * @throws CoreException
-	 */
-	protected MergeResult mergeTo(IProgressMonitor monitor, String branchName,
-			String targetBranchName) throws CoreException {
-		return mergeTo(monitor, branchName, targetBranchName, false);
 	}
 
 	/**
