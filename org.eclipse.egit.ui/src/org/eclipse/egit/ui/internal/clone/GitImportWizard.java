@@ -22,7 +22,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
@@ -151,17 +150,7 @@ public class GitImportWizard extends Wizard implements ProjectCreator,
 
 				switch (importWithDirectoriesPage.getWizardSelection()) {
 				case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
-					try {
-						ProjectUtils.createProjects(projectsImportPage
-								.getCheckedProjects(), selectRepoPage
-								.getRepository(), projectsImportPage
-								.getSelectedWorkingSets(),
-								new NullProgressMonitor());
-					} catch (OperationCanceledException e) {
-						return;
-					} catch (CoreException e) {
-						Activator.handleError(e.getMessage(), e, true);
-					}
+					projectsImportPage.createProjects(selectRepoPage.getRepository());
 					break;
 				case GitSelectWizardPage.NEW_WIZARD:
 					new NewWizardAction(PlatformUI.getWorkbench()
