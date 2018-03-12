@@ -52,7 +52,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 
 	private static final String GIT_PAGE_USE_MASTER = "org.eclipse.team.egit.ui.import.page.master"; //$NON-NLS-1$
 
-	class GitLabelProvider extends StyledCellLabelProvider implements ILabelProvider {
+	static class GitLabelProvider extends StyledCellLabelProvider implements ILabelProvider {
 
 		/* (non-Javadoc)
 		 * @see org.eclipse.jface.viewers.ILabelProvider#getImage(java.lang.Object)
@@ -205,7 +205,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 	 * Updates the count of bundles that will be imported
 	 */
 	private void updateCount() {
-		counterLabel.setText(NLS.bind(Messages.GitScmUrlImportWizardPage_counter, new Integer(descriptions.length)));
+		counterLabel.setText(NLS.bind(Messages.GitScmUrlImportWizardPage_counter, Integer.valueOf(descriptions.length)));
 		counterLabel.getParent().layout();
 	}
 
