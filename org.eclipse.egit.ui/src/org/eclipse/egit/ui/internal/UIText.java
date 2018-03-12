@@ -743,19 +743,37 @@ public class UIText extends NLS {
 	public static String RebaseInteractiveStepActionToolBarProvider_SkipText;
 
 	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_SkipDesc;
+
+	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_EditText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_EditDesc;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_FixupText;
 
 	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_FixupDesc;
+
+	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_MoveDownText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_MoveDownDesc;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_MoveUpText;
 
 	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_MoveUpDesc;
+
+	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_PickText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_PickDesc;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_RedoText;
@@ -764,7 +782,13 @@ public class UIText extends NLS {
 	public static String RebaseInteractiveStepActionToolBarProvider_RewordText;
 
 	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_RewordDesc;
+
+	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_SquashText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_SquashDesc;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_UndoText;
@@ -3860,21 +3884,6 @@ public class UIText extends NLS {
 	public static String MergeTargetSelectionDialog_MergeTypeSquashButton;
 
 	/** */
-	public static String RemoteRenameDialog_Message;
-
-	/** */
-	public static String RemoteRenameDialog_NewNameLabel;
-
-	/** */
-	public static String RemoteRenameDialog_RenameExceptionMessage;
-
-	/** */
-	public static String RemoteRenameDialog_Title;
-
-	/** */
-	public static String RemoteRenameDialog_WindowTitle;
-
-	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
 
 	/** */
@@ -4789,12 +4798,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_RefNameConflictsWithExistingMessage;
-
-	/** */
-	public static String ValidationUtils_InvalidRemoteNameMessage;
-
-	/** */
-	public static String ValidationUtils_RemoteAlreadyExistsMessage;
 
 	/** */
 	public static String ValidationUtils_PleaseEnterNameMessage;
