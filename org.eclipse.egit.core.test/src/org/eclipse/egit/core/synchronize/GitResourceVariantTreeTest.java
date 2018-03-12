@@ -11,10 +11,9 @@ package org.eclipse.egit.core.synchronize;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.eclipse.jgit.lib.Constants.MASTER;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.InputStream;
@@ -173,7 +172,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
 				.setMessage("Initial commit").call();
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
-				true);
+				false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitSyncCache cache = GitSyncCache.getAllData(dataSet,
 				new NullProgressMonitor());
@@ -202,7 +201,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 				"initial commit");
 		IFile mainJava = testRepo.getIFile(iProject, file);
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
-				true);
+				false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitSyncCache cache = GitSyncCache.getAllData(dataSet,
 				new NullProgressMonitor());
@@ -212,9 +211,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 				dataSet);
 
 		// then
-		IResourceVariant actual = grvt.getResourceVariant(mainJava);
 		// null variant indicates that resource wasn't changed
-		assertNull(actual);
+		assertNull(grvt.getResourceVariant(mainJava));
 	}
 
 	/**
@@ -246,7 +244,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 				new NullProgressMonitor());
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(cache,
+		GitResourceVariantTree grvt = new GitBaseResourceVariantTree(cache,
 				dataSet);
 
 		// then
@@ -261,10 +259,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		byte[] expectedByte = getBytesAndCloseStream(expectedIn);
 
 		// assert arrays not equals
-		if (Arrays.equals(expectedByte, actualByte))
-			fail();
-		else
-			assertTrue(true);
+		assertFalse(Arrays.equals(expectedByte, actualByte));
 	}
 
 	private byte[] getBytesAndCloseStream(InputStream stream) throws Exception {

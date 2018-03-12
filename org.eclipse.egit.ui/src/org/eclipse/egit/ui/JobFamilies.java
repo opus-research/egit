@@ -103,7 +103,19 @@ public class JobFamilies {
 	 */
 	public static final Object REMOVE_FROM_INDEX = new Object();
 
-	/** Fetch data from git job */
+	/**
+	 * Cherry pick commit job
+	 */
+	public static final Object CHERRY_PICK = new Object();
+
+	/**
+	 * Revert commit job
+	 */
+	public static final Object REVERT_COMMIT = new Object();
+
+	/**
+	 * Fetch data from git job
+	 */
 	public static final Object SYNCHRONIZE_READ_DATA = new Object();
 
 }

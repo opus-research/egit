@@ -823,6 +823,9 @@ public class UIText extends NLS {
 	public static String CherryPickHandler_IndexDirty;
 
 	/** */
+	public static String CherryPickHandler_JobName;
+
+	/** */
 	public static String CherryPickHandler_unknown;
 
 	/** */
@@ -1543,6 +1546,9 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_notFound;
 
 	/** */
+	public static String PullOperationUI_ConnectionProblem;
+
+	/** */
 	public static String PullOperationUI_NotTriedMessage;
 
 	/** */
@@ -1550,6 +1556,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PullOperationUI_PullErrorWindowTitle;
+
+	/** */
+	public static String PullOperationUI_PullFailed;
 
 	/** */
 	public static String PullOperationUI_PullingMultipleTaskName;
@@ -1754,6 +1763,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_ConfigureLink;
+
+	/** */
+	public static String CommitDialog_ContentAssist;
 
 	/** */
 	public static String CommitDialog_Files;
@@ -2842,6 +2854,12 @@ public class UIText extends NLS {
 	public static String GitImportWizard_WizardTitle;
 
 	/** */
+	public static String GitScopeOperation_couldNotDetermineState;
+
+	/** */
+	public static String GitScopeOperation_GitScopeManager;
+
+	/** */
 	public static String GitSelectRepositoryPage_AddButton;
 
 	/** */
@@ -3114,6 +3132,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitActionHandler_calculatingChanges;
+
+	/** */
+	public static String CommitActionHandler_errorBuildingScope;
+
+	/** */
+	public static String CommitActionHandler_lookingForChanges;
 
 	/** */
 	public static String CommitActionHandler_repository;
@@ -3423,6 +3447,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RevertHandler_AlreadyRevertedMessae;
+
+	/** */
+	public static String RevertHandler_JobName;
 
 	/** */
 	public static String RevertHandler_NoRevertTitle;

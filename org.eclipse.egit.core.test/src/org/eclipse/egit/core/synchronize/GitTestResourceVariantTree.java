@@ -10,6 +10,7 @@ package org.eclipse.egit.core.synchronize;
 
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.variants.ResourceVariantByteStore;
@@ -27,11 +28,7 @@ class GitTestResourceVariantTree extends GitResourceVariantTree {
 	}
 
 	@Override
-	protected ObjectId getObjectId(ThreeWayDiffEntry diffEntry) {
-		return null;
-	}
-	@Override
-	protected ObjectId getObjectId(GitSynchronizeData gsd) {
+	protected ObjectId getObjectId(DiffEntry diffEntry) {
 		return null;
 	}
 

@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -83,6 +84,9 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 	}
 
 	private IResourceVariant fetchVariant(IResource resource) {
+		if (gitCache == null)
+			return null;
+
 		if (cache.containsKey(resource))
 			return cache.get(resource);
 
@@ -92,8 +96,7 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 
 		Repository repo = gsd.getRepository();
 		String path = getPath(resource, repo);
-		if (gitCache == null)
-			return null;
+
 		GitSyncObjectCache syncCache = gitCache.get(repo);
 		GitSyncObjectCache cachedData = syncCache.get(path);
 		if (cachedData == null)
@@ -103,7 +106,8 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 		if (cachedData.getDiffEntry() != null)
 			objectId = getObjectId(cachedData.getDiffEntry());
 		else
-			objectId = getObjectId(gsd);
+			return null;
+
 		IResourceVariant variant = null;
 		if (!objectId.equals(zeroId())) {
 			if (resource.getType() == IResource.FILE)
@@ -119,9 +123,7 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 		return variant;
 	}
 
-	protected abstract ObjectId getObjectId(ThreeWayDiffEntry diffEntry);
-
-	protected abstract ObjectId getObjectId(GitSynchronizeData gsd);
+	protected abstract ObjectId getObjectId(DiffEntry diffEntry);
 
 	protected abstract RevCommit getCommitId(GitSynchronizeData gsd);
 
