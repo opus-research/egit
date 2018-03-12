@@ -301,6 +301,9 @@ public class UIText extends NLS {
 	public static String ExistingOrNewPage_WrongPathErrorDialogTitle;
 
 	/** */
+	public static String GitCloneSourceProviderExtension_Local;
+
+	/** */
 	public static String GitCloneWizard_abortingCloneMsg;
 
 	/** */
@@ -1967,9 +1970,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_WrongNumberOfTokensMessage;
-
-	/** */
-	public static String ConfigureGerritWizard_title;
 
 	/** */
 	public static String GlobalConfigurationPreferencePage_systemSettingTabTitle;
