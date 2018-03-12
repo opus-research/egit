@@ -3184,12 +3184,6 @@ public class UIText extends NLS {
 	public static String TagAction_taggingFailed;
 
 	/** */
-	public static String CleanDialog_HeaderMessage;
-
-	/** */
-	public static String CleanDialog_TitleMessage;
-
-	/** */
 	public static String CreateTagDialog_tagName;
 
 	/** */
