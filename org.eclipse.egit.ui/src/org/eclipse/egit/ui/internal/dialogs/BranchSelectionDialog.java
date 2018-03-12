@@ -64,8 +64,8 @@ public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public BranchSelectionDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo);
-		setRootsToShow(true, true, true, false);
+		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
+				| SHOW_TAGS | SELECT_CURRENT_REF | EXPAND_LOCAL_BRANCHES_NODE);
 	}
 
 	private InputDialog getRefNameInputDialog(String prompt,
@@ -142,7 +142,7 @@ public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
 		newButton.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				CreateBranchWizard wiz = new CreateBranchWizard(repo,
-						refNameFromDialog());
+						refFromDialog());
 				if (new WizardDialog(getShell(), wiz).open() == Window.OK) {
 					String newRefName = wiz.getNewBranchName();
 					try {

@@ -22,14 +22,9 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
-import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
-import org.eclipse.egit.ui.internal.dialogs.CheckoutDialog;
-import org.eclipse.egit.ui.internal.dialogs.CreateBranchDialog;
-import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
@@ -40,22 +35,11 @@ import org.eclipse.ui.PlatformUI;
  * The UI wrapper for {@link BranchOperation}
  */
 public class BranchOperationUI {
-	// create
-	private final static int MODE_CREATE = 1;
-
-	// checkout dialog
-	private final static int MODE_CHECKOUT = 2;
-
-	// branch dialog (delete, rename)
-	private final static int MODE_BRANCH = 3;
-
 	private BranchOperation bop;
 
 	private final Repository repository;
 
 	private String target;
-
-	private final int mode;
 
 	/**
 	 * Create an operation for selecting and checking out a branch
@@ -64,28 +48,7 @@ public class BranchOperationUI {
 	 * @return the {@link BranchOperationUI}
 	 */
 	public static BranchOperationUI branch(Repository repository) {
-		return new BranchOperationUI(repository, MODE_BRANCH);
-	}
-
-	/**
-	 * Create an operation for creating a local branch
-	 *
-	 * @param repository
-	 * @return the {@link BranchOperationUI}
-	 */
-	public static BranchOperationUI create(Repository repository) {
-		BranchOperationUI op = new BranchOperationUI(repository, MODE_CREATE);
-		return op;
-	}
-
-	/**
-	 * Create an operation for creating a local branch
-	 *
-	 * @param repository
-	 * @return the {@link BranchOperationUI}
-	 */
-	public static BranchOperationUI checkout(Repository repository) {
-		return new BranchOperationUI(repository, MODE_CHECKOUT);
+		return new BranchOperationUI(repository);
 	}
 
 	/**
@@ -108,18 +71,15 @@ public class BranchOperationUI {
 	private BranchOperationUI(Repository repository, String target) {
 		this.repository = repository;
 		this.target = target;
-		this.mode = 0;
 	}
 
 	/**
 	 * Select and checkout a branch
 	 *
 	 * @param repository
-	 * @param mode
 	 */
-	private BranchOperationUI(Repository repository, int mode) {
+	private BranchOperationUI(Repository repository) {
 		this.repository = repository;
-		this.mode = mode;
 	}
 
 	/**
@@ -133,10 +93,14 @@ public class BranchOperationUI {
 									.getRepositoryState().getDescription()));
 			return;
 		}
-		if (target == null)
-			target = getTargetWithDialog();
-		if (target == null)
-			return;
+		if (target == null) {
+			BranchSelectionDialog dialog = new BranchSelectionDialog(
+					getShell(), repository);
+			if (dialog.open() != Window.OK) {
+				return;
+			}
+			target = dialog.getRefName();
+		}
 
 		String repoName = Activator.getDefault().getRepositoryUtil()
 				.getRepositoryName(repository);
@@ -202,41 +166,19 @@ public class BranchOperationUI {
 			});
 			return;
 		}
-		if (target == null)
-			target = getTargetWithDialog();
-		if (target == null)
-			return;
+		if (target == null) {
+			BranchSelectionDialog dialog = new BranchSelectionDialog(
+					getShell(), repository);
+			if (dialog.open() != Window.OK) {
+				return;
+			}
+			target = dialog.getRefName();
+		}
 
 		bop = new BranchOperation(repository, target);
 		bop.execute(monitor);
+
 		BranchResultDialog.show(bop.getResult(), repository, target);
-	}
-
-	private String getTargetWithDialog() {
-		AbstractBranchSelectionDialog dialog;
-		switch (mode) {
-		case MODE_BRANCH:
-			dialog = new BranchSelectionDialog(getShell(), repository);
-			break;
-		case MODE_CHECKOUT:
-			dialog = new CheckoutDialog(getShell(), repository);
-			break;
-		case MODE_CREATE:
-			dialog = new CreateBranchDialog(getShell(), repository);
-			if (dialog.open() != Window.OK)
-				return null;
-			CreateBranchWizard wiz = new CreateBranchWizard(repository, dialog
-					.getRefName());
-			new WizardDialog(getShell(), wiz).open();
-			return null;
-		default:
-			return null;
-		}
-
-		if (dialog.open() != Window.OK) {
-			return null;
-		}
-		return dialog.getRefName();
 	}
 
 	private Shell getShell() {
