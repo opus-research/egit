@@ -32,17 +32,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 
 class FileDiff {
-
-	private final RevCommit commit;
-
-	private final String path;
-
-	private String change;
-
-	private ObjectId[] blobs;
-
-	private FileMode[] modes;
-
 	private static ObjectId[] trees(final RevCommit commit) {
 		final ObjectId[] r = new ObjectId[commit.getParentCount() + 1];
 		for (int i = 0; i < r.length - 1; i++)
@@ -219,26 +208,17 @@ class FileDiff {
 		return new RawText(db.open(id).getCachedBytes());
 	}
 
+	final RevCommit commit;
 
-	public RevCommit getCommit() {
-		return commit;
-	}
+	final String path;
 
-	public String getPath() {
-		return path;
-	}
+	String change;
 
-	public String getChange() {
-		return change;
-	}
+	ObjectId[] blobs;
 
-	public ObjectId[] getBlobs() {
-		return blobs;
-	}
+	FileMode[] modes;
 
-	public FileMode[] getModes() {
-		return modes;
-	}
+
 
 	FileDiff(final RevCommit c, final String p) {
 		commit = c;
