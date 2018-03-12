@@ -42,8 +42,6 @@ public class RepositoryMapping {
 
 	private IPath gitDirPath;
 
-	private boolean isGitDirRelative;
-
 	private IPath gitDirAbsolutePath;
 
 	private Repository db;
@@ -63,7 +61,6 @@ public class RepositoryMapping {
 
 		containerPathString = initialKey.substring(0, dot);
 		gitDirPathString = p.getProperty(initialKey);
-		isGitDirRelative = true;
 	}
 
 	/**
@@ -85,7 +82,6 @@ public class RepositoryMapping {
 				.toPortableString();
 
 		if (cLoc.isPrefixOf(gLoc)) {
-			isGitDirRelative = true;
 			int matchingSegments = gLoc.matchingFirstSegments(cLoc);
 			IPath remainder = gLoc.removeFirstSegments(matchingSegments);
 			String device = remainder.getDevice();
@@ -95,7 +91,6 @@ public class RepositoryMapping {
 				gitDirPathString = remainder.toPortableString().substring(
 						device.length());
 		} else if (gLocParent.isPrefixOf(cLoc)) {
-			isGitDirRelative = true;
 			int cnt = cLoc.segmentCount() - cLoc.matchingFirstSegments(gLocParent);
 			StringBuilder p = new StringBuilder("");  //$NON-NLS-1$
 			while (cnt-- > 0) {
@@ -104,7 +99,6 @@ public class RepositoryMapping {
 			p.append(gLoc.segment(gLoc.segmentCount() - 1));
 			gitDirPathString = p.toString();
 		} else {
-			isGitDirRelative = false;
 			gitDirPathString = gLoc.toPortableString();
 		}
 	}
@@ -118,7 +112,7 @@ public class RepositoryMapping {
 		return containerPath;
 	}
 
-	private IPath getGitDirPath() {
+	IPath getGitDirPath() {
 		if (gitDirPath == null)
 			gitDirPath = Path.fromPortableString(gitDirPathString);
 		return gitDirPath;
@@ -262,13 +256,9 @@ public class RepositoryMapping {
 	 * @return The GIT DIR absolute path
 	 */
 	public IPath getGitDirAbsolutePath() {
-		if (gitDirAbsolutePath == null) {
-			if(isGitDirRelative)
-				gitDirAbsolutePath = container.getLocation()
+		if (gitDirAbsolutePath == null)
+			gitDirAbsolutePath = container.getLocation()
 					.append(getGitDirPath());
-			else
-				gitDirAbsolutePath = getGitDirPath();
-		}
 		return gitDirAbsolutePath;
 	}
 }
