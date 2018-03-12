@@ -554,9 +554,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_IncompleteListTooltip;
 
 	/** */
-	public static String GitHistoryPage_InRevisionCommentSubMenuLabel;
-
-	/** */
 	public static String GitHistoryPage_ListIncompleteWarningMessage;
 
 	/** */
@@ -1695,12 +1692,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String HistoryPreferencePage_MaxTagLength;
-
-	/** */
-	public static String HistoryPreferencePage_ShowGroupLabel;
-
-	/** */
-	public static String HistoryPreferencePage_ShowInRevCommentGroupLabel;
 
 	/** */
 	public static String HistoryPreferencePage_toggleAdditionalRefs;
