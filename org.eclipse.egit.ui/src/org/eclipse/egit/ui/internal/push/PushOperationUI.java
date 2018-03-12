@@ -125,7 +125,7 @@ public class PushOperationUI {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.PUSH.equals(family))
+				if (JobFamilies.FETCH.equals(family))
 					return true;
 				return super.belongsTo(family);
 			}
