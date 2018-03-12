@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010-2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -36,7 +36,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.storage.file.FileRepository;
@@ -49,25 +48,21 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.hamcrest.Matcher;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class SynchronizeViewGitChangeSetModelTest extends
 		AbstractSynchronizeViewTest {
 
-	@Before
-	public void setUpEnabledModelProvider() {
-		setEnabledModelProvider(GitChangeSetModelProvider.ID);
-	}
-
 	@Test
 	public void shouldReturnNoChanges() throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
 
 		// when
 		launchSynchronization(HEAD, R_HEADS + MASTER, false);
+		setGitChangeSetPresentationModel();
 
 		// then
 		SWTBot viewBot = bot.viewByTitle("Synchronize").bot();
@@ -83,50 +78,59 @@ public class SynchronizeViewGitChangeSetModelTest extends
 	@Test
 	public void shouldReturnListOfChanges() throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
 
 		// when
 		launchSynchronization(HEAD, HEAD, true);
+		setGitChangeSetPresentationModel();
 
 		// then
-		SWTBotTreeItem workingTreeItem = getExpandedWorkingTreeItem();
-		assertTrue(workingTreeItem.getText().endsWith(GitModelWorkingTree_workingTree));
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
+		assertTrue(syncItems[0].getText().endsWith(GitModelWorkingTree_workingTree));
 	}
 
 	@Test
 	public void shouldCompareBranchAgainstTag() throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		makeChangesAndCommit(PROJ1);
 
 		// when
 		launchSynchronization(INITIAL_TAG, HEAD, false);
+		setGitChangeSetPresentationModel();
 
 		// then
-		SWTBotTreeItem changeSetTreeItem = getChangeSetTreeItem();
-		assertEquals(1, changeSetTreeItem.getItems().length);
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
 	@Test
 	public void shouldCompareTagAgainstTag() throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		makeChangesAndCommit(PROJ1);
 		createTag("v0.1");
 
 		// when
 		launchSynchronization(INITIAL_TAG, R_TAGS + "v0.1", false);
+		setGitChangeSetPresentationModel();
 
 		// then
-		SWTBotTreeItem changeSetTreeItem = getChangeSetTreeItem();
-		assertEquals(1, changeSetTreeItem.getItems().length);
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
 	@Test
 	public void shouldOpenCompareEditor() throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
 
 		// when
 		launchSynchronization(HEAD, INITIAL_TAG, true);
+		setGitChangeSetPresentationModel();
 
 		// then
 		SWTBot compare = getCompareEditorForFileInGitChangeSet(FILE1, true)
@@ -134,19 +138,20 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		assertNotNull(compare);
 	}
 
-	@Test
-	public void shouldListFileDeletedChange() throws Exception {
+	@Test public void shouldListFileDeletedChange() throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		deleteFileAndCommit(PROJ1);
 
 		// when
 		launchSynchronization(HEAD, HEAD + "~1", true);
+		setGitChangeSetPresentationModel();
 
 		// then
-		SWTBotTreeItem changeSetTreeItem = getChangeSetTreeItem();
-		assertEquals(1, changeSetTreeItem.getItems().length);
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		assertEquals(1, syncViewTree.getAllItems().length);
 
-		SWTBotTreeItem commitTree = waitForNodeWithText(changeSetTreeItem,
+		SWTBotTreeItem commitTree = waitForNodeWithText(syncViewTree,
 				TEST_COMMIT_MSG);
 		SWTBotTreeItem projectTree = waitForNodeWithText(commitTree, PROJ1);
 		assertEquals(1, projectTree.getItems().length);
@@ -158,17 +163,20 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		assertEquals("test.txt", fileTree.getText());
 	}
 
-	@Test
-	public void shouldSynchronizeInEmptyRepository() throws Exception {
+	@Test public void shouldSynchronizeInEmptyRepository() throws Exception {
 		// given
 		createEmptyRepository();
 
 		// when
 		launchSynchronization(EMPTY_PROJECT, "", "", true);
+		setGitChangeSetPresentationModel();
 
 		// then
-		SWTBotTreeItem workingTree = getExpandedWorkingTreeItem();
-		SWTBotTreeItem projectTree = waitForNodeWithText(workingTree,
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTreeItem commitTree = waitForNodeWithText(syncViewTree,
+				GitModelWorkingTree_workingTree);
+		assertEquals(1, syncViewTree.getAllItems().length);
+		SWTBotTreeItem projectTree = waitForNodeWithText(commitTree,
 				EMPTY_PROJECT);
 		assertEquals(2, projectTree.getItems().length);
 
@@ -181,15 +189,15 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		assertEquals(FILE2, fileTree.getText());
 	}
 
-	@Test
-	public void shouldExchangeCompareEditorSidesBetweenIncomingAndOutgoingChanges()
+	@Test public void shouldExchangeCompareEditorSidesBetweenIncomingAndOutgoingChanges()
 			throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		makeChangesAndCommit(PROJ1);
 
 		// compare HEAD against tag
 		launchSynchronization(HEAD, INITIAL_TAG, false);
-
+		setGitChangeSetPresentationModel();
 		SWTBotEditor outgoingCompare = getCompareEditorForFileInGitChangeSet(
 				FILE1, false);
 		SWTBot outgoingCompareBot = outgoingCompare.bot();
@@ -204,6 +212,7 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		// when
 		// compare tag against HEAD
 		launchSynchronization(INITIAL_TAG, HEAD, false);
+		setGitChangeSetPresentationModel();
 
 		// then
 		SWTBot incomingComp = getCompareEditorForFileInGitChangeSet(
@@ -214,10 +223,10 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		assertThat(outgoingRight, equalTo(incomingComp.styledText(0).getText()));
 	}
 
-	@Test
-	public void shouldNotShowIgnoredFiles()
+	@Test public void shouldNotShowIgnoredFiles()
 			throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		String ignoredName = "to-be-ignored.txt";
 
 		IProject proj = ResourcesPlugin.getWorkspace().getRoot()
@@ -235,36 +244,40 @@ public class SynchronizeViewGitChangeSetModelTest extends
 
 		// when
 		launchSynchronization(INITIAL_TAG, HEAD, true);
+		setGitChangeSetPresentationModel();
 
 		// then
 		// asserts for Git Change Set model
-		SWTBotTreeItem workingTree = getExpandedWorkingTreeItem();
-		assertEquals(1, workingTree.getItems().length);
-		SWTBotTreeItem proj1Node = workingTree.getItems()[0];
-		assertEquals(1, proj1Node.getItems().length);
-		assertEquals(".gitignore", proj1Node.getItems()[0].getText());
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		syncViewTree.expandNode(UIText.GitModelWorkingTree_workingTree);
+		assertEquals(2, syncViewTree.getAllItems().length);
+		SWTBotTreeItem proj1Node = syncViewTree.getAllItems()[0];
+		proj1Node.getItems()[0].expand();
+		assertEquals(1, proj1Node.getItems()[0].getItems().length);
+		assertEquals(".gitignore",
+				proj1Node.getItems()[0].getItems()[0].getText());
 	}
 
-	@Test
-	public void shouldShowNonWorkspaceFileInSynchronization()
+	@Test public void shouldShowNonWorkspaceFileInSynchronization()
 			throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		String name = "non-workspace.txt";
 		File root = new File(getTestDirectory(), REPO1);
 		File nonWorkspace = new File(root, name);
 		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
 		writer.append("file content");
 		writer.close();
-		// TODO Synchronize currently shows "No changes" when the only thing that has
-		// changed is a non-workspace file, so add another change so that this
-		// does not happen. When the bug is fixed, this should be removed.
-		setTestFileContent("other content");
 
 		// when
 		launchSynchronization(INITIAL_TAG, HEAD, true);
+		setGitChangeSetPresentationModel();
 
 		// then
-		SWTBotTreeItem workingTree = getExpandedWorkingTreeItem();
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTreeItem workingTree = syncViewTree
+				.expandNode(UIText.GitModelWorkingTree_workingTree);
+		assertEquals(2, syncViewTree.getAllItems().length);
 		assertEquals(1, workingTree.getNodes(name).size());
 	}
 
@@ -272,6 +285,7 @@ public class SynchronizeViewGitChangeSetModelTest extends
 	public void shouldShowCompareEditorForNonWorkspaceFileFromSynchronization()
 			throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		String content = "file content";
 		String name = "non-workspace.txt";
 		File root = new File(getTestDirectory(), REPO1);
@@ -279,15 +293,18 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
 		writer.append(content);
 		writer.close();
-		// TODO Synchronize currently shows "No changes" when the only thing that has
-		// changed is a non-workspace file, so add another change so that this
-		// does not happen. When the bug is fixed, this should be removed.
-		setTestFileContent("other content");
 
 		// when
 		launchSynchronization(INITIAL_TAG, HEAD, true);
+		setGitChangeSetPresentationModel();
 
 		// then
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTreeItem workingTree = syncViewTree
+				.expandNode(UIText.GitModelWorkingTree_workingTree);
+		assertEquals(2, syncViewTree.getAllItems().length);
+		workingTree.expand().getNode(name).doubleClick();
+
 		SWTBotEditor editor = getCompareEditorForNonWorkspaceFileInGitChangeSet(name);
 		editor.setFocus();
 
@@ -301,8 +318,10 @@ public class SynchronizeViewGitChangeSetModelTest extends
 	@Test
 	public void shouldStagePartialChangeInCompareEditor() throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
 		launchSynchronization(HEAD, HEAD, true);
+		setGitChangeSetPresentationModel();
 		getCompareEditorForFileInGitChangeSet(FILE1, true).bot();
 
 		// when
@@ -327,8 +346,10 @@ public class SynchronizeViewGitChangeSetModelTest extends
 	@Test
 	public void shouldUnStagePartialChangeInCompareEditor() throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
 		launchSynchronization(HEAD, HEAD, true);
+		setGitChangeSetPresentationModel();
 		getCompareEditorForFileInGitChangeSet(FILE1, true).bot();
 
 		// when
@@ -349,11 +370,12 @@ public class SynchronizeViewGitChangeSetModelTest extends
 				+ FOLDER + "/" + FILE2));
 	}
 
-	@Test
 	public void shouldRefreshSyncResultAfterWorkspaceChange() throws Exception {
 		// given
 		String newFileName = "new.txt";
+		resetRepositoryToCreateInitialTag();
 		launchSynchronization(INITIAL_TAG, HEAD, true);
+		setGitChangeSetPresentationModel();
 		IProject proj = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(PROJ1);
 
@@ -367,25 +389,33 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, null);
 
 		// then
-		SWTBotTreeItem workingTree = getExpandedWorkingTreeItem();
-		assertEquals(GitModelWorkingTree_workingTree, workingTree.getText());
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
+		assertEquals(GitModelWorkingTree_workingTree, syncItems[0].getText());
+		syncItems[0].doubleClick(); // expand all
 		// WidgetNotFoundException will be thrown when node named 'new.txt' not
 		// exists
-		assertNotNull(workingTree.getNode(PROJ1).expand());
-		assertNotNull(workingTree.getNode(PROJ1).getNode(newFileName));
+		assertNotNull(syncItems[0].getNode(PROJ1));
+		assertNotNull(syncItems[0].getNode(PROJ1).getNode(newFileName));
 	}
 
+	// TODO: stabilize test and reenable it
+	@Ignore
 	@Test
 	public void shouldRefreshSyncResultAfterRepositoryChange() throws Exception {
 		// given
+		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
 		launchSynchronization(HEAD, HEAD, true);
+		setGitChangeSetPresentationModel();
 
 		// preconditions - sync result should contain two uncommitted changes
-		SWTBotTreeItem workingTree = getExpandedWorkingTreeItem();
-		assertTrue(workingTree.getText().endsWith(GitModelWorkingTree_workingTree));
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
+		assertTrue(syncItems[0].getText().endsWith(GitModelWorkingTree_workingTree));
+		syncItems[0].doubleClick();
 		assertEquals(2,
-				workingTree.getItems()[0].getItems()[0].getItems().length);
+				syncItems[0].getItems()[0].getItems()[0].getItems().length);
 
 		// when
 		commit(PROJ1);
@@ -430,61 +460,6 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		// then
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
 		assertEquals(8, syncViewTree.getAllItems().length);
-	}
-
-	protected SWTBotTreeItem getChangeSetTreeItem() {
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		SWTBotTreeItem changeSetItem = waitForNodeWithText(syncViewTree,
-				UIText.GitChangeSetModelProviderLabel);
-		return changeSetItem;
-	}
-
-	protected SWTBotEditor getCompareEditorForFileInGitChangeSet(
-			String fileName,
-			boolean includeLocalChanges) {
-		SWTBotTreeItem changeSetTreeItem = getChangeSetTreeItem();
-
-		SWTBotTreeItem rootTree;
-		if (includeLocalChanges)
-			rootTree = waitForNodeWithText(changeSetTreeItem,
-					GitModelWorkingTree_workingTree);
-		else
-			rootTree = waitForNodeWithText(changeSetTreeItem, TEST_COMMIT_MSG);
-
-		SWTBotTreeItem projNode = waitForNodeWithText(rootTree, PROJ1);
-		return getCompareEditor(projNode, fileName);
-	}
-
-	protected SWTBotEditor getCompareEditorForNonWorkspaceFileInGitChangeSet(
-			final String fileName) {
-		SWTBotTreeItem changeSetTreeItem = getChangeSetTreeItem();
-
-		SWTBotTreeItem rootTree = waitForNodeWithText(changeSetTreeItem,
-					GitModelWorkingTree_workingTree);
-		waitForNodeWithText(rootTree, fileName).doubleClick();
-
-		SWTBotEditor editor = bot
-				.editor(new CompareEditorTitleMatcher(fileName));
-
-		return editor;
-	}
-
-	private SWTBotTreeItem getExpandedWorkingTreeItem() {
-		SWTBotTreeItem changeSetTreeItem = getChangeSetTreeItem();
-		String workingTreeNodeNameString = getWorkingTreeNodeName(changeSetTreeItem);
-		SWTBotTreeItem node = changeSetTreeItem.getNode(workingTreeNodeNameString);
-		// Full expansion
-		return node.doubleClick();
-	}
-
-	private String getWorkingTreeNodeName(SWTBotTreeItem changeSetTreeItem) {
-		for (SWTBotTreeItem item : changeSetTreeItem.getItems()) {
-			String nodeName = item.getText();
-			if (nodeName.contains(UIText.GitModelWorkingTree_workingTree))
-				return nodeName;
-		}
-
-		return UIText.GitModelWorkingTree_workingTree;
 	}
 
 }

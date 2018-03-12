@@ -1,7 +1,5 @@
 /*******************************************************************************
  * Copyright (c) 2010 SAP AG.
- * Copyright (C) 2012, Tomasz Zarna <Tomasz.Zarna@pl.ibm.com>
- *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -9,11 +7,11 @@
  *
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
- *    Tomasz Zarna (IBM) - merge squash, bug 382720
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -54,8 +52,6 @@ public class MergeOperation implements IEGitOperation {
 
 	private MergeStrategy mergeStrategy;
 
-	private boolean squash;
-
 	private MergeResult mergeResult;
 
 	/**
@@ -79,13 +75,6 @@ public class MergeOperation implements IEGitOperation {
 		this.refName = refName;
 		if (mergeStrategy != null)
 			this.mergeStrategy = MergeStrategy.get(mergeStrategy);
-	}
-
-	/**
-	 * @param squash true to squash merge commits
-	 */
-	public void setSquash(boolean squash) {
-		this.squash = squash;
 	}
 
 	public void execute(IProgressMonitor m) throws CoreException {
@@ -114,22 +103,32 @@ public class MergeOperation implements IEGitOperation {
 				} catch (IOException e) {
 					throw new TeamException(CoreText.MergeOperation_InternalError, e);
 				}
-				merge.setSquash(squash);
 				if (mergeStrategy != null) {
 					merge.setStrategy(mergeStrategy);
 				}
 				try {
 					mergeResult = merge.call();
 					mymonitor.worked(1);
-					if (MergeResult.MergeStatus.NOT_SUPPORTED.equals(mergeResult.getMergeStatus()))
+					if (MergeResult.MergeStatus.FAILED.equals(mergeResult.getMergeStatus()))
+						throw new TeamException(mergeResult.toString());
+					else if (MergeResult.MergeStatus.NOT_SUPPORTED.equals(mergeResult.getMergeStatus()))
 						throw new TeamException(new Status(IStatus.INFO, Activator.getPluginId(), mergeResult.toString()));
 				} catch (NoHeadException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedNoHead, e);
 				} catch (ConcurrentRefUpdateException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedRefUpdate, e);
 				} catch (CheckoutConflictException e) {
-					mergeResult = new MergeResult(e.getConflictingPaths());
-					return;
+					StringBuilder builder = new StringBuilder();
+					for (String f : e.getConflictingPaths()) {
+						builder.append("\n"); //$NON-NLS-1$
+						builder.append(f);
+					}
+					throw new TeamException(
+								new Status(
+									IStatus.INFO,
+									Activator.getPluginId(),
+									MessageFormat.format(CoreText.MergeOperation_CheckoutConflict,
+									builder.toString())));
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
 				} finally {

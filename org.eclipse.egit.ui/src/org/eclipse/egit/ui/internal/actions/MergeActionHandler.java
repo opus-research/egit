@@ -56,7 +56,6 @@ public class MergeActionHandler extends RepositoryActionHandler {
 
 			String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
 			final MergeOperation op = new MergeOperation(repository, refName);
-			op.setSquash(mergeTargetSelectionDialog.isMergeSquash());
 			Job job = new Job(jobname) {
 				@Override
 				protected IStatus run(IProgressMonitor monitor) {
@@ -74,7 +73,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 				@Override
 				public void done(IJobChangeEvent cevent) {
 					IStatus result = cevent.getJob().getResult();
-					if (result.getSeverity() == IStatus.CANCEL)
+					if (result.getSeverity() == IStatus.CANCEL) {
 						Display.getDefault().asyncExec(new Runnable() {
 							public void run() {
 								// don't use getShell(event) here since
@@ -89,18 +88,19 @@ public class MergeActionHandler extends RepositoryActionHandler {
 												UIText.MergeAction_MergeCanceledMessage);
 							}
 						});
-					else if (!result.isOK())
+					} else if (!result.isOK()) {
 						Activator.handleError(result.getMessage(), result
 								.getException(), true);
-					else
+					} else {
 						Display.getDefault().asyncExec(new Runnable() {
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
-								MergeResultDialog.getDialog(shell, repository, op
+								new MergeResultDialog(shell, repository, op
 										.getResult()).open();
 							}
 						});
+					}
 				}
 			});
 			job.schedule();
@@ -113,6 +113,6 @@ public class MergeActionHandler extends RepositoryActionHandler {
 		Repository repo = getRepository();
 		return repo != null
 				&& repo.getRepositoryState() == RepositoryState.SAFE
-				&& isLocalBranchCheckedout(repo);
+				&& containsHead();
 	}
 }

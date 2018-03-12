@@ -31,7 +31,7 @@ import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
  *
  */
 public class EditableRevision extends FileRevisionTypedElement implements
-		IEditableContent, IContentChangeNotifier {
+		ITypedElement, IEditableContent, IContentChangeNotifier {
 
 	private final static class ContentChangeNotifier implements IContentChangeNotifier {
 
