@@ -92,14 +92,12 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		try {
 			commitPage = new CommitEditorPage(this);
 			addPage(commitPage);
-			if (getCommit().getRevCommit().getParentCount() <= 1) {
+			if (getCommit().getRevCommit().getParentCount() == 1) {
 				diffPage = new DiffEditorPage(this);
 				addPage(diffPage);
 			}
-			if (getCommit().getNotes().length > 0) {
-				notePage = new NotesEditorPage(this);
-				addPage(notePage);
-			}
+			notePage = new NotesEditorPage(this);
+			addPage(notePage);
 		} catch (PartInitException e) {
 			Activator.error("Error adding page", e); //$NON-NLS-1$
 		}
