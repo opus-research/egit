@@ -1,4 +1,4 @@
-﻿/*******************************************************************************
+/*******************************************************************************
  * Copyright (C) 2007, Dave Watson <dwatson@mimvista.com>
  * Copyright (C) 2007, Robin Rosenberg <me@lathund.dewire.com.dewire.com>
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
@@ -22,9 +22,9 @@ import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
-import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -124,6 +124,8 @@ public class BranchSelectionDialog extends Dialog {
 
 				String refName = refNameFromDialog();
 
+				boolean headSelected = Constants.HEAD.equals(refName);
+
 				boolean tagSelected = refName != null
 						&& refName.startsWith(Constants.R_TAGS);
 
@@ -131,15 +133,14 @@ public class BranchSelectionDialog extends Dialog {
 						&& (refName.startsWith(Constants.R_HEADS) || refName
 								.startsWith(Constants.R_REMOTES));
 
-				// we don't allow reset on tags, but checkout
-				if (showResetType)
-					confirmationBtn.setEnabled(branchSelected);
-				else
-					confirmationBtn.setEnabled(branchSelected || tagSelected);
+				// TODO add support for checkout of tags
+				confirmationBtn.setEnabled(branchSelected && !headSelected
+						&& !tagSelected);
 
 				if (!showResetType) {
 					// we don't support rename on tags
-					renameButton.setEnabled(branchSelected && !tagSelected);
+					renameButton.setEnabled(branchSelected && !headSelected
+							&& !tagSelected);
 
 					// new branch can not be based on a tag
 					newButton.setEnabled(branchSelected && !tagSelected);
@@ -214,8 +215,6 @@ public class BranchSelectionDialog extends Dialog {
 		RepositoryTreeNode<Repository> parentNode;
 		if (refName.startsWith(Constants.R_HEADS)) {
 			parentNode = localBranches;
-			// TODO fix this: if we are on a local branch or tag, we must do the
-			// indirection through the commit
 		} else if (refName.startsWith(Constants.R_REMOTES)) {
 			parentNode = remoteBranches;
 		} else if (refName.startsWith(Constants.R_TAGS)) {
@@ -298,8 +297,7 @@ public class BranchSelectionDialog extends Dialog {
 		if (sel.size() != 1)
 			return null;
 		RepositoryTreeNode node = (RepositoryTreeNode) sel.getFirstElement();
-		if (node.getType() == RepositoryTreeNodeType.REF
-				|| node.getType() == RepositoryTreeNodeType.TAG) {
+		if (node.getType() == RepositoryTreeNodeType.REF) {
 			return ((Ref) node.getObject()).getName();
 		}
 		return null;
@@ -310,7 +308,28 @@ public class BranchSelectionDialog extends Dialog {
 				getShell(),
 				UIText.BranchSelectionDialog_QuestionNewBranchTitle,
 				prompt,
-				null, ValidationUtils.getRefNameInputValidator(repo, refPrefix));
+				null, new IInputValidator() {
+					public String isValid(String newText) {
+						if (newText.length() == 0) {
+							// nothing entered, just don't let the user proceed,
+							// no need to prompt them with an error message
+							return ""; //$NON-NLS-1$
+						}
+
+						String testFor = refPrefix + newText;
+						try {
+							if (repo.resolve(testFor) != null)
+								return UIText.BranchSelectionDialog_ErrorAlreadyExists;
+						} catch (IOException e1) {
+							Activator.logError(NLS.bind(
+									UIText.BranchSelectionDialog_ErrorCouldNotResolve, testFor), e1);
+							return e1.getMessage();
+						}
+						if (!Repository.isValidRefName(testFor))
+							return UIText.BranchSelectionDialog_ErrorInvalidRefName;
+						return null;
+					}
+				});
 		labelDialog.setBlockOnOpen(true);
 		return labelDialog;
 	}

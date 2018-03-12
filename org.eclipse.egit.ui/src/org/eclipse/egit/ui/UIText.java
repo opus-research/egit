@@ -331,9 +331,6 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_ToggleSelection_button;
 
 	/** */
-	public static String CompareWithIndexAction_FileNotInIndex;
-
-	/** */
 	public static String RepositoryAction_errorFindingRepo;
 
 	/** */
@@ -1150,6 +1147,9 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_BranchNameLabel;
 
 	/** */
+	public static String CreateBranchPage_BranchNameTooltip;
+
+	/** */
 	public static String CreateBranchPage_CheckingOutMessage;
 
 	/** */
@@ -1160,6 +1160,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_ChosseNameMessage;
+
+	/** */
+	public static String CreateBranchPage_CreateLocalBasedTitle;
+
+	/** */
+	public static String CreateBranchPage_CreateLocalTitle;
+
+	/** */
+	public static String CreateBranchPage_CreateRemoteBaseOnTitle;
+
+	/** */
+	public static String CreateBranchPage_CreateRemoteTitle;
 
 	/** */
 	public static String CreateBranchPage_CreatingBranchMessage;
@@ -1175,9 +1187,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_SourceBranchTooltip;
-
-	/** */
-	public static String CreateBranchPage_Title;
 
 	/** */
 	public static String PushResultTable_columnStatusRepo;
@@ -1690,10 +1699,13 @@ public class UIText extends NLS {
 	public static String RepositoriesView_LinkWithSelection_action;
 
 	/** */
-	public static String RepositoriesView_NewBranchMenu;
+	public static String RepositoriesView_NewBranchTitle;
 
 	/** */
-	public static String RepositoriesView_NewBranchTitle;
+	public static String RepositoriesView_NewLocalBranchMenu;
+
+	/** */
+	public static String RepositoriesView_NewRemoteBranchMenu;
 
 	/** */
 	public static String RepositoriesView_NewRemoteMenu;
@@ -1739,9 +1751,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesViewContentProvider_ExceptionNodeText;
-
-	/** */
-	public static String RepositoriesViewLabelProvider_BareRepositoryMessage;
 
 	/** */
 	public static String RepositoriesViewLabelProvider_LocalBranchesNodetext;
@@ -1835,18 +1844,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCreatePatchWizard_SelectOptionsTitle;
-
-	/** */
-	public static String GitCreatePatchWizard_FilesystemError;
-
-	/** */
-	public static String GitCreatePatchWizard_FilesystemInvalidError;
-
-	/** */
-	public static String GitCreatePatchWizard_FilesystemDirectoryError;
-
-	/** */
-	public static String GitCreatePatchWizard_FilesystemDirectoryNotExistsError;
 
 	/** */
 	public static String GitCreateProjectViaWizardWizard_AbortedMessage;
@@ -1961,78 +1958,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String Update_update;
-
-	/** */
-	public static String TagAction_cannotCheckout;
-
-	/** */
-	public static String TagAction_cannotGetBranchName;
-
-	/** */
-	public static String TagAction_repositoryState;
-
-	/** */
-	public static String TagAction_errorCreatingTag;
-
-	/** */
-	public static String TagAction_unableToCreateTag;
-
-	/** */
-	public static String TagAction_errorDuringTagging;
-
-	/** */
-	public static String TagAction_errorWhileGettingRevCommits;
-
-	/** */
-	public static String TagAction_unableToResolveHeadObjectId;
-
-	/** */
-	public static String TagAction_errorWhileMappingRevTag;
-
-	/** */
-	public static String TagAction_creating;
-
-	/** */
-	public static String TagAction_taggingFailed;
-
-	/** */
-	public static String CreateTagDialog_tagName;
-
-	/** */
-	public static String CreateTagDialog_tagMessage;
-
-	/** */
-	public static String CreateTagDialog_questionNewTagTitle;
-
-	/** */
-	public static String CreateTagDialog_overwriteTag;
-
-	/** */
-	public static String CreateTagDialog_overwriteTagToolTip;
-
-	/** */
-	public static String CreateTagDialog_existingTags;
-
-	/** */
-	public static String CreateTagDialog_advanced;
-
-	/** */
-	public static String CreateTagDialog_advancedToolTip;
-
-	/** */
-	public static String CreateTagDialog_advancedMessage;
-
-	/** */
-	public static String CreateTagDialog_tagNameToolTip;
-
-	/** */
-	public static String CreateTagDialog_clearButton;
-
-	/** */
-	public static String CreateTagDialog_clearButtonTooltip;
-
-	/** */
-	public static String CommitCombo_showSuggestedCommits;
 
 	static {
 		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$
