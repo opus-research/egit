@@ -27,7 +27,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.ObjectWalk;
@@ -128,8 +127,15 @@ public class GitSynchronizeData {
 	 */
 	public void updateRevs() throws IOException {
 		ObjectWalk ow = new ObjectWalk(repo);
-		srcRevCommit = getCommit(srcRev, ow);
-		dstRevCommit = getCommit(dstRev, ow);
+		if (srcRev.length() > 0)
+			this.srcRevCommit = ow.parseCommit(repo.resolve(srcRev));
+		else
+			this.srcRevCommit = null;
+
+		if (dstRev.length() > 0)
+			this.dstRevCommit = ow.parseCommit(repo.resolve(dstRev));
+		else
+			this.dstRevCommit = null;
 
 		if (this.dstRevCommit != null || this.srcRevCommit != null)
 			this.ancestorRevCommit = getCommonAncestor(repo, this.srcRevCommit,
@@ -249,14 +255,6 @@ public class GitSynchronizeData {
 
 			return new RemoteConfig(remote, merge);
 		}
-	}
-
-	private RevCommit getCommit(String rev, ObjectWalk ow) throws IOException {
-		if (rev.length() > 0) {
-			ObjectId id = repo.resolve(rev);
-			return id != null ? ow.parseCommit(id) : null;
-		} else
-			return null;
 	}
 
 }

@@ -249,16 +249,14 @@ public class CompareTreeView extends ViewPart {
 			};
 			GitFileRevision rightRevision = compareVersionMap.get(new Path(
 					repositoryMapping.getRepoRelativePath(res)));
-			if (rightRevision == null) {
+			if (rightRevision == null)
 				right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
 						NLS
 								.bind(
 										UIText.CompareTreeView_ItemNotFoundInVersionMessage,
 										res.getName(), getCompareVersion()));
-			} else {
-				String encoding = CompareUtils.getResourceEncoding(res);
-				right = new FileRevisionTypedElement(rightRevision, encoding);
-			}
+			else
+				right = new FileRevisionTypedElement(rightRevision);
 			GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
 					left, right, PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getActivePage());

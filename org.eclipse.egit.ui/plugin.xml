@@ -1204,14 +1204,6 @@
             name="%TreeCompareView.name"
             restorable="false">
       </view>
-      <view
-            allowMultiple="false"
-            category="org.eclipse.egit.ui.GitCategory"
-            class="org.eclipse.egit.ui.internal.reflog.ReflogView"
-            icon="icons/eview16/reflog.gif"
-            id="org.eclipse.egit.ui.ReflogView"
-            name="Git Reflog">
-      </view>
    </extension>
    <extension
          point="org.eclipse.ui.perspectives">
@@ -2607,29 +2599,6 @@
                   </visibleWhen>
                </command>
                <separator
-                  name="org.eclipse.egit.ui.SynchronizeWitchSeparator"
-                  visible="true" />
-               <menu
-                  label="%SynchronizeWith_label"
-                  icon="$nl$/icons/obj16/remotespec.gif">
-                  <dynamic
-                     class="org.eclipse.egit.ui.internal.actions.SynchronizeWithMenu"
-                     id="org.eclipse.egit.ui.synchronize">
-                  </dynamic>
-                  <visibleWhen checkEnabled="false">
-                     <and>
-                        <count value="1" />
-                        <iterate>
-                           <and>
-                              <adapt type="org.eclipse.core.resources.IProject">
-                                <test property="GitResource.isShared" />
-                              </adapt>
-                           </and>
-                        </iterate>
-                     </and>
-                  </visibleWhen>
-               </menu>
-               <separator
                      name="org.eclipse.egit.ui.separator1"
                      visible="true">
                </separator>
@@ -2715,6 +2684,32 @@
                   name="group3"
                   visible="true">
             </separator>
+            <menu
+                  label="%SynchronizeWith_label"
+                  icon="$nl$/icons/obj16/remotespec.gif">
+               <dynamic
+                     class="org.eclipse.egit.ui.internal.actions.SynchronizeWithMenu"
+                     id="org.eclipse.egit.ui.synchronize">
+               </dynamic>
+               <visibleWhen
+                     checkEnabled="false">
+                  <and>
+                     <count
+                           value="1">
+                     </count>
+                     <iterate>
+                        <and>
+                           <adapt
+                                 type="org.eclipse.core.resources.IProject">
+                              <test
+                                    property="GitResource.isShared">
+                              </test>
+                           </adapt>
+                        </and>
+                     </iterate>
+                  </and>
+               </visibleWhen>
+            </menu>
             <separator
                   name="group4"
                   visible="true">
@@ -2943,10 +2938,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.LinkWithSelectionCommand"
             id="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
             name="%LinkWithSelectionCommand">
-          <state
-                class="org.eclipse.ui.handlers.RegistryToggleState:false"
-                id="org.eclipse.ui.commands.toggleState">
-          </state>
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -3299,7 +3290,7 @@
    <extension
          point="org.eclipse.ui.navigator.navigatorContent">
       <navigatorContent
-            activeByDefault="false"
+            activeByDefault="true"
             contentProvider="org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetContentProvider"
             icon="$nl$/icons/obj16/changelog_obj.gif"
             id="org.eclipse.egit.ui.changeSetContent"
@@ -3490,7 +3481,17 @@
             commandId="org.eclipse.egit.ui.team.Commit"
             contextId="org.eclipse.ui.contexts.window"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+#">
+            sequence="M1+M3+C">
+      </key>
+      <key
+            commandId="org.eclipse.egit.ui.team.Ignore"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+M3+I">
+      </key>
+      <key
+            commandId="org.eclipse.egit.ui.team.Merge"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+M3+M">
       </key>
       <key
             commandId="org.eclipse.egit.ui.RepositoriesViewPaste"
@@ -3725,31 +3726,4 @@
                tooltip="%OpenCommitAction.tooltip"/>
        </actionSet>
    </extension>
-  <extension
-	point="org.eclipse.core.variables.dynamicVariables">
-     <variable
-	   description="%GitVariable_git_dir"
-	   name="git_dir"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
-	   supportsArgument="true">
-     </variable>
-     <variable
-	   description="%GitVariable_git_repo_relative_path"
-	   name="git_repo_relative_path"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
-	   supportsArgument="true">
-     </variable>
-     <variable
-	   description="%GitVariable__git_work_tree_description"
-	   name="git_work_tree"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
-	   supportsArgument="true">
-     </variable>
-     <variable
-	   description="%GitVariable_git_branch_description"
-	   name="git_branch"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
-	   supportsArgument="true">
-     </variable>
-  </extension>
 </plugin>

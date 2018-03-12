@@ -268,7 +268,8 @@ public class CommitMessageComponent {
 		} else {
 			getHeadCommitInfo();
 			saveOriginalChangeId();
-			commitText.setText(previousCommitMessage);
+			commitText.setText(previousCommitMessage.replaceAll(
+					"\n", Text.DELIMITER)); //$NON-NLS-1$
 			if (previousAuthor != null)
 				authorText.setText(previousAuthor);
 		}
@@ -532,7 +533,7 @@ public class CommitMessageComponent {
 					previousCommitMessage);
 			if (endOfChangeId < 0)
 				endOfChangeId = previousCommitMessage.length() - 1;
-			int sha1Offset = changeIdOffset + Text.DELIMITER.length() + "Change-Id: I".length(); //$NON-NLS-1$
+			int sha1Offset = changeIdOffset + "\nChange-Id: I".length(); //$NON-NLS-1$
 			try {
 				originalChangeId = ObjectId.fromString(previousCommitMessage
 						.substring(sha1Offset, endOfChangeId));
@@ -544,10 +545,16 @@ public class CommitMessageComponent {
 	}
 
 	private int findNextEOL(int oldPos, String message) {
+		int pos = message.indexOf("\n", oldPos + 1); //$NON-NLS-1$
+		if (pos > -1)
+			return pos;
 		return message.indexOf(Text.DELIMITER, oldPos + 1);
 	}
 
 	private int findOffsetOfChangeIdLine(String message) {
+		int pos = message.indexOf("\nChange-Id: I"); //$NON-NLS-1$
+		if (pos > -1)
+			return pos;
 		return message.indexOf(Text.DELIMITER + "Change-Id: I"); //$NON-NLS-1$
 	}
 
@@ -561,9 +568,8 @@ public class CommitMessageComponent {
 	}
 
 	private void refreshChangeIdText() {
+		String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
 		if (createChangeId) {
-			// ChangeIdUtil uses \n line endings
-			String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
 			String changedText = ChangeIdUtil.insertId(
 					text,
 					originalChangeId != null ? originalChangeId : ObjectId
@@ -573,12 +579,12 @@ public class CommitMessageComponent {
 				commitText.setText(changedText);
 			}
 		} else {
-			String text = commitText.getText();
 			int changeIdOffset = findOffsetOfChangeIdLine(text);
 			if (changeIdOffset > 0) {
 				int endOfChangeId = findNextEOL(changeIdOffset, text);
 				String cleanedText = text.substring(0, changeIdOffset)
 						+ text.substring(endOfChangeId);
+				cleanedText = cleanedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
 				commitText.setText(cleanedText);
 			}
 		}
