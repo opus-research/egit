@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2011 Tomi Pakarinen <tomi.pakarinen@iki.fi> and others.
+ * Copyright (C) 2008, 2015 Tomi Pakarinen <tomi.pakarinen@iki.fi> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
@@ -85,7 +86,7 @@ public class GitProjectPropertyPage extends PropertyPage {
 		if (element instanceof IResource) {
 			project = ((IResource) element).getProject();
 		} else {
-			Object adapter = element.getAdapter(IResource.class);
+			Object adapter = CommonUtils.getAdapter(element, IResource.class);
 			if (adapter instanceof IResource) {
 				project = ((IResource) adapter).getProject();
 			}
@@ -143,8 +144,7 @@ public class GitProjectPropertyPage extends PropertyPage {
 	}
 
 	private RepositoryCommit getCommit(Repository repository, ObjectId objectId) {
-		RevWalk walk = new RevWalk(repository);
-		try {
+		try (RevWalk walk = new RevWalk(repository)) {
 			RevCommit commit = walk.parseCommit(objectId);
 			for (RevCommit parent : commit.getParents())
 				walk.parseBody(parent);
@@ -153,8 +153,6 @@ public class GitProjectPropertyPage extends PropertyPage {
 			Activator.showError(NLS.bind(
 					UIText.GitProjectPropertyPage_UnableToGetCommit,
 					objectId.name()), e);
-		} finally {
-			walk.release();
 		}
 		return null;
 	}

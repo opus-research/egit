@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, 2015 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -256,7 +256,7 @@ public class CompareUtils {
 		if (adapterType.isInstance(element))
 			return element;
 		if (element instanceof IAdaptable) {
-			Object adapted = ((IAdaptable) element).getAdapter(adapterType);
+			Object adapted = CommonUtils.getAdapter(((IAdaptable) element), adapterType);
 			if (adapterType.isInstance(adapted))
 				return adapted;
 		}
@@ -584,17 +584,17 @@ public class CompareUtils {
 			destCommit = getHeadTypedElement(repository, gitPath);
 		else {
 			final ObjectId destCommitId = repository.resolve(refName);
-			RevWalk rw = new RevWalk(repository);
-			RevCommit commit = rw.parseCommit(destCommitId);
-			rw.release();
-			destCommit = getFileRevisionTypedElement(gitPath, commit,
-					repository);
+			try (RevWalk rw = new RevWalk(repository)) {
+				RevCommit commit = rw.parseCommit(destCommitId);
+				destCommit = getFileRevisionTypedElement(gitPath, commit,
+						repository);
 
-			if (base != null && commit != null) {
-				final ObjectId headCommitId = repository
-						.resolve(Constants.HEAD);
-				commonAncestor = getFileRevisionTypedElementForCommonAncestor(
-						gitPath, headCommitId, destCommitId, repository);
+				if (base != null && commit != null) {
+					final ObjectId headCommitId = repository
+							.resolve(Constants.HEAD);
+					commonAncestor = getFileRevisionTypedElementForCommonAncestor(
+							gitPath, headCommitId, destCommitId, repository);
+				}
 			}
 		}
 
@@ -845,11 +845,11 @@ public class CompareUtils {
 			typedElement = getHeadTypedElement(repository, gitPath);
 		else {
 			final ObjectId id = repository.resolve(rev);
-			final RevWalk rw = new RevWalk(repository);
-			final RevCommit revCommit = rw.parseCommit(id);
-			rw.release();
-			typedElement = getFileRevisionTypedElement(gitPath,
-					revCommit, repository);
+			try (final RevWalk rw = new RevWalk(repository)) {
+				final RevCommit revCommit = rw.parseCommit(id);
+				typedElement = getFileRevisionTypedElement(gitPath, revCommit,
+						repository);
+			}
 		}
 		return typedElement;
 	}
@@ -919,8 +919,7 @@ public class CompareUtils {
 				return new EmptyTypedElement(""); //$NON-NLS-1$
 
 			RevCommit latestFileCommit;
-			RevWalk rw = new RevWalk(repository);
-			try {
+			try (RevWalk rw = new RevWalk(repository)) {
 				RevCommit headCommit = rw.parseCommit(head.getObjectId());
 				rw.markStart(headCommit);
 				rw.setTreeFilter(AndTreeFilter.create(
@@ -930,8 +929,6 @@ public class CompareUtils {
 				// Fall back to HEAD
 				if (latestFileCommit == null)
 					latestFileCommit = headCommit;
-			} finally {
-				rw.release();
 			}
 
 			return CompareUtils.getFileRevisionTypedElement(repoRelativePath, latestFileCommit, repository);
