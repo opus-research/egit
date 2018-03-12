@@ -166,7 +166,6 @@ public class GitSynchronizeData {
 	 */
 	public void updateRevs() throws IOException {
 		try (ObjectWalk ow = new ObjectWalk(repo)) {
-			ow.setRetainBody(true);
 			srcRevCommit = getCommit(srcRev, ow);
 			dstRevCommit = getCommit(dstRev, ow);
 		}

@@ -123,7 +123,6 @@ public class CommitUI  {
 		try {
 			PlatformUI.getWorkbench().getProgressService().busyCursorWhile(new IRunnableWithProgress() {
 
-				@Override
 				public void run(IProgressMonitor monitor) throws InvocationTargetException,
 						InterruptedException {
 					try {
@@ -300,7 +299,6 @@ public class CommitUI  {
 
 	static class CountingVisitor implements IResourceVisitor {
 		int count;
-		@Override
 		public boolean visit(IResource resource) throws CoreException {
 			count++;
 			return true;

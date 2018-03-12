@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2015 Marek Zawirski <marek.zawirski@gmail.com> and others.
+ * Copyright (C) 2008, 2012 Marek Zawirski <marek.zawirski@gmail.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,7 +18,6 @@ import org.eclipse.egit.ui.internal.WorkbenchStyledLabelProvider;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.util.OpenStrategy;
@@ -41,7 +40,6 @@ import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
@@ -58,29 +56,15 @@ import org.eclipse.ui.model.IWorkbenchAdapter3;
  * Table displaying push operation results.
  */
 class PushResultTable {
-
-	private final static class SpellcheckableMessageAreaExtension
-			extends SpellcheckableMessageArea {
-		private SpellcheckableMessageAreaExtension(Composite parent,
-				String initialText, boolean readOnly, int styles) {
-			super(parent, initialText, readOnly, styles);
-		}
-
-		@Override
-		protected void createMarginPainter() {
-			// Disabled intentionally
-		}
-	}
+	private static final int TEXT_PREFERRED_HEIGHT = 100;
 
 	private static final String EMPTY_STRING = ""; //$NON-NLS-1$
 
 	private static final String SPACE = " "; //$NON-NLS-1$
 
-	private static final String SASH_WEIGHTS_SETTING = "sashWeights"; //$NON-NLS-1$
-
 	private final TreeViewer treeViewer;
 
-	private final SashForm root;
+	private final Composite root;
 
 	private final Image deleteImage;
 
@@ -89,19 +73,13 @@ class PushResultTable {
 	private Repository repo;
 
 	PushResultTable(final Composite parent) {
-		this(parent, null);
-	}
+		root = new Composite(parent, SWT.NONE);
+		GridLayoutFactory.swtDefaults().numColumns(2).applyTo(root);
 
-	PushResultTable(final Composite parent,
-			final IDialogSettings dialogSettings) {
-		root = new SashForm(parent, SWT.VERTICAL);
-
-		Composite treeContainer = new Composite(root, SWT.NONE);
-		GridLayoutFactory.swtDefaults().numColumns(2).applyTo(treeContainer);
-		treeViewer = new TreeViewer(treeContainer);
+		treeViewer = new TreeViewer(root);
 		treeViewer.setAutoExpandLevel(2);
 
-		addToolbar(treeContainer);
+		addToolbar(root);
 
 		ColumnViewerToolTipSupport.enableFor(treeViewer);
 		final Tree table = treeViewer.getTree();
@@ -111,9 +89,7 @@ class PushResultTable {
 		UIUtils.hookDisposal(root, deleteImage);
 
 		root.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
-				saveDialogSettings(root, dialogSettings);
 				if (reader != null)
 					reader.close();
 			}
@@ -122,19 +98,16 @@ class PushResultTable {
 		treeViewer.setComparer(new IElementComparer() {
 			// we need this to keep refresh() working while having custom
 			// equals() in PushOperationResult
-			@Override
 			public boolean equals(Object a, Object b) {
 				return a == b;
 			}
 
-			@Override
 			public int hashCode(Object element) {
 				return element.hashCode();
 			}
 		});
 		final IStyledLabelProvider styleProvider = new WorkbenchStyledLabelProvider() {
 
-			@Override
 			public StyledString getStyledText(Object element) {
 				if (element instanceof IWorkbenchAdapter3)
 					return ((IWorkbenchAdapter3) element).getStyledText(element);
@@ -146,7 +119,6 @@ class PushResultTable {
 
 		treeViewer.setSorter(new ViewerSorter() {
 
-			@Override
 			public int compare(Viewer viewer, Object e1, Object e2) {
 
 				if (e1 instanceof RefUpdateElement
@@ -205,11 +177,17 @@ class PushResultTable {
 		GridDataFactory.fillDefaults().grab(true, false).span(2, 1)
 				.applyTo(messageGroup);
 
-		final SpellcheckableMessageArea text = new SpellcheckableMessageAreaExtension(messageGroup, EMPTY_STRING, true,
-				SWT.BORDER);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(text);
+		final SpellcheckableMessageArea text = new SpellcheckableMessageArea(
+				messageGroup, EMPTY_STRING, true, SWT.BORDER) {
+
+			protected void createMarginPainter() {
+				// Disabled intentionally
+			}
+
+		};
+		GridDataFactory.fillDefaults().grab(true, true)
+				.hint(SWT.DEFAULT, TEXT_PREFERRED_HEIGHT).applyTo(text);
 		treeViewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				ISelection selection = event.getSelection();
 				if (!(selection instanceof IStructuredSelection)) {
@@ -226,8 +204,6 @@ class PushResultTable {
 					text.setText(getResult((RefUpdateElement) selected));
 			}
 		});
-
-		initializeSashWeights(root, new int[] { 3, 2 }, dialogSettings);
 
 		new OpenAndLinkWithEditorHelper(treeViewer) {
 			@Override
@@ -290,40 +266,6 @@ class PushResultTable {
 				&& (s.charAt(s.length() - 1) == '\n' || s
 						.charAt(s.length() - 1) == '\r'))
 			s.deleteCharAt(s.length() - 1);
-	}
-
-	private static void saveDialogSettings(SashForm sashForm,
-			IDialogSettings dialogSettings) {
-		if (dialogSettings != null) {
-			int[] weights = sashForm.getWeights();
-			String[] weightStrings = new String[weights.length];
-			for (int i = 0; i < weights.length; i++) {
-				weightStrings[i] = String.valueOf(weights[i]);
-			}
-			dialogSettings.put(SASH_WEIGHTS_SETTING, weightStrings);
-		}
-	}
-
-	private static void initializeSashWeights(SashForm sashForm,
-			int[] defaultValues, IDialogSettings dialogSettings) {
-		if (dialogSettings != null) {
-			String[] weightStrings = dialogSettings
-					.getArray(SASH_WEIGHTS_SETTING);
-			if (weightStrings != null
-					&& weightStrings.length == defaultValues.length) {
-				try {
-					int[] weights = new int[weightStrings.length];
-					for (int i = 0; i < weights.length; i++) {
-						weights[i] = Integer.parseInt(weightStrings[i]);
-					}
-					sashForm.setWeights(weights);
-					return;
-				} catch (NumberFormatException ignore) { // bad settings
-					dialogSettings.put(SASH_WEIGHTS_SETTING, (String[]) null);
-				}
-			}
-		}
-		sashForm.setWeights(defaultValues);
 	}
 
 	void setData(final Repository localDb, final PushOperationResult result) {

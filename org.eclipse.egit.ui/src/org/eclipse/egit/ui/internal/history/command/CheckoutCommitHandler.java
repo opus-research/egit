@@ -31,7 +31,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
  * Check out of a commit.
  */
 public class CheckoutCommitHandler extends AbstractHistoryCommandHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		ObjectId commitId = getSelectedCommitId(event);
 		Repository repo = getRepository(event);

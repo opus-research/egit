@@ -173,18 +173,15 @@ public class MergeResultDialog extends Dialog {
 		TableViewer viewer = new TableViewer(composite);
 		viewer.setContentProvider(new IStructuredContentProvider() {
 
-			@Override
 			public void dispose() {
 				// empty
 			}
 
-			@Override
 			public void inputChanged(Viewer theViewer, Object oldInput,
 					Object newInput) {
 				// empty
 			}
 
-			@Override
 			public Object[] getElements(Object inputElement) {
 				return getCommits(mergeResult.getMergedCommits());
 			}
@@ -193,27 +190,22 @@ public class MergeResultDialog extends Dialog {
 
 			private final WorkbenchLabelProvider wrapped = new WorkbenchLabelProvider();
 
-			@Override
 			public void removeListener(ILabelProviderListener listener) {
 				// Empty
 			}
 
-			@Override
 			public boolean isLabelProperty(Object element, String property) {
 				return false;
 			}
 
-			@Override
 			public void dispose() {
 				wrapped.dispose();
 			}
 
-			@Override
 			public void addListener(ILabelProviderListener listener) {
 				// Empty
 			}
 
-			@Override
 			public StyledString getStyledText(Object element) {
 				// TODO Replace with use of IWorkbenchAdapter3 when is no longer
 				// supported
@@ -223,7 +215,6 @@ public class MergeResultDialog extends Dialog {
 				return new StyledString(wrapped.getText(element));
 			}
 
-			@Override
 			public Image getImage(Object element) {
 				return wrapped.getImage(element);
 			}
@@ -342,7 +333,6 @@ public class MergeResultDialog extends Dialog {
 		super.configureShell(newShell);
 		newShell.setText(UIText.MergeAction_MergeResultTitle);
 		newShell.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				if (objectReader != null)
 					objectReader.close();
@@ -350,7 +340,6 @@ public class MergeResultDialog extends Dialog {
 		});
 	}
 
-	@Override
 	protected IDialogSettings getDialogBoundsSettings() {
 		return UIUtils.getDialogBoundSettings(getClass());
 	}

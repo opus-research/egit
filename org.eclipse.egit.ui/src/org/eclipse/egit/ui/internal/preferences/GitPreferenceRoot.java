@@ -64,12 +64,10 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		super(FLAT);
 	}
 
-	@Override
 	protected IPreferenceStore doGetPreferenceStore() {
 		return Activator.getDefault().getPreferenceStore();
 	}
 
-	@Override
 	public void init(final IWorkbench workbench) {
 		// Do nothing.
 	}
@@ -143,7 +141,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 				variableButton.setText(UIText.GitPreferenceRoot_DefaultRepoFolderVariableButton);
 
 				variableButton.addSelectionListener(new SelectionAdapter() {
-					@Override
 					public void widgetSelected(SelectionEvent e) {
 						org.eclipse.debug.ui.StringVariableSelectionDialog dialog = new org.eclipse.debug.ui.StringVariableSelectionDialog(
 								getShell());

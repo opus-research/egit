@@ -46,7 +46,6 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 	/**
 	 * @see org.eclipse.core.commands.IHandler#execute(org.eclipse.core.commands.ExecutionEvent)
 	 */
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(true, event);
 		if (repository == null) {
@@ -114,7 +113,6 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 				commits.add(pc.commit);
 			HandlerUtil.getActiveShell(event).getDisplay()
 					.syncExec(new Runnable() {
-						@Override
 						public void run() {
 							CommitSelectDialog dlg = new CommitSelectDialog(
 									HandlerUtil.getActiveShell(event), commits);
@@ -139,7 +137,6 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 						resource.getName());
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				MessageDialog
 						.openWarning(

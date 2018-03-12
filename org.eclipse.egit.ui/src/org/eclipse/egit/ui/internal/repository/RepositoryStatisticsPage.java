@@ -50,7 +50,6 @@ public class RepositoryStatisticsPage extends PropertyPage {
 				.getLocale());
 	}
 
-	@Override
 	protected Control createContents(Composite parent) {
 		Table table = new Table(parent, SWT.MULTI | SWT.BORDER
 				| SWT.FULL_SELECTION);
