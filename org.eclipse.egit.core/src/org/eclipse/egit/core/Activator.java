@@ -41,6 +41,7 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.IgnoreOperation;
 import org.eclipse.egit.core.project.GitProjectData;
@@ -189,8 +190,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 					if (resource instanceof IProject) {
 						IProject project = (IProject) resource;
 						if (project.isAccessible()) {
-							if (RepositoryProvider.getProvider(project,
-									GitProvider.ID) != null) {
+							if (ResourceUtil.isSharedWithGit(project)) {
 								IResource dotGit = project
 										.findMember(Constants.DOT_GIT);
 								if (dotGit != null && dotGit
@@ -430,7 +430,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 			RepositoryMapping m = mappings.iterator().next();
 			IPath gitDirPath = m.getGitDirAbsolutePath();
-			if (gitDirPath.segmentCount() == 0) {
+			if (gitDirPath == null || gitDirPath.segmentCount() == 0) {
 				return;
 			}
 
@@ -469,26 +469,30 @@ public class Activator extends Plugin implements DebugOptionsListener {
 				IResourceChangeEvent.POST_CHANGE);
 	}
 
+	/**
+	 * @return true if the derived resources should be automatically added to
+	 *         the .gitignore files
+	 */
+	public static boolean autoIgnoreDerived() {
+		IEclipsePreferences d = DefaultScope.INSTANCE
+				.getNode(Activator.getPluginId());
+		IEclipsePreferences p = InstanceScope.INSTANCE
+				.getNode(Activator.getPluginId());
+		return p.getBoolean(GitCorePreferences.core_autoIgnoreDerivedResources,
+				d.getBoolean(GitCorePreferences.core_autoIgnoreDerivedResources,
+						true));
+	}
+
 	private static class IgnoreDerivedResources implements
 			IResourceChangeListener {
 
-		protected boolean autoIgnoreDerived() {
-			IEclipsePreferences d = DefaultScope.INSTANCE.getNode(Activator
-					.getPluginId());
-			IEclipsePreferences p = InstanceScope.INSTANCE.getNode(Activator
-					.getPluginId());
-			return p.getBoolean(
-					GitCorePreferences.core_autoIgnoreDerivedResources,
-					d.getBoolean(
-							GitCorePreferences.core_autoIgnoreDerivedResources,
-							true));
-		}
 
 		public void resourceChanged(IResourceChangeEvent event) {
 			try {
 				IResourceDelta d = event.getDelta();
-				if (d == null || !autoIgnoreDerived())
+				if (d == null || !autoIgnoreDerived()) {
 					return;
+				}
 
 				final Set<IPath> toBeIgnored = new LinkedHashSet<IPath>();
 

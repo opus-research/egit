@@ -79,12 +79,15 @@ public class GitCompareEditorInput extends CompareEditorInput {
 	 * @param baseVersion
 	 *            (shown on the right side in compare); currently only commit
 	 *            IDs are supported
+	 * @param repository
+	 *            repository where resources are coming from
 	 * @param resources
 	 *            as selected by the user
 	 */
 	public GitCompareEditorInput(String compareVersion, String baseVersion,
-			IResource... resources) {
+			Repository repository, IResource... resources) {
 		super(new CompareConfiguration());
+		this.repository = repository;
 		this.resources = convertResourceInput(resources);
 		this.baseVersion = baseVersion;
 		this.compareVersion = compareVersion;
@@ -121,6 +124,11 @@ public class GitCompareEditorInput extends CompareEditorInput {
 			for (IResource resource : resources) {
 				RepositoryMapping map = RepositoryMapping
 						.getMapping(resource.getProject());
+				if (map == null) {
+					throw new InvocationTargetException(
+							new IllegalStateException(
+									UIText.GitCompareEditorInput_ResourcesInDifferentReposMessagge));
+				}
 				if (repository != null && repository != map.getRepository())
 					throw new InvocationTargetException(
 							new IllegalStateException(
