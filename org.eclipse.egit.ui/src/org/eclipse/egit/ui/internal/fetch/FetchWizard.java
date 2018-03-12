@@ -169,8 +169,7 @@ public class FetchWizard extends Wizard {
 		}
 
 		@Override
-		protected IStatus run(IProgressMonitor actMonitor) {
-			IProgressMonitor monitor = actMonitor;
+		protected IStatus run(IProgressMonitor monitor) {
 			if (monitor == null)
 				monitor = new NullProgressMonitor();
 			final FetchResult result;
