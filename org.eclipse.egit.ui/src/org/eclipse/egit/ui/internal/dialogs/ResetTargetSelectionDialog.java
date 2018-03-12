@@ -213,8 +213,7 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 	@Override
 	protected void refNameSelected(String refName) {
-		boolean enabled = refName != null || parsedCommitish != null;
-		getButton(Window.OK).setEnabled(enabled);
+		getButton(Window.OK).setEnabled(refName != null);
 	}
 
 	@Override
