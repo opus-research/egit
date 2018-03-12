@@ -24,7 +24,7 @@ class GitSyncObjectCache {
 
 	private final String name;
 
-	private final ThreeWayDiffEntry diffEntry;
+	private final DiffEntry diffEntry;
 
 	private Map<String, GitSyncObjectCache> members;
 
@@ -43,7 +43,7 @@ class GitSyncObjectCache {
 	 * @param diffEntry
 	 *            entry meta data
 	 */
-	GitSyncObjectCache(String name, ThreeWayDiffEntry diffEntry) {
+	GitSyncObjectCache(String name, DiffEntry diffEntry) {
 		this.name = name;
 		this.diffEntry = diffEntry;
 	}
@@ -59,7 +59,7 @@ class GitSyncObjectCache {
 	 *
 	 * @return entry meta data
 	 */
-	public ThreeWayDiffEntry getDiffEntry() {
+	public DiffEntry getDiffEntry() {
 		return diffEntry;
 	}
 
@@ -73,23 +73,24 @@ class GitSyncObjectCache {
 	 * @throws RuntimeException
 	 *             when cannot find parent of given {@code entry} in cache
 	 */
-	public void addMember(ThreeWayDiffEntry entry) {
-		if (members == null || members.size() == 0)
+	public void addMember(DiffEntry entry) {
+		String memberPath = getMemberPath(entry);
+
+		if (members == null)
 			members = new HashMap<String, GitSyncObjectCache>();
 
 		int start = -1;
-		String path = entry.getPath();
 		Map<String, GitSyncObjectCache> parent = members;
-		int separatorIdx = path.indexOf("/"); //$NON-NLS-1$
+		int separatorIdx = memberPath.indexOf("/"); //$NON-NLS-1$
 		while (separatorIdx > 0) {
-			String key = path.substring(start + 1, separatorIdx);
+			String key = memberPath.substring(start + 1, separatorIdx);
 			GitSyncObjectCache cacheObject = parent.get(key);
 			if (cacheObject == null)
 				throw new RuntimeException(
 						NLS.bind(CoreText.GitSyncObjectCache_noData, key));
 
 			start = separatorIdx;
-			separatorIdx = path.indexOf("/", separatorIdx + 1); //$NON-NLS-1$
+			separatorIdx = memberPath.indexOf("/", separatorIdx + 1); //$NON-NLS-1$
 			if (cacheObject.members == null)
 				cacheObject.members = new HashMap<String, GitSyncObjectCache>();
 
@@ -98,9 +99,9 @@ class GitSyncObjectCache {
 
 		String newName;
 		if (start > 0)
-			newName = path.substring(start + 1);
+			newName = memberPath.substring(start + 1);
 		else
-			newName = path;
+			newName = memberPath;
 
 		GitSyncObjectCache obj = new GitSyncObjectCache(newName, entry);
 		parent.put(newName, obj);
@@ -113,8 +114,6 @@ class GitSyncObjectCache {
 	 *         for given path
 	 */
 	public GitSyncObjectCache get(String childPath) {
-		if (members == null)
-			return null;
 		if (childPath.length() == 0)
 			return this;
 
@@ -132,11 +131,8 @@ class GitSyncObjectCache {
 			parent = childObject.members;
 		}
 
-		if (parent != null)
-			return parent.get(childPath.subSequence(
+		return parent.get(childPath.subSequence(
 				childPath.lastIndexOf("/") + 1, childPath.length())); //$NON-NLS-1$
-		else
-			return null;
 	}
 
 	/**
@@ -165,6 +161,13 @@ class GitSyncObjectCache {
 		}
 
 		return builder.toString();
+	}
+
+	private String getMemberPath(DiffEntry entry) {
+		if (!entry.getNewPath().equals(DiffEntry.DEV_NULL))
+			return entry.getNewPath();
+		else
+			return entry.getOldPath();
 	}
 
 }
