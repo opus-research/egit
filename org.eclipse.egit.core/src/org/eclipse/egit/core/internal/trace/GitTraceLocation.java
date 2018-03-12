@@ -12,6 +12,7 @@ package org.eclipse.egit.core.internal.trace;
 
 import org.eclipse.egit.core.Activator;
 import org.eclipse.osgi.service.debug.DebugOptions;
+import org.eclipse.osgi.service.debug.DebugTrace;
 
 /**
  * EGit Trace locations
@@ -19,7 +20,9 @@ import org.eclipse.osgi.service.debug.DebugOptions;
  */
 public enum GitTraceLocation implements ITraceLocation {
 	/** Core */
-	CORE("/debug/core"); //$NON-NLS-1$
+	CORE("/debug/core"), //$NON-NLS-1$
+	/** UI */
+	UI("/debug/ui"); //$NON-NLS-1$
 
 	/**
 	 * Initialize the locations
@@ -31,18 +34,7 @@ public enum GitTraceLocation implements ITraceLocation {
 
 		// we evaluate the plug-in switch
 		if (pluginIsDebugging) {
-			myTrace = new DebugTrace() {
-
-				public void trace(String location, String message, Throwable error) {
-					// TODO Auto-generated method stub
-
-				}
-
-				public void trace(String location, String message) {
-					// TODO Auto-generated method stub
-
-				}
-			};
+			myTrace = options.newDebugTrace(Activator.getPluginId());
 			for (GitTraceLocation loc : values()) {
 				boolean active = options.getBooleanOption(loc.getFullPath(), false);
 				loc.setActive(active);
