@@ -19,44 +19,28 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.RebaseTodoLine;
 
 /**
- *
+ * Content provider feeding rebase interactive plan
  */
 public enum RebaseInteractivePlanContentProvider implements ITreeContentProvider {
+
 	/** Singleton instance */
 	INSTANCE;
-	/**
-	 *
-	 */
+
 	private RebaseInteractivePlanContentProvider() {
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.jface.viewers.IContentProvider#dispose()
-	 */
 	public void dispose() {
+		// empty
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.jface.viewers.IContentProvider#inputChanged(org.eclipse.jface.viewers.Viewer, java.lang.Object, java.lang.Object)
-	 */
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-
+		// empty
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.jface.viewers.ITreeContentProvider#getElements(java.lang.Object)
-	 */
 	public Object[] getElements(Object inputElement) {
-		// if (inputElement instanceof InteractiveRebasePlan) {
-		// return reverse(((InteractiveRebasePlan)
-		// inputElement).plan.toArray());
-		// }
 		return getChildren(inputElement);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.jface.viewers.ITreeContentProvider#getChildren(java.lang.Object)
-	 */
 	public Object[] getChildren(Object parentElement) {
 		if (parentElement instanceof RebaseInteractivePlan) {
 			RebaseInteractivePlan plan = (RebaseInteractivePlan) parentElement;
@@ -68,6 +52,7 @@ public enum RebaseInteractivePlanContentProvider implements ITreeContentProvider
 			}
 			return linesToDisplay.toArray();
 		}
+
 		if (parentElement instanceof RebaseTodoLine) {
 			// TODO: return touched files
 			return new Object[0];
@@ -77,22 +62,12 @@ public enum RebaseInteractivePlanContentProvider implements ITreeContentProvider
 		return new Object[0];
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.jface.viewers.ITreeContentProvider#getParent(java.lang.Object)
-	 */
 	public Object getParent(Object element) {
-		if (element instanceof RebaseInteractivePlan) {
-			return null;
-		}
 		return null;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.jface.viewers.ITreeContentProvider#hasChildren(java.lang.Object)
-	 */
 	public boolean hasChildren(Object element) {
 		return (element instanceof RebaseInteractivePlan);
 		// TODO:add children as touched files; grandchildren as hunks in files
 	}
-
 }

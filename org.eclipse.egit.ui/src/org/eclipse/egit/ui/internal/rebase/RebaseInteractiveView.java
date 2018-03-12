@@ -36,12 +36,14 @@ import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.util.LocalSelectionTransfer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
+import org.eclipse.jface.window.ToolTip;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.swt.SWT;
@@ -54,6 +56,7 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.ToolBar;
@@ -129,6 +132,7 @@ public class RebaseInteractiveView extends ViewPart implements
 	public void setInput(Object o) {
 		if (o == null)
 			return;
+
 		if (o instanceof StructuredSelection) {
 			StructuredSelection sel = (StructuredSelection) o;
 			if (sel.size() != 1)
@@ -136,11 +140,11 @@ public class RebaseInteractiveView extends ViewPart implements
 			o = sel.getFirstElement();
 		}
 		Repository repo = null;
-		if (o instanceof RepositoryTreeNode<?>) {
+		if (o instanceof RepositoryTreeNode<?>)
 			repo = ((RepositoryTreeNode) o).getRepository();
-		} else if (o instanceof Repository) {
+		else if (o instanceof Repository)
 			repo = (Repository) o;
-		} else if (o instanceof IAdaptable) {
+		else if (o instanceof IAdaptable) {
 			IResource resource = (IResource) ((IAdaptable) o)
 					.getAdapter(IResource.class);
 			if (resource != null) {
@@ -149,12 +153,10 @@ public class RebaseInteractiveView extends ViewPart implements
 				repo = mapping.getRepository();
 			}
 		}
-
 		if (repo == null)
 			repo = AdapterUtils.adapt(o, Repository.class);
 
 		currentRepository = repo;
-
 		showRepository(repo);
 	}
 
@@ -179,17 +181,9 @@ public class RebaseInteractiveView extends ViewPart implements
 				selectionChangedListener);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see
-	 * org.eclipse.ui.part.WorkbenchPart#createPartControl(org.eclipse.swt.widgets
-	 * .Composite)
-	 */
 	@Override
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
-
 		final FormToolkit toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 
@@ -334,11 +328,13 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	private void setupRepositoryViewSelectionChangeListener() {
 		selectionChangedListener = new ISelectionListener() {
+
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
 				if (!listenOnRepositoryViewSelection
 						|| part == getSite().getPart())
 					return;
+
 				// this may happen if we switch between editors
 				if (part instanceof IEditorPart) {
 					IEditorInput input = ((IEditorPart) part).getEditorInput();
@@ -349,14 +345,14 @@ public class RebaseInteractiveView extends ViewPart implements
 					setInput(selection);
 			}
 		};
+
 		ISelectionService srv = (ISelectionService) getSite().getService(
 				ISelectionService.class);
 		srv.addPostSelectionListener(RepositoriesView.VIEW_ID,
 				selectionChangedListener);
 	}
 
-	private class RebaseCommandItemSelectionListener extends
-			SelectionAdapter {
+	private class RebaseCommandItemSelectionListener extends SelectionAdapter {
 
 		private final AbstractRebaseCommandHandler command;
 
@@ -388,11 +384,10 @@ public class RebaseInteractiveView extends ViewPart implements
 	}
 
 	private void createLocalDragandDrop() {
-		planTreeViewer.addDragSupport(
-				DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
+		planTreeViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
+				| DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer() },
 				new RebaseInteractiveDragSourceListener(this));
-
 		planTreeViewer.addDropSupport(DND.DROP_MOVE,
 				new Transfer[] { LocalSelectionTransfer.getTransfer() },
 				new RebaseInteractiveDropTargetListener(this, planTreeViewer));
@@ -400,7 +395,6 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	private void createStepActionToolBar(Section rebasePlanSection,
 			final FormToolkit toolkit) {
-
 		actionToolBarProvider = new RebaseInteractiveStepActionToolBarProvider(
 				rebasePlanSection, SWT.FLAT | SWT.WRAP, this);
 		toolkit.adapt(actionToolBarProvider.getTheToolbar());
@@ -418,6 +412,7 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	private static class HighlightingColumnLabelProvider extends
 			ColumnLabelProvider {
+
 		@Override
 		public Font getFont(Object element) {
 			ElementType t = RebaseInteractiveView.getType(element);
@@ -434,6 +429,9 @@ public class RebaseInteractiveView extends ViewPart implements
 				UIText.RebaseInteractiveView_HeadingAction,
 				UIText.RebaseInteractiveView_HeadingCommitId,
 				UIText.RebaseInteractiveView_HeadingMessage };
+
+		ColumnViewerToolTipSupport.enableFor(planTreeViewer,
+				ToolTip.NO_RECREATE);
 
 		TreeViewerColumn infoColumn = new TreeViewerColumn(planTreeViewer,
 				SWT.NONE);
@@ -464,20 +462,40 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 
 			@Override
+			public String getToolTipText(Object element) {
+				ElementType t = getType(element);
+				if (t != null) {
+					switch (t) {
+					case DONE:
+						return UIText.RebaseInteractiveView_StatusDone;
+					case DONE_CURRENT:
+						return UIText.RebaseInteractiveView_StatusCurrent;
+					case TODO:
+						return UIText.RebaseInteractiveView_StatusTodo;
+					default:
+						// fall through
+					}
+				}
+				return ""; //$NON-NLS-1$
+			}
+
+			@Override
+			public Point getToolTipShift(Object object) {
+				return new Point(5, 5);
+			}
+
+			@Override
+			public int getToolTipDisplayDelayTime(Object object) {
+				return 100; // msec
+			}
+
+			@Override
+			public int getToolTipTimeDisplayed(Object object) {
+				return 1000; // msec
+			}
+
+			@Override
 			public String getText(Object element) {
-				// ElementType t = getType(element);
-				// if (t != null) {
-				// switch (t) {
-				// case DONE:
-				// return UIText.RebaseInteractiveView_StatusDone;
-				// case DONE_CURRENT:
-				// return UIText.RebaseInteractiveView_StatusCurrent;
-				// case TODO:
-				// return UIText.RebaseInteractiveView_StatusTodo;
-				// default:
-				// // fall through
-				// }
-				// }
 				return ""; //$NON-NLS-1$
 			}
 		});
@@ -549,8 +567,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		});
 
 		TreeViewerColumn commitMessageColumn = new TreeViewerColumn(
-				planTreeViewer,
-				SWT.NONE);
+				planTreeViewer, SWT.NONE);
 		commitMessageColumn.getColumn().setText(headings[3]);
 		commitMessageColumn.getColumn().setMoveable(false);
 		commitMessageColumn.getColumn().setResizable(true);
@@ -558,15 +575,15 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		commitMessageColumn
 				.setLabelProvider(new HighlightingColumnLabelProvider() {
-			@Override
-			public String getText(Object element) {
-				if (element instanceof PlanElement) {
-					PlanElement planLine = (PlanElement) element;
-					return planLine.getShortMessage();
-				}
-				return super.getText(element);
-			}
-		});
+					@Override
+					public String getText(Object element) {
+						if (element instanceof PlanElement) {
+							PlanElement planLine = (PlanElement) element;
+							return planLine.getShortMessage();
+						}
+						return super.getText(element);
+					}
+				});
 	}
 
 	private void asyncExec(Runnable runnable) {
@@ -636,12 +653,13 @@ public class RebaseInteractiveView extends ViewPart implements
 			return;
 		}
 
-		actionToolBarProvider.mapActionItemsToSelection(planTreeViewer.getSelection());
+		actionToolBarProvider.mapActionItemsToSelection(planTreeViewer
+				.getSelection());
 		if (!currentPlan.hasRebaseBeenStartedYet()) {
 			actionToolBarProvider.getTheToolbar().setEnabled(true);
 			startItem.setEnabled(true);
 			abortItem.setEnabled(true);
-			dndEnabled  = true;
+			dndEnabled = true;
 		} else {
 			continueItem.setEnabled(true);
 			skipItem.setEnabled(true);
@@ -667,10 +685,8 @@ public class RebaseInteractiveView extends ViewPart implements
 	}
 
 	public void planElementTypeChanged(
-			RebaseInteractivePlan rebaseInteractivePlan,
-			PlanElement element,
-			ElementAction oldType,
-			ElementAction newType) {
+			RebaseInteractivePlan rebaseInteractivePlan, PlanElement element,
+			ElementAction oldType, ElementAction newType) {
 		planTreeViewer.refresh(element, true);
 	}
 
