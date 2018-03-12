@@ -182,13 +182,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	}
 
 	protected static File createProjectAndCommitToRepository() throws Exception {
-		return createProjectAndCommitToRepository(REPO1);
-	}
 
-	protected static File createProjectAndCommitToRepository(String repoName)
-			throws Exception {
-
-		File gitDir = new File(new File(testDirectory, repoName),
+		File gitDir = new File(new File(testDirectory, REPO1),
 				Constants.DOT_GIT);
 		gitDir.mkdir();
 		Repository myRepository = new FileRepository(gitDir);

@@ -73,7 +73,9 @@ class CreateBranchPage extends WizardPage {
 
 	private Composite warningComposite;
 
-	private UpstreamConfig upstreamConfig;
+	private UpstreamConfig upstreamConfig = UpstreamConfig.REBASE;
+
+	private final UpstreamConfig defaultUpstreamConfig;
 
 	private Group upstreamConfigGroup;
 
@@ -100,7 +102,8 @@ class CreateBranchPage extends WizardPage {
 		this.myBaseCommit = null;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
 				myRepository, Constants.R_HEADS, true);
-		this.upstreamConfig = getDefaultUpstreamConfig(repo, baseRef.getName());
+		this.defaultUpstreamConfig = getDefaultUpstreamConfig(repo, baseRef
+				.getName());
 		setTitle(UIText.CreateBranchPage_Title);
 		setMessage(UIText.CreateBranchPage_ChooseBranchAndNameMessage);
 	}
@@ -122,7 +125,7 @@ class CreateBranchPage extends WizardPage {
 		this.myBaseCommit = baseCommit;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
 				myRepository, Constants.R_HEADS, true);
-		this.upstreamConfig = UpstreamConfig.NONE;
+		this.defaultUpstreamConfig = UpstreamConfig.NONE;
 		setTitle(UIText.CreateBranchPage_Title);
 		setMessage(UIText.CreateBranchPage_ChooseNameMessage);
 	}
@@ -261,6 +264,18 @@ class CreateBranchPage extends WizardPage {
 		buttonConfigNone
 				.setToolTipText(UIText.CreateBranchPage_PullNoneTooltip);
 
+		switch (defaultUpstreamConfig) {
+		case REBASE:
+			buttonConfigRebase.setSelection(true);
+			break;
+		case MERGE:
+			buttonConfigMerge.setSelection(true);
+			break;
+		case NONE:
+			buttonConfigNone.setSelection(true);
+			break;
+		}
+
 		boolean isBare = myRepository.isBare();
 		checkout = new Button(main, SWT.CHECK);
 		checkout.setText(UIText.CreateBranchPage_CheckoutButton);
@@ -290,10 +305,11 @@ class CreateBranchPage extends WizardPage {
 			nameText.setText(myBaseRef
 					.substring(myBaseRef.lastIndexOf('/') + 1));
 			nameText.selectAll();
-		} else
+			checkPage();
+		} else {
 			// in any case, we will have to enter the name
 			setPageComplete(false);
-		checkPage();
+		}
 		// add the listener just now to avoid unneeded checkPage()
 		nameText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
@@ -306,7 +322,7 @@ class CreateBranchPage extends WizardPage {
 		setErrorMessage(null);
 		try {
 			GridData gd = (GridData) warningComposite.getLayoutData();
-			gd.exclude = !branchCombo.getText().startsWith(Constants.R_HEADS);
+			gd.exclude = branchCombo.getText().startsWith(Constants.R_REMOTES);
 			warningComposite.setVisible(!gd.exclude);
 
 			gd = (GridData) upstreamConfigGroup.getLayoutData();
