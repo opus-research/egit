@@ -34,9 +34,5 @@
          </adapter>
       </factory>
    </extension>
-   <extension
-         point="org.eclipse.egit.core.mergeStrategy">
-      <strategy class="org.eclipse.egit.core.mergestrategy.MergeStrategyExtensionFactory" label="Strategy OURS (used for tests)"/>
-   </extension>
 
 </fragment>
