@@ -24,8 +24,6 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
-import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -77,19 +75,13 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 		if (resource.getType() == IResource.PROJECT) {
 			// If the resource is not part of a project under
 			// Git revision control or from a different repository
-			if (!ResourceUtil.isSharedWithGit(resource)) {
+			final RepositoryMapping mapping = RepositoryMapping
+					.getMapping((IProject) resource);
+			if (mapping == null || mapping.getRepository() != repository) {
 				// Ignore the change for project and its children
 				return false;
 			}
-			GitProjectData gitData = GitProjectData.get((IProject) resource);
-			if (gitData == null) {
-				return false;
-			}
-			RepositoryMapping mapping = gitData.getRepositoryMapping(resource);
-			if (mapping == null || !gitData.hasSubmodules()
-					&& mapping.getRepository() != repository) {
-				return false;
-			}
+
 			// continue with children
 			return true;
 		}
@@ -100,15 +92,6 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 		}
 
 		if (resource.getType() == IResource.FOLDER) {
-			GitProjectData gitData = GitProjectData.get(resource.getProject());
-			if (gitData == null) {
-				return false;
-			}
-			RepositoryMapping mapping = gitData.getRepositoryMapping(resource);
-			if (mapping == null || !gitData.isProtected(resource)
-					&& mapping.getRepository() != repository) {
-				return false;
-			}
 			if (delta.getKind() == IResourceDelta.ADDED) {
 				String repoRelativePath = getRepoRelativePath(resource);
 				if (repoRelativePath == null) {
@@ -124,11 +107,6 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 
 			// continue with children
 			return true;
-		}
-
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-		if (mapping == null || mapping.getRepository() != repository) {
-			return false;
 		}
 
 		// If the file has changed but not in a way that we
