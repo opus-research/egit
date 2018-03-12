@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
-import org.eclipse.core.resources.IResourceRuleFactory;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
@@ -20,10 +19,7 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 public interface IEGitOperation {
 	/**
 	 * Executes the operation
-	 *
 	 * @param monitor
-	 *            a progress monitor, or <code>null</code> if progress reporting
-	 *            and cancellation are not desired
 	 * @throws CoreException
 	 */
 	void execute(IProgressMonitor monitor) throws CoreException;
@@ -31,10 +27,6 @@ public interface IEGitOperation {
 	/**
 	 * @return the rule needed to execute this operation.
 	 * <code>null</code> if no rule is required.
-	 * A rule is required if the operation changes resources.
-	 * It can also be useful to use a rule for reading resources to avoid
-	 * changes on the resources by other threads while the operation is running.
-	 * @see IResourceRuleFactory
 	 */
 	ISchedulingRule getSchedulingRule();
 }

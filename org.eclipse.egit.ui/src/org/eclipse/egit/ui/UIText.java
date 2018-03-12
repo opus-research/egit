@@ -316,9 +316,6 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SelectAll_button;
 
 	/** */
-	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
-
-	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
 
 	/** */
