@@ -39,7 +39,6 @@ public class StashToolbarAction extends RepositoryAction implements
 		});
 	}
 
-	@Override
 	public Menu getMenu(Control parent) {
 		stashesMenu.initialize(getServiceLocator());
 		if (menu != null)

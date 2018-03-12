@@ -12,6 +12,7 @@ package org.eclipse.egit.ui.internal.rebase;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan;
@@ -85,7 +86,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		createToolBarItems();
 		this.theToolbar.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				dispose();
 			}
@@ -123,7 +123,7 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		rebaseActionItems[2] = itemEdit;
 
 		itemSquash = new ToolItem(theToolbar, SWT.RADIO);
-		itemSquash.setImage(getImage(UIIcons.SQUASH_UP));
+		itemSquash.setImage(getImage(UIIcons.SQUASH));
 		itemSquash.addSelectionListener(new ActionSelectionListener(
 				RebaseInteractivePlan.ElementAction.SQUASH));
 		itemSquash
@@ -131,7 +131,7 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		rebaseActionItems[3] = itemSquash;
 
 		itemFixup = new ToolItem(theToolbar, SWT.RADIO);
-		itemFixup.setImage(getImage(UIIcons.FIXUP_UP));
+		itemFixup.setImage(getImage(UIIcons.FIXUP));
 		itemFixup.addSelectionListener(new ActionSelectionListener(
 				RebaseInteractivePlan.ElementAction.FIXUP));
 		itemFixup
@@ -159,12 +159,7 @@ public class RebaseInteractiveStepActionToolBarProvider {
 				for (PlanElement planElement : selectedRebaseTodoLines) {
 					if (planElement.getElementType() != ElementType.TODO)
 						return;
-
-					if (!RebaseInteractivePreferences.isOrderReversed())
-						view.getCurrentPlan().moveTodoEntryUp(planElement);
-					else
-						view.getCurrentPlan().moveTodoEntryDown(planElement);
-
+					view.getCurrentPlan().moveTodoEntryUp(planElement);
 					mapActionItemsToSelection(view.planTreeViewer
 							.getSelection());
 				}
@@ -183,12 +178,7 @@ public class RebaseInteractiveStepActionToolBarProvider {
 				for (PlanElement planElement : selectedRebaseTodoLines) {
 					if (planElement.getElementType() != ElementType.TODO)
 						return;
-
-					if (!RebaseInteractivePreferences.isOrderReversed())
-						view.getCurrentPlan().moveTodoEntryDown(planElement);
-					else
-						view.getCurrentPlan().moveTodoEntryUp(planElement);
-
+					view.getCurrentPlan().moveTodoEntryDown(planElement);
 					mapActionItemsToSelection(view.planTreeViewer
 							.getSelection());
 				}
@@ -203,7 +193,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			this.type = action;
 		}
 
-		@Override
 		public void widgetSelected(SelectionEvent e) {
 			List<RebaseInteractivePlan.PlanElement> selected = getSelectedRebaseTodoLines();
 			if (selected == null || selected.isEmpty())
@@ -227,7 +216,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			mapActionItemsToSelection(view.planTreeViewer.getSelection());
 		}
 
-		@Override
 		public void widgetDefaultSelected(SelectionEvent e) {
 			widgetSelected(e);
 		}
@@ -258,13 +246,8 @@ public class RebaseInteractiveStepActionToolBarProvider {
 
 	void mapActionItemsToSelection(ISelection selection) {
 		setMoveItemsEnabled(false);
-		if (selection == null || selection.isEmpty()) {
-			if (theToolbar.isEnabled())
-				theToolbar.setEnabled(false);
-
-			unselectAllActionItemsExecpt(null);
+		if (selection == null || selection.isEmpty())
 			return;
-		}
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection structured = (IStructuredSelection) selection;
 
@@ -274,31 +257,24 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			PlanElement firstSelectedEntry = (PlanElement) obj;
 			PlanElement lastSelectedEntry = firstSelectedEntry;
 
-			ElementAction type = firstSelectedEntry.getPlanElementAction();
-
-			boolean singleTypeSelected = true;
-
-			if (!theToolbar.isEnabled()
-					&& !view.getCurrentPlan().hasRebaseBeenStartedYet())
-				theToolbar.setEnabled(true);
-
 			if (structured.size() > 1) {
 				// multi selection
-				for (Object selectedObj : structured.toList()) {
+				ElementAction type = firstSelectedEntry.getPlanElementAction();
+				for (Iterator iterator = structured.iterator(); iterator
+						.hasNext();) {
+					Object selectedObj = iterator.next();
 					if (!(selectedObj instanceof PlanElement))
 						continue;
-					PlanElement entry = (PlanElement) selectedObj;
-					lastSelectedEntry = entry;
+					PlanElement entry = lastSelectedEntry = (PlanElement) selectedObj;
 					if (type != entry.getPlanElementAction()) {
-						singleTypeSelected = false;
+						unselectAllActionItemsExecpt(null);
 					}
 				}
+			} else {
+				// single selection
+				unselectAllActionItemsExecpt(getItemFor(firstSelectedEntry
+						.getPlanElementAction()));
 			}
-
-			if (singleTypeSelected)
-				unselectAllActionItemsExecpt(getItemFor(type));
-			else
-				unselectAllActionItemsExecpt(null);
 
 			enableMoveButtons(firstSelectedEntry, lastSelectedEntry);
 
@@ -313,16 +289,9 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			if (!planElement.isComment())
 				stepList.add(planElement);
 		}
-
-		int firstEntryIndex = stepList.indexOf(firstSelectedEntry);
-		int lastEntryIndex = stepList.indexOf(lastSelectedEntry);
-		if (!RebaseInteractivePreferences.isOrderReversed()) {
-			itemMoveUp.setEnabled(firstEntryIndex > 0);
-			itemMoveDown.setEnabled(lastEntryIndex < stepList.size() - 1);
-		} else {
-			itemMoveUp.setEnabled(firstEntryIndex < stepList.size() - 1);
-			itemMoveDown.setEnabled(lastEntryIndex > 0);
-		}
+		itemMoveUp.setEnabled(stepList.indexOf(firstSelectedEntry) > 0);
+		itemMoveDown.setEnabled(stepList.indexOf(lastSelectedEntry) < stepList
+				.size() - 1);
 	}
 
 	private ToolItem getItemFor(ElementAction type) {

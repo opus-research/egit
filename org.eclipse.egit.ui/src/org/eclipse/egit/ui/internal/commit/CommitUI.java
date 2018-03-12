@@ -31,7 +31,6 @@ import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
@@ -123,7 +122,6 @@ public class CommitUI  {
 		try {
 			PlatformUI.getWorkbench().getProgressService().busyCursorWhile(new IRunnableWithProgress() {
 
-				@Override
 				public void run(IProgressMonitor monitor) throws InvocationTargetException,
 						InterruptedException {
 					try {
@@ -254,8 +252,7 @@ public class CommitUI  {
 			} else {
 				// could be file outside of workspace
 				for (IResource resource : selectedResources) {
-					IPath location = resource.getLocation();
-					if(location != null && location.toFile().equals(new File(uri))) {
+					if(resource.getFullPath().toFile().equals(new File(uri))) {
 						preselectionCandidates.add(fileName);
 					}
 				}
@@ -300,7 +297,6 @@ public class CommitUI  {
 
 	static class CountingVisitor implements IResourceVisitor {
 		int count;
-		@Override
 		public boolean visit(IResource resource) throws CoreException {
 			count++;
 			return true;

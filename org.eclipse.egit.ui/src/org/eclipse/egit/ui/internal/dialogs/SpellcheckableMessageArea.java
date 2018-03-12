@@ -24,7 +24,6 @@ import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -137,7 +136,6 @@ public class SpellcheckableMessageArea extends Composite {
 		 *
 		 * @see Action#firePropertyChange(String, Object, Object)
 		 */
-		@Override
 		public void update() {
 			// XXX: workaround for https://bugs.eclipse.org/bugs/show_bug.cgi?id=206111
 			if (fOperationCode == ITextOperationTarget.REDO)
@@ -154,7 +152,6 @@ public class SpellcheckableMessageArea extends Composite {
 		/**
 		 * @see Action#run()
 		 */
-		@Override
 		public void run() {
 			if (fOperationCode != -1 && fOperationTarget != null)
 				fOperationTarget.doOperation(fOperationCode);
@@ -177,7 +174,6 @@ public class SpellcheckableMessageArea extends Composite {
 			synchronizeWithPreference();
 		}
 
-		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			if (event.getProperty().equals(getPreferenceKey()))
 				synchronizeWithPreference();
@@ -292,11 +288,9 @@ public class SpellcheckableMessageArea extends Composite {
 
 		configureHardWrap();
 		final IPropertyChangeListener propertyChangeListener = new IPropertyChangeListener() {
-			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				if (UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE.equals(event.getProperty())) {
 					getDisplay().asyncExec(new Runnable() {
-						@Override
 						public void run() {
 							configureHardWrap();
 							if (brokenBidiPlatformTextWidth != -1) {
@@ -320,12 +314,10 @@ public class SpellcheckableMessageArea extends Composite {
 				EditorsUI
 				.getPreferenceStore()) {
 
-			@Override
 			public int getHyperlinkStateMask(ISourceViewer targetViewer) {
 				return SWT.NONE;
 			}
 
-			@Override
 			protected Map getHyperlinkDetectorTargets(ISourceViewer targetViewer) {
 				return getHyperlinkTargets();
 			}
@@ -344,7 +336,6 @@ public class SpellcheckableMessageArea extends Composite {
 				};
 			}
 
-			@Override
 			public IHyperlinkDetector[] getHyperlinkDetectors(
 					ISourceViewer targetViewer) {
 				return getRegisteredHyperlinkDetectors(sourceViewer);
@@ -357,7 +348,6 @@ public class SpellcheckableMessageArea extends Composite {
 				return super.getReconciler(sourceViewer);
 			}
 
-			@Override
 			public IContentAssistant getContentAssistant(ISourceViewer viewer) {
 				if (!viewer.isEditable())
 					return null;
@@ -373,13 +363,14 @@ public class SpellcheckableMessageArea extends Composite {
 		sourceViewer.configure(configuration);
 		sourceViewer.setDocument(document, annotationModel);
 
-		UIUtils.applyHyperlinkDetectorStyleRanges(sourceViewer,
-				configuration.getHyperlinkDetectors(sourceViewer));
+		StyleRange[] styleRanges = UIUtils
+				.getHyperlinkDetectorStyleRanges(sourceViewer,
+						configuration.getHyperlinkDetectors(sourceViewer));
+		sourceViewer.getTextWidget().setStyleRanges(styleRanges);
 
 		configureContextMenu();
 
 		getTextWidget().addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				support.uninstall();
 				Activator.getDefault().getPreferenceStore().removePropertyChangeListener(propertyChangeListener);
@@ -391,7 +382,6 @@ public class SpellcheckableMessageArea extends Composite {
 		class BidiSegmentListenerTester implements BidiSegmentListener {
 			boolean called;
 
-			@Override
 			public void lineGetSegments(BidiSegmentEvent event) {
 				called = true;
 			}
@@ -415,7 +405,6 @@ public class SpellcheckableMessageArea extends Composite {
 			if (hardWrapSegmentListener == null) {
 				final StyledText textWidget = getTextWidget();
 				hardWrapSegmentListener = new BidiSegmentListener() {
-					@Override
 					public void lineGetSegments(BidiSegmentEvent e) {
 						int[] segments = calculateWrapOffsets(e.lineText, MAX_LINE_WIDTH);
 						if (segments != null) {
@@ -623,7 +612,6 @@ public class SpellcheckableMessageArea extends Composite {
 			final SubMenuManager quickFixMenu = new SubMenuManager(contextMenu);
 			quickFixMenu.setVisible(true);
 			quickFixMenu.addMenuListener(new IMenuListener() {
-				@Override
 				public void menuAboutToShow(IMenuManager manager) {
 					quickFixMenu.removeAll();
 					addProposals(quickFixMenu);
@@ -645,7 +633,6 @@ public class SpellcheckableMessageArea extends Composite {
 			private IHandlerActivation quickFixHandlerActivation;
 			private IHandlerActivation contentAssistHandlerActivation;
 
-			@Override
 			public void focusGained(FocusEvent e) {
 				IHandlerService service = getHandlerService();
 				if (service == null)
@@ -695,7 +682,6 @@ public class SpellcheckableMessageArea extends Composite {
 							new ActiveShellExpression(getParent().getShell()));
 			}
 
-			@Override
 			public void focusLost(FocusEvent e) {
 				IHandlerService service = getHandlerService();
 				if (service == null)
@@ -730,7 +716,6 @@ public class SpellcheckableMessageArea extends Composite {
 
         sourceViewer.addSelectionChangedListener(new ISelectionChangedListener() {
 
-					@Override
 					public void selectionChanged(SelectionChangedEvent event) {
 						if (cutAction != null)
 							cutAction.update();
@@ -742,12 +727,15 @@ public class SpellcheckableMessageArea extends Composite {
 		if (editable)
 			sourceViewer.addTextListener(new ITextListener() {
 
-				@Override
 				public void textChanged(TextEvent event) {
 					textWidget.setStyleRanges(
 							new StyleRange[0]);
-					UIUtils.applyHyperlinkDetectorStyleRanges(sourceViewer,
-							configuration.getHyperlinkDetectors(sourceViewer));
+					StyleRange[] styleRanges = UIUtils
+							.getHyperlinkDetectorStyleRanges(
+									sourceViewer,
+									configuration
+											.getHyperlinkDetectors(sourceViewer));
+					textWidget.setStyleRanges(styleRanges);
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)
@@ -757,7 +745,6 @@ public class SpellcheckableMessageArea extends Composite {
 
 		// set the cursor when hovering over a link
 		textWidget.addListener(SWT.MouseMove, new Listener() {
-			@Override
 			public void handleEvent(final Event e) {
 				StyleRange styleRange = getStyleRange(e.x, e.y);
 				if (styleRange != null && styleRange.underline)
@@ -768,7 +755,6 @@ public class SpellcheckableMessageArea extends Composite {
 		});
 
 		textWidget.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				showWhitespaceAction.dispose();
 			}
@@ -822,12 +808,10 @@ public class SpellcheckableMessageArea extends Composite {
 	private IAction createQuickFixAction(final ICompletionProposal proposal) {
 		return new Action(proposal.getDisplayString()) {
 
-			@Override
 			public void run() {
 				proposal.apply(sourceViewer.getDocument());
 			}
 
-			@Override
 			public ImageDescriptor getImageDescriptor() {
 				Image image = proposal.getImage();
 				if (image != null)
@@ -847,7 +831,8 @@ public class SpellcheckableMessageArea extends Composite {
 	 *         found.
 	 */
 	protected IHandlerService getHandlerService() {
-		return CommonUtils.getService(PlatformUI.getWorkbench(), IHandlerService.class);
+		return (IHandlerService) PlatformUI.getWorkbench().getService(
+				IHandlerService.class);
 	}
 
 	private SourceViewerDecorationSupport configureAnnotationPreferences() {
@@ -907,7 +892,6 @@ public class SpellcheckableMessageArea extends Composite {
 			final ITextOperationTarget textOperationTarget) {
 		Action quickFixAction = new Action() {
 
-			@Override
 			public void run() {
 				textOperationTarget.doOperation(ISourceViewer.QUICK_ASSIST);
 			}
@@ -920,7 +904,6 @@ public class SpellcheckableMessageArea extends Composite {
 	private ActionHandler createContentAssistActionHandler(
 			final ITextOperationTarget textOperationTarget) {
 		Action proposalAction = new Action() {
-			@Override
 			public void run() {
 				if (textOperationTarget
 						.canDoOperation(ISourceViewer.CONTENTASSIST_PROPOSALS)
@@ -1026,7 +1009,6 @@ public class SpellcheckableMessageArea extends Composite {
 	/**
 	 *
 	 */
-	@Override
 	public boolean setFocus() {
 		return getTextWidget().setFocus();
 	}

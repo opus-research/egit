@@ -45,6 +45,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
@@ -328,6 +329,14 @@ public class RepositoryUtil {
 		return repos;
 	}
 
+	private String getPath(File repositoryDir) {
+		try {
+			return repositoryDir.getCanonicalPath();
+		} catch (IOException e) {
+			return repositoryDir.getAbsolutePath();
+		}
+	}
+
 	/**
 	 *
 	 * @param repositoryDir
@@ -345,7 +354,7 @@ public class RepositoryUtil {
 						CoreText.RepositoryUtil_DirectoryIsNotGitDirectory,
 						repositoryDir));
 
-			String dirString = repositoryDir.getAbsolutePath();
+			String dirString = getPath(repositoryDir);
 
 			List<String> dirStrings = getConfiguredRepositories();
 			if (dirStrings.contains(dirString)) {
@@ -366,10 +375,12 @@ public class RepositoryUtil {
 	 */
 	public boolean removeDir(File file) {
 		synchronized (prefs) {
-			String dirString = file.getAbsolutePath();
+
+			String dir = getPath(file);
+
 			Set<String> dirStrings = new HashSet<String>();
 			dirStrings.addAll(getConfiguredRepositories());
-			if (dirStrings.remove(dirString)) {
+			if (dirStrings.remove(dir)) {
 				saveDirs(dirStrings);
 				return true;
 			}
@@ -402,7 +413,7 @@ public class RepositoryUtil {
 	 * @return true if contains repository, false otherwise
 	 */
 	public boolean contains(final Repository repository) {
-		return contains(repository.getDirectory().getAbsolutePath());
+		return contains(getPath(repository.getDirectory()));
 	}
 
 	/**
@@ -464,7 +475,7 @@ public class RepositoryUtil {
 			return null;
 		} finally {
 			if (walk != null)
-				walk.close();
+				walk.release();
 		}
 	}
 
@@ -483,14 +494,10 @@ public class RepositoryUtil {
 		if (mapping == null)
 			return true; // Linked resources may not be mapped
 		Repository repository = mapping.getRepository();
-		WorkingTreeIterator treeIterator = IteratorService
-				.createInitialIterator(repository);
-		if (treeIterator == null)
-			return true;
 		String repoRelativePath = mapping.getRepoRelativePath(path);
 		TreeWalk walk = new TreeWalk(repository);
 		try {
-			walk.addTree(treeIterator);
+			walk.addTree(new FileTreeIterator(repository));
 			walk.setFilter(PathFilter.create(repoRelativePath));
 			while (walk.next()) {
 				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
@@ -502,7 +509,7 @@ public class RepositoryUtil {
 					walk.enterSubtree();
 			}
 		} finally {
-			walk.close();
+			walk.release();
 		}
 		return false;
 	}

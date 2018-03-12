@@ -278,7 +278,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 				tree);
 		branchTree.addSelectionChangedListener(new ISelectionChangedListener() {
 
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				String refName = refNameFromDialog();
 				refNameSelected(refName);
@@ -287,7 +286,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 
 		// double-click support
 		branchTree.addDoubleClickListener(new IDoubleClickListener() {
-			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				RepositoryTreeNode node = (RepositoryTreeNode) ((IStructuredSelection) branchTree
 						.getSelection()).getFirstElement();

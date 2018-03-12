@@ -43,7 +43,6 @@ public class ResetCommand extends
 	 */
 	public static final String ID = "org.eclipse.egit.ui.team.Reset"; //$NON-NLS-1$
 
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 
 		final RepositoryTreeNode<?> node = getSelectedNodes(event).get(0);
@@ -88,9 +87,8 @@ public class ResetCommand extends
 						return true;
 
 				try {
-					getContainer().run(true, true,
+					getContainer().run(false, true,
 							new IRunnableWithProgress() {
-								@Override
 								public void run(IProgressMonitor monitor)
 										throws InvocationTargetException,
 										InterruptedException {
