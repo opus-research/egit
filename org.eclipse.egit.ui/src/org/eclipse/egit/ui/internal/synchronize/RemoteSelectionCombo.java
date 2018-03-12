@@ -24,8 +24,6 @@ import org.eclipse.swt.widgets.Label;
 
 class RemoteSelectionCombo extends Composite {
 
-	private Label refLabel;
-
 	private Combo refsCombo;
 
 	private Combo remotesCombo;
@@ -45,7 +43,6 @@ class RemoteSelectionCombo extends Composite {
 
 	@Override
 	public void setEnabled(boolean enabled) {
-		refLabel.setEnabled(enabled);
 		refsCombo.setEnabled(enabled);
 		remotesCombo.setEnabled(enabled);
 		super.setEnabled(enabled);
@@ -56,8 +53,7 @@ class RemoteSelectionCombo extends Composite {
 		remoteComposite.setLayout(new GridLayout());
 		remoteComposite.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).hint(150, SWT.DEFAULT).create());
-		refLabel = new Label(remoteComposite, SWT.NONE);
-		refLabel.setText(remoteLabel);
+		new Label(remoteComposite, SWT.NONE).setText(remoteLabel);
 		remotesCombo = new Combo(remoteComposite, SWT.NONE);
 		remotesCombo.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).create());
