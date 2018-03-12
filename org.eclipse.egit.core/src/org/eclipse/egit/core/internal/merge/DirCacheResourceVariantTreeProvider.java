@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.merge;
 
-// CHECKSTYLE:OFF
 import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -30,9 +29,6 @@ import org.eclipse.team.core.variants.IResourceVariantTree;
  * Files that are not located within the workspace will be ignored and thus will
  * not be accessible through the trees created by this provider.
  * </p>
- *
- * @author <a href="mailto:laurent.goubet@obeo.fr">Laurent Goubet</a>
- * @author <a href="mailto:laurent.delaigue@obeo.fr">Laurent Delaigue</a>
  */
 public class DirCacheResourceVariantTreeProvider implements
 		GitResourceVariantTreeProvider {
@@ -71,8 +67,9 @@ public class DirCacheResourceVariantTreeProvider implements
 			final DirCacheEntry entry = cache.getEntry(i);
 			final IResource resource = ResourceUtil
 					.getResourceHandleForLocation(
-					repository, entry.getPathString(),
-					FileMode.fromBits(entry.getRawMode()) == FileMode.TREE);
+							repository,
+							entry.getPathString(),
+							FileMode.fromBits(entry.getRawMode()) == FileMode.TREE);
 			// Resource variants only make sense for IResources. Do not consider
 			// files outside of the workspace or otherwise non accessible.
 			if (resource == null || resource.getProject() == null
@@ -151,4 +148,3 @@ public class DirCacheResourceVariantTreeProvider implements
 		return roots;
 	}
 }
-// CHECKSTYLE:ON

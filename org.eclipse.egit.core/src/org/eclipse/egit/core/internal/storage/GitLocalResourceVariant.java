@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.storage;
 
-//CHECKSTYLE:OFF
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
@@ -26,9 +25,6 @@ import org.eclipse.team.core.variants.IResourceVariant;
  * <p>
  * Mimics Team's LocalResourceVariant.
  * </p>
- * 
- * @author <a href="mailto:laurent.goubet@obeo.fr">Laurent Goubet</a>
- * @author <a href="mailto:laurent.delaigue@obeo.fr">Laurent Delaigue</a>
  */
 public class GitLocalResourceVariant implements IResourceVariant {
 	private final IResource resource;
@@ -77,4 +73,3 @@ public class GitLocalResourceVariant implements IResourceVariant {
 		return resource;
 	}
 }
-// CHECKSTYLE:ON
