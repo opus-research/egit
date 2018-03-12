@@ -26,7 +26,6 @@ import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -38,18 +37,17 @@ import org.eclipse.swt.widgets.Shell;
  */
 public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final Repository repository = getRepository(event);
+		GitHistoryPage page = getPage();
+
+		final Repository repository = getRepository(page);
 		if (repository == null)
 			return null;
-
-		IStructuredSelection selection = getSelection(event);
 
 		int totalBranchCount;
 		List<Ref> branchesOfCommit;
 		try {
-			totalBranchCount = getBranchesOfCommit(selection, repository, false)
-					.size();
-			branchesOfCommit = getBranchesOfCommit(selection, repository, true);
+			totalBranchCount = getBranchesOfCommit(page, repository, false).size();
+			branchesOfCommit = getBranchesOfCommit(page, repository, true);
 		} catch (IOException e) {
 			throw new ExecutionException("Could not obtain current Branch", e); //$NON-NLS-1$
 		}
@@ -148,8 +146,7 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 
 		List<Ref> branchesOfCommit;
 		try {
-			branchesOfCommit = getBranchesOfCommit(getSelection(page),
-					repository, true);
+			branchesOfCommit = getBranchesOfCommit(page, repository, true);
 		} catch (IOException e) {
 			Activator.logError("Could not calculate Enablement", e); //$NON-NLS-1$
 			return false;

@@ -14,8 +14,7 @@ import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.CONFLICTIN
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING_AND_CHANGED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED_AND_ADDED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED_AND_CHANGED;
+import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.PARTIALLY_MODIFIED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.REMOVED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.UNTRACKED;
 
@@ -61,12 +60,9 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 
 	private Repository repository;
 
-	private final EntryComparator comparator;
-
 	StagingViewContentProvider(StagingView stagingView, boolean unstagedSection) {
 		this.stagingView = stagingView;
 		this.unstagedSection = unstagedSection;
-		comparator = new EntryComparator();
 	}
 
 	public Object getParent(Object element) {
@@ -197,12 +193,12 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 					else if (child instanceof StagingFolderEntry)
 						((StagingFolderEntry) child).setParent(folderEntry);
 				}
-				Collections.sort(children, comparator);
+				Collections.sort(children, EntryComparator.INSTANCE);
 				folderEntry.setChildren(children.toArray());
 			}
 		}
 
-		Collections.sort(roots, comparator);
+		Collections.sort(roots, EntryComparator.INSTANCE);
 		return roots.toArray();
 	}
 
@@ -309,10 +305,7 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 					nodes.add(new StagingEntry(repository, MISSING, file));
 			for (String file : indexDiff.getModified())
 				if (indexDiff.getChanged().contains(file))
-					nodes.add(new StagingEntry(repository, MODIFIED_AND_CHANGED,
-							file));
-				else if (indexDiff.getAdded().contains(file))
-					nodes.add(new StagingEntry(repository, MODIFIED_AND_ADDED,
+					nodes.add(new StagingEntry(repository, PARTIALLY_MODIFIED,
 							file));
 				else
 					nodes.add(new StagingEntry(repository, MODIFIED, file));
@@ -339,7 +332,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		}
 
 		content = nodes.toArray(new StagingEntry[nodes.size()]);
-		Arrays.sort(content, comparator);
 
 		treeRoots = null;
 		compactTreeRoots = null;
@@ -359,36 +351,14 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 			return content.length;
 	}
 
-	/**
-	 * Set file name mode to be enabled or disabled, to keep proper sorting
-	 * order. This mode displays the names of the file first followed by the
-	 * path to the folder that the file is in.
-	 *
-	 * @param enable
-	 */
-	void setFileNameMode(boolean enable) {
-		comparator.fileNameMode = enable;
-		if (content != null) {
-			Arrays.sort(content, comparator);
-		}
-	}
-
 	private static class EntryComparator implements Comparator<Object> {
-		boolean fileNameMode;
+		public static EntryComparator INSTANCE = new EntryComparator();
 
 		public int compare(Object o1, Object o2) {
 			if (o1 instanceof StagingEntry) {
 				if (o2 instanceof StagingEntry) {
 					StagingEntry e1 = (StagingEntry) o1;
 					StagingEntry e2 = (StagingEntry) o2;
-					if (fileNameMode) {
-						int result = e1.getName().compareTo(e2.getName());
-						if (result != 0)
-							return result;
-						else
-							return e1.getParentPath().toString()
-									.compareTo(e2.getParentPath().toString());
-					}
 					return e1.getPath().compareTo(e2.getPath());
 				} else {
 					// Files should come after folders

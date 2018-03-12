@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.rebase;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -51,10 +50,6 @@ public enum RebaseInteractivePlanContentProvider implements ITreeContentProvider
 					continue;
 				linesToDisplay.add(line);
 			}
-
-			if (RebaseInteractivePreferences.isOrderReversed())
-				Collections.reverse(linesToDisplay);
-
 			return linesToDisplay.toArray();
 		}
 

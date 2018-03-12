@@ -125,16 +125,11 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	/** A folder obtained by checking in a project without .project */
 	protected static final String PROJ2 = "ProjectWithoutDotProject";
 
-	protected static final String FOLDER = "folder";
-
 	protected static final String FILE1 = "test.txt";
-
-	protected static final String FILE1_PATH = PROJ1 + "/" + FOLDER + "/"
-			+ FILE1;
 
 	protected static final String FILE2 = "test2.txt";
 
-
+	protected static final String FOLDER = "folder";
 
 	protected final static TestUtils testUtils = new TestUtils();
 
@@ -382,11 +377,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// let's create a stable branch temporarily so
 		// that we push two branches to remote
 		String newRefName = "refs/heads/stable";
-		createBranch(myRepository, newRefName);
-	}
-
-	protected static void createBranch(Repository myRepository,
-			String newRefName) throws IOException {
 		RefUpdate updateRef = myRepository.updateRef(newRefName);
 		Ref sourceBranch = myRepository.getRef("refs/heads/master");
 		ObjectId startAt = sourceBranch.getObjectId();

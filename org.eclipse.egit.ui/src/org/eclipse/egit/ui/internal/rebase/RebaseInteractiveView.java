@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 SAP AG and others.
+ * Copyright (c) 2013 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -9,11 +9,6 @@
  *    Tobias Pfeifer (SAP AG) - initial implementation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.rebase;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
@@ -27,7 +22,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commands.shared.AbortRebaseCommand;
@@ -35,13 +29,8 @@ import org.eclipse.egit.ui.internal.commands.shared.AbstractRebaseCommandHandler
 import org.eclipse.egit.ui.internal.commands.shared.ContinueRebaseCommand;
 import org.eclipse.egit.ui.internal.commands.shared.ProcessStepsRebaseCommand;
 import org.eclipse.egit.ui.internal.commands.shared.SkipRebaseCommand;
-import org.eclipse.egit.ui.internal.commit.CommitEditor;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jface.action.IMenuListener;
-import org.eclipse.jface.action.IMenuManager;
-import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceResources;
@@ -49,22 +38,15 @@ import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.util.LocalSelectionTransfer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.jface.window.ToolTip;
-import org.eclipse.jgit.lib.AbbreviatedObjectId;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.GitDateFormatter;
 import org.eclipse.jgit.util.GitDateFormatter.Format;
 import org.eclipse.swt.SWT;
@@ -79,11 +61,9 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
-import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -142,10 +122,6 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	/** these columns are dynamically resized to fit their contents */
 	private TreeViewerColumn[] dynamicColumns;
-
-	private List<PlanContextMenuAction> contextMenuItems;
-
-	private RebasePlanIndexer planIndexer;
 
 	/**
 	 * View for handling interactive rebase
@@ -206,14 +182,10 @@ public class RebaseInteractiveView extends ViewPart implements
 	}
 
 	private void removeListeners() {
-		ISelectionService srv = CommonUtils.getService(getSite(), ISelectionService.class);
+		ISelectionService srv = (ISelectionService) getSite().getService(
+				ISelectionService.class);
 		srv.removePostSelectionListener(RepositoriesView.VIEW_ID,
 				selectionChangedListener);
-		if (currentPlan != null)
-			currentPlan.removeRebaseInteractivePlanChangeListener(this);
-
-		if (planIndexer != null)
-			planIndexer.dispose();
 	}
 
 	@Override
@@ -240,44 +212,6 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		setupListeners();
 		createLocalDragandDrop();
-		planTreeViewer.addDoubleClickListener(new IDoubleClickListener() {
-
-			public void doubleClick(DoubleClickEvent event) {
-				PlanElement element = (PlanElement) ((IStructuredSelection) event
-						.getSelection()).getFirstElement();
-				if (element == null)
-					return;
-
-				RepositoryCommit commit = loadCommit(element.getCommit());
-				if (commit != null)
-					CommitEditor.openQuiet(commit);
-
-			}
-
-			private RepositoryCommit loadCommit(
-					AbbreviatedObjectId abbreviatedObjectId) {
-				if (abbreviatedObjectId != null) {
-					RevWalk walk = new RevWalk(
-							RebaseInteractiveView.this.currentRepository);
-					try {
-						Collection<ObjectId> resolved = walk.getObjectReader()
-								.resolve(abbreviatedObjectId);
-						if (resolved.size() == 1) {
-							RevCommit commit = walk.parseCommit(resolved
-									.iterator().next());
-							return new RepositoryCommit(
-									RebaseInteractiveView.this.currentRepository,
-									commit);
-						}
-					} catch (IOException e) {
-						return null;
-					} finally {
-						walk.release();
-					}
-				}
-				return null;
-			}
-		});
 	}
 
 	private void createCommandToolBar(Form theForm, FormToolkit toolkit) {
@@ -319,7 +253,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		abortItem.setText(UIText.InteractiveRebaseView_abortItem_text);
 		abortItem.setEnabled(false);
 
-		createSeparator(toolBar);
+		new ToolItem(toolBar, SWT.SEPARATOR);
 
 		refreshItem = new ToolItem(toolBar, SWT.NONE);
 		refreshItem.setImage(UIIcons
@@ -331,10 +265,6 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 		refreshItem.setText(UIText.InteractiveRebaseView_refreshItem_text);
-	}
-
-	private static ToolItem createSeparator(ToolBar toolBar) {
-		return new ToolItem(toolBar, SWT.SEPARATOR);
 	}
 
 	private TreeViewer createPlanTreeViewer(Section rebasePlanSection,
@@ -423,7 +353,8 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		};
 
-		ISelectionService srv = CommonUtils.getService(getSite(), ISelectionService.class);
+		ISelectionService srv = (ISelectionService) getSite().getService(
+				ISelectionService.class);
 		srv.addPostSelectionListener(RepositoriesView.VIEW_ID,
 				selectionChangedListener);
 	}
@@ -502,7 +433,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	// show empty space)
 	private void createColumns() {
 		String[] headings = { UIText.RebaseInteractiveView_HeadingStatus,
-				UIText.RebaseInteractiveView_HeadingStep,
 				UIText.RebaseInteractiveView_HeadingAction,
 				UIText.RebaseInteractiveView_HeadingCommitId,
 				UIText.RebaseInteractiveView_HeadingMessage,
@@ -522,6 +452,8 @@ public class RebaseInteractiveView extends ViewPart implements
 				ElementType t = getType(element);
 				if (t != null) {
 					switch (t) {
+					case TODO:
+						return UIIcons.getImage(resources, UIIcons.TODO_STEP);
 					case DONE_CURRENT:
 						return UIIcons
 								.getImage(resources, UIIcons.CURRENT_STEP);
@@ -558,44 +490,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn stepColumn = createColumn(headings[1], 55);
-		stepColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
-			@Override
-			public String getText(Object element) {
-				if (element instanceof PlanElement) {
-					PlanElement planLine = (PlanElement) element;
-					return (planIndexer.indexOf(planLine) + 1) + "."; //$NON-NLS-1$
-				}
-				return super.getText(element);
-			}
-		});
-		stepColumn.getColumn().addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				Tree tree = planTreeViewer.getTree();
-
-				boolean orderReversed = tree.getSortDirection() == SWT.DOWN;
-
-				RebaseInteractivePreferences.setOrderReversed(!orderReversed);
-
-				int newDirection = (orderReversed ? SWT.UP : SWT.DOWN);
-				tree.setSortDirection(newDirection);
-
-				TreeItem topmostVisibleItem = tree.getTopItem();
-				refreshUI();
-				if (topmostVisibleItem != null)
-					tree.showItem(topmostVisibleItem);
-			}
-		});
-
-		int direction = (RebaseInteractivePreferences.isOrderReversed() ? SWT.DOWN
-				: SWT.UP);
-
-		Tree planTree = planTreeViewer.getTree();
-		planTree.setSortColumn(stepColumn.getColumn());
-		planTree.setSortDirection(direction);
-
-		TreeViewerColumn actionColumn = createColumn(headings[2], 90);
+		TreeViewerColumn actionColumn = createColumn(headings[1], 90);
 		actionColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 
 			@Override
@@ -606,12 +501,7 @@ public class RebaseInteractiveView extends ViewPart implements
 					case EDIT:
 						return UIIcons.getImage(resources, UIIcons.EDITCONFIG);
 					case FIXUP:
-						if (RebaseInteractivePreferences.isOrderReversed())
-							return UIIcons.getImage(resources,
-									UIIcons.FIXUP_DOWN);
-						else
-							return UIIcons.getImage(resources,
-									UIIcons.FIXUP_UP);
+						return UIIcons.getImage(resources, UIIcons.FIXUP);
 					case PICK:
 						return UIIcons.getImage(resources, UIIcons.CHERRY_PICK);
 					case REWORD:
@@ -619,12 +509,7 @@ public class RebaseInteractiveView extends ViewPart implements
 					case SKIP:
 						return UIIcons.getImage(resources, UIIcons.REBASE_SKIP);
 					case SQUASH:
-						if (RebaseInteractivePreferences.isOrderReversed())
-							return UIIcons.getImage(resources,
-									UIIcons.SQUASH_DOWN);
-						else
-							return UIIcons.getImage(resources,
-									UIIcons.SQUASH_UP);
+						return UIIcons.getImage(resources, UIIcons.SQUASH);
 					default:
 						// fall through
 					}
@@ -647,7 +532,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn commitIDColumn = createColumn(headings[3], 70);
+		TreeViewerColumn commitIDColumn = createColumn(headings[2], 70);
 		commitIDColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -659,7 +544,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn commitMessageColumn = createColumn(headings[4], 200);
+		TreeViewerColumn commitMessageColumn = createColumn(headings[3], 200);
 		commitMessageColumn
 				.setLabelProvider(new HighlightingColumnLabelProvider() {
 					@Override
@@ -672,7 +557,7 @@ public class RebaseInteractiveView extends ViewPart implements
 					}
 				});
 
-		TreeViewerColumn authorColumn = createColumn(headings[5], 120);
+		TreeViewerColumn authorColumn = createColumn(headings[4], 120);
 		authorColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -684,7 +569,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn authoredDateColumn = createColumn(headings[6], 80);
+		TreeViewerColumn authoredDateColumn = createColumn(headings[5], 80);
 		authoredDateColumn
 				.setLabelProvider(new HighlightingColumnLabelProvider() {
 					@Override
@@ -697,7 +582,7 @@ public class RebaseInteractiveView extends ViewPart implements
 					}
 				});
 
-		TreeViewerColumn committerColumn = createColumn(headings[7], 120);
+		TreeViewerColumn committerColumn = createColumn(headings[6], 120);
 		committerColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -709,7 +594,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn commitDateColumn = createColumn(headings[8], 80);
+		TreeViewerColumn commitDateColumn = createColumn(headings[7], 80);
 		commitDateColumn
 				.setLabelProvider(new HighlightingColumnLabelProvider() {
 					@Override
@@ -757,14 +642,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			return;
 		}
 
-		if (currentPlan != null)
-			currentPlan.removeRebaseInteractivePlanChangeListener(this);
-
-		if (planIndexer != null)
-			planIndexer.dispose();
-
 		currentPlan = RebaseInteractivePlan.getPlan(repository);
-		planIndexer = new RebasePlanIndexer(currentPlan);
 		currentPlan.addRebaseInteractivePlanChangeListener(this);
 		form.setText(getRepositoryName(repository));
 		refresh();
@@ -775,13 +653,8 @@ public class RebaseInteractiveView extends ViewPart implements
 			return;
 		asyncExec(new Runnable() {
 			public void run() {
-				planTreeViewer.getTree().setRedraw(false);
-				try {
-					planTreeViewer.setInput(currentPlan);
-					refreshUI();
-				} finally {
-					planTreeViewer.getTree().setRedraw(true);
-				}
+				planTreeViewer.setInput(currentPlan);
+				refreshUI();
 			}
 		});
 
@@ -822,9 +695,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		actionToolBarProvider.mapActionItemsToSelection(planTreeViewer
 				.getSelection());
 		if (!currentPlan.hasRebaseBeenStartedYet()) {
-			if (!planTreeViewer.getSelection().isEmpty())
-				actionToolBarProvider.getTheToolbar().setEnabled(true);
-
+			actionToolBarProvider.getTheToolbar().setEnabled(true);
 			startItem.setEnabled(true);
 			abortItem.setEnabled(true);
 			dndEnabled = true;
@@ -833,64 +704,10 @@ public class RebaseInteractiveView extends ViewPart implements
 			skipItem.setEnabled(true);
 			abortItem.setEnabled(true);
 		}
-
-		if (RebaseInteractivePreferences.isOrderReversed()) {
-			Tree tree = planTreeViewer.getTree();
-			TreeItem bottomItem = tree.getItem(tree.getItemCount() - 1);
-			tree.showItem(bottomItem);
-		}
 	}
 
-	private void createPopupMenu(final TreeViewer planViewer) {
-		createContextMenuItems(planViewer);
-
-		MenuManager manager = new MenuManager();
-		manager.addMenuListener(new IMenuListener() {
-			public void menuAboutToShow(IMenuManager menuManager) {
-				boolean selectionNotEmpty = !planViewer.getSelection()
-						.isEmpty();
-				boolean rebaseNotStarted = !currentPlan
-						.hasRebaseBeenStartedYet();
-				boolean menuEnabled = selectionNotEmpty && rebaseNotStarted;
-				for (PlanContextMenuAction item : contextMenuItems)
-					item.setEnabled(menuEnabled);
-			}
-		});
-
-		for (PlanContextMenuAction item : contextMenuItems)
-			manager.add(item);
-
-		Menu menu = manager.createContextMenu(planViewer.getControl());
-		planViewer.getControl().setMenu(menu);
-	}
-
-	private void createContextMenuItems(final TreeViewer planViewer) {
-		contextMenuItems = new ArrayList<PlanContextMenuAction>();
-
-		contextMenuItems.add(new PlanContextMenuAction(
-				UIText.RebaseInteractiveStepActionToolBarProvider_PickText,
-				UIIcons.CHERRY_PICK, RebaseInteractivePlan.ElementAction.PICK,
-				planViewer, actionToolBarProvider));
-		contextMenuItems.add(new PlanContextMenuAction(
-				UIText.RebaseInteractiveStepActionToolBarProvider_SkipText,
-				UIIcons.REBASE_SKIP, RebaseInteractivePlan.ElementAction.SKIP,
-				planViewer, actionToolBarProvider));
-		contextMenuItems.add(new PlanContextMenuAction(
-				UIText.RebaseInteractiveStepActionToolBarProvider_EditText,
-				UIIcons.EDITCONFIG, RebaseInteractivePlan.ElementAction.EDIT,
-				planViewer, actionToolBarProvider));
-		contextMenuItems.add(new PlanContextMenuAction(
-				UIText.RebaseInteractiveStepActionToolBarProvider_SquashText,
-				UIIcons.SQUASH_UP, RebaseInteractivePlan.ElementAction.SQUASH,
-				planViewer, actionToolBarProvider));
-		contextMenuItems.add(new PlanContextMenuAction(
-				UIText.RebaseInteractiveStepActionToolBarProvider_FixupText,
-				UIIcons.FIXUP_UP, RebaseInteractivePlan.ElementAction.FIXUP,
-				planViewer, actionToolBarProvider));
-		contextMenuItems.add(new PlanContextMenuAction(
-				UIText.RebaseInteractiveStepActionToolBarProvider_RewordText,
-				UIIcons.REWORD, RebaseInteractivePlan.ElementAction.REWORD,
-				planViewer, actionToolBarProvider));
+	private void createPopupMenu(TreeViewer planViewer) {
+		// TODO create popup menu
 	}
 
 	private static GitDateFormatter getNewDateFormatter() {

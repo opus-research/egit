@@ -190,9 +190,6 @@ public class CoreText extends NLS {
 	public static String ResetOperation_performingReset;
 
 	/** */
-	public static String ResourceUtil_SaveLocalHistoryFailed;
-
-	/** */
 	public static String MergeOperation_InternalError;
 
 	/** */
@@ -217,9 +214,6 @@ public class CoreText extends NLS {
 	public static String MoveDeleteHook_unmergedFileInFolderError;
 
 	/** */
-	public static String MoveDeleteHook_cannotAutoStageDeletion;
-
-	/** */
 	public static String Error_CanonicalFile;
 
 	/** */
@@ -236,6 +230,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CreatePatchOperation_cannotCreatePatchForMergeCommit;
+
+	/** */
+	public static String CreatePatchOperation_cannotCreatePatchForFirstCommit;
 
 	/** */
 	public static String CreatePatchOperation_couldNotFindProject;
@@ -302,12 +299,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String RevertCommitOperation_reverting;
-
-	/** */
-	public static String RewordCommitOperation_rewording;
-
-	/** */
-	public static String EditCommitOperation_editing;
 
 	/** */
 	public static String BranchOperation_closingMissingProject;
@@ -377,9 +368,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitProjectData_repositoryChangedTaskName;
-
-	/** */
-	public static String GitProjectData_UnmapJobName;
 
 	/** */
 	public static String GitProjectData_UnmappingGoneResourceFailed;
