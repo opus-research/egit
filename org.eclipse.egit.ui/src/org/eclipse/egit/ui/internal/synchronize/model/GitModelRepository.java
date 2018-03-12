@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -55,7 +55,7 @@ public class GitModelRepository extends GitModelObjectContainer implements HasPr
 
 	@Override
 	public GitModelObject[] getChildren() {
-		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
+		List<GitModelObjectContainer> result = new ArrayList<>();
 		Repository repo = gsd.getRepository();
 		RevCommit srcRevCommit = gsd.getSrcRevCommit();
 		RevCommit dstRevCommit = gsd.getDstRevCommit();
@@ -86,6 +86,7 @@ public class GitModelRepository extends GitModelObjectContainer implements HasPr
 		return gsd.getRepository().getWorkTree().toString();
 	}
 
+	@Override
 	public IProject[] getProjects() {
 		return gsd.getProjects().toArray(new IProject[gsd.getProjects().size()]);
 	}
@@ -113,11 +114,6 @@ public class GitModelRepository extends GitModelObjectContainer implements HasPr
 	@Override
 	public int getKind() {
 		return Differencer.CHANGE;
-	}
-
-	@Override
-	public boolean isContainer() {
-		return true;
 	}
 
 	@Override
@@ -153,7 +149,7 @@ public class GitModelRepository extends GitModelObjectContainer implements HasPr
 		Repository repo = gsd.getRepository();
 		Set<IProject> projectsSet = gsd.getProjects();
 		IProject[] projects = projectsSet.toArray(new IProject[projectsSet.size()]);
-		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
+		List<GitModelObjectContainer> result = new ArrayList<>();
 
 		for (Commit commit : commitCache)
 			result.add(new GitModelCommit(this, repo, commit, projects));
@@ -162,7 +158,7 @@ public class GitModelRepository extends GitModelObjectContainer implements HasPr
 	}
 
 	private List<GitModelObjectContainer> getWorkingChanges() {
-		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
+		List<GitModelObjectContainer> result = new ArrayList<>();
 		if (gsd.shouldIncludeLocal()) {
 			Repository repo = gsd.getRepository();
 			Map<String, Change> stagedChanges = StagedChangeCache.build(repo);

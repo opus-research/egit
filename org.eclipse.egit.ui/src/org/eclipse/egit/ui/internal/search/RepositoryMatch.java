@@ -15,7 +15,7 @@ import java.util.List;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.PlatformObject;
-import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jgit.lib.Repository;
@@ -27,7 +27,7 @@ import org.eclipse.ui.model.IWorkbenchAdapter;
 public class RepositoryMatch extends PlatformObject implements
 		IWorkbenchAdapter {
 
-	private List<RepositoryCommit> commits = new ArrayList<RepositoryCommit>();
+	private List<RepositoryCommit> commits = new ArrayList<>();
 
 	private Repository repository;
 
@@ -41,10 +41,12 @@ public class RepositoryMatch extends PlatformObject implements
 		this.repository = repository;
 	}
 
+	@Override
 	public int hashCode() {
 		return 31 * repository.hashCode();
 	}
 
+	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
@@ -85,14 +87,17 @@ public class RepositoryMatch extends PlatformObject implements
 		return this.commits.size();
 	}
 
+	@Override
 	public Object[] getChildren(Object o) {
 		return this.commits.toArray();
 	}
 
+	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		return UIIcons.REPOSITORY;
 	}
 
+	@Override
 	public String getLabel(Object o) {
 		if (repository.isBare())
 			return repository.getDirectory().getName();
@@ -100,6 +105,7 @@ public class RepositoryMatch extends PlatformObject implements
 			return repository.getDirectory().getParentFile().getName();
 	}
 
+	@Override
 	public Object getParent(Object o) {
 		return null;
 	}

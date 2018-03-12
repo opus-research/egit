@@ -136,57 +136,68 @@ public class GitModelBlob extends GitModelObject implements
 		return "ModelBlob[objectId=" + change.getObjectId() + ", location=" + getLocation() + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
+	@Override
 	public Image getImage() {
 		// not used
 		return null;
 	}
 
+	@Override
 	public ITypedElement getAncestor() {
 		prepareTypedElements();
 		return ancestorElement;
 	}
 
+	@Override
 	public ITypedElement getLeft() {
 		prepareTypedElements();
 		return leftElement;
 	}
 
+	@Override
 	public ITypedElement getRight() {
 		prepareTypedElements();
 		return rightElement;
 	}
 
+	@Override
 	public void addCompareInputChangeListener(
 			ICompareInputChangeListener listener) {
 		// data in commit will never change, therefore change listeners are
 		// useless
 	}
 
+	@Override
 	public void removeCompareInputChangeListener(
 			ICompareInputChangeListener listener) {
 		// data in commit will never change, therefore change listeners are
 		// useless
 	}
 
+	@Override
 	public void copy(boolean leftToRight) {
 		// do nothing, we should disallow coping content between commits
 	}
 
+	@Override
 	public SaveableComparison getSaveable() {
 		// unused
 		return null;
 	}
 
+	@Override
 	public void prepareInput(CompareConfiguration configuration,
 			IProgressMonitor monitor) throws CoreException {
 		configuration.setLeftLabel(getFileRevisionLabel(getLeft()));
 		configuration.setRightLabel(getFileRevisionLabel(getRight()));
 	}
 
+	@Override
 	public String getFullPath() {
 		return path.toOSString();
 	}
 
+	@Override
 	public boolean isCompareInputFor(Object object) {
 		// not used
 		return false;
@@ -236,11 +247,10 @@ public class GitModelBlob extends GitModelObject implements
 		ComparisonDataSource baseData;
 		ComparisonDataSource remoteData;
 
-		RevWalk rw = new RevWalk(repo);
-		rw.setRetainBody(true);
 		RevCommit baseCommit = null;
 		RevCommit remoteCommit = null;
-		try {
+		try (RevWalk rw = new RevWalk(repo)) {
+			rw.setRetainBody(true);
 			if (change.getCommitId() != null)
 				baseCommit = rw.parseCommit(change.getCommitId().toObjectId());
 			if (change.getRemoteCommitId() != null)
@@ -248,8 +258,6 @@ public class GitModelBlob extends GitModelObject implements
 						.toObjectId());
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
-		} finally {
-			rw.dispose();
 		}
 		if (baseCommit == null && remoteCommit != null)
 			baseCommit = remoteCommit; // prevent from NPE for deleted files
@@ -272,6 +280,7 @@ public class GitModelBlob extends GitModelObject implements
 		rightElement = compareInput.getRight();
 	}
 
+	@Override
 	public IResource getResource() {
 		IFile file = ResourcesPlugin.getWorkspace().getRoot()
 				.getFileForLocation(path);

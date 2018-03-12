@@ -18,8 +18,8 @@ import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitTag;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -35,7 +35,8 @@ import org.eclipse.team.core.history.ITag;
  * An {@link IFileRevision} for a version of a specified resource in the
  * specified commit (revision).
  */
-class CommitFileRevision extends GitFileRevision {
+public class CommitFileRevision extends GitFileRevision implements
+		OpenWorkspaceVersionEnabled {
 	private final Repository db;
 
 	private final RevCommit commit;
@@ -47,24 +48,31 @@ class CommitFileRevision extends GitFileRevision {
 	private ObjectId blobId;
 
 	CommitFileRevision(final Repository repo, final RevCommit rc,
-			final String fileName) {
-		this(repo, rc, fileName, null);
+			final String path) {
+		this(repo, rc, path, null);
 	}
 
 	CommitFileRevision(final Repository repo, final RevCommit rc,
-			final String fileName, final ObjectId blob) {
-		super(fileName);
+			final String path, final ObjectId blob) {
+		super(path);
 		db = repo;
 		commit = rc;
 		author = rc.getAuthorIdent();
-		path = fileName;
+		this.path = path;
 		blobId = blob;
 	}
 
-	String getGitPath() {
+	@Override
+	public Repository getRepository() {
+		return db;
+	}
+
+	@Override
+	public String getGitPath() {
 		return path;
 	}
 
+	@Override
 	public IStorage getStorage(final IProgressMonitor monitor)
 			throws CoreException {
 		if (blobId == null)
@@ -72,26 +80,32 @@ class CommitFileRevision extends GitFileRevision {
 		return new CommitBlobStorage(db, path, blobId, commit);
 	}
 
+	@Override
 	public long getTimestamp() {
 		return author != null ? author.getWhen().getTime() : 0;
 	}
 
+	@Override
 	public String getContentIdentifier() {
 		return commit.getId().name();
 	}
 
+	@Override
 	public String getAuthor() {
 		return author != null ? author.getName() : null;
 	}
 
+	@Override
 	public String getComment() {
 		return commit.getShortMessage();
 	}
 
+	@Override
 	public String toString() {
 		return commit.getId() + ":" + path;  //$NON-NLS-1$
 	}
 
+	@Override
 	public ITag[] getTags() {
 		final Collection<GitTag> ret = new ArrayList<GitTag>();
 		for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {

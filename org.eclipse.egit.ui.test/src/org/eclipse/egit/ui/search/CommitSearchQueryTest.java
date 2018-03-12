@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011 GitHub Inc.
+ *  Copyright (c) 2011, 2013 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -30,7 +30,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.search.ui.ISearchResult;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -38,24 +38,21 @@ import org.junit.Test;
  */
 public class CommitSearchQueryTest extends LocalRepositoryTestCase {
 
-	private static Repository repository;
+	private Repository repository;
 
-	private static RevCommit commit;
+	private RevCommit commit;
 
-	@BeforeClass
-	public static void setup() throws Exception {
+	@Before
+	public void setup() throws Exception {
 		File repoFile = createProjectAndCommitToRepository();
 		assertNotNull(repoFile);
 		repository = Activator.getDefault().getRepositoryCache()
 				.lookupRepository(repoFile);
 		assertNotNull(repository);
 
-		RevWalk walk = new RevWalk(repository);
-		try {
+		try (RevWalk walk = new RevWalk(repository)) {
 			commit = walk.parseCommit(repository.resolve(Constants.HEAD));
 			assertNotNull(commit);
-		} finally {
-			walk.release();
 		}
 	}
 
@@ -137,7 +134,7 @@ public class CommitSearchQueryTest extends LocalRepositoryTestCase {
 		CommitSearchSettings settings = createSettings();
 		settings.setMatchCommit(true);
 		settings.setCaseSensitive(true);
-		settings.setTextPattern(commit.name().toUpperCase(Locale.US));
+		settings.setTextPattern(commit.name().toUpperCase(Locale.ROOT));
 		CommitSearchQuery query = new CommitSearchQuery(settings);
 		IStatus status = query.run(new NullProgressMonitor());
 		assertNotNull(status);

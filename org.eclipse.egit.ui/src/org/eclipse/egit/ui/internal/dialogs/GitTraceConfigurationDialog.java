@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2010, 2013 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,32 +10,33 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Properties;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ICheckStateProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -158,23 +159,32 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 			return true;
 		}
 
+		@Override
 		public int compareTo(OptionNode o) {
 			return option.compareTo(o.option);
 		}
 	}
 
-	private final static class TraceTableContentProvider extends
-			ArrayContentProvider implements ITreeContentProvider {
+	private final static class TraceTableContentProvider implements
+			ITreeContentProvider {
 		private final Map<PluginNode, Properties> myOptionsMap;
 
 		public TraceTableContentProvider(Map<PluginNode, Properties> optionsMap) {
 			this.myOptionsMap = optionsMap;
 		}
 
+		@Override
+		public Object[] getElements(Object inputElement) {
+			if (inputElement instanceof Object[])
+				return (Object[]) inputElement;
+			return new Object[0];
+		}
+
+		@Override
 		public Object[] getChildren(Object parentElement) {
 			if (parentElement instanceof PluginNode) {
 				PluginNode node = (PluginNode) parentElement;
-				List<OptionNode> result = new ArrayList<OptionNode>();
+				List<OptionNode> result = new ArrayList<>();
 				for (Object key : myOptionsMap.get(node).keySet()) {
 					// hide the main switch
 					if (key.equals(node.getPlugin() + MAINSWITCH))
@@ -187,14 +197,26 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 			return null;
 		}
 
+		@Override
 		public Object getParent(Object element) {
 			if (element instanceof OptionNode)
 				return ((OptionNode) element).getPlugin();
 			return null;
 		}
 
+		@Override
 		public boolean hasChildren(Object element) {
 			return element instanceof PluginNode;
+		}
+
+		@Override
+		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+			// Do nothing
+		}
+
+		@Override
+		public void dispose() {
+			// Do nothing
 		}
 	}
 
@@ -208,7 +230,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 
 	private static final int DEFAULT_ID = 88;
 
-	private final Map<PluginNode, Properties> optionsMap = new HashMap<PluginNode, Properties>();
+	private final Map<PluginNode, Properties> optionsMap = new HashMap<>();
 
 	private boolean isDirty;
 
@@ -295,6 +317,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 		});
 
 		tv.addCheckStateListener(new ICheckStateListener() {
+			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				setDirty(true);
 			}
@@ -330,10 +353,12 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 		DebugOptions options = getOptions();
 		fillOptionsMapFromCurrent(options);
 		tv.setCheckStateProvider(new ICheckStateProvider() {
+			@Override
 			public boolean isGrayed(Object element) {
 				return false;
 			}
 
+			@Override
 			public boolean isChecked(Object element) {
 				Object data = element;
 				Properties props;
@@ -416,7 +441,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 			options.setDebugEnabled(platformSwitch.getSelection());
 			if (platformSwitch.getSelection()) {
 				// if this is off, we won't be able to save anything
-				List<String> checkedKeys = new ArrayList<String>();
+				List<String> checkedKeys = new ArrayList<>();
 				for (Object checked : Arrays.asList(tv.getCheckedElements())) {
 					if (checked instanceof PluginNode)
 						checkedKeys.add(((PluginNode) checked).getPlugin()
@@ -446,7 +471,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 	}
 
 	private void fillOptionsMapFromOptions() {
-		Map<String, String> oldValues = new HashMap<String, String>();
+		Map<String, String> oldValues = new HashMap<>();
 		for (Properties props : optionsMap.values())
 			for (Object keyObject : props.keySet()) {
 				String key = (String) keyObject;
@@ -457,16 +482,23 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 		for (PluginNode plugin : PLUGIN_LIST) {
 			Properties props = new Properties();
 			try {
-				InputStream is = Platform.getBundle(plugin.getPlugin())
-						.getResource(".options").openStream(); //$NON-NLS-1$
-				props.load(is);
+				URL resource = Platform.getBundle(plugin.getPlugin())
+						.getResource(".options"); //$NON-NLS-1$
+				if (resource != null) {
+					InputStream is = resource.openStream();
+					try {
+						props.load(is);
+					} finally {
+						is.close();
+					}
+				}
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
 			}
 			optionsMap.put(plugin, props);
 		}
 
-		Map<String, String> newValues = new HashMap<String, String>();
+		Map<String, String> newValues = new HashMap<>();
 		for (Properties props : optionsMap.values())
 			for (Object keyObject : props.keySet()) {
 				String key = (String) keyObject;
@@ -497,9 +529,16 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 		for (PluginNode plugin : PLUGIN_LIST) {
 			Properties props = new Properties();
 			try {
-				InputStream is = Platform.getBundle(plugin.getPlugin())
-						.getResource(".options").openStream(); //$NON-NLS-1$
-				props.load(is);
+				URL resource = Platform.getBundle(plugin.getPlugin())
+						.getResource(".options"); //$NON-NLS-1$
+				if (resource != null) {
+					InputStream is = resource.openStream();
+					try {
+						props.load(is);
+					} finally {
+						is.close();
+					}
+				}
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
 			}

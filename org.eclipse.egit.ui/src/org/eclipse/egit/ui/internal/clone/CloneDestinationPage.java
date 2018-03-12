@@ -4,6 +4,8 @@
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,13 +18,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.variables.IStringVariableManager;
-import org.eclipse.core.variables.VariablesPlugin;
+import org.eclipse.egit.core.RepositoryUtil;
+import org.eclipse.egit.core.internal.util.RepositoryPathChecker;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -33,8 +33,11 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -57,9 +60,9 @@ import org.eclipse.ui.dialogs.WorkingSetGroup;
  * Wizard page that allows the user entering the location of a repository to be
  * cloned.
  */
-class CloneDestinationPage extends WizardPage {
+public class CloneDestinationPage extends WizardPage {
 
-	private final List<Ref> availableRefs = new ArrayList<Ref>();
+	private final List<Ref> availableRefs = new ArrayList<>();
 
 	private RepositorySelection validatedRepoSelection;
 
@@ -94,6 +97,7 @@ class CloneDestinationPage extends WizardPage {
 		setTitle(UIText.CloneDestinationPage_title);
 	}
 
+	@Override
 	public void createControl(final Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NULL);
 		final GridLayout layout = new GridLayout();
@@ -120,22 +124,34 @@ class CloneDestinationPage extends WizardPage {
 			directoryText.setFocus();
 	}
 
-	public void setSelection(RepositorySelection repositorySelection, List<Ref> availableRefs, List<Ref> branches, Ref head){
+	/**
+	 * @param repositorySelection
+	 *            selection of remote repository made by user
+	 * @param availableRefs
+	 *            all available refs
+	 * @param branches
+	 *            branches selected to be cloned
+	 * @param head
+	 *            HEAD in source repository
+	 */
+	public void setSelection(@NonNull RepositorySelection repositorySelection,
+			List<Ref> availableRefs, List<Ref> branches, Ref head) {
 		this.availableRefs.clear();
 		this.availableRefs.addAll(availableRefs);
 		checkPreviousPagesSelections(repositorySelection, branches, head);
-		revalidate(repositorySelection,branches, head);
+		revalidate(repositorySelection, branches, head);
 	}
 
 	private void checkPreviousPagesSelections(
-			RepositorySelection repositorySelection, List<Ref> branches,
-			Ref head) {
+			@NonNull RepositorySelection repositorySelection,
+			List<Ref> branches, Ref head) {
 		if (!repositorySelection.equals(validatedRepoSelection)
 				|| !branches.equals(validatedSelectedBranches)
-				|| !head.equals(validatedHEAD))
+				|| (head != null && !head.equals(validatedHEAD))) {
 			setPageComplete(false);
-		else
+		} else {
 			checkPage();
+		}
 	}
 
 	private void createDestinationGroup(final Composite parent) {
@@ -154,6 +170,7 @@ class CloneDestinationPage extends WizardPage {
 		directoryText = new Text(p, SWT.BORDER);
 		directoryText.setLayoutData(createFieldGridData());
 		directoryText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(final ModifyEvent e) {
 				checkPage();
 			}
@@ -161,6 +178,7 @@ class CloneDestinationPage extends WizardPage {
 		final Button b = new Button(p, SWT.PUSH);
 		b.setText(UIText.CloneDestinationPage_browseButton);
 		b.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				final FileDialog d;
 
@@ -210,6 +228,7 @@ class CloneDestinationPage extends WizardPage {
 		remoteText.setText(Constants.DEFAULT_REMOTE_NAME);
 		remoteText.setLayoutData(createFieldGridData());
 		remoteText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -227,6 +246,7 @@ class CloneDestinationPage extends WizardPage {
 				.getPreferenceStore()
 				.getBoolean(UIPreferences.CLONE_WIZARD_IMPORT_PROJECTS));
 		importProjectsButton.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Activator
 						.getDefault()
@@ -294,7 +314,7 @@ class CloneDestinationPage extends WizardPage {
 	 * @return location the user wants to store this repository.
 	 */
 	public File getDestinationFile() {
-		return new File(directoryText.getText());
+		return FileUtils.canonicalize(new File(directoryText.getText()));
 	}
 
 	/**
@@ -310,7 +330,7 @@ class CloneDestinationPage extends WizardPage {
 	 * @return remote name
 	 */
 	public String getRemote() {
-		return remoteText.getText();
+		return remoteText.getText().trim();
 	}
 
 	/**
@@ -338,13 +358,14 @@ class CloneDestinationPage extends WizardPage {
 			return;
 		}
 		final String dstpath = directoryText.getText();
-		if (dstpath.length() == 0) {
-			setErrorMessage(UIText.CloneDestinationPage_errorDirectoryRequired);
+		RepositoryPathChecker checker = new RepositoryPathChecker();
+		if (!checker.check(dstpath)) {
+			setErrorMessage(checker.getErrorMessage());
 			setPageComplete(false);
 			return;
 		}
 		final File absoluteFile = new File(dstpath).getAbsoluteFile();
-		if (!isEmptyDir(absoluteFile)) {
+		if (checker.hasContent()) {
 			setErrorMessage(NLS.bind(
 					UIText.CloneDestinationPage_errorNotEmptyDir, absoluteFile
 							.getPath()));
@@ -364,8 +385,16 @@ class CloneDestinationPage extends WizardPage {
 			setPageComplete(false);
 			return;
 		}
-		if (remoteText.getText().length() == 0) {
+		String remoteName = getRemote();
+		if (remoteName.length() == 0) {
 			setErrorMessage(UIText.CloneDestinationPage_errorRemoteNameRequired);
+			setPageComplete(false);
+			return;
+		}
+		if (!Repository.isValidRefName(Constants.R_REMOTES + remoteName)) {
+			setErrorMessage(NLS.bind(
+					UIText.CloneDestinationPage_errorInvalidRemoteName,
+					remoteName));
 			setPageComplete(false);
 			return;
 		}
@@ -380,21 +409,17 @@ class CloneDestinationPage extends WizardPage {
 		clonedRemote = getRemote();
 	}
 
-	boolean cloneSettingsChanged() {
+	/**
+	 * @return whether user updated clone settings
+	 * @since 4.0.0
+	 */
+	public boolean cloneSettingsChanged() {
 		boolean cloneSettingsChanged = false;
 		if (clonedDestination == null || !clonedDestination.equals(getDestinationFile()) ||
 				clonedInitialBranch == null || !clonedInitialBranch.equals(getInitialBranch()) ||
 				clonedRemote == null || !clonedRemote.equals(getRemote()))
 			cloneSettingsChanged = true;
 		return cloneSettingsChanged;
-	}
-
-	private static boolean isEmptyDir(final File dir) {
-		if (!dir.exists())
-			return true;
-		if (!dir.isDirectory())
-			return false;
-		return dir.listFiles().length == 0;
 	}
 
 	// this is actually just an optimistic heuristic - should be named
@@ -408,10 +433,11 @@ class CloneDestinationPage extends WizardPage {
 		return canCreateSubdir(parent.getParentFile());
 	}
 
-	private void revalidate(RepositorySelection repoSelection, List<Ref> branches, Ref head) {
+	private void revalidate(@NonNull RepositorySelection repoSelection,
+			List<Ref> branches, Ref head) {
 		if (repoSelection.equals(validatedRepoSelection)
 				&& branches.equals(validatedSelectedBranches)
-				&& head.equals(validatedHEAD)) {
+				&& head != null && head.equals(validatedHEAD)) {
 			checkPage();
 			return;
 		}
@@ -421,19 +447,8 @@ class CloneDestinationPage extends WizardPage {
 			// update repo-related selection only if it changed
 			final String n = validatedRepoSelection.getURI().getHumanishName();
 			setDescription(NLS.bind(UIText.CloneDestinationPage_description, n));
-			String defaultRepoDir = Activator.getDefault().getPreferenceStore()
-					.getString(UIPreferences.DEFAULT_REPO_DIR);
-			IStringVariableManager manager = VariablesPlugin.getDefault().getStringVariableManager();
-			String destinationDir;
-			File parentDir;
-			try {
-				destinationDir = manager.performStringSubstitution(defaultRepoDir);
-				parentDir = new File(destinationDir);
-			} catch (CoreException e) {
-				parentDir = null;
-			}
-			if (parentDir == null)
-				parentDir = ResourcesPlugin.getWorkspace().getRoot().getRawLocation().toFile();
+			String defaultRepoDir = RepositoryUtil.getDefaultRepositoryDir();
+			File parentDir = new File(defaultRepoDir);
 			directoryText.setText(new File(parentDir, n).getAbsolutePath());
 		}
 

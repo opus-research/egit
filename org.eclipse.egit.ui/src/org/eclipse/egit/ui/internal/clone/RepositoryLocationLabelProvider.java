@@ -13,7 +13,7 @@ package org.eclipse.egit.ui.internal.clone;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
 import org.eclipse.egit.ui.internal.provisional.wizards.RepositoryServerInfo;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -23,7 +23,7 @@ class RepositoryLocationLabelProvider extends LabelProvider {
 
 	private Image repoImage = UIIcons.CLONEGIT.createImage();
 
-	private List<Image> images = new ArrayList<Image>();
+	private List<Image> images = new ArrayList<>();
 
 	@Override
 	public String getText(Object element) {
@@ -46,6 +46,7 @@ class RepositoryLocationLabelProvider extends LabelProvider {
 		return null;
 	}
 
+	@Override
 	public void dispose() {
 		repoImage.dispose();
 		for (Image image  : images)

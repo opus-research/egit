@@ -149,10 +149,13 @@ public class DecorationOverlayDescriptor extends CompositeImageDescriptor {
 				drawImage(overlayData, size.x - overlayData.width, size.y
 						- overlayData.height);
 				break;
+			default:
+				break;
 			}
 		}
 	}
 
+	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof DecorationOverlayDescriptor))
 			return false;
@@ -161,6 +164,7 @@ public class DecorationOverlayDescriptor extends CompositeImageDescriptor {
 				&& Arrays.equals(overlays, other.overlays);
 	}
 
+	@Override
 	public int hashCode() {
 		int code = base.hashCode();
 		for (int i = 0; i < overlays.length; i++)
@@ -169,6 +173,7 @@ public class DecorationOverlayDescriptor extends CompositeImageDescriptor {
 		return code;
 	}
 
+	@Override
 	protected void drawCompositeImage(int width, int height) {
 		if (overlays.length > IDecoration.UNDERLAY) {
 			ImageDescriptor underlay = overlays[IDecoration.UNDERLAY];
@@ -190,10 +195,12 @@ public class DecorationOverlayDescriptor extends CompositeImageDescriptor {
 		return data != null ? data : DEFAULT_IMAGE_DATA;
 	}
 
+	@Override
 	protected Point getSize() {
 		return size;
 	}
 
+	@Override
 	protected int getTransparentPixel() {
 		return getBaseImageData().transparentPixel;
 	}

@@ -27,10 +27,10 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.JFacePreferences;
@@ -72,9 +72,9 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 	private TreeViewer treeViewer;
 
-	private final Map<Repository, Set<IProject>> resources = new HashMap<Repository, Set<IProject>>();
+	private final Map<Repository, Set<IProject>> resources = new HashMap<>();
 
-	private final Map<Repository, String> selectedBranches = new HashMap<Repository, String>();
+	private final Map<Repository, String> selectedBranches = new HashMap<>();
 
 	private final Image branchImage = UIIcons.BRANCH.createImage();
 
@@ -86,6 +86,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 		setMessage(UIText.GitBranchSynchronizeWizardPage_description, WARNING);
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		Composite composite = new Composite(parent, SWT.NONE);
 		GridLayout layout = new GridLayout(1, false);
@@ -101,7 +102,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 			Repository repo = repositoryMapping.getRepository();
 			Set<IProject> projects = resources.get(repo);
 			if (projects == null) {
-				projects = new HashSet<IProject>();
+				projects = new HashSet<>();
 				resources.put(repo, projects);
 			}
 			projects.add(project);
@@ -117,7 +118,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 		TreeViewerColumn projectsColumn = new TreeViewerColumn(treeViewer,
 				SWT.LEAD);
 		projectsColumn.getColumn().setText(
-				UIText.GitBranchSynchronizeWizardPage_repositories);
+				UIText.GitBranchSynchronizeWizardPage_repository);
 		projectsColumn.getColumn().setImage(repositoryImage);
 		projectsColumn.setLabelProvider(new StyledCellLabelProvider() {
 			@Override
@@ -204,7 +205,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 			@Override
 			protected CellEditor getCellEditor(Object element) {
 				Repository repo = (Repository) element;
-				List<String> refs = new LinkedList<String>(repo.getAllRefs()
+				List<String> refs = new LinkedList<>(repo.getAllRefs()
 						.keySet());
 
 				List<Ref> additionalRefs;
@@ -238,35 +239,42 @@ class GitSynchronizeWizardPage extends WizardPage {
 		});
 
 		treeViewer.setContentProvider(new ITreeContentProvider() {
+			@Override
 			public void inputChanged(Viewer viewer, Object oldInput,
 					Object newInput) {
 				// nothing to do
 			}
 
+			@Override
 			public void dispose() {
 				// nothing to do
 			}
 
+			@Override
 			public Object[] getElements(Object inputElement) {
 				return (Object[]) inputElement;
 			}
 
+			@Override
 			public boolean hasChildren(Object element) {
 				return false;
 			}
 
+			@Override
 			public Object getParent(Object element) {
 				return null;
 			}
 
+			@Override
 			public Object[] getChildren(Object parentElement) {
 				return new Object[0];
 			}
 		});
 
-		List<Repository> repositoriesList = new ArrayList<Repository>(
+		List<Repository> repositoriesList = new ArrayList<>(
 				resources.keySet());
 		Collections.sort(repositoriesList, new Comparator<Repository>() {
+			@Override
 			public int compare(Repository o1, Repository o2) {
 				String name1 = o1.getWorkTree().getName();
 				String name2 = o2.getWorkTree().getName();
@@ -339,7 +347,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 	}
 
 	Set<IProject> getSelectedProjects() {
-		Set<IProject> projects = new HashSet<IProject>();
+		Set<IProject> projects = new HashSet<>();
 		for (Repository repo : selectedBranches.keySet())
 			projects.addAll(resources.get(repo));
 

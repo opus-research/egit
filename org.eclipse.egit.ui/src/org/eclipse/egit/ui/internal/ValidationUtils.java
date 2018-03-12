@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,11 +10,17 @@
 package org.eclipse.egit.ui.internal;
 
 import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.IInputValidator;
+import org.eclipse.jgit.errors.RevisionSyntaxException;
+import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.util.StringUtils;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -32,6 +38,7 @@ public class ValidationUtils {
 	public static IInputValidator getRefNameInputValidator(
 			final Repository repo, final String refPrefix, final boolean errorOnEmptyName) {
 		return new IInputValidator() {
+			@Override
 			public String isValid(String newText) {
 				if (newText.length() == 0) {
 					if (errorOnEmptyName)
@@ -50,11 +57,27 @@ public class ValidationUtils {
 						return NLS.bind(
 								UIText.ValidationUtils_RefAlreadyExistsMessage,
 								testFor);
-				} catch (IOException e1) {
+					RefDatabase refDatabase = repo.getRefDatabase();
+					Collection<String> conflictingNames = refDatabase.getConflictingNames(testFor);
+					if (!conflictingNames.isEmpty()) {
+						ArrayList<String> names = new ArrayList<>(conflictingNames);
+						Collections.sort(names);
+						String joined = StringUtils.join(names, ", "); //$NON-NLS-1$
+						return NLS.bind(
+								UIText.ValidationUtils_RefNameConflictsWithExistingMessage,
+								joined);
+					}
+				} catch (IOException e) {
 					Activator.logError(NLS.bind(
 							UIText.ValidationUtils_CanNotResolveRefMessage,
-							testFor), e1);
-					return e1.getMessage();
+							testFor), e);
+					return e.getMessage();
+				} catch (RevisionSyntaxException e) {
+					String m = MessageFormat.format(
+							UIText.ValidationUtils_InvalidRevision,
+							testFor);
+					Activator.logError(m, e);
+					return m;
 				}
 				return null;
 			}

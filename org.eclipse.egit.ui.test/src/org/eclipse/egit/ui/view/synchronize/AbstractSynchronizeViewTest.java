@@ -8,15 +8,15 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.view.synchronize;
 
-import static org.eclipse.egit.ui.UIText.CommitAction_commit;
-import static org.eclipse.egit.ui.UIText.CommitDialog_Commit;
-import static org.eclipse.egit.ui.UIText.CommitDialog_CommitChanges;
-import static org.eclipse.egit.ui.UIText.CommitDialog_SelectAll;
+import static org.eclipse.egit.ui.internal.UIText.CommitDialog_Commit;
+import static org.eclipse.egit.ui.internal.UIText.CommitDialog_CommitChanges;
+import static org.eclipse.egit.ui.internal.UIText.CommitDialog_SelectAll;
 import static org.eclipse.egit.ui.test.ContextMenuHelper.clickContextMenu;
 import static org.eclipse.egit.ui.test.TestUtil.waitUntilTreeHasNodeContainsText;
 import static org.eclipse.jface.dialogs.MessageDialogWithToggle.NEVER;
 import static org.eclipse.jgit.lib.Constants.R_TAGS;
 import static org.eclipse.team.internal.ui.IPreferenceIds.SYNCHRONIZING_COMPLETE_PERSPECTIVE;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
@@ -42,22 +41,18 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.common.CompareEditorTester;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.util.FileUtils;
-import org.eclipse.jgit.util.StringUtils;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
-import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
-import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
-import org.eclipse.swtbot.swt.finder.waits.Conditions;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
@@ -65,6 +60,7 @@ import org.eclipse.team.ui.TeamUI;
 import org.eclipse.team.ui.mapping.ITeamContentProviderDescriptor;
 import org.eclipse.team.ui.mapping.ITeamContentProviderManager;
 import org.eclipse.team.ui.synchronize.ISynchronizeManager;
+import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -85,15 +81,28 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	protected File childRepositoryFile;
 
-	@Before public void setupViews() {
-		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
-		bot.viewByTitle("Package Explorer").show();
+	@Before
+	public void setupViews() {
+		Activator.getDefault().getPreferenceStore()
+				.setValue(UIPreferences.ALWAYS_USE_STAGING_VIEW, false);
+		TestUtil.showExplorerView();
 	}
 
 	@After
 	public void closeSynchronizeView() {
-		SWTBotView syncView = bot.viewByTitle("Synchronize");
-		syncView.close();
+		Activator.getDefault().getPreferenceStore()
+				.setValue(UIPreferences.ALWAYS_USE_STAGING_VIEW, true);
+		TestUtil.hideView(ISynchronizeView.VIEW_ID);
+	}
+
+	@After
+	public void deleteEmptyProject() throws Exception {
+		IProject prj = ResourcesPlugin.getWorkspace().getRoot()
+				.getProject(EMPTY_PROJECT);
+		if (prj.exists()) {
+			prj.delete(false, false, null);
+			TestUtil.waitForJobs(50, 5000);
+		}
 	}
 
 	@Before
@@ -109,30 +118,22 @@ public abstract class AbstractSynchronizeViewTest extends
 				.addConfiguredRepository(repositoryFile);
 	}
 
-	@After
-	public void deleteRepository() throws Exception {
-		deleteAllProjects();
-		shutDownRepositories();
-		FileUtils.delete(repositoryFile.getParentFile(), FileUtils.RECURSIVE | FileUtils.RETRY);
-		FileUtils.delete(childRepositoryFile.getParentFile(), FileUtils.RECURSIVE | FileUtils.RETRY);
-	}
-
-	@BeforeClass public static void setupEnvironment() throws Exception {
+	@BeforeClass
+	public static void setupEnvironment() throws Exception {
 		// disable perspective synchronize selection
 		TeamUIPlugin.getPlugin().getPreferenceStore().setValue(
 				SYNCHRONIZING_COMPLETE_PERSPECTIVE, NEVER);
 		Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, false);
 
-		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
-		bot.viewByTitle("Package Explorer").show();
+		TestUtil.showExplorerView();
 	}
 
 	protected void changeFilesInProject() throws Exception {
-		SWTBot packageExlBot = bot.viewByTitle("Package Explorer").bot();
+		SWTBot packageExlBot = bot.viewById(JavaUI.ID_PACKAGES).bot();
 		SWTBotTreeItem coreTreeItem = selectProject(PROJ1, packageExlBot.tree());
-		SWTBotTreeItem rootNode = coreTreeItem.expand().getNode(0)
-				.expand().select();
+		SWTBotTreeItem rootNode = TestUtil.expandAndWait(coreTreeItem);
+		rootNode = TestUtil.expandAndWait(rootNode.getNode(0)).select();
 		rootNode.getNode(0).select().doubleClick();
 
 		SWTBotEditor corePomEditor = bot.editorByTitle(FILE1);
@@ -149,8 +150,9 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	protected void createTag(String tagName)
 			throws Exception {
-		new Git(lookupRepository(repositoryFile)).tag().setName(tagName)
-				.setMessage(tagName).call();
+		try (Git git = new Git(lookupRepository(repositoryFile))) {
+			git.tag().setName(tagName).setMessage(tagName).call();
+		}
 	}
 
 	protected void makeChangesAndCommit(String projectName) throws Exception {
@@ -173,7 +175,8 @@ public abstract class AbstractSynchronizeViewTest extends
 			String dstRef, boolean includeLocal) throws IOException {
 		IProject project = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName);
-		Repository repo = RepositoryMapping.getMapping(project).getRepository();
+		RepositoryMapping mapping = assertConnected(project);
+		Repository repo = mapping.getRepository();
 
 		GitSynchronizeData data = new GitSynchronizeData(repo, srcRef, dstRef,
 				includeLocal);
@@ -195,21 +198,25 @@ public abstract class AbstractSynchronizeViewTest extends
 	protected void createEmptyRepository() throws Exception {
 		File gitDir = new File(new File(getTestDirectory(), EMPTY_REPOSITORY),
 				Constants.DOT_GIT);
-		Repository myRepository = new FileRepository(gitDir);
+		Repository myRepository = FileRepositoryBuilder.create(gitDir);
 		myRepository.create();
 
 		// we need to commit into master first
 		IProject firstProject = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(EMPTY_PROJECT);
 
-		if (firstProject.exists())
+		if (firstProject.exists()) {
 			firstProject.delete(true, null);
+			TestUtil.waitForJobs(100, 5000);
+		}
 		IProjectDescription desc = ResourcesPlugin.getWorkspace()
 				.newProjectDescription(EMPTY_PROJECT);
 		desc.setLocation(new Path(new File(myRepository.getWorkTree(),
 				EMPTY_PROJECT).getPath()));
 		firstProject.create(desc, null);
 		firstProject.open(null);
+		assertTrue("Project is not accessible: " + firstProject,
+				firstProject.isAccessible());
 
 		IFolder folder = firstProject.getFolder(FOLDER);
 		folder.create(false, true, null);
@@ -219,8 +226,13 @@ public abstract class AbstractSynchronizeViewTest extends
 		IFile textFile2 = folder.getFile(FILE2);
 		textFile2.create(new ByteArrayInputStream("Some more content"
 				.getBytes(firstProject.getDefaultCharset())), false, null);
-
-		new ConnectProviderOperation(firstProject, gitDir).execute(null);
+		TestUtil.waitForJobs(50, 5000);
+		try {
+			new ConnectProviderOperation(firstProject, gitDir).execute(null);
+		} catch (Exception e) {
+			Activator.logError("Failed to connect project to repository", e);
+		}
+		assertConnected(firstProject);
 	}
 
 	protected SWTBotTreeItem waitForNodeWithText(SWTBotTree tree, String name) {
@@ -255,7 +267,7 @@ public abstract class AbstractSynchronizeViewTest extends
 	}
 
 	protected void commit(String projectName) throws InterruptedException {
-		showDialog(projectName, "Team", CommitAction_commit);
+		showDialog(projectName, "Team", "Commit...");
 
 		SWTBot shellBot = bot.shell(CommitDialog_CommitChanges).bot();
 		shellBot.styledText(0).setText(TEST_COMMIT_MSG);
@@ -264,22 +276,16 @@ public abstract class AbstractSynchronizeViewTest extends
 		TestUtil.joinJobs(JobFamilies.COMMIT);
 	}
 
-	protected SWTBotEditor getCompareEditor(SWTBotTreeItem projectNode,
+	protected CompareEditorTester getCompareEditor(SWTBotTreeItem projectNode,
 			final String fileName) {
 		SWTBotTreeItem folderNode = waitForNodeWithText(projectNode, FOLDER);
 		waitForNodeWithText(folderNode, fileName).doubleClick();
 
-		SWTBotEditor editor = bot
-				.editor(new CompareEditorTitleMatcher(fileName));
-		// Ensure that both StyledText widgets are enabled
-		SWTBotStyledText styledText = editor.toTextEditor().getStyledText();
-		bot.waitUntil(Conditions.widgetIsEnabled(styledText));
-		return editor;
+		return CompareEditorTester.forTitleContaining(fileName);
 	}
 
 	private static void showDialog(String projectName, String... cmd) {
-		SWTBot packageExplorerBot = bot.viewByTitle("Package Explorer").bot();
-		SWTBotTree tree = packageExplorerBot.tree();
+		SWTBotTree tree = TestUtil.getExplorerTree();
 
 		// EGit decorates the project node shown in the package explorer. The
 		// '>' decorator indicates that there are uncommitted changes present in
@@ -305,16 +311,6 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	private SWTBotTreeItem getTreeItemContainingText(SWTBotTreeItem[] items,
 			String text) {
-		List<String> existingItems = new ArrayList<String>();
-		for (SWTBotTreeItem item : items) {
-			if (item.getText().contains(text))
-				return item;
-			existingItems.add(item.getText());
-		}
-
-		throw new WidgetNotFoundException(
-				"Tree item element containing text \"" + text
-						+ "\" was not found. Existing tree items:\n"
-						+ StringUtils.join(existingItems, "\n"));
+		return TestUtil.getNode(items, text);
 	}
 }

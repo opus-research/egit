@@ -19,20 +19,17 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.DeleteBranchOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.UnmergedBranchDialog;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
-import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Shell;
 
@@ -40,26 +37,30 @@ import org.eclipse.swt.widgets.Shell;
  * Delete a branch pointing to a commit.
  */
 public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		GitHistoryPage page = getPage();
-
-		final Repository repository = getRepository(page);
+		final Repository repository = getRepository(event);
 		if (repository == null)
 			return null;
+
+		IStructuredSelection selection = getSelection(event);
 
 		int totalBranchCount;
 		List<Ref> branchesOfCommit;
 		try {
-			totalBranchCount = getBranchesOfCommit(page, repository, false).size();
-			branchesOfCommit = getBranchesOfCommit(page, repository, true);
+			totalBranchCount = getBranchesOfCommit(selection, repository, false)
+					.size();
+			branchesOfCommit = getBranchesOfCommit(selection, repository, true);
 		} catch (IOException e) {
-			throw new ExecutionException("Could not obtain current Branch", e); //$NON-NLS-1$
+			throw new ExecutionException(
+					UIText.AbstractHistoryCommitHandler_cantGetBranches,
+					e);
 		}
 		// this should have been checked by isEnabled()
 		if (branchesOfCommit.isEmpty())
 			return null;
 
-		final List<Ref> unmergedBranches = new ArrayList<Ref>();
+		final List<Ref> unmergedBranches = new ArrayList<>();
 		final Shell shell = getPart(event).getSite().getShell();
 
 		final List<Ref> branchesToDelete;
@@ -69,7 +70,7 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 		// delete instead of quietly deleting an unexpected one, for example a remote
 		// tracking branch
 		if (totalBranchCount > 1) {
-			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<Ref>(
+			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<>(
 					shell,
 					branchesOfCommit,
 					UIText.DeleteBranchOnCommitHandler_SelectBranchDialogTitle,
@@ -82,9 +83,10 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 			branchesToDelete = branchesOfCommit;
 
 		try {
-			new ProgressMonitorDialog(shell).run(false, false,
+			new ProgressMonitorDialog(shell).run(true, false,
 					new IRunnableWithProgress() {
-						public void run(IProgressMonitor monitor)
+						@Override
+						public void run(final IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
 							try {
@@ -105,16 +107,6 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 									} else
 										monitor.worked(1);
 								}
-								if (!unmergedBranches.isEmpty()) {
-									MessageDialog messageDialog = new UnmergedBranchDialog<Ref>(
-											shell, unmergedBranches);
-									if (messageDialog.open() == Window.OK) {
-										for (Ref node : unmergedBranches) {
-											deleteBranch(repository, node, true);
-											monitor.worked(1);
-										}
-									}
-								}
 							} catch (CoreException ex) {
 								throw new InvocationTargetException(ex);
 							} finally {
@@ -130,40 +122,44 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 			// ignore
 		}
 
-		return null;
-	}
-
-	private List<Ref> getBranchesOfCommit(GitHistoryPage page,
-			final Repository repo, boolean hideCurrentBranch) throws IOException {
-		final List<Ref> branchesOfCommit = new ArrayList<Ref>();
-		IStructuredSelection selection = getSelection(page);
-		if (selection.isEmpty())
-			return branchesOfCommit;
-		PlotCommit commit = (PlotCommit) selection.getFirstElement();
-		String head = repo.getFullBranch();
-
-		int refCount = commit.getRefCount();
-		for (int i = 0; i < refCount; i++) {
-			Ref ref = commit.getRef(i);
-			String refName = ref.getName();
-			if (hideCurrentBranch && head != null && refName.equals(head))
-				continue;
-			if (refName.startsWith(Constants.R_HEADS)
-					|| refName.startsWith(Constants.R_REMOTES))
-				branchesOfCommit.add(ref);
+		if (!unmergedBranches.isEmpty()) {
+			MessageDialog messageDialog = new UnmergedBranchDialog<>(shell,
+					unmergedBranches);
+			if (messageDialog.open() == Window.OK) {
+				try {
+					new ProgressMonitorDialog(shell).run(true, false,
+							new IRunnableWithProgress() {
+								@Override
+								public void run(final IProgressMonitor monitor)
+										throws InvocationTargetException,
+										InterruptedException {
+									try {
+										monitor.beginTask(
+												UIText.DeleteBranchCommand_DeletingBranchesProgress,
+												unmergedBranches.size());
+										for (Ref node : unmergedBranches) {
+											deleteBranch(repository, node, true);
+											monitor.worked(1);
+										}
+									} catch (CoreException ex) {
+										throw new InvocationTargetException(ex);
+									} finally {
+										monitor.done();
+									}
+								}
+							});
+				} catch (InvocationTargetException e1) {
+					Activator
+							.handleError(
+									UIText.RepositoriesView_BranchDeletionFailureMessage,
+									e1.getCause(), true);
+				} catch (InterruptedException e1) {
+					// ignore
+				}
+			}
 		}
-		return branchesOfCommit;
-	}
 
-	private Repository getRepository(GitHistoryPage page) {
-		if (page == null)
-			return null;
-		HistoryPageInput input = page.getInputInternal();
-		if (input == null)
-			return null;
-
-		final Repository repository = input.getRepository();
-		return repository;
+		return null;
 	}
 
 	private int deleteBranch(Repository repo, final Ref ref, boolean force)
@@ -183,9 +179,12 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 
 		List<Ref> branchesOfCommit;
 		try {
-			branchesOfCommit = getBranchesOfCommit(page, repository, true);
+			branchesOfCommit = getBranchesOfCommit(getSelection(page),
+					repository, true);
 		} catch (IOException e) {
-			Activator.logError("Could not calculate Enablement", e); //$NON-NLS-1$
+			Activator.logError(
+					UIText.AbstractHistoryCommitHandler_cantGetBranches,
+					e);
 			return false;
 		}
 		return !branchesOfCommit.isEmpty();

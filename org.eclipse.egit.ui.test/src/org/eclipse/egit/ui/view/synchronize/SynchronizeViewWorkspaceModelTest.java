@@ -25,7 +25,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -33,6 +34,8 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.ui.common.CompareEditorTester;
+import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.swt.finder.SWTBot;
@@ -40,6 +43,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -61,7 +65,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, R_HEADS + MASTER, false);
 
 		// then
-		SWTBot viewBot = bot.viewByTitle("Synchronize").bot();
+		SWTBot viewBot = bot.viewById(ISynchronizeView.VIEW_ID).bot();
 		@SuppressWarnings("unchecked")
 		Matcher matcher = allOf(widgetOfType(Label.class),
 				withRegex("No changes in .*"));
@@ -80,7 +84,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, HEAD, true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertTrue(syncItems[0].getText().contains(PROJ1));
 	}
@@ -94,7 +98,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(INITIAL_TAG, HEAD, false);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
@@ -108,7 +112,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(INITIAL_TAG, R_TAGS + "v0.1", false);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
@@ -123,8 +127,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, INITIAL_TAG, true);
 
 		// then
-		SWTBot compare = getCompareEditorForFileInWorkspaceModel(FILE1)
-				.bot();
+		CompareEditorTester compare = getCompareEditorForFileInWorkspaceModel(FILE1);
 		assertNotNull(compare);
 	}
 
@@ -137,7 +140,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, HEAD + "~1", true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		assertEquals(1, syncViewTree.getAllItems().length);
 
 		SWTBotTreeItem projectTree = waitForNodeWithText(syncViewTree, PROJ1);
@@ -159,7 +162,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(EMPTY_PROJECT, "", "", true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem projectTree = waitForNodeWithText(syncViewTree,
 				EMPTY_PROJECT);
 		assertEquals(1, syncViewTree.getAllItems().length);
@@ -181,24 +184,22 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 
 		// compare HEAD against tag
 		launchSynchronization(HEAD, INITIAL_TAG, false);
-		SWTBotEditor compEditor = getCompareEditorForFileInWorkspaceModel(
+		CompareEditorTester outgoingCompare = getCompareEditorForFileInWorkspaceModel(
 				FILE1);
-		SWTBot outgoingCompare = compEditor.bot();
 		// save left value from compare editor
-		String outgoingLeft = outgoingCompare.styledText(0).getText();
+		String outgoingLeft = outgoingCompare.getLeftEditor().getText();
 		// save right value from compare editor
-		String outgoingRight = outgoingCompare.styledText(1).getText();
-		compEditor.close();
+		String outgoingRight = outgoingCompare.getRightEditor().getText();
+		outgoingCompare.close();
 
 		// when
 		// compare tag against HEAD
 		launchSynchronization(INITIAL_TAG, HEAD, false);
 
 		// then
-		SWTBot incomingComp = getCompareEditorForFileInWorkspaceModel(
-				FILE1).bot();
-		String incomingLeft = incomingComp.styledText(0).getText();
-		String incomingRight = incomingComp.styledText(1).getText();
+		CompareEditorTester incomingComp = getCompareEditorForFileInWorkspaceModel(FILE1);
+		String incomingLeft = incomingComp.getLeftEditor().getText();
+		String incomingRight = incomingComp.getRightEditor().getText();
 		// right side from compare editor should be equal with left
 		assertThat(outgoingLeft, equalTo(incomingRight));
 		// left side from compare editor should be equal with right
@@ -228,9 +229,9 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(INITIAL_TAG, HEAD, true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem projectTree = waitForNodeWithText(syncViewTree, PROJ1);
-		projectTree.expand();
+		TestUtil.expandAndWait(projectTree);
 		assertEquals(1, projectTree.getItems().length);
 	}
 
@@ -250,10 +251,10 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, null);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertTrue(syncItems[0].getText().contains(PROJ1));
-		syncItems[0].expand();
+		TestUtil.expandAndWait(syncItems[0]);
 		// WidgetNotFoundException will be thrown when node named 'new.txt' not exists
 		assertNotNull(syncItems[0].getNode(newFileName));
 	}
@@ -265,18 +266,18 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, HEAD, true);
 
 		// preconditions - sync result should contain two uncommitted changes
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertTrue(syncItems[0].getText().contains(PROJ1));
-		syncItems[0].expand();
-		syncItems[0].getItems()[0].expand();
+		TestUtil.expandAndWait(syncItems[0]);
+		TestUtil.expandAndWait(syncItems[0].getItems()[0]);
 		assertEquals(2, syncItems[0].getItems()[0].getItems().length);
 
 		// when
 		commit(PROJ1);
 
 		// then - synchronize view should be empty
-		SWTBot viewBot = bot.viewByTitle("Synchronize").bot();
+		SWTBot viewBot = bot.viewById(ISynchronizeView.VIEW_ID).bot();
 		@SuppressWarnings("unchecked")
 		Matcher matcher = allOf(widgetOfType(Label.class),
 				withRegex("No changes in .*"));
@@ -293,7 +294,8 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		String name = "non-workspace.txt";
 		File root = new File(getTestDirectory(), REPO1);
 		File nonWorkspace = new File(root, name);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(nonWorkspace), "UTF-8"));
 		writer.append("file content");
 		writer.close();
 
@@ -301,7 +303,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(INITIAL_TAG, HEAD, true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem workingTree = syncViewTree.expandNode(PROJ1);
 		assertEquals(1, syncViewTree.getAllItems().length);
 		assertEquals(1, workingTree.getNodes(name).size());
@@ -315,7 +317,8 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		String name = "non-workspace.txt";
 		File root = new File(getTestDirectory(), REPO1);
 		File nonWorkspace = new File(root, name);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(nonWorkspace), "UTF-8"));
 		writer.append(content);
 		writer.close();
 
@@ -323,10 +326,10 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(INITIAL_TAG, HEAD, true);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem workingTree = syncViewTree.expandNode(PROJ1);
 		assertEquals(1, syncViewTree.getAllItems().length);
-		workingTree.expand().getNode(name).doubleClick();
+		TestUtil.expandAndWait(workingTree).getNode(name).doubleClick();
 
 		SWTBotEditor editor = bot.editorByTitle(name);
 		editor.setFocus();
@@ -338,14 +341,12 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		assertNotSame(left, right);
 	}
 
-	protected SWTBotEditor getCompareEditorForFileInWorkspaceModel(
+	protected CompareEditorTester getCompareEditorForFileInWorkspaceModel(
 			String fileName) {
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 
 		SWTBotTreeItem projNode = waitForNodeWithText(syncViewTree, PROJ1);
-		SWTBotEditor editor = getCompareEditor(projNode, fileName);
-
-		return editor;
+		return getCompareEditor(projNode, fileName);
 	}
 
 }

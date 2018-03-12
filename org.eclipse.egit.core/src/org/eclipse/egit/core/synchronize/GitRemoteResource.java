@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,12 +10,19 @@ package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
+import java.io.UnsupportedEncodingException;
+
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.variants.CachedResourceVariant;
 
-abstract class GitRemoteResource extends CachedResourceVariant {
+/**
+ * Base class for EGit's remote resource variants.
+ *
+ * @since 3.0
+ */
+public abstract class GitRemoteResource extends CachedResourceVariant {
 
 	private final String path;
 
@@ -30,11 +37,13 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 		this.commitId = commitId;
 	}
 
+	@Override
 	public String getName() {
 		int lastSeparator = path.lastIndexOf("/"); //$NON-NLS-1$
 		return path.substring(lastSeparator + 1, path.length());
 	}
 
+	@Override
 	public String getContentIdentifier() {
 		if (commitId == null)
 			return ""; //$NON-NLS-1$
@@ -52,8 +61,13 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 		return s.toString();
 	}
 
+	@Override
 	public byte[] asBytes() {
-		return getObjectId().name().getBytes();
+		try {
+			return getObjectId().name().getBytes("UTF-8"); //$NON-NLS-1$
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -70,7 +84,10 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 		return commitId != null;
 	}
 
-	RevCommit getCommitId() {
+	/**
+	 * @return the commit Id for this resource variant.
+	 */
+	public RevCommit getCommitId() {
 		return commitId;
 	}
 
@@ -82,7 +99,10 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 		return objectId != null ? objectId : zeroId();
 	}
 
-	String getPath() {
+	/**
+	 * @return path to the resource.
+	 */
+	public String getPath() {
 		return path;
 	}
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2012 SAP AG and others.
+ * Copyright (c) 2011, 2017 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 495512
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
@@ -18,17 +19,15 @@ import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.PushOperation;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -45,8 +44,6 @@ import org.eclipse.osgi.util.NLS;
 public class PushOperationUI {
 	private final Repository repository;
 
-	private final int timeout;
-
 	private final boolean dryRun;
 
 	private final String destinationString;
@@ -61,20 +58,24 @@ public class PushOperationUI {
 
 	private final String remoteName;
 
+	private PushOperationResult expectedResult;
+
+	private boolean showConfigureButton = true;
+
+	private @NonNull PushMode pushMode = PushMode.UPSTREAM;
+
 	/**
 	 * @param repository
 	 * @param remoteName
-	 * @param timeout
 	 * @param dryRun
 	 *
 	 */
 	public PushOperationUI(Repository repository, String remoteName,
-			int timeout, boolean dryRun) {
+			boolean dryRun) {
 		this.repository = repository;
 		this.spec = null;
 		this.config = null;
 		this.remoteName = remoteName;
-		this.timeout = timeout;
 		this.dryRun = dryRun;
 		destinationString = NLS.bind("{0} - {1}", repository.getDirectory() //$NON-NLS-1$
 				.getParentFile().getName(), remoteName);
@@ -84,17 +85,15 @@ public class PushOperationUI {
 	/**
 	 * @param repository
 	 * @param config
-	 * @param timeout
 	 * @param dryRun
 	 *
 	 */
 	public PushOperationUI(Repository repository, RemoteConfig config,
-			int timeout, boolean dryRun) {
+			boolean dryRun) {
 		this.repository = repository;
 		this.spec = null;
 		this.config = config;
 		this.remoteName = null;
-		this.timeout = timeout;
 		this.dryRun = dryRun;
 		destinationString = NLS.bind("{0} - {1}", repository.getDirectory() //$NON-NLS-1$
 				.getParentFile().getName(), config.getName());
@@ -103,16 +102,14 @@ public class PushOperationUI {
 	/**
 	 * @param repository
 	 * @param spec
-	 * @param timeout
 	 * @param dryRun
 	 */
 	public PushOperationUI(Repository repository,
-			PushOperationSpecification spec, int timeout, boolean dryRun) {
+			PushOperationSpecification spec, boolean dryRun) {
 		this.repository = repository;
 		this.spec = spec;
 		this.config = null;
 		this.remoteName = null;
-		this.timeout = timeout;
 		this.dryRun = dryRun;
 		if (spec.getURIsNumber() == 1)
 			destinationString = spec.getURIs().iterator().next()
@@ -131,6 +128,26 @@ public class PushOperationUI {
 	}
 
 	/**
+	 * Set the expected result. If this is set, the result dialog in {@link #start()} will only be
+	 * shown when the result is different from the expected result.
+	 *
+	 * @param expectedResult
+	 */
+	public void setExpectedResult(PushOperationResult expectedResult) {
+		this.expectedResult = expectedResult;
+	}
+
+	/**
+	 * Set whether the "Configure..." button should be shown in the result
+	 * dialog of {@link #start()}.
+	 *
+	 * @param showConfigureButton
+	 */
+	public void setShowConfigureButton(boolean showConfigureButton) {
+		this.showConfigureButton = showConfigureButton;
+	}
+
+	/**
 	 * Executes this directly, without showing a confirmation dialog
 	 *
 	 * @param monitor
@@ -143,6 +160,8 @@ public class PushOperationUI {
 		createPushOperation();
 		if (credentialsProvider != null)
 			op.setCredentialsProvider(credentialsProvider);
+		else
+			op.setCredentialsProvider(new EGitCredentialsProvider());
 		try {
 			op.run(monitor);
 			return op.getOperationResult();
@@ -155,7 +174,7 @@ public class PushOperationUI {
 
 	private void createPushOperation() throws CoreException {
 		if (remoteName != null) {
-			op = new PushOperation(repository, remoteName, dryRun, timeout);
+			op = new PushOperation(repository, remoteName, dryRun, getTimeout());
 			return;
 		}
 
@@ -166,13 +185,13 @@ public class PushOperationUI {
 			// to add the default push RefSpec here
 			spec = new PushOperationSpecification();
 
-			List<URIish> urisToPush = new ArrayList<URIish>();
+			List<URIish> urisToPush = new ArrayList<>();
 			for (URIish uri : config.getPushURIs())
 				urisToPush.add(uri);
 			if (urisToPush.isEmpty() && !config.getURIs().isEmpty())
 				urisToPush.add(config.getURIs().get(0));
 
-			List<RefSpec> pushRefSpecs = new ArrayList<RefSpec>();
+			List<RefSpec> pushRefSpecs = new ArrayList<>();
 			pushRefSpecs.addAll(config.getPushRefSpecs());
 
 			for (URIish uri : urisToPush) {
@@ -193,47 +212,34 @@ public class PushOperationUI {
 				}
 			}
 		}
-		op = new PushOperation(repository, spec, dryRun, timeout);
+		op = new PushOperation(repository, spec, dryRun, getTimeout());
 	}
 
 	/**
-	 * Starts the operation asynchronously showing a confirmation dialog after
-	 * completion
+	 * Starts the operation asynchronously.
 	 */
 	public void start() {
-		Job job = new Job(NLS.bind(UIText.PushOperationUI_PushJobName,
-				destinationString)) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				try {
-					execute(monitor);
-				} catch (CoreException e) {
-					return Activator.createErrorStatus(e.getStatus()
-							.getMessage(), e);
-				}
-				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (JobFamilies.PUSH.equals(family))
-					return true;
-				return super.belongsTo(family);
-			}
-		};
+		final Repository repo = repository;
+		if (repo == null) {
+			return;
+		}
+		try {
+			createPushOperation();
+		} catch (CoreException e) {
+			Activator.showErrorStatus(e.getLocalizedMessage(), e.getStatus());
+			return;
+		}
+		if (credentialsProvider != null) {
+			op.setCredentialsProvider(credentialsProvider);
+		} else {
+			op.setCredentialsProvider(new EGitCredentialsProvider());
+		}
+		Job job = new PushJob(
+				NLS.bind(UIText.PushOperationUI_PushJobName, destinationString),
+				repo, op, expectedResult, destinationString,
+				showConfigureButton, pushMode);
 		job.setUser(true);
 		job.schedule();
-		job.addJobChangeListener(new JobChangeAdapter() {
-			@Override
-			public void done(IJobChangeEvent event) {
-				if (event.getResult().isOK())
-					PushResultDialog.show(repository, op.getOperationResult(),
-							destinationString);
-				else
-					Activator.handleError(event.getResult().getMessage(), event
-							.getResult().getException(), true);
-			}
-		});
 	}
 
 	/**
@@ -241,5 +247,21 @@ public class PushOperationUI {
 	 */
 	public String getDestinationString() {
 		return destinationString;
+	}
+
+	private int getTimeout() {
+		return Activator.getDefault().getPreferenceStore()
+				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
+	}
+
+	/**
+	 * Defines the {@link PushMode}.If not set explicitly,
+	 * {@link PushMode#UPSTREAM} is assumed.
+	 *
+	 * @param mode
+	 *            to use
+	 */
+	public void setPushMode(@NonNull PushMode mode) {
+		pushMode = mode;
 	}
 }

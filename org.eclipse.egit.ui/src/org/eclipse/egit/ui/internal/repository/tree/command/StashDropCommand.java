@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2012 GitHub Inc.
+ *  Copyright (C) 2012, 2013 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -11,6 +11,8 @@
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -24,12 +26,19 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.StashDropOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.commit.CommitEditorInput;
 import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorReference;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Command to drop one or all stashed commits
@@ -37,50 +46,113 @@ import org.eclipse.swt.widgets.Shell;
 public class StashDropCommand extends
 		RepositoriesViewCommandHandler<StashedCommitNode> {
 
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		List<StashedCommitNode> nodes = getSelectedNodes(event);
+		final List<StashedCommitNode> nodes = getSelectedNodes(event);
 		if (nodes.isEmpty())
 			return null;
 
-		StashedCommitNode node = nodes.get(0);
-		final Repository repo = node.getRepository();
+		final Repository repo = nodes.get(0).getRepository();
 		if (repo == null)
 			return null;
-		final int index = node.getIndex();
-		if (index < 0)
-			return null;
-		final RevCommit commit = node.getObject();
-		if (commit == null)
-			return null;
 
-		// Confirm deletion of selected tags
+		// Confirm deletion of selected nodes
 		final AtomicBoolean confirmed = new AtomicBoolean();
 		final Shell shell = getActiveShell(event);
 		shell.getDisplay().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
+				String message;
+				if (nodes.size() > 1)
+					message = MessageFormat.format(
+							UIText.StashDropCommand_confirmMultiple,
+							Integer.toString(nodes.size()));
+				else
+					message = MessageFormat.format(
+							UIText.StashDropCommand_confirmSingle,
+							Integer.toString(nodes.get(0).getIndex()));
+
 				confirmed.set(MessageDialog.openConfirm(shell,
-						UIText.StashDropCommand_confirmTitle, MessageFormat
-								.format(UIText.StashDropCommand_confirmMessage,
-										Integer.toString(index))));
+						UIText.StashDropCommand_confirmTitle, message));
 			}
 		});
 		if (!confirmed.get())
 			return null;
 
-		final StashDropOperation op = new StashDropOperation(repo, index);
-		Job job = new Job(MessageFormat.format(
-				UIText.StashDropCommand_jobTitle, commit.name())) {
+		Job job = new Job(UIText.StashDropCommand_jobTitle) {
+
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				try {
-					op.execute(monitor);
-				} catch (CoreException e) {
-					Activator.logError(MessageFormat.format(
-							UIText.StashDropCommand_dropFailed, commit.name()),
-							e);
+				monitor.beginTask(UIText.StashDropCommand_jobTitle,
+						nodes.size());
+
+				// Sort by highest to lowest stash commit index.
+				// This avoids shifting problems that cause the indices of the
+				// selected nodes not match the indices in the repository
+				Collections.sort(nodes, new Comparator<StashedCommitNode>() {
+
+					@Override
+					public int compare(StashedCommitNode n1,
+							StashedCommitNode n2) {
+						return n1.getIndex() < n2.getIndex() ? 1 : -1;
+					}
+				});
+
+				for (StashedCommitNode node : nodes) {
+					final int index = node.getIndex();
+					if (index < 0)
+						return null;
+					final RevCommit commit = node.getObject();
+					if (commit == null)
+						return null;
+					final String stashName = node.getObject().getName();
+					final StashDropOperation op = new StashDropOperation(repo,
+							node.getIndex());
+					monitor.subTask(stashName);
+					try {
+						op.execute(monitor);
+					} catch (CoreException e) {
+						Activator.logError(MessageFormat.format(
+								UIText.StashDropCommand_dropFailed,
+								node.getObject().name()), e);
+					}
+					tryToCloseEditor(node);
+					monitor.worked(1);
 				}
+				monitor.done();
 				return Status.OK_STATUS;
+			}
+
+			private void tryToCloseEditor(final StashedCommitNode node) {
+				Display.getDefault().asyncExec(new Runnable() {
+
+					@Override
+					public void run() {
+						IWorkbenchPage activePage = PlatformUI.getWorkbench()
+								.getActiveWorkbenchWindow().getActivePage();
+						IEditorReference[] editorReferences = activePage
+								.getEditorReferences();
+						for (IEditorReference editorReference : editorReferences) {
+							IEditorInput editorInput = null;
+							try {
+								editorInput = editorReference.getEditorInput();
+							} catch (PartInitException e) {
+								Activator.handleError(e.getMessage(), e, true);
+							}
+							if (editorInput instanceof CommitEditorInput) {
+								CommitEditorInput comEditorInput = (CommitEditorInput) editorInput;
+								if (comEditorInput.getCommit().getRevCommit()
+										.equals(node.getObject())) {
+									activePage.closeEditor(
+											editorReference.getEditor(false),
+											false);
+								}
+							}
+						}
+					}
+				});
+
 			}
 
 			@Override
@@ -91,7 +163,8 @@ public class StashDropCommand extends
 			}
 		};
 		job.setUser(true);
-		job.setRule(op.getSchedulingRule());
+		job.setRule((new StashDropOperation(repo, nodes.get(0).getIndex()))
+				.getSchedulingRule());
 		job.schedule();
 		return null;
 	}

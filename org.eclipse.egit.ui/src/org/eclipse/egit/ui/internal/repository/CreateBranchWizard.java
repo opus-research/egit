@@ -16,7 +16,7 @@ import java.lang.reflect.InvocationTargetException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Constants;
@@ -49,23 +49,23 @@ public class CreateBranchWizard extends Wizard {
 	 *            a {@link Ref} name or {@link RevCommit} id, or null
 	 */
 	public CreateBranchWizard(Repository repository, String base) {
-		try {
+		try (RevWalk rw = new RevWalk(repository)) {
 			if (base == null) {
 				myPage = new CreateBranchPage(repository, (Ref) null);
 			} else if (ObjectId.isId(base)) {
-				RevCommit commit = new RevWalk(repository).parseCommit(ObjectId
+				RevCommit commit = rw.parseCommit(ObjectId
 						.fromString(base));
 				myPage = new CreateBranchPage(repository, commit);
 			} else {
 				if (base.startsWith(Constants.R_HEADS)
 						|| base.startsWith(Constants.R_REMOTES)
 						|| base.startsWith(Constants.R_TAGS)) {
-					Ref currentBranch = repository.getRef(base);
+					Ref currentBranch = repository.exactRef(base);
 					myPage = new CreateBranchPage(repository, currentBranch);
 				} else {
 					// the page only knows some special Refs
-					RevCommit commit = new RevWalk(repository)
-							.parseCommit(repository.resolve(base + "^{commit}")); //$NON-NLS-1$
+					RevCommit commit = rw.parseCommit(
+							repository.resolve(base + "^{commit}")); //$NON-NLS-1$
 					myPage = new CreateBranchPage(repository, commit);
 				}
 			}
@@ -83,14 +83,17 @@ public class CreateBranchWizard extends Wizard {
 
 	@Override
 	public boolean performFinish() {
+		final CreateBranchPage cp = (CreateBranchPage) getPages()[0];
+		newBranchName = cp.getBranchName();
+		final boolean checkoutNewBranch = cp.checkoutNewBranch();
 		try {
-			getContainer().run(false, true, new IRunnableWithProgress() {
+			getContainer().run(true, true, new IRunnableWithProgress() {
+				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
-					CreateBranchPage cp = (CreateBranchPage) getPages()[0];
 					try {
-						newBranchName = cp.getBranchName();
-						cp.createBranch(monitor);
+						cp.createBranch(newBranchName, checkoutNewBranch,
+								monitor);
 					} catch (CoreException ce) {
 						throw new InvocationTargetException(ce);
 					} catch (IOException ioe) {

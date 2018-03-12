@@ -19,9 +19,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.search.CommitSearchPage;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -53,10 +54,12 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 
 	private static class CommitLabelProvider extends GitLabelProvider {
 
+		@Override
 		public String getText(Object element) {
 			return getStyledText(element).getString();
 		}
 
+		@Override
 		public StyledString getStyledText(Object element) {
 			StyledString styled = new StyledString();
 			if (element instanceof RepositoryCommit) {
@@ -112,6 +115,7 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 		setInitialPattern(Constants.HEAD, FULL_SELECTION);
 	}
 
+	@Override
 	protected Control createExtendedContentArea(Composite parent) {
 		Composite displayArea = new Composite(parent, SWT.NONE);
 		GridLayoutFactory.fillDefaults().applyTo(displayArea);
@@ -119,6 +123,7 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 		link.setText(UIText.CommitSelectionDialog_LinkSearch);
 		link.addSelectionListener(new SelectionAdapter() {
 
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				close();
 				NewSearchUI.openSearchDialog(PlatformUI.getWorkbench()
@@ -129,6 +134,7 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 		return displayArea;
 	}
 
+	@Override
 	protected IDialogSettings getDialogSettings() {
 		IDialogSettings settings = Activator.getDefault().getDialogSettings();
 		IDialogSettings section = settings
@@ -138,30 +144,37 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 		return section;
 	}
 
+	@Override
 	protected IStatus validateItem(Object item) {
 		return Status.OK_STATUS;
 	}
 
+	@Override
 	protected ItemsFilter createFilter() {
 		return new ItemsFilter() {
 
+			@Override
 			public boolean isSubFilter(ItemsFilter filter) {
 				return false;
 			}
 
+			@Override
 			public boolean matchItem(Object item) {
 				return true;
 			}
 
+			@Override
 			public boolean isConsistentItem(Object item) {
 				return true;
 			}
 		};
 	}
 
+	@Override
 	protected Comparator getItemsComparator() {
 		return new Comparator<RepositoryCommit>() {
 
+			@Override
 			public int compare(RepositoryCommit o1, RepositoryCommit o2) {
 				int compare = o1.getRepositoryName().compareToIgnoreCase(
 						o2.getRepositoryName());
@@ -177,13 +190,15 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 				.getRepositoryCache().getAllRepositories();
 	}
 
+	@Override
 	protected void fillContentProvider(AbstractContentProvider contentProvider,
 			ItemsFilter itemsFilter, IProgressMonitor progressMonitor)
 			throws CoreException {
 		String pattern = itemsFilter.getPattern();
 		Repository[] repositories = getRepositories();
-		progressMonitor.beginTask(UIText.CommitSelectionDialog_TaskSearching,
+		SubMonitor progress = SubMonitor.convert(progressMonitor,
 				repositories.length);
+		progress.setTaskName(UIText.CommitSelectionDialog_TaskSearching);
 		for (Repository repository : repositories) {
 			try {
 				ObjectId commitId;
@@ -192,22 +207,24 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 				else
 					commitId = repository.resolve(itemsFilter.getPattern());
 				if (commitId != null) {
-					RevWalk walk = new RevWalk(repository);
-					walk.setRetainBody(true);
-					RevCommit commit = walk.parseCommit(commitId);
-					contentProvider.add(
-							new RepositoryCommit(repository, commit),
-							itemsFilter);
+					try (RevWalk walk = new RevWalk(repository)) {
+						walk.setRetainBody(true);
+						RevCommit commit = walk.parseCommit(commitId);
+						contentProvider.add(
+								new RepositoryCommit(repository, commit),
+								itemsFilter);
+					}
 				}
 			} catch (RevisionSyntaxException ignored) {
 				// Ignore and advance
 			} catch (IOException ignored) {
 				// Ignore and advance
 			}
-			progressMonitor.worked(1);
+			progress.worked(1);
 		}
 	}
 
+	@Override
 	public String getElementName(Object item) {
 		return labelProvider.getText(item);
 	}

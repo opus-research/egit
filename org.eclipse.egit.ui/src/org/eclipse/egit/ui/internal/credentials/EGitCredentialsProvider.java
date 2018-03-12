@@ -9,15 +9,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.credentials;
 
-import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.SecureStoreUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.CustomPromptDialog;
-import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
@@ -102,7 +99,7 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 			if ((user != null) && (password != null))
 				credentials = new UserPasswordCredentials(user, password);
 			else
-				credentials = getCredentialsFromSecureStore(uri);
+				credentials = SecureStoreUtils.getCredentials(uri);
 
 			if (credentials == null) {
 				credentials = getCredentialsFromUser(uri);
@@ -120,6 +117,7 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 		final boolean[] result = new boolean[1];
 
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
@@ -138,13 +136,9 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 
 	@Override
 	public void reset(URIish uri) {
-		try {
-			Activator.getDefault().getSecureStore().clearCredentials(uri);
-		} catch (IOException e) {
-			Activator.logError(MessageFormat.format(
-					UIText.EGitCredentialsProvider_FailedToClearCredentials,
-					uri), e);
-		}
+		SecureStoreUtils.clearCredentials(uri);
+		user = null;
+		password = null;
 	}
 
 	/**
@@ -216,9 +210,10 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 	}
 
 	private UserPasswordCredentials getCredentialsFromUser(final URIish uri) {
-		final AtomicReference<UserPasswordCredentials> aRef = new AtomicReference<UserPasswordCredentials>(
+		final AtomicReference<UserPasswordCredentials> aRef = new AtomicReference<>(
 				null);
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
@@ -226,17 +221,5 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 			}
 		});
 		return aRef.get();
-	}
-
-	private UserPasswordCredentials getCredentialsFromSecureStore(final URIish uri) {
-		UserPasswordCredentials credentials = null;
-		try {
-			credentials = Activator.getDefault().getSecureStore()
-					.getCredentials(uri);
-		} catch (StorageException e) {
-			Activator.logError(
-					UIText.EGitCredentialsProvider_errorReadingCredentials, e);
-		}
-		return credentials;
 	}
 }

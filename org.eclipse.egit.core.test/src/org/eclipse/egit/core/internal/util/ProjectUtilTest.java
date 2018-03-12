@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2012, Matthias Sohn <matthias.sohn@sap.com> and others.
+ * Copyright (C) 2012, 2013 Matthias Sohn <matthias.sohn@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,11 +8,11 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -20,16 +20,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
@@ -47,12 +52,14 @@ public class ProjectUtilTest extends GitTestCase {
 
 	private TestProject project2;
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
 		repository = new TestRepository(gitDir);
 	}
 
+	@Override
 	@After
 	public void tearDown() throws Exception {
 		super.tearDown();
@@ -241,13 +248,13 @@ public class ProjectUtilTest extends GitTestCase {
 	public void testFindProjectFiles() {
 		Collection<File> files = new ArrayList<File>();
 		assertTrue(ProjectUtil.findProjectFiles(files, gitDir.getParentFile(),
-				null, new NullProgressMonitor()));
+				true, new NullProgressMonitor()));
 	}
 
 	@Test
 	public void testFindProjectFilesNullDir() {
 		Collection<File> files = new ArrayList<File>();
-		assertFalse(ProjectUtil.findProjectFiles(files, null, null,
+		assertFalse(ProjectUtil.findProjectFiles(files, null, true,
 				new NullProgressMonitor()));
 	}
 
@@ -257,7 +264,7 @@ public class ProjectUtilTest extends GitTestCase {
 		File dir = new File(gitDir.getParentFile().getPath() + File.separator
 				+ "xxx");
 		FileUtils.mkdir(dir);
-		assertFalse(ProjectUtil.findProjectFiles(files, dir, null,
+		assertFalse(ProjectUtil.findProjectFiles(files, dir, true,
 				new NullProgressMonitor()));
 	}
 
@@ -266,12 +273,65 @@ public class ProjectUtilTest extends GitTestCase {
 		project2 = new TestProject(true, "Project-1/Project-Nested");
 		File workingDir = gitDir.getParentFile();
 
-		Collection<File> foundFiles = new ArrayList<File>();
-		boolean found = ProjectUtil.findProjectFiles(foundFiles, workingDir,
-				null, new NullProgressMonitor());
+		Collection<File> nestedResult = new ArrayList<File>();
+		boolean nestedFound = ProjectUtil.findProjectFiles(nestedResult,
+				workingDir, true,
+				new NullProgressMonitor());
 
-		assertTrue("Expected to find projects", found);
-		assertThat(foundFiles, hasItem(new File(workingDir, "Project-1/.project")));
-		assertThat(foundFiles, hasItem(new File(workingDir, "Project-1/Project-Nested/.project")));
+		assertTrue("Expected to find projects", nestedFound);
+		assertEquals(2, nestedResult.size());
+		assertThat(nestedResult, hasItem(new File(workingDir,
+				"Project-1/.project")));
+		assertThat(nestedResult, hasItem(new File(workingDir,
+				"Project-1/Project-Nested/.project")));
+
+		Collection<File> noNestedResult = new ArrayList<File>();
+		boolean noNestedFound = ProjectUtil.findProjectFiles(noNestedResult,
+				workingDir, false, new NullProgressMonitor());
+		assertTrue("Expected to find projects", noNestedFound);
+		assertEquals(1, noNestedResult.size());
+		assertThat(noNestedResult, hasItem(new File(workingDir,
+				"Project-1/.project")));
+	}
+
+	@Test
+	public void testRefreshRepositoryResources() throws Exception {
+		TestProject subdirProject = new TestProject(true, "subdir/Project-2");
+
+		new ConnectProviderOperation(project.getProject(), repository
+				.getRepository().getDirectory()).execute(null);
+		new ConnectProviderOperation(subdirProject.getProject(), repository
+				.getRepository().getDirectory()).execute(null);
+
+		IFile file1 = createOutOfSyncFile(project, "refresh1");
+		ProjectUtil.refreshRepositoryResources(repository.getRepository(),
+				Arrays.asList("Project-1/refresh1"), new NullProgressMonitor());
+		assertTrue(file1.isSynchronized(IResource.DEPTH_ZERO));
+
+		IFile file2 = createOutOfSyncFile(project, "refresh2");
+		ProjectUtil.refreshRepositoryResources(repository.getRepository(),
+				Arrays.asList("Project-1"), new NullProgressMonitor());
+		assertTrue(file2.isSynchronized(IResource.DEPTH_ZERO));
+
+		IFile file3 = createOutOfSyncFile(project, "refresh3");
+		ProjectUtil.refreshRepositoryResources(repository.getRepository(),
+				Arrays.asList(""), new NullProgressMonitor());
+		assertTrue(file3.isSynchronized(IResource.DEPTH_ZERO));
+
+		IFile file4 = createOutOfSyncFile(subdirProject, "refresh4");
+		ProjectUtil.refreshRepositoryResources(repository.getRepository(),
+				Arrays.asList("subdir"), new NullProgressMonitor());
+		assertTrue(file4.isSynchronized(IResource.DEPTH_ZERO));
+	}
+
+	private static IFile createOutOfSyncFile(TestProject project, String name)
+			throws IOException, CoreException {
+		IFile file = project.getProject().getFile(name);
+		file.create(new ByteArrayInputStream("test".getBytes("UTF-8")), false,
+				null);
+		assertTrue(file.isSynchronized(IResource.DEPTH_ZERO));
+		assertTrue(file.getLocation().toFile().delete());
+		assertFalse(file.isSynchronized(IResource.DEPTH_ZERO));
+		return file;
 	}
 }

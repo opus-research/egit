@@ -11,7 +11,7 @@ package org.eclipse.egit.core.op;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.op.CloneOperation.PostCloneTask;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Repository;
@@ -42,25 +42,24 @@ public class ConfigureFetchAfterCloneTask implements PostCloneTask {
 	 * @param monitor
 	 * @throws CoreException
 	 */
+	@Override
 	public void execute(Repository repository, IProgressMonitor monitor)
 			throws CoreException {
-		try {
-			RemoteConfig configToUse = new RemoteConfig(
-					repository.getConfig(), remoteName);
-			if (fetchRefSpec != null)
+		try (Git git = new Git(repository)) {
+			RemoteConfig configToUse = new RemoteConfig(repository.getConfig(),
+					remoteName);
+			if (fetchRefSpec != null) {
 				configToUse.addFetchRefSpec(new RefSpec(fetchRefSpec));
+			}
 			configToUse.update(repository.getConfig());
 			repository.getConfig().save();
-			Git git = new Git(repository);
-			try {
-				git.fetch().setRemote(remoteName).call();
-			} catch (Exception e) {
-				Activator.logError(NLS.bind(CoreText.ConfigureFetchAfterCloneTask_couldNotFetch, fetchRefSpec), e);
-			}
+			git.fetch().setRemote(remoteName).call();
 		} catch (Exception e) {
+			Activator.logError(NLS.bind(
+					CoreText.ConfigureFetchAfterCloneTask_couldNotFetch,
+					fetchRefSpec), e);
 			throw new CoreException(Activator.error(e.getMessage(), e));
 		}
-
 	}
 
 }

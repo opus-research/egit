@@ -30,6 +30,7 @@ import org.eclipse.egit.ui.internal.repository.tree.TagNode;
  */
 public class OpenCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
+	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final List<RepositoryTreeNode> nodes = getSelectedNodes(event);
 		if (nodes.isEmpty())
@@ -41,9 +42,13 @@ public class OpenCommand extends
 			return new CheckoutCommand().execute(event);
 		if (node instanceof FileNode)
 			return new OpenInEditorCommand().execute(event);
-		if (node instanceof StashedCommitNode)
-			CommitEditor.openQuiet(new RepositoryCommit(node.getRepository(),
-					((StashedCommitNode) node).getObject()));
+		if (node instanceof StashedCommitNode) {
+			RepositoryCommit repositoryCommit = new RepositoryCommit(
+					node.getRepository(),
+					((StashedCommitNode) node).getObject());
+			repositoryCommit.setStash(true);
+			CommitEditor.openQuiet(repositoryCommit);
+		}
 
 		return null;
 	}

@@ -24,7 +24,7 @@ import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.IO;
 import org.junit.After;
 import org.junit.Before;
@@ -33,13 +33,15 @@ import org.junit.Test;
 public class IndexFileRevisionTest extends GitTestCase {
 	private Repository repository;
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		repository = new FileRepository(gitDir);
+		repository = FileRepositoryBuilder.create(gitDir);
 		repository.create();
 	}
 
+	@Override
 	@After
 	public void tearDown() throws Exception {
 		repository.close();
@@ -116,14 +118,11 @@ public class IndexFileRevisionTest extends GitTestCase {
 			throws IOException {
 		DirCacheEntry entry = new DirCacheEntry(path, stage);
 		entry.setFileMode(FileMode.REGULAR_FILE);
-		ObjectInserter inserter = repository.newObjectInserter();
-		try {
+		try (ObjectInserter inserter = repository.newObjectInserter()) {
 			ObjectId blob = inserter.insert(Constants.OBJ_BLOB,
 					data.getBytes("UTF-8"));
 			entry.setObjectId(blob);
 			inserter.flush();
-		} finally {
-			inserter.release();
 		}
 		return entry;
 	}

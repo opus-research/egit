@@ -18,7 +18,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.op.DeletePathsOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
@@ -83,9 +83,9 @@ public class DeletePathsOperationUI {
 	}
 
 	private List<IResource> getSelectedResourcesIfAllExist() {
-		List<IResource> resources = new ArrayList<IResource>();
+		List<IResource> resources = new ArrayList<>();
 		for (IPath path : paths) {
-			IResource resource = ResourceUtil.getResourceForLocation(path);
+			IResource resource = ResourceUtil.getResourceForLocation(path, false);
 			if (resource != null)
 				resources.add(resource);
 			else

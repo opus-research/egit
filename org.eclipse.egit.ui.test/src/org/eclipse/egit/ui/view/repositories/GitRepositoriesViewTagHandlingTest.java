@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -22,13 +22,13 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.push.PushTagsWizardTester;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTag;
@@ -38,7 +38,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,33 +48,19 @@ import org.junit.runner.RunWith;
 public class GitRepositoriesViewTagHandlingTest extends
 		GitRepositoriesViewTestBase {
 
-	private static File repositoryFile;
+	private File repositoryFile;
 
 	private Repository repository;
 
 	private RevWalk revWalk;
 
-	@BeforeClass
-	public static void beforeClass() throws Exception {
+	@Before
+	public void beforeClass() throws Exception {
 		setVerboseBranchMode(false);
 		repositoryFile = createProjectAndCommitToRepository();
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				repositoryFile);
-	}
-
-	@Before
-	public void before() throws Exception {
 		repository = lookupRepository(repositoryFile);
-		for (String ref : repository.getTags().keySet()) {
-			RefUpdate op = repository.updateRef(ref, true);
-			op.setRefLogMessage("tag deleted", //$NON-NLS-1$
-					false);
-			// we set the force update in order
-			// to avoid having this rejected
-			// due to minor issues
-			op.setForceUpdate(true);
-			op.delete();
-		}
 		revWalk = new RevWalk(repository);
 	}
 
@@ -91,8 +76,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 		String newObject = getObjectIdOfCommit();
 		createTag("SecondTag", "The second tag");
 		refreshAndWait();
-		SWTBotTreeItem tagsItem = myRepoViewUtil.getTagsItem(tree,
-				repositoryFile).expand();
+		SWTBotTreeItem tagsItem = TestUtil.expandAndWait(
+				myRepoViewUtil.getTagsItem(tree, repositoryFile));
 		SWTBotTreeItem[] items = tagsItem.getItems();
 		assertEquals("Wrong number of tags", initialCount + 2, items.length);
 
@@ -110,8 +95,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 
 		createTag("Delete1", "The first tag");
 		refreshAndWait();
-		SWTBotTreeItem tagsItem = myRepoViewUtil.getTagsItem(tree,
-				repositoryFile).expand();
+		SWTBotTreeItem tagsItem = TestUtil.expandAndWait(
+				myRepoViewUtil.getTagsItem(tree, repositoryFile));
 		SWTBotTreeItem[] items = tagsItem.getItems();
 		assertEquals("Wrong number of tags", initialCount + 1, items.length);
 		tagsItem.select("Delete1");
@@ -139,8 +124,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 		createTag("Delete2", "The first tag");
 		createTag("Delete3", "The second tag");
 		refreshAndWait();
-		SWTBotTreeItem tagsItem = myRepoViewUtil.getTagsItem(tree,
-				repositoryFile).expand();
+		SWTBotTreeItem tagsItem = TestUtil.expandAndWait(
+				myRepoViewUtil.getTagsItem(tree, repositoryFile));
 		SWTBotTreeItem[] items = tagsItem.getItems();
 		assertEquals("Wrong number of tags", initialCount + 2, items.length);
 		tagsItem.select("Delete2", "Delete3");
@@ -166,8 +151,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 		assertFalse("Wrong content", initialContent.equals(newContent));
 		createTag("ResetToSecond", "The second tag");
 		refreshAndWait();
-		myRepoViewUtil.getTagsItem(tree, repositoryFile).expand().getNode(
-				"ResetToFirst").select();
+		TestUtil.expandAndWait(myRepoViewUtil.getTagsItem(tree, repositoryFile))
+				.getNode("ResetToFirst").select();
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("ResetCommand"));
@@ -181,11 +166,26 @@ public class GitRepositoriesViewTagHandlingTest extends
 		bot.shell(UIText.ResetTargetSelectionDialog_ResetQuestion).bot()
 				.button(IDialogConstants.YES_LABEL).click();
 
+		TestUtil.waitForJobs(50, 5000);
 		Job.getJobManager().join(JobFamilies.RESET, null);
 
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
 				IResource.DEPTH_INFINITE, null);
 		assertEquals("Wrong content", initialContent, getTestFileContent());
+	}
+
+	@Test
+	public void testPushTagPreselectsTag() throws Exception {
+		createTag("tag-to-push", "Tag to push");
+		SWTBotTree tree = getOrOpenView().bot().tree();
+		TestUtil.expandAndWait(myRepoViewUtil.getTagsItem(tree, repositoryFile))
+				.getNode("tag-to-push").select();
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("RepoViewPushTag.label"));
+
+		PushTagsWizardTester tester = PushTagsWizardTester.forShell();
+		tester.assertTagChecked("tag-to-push");
+		tester.cancel();
 	}
 
 	private String getCommitIdOfTag(String tagName) throws Exception {
@@ -196,8 +196,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 	private void createTag(String name, String message) throws Exception {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		myRepoViewUtil.getTagsItem(tree, repositoryFile).select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("CreateTagCommand"));
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("RepoViewCreateTag.label"));
 		String shellTitle = UIText.CreateTagDialog_NewTag;
 		SWTBotShell createDialog = bot.shell(shellTitle).activate();
 		TestUtil.joinJobs(JobFamilies.FILL_TAG_LIST);
@@ -206,7 +206,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 		createDialog.bot()
 				.styledTextWithLabel(UIText.CreateTagDialog_tagMessage)
 				.setText(message);
-		createDialog.bot().button(IDialogConstants.OK_LABEL).click();
+		createDialog.bot().button(UIText.CreateTagDialog_CreateTagButton)
+				.click();
 		TestUtil.joinJobs(JobFamilies.TAG);
 	}
 

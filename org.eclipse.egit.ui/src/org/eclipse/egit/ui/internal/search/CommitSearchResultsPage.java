@@ -20,7 +20,7 @@ import org.eclipse.jface.viewers.StructuredViewer;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.jface.viewers.ViewerSorter;
+import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.search.ui.text.AbstractTextSearchViewPage;
@@ -33,8 +33,9 @@ import org.eclipse.ui.model.WorkbenchContentProvider;
  */
 public class CommitSearchResultsPage extends AbstractTextSearchViewPage {
 
-	private static class CommitSorter extends ViewerSorter {
+	private static class CommitSorter extends ViewerComparator {
 
+		@Override
 		public int compare(Viewer viewer, Object e1, Object e2) {
 			if (e1 instanceof RepositoryCommit
 					&& e2 instanceof RepositoryCommit) {
@@ -55,6 +56,7 @@ public class CommitSearchResultsPage extends AbstractTextSearchViewPage {
 	/**
 	 * @see org.eclipse.search.ui.text.AbstractTextSearchViewPage#elementsChanged(java.lang.Object[])
 	 */
+	@Override
 	protected void elementsChanged(Object[] objects) {
 		getViewer().refresh();
 	}
@@ -62,17 +64,19 @@ public class CommitSearchResultsPage extends AbstractTextSearchViewPage {
 	/**
 	 * @see org.eclipse.search.ui.text.AbstractTextSearchViewPage#clear()
 	 */
+	@Override
 	protected void clear() {
 		getViewer().refresh();
 	}
 
 	private void configureViewer(StructuredViewer viewer) {
-		viewer.setSorter(new CommitSorter());
+		viewer.setComparator(new CommitSorter());
 		viewer.setContentProvider(new WorkbenchContentProvider() {
 
+			@Override
 			public Object[] getElements(Object element) {
 				if (getLayout() == FLAG_LAYOUT_TREE) {
-					Map<Repository, RepositoryMatch> repos = new HashMap<Repository, RepositoryMatch>();
+					Map<Repository, RepositoryMatch> repos = new HashMap<>();
 					for (Object inputElement : getInput().getElements()) {
 						RepositoryCommit commit = (RepositoryCommit) inputElement;
 						RepositoryMatch match = repos.get(commit
@@ -96,6 +100,7 @@ public class CommitSearchResultsPage extends AbstractTextSearchViewPage {
 	/**
 	 * @see org.eclipse.search.ui.text.AbstractTextSearchViewPage#configureTreeViewer(org.eclipse.jface.viewers.TreeViewer)
 	 */
+	@Override
 	protected void configureTreeViewer(TreeViewer viewer) {
 		configureViewer(viewer);
 	}
@@ -103,10 +108,12 @@ public class CommitSearchResultsPage extends AbstractTextSearchViewPage {
 	/**
 	 * @see org.eclipse.search.ui.text.AbstractTextSearchViewPage#configureTableViewer(org.eclipse.jface.viewers.TableViewer)
 	 */
+	@Override
 	protected void configureTableViewer(TableViewer viewer) {
 		configureViewer(viewer);
 	}
 
+	@Override
 	protected void showMatch(Match match, int currentOffset, int currentLength,
 			boolean activate) throws PartInitException {
 		if (match instanceof CommitMatch)

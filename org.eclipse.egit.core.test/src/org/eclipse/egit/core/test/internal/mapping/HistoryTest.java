@@ -14,8 +14,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -28,7 +30,7 @@ import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
@@ -53,6 +55,7 @@ public class HistoryTest extends GitTestCase {
 	private File workDir;
 	private Repository thisGit;
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -60,22 +63,23 @@ public class HistoryTest extends GitTestCase {
 		// ensure we are working on an empty repository
 		if (gitDir.exists())
 			FileUtils.delete(gitDir, FileUtils.RECURSIVE | FileUtils.RETRY);
-		thisGit = new FileRepository(gitDir);
+		thisGit = FileRepositoryBuilder.create(gitDir);
 		workDir = thisGit.getWorkTree();
 		thisGit.create();
 
-		Git git = new Git(thisGit);
+		try (Git git = new Git(thisGit)) {
+			createFile("Project-1/A.txt", "A.txt - first version\n");
+			createFile("Project-1/B.txt", "B.txt - first version\n");
+			git.add().addFilepattern("Project-1/A.txt")
+					.addFilepattern("Project-1/B.txt").call();
+			git.commit().setAuthor(jauthor).setCommitter(jcommitter)
+					.setMessage("Foo\n\nMessage").call();
 
-		createFile("Project-1/A.txt","A.txt - first version\n");
-		createFile("Project-1/B.txt","B.txt - first version\n");
-		git.add().addFilepattern("Project-1/A.txt").addFilepattern("Project-1/B.txt").call();
-		git.commit().setAuthor(jauthor).setCommitter(jcommitter)
-				.setMessage("Foo\n\nMessage").call();
-
-		createFile("Project-1/B.txt","B.txt - second version\n");
-		git.add().addFilepattern("Project-1/B.txt").call();
-		git.commit().setAuthor(jauthor).setCommitter(jcommitter)
-				.setMessage("Modified").call();
+			createFile("Project-1/B.txt", "B.txt - second version\n");
+			git.add().addFilepattern("Project-1/B.txt").call();
+			git.commit().setAuthor(jauthor).setCommitter(jcommitter)
+					.setMessage("Modified").call();
+		}
 
 		ConnectProviderOperation operation = new ConnectProviderOperation(
 				project.getProject(), gitDir);
@@ -84,9 +88,10 @@ public class HistoryTest extends GitTestCase {
 
 	private File createFile(String name, String content) throws IOException {
 		File f = new File(workDir, name);
-		FileWriter fileWriter = null;
+		Writer fileWriter = null;
 		try {
-			fileWriter = new FileWriter(f);
+			fileWriter = new OutputStreamWriter(new FileOutputStream(f),
+					"UTF-8");
 			fileWriter.write(content);
 		} finally {
 			if (fileWriter != null)

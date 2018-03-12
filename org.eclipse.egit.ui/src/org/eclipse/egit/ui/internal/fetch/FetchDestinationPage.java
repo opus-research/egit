@@ -13,9 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.UIUtils.IRefListProvider;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
@@ -63,6 +62,7 @@ public class FetchDestinationPage extends WizardPage {
 		setTitle(UIText.FetchDestinationPage_PageTitle);
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(2, false));
@@ -86,6 +86,7 @@ public class FetchDestinationPage extends WizardPage {
 		destinationLabel.setText(UIText.FetchDestinationPage_DestinationLabel);
 		destinationText = new Text(main, SWT.BORDER);
 		destinationText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -93,11 +94,7 @@ public class FetchDestinationPage extends WizardPage {
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(
 				destinationText);
 		UIUtils.addRefContentProposalToText(sourceText, repository,
-				new IRefListProvider() {
-					public List<Ref> getRefList() {
-						return getRemoteRefs();
-					}
-				});
+				() -> getRemoteRefs());
 
 		force = new Button(main, SWT.CHECK);
 		force.setText(UIText.FetchDestinationPage_ForceCheckbox);
@@ -141,7 +138,7 @@ public class FetchDestinationPage extends WizardPage {
 
 	private List<Ref> getRemoteRefs() {
 		if (this.trackingBranches == null) {
-			List<Ref> proposals = new ArrayList<Ref>();
+			List<Ref> proposals = new ArrayList<>();
 			try {
 				for (Ref ref : repository.getRefDatabase().getRefs(
 						Constants.R_REMOTES).values()) {

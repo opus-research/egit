@@ -15,7 +15,7 @@ import java.io.IOException;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteNode;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -27,6 +27,7 @@ import org.eclipse.osgi.util.NLS;
  */
 public class RemoveRemoteCommand extends
 		RepositoriesViewCommandHandler<RemoteNode> {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final RemoteNode node = getSelectedNodes(event).get(0);
 		final String configName = node.getObject();

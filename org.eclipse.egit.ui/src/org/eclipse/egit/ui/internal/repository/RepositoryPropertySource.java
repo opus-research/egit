@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.preferences.ConfigurationEditorComponent;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
@@ -153,7 +153,7 @@ public class RepositoryPropertySource implements IPropertySource {
 
 		effectiveConfig = repository.getConfig();
 		systemConfig = SystemReader.getInstance().openSystemConfig(null, FS.DETECTED);
-		userHomeConfig = SystemReader.getInstance().openUserConfig(systemConfig, FS.DETECTED);
+		userHomeConfig = SystemReader.getInstance().openUserConfig(null, FS.DETECTED);
 
 		if (effectiveConfig instanceof FileBasedConfig) {
 			File configFile = ((FileBasedConfig) effectiveConfig).getFile();
@@ -201,14 +201,30 @@ public class RepositoryPropertySource implements IPropertySource {
 							public void run() {
 								changeModeAction.getAction().setText(
 										aMode.getText());
-								editAction.getAction().setEnabled(
-										aMode != DisplayMode.EFFECTIVE);
+								boolean enabled = true;
+								switch (aMode) {
+								case EFFECTIVE:
+									enabled = false;
+									break;
+								case SYSTEM:
+									enabled = systemConfig.getFile() != null
+											&& systemConfig.getFile()
+													.canWrite();
+									break;
+								default:
+									// Nothing; enabled is true
+									break;
+								}
+								editAction.getAction().setEnabled(enabled);
 								myPage.refresh();
 							}
 
 							@Override
 							public boolean isEnabled() {
-								return aMode != getCurrentMode();
+								return aMode != getCurrentMode()
+										&& (aMode != DisplayMode.SYSTEM
+												|| systemConfig
+														.getFile() != null);
 							}
 
 							@Override
@@ -332,10 +348,12 @@ public class RepositoryPropertySource implements IPropertySource {
 		return sb.toString();
 	}
 
+	@Override
 	public Object getEditableValue() {
 		return null;
 	}
 
+	@Override
 	public IPropertyDescriptor[] getPropertyDescriptors() {
 		try {
 			systemConfig.load();
@@ -348,16 +366,18 @@ public class RepositoryPropertySource implements IPropertySource {
 			showExceptionMessage(e);
 		}
 
-		List<IPropertyDescriptor> resultList = new ArrayList<IPropertyDescriptor>();
+		List<IPropertyDescriptor> resultList = new ArrayList<>();
 
 		StoredConfig config;
 		String category;
 		String prefix;
+		boolean recursive = false;
 		switch (getCurrentMode()) {
 		case EFFECTIVE:
 			prefix = EFFECTIVE_ID_PREFIX;
 			category = UIText.RepositoryPropertySource_EffectiveConfigurationCategory;
 			config = effectiveConfig;
+			recursive = true;
 			break;
 		case REPO: {
 			prefix = REPO_ID_PREFIX;
@@ -384,6 +404,9 @@ public class RepositoryPropertySource implements IPropertySource {
 		}
 		case SYSTEM: {
 			prefix = SYSTEM_ID_PREFIX;
+			if (systemConfig.getFile() == null) {
+				return new IPropertyDescriptor[0];
+			}
 			String location = systemConfig.getFile().getAbsolutePath();
 			category = NLS
 					.bind(UIText.RepositoryPropertySource_GlobalConfigurationCategory,
@@ -395,7 +418,7 @@ public class RepositoryPropertySource implements IPropertySource {
 			return new IPropertyDescriptor[0];
 		}
 		for (String key : config.getSections()) {
-			for (String sectionItem : config.getNames(key)) {
+			for (String sectionItem : config.getNames(key, recursive)) {
 				String sectionId = key + "." + sectionItem; //$NON-NLS-1$
 				PropertyDescriptor desc = new PropertyDescriptor(prefix
 						+ sectionId, sectionId);
@@ -403,7 +426,7 @@ public class RepositoryPropertySource implements IPropertySource {
 				resultList.add(desc);
 			}
 			for (String sub : config.getSubsections(key)) {
-				for (String sectionItem : config.getNames(key, sub)) {
+				for (String sectionItem : config.getNames(key, sub, recursive)) {
 					String sectionId = key + "." + sub + "." + sectionItem; //$NON-NLS-1$ //$NON-NLS-2$
 					PropertyDescriptor desc = new PropertyDescriptor(prefix
 							+ sectionId, sectionId);
@@ -416,17 +439,22 @@ public class RepositoryPropertySource implements IPropertySource {
 		return resultList.toArray(new IPropertyDescriptor[0]);
 	}
 
+	@Override
 	public Object getPropertyValue(Object id) {
 		String actId = ((String) id);
 		Object value = null;
 		if (actId.startsWith(SYSTEM_ID_PREFIX)) {
-			value = getValueFromConfig(systemConfig, actId.substring(4));
+			value = getValueFromConfig(systemConfig,
+					actId.substring(SYSTEM_ID_PREFIX.length()));
 		} else if (actId.startsWith(USER_ID_PREFIX)) {
-			value = getValueFromConfig(userHomeConfig, actId.substring(4));
+			value = getValueFromConfig(userHomeConfig,
+					actId.substring(USER_ID_PREFIX.length()));
 		} else if (actId.startsWith(REPO_ID_PREFIX)) {
-			value = getValueFromConfig(repositoryConfig, actId.substring(4));
+			value = getValueFromConfig(repositoryConfig,
+					actId.substring(REPO_ID_PREFIX.length()));
 		} else if (actId.startsWith(EFFECTIVE_ID_PREFIX)) {
-			value = getValueFromConfig(effectiveConfig, actId.substring(4));
+			value = getValueFromConfig(effectiveConfig,
+					actId.substring(EFFECTIVE_ID_PREFIX.length()));
 		}
 		if (value == null)
 			// the text editor needs this to work
@@ -435,14 +463,17 @@ public class RepositoryPropertySource implements IPropertySource {
 		return value;
 	}
 
+	@Override
 	public boolean isPropertySet(Object id) {
 		return false;
 	}
 
+	@Override
 	public void resetPropertyValue(Object id) {
 		// no editing here
 	}
 
+	@Override
 	public void setPropertyValue(Object id, Object value) {
 		// no editing here
 	}
@@ -499,7 +530,7 @@ public class RepositoryPropertySource implements IPropertySource {
 			Composite main = (Composite) super.createDialogArea(parent);
 			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).grab(true,
 					true).applyTo(main);
-			editor = new ConfigurationEditorComponent(main, myConfig, true, false) {
+			editor = new ConfigurationEditorComponent(main, myConfig, true) {
 				@Override
 				protected void setErrorMessage(String message) {
 					EditDialog.this.setErrorMessage(message);

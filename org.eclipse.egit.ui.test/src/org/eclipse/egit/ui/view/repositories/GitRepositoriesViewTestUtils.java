@@ -10,12 +10,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.view.repositories;
 
-import static org.junit.Assert.assertNotNull;
-
 import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
@@ -28,14 +25,8 @@ import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
-import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 
 public class GitRepositoriesViewTestUtils {
 
@@ -48,6 +39,7 @@ public class GitRepositoriesViewTestUtils {
 		final AtomicReference<RepositoriesViewLabelProvider> providerRef = new AtomicReference<RepositoriesViewLabelProvider>();
 		Display.getDefault().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				providerRef.set(new RepositoriesViewLabelProvider());
 			}
@@ -77,9 +69,9 @@ public class GitRepositoriesViewTestUtils {
 
 		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
-		SWTBotTreeItem branchesItem = rootItem.expand().getNode(
-				labelProvider.getStyledText(branches).getString());
-		SWTBotTreeItem localItem = branchesItem.expand().getNode(
+		SWTBotTreeItem branchesItem = TestUtil.expandAndWait(rootItem)
+				.getNode(labelProvider.getStyledText(branches).getString());
+		SWTBotTreeItem localItem = TestUtil.expandAndWait(branchesItem).getNode(
 				labelProvider.getStyledText(localBranches).getString());
 		return localItem;
 	}
@@ -92,8 +84,8 @@ public class GitRepositoriesViewTestUtils {
 
 		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
-		SWTBotTreeItem tagsItem = rootItem.expand().getNode(
-				labelProvider.getStyledText(tags).getString());
+		SWTBotTreeItem tagsItem = TestUtil.expandAndWait(rootItem)
+				.getNode(labelProvider.getStyledText(tags).getString());
 		return tagsItem;
 	}
 
@@ -107,10 +99,11 @@ public class GitRepositoriesViewTestUtils {
 
 		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
-		SWTBotTreeItem branchesItem = rootItem.expand().getNode(
-				labelProvider.getStyledText(branches).getString());
-		SWTBotTreeItem remoteItem = branchesItem.expand().getNode(
-				labelProvider.getStyledText(remoteBranches).getString());
+		SWTBotTreeItem branchesItem = TestUtil.expandAndWait(rootItem)
+				.getNode(labelProvider.getStyledText(branches).getString());
+		SWTBotTreeItem remoteItem = TestUtil.expandAndWait(branchesItem)
+				.getNode(labelProvider.getStyledText(remoteBranches)
+						.getString());
 		return remoteItem;
 	}
 
@@ -123,8 +116,8 @@ public class GitRepositoriesViewTestUtils {
 
 		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
-		SWTBotTreeItem workdirItem = rootItem.expand().getNode(
-				labelProvider.getStyledText(workdir).getString());
+		SWTBotTreeItem workdirItem = TestUtil.expandAndWait(rootItem)
+				.getNode(labelProvider.getStyledText(workdir).getString());
 		return workdirItem;
 	}
 
@@ -142,10 +135,10 @@ public class GitRepositoriesViewTestUtils {
 		Repository repository = lookupRepository(repositoryFile);
 		RepositoryNode root = new RepositoryNode(null, repository);
 		AdditionalRefsNode symrefsnode = new AdditionalRefsNode(root, repository);
-		SWTBotTreeItem rootItem = tree.getTreeItem(
-				labelProvider.getStyledText(root).getString()).expand();
-		SWTBotTreeItem symrefsitem = rootItem.getNode(labelProvider
-				.getText(symrefsnode));
+		SWTBotTreeItem rootItem = tree
+				.getTreeItem(labelProvider.getStyledText(root).getString());
+		SWTBotTreeItem symrefsitem = TestUtil.expandAndWait(rootItem)
+				.getNode(labelProvider.getStyledText(symrefsnode).getString());
 		return symrefsitem;
 	}
 
@@ -157,32 +150,13 @@ public class GitRepositoriesViewTestUtils {
 
 		String rootText = labelProvider.getStyledText(root).getString();
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
-		SWTBotTreeItem remotesItem = rootItem.expand().getNode(
-				labelProvider.getStyledText(remotes).getString());
+		SWTBotTreeItem remotesItem = TestUtil.expandAndWait(rootItem)
+				.getNode(labelProvider.getStyledText(remotes).getString());
 		return remotesItem;
 	}
 
 	public Repository lookupRepository(File directory) throws Exception {
 		return org.eclipse.egit.core.Activator.getDefault()
 				.getRepositoryCache().lookupRepository(directory);
-	}
-
-	public SWTBotView openRepositoriesView(SWTWorkbenchBot bot)
-			throws Exception {
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-				IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
-				try {
-					workbenchPage.showView(RepositoriesView.VIEW_ID);
-				} catch (PartInitException e) {
-					throw new RuntimeException("Showing repositories view failed", e);
-				}
-			}
-		});
-
-		SWTBotView viewbot = bot.viewById(RepositoriesView.VIEW_ID);
-		assertNotNull("Repositories View should not be null", viewbot);
-		return viewbot;
 	}
 }

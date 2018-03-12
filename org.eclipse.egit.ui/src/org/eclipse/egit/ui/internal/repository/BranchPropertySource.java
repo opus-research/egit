@@ -13,8 +13,8 @@ package org.eclipse.egit.ui.internal.repository;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BranchConfigurationDialog;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
@@ -115,12 +115,14 @@ public class BranchPropertySource implements IPropertySource {
 		}
 	}
 
+	@Override
 	public Object getEditableValue() {
 		return null;
 	}
 
+	@Override
 	public IPropertyDescriptor[] getPropertyDescriptors() {
-		List<IPropertyDescriptor> resultList = new ArrayList<IPropertyDescriptor>();
+		List<IPropertyDescriptor> resultList = new ArrayList<>();
 
 		PropertyDescriptor desc = new PropertyDescriptor(
 				ConfigConstants.CONFIG_KEY_MERGE, UIText.BranchPropertySource_UpstreamBranchDescriptor);
@@ -138,6 +140,7 @@ public class BranchPropertySource implements IPropertySource {
 		return resultList.toArray(new IPropertyDescriptor[0]);
 	}
 
+	@Override
 	public Object getPropertyValue(Object id) {
 		String actId = ((String) id);
 		String value = myRepository.getConfig().getString(
@@ -148,14 +151,17 @@ public class BranchPropertySource implements IPropertySource {
 		return value;
 	}
 
+	@Override
 	public boolean isPropertySet(Object id) {
 		return false;
 	}
 
+	@Override
 	public void resetPropertyValue(Object id) {
 		// no editing here
 	}
 
+	@Override
 	public void setPropertyValue(Object id, Object value) {
 		// no editing here
 	}

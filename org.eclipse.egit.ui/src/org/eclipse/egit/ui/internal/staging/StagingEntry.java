@@ -1,12 +1,17 @@
 /*******************************************************************************
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Andre Bossert <anb0s@anbos.de> - Cleaning up the DecoratableResourceAdapter
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
@@ -16,49 +21,59 @@ import java.util.Set;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.PlatformObject;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 
 
 /**
  * A staged/unstaged entry in the table
  */
-public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
+public class StagingEntry extends PlatformObject
+		implements IProblemDecoratable, IDecoratableResource {
+
 	/**
 	 * State of the node
 	 */
 	public static enum State {
-		/** added to the index, not in the tree */
+		/** in index, not in HEAD */
 		ADDED(EnumSet.of(Action.UNSTAGE)),
 
-		/** changed from tree to index */
+		/** changed in index compared to HEAD */
 		CHANGED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.UNSTAGE)),
 
-		/** removed from index, but in tree */
+		/** removed from index, but in HEAD */
 		REMOVED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.UNSTAGE)),
 
-		/** in index, but not filesystem */
-		MISSING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
+		/** in index (unchanged), missing from working tree */
+		MISSING(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
-		/** modified on disk relative to the index */
-		MODIFIED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
+		/** changed in index compared to HEAD, missing from working tree */
+		MISSING_AND_CHANGED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX,
+				Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
-		/** partially staged, modified in workspace and in index */
-		PARTIALLY_MODIFIED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
+		/** modified in working tree compared to index */
+		MODIFIED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
+
+		/** modified in working tree compared to index, changed in index compared to HEAD */
+		MODIFIED_AND_CHANGED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
+
+		/** modified in working tree compared to index, added in index (not in HEAD) */
+		MODIFIED_AND_ADDED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.STAGE)),
 
 		/** not ignored, and not in the index */
 		UNTRACKED(EnumSet.of(Action.STAGE, Action.DELETE, Action.IGNORE)),
 
 		/** in conflict */
-		CONFLICTING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION,
-					Action.STAGE, Action.LAUNCH_MERGE_TOOL));
+		CONFLICTING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX,
+				Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE,
+				Action.LAUNCH_MERGE_TOOL, Action.REPLACE_WITH_OURS_THEIRS_MENU));
 
 		private final Set<Action> availableActions;
 
@@ -85,26 +100,36 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		DELETE,
 		IGNORE,
 		LAUNCH_MERGE_TOOL,
+		REPLACE_WITH_OURS_THEIRS_MENU
 	}
 
-	private Repository repository;
+	private final Repository repository;
+	private final State state;
+	private final String path;
 
-	private State state;
+	private boolean fileLoaded;
 
-	private String path;
+	private IFile file;
+
+	private String name;
+
+	private StagingFolderEntry parent;
 
 	private boolean submodule;
 
+	private boolean symlink;
+
 	/**
-	 *
-	 * @param repository TODO
-	 * @param modified
-	 * @param file
+	 * @param repository
+	 *            repository for this entry
+	 * @param state
+	 * @param path
+	 *            repo-relative path for this entry
 	 */
-	public StagingEntry(Repository repository, State modified, String file) {
+	public StagingEntry(Repository repository, State state, String path) {
 		this.repository = repository;
-		this.state = modified;
-		this.path = file;
+		this.state = state;
+		this.path = path;
 	}
 
 	/**
@@ -122,10 +147,31 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	/**
-	 * @return the full path for this node
+	 * @param symlink
+	 */
+	public void setSymlink(boolean symlink) {
+		this.symlink = symlink;
+	}
+
+	/**
+	 * @return true if symlink, false otherwise
+	 */
+	public boolean isSymlink() {
+		return symlink;
+	}
+
+	/**
+	 * @return the repo-relative path for this file
 	 */
 	public String getPath() {
 		return path;
+	}
+
+	/**
+	 * @return the repo-relative path of the parent
+	 */
+	public IPath getParentPath() {
+		return new Path(path).removeLastSegments(1);
 	}
 
 	/**
@@ -147,97 +193,150 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	/**
-	 * @return the file corresponding to the entry
+	 * @return the file corresponding to the entry, if it exists in the
+	 *         workspace, null otherwise.
 	 */
 	public IFile getFile() {
-		IPath absolutePath = getLocation();
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IFile resource = root.getFileForLocation(absolutePath);
-		return resource;
+		if (!fileLoaded) {
+			fileLoaded = true;
+			file = ResourceUtil.getFileForLocation(repository, path, false);
+		}
+		return file;
 	}
 
 	/**
 	 * @return the location (path) of the entry
 	 */
+	@NonNull
 	public IPath getLocation() {
 		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
 		return absolutePath;
 	}
 
+	/**
+	 * @return parent StagingFolderEntry
+	 */
+	public StagingFolderEntry getParent() {
+		return parent;
+	}
+
+	/**
+	 * @param parent
+	 *            StagingFolderEntry
+	 */
+	public void setParent(StagingFolderEntry parent) {
+		this.parent = parent;
+	}
+
+	@Override
 	public int getProblemSeverity() {
-		IFile file = getFile();
-		if (file == null)
+		IFile f = getFile();
+		if (f == null)
 			return SEVERITY_NONE;
 
 		try {
-			return file.findMaxProblemSeverity(IMarker.PROBLEM, true, IResource.DEPTH_ONE);
+			return f.findMaxProblemSeverity(IMarker.PROBLEM, true,
+					IResource.DEPTH_ZERO);
 		} catch (CoreException e) {
 			return SEVERITY_NONE;
 		}
 	}
 
-	public Object getAdapter(Class adapter) {
-		if (adapter == IResource.class)
-			return getFile();
-		else if (adapter == IPath.class)
-			return getLocation();
-		return null;
-	}
-
+	@Override
 	public int getType() {
 		return IResource.FILE;
 	}
 
+	@Override
 	public String getName() {
-		// Not used in StagingViewLabelProvider
-		return null;
+		if (name == null) {
+			IPath parsed = Path.fromOSString(getPath());
+			name = parsed.lastSegment();
+		}
+		return name;
 	}
 
+	@Override
 	public String getRepositoryName() {
 		return null;
 	}
 
+	@Override
 	public String getBranch() {
 		return null;
 	}
 
+	@Override
 	public String getBranchStatus() {
 		return null;
 	}
 
+	@Override
+	public String getCommitMessage() {
+		return null;
+	}
+
+	@Override
 	public boolean isTracked() {
 		return state != State.UNTRACKED;
 	}
 
+	@Override
 	public boolean isIgnored() {
 		return false;
 	}
 
+	@Override
 	public boolean isDirty() {
-		return state == State.MODIFIED || state == State.PARTIALLY_MODIFIED;
+		return state == State.MODIFIED || state == State.MODIFIED_AND_CHANGED
+				|| state == State.MODIFIED_AND_ADDED;
 	}
 
-	public Staged staged() {
+	@Override
+	public boolean isMissing() {
+		return state == State.MISSING || state == State.MISSING_AND_CHANGED;
+	}
+
+	@Override
+	public boolean hasUnstagedChanges() {
+		return !isTracked() || isDirty() || isMissing() || hasConflicts();
+	}
+
+	@Override
+	public StagingState getStagingState() {
 		switch (state) {
 		case ADDED:
-			return Staged.ADDED;
+			return StagingState.ADDED;
 		case CHANGED:
-			return Staged.MODIFIED;
+			return StagingState.MODIFIED;
 		case REMOVED:
-			return Staged.REMOVED;
+			return StagingState.REMOVED;
 		case MISSING:
-			return Staged.REMOVED;
+		case MISSING_AND_CHANGED:
+			return StagingState.REMOVED;
 		default:
-			return Staged.NOT_STAGED;
+			return StagingState.NOT_STAGED;
 		}
 	}
 
+	@Override
+	public boolean isStaged() {
+		return getStagingState() != StagingState.NOT_STAGED;
+	}
+
+	@Override
 	public boolean hasConflicts() {
 		return state == State.CONFLICTING;
 	}
 
-	public boolean isAssumeValid() {
+	@Override
+	public boolean isAssumeUnchanged() {
 		return false;
+	}
+
+	@Override
+	public String toString() {
+		return "StagingEntry[" + state + ' ' + path + ']'; //$NON-NLS-1$
 	}
 
 	@Override
@@ -266,5 +365,10 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		if (state != other.state)
 			return false;
 		return true;
+	}
+
+	@Override
+	public boolean isRepositoryContainer() {
+		return false;
 	}
 }

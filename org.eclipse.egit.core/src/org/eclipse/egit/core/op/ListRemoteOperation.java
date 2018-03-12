@@ -13,7 +13,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LsRemoteCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -45,9 +45,10 @@ public class ListRemoteOperation {
 	 */
 	public ListRemoteOperation(final Repository localDb, final URIish uri,
 			int timeout) {
-		Git git = new Git(localDb);
-		rc = git.lsRemote();
-		rc.setRemote(uri.toString()).setTimeout(timeout);
+		try (Git git = new Git(localDb)) {
+			rc = git.lsRemote();
+			rc.setRemote(uri.toString()).setTimeout(timeout);
+		}
 	}
 
 	/**

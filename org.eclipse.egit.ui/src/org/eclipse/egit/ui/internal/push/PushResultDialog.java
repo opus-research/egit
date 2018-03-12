@@ -1,6 +1,8 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler mathias.kinzler@sap.com>
+ * Copyright (C) 2015, Christian Georgi <christian.georgi@sap.com>
+ * Copyright (C) 2017, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,12 +12,14 @@
 package org.eclipse.egit.ui.internal.push;
 
 import org.eclipse.egit.core.op.PushOperationResult;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.components.TitleAndImageDialog;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jface.dialogs.TitleAreaDialog;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
@@ -26,7 +30,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
-class PushResultDialog extends TitleAreaDialog {
+class PushResultDialog extends TitleAndImageDialog {
 	private static final int CONFIGURE = 99;
 
 	private final Repository localDb;
@@ -37,34 +41,16 @@ class PushResultDialog extends TitleAreaDialog {
 
 	private boolean hideConfigure = false;
 
-	/**
-	 * Shows this dialog asynchronously
-	 *
-	 * @param repository
-	 * @param result
-	 * @param sourceString
-	 */
-	public static void show(final Repository repository,
-			final PushOperationResult result, final String sourceString) {
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				PlatformUI.getWorkbench().getDisplay().asyncExec(
-						new Runnable() {
-							public void run() {
-								Shell shell = PlatformUI.getWorkbench()
-										.getActiveWorkbenchWindow().getShell();
-								new PushResultDialog(shell, repository, result,
-										sourceString).open();
-							}
-						});
-			}
-		});
-	}
-
 	PushResultDialog(final Shell parentShell, final Repository localDb,
-			final PushOperationResult result, final String destinationString) {
-		super(parentShell);
-		setShellStyle(getShellStyle() | SWT.RESIZE);
+			final PushOperationResult result, final String destinationString,
+			boolean modal, @NonNull PushMode pushMode) {
+		super(parentShell, pushMode == PushMode.UPSTREAM ? UIIcons.WIZBAN_PUSH
+				: UIIcons.WIZBAN_PUSH_GERRIT);
+		int shellStyle = getShellStyle() | SWT.RESIZE;
+		if (!modal) {
+			shellStyle &= ~SWT.APPLICATION_MODAL;
+		}
+		setShellStyle(shellStyle);
 		this.localDb = localDb;
 		this.result = result;
 		this.destinationString = destinationString;
@@ -87,9 +73,11 @@ class PushResultDialog extends TitleAreaDialog {
 		if (buttonId == CONFIGURE) {
 			super.buttonPressed(IDialogConstants.OK_ID);
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
-					Dialog dlg = SimpleConfigurePushDialog.getDialog(PlatformUI
-							.getWorkbench().getDisplay().getActiveShell(),
+					Dialog dlg = SimpleConfigurePushDialog.getDialog(
+							PlatformUI.getWorkbench()
+									.getModalDialogShellProvider().getShell(),
 							localDb);
 					dlg.open();
 				}
@@ -101,10 +89,16 @@ class PushResultDialog extends TitleAreaDialog {
 	protected Control createDialogArea(final Composite parent) {
 		final Composite composite = (Composite) super.createDialogArea(parent);
 		String pushErrors = getPushErrors();
-		setTitle(NLS.bind(UIText.ResultDialog_label, destinationString));
-		if (pushErrors != null && pushErrors.length() > 0)
+		String title;
+		if (pushErrors != null && pushErrors.length() > 0) {
 			setErrorMessage(pushErrors);
-		final PushResultTable table = new PushResultTable(composite);
+			title = NLS.bind(UIText.PushResultDialog_label_failed,
+					destinationString);
+		} else
+			title = NLS.bind(UIText.PushResultDialog_label, destinationString);
+		setTitle(title);
+		final PushResultTable table = new PushResultTable(composite,
+				getDialogBoundsSettings());
 		table.setData(localDb, result);
 		final Control tableControl = table.getControl();
 		final GridData tableLayout = new GridData(SWT.FILL, SWT.FILL, true,
@@ -114,7 +108,7 @@ class PushResultDialog extends TitleAreaDialog {
 		tableControl.setLayoutData(tableLayout);
 
 		getShell().setText(
-				NLS.bind(UIText.ResultDialog_title, destinationString));
+				NLS.bind(UIText.PushResultDialog_title, destinationString));
 		applyDialogFont(composite);
 		return composite;
 	}
@@ -136,6 +130,7 @@ class PushResultDialog extends TitleAreaDialog {
 		this.hideConfigure = !show;
 	}
 
+	@Override
 	protected IDialogSettings getDialogBoundsSettings() {
 		return UIUtils.getDialogBoundSettings(getClass());
 	}

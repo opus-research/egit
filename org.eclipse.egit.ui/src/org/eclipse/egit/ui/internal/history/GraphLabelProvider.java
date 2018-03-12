@@ -21,8 +21,20 @@ import org.eclipse.egit.ui.internal.dialogs.CommitLabelProvider;
  * A Label Provider for Commits
  */
 class GraphLabelProvider extends CommitLabelProvider {
+
+	public GraphLabelProvider() {
+		super();
+	}
+
+	public GraphLabelProvider(boolean canShowEmailAddresses) {
+		super(canShowEmailAddresses);
+	}
+
 	@Override
 	public String getColumnText(Object element, int columnIndex) {
+		if (element == null) {
+			return ""; //$NON-NLS-1$
+		}
 		final SWTCommit c = (SWTCommit) element;
 		try {
 			c.parseBody();

@@ -21,8 +21,8 @@ import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.core.synchronize.StagedChangeCache;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.storage.file.FileRepository;
-import org.junit.BeforeClass;
+import org.eclipse.jgit.lib.Repository;
+import org.junit.Before;
 import org.junit.Test;
 
 public class GitModelCacheTest extends GitModelTestCase {
@@ -102,12 +102,14 @@ public class GitModelCacheTest extends GitModelTestCase {
 
 	@Test
 	public void shouldReturnChildren() throws Exception {
-		FileRepository repo = lookupRepository(leftRepoFile);
+		Repository repo = lookupRepository(leftRepoFile);
 		writeTrashFile(repo, "dir/a.txt", "trash");
 		writeTrashFile(repo, "dir/b.txt", "trash");
 		writeTrashFile(repo, "dir/c.txt", "trash");
 		writeTrashFile(repo, "dir/d.txt", "trash");
-		new Git(repo).add().addFilepattern("dir").call();
+		try (Git git = new Git(repo)) {
+			git.add().addFilepattern("dir").call();
+		}
 
 		Map<String, Change> changes = StagedChangeCache.build(repo);
 		assertEquals(4, changes.size());
@@ -124,7 +126,8 @@ public class GitModelCacheTest extends GitModelTestCase {
 		assertEquals(4, dirChildren.length);
 	}
 
-	@BeforeClass public static void setupEnvironment() throws Exception {
+	@Before
+	public void setupEnvironment() throws Exception {
 		leftRepoFile = createProjectAndCommitToRepository();
 
 		Activator.getDefault().getRepositoryUtil()

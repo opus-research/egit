@@ -15,7 +15,7 @@ import java.util.Map;
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.synchronize.model.TreeBuilder.FileModelFactory;
 import org.eclipse.jgit.lib.Repository;
 
@@ -35,6 +35,7 @@ public class GitModelWorkingTree extends GitModelCache {
 	public GitModelWorkingTree(GitModelRepository parent, Repository repo,
 			Map<String, Change> cache) {
 		super(parent, repo, cache, new FileModelFactory() {
+			@Override
 			public GitModelBlob createFileModel(
 					GitModelObjectContainer objParent, Repository nestedRepo,
 					Change change, IPath path) {
@@ -42,6 +43,7 @@ public class GitModelWorkingTree extends GitModelCache {
 						path);
 			}
 
+			@Override
 			public boolean isWorkingTree() {
 				return true;
 			}

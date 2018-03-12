@@ -31,16 +31,19 @@ public class RepoComboContentProvider implements IStructuredContentProvider {
 	private final RepositoryCache cache = org.eclipse.egit.core.Activator
 			.getDefault().getRepositoryCache();
 
+	@Override
 	public void dispose() {
 		// nothing
 	}
 
+	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		// nothing
 	}
 
+	@Override
 	public Object[] getElements(Object inputElement) {
-		List<Repository> nonBareRepos = new ArrayList<Repository>();
+		List<Repository> nonBareRepos = new ArrayList<>();
 		for (String dir : util.getConfiguredRepositories()) {
 			Repository repo;
 			try {

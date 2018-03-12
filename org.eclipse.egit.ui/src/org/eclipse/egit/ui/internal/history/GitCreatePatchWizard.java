@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,9 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -30,15 +31,16 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.op.CreatePatchOperation;
 import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.DialogSettings;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -58,6 +60,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
@@ -127,19 +130,8 @@ public class GitCreatePatchWizard extends Wizard {
 		this.db = db;
 		this.resources = resources;
 
-		setDialogSettings(getOrCreateSection(Activator.getDefault().getDialogSettings(), "GitCreatePatchWizard")); //$NON-NLS-1$
-	}
-
-	/*
-	 * Copy of org.eclipse.jface.dialogs.DialogSettings.getOrCreateSection(IDialogSettings, String)
-	 * which is not available in 3.5.
-	 */
-	private static IDialogSettings getOrCreateSection(IDialogSettings settings,
-			String sectionName) {
-		IDialogSettings section = settings.getSection(sectionName);
-		if (section == null)
-			section = settings.addNewSection(sectionName);
-		return section;
+		setDialogSettings(DialogSettings.getOrCreateSection(Activator
+				.getDefault().getDialogSettings(), "GitCreatePatchWizard")); //$NON-NLS-1$
 	}
 
 	@Override
@@ -173,10 +165,12 @@ public class GitCreatePatchWizard extends Wizard {
 
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
+				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException {
+					SubMonitor progress = SubMonitor.convert(monitor, 2);
 					try {
-						operation.execute(monitor);
+						operation.execute(progress.newChild(1));
 
 						String content = operation.getPatchContent();
 						if (file != null) {
@@ -184,11 +178,14 @@ public class GitCreatePatchWizard extends Wizard {
 							IFile[] files = ResourcesPlugin.getWorkspace()
 									.getRoot()
 									.findFilesForLocationURI(file.toURI());
-							for (int i = 0; i < files.length; i++)
-								files[i].refreshLocal(IResource.DEPTH_ZERO,
-										monitor);
-						} else
+							progress.setWorkRemaining(files.length);
+							for (IFile f : files) {
+								f.refreshLocal(IResource.DEPTH_ZERO,
+										progress.newChild(1));
+							}
+						} else {
 							copyToClipboard(content);
+						}
 					} catch (IOException e) {
 						throw new InvocationTargetException(e);
 					} catch (CoreException e) {
@@ -215,6 +212,7 @@ public class GitCreatePatchWizard extends Wizard {
 
 	private void copyToClipboard(final String content) {
 		getShell().getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				TextTransfer plainTextTransfer = TextTransfer.getInstance();
 				Clipboard clipboard = new Clipboard(getShell().getDisplay());
@@ -228,16 +226,18 @@ public class GitCreatePatchWizard extends Wizard {
 	private TreeFilter createPathFilter(final Collection<? extends IResource> rs) {
 		if (rs == null || rs.isEmpty())
 			return null;
-		final List<PathFilter> filters = new ArrayList<PathFilter>();
+		final List<PathFilter> filters = new ArrayList<>();
 		for (IResource r : rs) {
 			RepositoryMapping rm = RepositoryMapping.getMapping(r);
-			String repoRelativePath = rm.getRepoRelativePath(r);
-			if (repoRelativePath != null)
-				if (repoRelativePath.equals("")) //$NON-NLS-1$
-					// repository selected
-					return TreeFilter.ALL;
-				else
-					filters.add(PathFilter.create(repoRelativePath));
+			if (rm != null) {
+				String repoRelativePath = rm.getRepoRelativePath(r);
+				if (repoRelativePath != null)
+					if (repoRelativePath.equals("")) //$NON-NLS-1$
+						// repository selected
+						return TreeFilter.ALL;
+					else
+						filters.add(PathFilter.create(repoRelativePath));
+			}
 		}
 		if (filters.size() == 0)
 			return null;
@@ -248,7 +248,8 @@ public class GitCreatePatchWizard extends Wizard {
 
 	private void writeToFile(final File file, String content)
 			throws IOException {
-		Writer output = new BufferedWriter(new FileWriter(file));
+		Writer output = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(file), RawParseUtils.UTF8_CHARSET));
 		try {
 			// FileWriter always assumes default encoding is
 			// OK!
@@ -306,14 +307,12 @@ public class GitCreatePatchWizard extends Wizard {
 			super(pageName, title, titleImage);
 		}
 
+		@Override
 		public void createControl(Composite parent) {
 			final Composite composite = new Composite(parent, SWT.NULL);
 			GridLayout gridLayout = new GridLayout(2, false);
 			composite.setLayout(gridLayout);
 			composite.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
-			GridData gd = new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING);
-			gd.horizontalSpan = 2;
 
 			formatLabel = new Label(composite, SWT.NONE);
 			formatLabel.setText(UIText.GitCreatePatchWizard_Format);
@@ -359,6 +358,7 @@ public class GitCreatePatchWizard extends Wizard {
 			validatePage();
 			contextLines.addModifyListener(new ModifyListener() {
 
+				@Override
 				public void modifyText(ModifyEvent e) {
 					validatePage();
 				}

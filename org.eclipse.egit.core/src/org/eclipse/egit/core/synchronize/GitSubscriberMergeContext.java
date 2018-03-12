@@ -22,7 +22,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.GitResourceDeltaVisitor;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
@@ -63,6 +63,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 
 		indexChangeListener = new IndexDiffChangedListener() {
+			@Override
 			public void indexDiffChanged(Repository repository,
 					IndexDiffData indexDiffData) {
 				handleRepositoryChange(repository);
@@ -70,6 +71,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 		};
 		resourceChangeListener = new IResourceChangeListener() {
 
+			@Override
 			public void resourceChanged(IResourceChangeEvent event) {
 				IResourceDelta delta = event.getDelta();
 				if (delta == null)
@@ -87,6 +89,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 		initialize();
 	}
 
+	@Override
 	public void markAsMerged(IDiff node, boolean inSyncHint,
 			IProgressMonitor monitor) throws CoreException {
 		IResource resource = getDiffTree().getResource(node);
@@ -95,6 +98,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 		operation.execute(monitor);
 	}
 
+	@Override
 	public void reject(IDiff diff, IProgressMonitor monitor)
 			throws CoreException {
 		// TODO Auto-generated method stub

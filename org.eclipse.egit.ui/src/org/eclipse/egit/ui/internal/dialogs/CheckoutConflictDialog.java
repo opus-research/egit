@@ -14,12 +14,11 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import java.util.List;
 
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.actions.ActionCommands;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
-import org.eclipse.egit.ui.internal.repository.tree.command.CommitCommand;
 import org.eclipse.egit.ui.internal.repository.tree.command.ResetCommand;
-import org.eclipse.egit.ui.internal.repository.tree.command.StashCreateCommand;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -70,20 +69,23 @@ public class CheckoutConflictDialog extends MessageDialog {
 		return main;
 	}
 
+	@Override
 	protected void buttonPressed(int buttonId) {
 		switch (buttonId) {
 		case IDialogConstants.PROCEED_ID:
-			CommonUtils.runCommand(CommitCommand.ID, new StructuredSelection(
-					new RepositoryNode(null, repository)));
+			CommonUtils.runCommand(ActionCommands.COMMIT_ACTION,
+					new StructuredSelection(repository));
 			break;
 		case IDialogConstants.ABORT_ID:
 			CommonUtils.runCommand(ResetCommand.ID, new StructuredSelection(
 					new RepositoryNode(null, repository)));
 			break;
 		case IDialogConstants.SKIP_ID:
-			CommonUtils.runCommand(StashCreateCommand.ID,
+			CommonUtils.runCommand(ActionCommands.STASH_CREATE,
 					new StructuredSelection(
 							new RepositoryNode(null, repository)));
+			break;
+		default:
 			break;
 		}
 		super.buttonPressed(buttonId);

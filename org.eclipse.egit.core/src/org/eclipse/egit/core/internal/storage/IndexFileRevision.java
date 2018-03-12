@@ -18,7 +18,7 @@ import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.ObjectId;
@@ -27,7 +27,8 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 
 /** An {@link IFileRevision} for the version in the Git index. */
-class IndexFileRevision extends GitFileRevision {
+public class IndexFileRevision extends GitFileRevision implements
+		OpenWorkspaceVersionEnabled {
 
 	// This is to maintain compatibility with the old behavior
 	private static final int FIRST_AVAILABLE = -1;
@@ -40,39 +41,45 @@ class IndexFileRevision extends GitFileRevision {
 
 	private ObjectId blobId;
 
-	IndexFileRevision(final Repository repo, final String fileName) {
-		this(repo, fileName, FIRST_AVAILABLE);
+	IndexFileRevision(final Repository repo, final String path) {
+		this(repo, path, FIRST_AVAILABLE);
 	}
 
-	IndexFileRevision(final Repository repo, final String fileName, int stage) {
-		super(fileName);
+	IndexFileRevision(final Repository repo, final String path, int stage) {
+		super(path);
 		this.db = repo;
-		this.path = fileName;
+		this.path = path;
 		this.stage = stage;
 	}
 
+	@Override
 	public IStorage getStorage(IProgressMonitor monitor) throws CoreException {
 		if (blobId == null)
 			blobId = locateBlobObjectId();
 		return new IndexBlobStorage(db, path, blobId);
 	}
 
+	@Override
 	public boolean isPropertyMissing() {
 		return false;
 	}
 
+	@Override
 	public String getAuthor() {
 		return "";  //$NON-NLS-1$
 	}
 
+	@Override
 	public long getTimestamp() {
 		return -1;
 	}
 
+	@Override
 	public String getComment() {
 		return null;
 	}
 
+	@Override
 	public String getContentIdentifier() {
 		return INDEX;
 	}
@@ -101,5 +108,15 @@ class IndexFileRevision extends GitFileRevision {
 			throw new CoreException(Activator.error(NLS.bind(
 					CoreText.IndexFileRevision_errorLookingUpPath, path), e));
 		}
+	}
+
+	@Override
+	public Repository getRepository() {
+		return db;
+	}
+
+	@Override
+	public String getGitPath() {
+		return path;
 	}
 }

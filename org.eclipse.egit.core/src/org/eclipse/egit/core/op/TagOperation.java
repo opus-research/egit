@@ -12,16 +12,16 @@ import java.io.IOException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
-import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 
@@ -48,25 +48,15 @@ public class TagOperation implements IEGitOperation {
 	}
 
 
-	public void execute(IProgressMonitor m) throws CoreException {
-		IProgressMonitor monitor;
-		if (m == null)
-			monitor = new NullProgressMonitor();
-		else
-			monitor = m;
-		try {
-			monitor.beginTask(NLS.bind(CoreText.TagOperation_performingTagging,
-					tag.getTag()), 3);
-
-			ObjectId tagId = updateTagObject();
-			monitor.worked(1);
-
-			updateRepo(tagId);
-			monitor.worked(1);
-
-		} finally {
-			monitor.done();
-		}
+	@Override
+	public void execute(IProgressMonitor monitor) throws CoreException {
+		SubMonitor progress = SubMonitor.convert(monitor, 2);
+		progress.setTaskName(NLS.bind(CoreText.TagOperation_performingTagging,
+				tag.getTag()));
+		ObjectId tagId = updateTagObject();
+		progress.worked(1);
+		updateRepo(tagId);
+		progress.worked(1);
 	}
 
 	private void updateRepo(ObjectId tagId) throws TeamException {
@@ -94,12 +84,9 @@ public class TagOperation implements IEGitOperation {
 		try {
 			ObjectId tagId;
 			repo.open(startPointRef);
-			ObjectInserter inserter = repo.newObjectInserter();
-			try {
+			try (ObjectInserter inserter = repo.newObjectInserter()) {
 				tagId = inserter.insert(tag);
 				inserter.flush();
-			} finally {
-				inserter.release();
 			}
 			return tagId;
 		} catch (IOException e) {
@@ -109,6 +96,7 @@ public class TagOperation implements IEGitOperation {
 	}
 
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return null;
 	}

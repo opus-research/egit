@@ -28,6 +28,7 @@ class GitRemoteFile extends GitRemoteResource {
 		this.repo = repo;
 	}
 
+	@Override
 	public boolean isContainer() {
 		return false;
 	}
@@ -39,7 +40,7 @@ class GitRemoteFile extends GitRemoteResource {
 		try {
 			setContents(content.getContents(), monitor);
 		} catch (CoreException e) {
-			Activator.error("", e); //$NON-NLS-1$
+			Activator.logError("", e); //$NON-NLS-1$
 		}
 	}
 

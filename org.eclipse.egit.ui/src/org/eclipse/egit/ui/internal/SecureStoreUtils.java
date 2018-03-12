@@ -10,11 +10,12 @@
 package org.eclipse.egit.ui.internal;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.equinox.security.storage.StorageException;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.transport.URIish;
 
 /**
@@ -35,17 +36,55 @@ public class SecureStoreUtils {
 				org.eclipse.egit.core.Activator.getDefault().getSecureStore()
 						.putCredentials(uri, credentials);
 			} catch (StorageException e) {
-				Activator.handleError(
-						UIText.SecureStoreUtils_writingCredentialsFailed, e,
-						true);
+				Activator.handleError(MessageFormat.format(
+						UIText.SecureStoreUtils_writingCredentialsFailed, uri),
+						e, true);
 				return false;
 			} catch (IOException e) {
-				Activator.handleError(
-						UIText.SecureStoreUtils_writingCredentialsFailed, e,
-						true);
+				Activator.handleError(MessageFormat.format(
+						UIText.SecureStoreUtils_writingCredentialsFailed, uri),
+						e, true);
 				return false;
 			}
 		}
 		return true;
 	}
+
+	/**
+	 * Gets credentials stored for the given uri. Logs {@code StorageException}
+	 * if thrown by the secure store implementation and removes credentials
+	 * which can't be read from secure store
+	 *
+	 * @param uri
+	 * @return credentials stored in secure store for given uri
+	 */
+	public static @Nullable UserPasswordCredentials getCredentials(
+			final URIish uri) {
+		try {
+			return org.eclipse.egit.core.Activator.getDefault()
+					.getSecureStore().getCredentials(uri);
+		} catch (StorageException e) {
+			Activator.logError(MessageFormat.format(
+					UIText.SecureStoreUtils_errorReadingCredentials,
+					uri), e);
+			clearCredentials(uri);
+			return null;
+		}
+	}
+
+	/**
+	 * Clear credentials stored for the given uri if any exist
+	 *
+	 * @param uri
+	 */
+	public static void clearCredentials(final URIish uri) {
+		try {
+			org.eclipse.egit.core.Activator.getDefault().getSecureStore()
+					.clearCredentials(uri);
+		} catch (IOException e) {
+			Activator.logError(MessageFormat.format(
+					UIText.SecureStoreUtils_errorClearingCredentials, uri), e);
+		}
+	}
+
 }

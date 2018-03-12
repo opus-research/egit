@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.common;
 
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.push.PushWizard;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.wizard.WizardDialog;
@@ -25,6 +25,7 @@ public class PushWizardTester {
 	public RepoPropertiesPage openPushWizard(final Repository repository)
 			throws Exception {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				try {
 					Shell shell = PlatformUI.getWorkbench()

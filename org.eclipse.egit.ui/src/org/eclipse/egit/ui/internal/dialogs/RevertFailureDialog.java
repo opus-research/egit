@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.WorkbenchStyledLabelProvider;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -30,7 +30,7 @@ import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jface.viewers.ViewerSorter;
+import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.merge.ResolveMerger.MergeFailureReason;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -81,10 +81,12 @@ public class RevertFailureDialog extends MessageDialog {
 			this.path = path;
 		}
 
+		@Override
 		public String getLabel(Object object) {
 			return path;
 		}
 
+		@Override
 		public ImageDescriptor getImageDescriptor(Object object) {
 			String name = new org.eclipse.core.runtime.Path(path).lastSegment();
 			if (name != null) {
@@ -95,6 +97,7 @@ public class RevertFailureDialog extends MessageDialog {
 						.getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
 		}
 
+		@Override
 		public StyledString getStyledText(Object object) {
 			int lastSlash = path.lastIndexOf('/');
 			StyledString styled = new StyledString();
@@ -118,7 +121,7 @@ public class RevertFailureDialog extends MessageDialog {
 
 		private RevertFailure(MergeFailureReason reason) {
 			this.reason = reason;
-			this.paths = new ArrayList<Path>();
+			this.paths = new ArrayList<>();
 		}
 
 		private RevertFailure add(String path) {
@@ -126,10 +129,12 @@ public class RevertFailureDialog extends MessageDialog {
 			return this;
 		}
 
+		@Override
 		public Object[] getChildren(Object object) {
 			return paths.toArray();
 		}
 
+		@Override
 		public String getLabel(Object object) {
 			switch (reason) {
 			case DIRTY_INDEX:
@@ -143,6 +148,7 @@ public class RevertFailureDialog extends MessageDialog {
 			}
 		}
 
+		@Override
 		public StyledString getStyledText(Object object) {
 			StyledString styled = new StyledString(getLabel(object));
 			styled.append(' ');
@@ -168,6 +174,7 @@ public class RevertFailureDialog extends MessageDialog {
 		this.reasons = reasons;
 	}
 
+	@Override
 	protected Control createCustomArea(Composite parent) {
 		if (reasons == null || reasons.isEmpty())
 			return null;
@@ -183,6 +190,7 @@ public class RevertFailureDialog extends MessageDialog {
 				.applyTo(viewer.getControl());
 		viewer.setContentProvider(new WorkbenchContentProvider() {
 
+			@Override
 			public Object[] getElements(Object element) {
 				return ((Collection) element).toArray();
 			}
@@ -190,6 +198,7 @@ public class RevertFailureDialog extends MessageDialog {
 		});
 		final IStyledLabelProvider styleProvider = new WorkbenchStyledLabelProvider() {
 
+			@Override
 			public StyledString getStyledText(Object element) {
 				// TODO Replace with use of IWorkbenchAdapter3 when is no longer
 				// supported
@@ -203,9 +212,9 @@ public class RevertFailureDialog extends MessageDialog {
 		};
 		viewer.setLabelProvider(new DelegatingStyledCellLabelProvider(
 				styleProvider));
-		viewer.setSorter(new ViewerSorter());
+		viewer.setComparator(new ViewerComparator());
 
-		Map<MergeFailureReason, RevertFailure> failures = new HashMap<MergeFailureReason, RevertFailure>();
+		Map<MergeFailureReason, RevertFailure> failures = new HashMap<>();
 		for (Entry<String, MergeFailureReason> reason : reasons.entrySet()) {
 			RevertFailure failure = failures.get(reason.getValue());
 			if (failure == null) {

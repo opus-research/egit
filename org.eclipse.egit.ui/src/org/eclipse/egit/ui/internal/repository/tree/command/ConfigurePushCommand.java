@@ -23,10 +23,11 @@ import org.eclipse.jface.dialogs.Dialog;
  */
 public class ConfigurePushCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		RepositoryTreeNode selectedNode = getSelectedNodes(event).get(0);
-		final String configName;
+		RepositoryTreeNode selectedNode = getFirstOrNull(getSelectedNodes(event));
 
+		final String configName;
 		if (selectedNode instanceof RemoteNode)
 			configName = ((RemoteNode) selectedNode).getObject();
 		else if (selectedNode instanceof PushNode)

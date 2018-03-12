@@ -10,9 +10,9 @@
  *****************************************************************************/
 package org.eclipse.egit.ui.internal.submodule;
 
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Repository;
@@ -40,6 +40,7 @@ public class AddSubmoduleWizard extends Wizard {
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 	}
 
+	@Override
 	public void addPages() {
 		pathPage = new SubmodulePathWizardPage(repo);
 		addPage(pathPage);
@@ -66,6 +67,7 @@ public class AddSubmoduleWizard extends Wizard {
 		return uriPage.getSelection().getURI();
 	}
 
+	@Override
 	public boolean performFinish() {
 		if (uriPage.getStoreInSecureStore()
 				&& !SecureStoreUtils.storeCredentials(uriPage.getCredentials(),

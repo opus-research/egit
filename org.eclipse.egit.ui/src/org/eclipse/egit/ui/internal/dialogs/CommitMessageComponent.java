@@ -7,8 +7,9 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, Tieto Corporation, Peter Bäckman <peter.backman@tieto.com>
+ * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2014 IBM Corporation (Daniel Megert <daniel_megert@ch.ibm.com>)
+ * Copyright (C) 2015 SAP SE (Christian Georgi <christian.georgi@sap.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -33,18 +35,25 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RevUtils;
+import org.eclipse.egit.core.internal.gerrit.GerritUtil;
+import org.eclipse.egit.core.internal.util.ProjectUtil;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.DocumentEvent;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.jface.text.IRegion;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -95,10 +104,12 @@ public class CommitMessageComponent {
 			this.type = type;
 		}
 
+		@Override
 		public String getMessage() {
 			return message;
 		}
 
+		@Override
 		public int getMessageType() {
 			return type;
 		}
@@ -158,11 +169,11 @@ public class CommitMessageComponent {
 
 	private Repository repository;
 
-	private Collection<String> filesToCommit = new ArrayList<String>();
+	private Collection<String> filesToCommit = new ArrayList<>();
 
 	private ObjectId headCommitId;
 
-	private boolean listersEnabled;
+	private boolean listenersEnabled;
 
 	/**
 	 * @param repository
@@ -196,9 +207,9 @@ public class CommitMessageComponent {
 		amending = false;
 		amendAllowed = false;
 		createChangeId = false;
-		filesToCommit = new ArrayList<String>();
+		filesToCommit = new ArrayList<>();
 		headCommitId = null;
-		listersEnabled = false;
+		listenersEnabled = false;
 	}
 
 	/**
@@ -391,12 +402,14 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Disable listeners on commit message editor and committer text
-	 * to change data programmatically.
+	 * Enable/disable listeners on commit message editor and committer text to
+	 * change data programmatically.
 	 * @param enable
 	 */
-	public void enableListers(boolean enable) {
-		this.listersEnabled = enable;
+	public void enableListeners(boolean enable) {
+		this.listenersEnabled = enable;
+		if (enable)
+			listener.statusUpdated();
 	}
 
 	/**
@@ -435,7 +448,35 @@ public class CommitMessageComponent {
 					UIText.CommitMessageComponent_AmendingCommitInRemoteBranch,
 					IMessageProvider.WARNING);
 
+		// Check format of commit message. The soft-wrapped text in the SWT
+		// control must be converted to a hard-wrapped text, since this will be
+		// the resulting commit message.
+		if (Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE)) {
+			String message = commitText.getCommitMessage();
+			String formatIssue = formatIssuesInCommitMessage(message);
+			if (formatIssue != null) {
+				return new CommitStatus(formatIssue, IMessageProvider.WARNING);
+			}
+		}
+
 		return CommitStatus.OK;
+	}
+
+	static String formatIssuesInCommitMessage(String message) {
+		IDocument document = new Document(message);
+		int numberOfLines = document.getNumberOfLines();
+		if (numberOfLines > 1) {
+			try {
+				IRegion lineInfo = document.getLineInformation(1);
+				if (lineInfo.getLength() > 0) {
+					return UIText.CommitMessageComponent_MessageSecondLineNotEmpty;
+				}
+			} catch (BadLocationException e) {
+				Activator.logError(e.getMessage(), e);
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -492,11 +533,20 @@ public class CommitMessageComponent {
 	private void addListeners() {
 		authorHandler = UIUtils.addPreviousValuesContentProposalToText(
 				authorText, AUTHOR_VALUES_PREF);
+		authorText.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(ModifyEvent e) {
+				if (!listenersEnabled || !authorText.isEnabled())
+					return;
+				listener.statusUpdated();
+			}
+		});
 		committerText.addModifyListener(new ModifyListener() {
 			String oldCommitter = committerText.getText();
 
+			@Override
 			public void modifyText(ModifyEvent e) {
-				if (!listersEnabled)
+				if (!listenersEnabled || !committerText.isEnabled())
 					return;
 				if (signedOff) {
 					// the commit message is signed
@@ -508,16 +558,23 @@ public class CommitMessageComponent {
 							oldSignOff, newSignOff));
 					oldCommitter = newCommitter;
 				}
+				listener.statusUpdated();
 			}
 		});
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
 				committerText, COMMITTER_VALUES_PREF);
-		commitText.getTextWidget().addModifyListener(new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				if (!listersEnabled)
+		commitText.getDocument().addDocumentListener(new IDocumentListener() {
+			@Override
+			public void documentChanged(DocumentEvent event) {
+				if (!listenersEnabled || !commitText.isEnabled())
 					return;
 				updateSignedOffButton();
 				updateChangeIdButton();
+				listener.statusUpdated();
+			}
+			@Override
+			public void documentAboutToBeChanged(DocumentEvent event) {
+				// nothing to do
 			}
 		});
 	}
@@ -526,12 +583,12 @@ public class CommitMessageComponent {
 	 * Sets the defaults for change id and signed off
 	 */
 	public void setDefaults() {
-		createChangeId = repository.getConfig().getBoolean(
-				ConfigConstants.CONFIG_GERRIT_SECTION,
-				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false);
-		signedOff = org.eclipse.egit.ui.Activator.getDefault()
-		.getPreferenceStore()
-		.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
+		if (repository != null)
+			createChangeId = GerritUtil.getCreateChangeId(repository
+					.getConfig());
+		signedOff = Activator.getDefault()
+				.getPreferenceStore()
+				.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
 	}
 
 	/**
@@ -572,6 +629,9 @@ public class CommitMessageComponent {
 
 	private void getHeadCommitInfo() {
 		CommitInfo headCommitInfo = CommitHelper.getHeadCommitInfo(repository);
+		if (headCommitInfo == null) {
+			return;
+		}
 		RevCommit previousCommit = headCommitInfo.getCommit();
 
 		amendingCommitInRemoteBranch = isContainedInAnyRemoteBranch(previousCommit);
@@ -615,31 +675,38 @@ public class CommitMessageComponent {
 			return previousCommitMessage;
 		String calculatedCommitMessage = EMPTY_STRING;
 
-		Set<IResource> resources = new HashSet<IResource>();
+		Set<IResource> resources = new HashSet<>();
 		for (String path : paths) {
 			IFile file = findFile(path);
 			if (file != null)
 				resources.add(file.getProject());
 		}
+		if (resources.size() == 0 && repository != null) {
+			resources
+					.addAll(Arrays.asList(ProjectUtil.getProjects(repository)));
+		}
 		try {
-			List <ICommitMessageProvider> messageProviders = getCommitMessageProviders();
+			List<ICommitMessageProvider> messageProviders = getCommitMessageProvider();
 			for (ICommitMessageProvider messageProvider : messageProviders) {
 				if (messageProvider != null) {
 					IResource[] resourcesArray = resources
 							.toArray(new IResource[0]);
-					calculatedCommitMessage = calculatedCommitMessage+System.getProperty("line.separator") //$NON-NLS-1$
-							+(messageProvider.getMessage(resourcesArray).trim());
+					calculatedCommitMessage = calculatedCommitMessage
+							+ System.getProperty("line.separator") //$NON-NLS-1$
+							+ (messageProvider.getMessage(resourcesArray)
+									.trim());
 				}
 			}
 		} catch (CoreException coreException) {
-			Activator.error(coreException.getLocalizedMessage(), coreException);
+			Activator.logError(coreException.getLocalizedMessage(),
+					coreException);
 		}
 		return calculatedCommitMessage;
 	}
 
-	private List<ICommitMessageProvider> getCommitMessageProviders()
+	private List<ICommitMessageProvider> getCommitMessageProvider()
 			throws CoreException {
-		List<ICommitMessageProvider> providers = new ArrayList<ICommitMessageProvider>();
+		List<ICommitMessageProvider> providers = new ArrayList<>();
 
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
 		IConfigurationElement[] config = registry
@@ -657,8 +724,6 @@ public class CommitMessageComponent {
 		}
 		return providers;
 	}
-
-
 
 	private void saveOriginalChangeId() {
 		int changeIdOffset = findOffsetOfChangeIdLine(previousCommitMessage);

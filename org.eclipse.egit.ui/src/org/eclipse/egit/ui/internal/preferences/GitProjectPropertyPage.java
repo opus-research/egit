@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2011 Tomi Pakarinen <tomi.pakarinen@iki.fi> and others.
+ * Copyright (C) 2008, 2015 Tomi Pakarinen <tomi.pakarinen@iki.fi> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,9 +16,11 @@ import java.io.IOException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -35,7 +37,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
@@ -85,25 +86,28 @@ public class GitProjectPropertyPage extends PropertyPage {
 		if (element instanceof IResource) {
 			project = ((IResource) element).getProject();
 		} else {
-			Object adapter = element.getAdapter(IResource.class);
-			if (adapter instanceof IResource) {
-				project = ((IResource) adapter).getProject();
+			IResource adapter = AdapterUtils.adapt(element, IResource.class);
+			if (adapter != null) {
+				project = adapter.getProject();
 			}
 		}
 
-		Repository repository = RepositoryMapping.getMapping(project)
-				.getRepository();
+		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+		if (mapping != null) {
+			Repository repository = mapping.getRepository();
 
-		if (repository != null) {
-			try {
-				createHeadLink(repository, composite);
-				fillValues(repository);
-			} catch (IOException e) {
-				if (GitTraceLocation.UI.isActive())
-					GitTraceLocation.getTrace().trace(GitTraceLocation.UI.getLocation(), e.getMessage(), e);
+			if (repository != null) {
+				try {
+					createHeadLink(repository, composite);
+					fillValues(repository);
+				} catch (IOException e) {
+					if (GitTraceLocation.UI.isActive())
+						GitTraceLocation.getTrace().trace(
+								GitTraceLocation.UI.getLocation(),
+								e.getMessage(), e);
+				}
 			}
 		}
-
 		return composite;
 	}
 
@@ -143,8 +147,7 @@ public class GitProjectPropertyPage extends PropertyPage {
 	}
 
 	private RepositoryCommit getCommit(Repository repository, ObjectId objectId) {
-		RevWalk walk = new RevWalk(repository);
-		try {
+		try (RevWalk walk = new RevWalk(repository)) {
 			RevCommit commit = walk.parseCommit(objectId);
 			for (RevCommit parent : commit.getParents())
 				walk.parseBody(parent);
@@ -153,8 +156,6 @@ public class GitProjectPropertyPage extends PropertyPage {
 			Activator.showError(NLS.bind(
 					UIText.GitProjectPropertyPage_UnableToGetCommit,
 					objectId.name()), e);
-		} finally {
-			walk.release();
 		}
 		return null;
 	}
@@ -186,9 +187,7 @@ public class GitProjectPropertyPage extends PropertyPage {
 
 	private Text createText(Composite parent) {
 		GridData data = new GridData();
-		Text text = new Text(parent, SWT.LEFT | SWT.READ_ONLY);
-		text.setBackground(Display.getDefault().getSystemColor(
-				SWT.COLOR_WIDGET_BACKGROUND));
+		Text text = UIUtils.createSelectableLabel(parent, SWT.LEFT);
 		data.horizontalSpan = 1;
 		data.horizontalAlignment = GridData.FILL;
 		text.setLayoutData(data);
