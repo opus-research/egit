@@ -1439,7 +1439,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					else
 						setWarningText(null);
 					setErrorMessage(null);
-				}
+				} else
+					list.dispose();
 			}
 		});
 		if (trace)
@@ -1759,7 +1760,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	private void scheduleNewGenerateHistoryJob() {
-		final SWTCommitList list = new SWTCommitList(graph.getControl());
+		final SWTCommitList list = new SWTCommitList(graph.getControl()
+				.getDisplay());
 		list.source(currentWalk);
 		final GenerateHistoryJob rj = new GenerateHistoryJob(this, list);
 		rj.addJobChangeListener(new JobChangeAdapter() {
