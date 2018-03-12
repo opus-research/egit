@@ -14,10 +14,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -33,9 +31,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridLayout;
@@ -48,6 +44,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Wizard page for connecting projects to Git repositories.
@@ -72,34 +69,10 @@ class ExistingOrNewPage extends WizardPage {
 		Group g = new Group(parent, SWT.NONE);
 		g.setLayout(new GridLayout(3,false));
 		g.setLayoutData(GridDataFactory.fillDefaults().grab(true, true).create());
-		tree = new Tree(g, SWT.BORDER|SWT.MULTI|SWT.FULL_SELECTION);
+		tree = new Tree(g, SWT.BORDER|SWT.MULTI);
 		tree.setHeaderVisible(true);
 		tree.setLayout(new GridLayout());
 		tree.setLayoutData(GridDataFactory.fillDefaults().grab(true, true).span(3,1).create());
-		tree.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				TreeItem t = (TreeItem) e.item;
-				for(TreeItem ti : t.getItems())
-					tree.deselect(ti);
-				if (t.getParentItem() != null) {
-					tree.deselect(t.getParentItem());
-					for(TreeItem ti : t.getParentItem().getItems())
-						if (ti != t)
-							tree.deselect(ti);
-				}
-				Set<IProject> projects = new HashSet<IProject>();
-				for (TreeItem treeItem : tree.getSelection()) {
-					if (treeItem.getData() ==  null && treeItem.getParentItem() != null) {
-						treeItem = treeItem.getParentItem();
-					}
-					final IProject project = (IProject) treeItem.getData();
-					if (projects.contains(project))
-							tree.deselect(treeItem);
-					projects.add(project);
-				}
-			}
-		});
 		TreeColumn c1 = new TreeColumn(tree,SWT.NONE);
 		c1.setText(UIText.ExistingOrNewPage_HeaderProject);
 		c1.setWidth(100);
@@ -115,24 +88,27 @@ class ExistingOrNewPage extends WizardPage {
 			treeItem.setText(0, project.getName());
 			treeItem.setText(1, project.getLocation().toOSString());
 			RepositoryFinder repositoryFinder = new RepositoryFinder(project);
-			Collection<RepositoryMapping> mappings;
+			Collection<RepositoryMapping> find;
 			try {
-				mappings = repositoryFinder.find(new NullProgressMonitor());
-				Iterator<RepositoryMapping> mi = mappings.iterator();
-				RepositoryMapping m = mi.hasNext() ? mi.next() : null;
-				if (m == null) {
-					// no mapping found, enable repository creation
+				find = repositoryFinder.find(new NullProgressMonitor());
+				Iterator<RepositoryMapping> mi = find.iterator();
+
+				// special case for a git repository in the project's root
+				final File gitDirInProjectRoot = project.getLocation().append(
+						".git").toFile(); //$NON-NLS-1$
+				if (!gitDirInProjectRoot.isDirectory()) {
+					// '.git/' isn't there, enable repository creation
 					treeItem.setText(2, ""); //$NON-NLS-1$
 				} else {
-					// at least one mapping found
-					fillTreeItemWithGitDirectory(m, treeItem, false);
+					// '.git/' is there
+					fillTreeItemWithGitDirectory(mi.next(), treeItem);
 				}
 
-				while (mi.hasNext()) {	// fill in additional mappings
-					m = mi.next();
+				while (mi.hasNext()) {
+					RepositoryMapping m = mi.next();
 					TreeItem treeItem2 = new TreeItem(treeItem, SWT.NONE);
 					treeItem2.setData(m.getContainer().getProject());
-					fillTreeItemWithGitDirectory(m, treeItem2, true);
+					fillTreeItemWithGitDirectory(m, treeItem2);
 				}
 			} catch (CoreException e) {
 				TreeItem treeItem2 = new TreeItem(treeItem, SWT.BOLD|SWT.ITALIC);
@@ -207,17 +183,14 @@ class ExistingOrNewPage extends WizardPage {
 		setControl(g);
 	}
 
-	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem2, boolean isAlternative) {
+	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem2) {
 		if (m.getGitDir() == null)
 			treeItem2.setText(2, UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
 		else {
-			IPath container = m.getContainerPath();
-			if (!container.isEmpty())
-				container = container.addTrailingSeparator();
-			IPath relativePath = container.append(m.getGitDir());
-			if (isAlternative)
-				treeItem2.setText(0, relativePath.removeLastSegments(1).addTrailingSeparator().toString());
-			treeItem2.setText(2, relativePath.toString());
+			String container = m.getContainerPath().toString();
+			if (container.length() > 0)
+				container += File.separator;
+			treeItem2.setText(2, container + m.getGitDir());
 		}
 	}
 
