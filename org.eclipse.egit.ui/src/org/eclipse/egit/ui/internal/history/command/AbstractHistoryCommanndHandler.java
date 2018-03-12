@@ -24,16 +24,14 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
-import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevTag;
+import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.team.ui.history.IHistoryPage;
 import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
 import org.eclipse.ui.IEditorInput;
@@ -42,7 +40,6 @@ import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IReusableEditor;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 
@@ -65,8 +62,28 @@ abstract class AbstractHistoryCommanndHandler extends AbstractHandler {
 		return HandlerUtil.getActivePartChecked(event);
 	}
 
+	protected IStructuredSelection getSelection(ExecutionEvent event)
+			throws ExecutionException {
+		ISelection selection;
+		if (event != null)
+			selection = HandlerUtil.getCurrentSelectionChecked(event);
+		else
+			selection = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+					.getActivePage().getSelection();
+		if (selection instanceof IStructuredSelection) {
+			return (IStructuredSelection) selection;
+		}
+		return new StructuredSelection();
+	}
+
 	protected Object getInput(ExecutionEvent event) throws ExecutionException {
-		IWorkbenchPart part = getPart(event);
+		IWorkbenchPart part;
+		if (event != null)
+			part = getPart(event);
+		else
+			part = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+					.getActivePage().getActivePart();
+
 		if (!(part instanceof IHistoryView))
 			throw new ExecutionException(
 					UIText.AbstractHistoryCommanndHandler_NoInputMessage);
@@ -150,44 +167,21 @@ abstract class AbstractHistoryCommanndHandler extends AbstractHandler {
 	 * @return the tags
 	 * @throws ExecutionException
 	 */
-	protected List<RevTag> getRevTags(ExecutionEvent event)
+	protected List<Tag> getRevTags(ExecutionEvent event)
 			throws ExecutionException {
 		Repository repo = getRepository(event);
 		Collection<Ref> revTags = repo.getTags().values();
-		List<RevTag> tags = new ArrayList<RevTag>();
+		List<Tag> tags = new ArrayList<Tag>();
 		RevWalk walk = new RevWalk(repo);
 		for (Ref ref : revTags) {
 			try {
-				tags.add(walk.parseTag(repo.resolve(ref.getName())));
+				Tag tag = walk.parseTag(repo.resolve(ref.getName()))
+						.asTag(walk);
+				tags.add(tag);
 			} catch (IOException e) {
 				throw new ExecutionException(e.getMessage(), e);
 			}
 		}
 		return tags;
-	}
-
-	protected GitHistoryPage getPage() {
-		IWorkbenchWindow window = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
-		if (window == null)
-			return null;
-		if (window.getActivePage() == null)
-			return null;
-		IWorkbenchPart part = window.getActivePage().getActivePart();
-		if (!(part instanceof IHistoryView))
-			return null;
-		IHistoryView view = (IHistoryView) part;
-		IHistoryPage page = view.getHistoryPage();
-		if (page instanceof GitHistoryPage)
-			return (GitHistoryPage) page;
-		return null;
-	}
-
-	protected IStructuredSelection getSelection(GitHistoryPage page) {
-		ISelection pageSelection = page.getSelectionProvider().getSelection();
-		if (pageSelection instanceof IStructuredSelection) {
-			return (IStructuredSelection) pageSelection;
-		} else
-			return new StructuredSelection();
 	}
 }

@@ -26,7 +26,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
@@ -115,7 +114,7 @@ public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
 		}
 	}
 
-	private static final class BranchLabelProvider extends LabelProvider {
+	private final class BranchLabelProvider extends LabelProvider {
 		@Override
 		public String getText(Object element) {
 			RefNode refNode = (RefNode) element;
@@ -129,7 +128,7 @@ public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
 	}
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		PlotCommit commit = (PlotCommit) getSelection(getPage()).getFirstElement();
+		PlotCommit commit = (PlotCommit) getSelection(event).getFirstElement();
 		Repository repo = getRepository(event);
 		List<Ref> availableBranches = new ArrayList<Ref>();
 
@@ -204,10 +203,13 @@ public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
 
 	@Override
 	public boolean isEnabled() {
-		GitHistoryPage page = getPage();
-		if (page == null)
+		try {
+			IStructuredSelection sel = getSelection(null);
+			return sel.size() == 1
+					&& sel.getFirstElement() instanceof RevCommit;
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, false);
 			return false;
-		IStructuredSelection sel = getSelection(page);
-		return sel.size() == 1 && sel.getFirstElement() instanceof RevCommit;
+		}
 	}
 }

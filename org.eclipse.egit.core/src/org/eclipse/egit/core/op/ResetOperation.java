@@ -23,15 +23,15 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
+import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.Tag;
+import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.WorkDirCheckout;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 
@@ -63,8 +63,8 @@ public class ResetOperation implements IEGitOperation {
 	private final String refName;
 	private final ResetType type;
 
-	private RevCommit commit;
-	private RevTree newTree;
+	private Commit commit;
+	private Tree newTree;
 	private GitIndex index;
 
 	/**
@@ -177,21 +177,24 @@ public class ResetOperation implements IEGitOperation {
 			throw new TeamException(NLS.bind(
 					CoreText.ResetOperation_lookingUpRef, refName), e);
 		}
-		RevWalk rw = new RevWalk(repository);
 		try {
-			commit = rw.parseCommit(commitId);
+			commit = repository.mapCommit(commitId);
 		} catch (IOException e) {
-			throw new TeamException(NLS.bind(
-					CoreText.ResetOperation_lookingUpCommit, commitId), e);
-		} finally {
-			rw.release();
+			try {
+				Tag t = repository.mapTag(refName, commitId);
+				commit = repository.mapCommit(t.getObjId());
+			} catch (IOException e2) {
+				throw new TeamException(NLS.bind(
+						CoreText.ResetOperation_lookingUpCommit, commitId), e2);
+			}
 		}
+
 	}
 
 	private void writeRef() throws TeamException {
 		try {
 			final RefUpdate ru = repository.updateRef(Constants.HEAD);
-			ru.setNewObjectId(commit.getId());
+			ru.setNewObjectId(commit.getCommitId());
 			String name = refName;
 			if (name.startsWith("refs/heads/"))  //$NON-NLS-1$
 				name = name.substring(11);
@@ -222,7 +225,7 @@ public class ResetOperation implements IEGitOperation {
 		try {
 			newTree = commit.getTree();
 			index = repository.getIndex();
-			index.readTree(repository.mapTree(newTree));
+			index.readTree(newTree);
 		} catch (IOException e) {
 			throw new TeamException(CoreText.ResetOperation_readingIndex, e);
 		}
@@ -240,7 +243,7 @@ public class ResetOperation implements IEGitOperation {
 		final File parentFile = repository.getWorkTree();
 		try {
 			WorkDirCheckout workDirCheckout =
-				new WorkDirCheckout(repository, parentFile, index, repository.mapTree(newTree));
+				new WorkDirCheckout(repository, parentFile, index, newTree);
 			workDirCheckout.setFailOnConflict(false);
 			workDirCheckout.checkout();
 		} catch (IOException e) {

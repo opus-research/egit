@@ -11,10 +11,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
-import java.io.IOException;
 import java.util.Map;
 
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.UIText;
@@ -49,11 +47,7 @@ public class GitSynchronizeWizard extends Wizard {
 
 		Map<Repository, String> branches = page.getSelectedBranches();
 		for (Repository repo : branches.keySet())
-			try {
-				gsdSet.add(new GitSynchronizeData(repo, Constants.HEAD, branches.get(repo), false));
-			} catch (IOException e) {
-				Activator.logError(e.getMessage(), e);
-			}
+			gsdSet.add(new GitSynchronizeData(repo, Constants.HEAD, branches.get(repo), false));
 
 		new GitSynchronize(gsdSet);
 

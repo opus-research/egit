@@ -11,8 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.team.core.Team.isIgnoredHint;
-
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
@@ -52,7 +50,7 @@ public class GitResourceVariantTreeSubscriber extends
 
 	@Override
 	public boolean isSupervised(IResource resource) throws TeamException {
-		return gsds.contains(resource.getProject()) && !isIgnoredHint(resource);
+		return true; //gitSynchronizeDataSet.contains(resource.getProject());
 	}
 
 	@Override

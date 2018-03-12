@@ -30,10 +30,9 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.WorkDirCheckout;
 import org.eclipse.jgit.lib.RefUpdate.Result;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
@@ -72,15 +71,17 @@ public class BranchOperation implements IEGitOperation {
 		this.commitId = commit;
 	}
 
-	private RevTree oldTree;
+	private Tree oldTree;
 
 	private GitIndex index;
 
-	private RevTree newTree;
+	private Tree newTree;
 
-	private RevCommit oldCommit;
+	// TODO replace with RevCommit
+	private Commit oldCommit;
 
-	private RevCommit newCommit;
+	// TODO replace with RevCommit
+	private Commit newCommit;
 
 
 
@@ -148,13 +149,13 @@ public class BranchOperation implements IEGitOperation {
 			RefUpdate u = repository.updateRef(Constants.HEAD, detach);
 			Result res;
 			if (detach) {
-				u.setNewObjectId(newCommit.getId());
+				u.setNewObjectId(newCommit.getCommitId());
 				// using forceUpdate instead of update avoids
 				// the merge tests which would otherwise make
 				// this fail
 				u.setRefLogMessage(NLS.bind(
 						CoreText.BranchOperation_checkoutMovingTo, newCommit
-								.getId().name()), false);
+								.getCommitId().toString()), false);
 				res = u.forceUpdate();
 			} else {
 				u.setRefLogMessage(NLS.bind(
@@ -187,9 +188,8 @@ public class BranchOperation implements IEGitOperation {
 
 	private void checkoutTree() throws TeamException {
 		try {
-			new WorkDirCheckout(repository, repository.getWorkTree(),
-					repository.mapTree(oldTree), index, repository
-							.mapTree(newTree)).checkout();
+			new WorkDirCheckout(repository, repository.getWorkTree(), oldTree,
+					index, newTree).checkout();
 		} catch (CheckoutConflictException e) {
 			TeamException teamException = new TeamException(e.getMessage());
 			throw teamException;
@@ -212,10 +212,11 @@ public class BranchOperation implements IEGitOperation {
 		RevWalk walk = new RevWalk(repository);
 		try {
 			if (refName != null) {
-				newCommit = walk.parseCommit(repository.resolve(refName));
+				newCommit = walk.parseCommit(repository.resolve(refName))
+						.asCommit(walk);
 			}
 			if (commitId != null) {
-				newCommit = walk.parseCommit(commitId);
+				newCommit = walk.parseCommit(commitId).asCommit(walk);
 			}
 		} catch (IOException e) {
 			throw new TeamException(NLS.bind(
@@ -223,7 +224,8 @@ public class BranchOperation implements IEGitOperation {
 		}
 
 		try {
-			oldCommit = walk.parseCommit(repository.resolve(Constants.HEAD));
+			oldCommit = walk.parseCommit(repository.resolve(Constants.HEAD))
+					.asCommit(walk);
 		} catch (IOException e) {
 			throw new TeamException(CoreText.BranchOperation_mappingCommitHead,
 					e);

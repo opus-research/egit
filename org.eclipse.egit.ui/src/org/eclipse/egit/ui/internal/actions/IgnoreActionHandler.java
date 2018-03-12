@@ -53,17 +53,22 @@ public class IgnoreActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		if (getProjectsInRepositoryOfSelectedResources().length == 0)
-			return false;
+		try {
+			if (getProjectsInRepositoryOfSelectedResources(null).length == 0)
+				return false;
 
-		IResource[] resources = getSelectedResources();
-		for (IResource resource : resources) {
-			// NB This does the same thing in DecoratableResourceAdapter,
-			// but
-			// neither currently consult .gitignore
-			if (!Team.isIgnoredHint(resource))
-				return true;
+			IResource[] resources = getSelectedResources(null);
+			for (IResource resource : resources) {
+				// NB This does the same thing in DecoratableResourceAdapter,
+				// but
+				// neither currently consult .gitignore
+				if (!Team.isIgnoredHint(resource))
+					return true;
+			}
+			return false;
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, false);
+			return false;
 		}
-		return false;
 	}
 }
