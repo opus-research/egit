@@ -166,9 +166,6 @@ public class UIText extends NLS {
 	public static String SharingWizard_MoveProjectActionLabel;
 
 	/** */
-	public static String ShowBlameHandler_errorMessage;
-
-	/** */
 	public static String ShowBlameHandler_JobName;
 
 	/** */
@@ -4353,6 +4350,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchChangeFromGerritCommand_noRepositorySelectedMessage;
+
+	/** */
+	public static String RebasePulldownAction_Continue;
+
+	/** */
+	public static String RebasePulldownAction_Skip;
+
+	/** */
+	public static String RebasePulldownAction_Abort;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
