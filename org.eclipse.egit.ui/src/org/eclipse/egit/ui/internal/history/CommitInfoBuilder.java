@@ -322,7 +322,6 @@ public class CommitInfoBuilder {
 			IOException {
 		RevWalk revWalk = new RevWalk(db);
 		try {
-			revWalk.setRetainBody(false);
 			return RevWalkUtils.findBranchesReachableFrom(commit, revWalk, allRefs);
 		} finally {
 			revWalk.dispose();
@@ -533,7 +532,7 @@ public class CommitInfoBuilder {
 		if (monitor.isCanceled())
 			throw new OperationCanceledException();
 		RevWalk revWalk = new RevWalk(db);
-		revWalk.setRetainBody(false);
+
 		Map<String, Ref> tagsMap = db.getTags();
 		Ref tagRef = null;
 
