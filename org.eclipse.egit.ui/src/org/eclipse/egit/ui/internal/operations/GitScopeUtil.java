@@ -23,11 +23,10 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -65,9 +64,8 @@ public class GitScopeUtil {
 			return new IResource[0];
 		IResource[] resourcesInScope;
 		// Only builds the logical model if the preference holds true
-		if (InstanceScope.INSTANCE.getNode(
-				org.eclipse.egit.core.Activator.getPluginId()).getBoolean(
-				GitCorePreferences.core_enableLogicalModel, false)) {
+		if (Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.USE_LOGICAL_MODEL)) {
 
 			try {
 				resourcesInScope = findRelatedChanges(part, resources);

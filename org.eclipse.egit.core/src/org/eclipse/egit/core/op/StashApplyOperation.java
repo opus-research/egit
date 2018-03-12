@@ -19,7 +19,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
@@ -60,11 +59,7 @@ public class StashApplyOperation implements IEGitOperation {
 							.getValidOpenProjects(repository);
 					pm.worked(1);
 					Git.wrap(repository).stashApply()
-							.setStashRef(commit.name())
-							.setStrategy(
-									Activator.getDefault()
-											.getPreferredMergeStrategy())
-							.call();
+							.setStashRef(commit.name()).call();
 					pm.worked(1);
 					ProjectUtil.refreshValidProjects(validProjects,
 							new SubProgressMonitor(pm, 1));

@@ -57,7 +57,7 @@ public class MergeOperation implements IEGitOperation {
 
 	private final String refName;
 
-	private final MergeStrategy mergeStrategy;
+	private MergeStrategy mergeStrategy;
 
 	private Boolean squash;
 
@@ -70,39 +70,26 @@ public class MergeOperation implements IEGitOperation {
 	private String message;
 
 	/**
-	 * Initializes the MergeStrategy with the preferred merge strategy,
-	 * according to preferences.
-	 *
 	 * @param repository
-	 * @param refName
-	 *            name of a commit which should be merged
+	 * @param refName name of a commit which should be merged
 	 */
 	public MergeOperation(Repository repository, String refName) {
 		this.repository = repository;
 		this.refName = refName;
-		this.mergeStrategy = Activator.getDefault().getPreferredMergeStrategy();
 	}
 
 	/**
-	 * Create a MergeOperation object
-	 *
-	 * @param repository
-	 * @param refName
-	 *            name of a commit which should be merged
-	 * @param mergeStrategy
-	 *            the strategy to use for merge. If null or not registered, the
-	 *            default merge strategy according to preferences will be used.
-	 */
+	* Create a MergeOperation object
+	* @param repository
+	* @param refName name of a commit which should be merged
+	* @param mergeStrategy the strategy to use for merge
+	*/
 	public MergeOperation(Repository repository, String refName,
 		String mergeStrategy) {
 		this.repository = repository;
 		this.refName = refName;
-		MergeStrategy target = null;
-		if (mergeStrategy != null) {
-			target = MergeStrategy.get(mergeStrategy);
-		}
-		this.mergeStrategy = target != null ? target : Activator.getDefault()
-				.getPreferredMergeStrategy();
+		if (mergeStrategy != null)
+			this.mergeStrategy = MergeStrategy.get(mergeStrategy);
 	}
 
 	/**
@@ -172,7 +159,9 @@ public class MergeOperation implements IEGitOperation {
 					merge.setCommit(commit.booleanValue());
 				if (squash != null)
 					merge.setSquash(squash.booleanValue());
-				merge.setStrategy(mergeStrategy);
+				if (mergeStrategy != null) {
+					merge.setStrategy(mergeStrategy);
+				}
 				if (message != null)
 					merge.setMessage(message);
 				try {

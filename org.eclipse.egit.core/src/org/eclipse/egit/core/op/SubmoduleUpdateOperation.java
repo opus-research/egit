@@ -22,7 +22,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
@@ -83,8 +82,6 @@ public class SubmoduleUpdateOperation implements IEGitOperation {
 						update.addPath(path);
 					update.setProgressMonitor(new EclipseGitProgressTransformer(
 							new SubProgressMonitor(pm, 2)));
-					update.setStrategy(Activator.getDefault()
-							.getPreferredMergeStrategy());
 					updated = update.call();
 					pm.worked(1);
 					SubProgressMonitor refreshMonitor = new SubProgressMonitor(

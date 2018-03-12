@@ -20,7 +20,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
@@ -72,9 +71,7 @@ public class CherryPickOperation implements IEGitOperation {
 						CoreText.CherryPickOperation_cherryPicking,
 						commit.name()));
 				CherryPickCommand command = new Git(repo).cherryPick().include(
-						commit.getId()).setStrategy(
-								Activator.getDefault()
-										.getPreferredMergeStrategy());
+						commit.getId());
 				try {
 					result = command.call();
 				} catch (GitAPIException e) {
