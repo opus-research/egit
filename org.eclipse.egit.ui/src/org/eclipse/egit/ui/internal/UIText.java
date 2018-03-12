@@ -2160,6 +2160,15 @@ public class UIText extends NLS {
 	public static String PushOperationUI_PushJobName;
 
 	/** */
+	public static String RepositoryJob_NullStatus;
+
+	/** */
+	public static String RepositoryJobResultAction_RepositoryGone;
+
+	/** */
+	public static String ShowPushResultAction_name;
+
+	/** */
 	public static String PushWizard_cantConnectToAny;
 
 	/** */
@@ -2770,6 +2779,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchOperationUI_FetchJobName;
+
+	/** */
+	public static String FetchOperationUI_ShowFetchResult;
 
 	/** */
 	public static String FetchDestinationPage_CouldNotGetBranchesMessage;
@@ -3843,9 +3855,6 @@ public class UIText extends NLS {
 	public static String GitSelectRepositoryPage_PageMessage;
 
 	/** */
-	public static String GitSelectRepositoryPage_BareRepositoriesHidden;
-
-	/** */
 	public static String GitSelectRepositoryPage_PageTitle;
 
 	/** */
@@ -4583,16 +4592,7 @@ public class UIText extends NLS {
 	public static String RenameBranchDialog_DialogTitle;
 
 	/** */
-	public static String RenameBranchDialog_NewNameInputDialogPrompt;
-
-	/** */
-	public static String RenameBranchDialog_RenameBranchDialogNewNameInputWindowTitle;
-
-	/** */
 	public static String RenameBranchDialog_RenameButtonLabel;
-
-	/** */
-	public static String RenameBranchDialog_RenameErrorMessage;
 
 	/** */
 	public static String RenameBranchDialog_WindowTitle;
