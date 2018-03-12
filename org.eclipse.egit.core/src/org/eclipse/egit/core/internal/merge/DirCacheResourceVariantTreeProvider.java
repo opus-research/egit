@@ -13,13 +13,12 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.storage.GitLocalResourceVariant;
 import org.eclipse.egit.core.internal.storage.IndexResourceVariant;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
+import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.variants.IResourceVariantTree;
 
@@ -60,53 +59,60 @@ public class DirCacheResourceVariantTreeProvider implements
 			boolean useWorkspace) throws IOException {
 		final DirCache cache = repository.readDirCache();
 		final GitResourceVariantCache baseCache = new GitResourceVariantCache();
-		final GitResourceVariantCache oursCache = new GitResourceVariantCache();
+		final GitResourceVariantCache sourceCache = new GitResourceVariantCache();
 		final GitResourceVariantCache remoteCache = new GitResourceVariantCache();
 
 		for (int i = 0; i < cache.getEntryCount(); i++) {
 			final DirCacheEntry entry = cache.getEntry(i);
-			final IPath path = new Path(entry.getPathString());
 			final IResource resource = ResourceUtil
-					.getResourceHandleForLocation(path);
+					.getResourceHandleForLocation(repository,
+							entry.getPathString(),
+							FileMode.fromBits(entry.getRawMode()) == FileMode.TREE);
 			// Resource variants only make sense for IResources. Do not consider
 			// files outside of the workspace or otherwise non accessible.
-			if (resource == null || !resource.getProject().isAccessible())
+			if (resource == null || resource.getProject() == null
+					|| !resource.getProject().isAccessible()) {
 				continue;
-
+			}
 			switch (entry.getStage()) {
+			case DirCacheEntry.STAGE_0:
+				// Skipped on purpose (no conflict)
+				break;
 			case DirCacheEntry.STAGE_1:
 				baseCache.setVariant(resource,
 						IndexResourceVariant.create(repository, entry));
 				break;
 			case DirCacheEntry.STAGE_2:
-				if (useWorkspace)
-					oursCache.setVariant(resource, new GitLocalResourceVariant(
+				if (useWorkspace) {
+					sourceCache.setVariant(resource, new GitLocalResourceVariant(
 							resource));
-				else
-					oursCache.setVariant(resource,
+				} else {
+					sourceCache.setVariant(resource,
 							IndexResourceVariant.create(repository, entry));
+				}
 				break;
 			case DirCacheEntry.STAGE_3:
 				remoteCache.setVariant(resource,
 						IndexResourceVariant.create(repository, entry));
 				break;
 			default:
-				break;
+				throw new IllegalStateException(
+						"Invalid stage: " + entry.getStage()); //$NON-NLS-1$
 			}
 		}
 
 		baseTree = new GitCachedResourceVariantTree(baseCache);
-		sourceTree = new GitCachedResourceVariantTree(oursCache);
+		sourceTree = new GitCachedResourceVariantTree(sourceCache);
 		remoteTree = new GitCachedResourceVariantTree(remoteCache);
 
 		roots = new LinkedHashSet<IResource>();
 		roots.addAll(baseCache.getRoots());
-		roots.addAll(oursCache.getRoots());
+		roots.addAll(sourceCache.getRoots());
 		roots.addAll(remoteCache.getRoots());
 
 		knownResources = new LinkedHashSet<IResource>();
 		knownResources.addAll(baseCache.getKnownResources());
-		knownResources.addAll(oursCache.getKnownResources());
+		knownResources.addAll(sourceCache.getKnownResources());
 		knownResources.addAll(remoteCache.getKnownResources());
 	}
 

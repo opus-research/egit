@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2014, Obeo.
+ * Copyright (C) 2015, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -72,8 +72,7 @@ public final class LogicalModels {
 	public void build(Set<IResource> resources,
 			RemoteResourceMappingContext remoteMappingContext) {
 		for (IResource supervisedResource : resources)
-			if (supervisedResource.isAccessible()
-					&& supervisedResource instanceof IFile
+			if (supervisedResource instanceof IFile
 					&& !models.containsKey(supervisedResource)) {
 				final Set<IResource> model = discoverModel(supervisedResource,
 						remoteMappingContext);
@@ -151,23 +150,25 @@ public final class LogicalModels {
 		final IModelProviderDescriptor[] descriptors = ModelProvider
 				.getModelProviderDescriptors();
 
-		T adapter = null;
-		for (int i = 0; i < descriptors.length && adapter == null; i++) {
+		for (int i = 0; i < descriptors.length; i++) {
 			final IModelProviderDescriptor descriptor = descriptors[i];
-			if (ignoredModelDescriptors.contains(descriptor.getId()))
+			if (ignoredModelDescriptors.contains(descriptor.getId())) {
 				continue;
-
+			}
 			final IResource[] matchingResources = descriptor
 					.getMatchingResources(modelArray);
 			if (matchingResources.length == modelArray.length) {
 				final ModelProvider provider = descriptor.getModelProvider();
-				adapter = (T) provider.getAdapter(adapterClass);
+				T adapter = (T) provider.getAdapter(adapterClass);
+				if (adapter != null) {
+					// The first merger is used (arbitrary decision)
+					return adapter;
+				}
 			} else {
 				// This provider does not match the whole target model
 			}
 		}
-
-		return adapter;
+		return null;
 	}
 
 	/**

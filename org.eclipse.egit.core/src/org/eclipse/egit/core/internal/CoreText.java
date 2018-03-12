@@ -413,6 +413,9 @@ public class CoreText extends NLS {
 	public static String SquashCommitsOperation_squashing;
 
 	/** */
+	public static String RecursiveModelMerger_AdaptError;
+
+	/** */
 	public static String RecursiveModelMerger_RefreshError;
 
 	/** */
