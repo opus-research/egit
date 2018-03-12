@@ -157,6 +157,13 @@ public class UIPreferences {
 	/** Holds true if the logical model should be used. */
 	public static final String USE_LOGICAL_MODEL = "enable_logical_model"; //$NON-NLS-1$
 
+	/**
+	 * When reading this preference, use
+	 * {@link UIUtils#getDefaultRepositoryDir()} instead (for variable
+	 * substitution).
+	 */
+	public static final String DEFAULT_REPO_DIR = "default_repository_dir"; //$NON-NLS-1$
+
 	/** */
 	public static final String MERGE_MODE = "merge_mode"; //$NON-NLS-1$
 	/** */
@@ -183,6 +190,9 @@ public class UIPreferences {
 	public static final String HISTORY_MAX_TAG_LENGTH = "HistoryView_MaxTagLength"; //$NON-NLS-1$
 	/** */
 	public static final String HISTORY_MAX_BRANCH_LENGTH = "HistoryView_MaxBranchLength"; //$NON-NLS-1$
+	/** */
+	public static final String HISTORY_MAX_DIFF_LINES = "HistoryView_MaxDiffLines"; //$NON-NLS-1$
+
 	/** */
 	public static final String HISTORY_CUT_AT_START = "HistoryView_CutAtStart"; //$NON-NLS-1$
 	/** */
