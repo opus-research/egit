@@ -18,339 +18,47 @@ import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.PARTIALLY_
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.REMOVED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.UNTRACKED;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.staging.StagingView.StagingViewUpdate;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
-import org.eclipse.ui.model.WorkbenchContentProvider;
 
 /**
- * ContentProvider for staged and unstaged tree nodes
+ * ContentProvider for staged and unstaged table nodes
  */
-public class StagingViewContentProvider extends WorkbenchContentProvider {
+public class StagingViewContentProvider implements
+		IStructuredContentProvider {
 	private StagingEntry[] content = new StagingEntry[0];
+	private boolean isWorkspace;
 
-	private StagingFolderEntry[] folders;
-
-	private StagingFolderEntry[] rootFolders;
-
-	private StagingEntry[] rootFiles;
-
-	private Object[] roots;
-
-	private Object[] compressedRoots;
-
-	private StagingFolderEntry[] compressedFolders;
-
-	private List<StagingFolderEntry> folderList;
-
-	private StagingView stagingView;
-	private boolean unstagedSection;
-
-	private Repository repository;
-
-	private FolderComparator comparator = new FolderComparator();
-
-	StagingViewContentProvider(StagingView stagingView, boolean unstagedSection) {
-		this.stagingView = stagingView;
-		this.unstagedSection = unstagedSection;
-	}
-
-	public Object getParent(Object element) {
-		if (element instanceof StagingFolderEntry)
-			return ((StagingFolderEntry) element).getParent();
-		if (element instanceof StagingEntry)
-			return ((StagingEntry) element).getParent();
-		return null;
-	}
-
-	public boolean hasChildren(Object element) {
-		return !(element instanceof StagingEntry);
+	StagingViewContentProvider(boolean workspace) {
+		this.isWorkspace = workspace;
 	}
 
 	public Object[] getElements(Object inputElement) {
-		return getChildren(inputElement);
-	}
-
-	public Object[] getChildren(Object parentElement) {
-		if (parentElement instanceof StagingEntry)
-			return null;
-		int presentation = stagingView.getPresentation();
-		if (parentElement instanceof StagingFolderEntry) {
-			if (presentation == StagingView.PRESENTATION_COMPRESSED_FOLDERS)
-				return getChildResources((StagingFolderEntry) parentElement);
-			else
-				// Tree mode
-				return getFolderChildren((StagingFolderEntry) parentElement);
-		} else {
-			if (presentation == StagingView.PRESENTATION_FLAT)
-				return content;
-			else if (presentation == StagingView.PRESENTATION_COMPRESSED_FOLDERS)
-				return getCompressedRoots();
-			else
-				// Tree mode
-				return getRoots();
-		}
-	}
-
-	private Object[] getRoots() {
-		if (roots == null) {
-			List<Object> rootList = new ArrayList<Object>();
-			rootFolders = getRootFolders();
-			for (StagingFolderEntry rootFolder : rootFolders)
-				rootList.add(rootFolder);
-			if (rootFiles != null) {
-				for (StagingEntry rootFile : rootFiles)
-					rootList.add(rootFile);
-			}
-			roots = new Object[rootList.size()];
-			rootList.toArray(roots);
-		}
-		return roots;
-	}
-
-	private Object[] getCompressedRoots() {
-		if (compressedRoots == null)
-			initCompressedFolders();
-		return compressedRoots;
-	}
-
-	private StagingFolderEntry[] getCompressedFolders() {
-		if (compressedFolders == null)
-			initCompressedFolders();
-		return compressedFolders;
-	}
-
-	private StagingFolderEntry[] getRootFolders() {
-		if (content == null || content.length == 0)
-			return new StagingFolderEntry[0];
-		if (rootFolders == null)
-			getFolders();
-		return rootFolders;
-	}
-
-	@SuppressWarnings("unchecked")
-	private StagingFolderEntry[] getFolders() {
-		if (folders == null) {
-			String workTreePath = stagingView.getCurrentRepository()
-					.getWorkTree().getAbsolutePath();
-			List<StagingFolderEntry> rootFolderList = new ArrayList<StagingFolderEntry>();
-			List<StagingEntry> rootFileList = new ArrayList<StagingEntry>();
-			folderList = new ArrayList<StagingFolderEntry>();
-			List<String> resourceList = new ArrayList<String>();
-			for (StagingEntry stagingEntry : content) {
-				File parent = stagingEntry.getSystemFile();
-				if (parent == null
-						|| (parent.getParentFile() != null
-						&& parent.getParentFile().getAbsolutePath()
-								.equals(workTreePath))) {
-					rootFileList.add(stagingEntry);
-					continue;
-				}
-
-				while (parent != null
-						&& !parent.getAbsolutePath()
-								.equals(workTreePath)) {
-					if (!parent.getParentFile().getAbsolutePath()
-									.equals(workTreePath)
-							&& resourceList.contains(parent.getParentFile()
-									.getAbsolutePath()))
-						break;
-					if (parent.getParentFile() == null
-							|| parent.getParentFile().getAbsolutePath()
-									.equals(workTreePath)) {
-						rootFolderList.add(new StagingFolderEntry(new Path(
-								parent.getAbsolutePath()), new Path(parent
-								.getName())));
-						resourceList.add(parent.getAbsolutePath());
-					}
-					parent = parent.getParentFile();
-					if (parent != null) {
-						folderList
-								.add(new StagingFolderEntry(new Path(parent
-										.getAbsolutePath()), new Path(parent
-										.getName())));
-						resourceList.add(parent.getAbsolutePath());
-					}
-				}
-			}
-			folders = new StagingFolderEntry[folderList.size()];
-			folderList.toArray(folders);
-			Arrays.sort(folders, comparator);
-			rootFolders = new StagingFolderEntry[rootFolderList.size()];
-			rootFolderList.toArray(rootFolders);
-			rootFiles = new StagingEntry[rootFileList.size()];
-			rootFileList.toArray(rootFiles);
-			Arrays.sort(rootFolders, comparator);
-		}
-		return folders;
-	}
-
-	private Object[] getFolderChildren(StagingFolderEntry parent) {
-		List<Object> children = new ArrayList<Object>();
-		folders = getFolders();
-		for (StagingFolderEntry folder : folders) {
-			if (folder.getFile().getParentFile() != null
-					&& folder.getFile().getParentFile()
-							.equals(parent.getFile())) {
-				folder.setParent(parent);
-				children.add(folder);
-			}
-		}
-		for (StagingEntry file : content) {
-			if (file.getSystemFile().getParentFile() != null
-					&& file.getSystemFile().getParentFile()
-							.equals(parent.getFile())) {
-				file.setParent(parent);
-				children.add(file);
-			}
-		}
-		Object[] childArray = new Object[children.size()];
-		children.toArray(childArray);
-		return childArray;
-	}
-
-	@SuppressWarnings("unchecked")
-	private void initCompressedFolders() {
-		IPath workingDirectory = new Path(repository.getWorkTree()
-				.getAbsolutePath());
-		Map<IPath, String> childSegments = new HashMap<IPath, String>();
-		Set<IPath> folderPaths = new HashSet<IPath>();
-
-		List<Object> compressedRootsList = new ArrayList<Object>();
-
-		for (StagingEntry file : content) {
-			IPath path = new Path(file.getPath());
-			if (path.segmentCount() == 1) {
-				compressedRootsList.add(file);
-			} else {
-				IPath folderPath = path.removeLastSegments(1);
-				folderPaths.add(folderPath);
-				IPath p = folderPath;
-				while (p.segmentCount() != 0) {
-					IPath parent = p.removeLastSegments(1);
-					String childSegment = p.lastSegment();
-					String existingChildSegment = childSegments.get(parent);
-					if (existingChildSegment == null) {
-						childSegments.put(parent, childSegment);
-					} else if (!childSegment.equals(existingChildSegment)) {
-						folderPaths.add(parent);
-					}
-					p = p.removeLastSegments(1);
-				}
-			}
-		}
-
-		List<StagingFolderEntry> compressedFoldersList = new ArrayList<StagingFolderEntry>();
-		for (IPath folderPath : folderPaths) {
-			IPath parent;
-			for (parent = folderPath.removeLastSegments(1); parent
-					.segmentCount() != 0; parent = parent.removeLastSegments(1)) {
-				if (folderPaths.contains(parent)) {
-					break;
-				}
-			}
-			IPath location = workingDirectory.append(folderPath);
-			if (parent.segmentCount() == 0) {
-				StagingFolderEntry folderEntry = new StagingFolderEntry(
-						location, folderPath);
-				compressedRootsList.add(folderEntry);
-			} else {
-				IPath nodePath = folderPath.makeRelativeTo(parent);
-				StagingFolderEntry folderEntry = new StagingFolderEntry(
-						location, nodePath);
-				compressedFoldersList.add(folderEntry);
-			}
-		}
-
-		compressedFolders = compressedFoldersList
-				.toArray(new StagingFolderEntry[compressedFoldersList.size()]);
-		Arrays.sort(compressedFolders, comparator);
-		compressedRoots = compressedRootsList
-				.toArray(new Object[compressedRootsList.size()]);
-	}
-
-	Object[] getChildResources(StagingFolderEntry parent) {
-		File parentFile = parent.getFile();
-		List<Object> children = new ArrayList<Object>();
-		for (StagingFolderEntry folder : getCompressedFolders()) {
-			if (folder.getFile().getParentFile() != null
-					&& folder.getFile().getParentFile()
-							.equals(parent.getFile())) {
-				folder.setParent(parent);
-				children.add(folder);
-			}
-		}
-		for (StagingEntry file : content) {
-			if (file.getSystemFile().getParentFile().equals(parentFile)) {
-				file.setParent(parent);
-				children.add(file);
-			}
-		}
-		return children.toArray(new Object[children.size()]);
-	}
-
-	int getShownCount(String filterText) {
-		if (filterText == null || filterText.length() == 0) {
-			return getCount();
-		} else {
-			int shownCount = 0;
-			for (StagingEntry entry : content) {
-				if (entry.getPath().toUpperCase()
-						.contains(filterText.toUpperCase()))
-					shownCount++;
-			}
-			return shownCount;
-		}
-	}
-
-	StagingEntry[] getStagingEntries(StagingFolderEntry folder,
-			String filterText) {
-		List<StagingEntry> stagingEntries = new ArrayList<StagingEntry>();
-		for (StagingEntry stagingEntry : content) {
-			if (stagingEntry.getLocation().toString()
-					.startsWith(folder.getPath() + "/")) { //$NON-NLS-1$
-				if (filterText == null
-						|| filterText.length() == 0
-						|| stagingEntry.getPath().toUpperCase()
-								.contains(filterText.toUpperCase()))
-					stagingEntries.add(stagingEntry);
-			}
-		}
-		StagingEntry[] stagingEntryArray = new StagingEntry[stagingEntries
-				.size()];
-		stagingEntries.toArray(stagingEntryArray);
-		return stagingEntryArray;
-	}
-
-	boolean hasVisibleChildren(StagingFolderEntry folder, String filterText) {
-		if (filterText == null || filterText.length() == 0)
-			return true;
-		return getStagingEntries(folder, filterText).length > 0;
+		return content;
 	}
 
 	StagingEntry[] getStagingEntries() {
 		return content;
 	}
 
-	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+	int getStagingEntryCount() {
+		return content.length;
+	}
+
+	public void inputChanged(Viewer viewer, Object oldInput,
+			Object newInput) {
 		if (!(newInput instanceof StagingViewUpdate))
 			return;
 
@@ -358,25 +66,8 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 
 		if (update.repository == null || update.indexDiff == null) {
 			content = new StagingEntry[0];
-			rootFolders = new StagingFolderEntry[0];
-			rootFiles = new StagingEntry[0];
-			roots = new Object[0];
-			compressedRoots = new Object[0];
-			compressedFolders = new StagingFolderEntry[0];
 			return;
 		}
-
-		if (update.repository != repository) {
-			folders = null;
-			rootFolders = null;
-			rootFiles = null;
-			roots = null;
-			compressedRoots = null;
-			folderList = null;
-			compressedFolders = null;
-		}
-
-		repository = update.repository;
 
 		Set<StagingEntry> nodes = new TreeSet<StagingEntry>(
 				new Comparator<StagingEntry>() {
@@ -395,7 +86,8 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		}
 
 		final IndexDiffData indexDiff = update.indexDiff;
-		if (unstagedSection) {
+		final Repository repository = update.repository;
+		if (isWorkspace) {
 			for (String file : indexDiff.getMissing())
 				if (indexDiff.getChanged().contains(file))
 					nodes.add(new StagingEntry(repository, MISSING_AND_CHANGED,
@@ -431,36 +123,9 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		}
 
 		content = nodes.toArray(new StagingEntry[nodes.size()]);
-
-		folders = null;
-		rootFolders = null;
-		rootFiles = null;
-		roots = null;
-		compressedRoots = null;
-		folderList = null;
-		compressedFolders = null;
 	}
 
 	public void dispose() {
 		// nothing to dispose
-	}
-
-	/**
-	 * @return StagingEntry count
-	 */
-	public int getCount() {
-		if (content == null)
-			return 0;
-		else
-			return content.length;
-	}
-
-	private class FolderComparator implements Comparator {
-		public int compare(Object obj0, Object obj1) {
-			StagingFolderEntry folder0 = (StagingFolderEntry) obj0;
-			StagingFolderEntry folder1 = (StagingFolderEntry) obj1;
-			return folder0.getPath().toOSString()
-					.compareTo(folder1.getPath().toOSString());
-		}
 	}
 }
