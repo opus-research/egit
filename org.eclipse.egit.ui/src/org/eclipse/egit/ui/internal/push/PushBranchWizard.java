@@ -167,7 +167,7 @@ public class PushBranchWizard extends Wizard {
 
 	private List<RefSpec> getRefSpecs() {
 		String src = this.ref != null ? this.ref.getName() : this.commitToPush.getName();
-		String dst = pushBranchPage.getFullRemoteReference();
+		String dst = Constants.R_HEADS + pushBranchPage.getRemoteBranchName();
 		RefSpec refSpec = new RefSpec().setSourceDestination(src, dst)
 				.setForceUpdate(pushBranchPage.isForceUpdateSelected());
 		return Arrays.asList(refSpec);
@@ -202,7 +202,7 @@ public class PushBranchWizard extends Wizard {
 			return;
 		}
 		String remoteName = getRemoteName();
-		String remoteBranchName = pushBranchPage.getFullRemoteReference();
+		String remoteBranchName = pushBranchPage.getRemoteBranchName();
 		String branchName = Repository.shortenRefName(this.ref.getName());
 
 		StoredConfig config = repository.getConfig();
