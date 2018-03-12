@@ -29,7 +29,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.internal.ui.Utils;
 
@@ -40,7 +39,7 @@ public class MergeAction extends RepositoryAction {
 
 	@Override
 	public void execute(IAction action) {
-		final FileRepository repository = getRepository(true);
+		final Repository repository = getRepository(true);
 		if (repository == null)
 			return;
 

@@ -14,6 +14,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.StringTokenizer;
+
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -47,7 +57,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
@@ -61,16 +70,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.StringTokenizer;
 
 /**
  * Collection of utility methods for Git Repositories View tests
@@ -185,7 +184,7 @@ public abstract class GitRepositoriesViewTestBase {
 		File gitDir = new File(new File(testDirectory, REPO1),
 				Constants.DOT_GIT);
 		gitDir.mkdir();
-		Repository myRepository = new FileRepository(gitDir);
+		Repository myRepository = new Repository(gitDir);
 		myRepository.create();
 
 		// we need to commit into master first
@@ -196,7 +195,7 @@ public abstract class GitRepositoriesViewTestBase {
 			firstProject.delete(true, null);
 		IProjectDescription desc = ResourcesPlugin.getWorkspace()
 				.newProjectDescription(PROJ1);
-		desc.setLocation(new Path(new File(myRepository.getWorkTree(), PROJ1)
+		desc.setLocation(new Path(new File(myRepository.getWorkDir(), PROJ1)
 				.getPath()));
 		firstProject.create(desc, null);
 		firstProject.open(null);
@@ -219,7 +218,7 @@ public abstract class GitRepositoriesViewTestBase {
 			secondPoject.delete(true, null);
 
 		desc = ResourcesPlugin.getWorkspace().newProjectDescription(PROJ2);
-		desc.setLocation(new Path(new File(myRepository.getWorkTree(), PROJ2)
+		desc.setLocation(new Path(new File(myRepository.getWorkDir(), PROJ2)
 				.getPath()));
 		secondPoject.create(desc, null);
 		secondPoject.open(null);
@@ -255,10 +254,10 @@ public abstract class GitRepositoriesViewTestBase {
 
 	protected static File createRemoteRepository(File repositoryDir)
 			throws Exception {
-		FileRepository myRepository = org.eclipse.egit.core.Activator.getDefault()
+		Repository myRepository = org.eclipse.egit.core.Activator.getDefault()
 				.getRepositoryCache().lookupRepository(repositoryDir);
 		File gitDir = new File(testDirectory, REPO2);
-		Repository myRemoteRepository = new FileRepository(gitDir);
+		Repository myRemoteRepository = new Repository(gitDir);
 		myRemoteRepository.create();
 
 		createStableBranch(myRepository);
@@ -377,7 +376,7 @@ public abstract class GitRepositoriesViewTestBase {
 				return name.equals(".project");
 			}
 		};
-		for (File file : myRepository.getWorkTree().listFiles()) {
+		for (File file : myRepository.getWorkDir().listFiles()) {
 			if (file.isDirectory()) {
 				if (file.list(projectFilter).length > 0) {
 					IProjectDescription desc = ResourcesPlugin.getWorkspace()
@@ -403,7 +402,7 @@ public abstract class GitRepositoriesViewTestBase {
 				existence);
 	}
 
-	protected static FileRepository lookupRepository(File directory)
+	protected static Repository lookupRepository(File directory)
 			throws Exception {
 		return org.eclipse.egit.core.Activator.getDefault()
 				.getRepositoryCache().lookupRepository(directory);
@@ -431,7 +430,7 @@ public abstract class GitRepositoriesViewTestBase {
 
 	protected SWTBotTreeItem getLocalBranchesItem(SWTBotTree tree, File repo)
 			throws Exception {
-		FileRepository repository = lookupRepository(repo);
+		Repository repository = lookupRepository(repo);
 		RepositoryNode root = new RepositoryNode(null, repository);
 		BranchesNode branches = new BranchesNode(root, repository);
 		LocalBranchesNode localBranches = new LocalBranchesNode(branches,
@@ -448,7 +447,7 @@ public abstract class GitRepositoriesViewTestBase {
 
 	protected SWTBotTreeItem getRemoteBranchesItem(SWTBotTree tree,
 			File repositoryFile) throws Exception {
-		FileRepository repository = lookupRepository(repositoryFile);
+		Repository repository = lookupRepository(repositoryFile);
 		RepositoryNode root = new RepositoryNode(null, repository);
 		BranchesNode branches = new BranchesNode(root, repository);
 		RemoteBranchesNode remoteBranches = new RemoteBranchesNode(branches,
@@ -465,7 +464,7 @@ public abstract class GitRepositoriesViewTestBase {
 
 	protected SWTBotTreeItem getWorkdirItem(SWTBotTree tree, File repositoryFile)
 			throws Exception {
-		FileRepository repository = lookupRepository(repositoryFile);
+		Repository repository = lookupRepository(repositoryFile);
 		RepositoryNode root = new RepositoryNode(null, repository);
 
 		WorkingDirNode workdir = new WorkingDirNode(root, repository);
@@ -479,7 +478,7 @@ public abstract class GitRepositoriesViewTestBase {
 
 	protected SWTBotTreeItem getRootItem(SWTBotTree tree, File repositoryFile)
 			throws Exception {
-		FileRepository repository = lookupRepository(repositoryFile);
+		Repository repository = lookupRepository(repositoryFile);
 		RepositoryNode root = new RepositoryNode(null, repository);
 		String rootText = labelProvider.getText(root);
 		SWTBotTreeItem rootItem = tree.getTreeItem(rootText);
@@ -488,7 +487,7 @@ public abstract class GitRepositoriesViewTestBase {
 
 	protected SWTBotTreeItem getSymbolicRefsItem(SWTBotTree tree,
 			File repositoryFile) throws Exception {
-		FileRepository repository = lookupRepository(repositoryFile);
+		Repository repository = lookupRepository(repositoryFile);
 		RepositoryNode root = new RepositoryNode(null, repository);
 		SymbolicRefsNode symrefsnode = new SymbolicRefsNode(root, repository);
 		SWTBotTreeItem rootItem = tree.getTreeItem(labelProvider.getText(root))
@@ -500,7 +499,7 @@ public abstract class GitRepositoriesViewTestBase {
 
 	protected SWTBotTreeItem getRemotesItem(SWTBotTree tree, File repositoryFile)
 			throws Exception {
-		FileRepository repository = lookupRepository(repositoryFile);
+		Repository repository = lookupRepository(repositoryFile);
 		RepositoryNode root = new RepositoryNode(null, repository);
 		RemotesNode remotes = new RemotesNode(root, repository);
 

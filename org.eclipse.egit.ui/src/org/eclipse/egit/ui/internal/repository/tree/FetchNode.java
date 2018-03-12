@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.internal.repository.tree;
 
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 
 /**
  * Represents the "Fetch" node
@@ -28,7 +27,7 @@ public class FetchNode extends RepositoryTreeNode<String> {
 	 * @param fetchUri
 	 *            the push URI (or another suitable representation of the fetch)
 	 */
-	public FetchNode(RepositoryTreeNode parent, FileRepository repository,
+	public FetchNode(RepositoryTreeNode parent, Repository repository,
 			String fetchUri) {
 		super(parent, RepositoryTreeNodeType.FETCH, repository, fetchUri);
 	}

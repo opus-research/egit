@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.repository.tree;
 
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 
 /**
  * Represents the "Symbolic Reference" node
@@ -29,7 +28,7 @@ public class SymbolicRefNode extends RepositoryTreeNode<Ref> {
 	 * @param ref
 	 *            the symbolic reference
 	 */
-	public SymbolicRefNode(RepositoryTreeNode parent, FileRepository repository,
+	public SymbolicRefNode(RepositoryTreeNode parent, Repository repository,
 			Ref ref) {
 		super(parent, RepositoryTreeNodeType.SYMBOLICREF, repository, ref);
 	}

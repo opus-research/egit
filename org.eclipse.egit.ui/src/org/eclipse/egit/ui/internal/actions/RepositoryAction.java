@@ -20,7 +20,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.team.internal.ui.actions.TeamAction;
 
 /**
@@ -83,7 +82,7 @@ public abstract class RepositoryAction extends TeamAction {
 	 * @param warn Put up a message dialog to warn why a resource was not selected
 	 * @return repository for current project, or null
 	 */
-	protected FileRepository getRepository(boolean warn) {
+	protected Repository getRepository(boolean warn) {
 		RepositoryMapping mapping = null;
 		for (IProject project : getSelectedProjects()) {
 			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(project);
@@ -107,7 +106,8 @@ public abstract class RepositoryAction extends TeamAction {
 			return null;
 		}
 
-		return mapping.getRepository();
+		final Repository repository = mapping.getRepository();
+		return repository;
 	}
 
 	/**
