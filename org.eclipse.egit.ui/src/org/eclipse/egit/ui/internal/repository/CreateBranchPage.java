@@ -392,7 +392,7 @@ class CreateBranchPage extends WizardPage {
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
 					IProgressMonitor.UNKNOWN);
-			BranchOperationUI.checkout(myRepository, Constants.R_HEADS + newRefName)
+			new BranchOperationUI(myRepository, Constants.R_HEADS + newRefName)
 					.run(monitor);
 		}
 	}
