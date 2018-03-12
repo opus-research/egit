@@ -151,22 +151,10 @@ public class UIText extends NLS {
 	public static String SecureStoreUtils_writingCredentialsFailed;
 
 	/** */
-	public static String SelectResetTypePage_labelCurrentHead;
-
-	/** */
-	public static String SelectResetTypePage_labelResettingTo;
-
-	/** */
 	public static String SelectResetTypePage_PageMessage;
 
 	/** */
 	public static String SelectResetTypePage_PageTitle;
-
-	/** */
-	public static String SelectResetTypePage_tooltipCurrentHead;
-
-	/** */
-	public static String SelectResetTypePage_tooltipResettingTo;
 
 	/** */
 	public static String SharingWizard_windowTitle;
