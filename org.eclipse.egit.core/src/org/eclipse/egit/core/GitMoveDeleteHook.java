@@ -30,9 +30,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.dircache.DirCache;
@@ -64,23 +61,9 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		if (map == null)
 			return false;
 
-		String repoRelativePath = map.getRepoRelativePath(file);
-		if (true) {
-			IndexDiffCache indexDiffCache = Activator.getDefault().getIndexDiffCache();
-			IndexDiffCacheEntry indexDiffCacheEntry = indexDiffCache.getIndexDiffCacheEntry(map.getRepository());
-			IndexDiffData indexDiff = indexDiffCacheEntry.getIndexDiff();
-			if (indexDiff.getUntracked().contains(repoRelativePath))
-				return false;
-			if (indexDiff.getIgnoredNotInIndex().contains(repoRelativePath))
-				return false;
-			if (!file.exists())
-				return false;
-			if (file.isDerived())
-				return false;
-		}
 		try {
 			final DirCache dirc = map.getRepository().lockDirCache();
-			final int first = dirc.findEntry(repoRelativePath);
+			final int first = dirc.findEntry(map.getRepoRelativePath(file));
 			if (first < 0) {
 				dirc.unlock();
 				return false;
