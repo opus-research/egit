@@ -186,8 +186,6 @@ public class RebaseInteractiveView extends ViewPart implements
 				ISelectionService.class);
 		srv.removePostSelectionListener(RepositoriesView.VIEW_ID,
 				selectionChangedListener);
-		if (currentPlan != null)
-			currentPlan.removeRebaseInteractivePlanChangeListener(this);
 	}
 
 	@Override
@@ -644,8 +642,6 @@ public class RebaseInteractiveView extends ViewPart implements
 			return;
 		}
 
-		if (currentPlan != null)
-			currentPlan.removeRebaseInteractivePlanChangeListener(this);
 		currentPlan = RebaseInteractivePlan.getPlan(repository);
 		currentPlan.addRebaseInteractivePlanChangeListener(this);
 		form.setText(getRepositoryName(repository));
