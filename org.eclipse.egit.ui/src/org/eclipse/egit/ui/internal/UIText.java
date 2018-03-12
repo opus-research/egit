@@ -13,7 +13,6 @@
  * Copyright (C) 2014, Red Hat Inc.
  * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
  * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
- * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -4987,9 +4986,6 @@ public class UIText extends NLS {
 	public static String GitTemplateVariableResolver_GitConfigDescription;
 
 	/** */
-	public static String StagingView_CompareWithIndexMenuLabel;
-
-	/** */
 	public static String StagingView_UnstagedChanges;
 
 	/** */
@@ -5045,9 +5041,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_NoSelectionTitle;
-
-	/** */
-	public static String StagingView_CompareMode;
 
 	/** */
 	public static String StagingView_OpenNewCommits;
