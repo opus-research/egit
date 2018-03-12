@@ -34,7 +34,7 @@ import org.eclipse.swt.widgets.Shell;
  */
 public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 
-	private final Set<Ref> selectedRefs = new HashSet<>();
+	private final Set<Ref> selectedRefs = new HashSet<Ref>();
 	private String currentBranch;
 
 	/**
@@ -70,7 +70,7 @@ public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 	@Override
 	protected String refNameFromDialog() {
 		selectedRefs.clear();
-		Set<String> selected = new HashSet<>();
+		Set<String> selected = new HashSet<String>();
 		IStructuredSelection selection = (IStructuredSelection) branchTree.getSelection();
 		for (Object sel : selection.toArray()) {
 			if (!(sel instanceof RefNode))
@@ -102,7 +102,7 @@ public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 				if (result == DeleteBranchOperation.REJECTED_UNMERGED) {
 					List<RefNode> nodes = extractSelectedRefNodes();
 
-					MessageDialog messageDialog = new UnmergedBranchDialog<>(
+					MessageDialog messageDialog = new UnmergedBranchDialog<RefNode>(
 							getShell(), nodes);
 
 					if (messageDialog.open() == Window.OK)
@@ -129,7 +129,7 @@ public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 	}
 
 	private List<RefNode> extractSelectedRefNodes() {
-		List<RefNode> nodes = new ArrayList<>();
+		List<RefNode> nodes = new ArrayList<RefNode>();
 		Object[] array = ((IStructuredSelection) super.branchTree
 				.getSelection()).toArray();
 

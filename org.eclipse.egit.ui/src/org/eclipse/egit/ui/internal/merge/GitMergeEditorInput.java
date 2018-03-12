@@ -144,7 +144,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 								UIText.RepositoryAction_multiRepoSelection));
 			}
 			Repository repo = pathsByRepository.keySet().iterator().next();
-			List<String> filterPaths = new ArrayList<>(
+			List<String> filterPaths = new ArrayList<String>(
 					pathsByRepository.get(repo));
 
 			if (monitor.isCanceled())
@@ -199,7 +199,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			}
 
 			// try to obtain the common ancestor
-			List<RevCommit> startPoints = new ArrayList<>();
+			List<RevCommit> startPoints = new ArrayList<RevCommit>();
 			rw.setRevFilter(RevFilter.MERGE_BASE);
 			startPoints.add(rightCommit);
 			startPoints.add(headCommit);
@@ -283,7 +283,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 					fileTreeIndex);
 			// filter by selected resources
 			if (filterPaths.size() > 1) {
-				List<TreeFilter> suffixFilters = new ArrayList<>();
+				List<TreeFilter> suffixFilters = new ArrayList<TreeFilter>();
 				for (String filterPath : filterPaths)
 					suffixFilters.add(PathFilter.create(filterPath));
 				TreeFilter otf = OrTreeFilter.create(suffixFilters);
