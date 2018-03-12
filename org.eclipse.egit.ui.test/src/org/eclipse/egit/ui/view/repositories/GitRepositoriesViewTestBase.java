@@ -27,6 +27,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryUtil;
@@ -268,8 +269,8 @@ public abstract class GitRepositoriesViewTestBase extends
 	protected void refreshAndWait() throws Exception {
 		RepositoriesView view = (RepositoriesView) getOrOpenView()
 				.getReference().getPart(false);
-		view.refresh();
-		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
+		Job refreshJob = view.refresh();
+		refreshJob.join();
 	}
 
 	@SuppressWarnings("boxing")
