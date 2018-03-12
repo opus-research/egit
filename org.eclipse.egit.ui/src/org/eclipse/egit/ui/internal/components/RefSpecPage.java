@@ -20,6 +20,7 @@ import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.WizardPage;
@@ -27,7 +28,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -112,6 +112,7 @@ public class RefSpecPage extends WizardPage {
 		this.credentials = credentials;
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NULL);
 		panel.setLayout(new GridLayout());
@@ -120,6 +121,7 @@ public class RefSpecPage extends WizardPage {
 		specsPanel.getControl().setLayoutData(
 				new GridData(SWT.FILL, SWT.FILL, true, true));
 		specsPanel.addRefSpecTableListener(new SelectionChangeListener() {
+			@Override
 			public void selectionChanged() {
 				checkPage();
 			}
@@ -226,6 +228,7 @@ public class RefSpecPage extends WizardPage {
 		validatedRepoSelection = null;
 		transportError = null;
 		getControl().getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				revalidateImpl(currentRepoSelection);
 			}
@@ -242,9 +245,10 @@ public class RefSpecPage extends WizardPage {
 			listRemotesOp = new ListRemoteOperation(local, uri, timeout);
 			if (credentials != null)
 				listRemotesOp
-						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
+						.setCredentialsProvider(new EGitCredentialsProvider(
 								credentials.getUser(), credentials.getPassword()));
 			getContainer().run(true, true, new IRunnableWithProgress() {
+				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
 					listRemotesOp.run(monitor);

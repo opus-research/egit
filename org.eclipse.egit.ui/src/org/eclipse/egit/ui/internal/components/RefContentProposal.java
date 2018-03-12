@@ -108,19 +108,21 @@ public class RefContentProposal implements IContentProposal {
 		this.objectId = objectId;
 	}
 
+	@Override
 	public String getContent() {
 		return refName;
 	}
 
+	@Override
 	public int getCursorPosition() {
 		return refName.length();
 	}
 
+	@Override
 	public String getDescription() {
 		if (objectId == null)
 			return null;
-		ObjectReader reader = db.newObjectReader();
-		try {
+		try (ObjectReader reader = db.newObjectReader()) {
 			final ObjectLoader loader = reader.open(objectId);
 			final StringBuilder sb = new StringBuilder();
 			sb.append(refName);
@@ -154,11 +156,10 @@ public class RefContentProposal implements IContentProposal {
 			Activator.logError(NLS.bind(
 					UIText.RefContentProposal_errorReadingObject, objectId), e);
 			return null;
-		} finally {
-			reader.release();
 		}
 	}
 
+	@Override
 	public String getLabel() {
 		for (int i = 0; i < PREFIXES.length; i++)
 			if (refName.startsWith(PREFIXES[i]))

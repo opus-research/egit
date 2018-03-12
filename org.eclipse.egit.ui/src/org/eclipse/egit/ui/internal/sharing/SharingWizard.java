@@ -54,20 +54,24 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 		setNeedsProgressMonitor(true);
 	}
 
+	@Override
 	public void init(IWorkbench workbench, IProject[] p) {
 		this.projects = new IProject[p.length];
 		System.arraycopy(p, 0, this.projects, 0, p.length);
 	}
 
+	@Override
 	public void init(final IWorkbench workbench, final IProject p) {
 		projects = new IProject[] { p };
 	}
 
+	@Override
 	public void addPages() {
 		existingPage = new ExistingOrNewPage(this);
 		addPage(existingPage);
 	}
 
+	@Override
 	public boolean performFinish() {
 		if (!existingPage.getInternalMode()) {
 			try {
@@ -75,7 +79,8 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 						.getProjects(true);
 				final Repository selectedRepository = existingPage
 						.getSelectedRepsoitory();
-				getContainer().run(false, false, new IRunnableWithProgress() {
+				getContainer().run(true, false, new IRunnableWithProgress() {
+					@Override
 					public void run(IProgressMonitor monitor)
 							throws InvocationTargetException,
 							InterruptedException {
@@ -125,12 +130,14 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 					existingPage.getProjects(true));
 			try {
 				getContainer().run(true, false, new IRunnableWithProgress() {
+					@Override
 					public void run(final IProgressMonitor monitor)
 							throws InvocationTargetException {
 						try {
 							op.execute(monitor);
 							PlatformUI.getWorkbench().getDisplay()
 									.syncExec(new Runnable() {
+										@Override
 										public void run() {
 											Set<File> filesToAdd = new HashSet<File>();
 											// collect all files first

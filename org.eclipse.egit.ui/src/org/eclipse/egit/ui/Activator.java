@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.resources.IProject;
@@ -43,6 +42,10 @@ import org.eclipse.egit.ui.internal.ConfigurationChecker;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.egit.ui.internal.variables.GitTemplateVariableResolver;
+import org.eclipse.jdt.internal.ui.JavaPlugin;
+import org.eclipse.jface.text.templates.ContextTypeRegistry;
+import org.eclipse.jface.text.templates.TemplateContextType;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.events.IndexChangedEvent;
@@ -198,6 +201,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	private ListenerHandle refreshHandle;
 	private DebugOptions debugOptions;
 
+	private volatile boolean uiIsActive;
 	private IWindowListener focusListener;
 
 	/**
@@ -212,6 +216,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 
+	@Override
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
 
@@ -229,43 +234,84 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		setupFocusHandling();
 		setupCredentialsProvider();
 		ConfigurationChecker.checkConfiguration();
+
+		registerTemplateVariableResolvers();
 	}
 
 	private void setupCredentialsProvider() {
 		CredentialsProvider.setDefault(new EGitCredentialsProvider());
 	}
 
-	static boolean isActive() {
-		if (!PlatformUI.isWorkbenchRunning())
-			return false;
-		final AtomicBoolean ret = new AtomicBoolean();
-		final Display display = PlatformUI.getWorkbench().getDisplay();
-		if (display.isDisposed())
-			return false;
-		display.syncExec(new Runnable() {
-			public void run() {
-				ret.set(display.getActiveShell() != null);
+	private void registerTemplateVariableResolvers() {
+		if (hasJavaPlugin()) {
+			final ContextTypeRegistry codeTemplateContextRegistry = JavaPlugin
+					.getDefault().getCodeTemplateContextRegistry();
+			final Iterator<?> ctIter = codeTemplateContextRegistry
+					.contextTypes();
+
+			while (ctIter.hasNext()) {
+				final TemplateContextType contextType = (TemplateContextType) ctIter
+						.next();
+				contextType
+						.addResolver(new GitTemplateVariableResolver(
+								"git_config", //$NON-NLS-1$
+								UIText.GitTemplateVariableResolver_GitConfigDescription));
 			}
-		});
-		return ret.get();
+		}
 	}
+
+	/**
+	 * @return true if at least one Eclipse window is active
+	 */
+	static boolean isActive() {
+		return getDefault().uiIsActive;
+	}
+
 
 	private void setupFocusHandling() {
 		focusListener = new IWindowListener() {
 
+			private void updateUiState() {
+				Display.getCurrent().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						boolean wasActive = uiIsActive;
+						uiIsActive = Display.getCurrent().getActiveShell() != null;
+						if (uiIsActive != wasActive
+								&& GitTraceLocation.REPOSITORYCHANGESCANNER
+										.isActive())
+							traceUiIsActive();
+					}
+
+					private void traceUiIsActive() {
+						StringBuilder message = new StringBuilder(
+								"workbench is "); //$NON-NLS-1$
+						message.append(uiIsActive ? "active" : "inactive"); //$NON-NLS-1$//$NON-NLS-2$
+						GitTraceLocation.getTrace().trace(
+								GitTraceLocation.REPOSITORYCHANGESCANNER
+										.getLocation(), message.toString());
+					}
+				});
+			}
+
+			@Override
 			public void windowOpened(IWorkbenchWindow window) {
-				// nothing
+				updateUiState();
 			}
 
+			@Override
 			public void windowDeactivated(IWorkbenchWindow window) {
-				// nothing
+				updateUiState();
 			}
 
+			@Override
 			public void windowClosed(IWorkbenchWindow window) {
-				// nothing
+				updateUiState();
 			}
 
+			@Override
 			public void windowActivated(IWorkbenchWindow window) {
+				updateUiState();
 				if (rcs.doReschedule)
 					rcs.schedule();
 				refreshJob.triggerRefresh();
@@ -284,6 +330,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		job.schedule();
 	}
 
+	@Override
 	public void optionsChanged(DebugOptions options) {
 		// initialize the trace stuff
 		debugOptions = options;
@@ -380,6 +427,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			return Status.OK_STATUS;
 		}
 
+		@Override
 		public void onIndexChanged(IndexChangedEvent e) {
 			if (Activator.getDefault().getPreferenceStore()
 					.getBoolean(UIPreferences.REFESH_ON_INDEX_CHANGE))
@@ -541,6 +589,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		}
 	}
 
+	@Override
 	public void stop(final BundleContext context) throws Exception {
 		if (refreshHandle != null) {
 			refreshHandle.remove();
@@ -625,4 +674,14 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		return org.eclipse.egit.core.Activator.getDefault().getRepositoryUtil();
 	}
 
+	/**
+	 * @return true if the Java Plugin is loaded
+	 */
+	public static final boolean hasJavaPlugin() {
+		try {
+			return Class.forName("org.eclipse.jdt.internal.ui.JavaPlugin") != null; //$NON-NLS-1$
+		} catch (ClassNotFoundException e) {
+			return false;
+		}
+	}
 }
