@@ -96,7 +96,6 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 		this.commit = commit;
 	}
 
-	@Override
 	public Object getAdapter(Class adapter) {
 		if (Repository.class == adapter)
 			return repository;
@@ -156,17 +155,20 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 			RevCommit[] parents = commit.getParents();
 			if (isStash() && commit.getParentCount() > 0)
 				parents = new RevCommit[] { commit.getParent(0) };
-
-			try (RevWalk revWalk = new RevWalk(repository);
-					TreeWalk treewalk = new TreeWalk(revWalk.getObjectReader())) {
-				treewalk.setRecursive(true);
-				treewalk.setFilter(TreeFilter.ANY_DIFF);
+			RevWalk revWalk = new RevWalk(repository);
+			TreeWalk treewalk = new TreeWalk(revWalk.getObjectReader());
+			treewalk.setRecursive(true);
+			treewalk.setFilter(TreeFilter.ANY_DIFF);
+			try {
 				for (RevCommit parent : commit.getParents())
 					revWalk.parseBody(parent);
 				diffs = FileDiff.compute(repository, treewalk, commit, parents,
 						TreeFilter.ALL);
 			} catch (IOException e) {
 				diffs = new FileDiff[0];
+			} finally {
+				revWalk.release();
+				treewalk.release();
 			}
 		}
 		return diffs;
@@ -181,24 +183,31 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 	 * @return non-null but possibly empty array of {@link FileDiff} instances.
 	 */
 	public FileDiff[] getDiffs(RevCommit... parents) {
+		RevWalk revWalk = new RevWalk(repository);
+		TreeWalk treewalk = new TreeWalk(revWalk.getObjectReader());
+		treewalk.setRecursive(true);
+		treewalk.setFilter(TreeFilter.ANY_DIFF);
 		FileDiff[] diffsResult = null;
-		try (RevWalk revWalk = new RevWalk(repository);
-				TreeWalk treewalk = new TreeWalk(revWalk.getObjectReader())) {
-			treewalk.setRecursive(true);
-			treewalk.setFilter(TreeFilter.ANY_DIFF);
+		try {
 			loadParents();
 			diffsResult = FileDiff.compute(repository, treewalk, commit,
 					parents, TreeFilter.ALL);
 		} catch (IOException e) {
 			diffsResult = new FileDiff[0];
+		} finally {
+			revWalk.release();
+			treewalk.release();
 		}
 		return diffsResult;
 	}
 
 	private void loadParents() throws IOException {
-		try (RevWalk revWalk = new RevWalk(repository)) {
+		RevWalk revWalk = new RevWalk(repository);
+		try {
 			for (RevCommit parent : commit.getParents())
 				revWalk.parseBody(parent);
+		} finally {
+			revWalk.release();
 		}
 	}
 
@@ -232,22 +241,18 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 		return notes;
 	}
 
-	@Override
 	public Object[] getChildren(Object o) {
 		return new Object[0];
 	}
 
-	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		return UIIcons.CHANGESET;
 	}
 
-	@Override
 	public String getLabel(Object o) {
 		return abbreviate();
 	}
 
-	@Override
 	public Object getParent(Object o) {
 		return null;
 	}

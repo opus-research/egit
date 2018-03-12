@@ -35,6 +35,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Constants;
@@ -457,7 +458,11 @@ public class ProjectUtil {
 		// Initialize recursion guard for recursive symbolic links
 		if (visistedDirs == null) {
 			directoriesVisited = new HashSet<String>();
-			directoriesVisited.add(directory.getAbsolutePath());
+			try {
+				directoriesVisited.add(directory.getCanonicalPath());
+			} catch (IOException exception) {
+				Activator.logError(exception.getLocalizedMessage(), exception);
+			}
 		} else
 			directoriesVisited = visistedDirs;
 
@@ -481,10 +486,15 @@ public class ProjectUtil {
 			// Skip .metadata folders
 			if (contents[i].getName().equals(METADATA_FOLDER))
 				continue;
-			String path = contents[i].getAbsolutePath();
-			if (!directoriesVisited.add(path))
-				// already been here --> do not recurse
-				continue;
+			try {
+				String canonicalPath = contents[i].getCanonicalPath();
+				if (!directoriesVisited.add(canonicalPath))
+					// already been here --> do not recurse
+					continue;
+			} catch (IOException exception) {
+				Activator.logError(exception.getLocalizedMessage(), exception);
+
+			}
 			findProjectFiles(files, contents[i], searchNested,
 					directoriesVisited, pm);
 		}

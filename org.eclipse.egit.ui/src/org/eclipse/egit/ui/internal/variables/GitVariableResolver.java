@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2011, Robin Rosenberg
  * Copyright (C) 2011, Chris Aniszczyk <caniszczyk@gmail.com>
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +22,6 @@ import org.eclipse.core.variables.IDynamicVariable;
 import org.eclipse.core.variables.IDynamicVariableResolver;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
@@ -48,7 +46,6 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 	private static final String GIT_WORK_TREE = "git_work_tree"; //$NON-NLS-1$
 	private static final String GIT_BRANCH = "git_branch"; //$NON-NLS-1$
 
-	@Override
 	public String resolveValue(IDynamicVariable variable, String argument)
 			throws CoreException {
 		if (variable.getName().equals(GIT_DIR))
@@ -112,7 +109,7 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 	 *
 	 * @param argument
 	 *            named resource or null for selected
-	 *
+	 * 
 	 * @return the currently selected <code>IResource</code>.
 	 * @throws CoreException
 	 *             thrown if no resource is selected
@@ -146,7 +143,6 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 		else {
 			final IResource[] resource = new IResource[1];
 			display.syncExec(new Runnable() {
-				@Override
 				public void run() {
 					resource[0] = getSelectedResource();
 				}
@@ -167,7 +163,7 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 				IWorkbenchPart part = page.getActivePart();
 				if(part instanceof IEditorPart) {
 					IEditorPart epart = (IEditorPart) part;
-					resource = CommonUtils.getAdapter(epart.getEditorInput(), IResource.class);
+					resource = (IResource) epart.getEditorInput().getAdapter(IResource.class);
 				}
 				else if(part != null) {
 					IWorkbenchPartSite site = part.getSite();
@@ -181,8 +177,7 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 									Iterator iterator = ss.iterator();
 									while (iterator.hasNext() && resource == null) {
 										Object next = iterator.next();
-										resource = getAdapterFromManager(next,
-												IResource.class);
+										resource = (IResource) Platform.getAdapterManager().getAdapter(next, IResource.class);
 									}
 								}
 							}
@@ -193,26 +188,4 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 		}
 		return resource;
 	}
-
-	/**
-	 * Returns the adapter corresponding to the given adapter class.
-	 * <p>
-	 * Workaround for "Unnecessary cast" errors, see bug 460685. Can be removed
-	 * when EGit depends on Eclipse 4.5 or higher.
-	 *
-	 * @param adaptable
-	 *            the adaptable
-	 * @param adapterClass
-	 *            the adapter class to look up
-	 * @return a object of the given class, or <code>null</code> if this object
-	 *         does not have an adapter for the given class
-	 */
-	@SuppressWarnings("unchecked")
-	private static <T> T getAdapterFromManager(Object adaptable,
-			Class<T> adapterClass) {
-		Object adapter = Platform.getAdapterManager().getAdapter(adaptable,
-				IResource.class);
-		return (T) adapter;
-	}
-
 }

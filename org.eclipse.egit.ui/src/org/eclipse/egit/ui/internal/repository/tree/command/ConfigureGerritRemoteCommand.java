@@ -23,7 +23,6 @@ import org.eclipse.ui.PlatformUI;
 public class ConfigureGerritRemoteCommand extends
 		RepositoriesViewCommandHandler<RemoteNode> {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final RemoteNode node = getSelectedNodes(event).get(0);
 		Repository repository = node.getRepository();

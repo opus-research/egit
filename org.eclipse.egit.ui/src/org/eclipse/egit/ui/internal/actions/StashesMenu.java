@@ -45,7 +45,6 @@ public class StashesMenu extends CompoundContributionItem implements
 
 	private IServiceLocator serviceLocator;
 
-	@Override
 	public void initialize(IServiceLocator locator) {
 		this.serviceLocator = locator;
 	}

@@ -396,36 +396,36 @@ public class GitCommitsModelCache {
 	private static Map<String, Change> getChangedObjects(Repository repo,
 			RevCommit commit, RevCommit parentCommit,
 			TreeFilter pathFilter, final int direction) throws IOException {
+		final TreeWalk tw = new TreeWalk(repo);
+		int commitIndex = addTree(tw, commit);
+		int parentCommitIndex = addTree(tw, parentCommit);
+
+		tw.setRecursive(true);
+		if (pathFilter == null)
+			tw.setFilter(ANY_DIFF);
+		else
+			tw.setFilter(AndTreeFilter.create(ANY_DIFF, pathFilter));
+
 		final Map<String, Change> result = new HashMap<String, GitCommitsModelCache.Change>();
-		try (final TreeWalk tw = new TreeWalk(repo)) {
-			int commitIndex = addTree(tw, commit);
-			int parentCommitIndex = addTree(tw, parentCommit);
+		final AbbreviatedObjectId commitId = getAbbreviatedObjectId(commit);
+		final AbbreviatedObjectId parentCommitId = getAbbreviatedObjectId(parentCommit);
 
-			tw.setRecursive(true);
-			if (pathFilter == null)
-				tw.setFilter(ANY_DIFF);
-			else
-				tw.setFilter(AndTreeFilter.create(ANY_DIFF, pathFilter));
+		MutableObjectId idBuf = new MutableObjectId();
+		while (tw.next()) {
+			Change change = new Change();
+			change.commitId = commitId;
+			change.remoteCommitId = parentCommitId;
+			change.name = tw.getNameString();
+			tw.getObjectId(idBuf, commitIndex);
+			change.objectId = AbbreviatedObjectId.fromObjectId(idBuf);
+			tw.getObjectId(idBuf, parentCommitIndex);
+			change.remoteObjectId = AbbreviatedObjectId.fromObjectId(idBuf);
 
-			final AbbreviatedObjectId commitId = getAbbreviatedObjectId(commit);
-			final AbbreviatedObjectId parentCommitId = getAbbreviatedObjectId(parentCommit);
+			calculateAndSetChangeKind(direction, change);
 
-			MutableObjectId idBuf = new MutableObjectId();
-			while (tw.next()) {
-				Change change = new Change();
-				change.commitId = commitId;
-				change.remoteCommitId = parentCommitId;
-				change.name = tw.getNameString();
-				tw.getObjectId(idBuf, commitIndex);
-				change.objectId = AbbreviatedObjectId.fromObjectId(idBuf);
-				tw.getObjectId(idBuf, parentCommitIndex);
-				change.remoteObjectId = AbbreviatedObjectId.fromObjectId(idBuf);
-
-				calculateAndSetChangeKind(direction, change);
-
-				result.put(tw.getPathString(), change);
-			}
+			result.put(tw.getPathString(), change);
 		}
+		tw.release();
 
 		return result.size() > 0 ? result : null;
 	}

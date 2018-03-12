@@ -25,7 +25,6 @@ import org.eclipse.ui.PlatformUI;
  * An action to show the history for a resource.
  */
 public class ShowHistoryActionHandler extends RepositoryActionHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repo = getRepository(true, event);
 		// assert all resources map to the same repository

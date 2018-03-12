@@ -56,10 +56,13 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 				.lookupRepository(repoFile);
 		assertNotNull(repository);
 
-		try (RevWalk walk = new RevWalk(repository)) {
+		RevWalk walk = new RevWalk(repository);
+		try {
 			commit = walk.parseCommit(repository.resolve(Constants.HEAD));
 			assertNotNull(commit);
 			walk.parseBody(commit.getParent(0));
+		} finally {
+			walk.release();
 		}
 	}
 

@@ -17,12 +17,10 @@ import org.eclipse.ui.part.Page;
  * A helper class for constructing the {@link GitHistoryPage}.
  */
 public class GitHistoryPageSource extends HistoryPageSource {
-	@Override
 	public boolean canShowHistoryFor(final Object object) {
 		return GitHistoryPage.canShowHistoryFor(object);
 	}
 
-	@Override
 	public Page createPage(final Object object) {
 		// don't set the input, the framework does this for us
 		return new GitHistoryPage();

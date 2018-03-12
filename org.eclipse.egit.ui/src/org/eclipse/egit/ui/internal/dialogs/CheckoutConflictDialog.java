@@ -69,7 +69,6 @@ public class CheckoutConflictDialog extends MessageDialog {
 		return main;
 	}
 
-	@Override
 	protected void buttonPressed(int buttonId) {
 		switch (buttonId) {
 		case IDialogConstants.PROCEED_ID:

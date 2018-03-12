@@ -58,7 +58,6 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 		return repository.getRepositoryState().equals(RepositoryState.SAFE);
 	}
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		ObjectId commitId = getSelectedCommitId(event);
 		final Repository repository = getRepository(event);
@@ -107,7 +106,6 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 				IStatus result = cevent.getJob().getResult();
 				if (result.getSeverity() == IStatus.CANCEL)
 					Display.getDefault().asyncExec(new Runnable() {
-						@Override
 						public void run() {
 							// don't use getShell(event) here since
 							// the active shell has changed since the
@@ -126,7 +124,6 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 							.getException(), true);
 				else
 					Display.getDefault().asyncExec(new Runnable() {
-						@Override
 						public void run() {
 							Shell shell = PlatformUI.getWorkbench()
 									.getActiveWorkbenchWindow().getShell();

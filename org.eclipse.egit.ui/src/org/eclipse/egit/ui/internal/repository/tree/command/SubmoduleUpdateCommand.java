@@ -37,7 +37,6 @@ import org.eclipse.jgit.lib.Repository;
 public class SubmoduleUpdateCommand extends
 		SubmoduleCommand<RepositoryTreeNode<?>> {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Map<Repository, List<String>> repoPaths = getSubmodules(getSelectedNodes(event));
 
