@@ -23,7 +23,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.PlatformObject;
-import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -65,7 +66,7 @@ public class FileRevisionEditorInput extends PlatformObject implements
 			return new IFileState() {
 				@Override
 				public Object getAdapter(Class adapter) {
-					return AdapterUtils.adapt(storage, adapter);
+					return CommonUtils.getAdapter(storage, adapter);
 				}
 
 				@Override
@@ -108,7 +109,7 @@ public class FileRevisionEditorInput extends PlatformObject implements
 		return new IEncodedStorage() {
 			@Override
 			public Object getAdapter(Class adapter) {
-				return AdapterUtils.adapt(storage, adapter);
+				return CommonUtils.getAdapter(storage, adapter);
 			}
 
 			@Override
@@ -186,13 +187,13 @@ public class FileRevisionEditorInput extends PlatformObject implements
 
 	@Override
 	public String getName() {
-		IFileRevision rev = AdapterUtils.adapt(this, IFileRevision.class);
+		IFileRevision rev = CommonUtils.getAdapter(this, IFileRevision.class);
 		if (rev != null) {
 			return NLS.bind(
 					UIText.FileRevisionEditorInput_NameAndRevisionTitle,
 					new String[] { rev.getName(), rev.getContentIdentifier() });
 		}
-		IFileState state = AdapterUtils.adapt(this, IFileState.class);
+		IFileState state = CommonUtils.getAdapter(this, IFileState.class);
 		if (state != null) {
 			return state.getName() + ' ' + PreferenceBasedDateFormatter.create()
 					.formatDate(new Date(state.getModificationTime()));
@@ -214,17 +215,14 @@ public class FileRevisionEditorInput extends PlatformObject implements
 
 	@Override
 	public Object getAdapter(Class adapter) {
-		if (adapter == IWorkbenchAdapter.class) {
+		if (adapter == IWorkbenchAdapter.class)
 			return this;
-		}
-		if (adapter == IStorage.class) {
+		if (adapter == IStorage.class)
 			return storage;
-		}
 		Object object = super.getAdapter(adapter);
-		if (object != null) {
+		if (object != null)
 			return object;
-		}
-		return AdapterUtils.adapt(fileRevision, adapter);
+		return CompareUtils.getAdapter(fileRevision, adapter);
 	}
 
 	@Override
@@ -239,7 +237,7 @@ public class FileRevisionEditorInput extends PlatformObject implements
 
 	@Override
 	public String getLabel(Object o) {
-		IFileRevision rev = AdapterUtils.adapt(this, IFileRevision.class);
+		IFileRevision rev = CommonUtils.getAdapter(this, IFileRevision.class);
 		if (rev != null)
 			return rev.getName();
 		return storage.getName();

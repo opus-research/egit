@@ -70,12 +70,10 @@ public class SelectionPropertyTester extends PropertyTester {
 			Object firstElement = selection.getFirstElement();
 			IResource resource = AdapterUtils.adapt(firstElement,
 					IResource.class);
-			if ((resource != null) && (resource instanceof IFile
-					|| resource instanceof IFolder)) {
+			if (resource instanceof IFile || resource instanceof IFolder) {
 				RepositoryMapping m = RepositoryMapping.getMapping(resource);
-				if (m != null) {
+				if (m != null)
 					return testRepositoryProperties(m.getRepository(), args);
-				}
 			}
 		} else if ("resourcesAllInRepository".equals(property)) { //$NON-NLS-1$
 			IStructuredSelection selection = getStructuredSelection(collection);
