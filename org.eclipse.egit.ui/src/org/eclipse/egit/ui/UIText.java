@@ -803,16 +803,22 @@ public class UIText extends NLS {
 	public static String CloneDestinationPage_promptRemoteName;
 
 	/** */
-	public static String CloneDestinationPage_fieldRequired;
-
-	/** */
 	public static String CloneDestinationPage_browseButton;
 
 	/** */
 	public static String CloneDestinationPage_DefaultRepoFolderTooltip;
 
 	/** */
+	public static String CloneDestinationPage_errorDirectoryRequired;
+
+	/** */
+	public static String CloneDestinationPage_errorInitialBranchRequired;
+
+	/** */
 	public static String CloneDestinationPage_errorNotEmptyDir;
+
+	/** */
+	public static String CloneDestinationPage_errorRemoteNameRequired;
 
 	/** */
 	public static String RefContentProposal_blob;
@@ -2108,12 +2114,6 @@ public class UIText extends NLS {
 	public static String GitCompareFileRevisionEditorInput_RevisionLabel;
 
 	/** */
-	public static String GitCompareFileRevisionEditorInput_LocalVersion;
-
-	/** */
-	public static String GitCompareFileRevisionEditorInput_StagedVersion;
-
-	/** */
 	public static String GitCreateGeneralProjectPage_DirLabel;
 
 	/** */
@@ -2654,5 +2654,4 @@ public class UIText extends NLS {
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
-
 }
