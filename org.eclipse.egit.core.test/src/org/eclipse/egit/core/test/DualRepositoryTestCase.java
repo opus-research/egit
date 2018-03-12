@@ -43,10 +43,8 @@ public abstract class DualRepositoryTestCase {
 			repository1.dispose();
 		if (repository2 != null)
 			repository2.dispose();
-		if (testProject != null) {
-			testProject.close(null);
+		if (testProject != null)
 			testProject.delete(false, false, null);
-		}
 		testUtils.deleteTempDirs();
 	}
 

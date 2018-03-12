@@ -19,6 +19,7 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.command.ResetCommand;
+import org.eclipse.egit.ui.internal.repository.tree.command.StashCreateCommand;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -80,7 +81,7 @@ public class CheckoutConflictDialog extends MessageDialog {
 					new RepositoryNode(null, repository)));
 			break;
 		case IDialogConstants.SKIP_ID:
-			CommonUtils.runCommand(ActionCommands.STASH_CREATE,
+			CommonUtils.runCommand(StashCreateCommand.ID,
 					new StructuredSelection(
 							new RepositoryNode(null, repository)));
 			break;

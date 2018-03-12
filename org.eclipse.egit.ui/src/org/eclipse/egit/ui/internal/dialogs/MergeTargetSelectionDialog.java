@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * Copyright (C) 2012, Tomasz Zarna <Tomasz.Zarna@pl.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
@@ -17,13 +17,13 @@ package org.eclipse.egit.ui.internal.dialogs;
 import java.io.IOException;
 import java.text.MessageFormat;
 
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.merge.MergeConfig;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -39,11 +39,10 @@ import org.eclipse.swt.widgets.Shell;
  */
 public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
-	private boolean mergeSquash;
+	private boolean mergeSquash = false;
+	private FastForwardMode fastForwardMode = null;
 
-	private FastForwardMode fastForwardMode;
-
-	private boolean mergeCommit;
+	private boolean mergeCommit = true;
 
 	/**
 	 * @param parentShell
@@ -53,13 +52,8 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		super(parentShell, repo, getMergeTarget(repo), SHOW_LOCAL_BRANCHES
 				| SHOW_REMOTE_BRANCHES | SHOW_TAGS | EXPAND_LOCAL_BRANCHES_NODE
 				| getSelectSetting(repo));
-		MergeConfig config = MergeConfig.getConfigForCurrentBranch(repo);
-		fastForwardMode = config.getFastForwardMode();
-		mergeSquash = config.isSquash();
-		if (mergeSquash)
-			mergeCommit = false;
-		else
-			mergeCommit = config.isCommit();
+		fastForwardMode = Activator.getDefault().getRepositoryUtil()
+				.getFastForwardMode(repo);
 	}
 
 	@Override
@@ -125,8 +119,7 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		mergeTypeGroup.setLayout(new GridLayout(1, false));
 
 		Button commit = new Button(mergeTypeGroup, SWT.RADIO);
-		if (mergeCommit)
-			commit.setSelection(true);
+		commit.setSelection(true);
 		commit.setText(UIText.MergeTargetSelectionDialog_MergeTypeCommitButton);
 		commit.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
@@ -137,11 +130,9 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 			}
 		});
 
-		Button noCommit = new Button(mergeTypeGroup, SWT.RADIO);
-		if (!mergeCommit && !mergeSquash)
-			noCommit.setSelection(true);
-		noCommit.setText(UIText.MergeTargetSelectionDialog_MergeTypeNoCommitButton);
-		noCommit.addListener(SWT.Selection, new Listener() {
+		Button squash = new Button(mergeTypeGroup, SWT.RADIO);
+		squash.setText(UIText.MergeTargetSelectionDialog_MergeTypeNoCommitButton);
+		squash.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				if (((Button) event.widget).getSelection()) {
 					mergeSquash = false;
@@ -150,11 +141,9 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 			}
 		});
 
-		Button squash = new Button(mergeTypeGroup, SWT.RADIO);
-		if (mergeSquash)
-			squash.setSelection(true);
-		squash.setText(UIText.MergeTargetSelectionDialog_MergeTypeSquashButton);
-		squash.addListener(SWT.Selection, new Listener() {
+		Button noCommit = new Button(mergeTypeGroup, SWT.RADIO);
+		noCommit.setText(UIText.MergeTargetSelectionDialog_MergeTypeSquashButton);
+		noCommit.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				if (((Button) event.widget).getSelection()) {
 					mergeSquash = true;

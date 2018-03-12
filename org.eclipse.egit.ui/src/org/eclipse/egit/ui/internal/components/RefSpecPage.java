@@ -15,19 +15,22 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -242,7 +245,7 @@ public class RefSpecPage extends WizardPage {
 			listRemotesOp = new ListRemoteOperation(local, uri, timeout);
 			if (credentials != null)
 				listRemotesOp
-						.setCredentialsProvider(new EGitCredentialsProvider(
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
 								credentials.getUser(), credentials.getPassword()));
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor)
@@ -253,10 +256,11 @@ public class RefSpecPage extends WizardPage {
 		} catch (InvocationTargetException e) {
 			final Throwable cause = e.getCause();
 			transportError(cause.getMessage());
-			Activator
-					.handleError(
-							UIText.RefSpecPage_errorTransportDialogMessage,
-							cause, true);
+			ErrorDialog.openError(getShell(),
+					UIText.RefSpecPage_errorTransportDialogTitle,
+					UIText.RefSpecPage_errorTransportDialogMessage, new Status(
+							IStatus.ERROR, Activator.getPluginId(), 0, cause
+									.getMessage(), cause));
 			return;
 		} catch (InterruptedException e) {
 			transportError(UIText.RefSpecPage_operationCancelled);

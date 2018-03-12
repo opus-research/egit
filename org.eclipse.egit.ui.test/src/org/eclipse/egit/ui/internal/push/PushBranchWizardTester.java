@@ -7,7 +7,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.text.MessageFormat;
@@ -18,8 +17,8 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
+import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotCombo;
@@ -32,8 +31,9 @@ public class PushBranchWizardTester {
 
 	public static PushBranchWizardTester startWizard(SWTBotTree projectTree,
 			String branchName) {
-		String pushBranchMenu = NLS
-				.bind(UIText.PushMenu_PushBranch, branchName);
+		TestUtil util = new TestUtil();
+		String pushBranchMenu = util
+				.getPluginLocalizedValue("PushBranchAction.label");
 		ContextMenuHelper.clickContextMenu(projectTree, "Team", pushBranchMenu);
 		return forBranchName(branchName);
 	}
@@ -88,16 +88,8 @@ public class PushBranchWizardTester {
 	}
 
 	public void enterBranchName(String branchName) {
-		wizard.textWithLabel(UIText.PushBranchPage_RemoteBranchNameLabel)
-				.setText(
+		wizard.textWithLabel(UIText.PushBranchPage_BranchNameLabel).setText(
 				branchName);
-	}
-
-	public void assertBranchName(String branchName) {
-		assertEquals(branchName,
-				wizard.textWithLabel(
-						UIText.PushBranchPage_RemoteBranchNameLabel)
-						.getText());
 	}
 
 	public void deselectConfigureUpstream() {
@@ -117,20 +109,10 @@ public class PushBranchWizardTester {
 		wizard.radio(UIText.UpstreamConfigComponent_RebaseRadio).click();
 	}
 
-	public void assertConfigureUpstreamSelected() {
+	public void assertRebaseSelected() {
 		assertTrue(wizard.checkBox(
 				UIText.UpstreamConfigComponent_ConfigureUpstreamCheck)
 				.isChecked());
-	}
-
-	public void assertMergeSelected() {
-		assertConfigureUpstreamSelected();
-		assertTrue(wizard.radio(UIText.UpstreamConfigComponent_MergeRadio)
-				.isSelected());
-	}
-
-	public void assertRebaseSelected() {
-		assertConfigureUpstreamSelected();
 		assertTrue(wizard.radio(UIText.UpstreamConfigComponent_RebaseRadio)
 				.isSelected());
 	}

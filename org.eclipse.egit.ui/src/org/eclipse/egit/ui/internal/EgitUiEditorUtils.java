@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
 import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
@@ -134,16 +133,14 @@ public class EgitUiEditorUtils {
 	 * @param file
 	 *            File to open an editor for. {@code file} must exist.
 	 * @param page
-	 * @return the created editor or null in case of an error
 	 */
-	public static IEditorPart openEditor(File file, IWorkbenchPage page) {
+	public static void openEditor(File file, IWorkbenchPage page) {
 		if (!file.exists())
-			return null;
+			return;
 		IFile fileResource = ResourceUtil.getFileForLocation(new Path(file.getAbsolutePath()));
 		if (fileResource != null) {
 			try {
-				return IDE.openEditor(page, fileResource,
-						OpenStrategy.activateOnOpen());
+				IDE.openEditor(page, fileResource, OpenStrategy.activateOnOpen());
 			} catch (PartInitException e) {
 				Activator.handleError(UIText.EgitUiEditorUtils_openFailed, e,
 						true);
@@ -152,14 +149,13 @@ public class EgitUiEditorUtils {
 			IFileStore store = EFS.getLocalFileSystem().getStore(
 					new Path(file.getAbsolutePath()));
 			try {
-				return IDE.openEditor(page, new FileStoreEditorInput(store),
+				IDE.openEditor(page, new FileStoreEditorInput(store),
 						EditorsUI.DEFAULT_TEXT_EDITOR_ID);
 			} catch (PartInitException e) {
 				Activator.handleError(UIText.EgitUiEditorUtils_openFailed, e,
 						true);
 			}
 		}
-		return null;
 	}
 
 	private static String getEditorId(FileRevisionEditorInput editorInput) {

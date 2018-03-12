@@ -19,7 +19,6 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.SWTUtils;
@@ -282,9 +281,7 @@ class GerritConfigurationPage extends WizardPage {
 	private void checkPage() {
 		try {
 			pushURI = new URIish(uriText.getText());
-			String uriScheme = pushURI.getScheme();
-			if (uriScheme != null)
-				scheme.select(scheme.indexOf(uriScheme));
+			scheme.select(scheme.indexOf(pushURI.getScheme()));
 		} catch (URISyntaxException e) {
 			setErrorMessage(e.getLocalizedMessage());
 			setPageComplete(false);

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2014 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -151,8 +151,10 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		if (branch == null)
 			return null;
 
-		String remoteName = null;
-		if (!ObjectId.isId(branch))
+		String remoteName;
+		if (ObjectId.isId(branch))
+			remoteName = Constants.DEFAULT_REMOTE_NAME;
+		else
 			remoteName = repository.getConfig().getString(
 					ConfigConstants.CONFIG_BRANCH_SECTION, branch,
 					ConfigConstants.CONFIG_REMOTE_SECTION);
@@ -167,22 +169,12 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		}
 
 		RemoteConfig configuredConfig = null;
-		RemoteConfig defaultConfig = null;
 		for (RemoteConfig config : allRemotes) {
 			if (remoteName != null && config.getName().equals(remoteName))
 				configuredConfig = config;
-			if (config.getName().equals(Constants.DEFAULT_REMOTE_NAME))
-				defaultConfig = config;
 		}
 
-		if (configuredConfig != null)
-			return configuredConfig;
-
-		if (defaultConfig != null)
-			if (!defaultConfig.getPushRefSpecs().isEmpty())
-				return defaultConfig;
-
-		return null;
+		return configuredConfig;
 	}
 
 	/**
@@ -571,30 +563,21 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 	public void buttonPressed(int buttonId) {
 		if (buttonId == DRY_RUN) {
 			try {
-				new ProgressMonitorDialog(getShell()).run(true, true,
+				new ProgressMonitorDialog(getShell()).run(false, true,
 						new IRunnableWithProgress() {
 							public void run(IProgressMonitor monitor)
 									throws InvocationTargetException,
 									InterruptedException {
-								final PushOperationUI op = new PushOperationUI(
+								PushOperationUI op = new PushOperationUI(
 										repository, config, true);
 								try {
-									final PushOperationResult result = op
+									PushOperationResult result = op
 											.execute(monitor);
-									getShell().getDisplay().asyncExec(
-											new Runnable() {
-
-												public void run() {
-													PushResultDialog dlg = new PushResultDialog(
-															getShell(),
-															repository,
-															result,
-															op
+									PushResultDialog dlg = new PushResultDialog(
+											getShell(), repository, result, op
 													.getDestinationString());
-													dlg.showConfigureButton(false);
-													dlg.open();
-												}
-											});
+									dlg.showConfigureButton(false);
+									dlg.open();
 								} catch (CoreException e) {
 									Activator.handleError(e.getMessage(), e,
 											true);
@@ -627,7 +610,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			}
 			if (buttonId == OK)
 				try {
-					new ProgressMonitorDialog(getShell()).run(true, true,
+					new ProgressMonitorDialog(getShell()).run(false, true,
 							new IRunnableWithProgress() {
 								public void run(IProgressMonitor monitor)
 										throws InvocationTargetException,

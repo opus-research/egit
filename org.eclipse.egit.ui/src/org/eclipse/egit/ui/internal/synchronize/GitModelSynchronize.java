@@ -242,7 +242,7 @@ public class GitModelSynchronize {
 				gsdSet);
 
 		Job syncJob = new WorkspaceJob(
-				UIText.GitModelSynchronize_fetchGitDataJobName) {
+				UIText.GitModelSynchonize_fetchGitDataJobName) {
 
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {

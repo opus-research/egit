@@ -33,10 +33,9 @@ import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
-import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -178,16 +177,14 @@ public class GitCompareEditorInput extends CompareEditorInput {
 			if (resources.length == 0) {
 				Object[] titleParameters = new Object[] {
 						Activator.getDefault().getRepositoryUtil()
-								.getRepositoryName(repository),
-						CompareUtils.truncatedRevision(compareVersion),
-						CompareUtils.truncatedRevision(baseVersion) };
+								.getRepositoryName(repository), compareVersion,
+						baseVersion };
 				setTitle(NLS.bind(UIText.GitCompareEditorInput_EditorTitle,
 						titleParameters));
 			} else if (resources.length == 1) {
 				Object[] titleParameters = new Object[] {
 						resources[0].getFullPath().makeRelative().toString(),
-						CompareUtils.truncatedRevision(compareVersion),
-						CompareUtils.truncatedRevision(baseVersion) };
+						compareVersion, baseVersion };
 				setTitle(NLS.bind(
 						UIText.GitCompareEditorInput_EditorTitleSingleResource,
 						titleParameters));
@@ -195,8 +192,7 @@ public class GitCompareEditorInput extends CompareEditorInput {
 				setTitle(NLS
 						.bind(
 								UIText.GitCompareEditorInput_EditorTitleMultipleResources,
-								CompareUtils.truncatedRevision(compareVersion),
-								CompareUtils.truncatedRevision(baseVersion)));
+								compareVersion, baseVersion));
 
 			// build the nodes
 			try {
@@ -232,41 +228,42 @@ public class GitCompareEditorInput extends CompareEditorInput {
 
 		IDiffContainer result = new DiffNode(Differencer.CONFLICTING);
 
-		try (TreeWalk tw = new TreeWalk(repository)) {
+		TreeWalk tw = new TreeWalk(repository);
 
-			// filter by selected resources
-			if (filterPathStrings.size() > 1) {
-				List<TreeFilter> suffixFilters = new ArrayList<TreeFilter>();
-				for (String filterPath : filterPathStrings)
-					suffixFilters.add(PathFilter.create(filterPath));
-				TreeFilter otf = OrTreeFilter.create(suffixFilters);
-				tw.setFilter(otf);
-			} else if (filterPathStrings.size() > 0) {
-				String path = filterPathStrings.get(0);
-				if (path.length() != 0)
-					tw.setFilter(PathFilter.create(path));
-			}
+		// filter by selected resources
+		if (filterPathStrings.size() > 1) {
+			List<TreeFilter> suffixFilters = new ArrayList<TreeFilter>();
+			for (String filterPath : filterPathStrings)
+				suffixFilters.add(PathFilter.create(filterPath));
+			TreeFilter otf = OrTreeFilter.create(suffixFilters);
+			tw.setFilter(otf);
+		} else if (filterPathStrings.size() > 0) {
+			String path = filterPathStrings.get(0);
+			if (path.length() != 0)
+				tw.setFilter(PathFilter.create(path));
+		}
 
-			tw.setRecursive(true);
+		tw.setRecursive(true);
 
-			int baseTreeIndex;
-			if (baseCommit == null) {
-				// compare workspace with something
-				checkIgnored = true;
-				baseTreeIndex = tw.addTree(new AdaptableFileTreeIterator(
-						repository, ResourcesPlugin.getWorkspace().getRoot()));
-			} else
-				baseTreeIndex = tw.addTree(new CanonicalTreeParser(null,
-						repository.newObjectReader(), baseCommit.getTree()));
-			int compareTreeIndex;
-			if (!useIndex)
-				compareTreeIndex = tw.addTree(new CanonicalTreeParser(null,
-						repository.newObjectReader(), compareCommit.getTree()));
-			else
-				// compare something with the index
-				compareTreeIndex = tw.addTree(new DirCacheIterator(repository
-						.readDirCache()));
+		int baseTreeIndex;
+		if (baseCommit == null) {
+			// compare workspace with something
+			checkIgnored = true;
+			baseTreeIndex = tw.addTree(new AdaptableFileTreeIterator(
+					repository, ResourcesPlugin.getWorkspace().getRoot()));
+		} else
+			baseTreeIndex = tw.addTree(new CanonicalTreeParser(null, repository
+					.newObjectReader(), baseCommit.getTree()));
+		int compareTreeIndex;
+		if (!useIndex)
+			compareTreeIndex = tw.addTree(new CanonicalTreeParser(null,
+					repository.newObjectReader(), compareCommit.getTree()));
+		else
+			// compare something with the index
+			compareTreeIndex = tw.addTree(new DirCacheIterator(repository
+					.readDirCache()));
 
+		try {
 			while (tw.next()) {
 				if (monitor.isCanceled())
 					throw new InterruptedException();
@@ -345,6 +342,8 @@ public class GitCompareEditorInput extends CompareEditorInput {
 					throw new InterruptedException();
 			}
 			return result;
+		} finally {
+			tw.release();
 		}
 	}
 

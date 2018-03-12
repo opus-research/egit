@@ -25,7 +25,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.IRemoteSelectionListener;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.SelectionType;
@@ -70,8 +69,6 @@ import org.eclipse.ui.PlatformUI;
  * by specifying URL manually or selecting a preconfigured remote repository.
  */
 public class RepositorySelectionPage extends WizardPage implements IRepositorySearchResult {
-
-	private static final String GIT_CLONE_COMMAND_PREFIX = "git clone "; //$NON-NLS-1$
 
 	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
@@ -604,9 +601,8 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			}
 		});
 
+		newLabel(g, UIText.RepositorySelectionPage_storeInSecureStore);
 		storeCheckbox = new Button(g, SWT.CHECK);
-		storeCheckbox
-				.setText(UIText.RepositorySelectionPage_storeInSecureStore);
 		storeCheckbox.setSelection(storeInSecureStore);
 		storeCheckbox.addSelectionListener(new SelectionListener() {
 			public void widgetSelected(SelectionEvent e) {
@@ -639,7 +635,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					setURI(uri.setScheme(nullString(scheme.getItem(idx))));
 					scheme.setToolTipText(Protocol.values()[idx].getTooltip());
 				}
-				updateGroups();
+				updateAuthGroup();
 			}
 		});
 
@@ -753,8 +749,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			}
 
 			try {
-				final URIish finalURI = new URIish(
-						stripGitCloneCommand(uriText.getText()));
+				final URIish finalURI = new URIish(uriText.getText().trim());
 				String proto = finalURI.getScheme();
 				if (proto == null && scheme.getSelectionIndex() >= 0)
 					proto = scheme.getItem(scheme.getSelectionIndex());
@@ -819,24 +814,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					}
 				}
 
-				if (Protocol.HTTP.handles(finalURI)
-						|| Protocol.HTTPS.handles(finalURI)) {
-					UserPasswordCredentials credentials = SecureStoreUtils
-							.getCredentials(finalURI);
-					if (credentials != null) {
-						String u = credentials.getUser();
-						String p = credentials.getPassword();
-						String uriUser = finalURI.getUser();
-						if (uriUser == null) {
-							if (setSafeUser(u) && setSafePassword(p))
-								setStoreInSecureStore(true);
-						} else if (uriUser.length() != 0 && uriUser.equals(u)) {
-							if (setSafePassword(p))
-								setStoreInSecureStore(true);
-						}
-					}
-				}
-
 				selectionComplete(finalURI, null);
 				return;
 			} catch (URISyntaxException e) {
@@ -854,39 +831,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			selectionComplete(null, remoteConfig);
 			return;
 		}
-	}
-
-	private String stripGitCloneCommand(String input) {
-		input = input.trim();
-		if (input.startsWith(GIT_CLONE_COMMAND_PREFIX)) {
-			return input.substring(GIT_CLONE_COMMAND_PREFIX.length()).trim();
-		}
-		return input.trim();
-	}
-
-	private boolean setSafePassword(String p) {
-		if ((password == null || password.length() == 0) && p != null
-				&& p.length() != 0) {
-			password = p;
-			passText.setText(p);
-			return true;
-		}
-		return false;
-	}
-
-	private boolean setSafeUser(String u) {
-		if ((user == null || user.length() == 0) && u != null
-				&& u.length() != 0) {
-			user = u;
-			userText.setText(u);
-			return true;
-		}
-		return false;
-	}
-
-	private void setStoreInSecureStore(boolean store) {
-		storeInSecureStore = store;
-		storeCheckbox.setSelection(store);
 	}
 
 	private String unamp(String s) {
@@ -916,27 +860,17 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	private void updateRemoteAndURIPanels() {
 		UIUtils.setEnabledRecursively(uriPanel, isURISelected());
 		if (uriPanel.getEnabled())
-			updateGroups();
+			updateAuthGroup();
 		if (configuredRemotes != null)
 			UIUtils.setEnabledRecursively(remotePanel, !isURISelected());
 	}
 
-	private void updateGroups() {
+	private void updateAuthGroup() {
 		Protocol p = getProtocol();
 		if (p != null) {
 			hostText.setEnabled(p.hasHost());
-			if (!p.hasHost())
-				hostText.setText(EMPTY_STRING);
 			portText.setEnabled(p.hasPort());
-			if (!p.hasPort())
-				portText.setText(EMPTY_STRING);
-
 			UIUtils.setEnabledRecursively(authGroup, p.canAuthenticate());
-			if (!p.canAuthenticate()) {
-				userText.setText(EMPTY_STRING);
-				passText.setText(EMPTY_STRING);
-				storeCheckbox.setSelection(false);
-			}
 		}
 	}
 
@@ -999,11 +933,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			if (eventDepth != 1)
 				return;
 
-			String strippedText = stripGitCloneCommand(text);
-			final URIish u = new URIish(strippedText);
-			if (!text.equals(strippedText)) {
-				uriText.setText(strippedText);
-			}
+			final URIish u = new URIish(text);
 			safeSet(hostText, u.getHost());
 			safeSet(pathText, u.getPath());
 			safeSet(userText, u.getUser());
@@ -1019,7 +949,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 				scheme.notifyListeners(SWT.Selection, new Event());
 			}
 
-			updateGroups();
+			updateAuthGroup();
 			uri = u;
 		} catch (URISyntaxException err) {
 			// leave uriText as it is, but clean up underlying uri and

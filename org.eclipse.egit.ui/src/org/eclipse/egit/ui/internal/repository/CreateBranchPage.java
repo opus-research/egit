@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,18 +13,11 @@
 package org.eclipse.egit.ui.internal.repository;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.SafeRunner;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
-import org.eclipse.egit.ui.IBranchNameProvider;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -39,7 +32,6 @@ import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.util.SafeRunnable;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
@@ -53,7 +45,6 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.TraverseEvent;
 import org.eclipse.swt.events.TraverseListener;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -73,20 +64,24 @@ import org.eclipse.swt.widgets.Text;
  */
 class CreateBranchPage extends WizardPage {
 
-	private static final String BRANCH_NAME_PROVIDER_ID = "org.eclipse.egit.ui.branchNameProvider"; //$NON-NLS-1$
-
 	/**
 	 * Get proposed target branch name for given source branch name
 	 *
 	 * @param sourceName
 	 * @return target name
 	 */
-	public String getProposedTargetName(String sourceName) {
+	public static String getProposedTargetName(String sourceName) {
 		if (sourceName == null)
 			return null;
 
-		if (sourceName.startsWith(Constants.R_REMOTES))
-			return myRepository.shortenRemoteBranchName(sourceName);
+		if (sourceName.startsWith(Constants.R_REMOTES)) {
+			String target = sourceName.substring(Constants.R_REMOTES.length());
+			int postSlash = target.indexOf('/') + 1;
+			if (postSlash > 0 && postSlash < target.length())
+				return target.substring(postSlash);
+			else
+				return target;
+		}
 
 		if (sourceName.startsWith(Constants.R_TAGS))
 			return sourceName.substring(Constants.R_TAGS.length()) + "-branch"; //$NON-NLS-1$
@@ -143,7 +138,7 @@ class CreateBranchPage extends WizardPage {
 			this.myBaseRef = null;
 		this.myBaseCommit = null;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
-				myRepository, Constants.R_HEADS, false);
+				myRepository, Constants.R_HEADS, true);
 		if (baseRef != null)
 			this.upstreamConfig = UpstreamConfig.getDefault(repo, baseRef.getName());
 		else
@@ -168,7 +163,7 @@ class CreateBranchPage extends WizardPage {
 		this.myBaseRef = null;
 		this.myBaseCommit = baseCommit;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
-				myRepository, Constants.R_HEADS, false);
+				myRepository, Constants.R_HEADS, true);
 		this.upstreamConfig = UpstreamConfig.NONE;
 		setTitle(UIText.CreateBranchPage_Title);
 		setMessage(UIText.CreateBranchPage_ChooseNameMessage);
@@ -335,7 +330,6 @@ class CreateBranchPage extends WizardPage {
 				gd.exclude = !showUpstreamConfig;
 				container.setVisible(showUpstreamConfig);
 				container.getParent().layout(true);
-				ensurePreferredHeight(getShell());
 			}
 
 			boolean basedOnLocalBranch = sourceRefName
@@ -343,9 +337,15 @@ class CreateBranchPage extends WizardPage {
 			if (basedOnLocalBranch && upstreamConfig != UpstreamConfig.NONE)
 				setMessage(UIText.CreateBranchPage_LocalBranchWarningMessage,
 						IMessageProvider.INFORMATION);
+			else
+				setMessage(null);
 
 			if (sourceRefName.length() == 0) {
 				setErrorMessage(UIText.CreateBranchPage_MissingSourceMessage);
+				return;
+			}
+			if (nameText.getText().length() == 0) {
+				setErrorMessage(UIText.CreateBranchPage_ChooseNameMessage);
 				return;
 			}
 			String message = this.myValidator.isValid(nameText.getText());
@@ -356,8 +356,7 @@ class CreateBranchPage extends WizardPage {
 
 			setErrorMessage(null);
 		} finally {
-			setPageComplete(getErrorMessage() == null
-					&& nameText.getText().length() > 0);
+			setPageComplete(getErrorMessage() == null);
 		}
 	}
 
@@ -365,23 +364,17 @@ class CreateBranchPage extends WizardPage {
 		return nameText.getText();
 	}
 
-	public boolean checkoutNewBranch() {
-		return checkout.getSelection();
-	}
-
 	/**
-	 * @param newRefName
-	 * @param checkoutNewBranch
 	 * @param monitor
 	 * @throws CoreException
 	 * @throws IOException
 	 */
-	public void createBranch(String newRefName, boolean checkoutNewBranch,
-			IProgressMonitor monitor)
-			throws CoreException,
+	public void createBranch(IProgressMonitor monitor) throws CoreException,
 			IOException {
 		monitor.beginTask(UIText.CreateBranchPage_CreatingBranchMessage,
 				IProgressMonitor.UNKNOWN);
+
+		String newRefName = getBranchName();
 
 		final CreateLocalBranchOperation cbop;
 
@@ -396,7 +389,7 @@ class CreateBranchPage extends WizardPage {
 
 		cbop.execute(monitor);
 
-		if (checkoutNewBranch) {
+		if (checkout.getSelection()) {
 			if (monitor.isCanceled())
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
@@ -408,54 +401,13 @@ class CreateBranchPage extends WizardPage {
 
 	private void suggestBranchName(String ref) {
 		if (nameText.getText().length() == 0 || nameIsSuggestion) {
-			String branchNameSuggestion = getBranchNameSuggestionFromProvider();
-			if (branchNameSuggestion == null)
-				branchNameSuggestion = getProposedTargetName(ref);
-
+			String branchNameSuggestion = getProposedTargetName(ref);
 			if (branchNameSuggestion != null) {
 				nameText.setText(branchNameSuggestion);
 				nameText.selectAll();
 				nameIsSuggestion = true;
 			}
 		}
-	}
-
-	private IBranchNameProvider getBranchNameProvider() {
-		IExtensionRegistry registry = Platform.getExtensionRegistry();
-		IConfigurationElement[] config = registry
-				.getConfigurationElementsFor(BRANCH_NAME_PROVIDER_ID);
-		if (config.length > 0) {
-			Object provider;
-			try {
-				provider = config[0].createExecutableExtension("class"); //$NON-NLS-1$
-				if (provider instanceof IBranchNameProvider)
-					return (IBranchNameProvider) provider;
-			} catch (Throwable e) {
-				Activator.logError(
-						UIText.CreateBranchPage_CreateBranchNameProviderFailed,
-						e);
-			}
-		}
-		return null;
-	}
-
-	private String getBranchNameSuggestionFromProvider() {
-		final AtomicReference<String> ref = new AtomicReference<String>();
-		final IBranchNameProvider branchNameProvider = getBranchNameProvider();
-		if (branchNameProvider != null)
-			SafeRunner.run(new SafeRunnable() {
-				public void run() throws Exception {
-					ref.set(branchNameProvider.getBranchNameSuggestion());
-				}
-			});
-		return ref.get();
-	}
-
-	private static void ensurePreferredHeight(Shell shell) {
-		int preferredHeight = shell.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
-		Point size = shell.getSize();
-		if (size.y < preferredHeight)
-			shell.setSize(size.x, preferredHeight);
 	}
 
 	private static class SourceSelectionDialog extends

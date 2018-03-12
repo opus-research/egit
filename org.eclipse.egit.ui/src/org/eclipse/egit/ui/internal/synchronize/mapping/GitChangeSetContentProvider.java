@@ -22,7 +22,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.GitSubscriberMergeContext;
 import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache;
@@ -106,7 +105,8 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 	}
 
 	private ResourceMapping getResourceMapping(Object object) {
-		return CommonUtils.getAdapter(((IAdaptable) object), ResourceMapping.class);
+		return (ResourceMapping) ((IAdaptable) object)
+				.getAdapter(ResourceMapping.class);
 	}
 
 	@Override

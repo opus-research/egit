@@ -184,8 +184,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_StatusAborted;
 		case STOPPED:
 			return UIText.RebaseResultDialog_StatusStopped;
-		case EDIT:
-			return UIText.RebaseResultDialog_StatusEdit;
 		case FAILED:
 			return UIText.RebaseResultDialog_StatusFailed;
 		case CONFLICTS:
@@ -198,8 +196,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_StatusNothingToCommit;
 		case UNCOMMITTED_CHANGES:
 			return UIText.RebaseResultDialog_UncommittedChanges;
-		case INTERACTIVE_PREPARED:
-			return UIText.RebaseResultDialog_StatusInteractivePrepared;
 		case STASH_APPLY_CONFLICTS:
 			return UIText.RebaseResultDialog_SuccessfullyFinished + ".\n" + //$NON-NLS-1$
 					UIText.RebaseResultDialog_stashApplyConflicts;
@@ -351,7 +347,9 @@ public class RebaseResultDialog extends MessageDialog {
 
 		boolean conflictListFailure = false;
 		DirCache dc = null;
-		try (RevWalk rw = new RevWalk(repo)) {
+		RevWalk rw = null;
+		try {
+			rw = new RevWalk(repo);
 			// the commits might not have been fully loaded
 			RevCommit commit = rw.parseCommit(result.getCurrentCommit());
 			commitMessage.getTextWidget().setText(commit.getFullMessage());
@@ -369,6 +367,8 @@ public class RebaseResultDialog extends MessageDialog {
 			// the file list will be empty
 			conflictListFailure = true;
 		} finally {
+			if (rw != null)
+				rw.release();
 			if (dc != null)
 				dc.unlock();
 		}
