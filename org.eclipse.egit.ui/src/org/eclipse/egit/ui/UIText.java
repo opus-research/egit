@@ -642,6 +642,9 @@ public class UIText extends NLS {
 	public static String ProjectsPreferencePage_RestoreBranchProjects;
 
 	/** */
+	public static String ProjectsPreferencePage_AutoIgnoreDerivedResources;
+
+	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -3019,9 +3022,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String IgnoreActionHandler_addToGitignore;
-
-	/** */
-	public static String IgnorePreferencePage_autoIgnoreDerivedResources;
 
 	/** */
 	public static String RepositoriesView_BranchDeletionFailureMessage;
