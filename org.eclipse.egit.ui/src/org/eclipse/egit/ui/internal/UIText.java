@@ -2661,9 +2661,6 @@ public class UIText extends NLS {
 	public static String FileDiffContentProvider_errorGettingDifference;
 
 	/** */
-	public static String FileDiffLabelProvider_RenamedFromToolTip;
-
-	/** */
 	public static String FileRevisionEditorInput_NameAndRevisionTitle;
 
 	/** */
