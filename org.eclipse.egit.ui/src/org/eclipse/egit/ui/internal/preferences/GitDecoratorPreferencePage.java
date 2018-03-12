@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2000, 2007 IBM Corporation and others.
+ * Copyright (c) 2000, 2012 IBM Corporation and others.
  * Copyright (C) 2009, Tor Arne Vestbø <torarnv@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
@@ -188,13 +188,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 				UIText.DecoratorPreferencesPage_bindingChangeSetShortMessage);
 	}
 
-	/**
-	 * Constructs a decorator preference page
-	 */
-	public GitDecoratorPreferencePage() {
-		setDescription(UIText.DecoratorPreferencesPage_description);
-	}
-
 	private static String removeBraces(String string) {
 		return string.replaceAll("[}{]", ""); //$NON-NLS-1$ //$NON-NLS-2$
 	}
@@ -208,12 +201,12 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		Composite composite = SWTUtils.createHVFillComposite(parent,
 				SWTUtils.MARGINS_NONE);
 
-		SWTUtils.createPreferenceLink(
-				(IWorkbenchPreferenceContainer) getContainer(), composite,
-				"org.eclipse.ui.preferencePages.Decorators", //$NON-NLS-1$
-				UIText.DecoratorPreferencesPage_labelDecorationsLink);
+		SWTUtils.createLabel(composite, UIText.DecoratorPreferencesPage_description);
 
-		TabFolder tabFolder = new TabFolder(composite, SWT.NONE);
+		Composite folderComposite = SWTUtils.createHFillComposite(composite,
+				SWTUtils.MARGINS_NONE);
+
+		TabFolder tabFolder = new TabFolder(folderComposite, SWT.NONE);
 		tabFolder.setLayoutData(SWTUtils.createHVFillGridData());
 
 		tabFolder.addSelectionListener(new SelectionAdapter() {
@@ -266,7 +259,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		Dialog.applyDialogFont(parent);
 
-		return composite;
+		return tabFolder;
 	}
 
 	/**
@@ -303,6 +296,16 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 							UIText.DecoratorPreferencesPage_recomputeAncestorDecorations);
 			recomputeAncestorDecorations
 					.setToolTipText(UIText.DecoratorPreferencesPage_recomputeAncestorDecorationsTooltip);
+
+			SWTUtils.createPreferenceLink(
+					(IWorkbenchPreferenceContainer) getContainer(), composite,
+					"org.eclipse.ui.preferencePages.Decorators", //$NON-NLS-1$
+					UIText.DecoratorPreferencesPage_labelDecorationsLink);
+
+			SWTUtils.createPreferenceLink(
+					(IWorkbenchPreferenceContainer) getContainer(), composite,
+					"org.eclipse.ui.preferencePages.ColorsAndFonts", //$NON-NLS-1$
+					UIText.DecoratorPreferencesPage_colorsAndFontsLink);
 
 			recomputeAncestorDecorations.addSelectionListener(this);
 
