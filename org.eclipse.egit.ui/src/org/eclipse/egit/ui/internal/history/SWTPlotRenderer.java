@@ -13,8 +13,6 @@ package org.eclipse.egit.ui.internal.history;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -33,8 +31,6 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.themes.ColorUtil;
 
 class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
-
-	private static final int MAX_LABEL_LENGTH = 15;
 
 	private final Color sys_black;
 
@@ -148,18 +144,13 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	protected int drawLabel(int x, int y, Ref ref) {
 		String txt;
 		String name = ref.getName();
-		boolean tag = false;
-		boolean branch = false;
 		if (name.startsWith(Constants.R_HEADS)) {
-			branch = true;
 			g.setBackground(sys_green);
 			txt = name.substring(Constants.R_HEADS.length());
 		} else if (name.startsWith(Constants.R_REMOTES)){
-			branch = true;
 			g.setBackground(sys_gray);
 			txt = name.substring(Constants.R_REMOTES.length());
 		} else if (name.startsWith(Constants.R_TAGS)){
-			tag = true;
 			g.setBackground(sys_yellow);
 			txt = name.substring(Constants.R_TAGS.length());
 		} else {
@@ -178,17 +169,8 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 			g.setBackground(peeledColor);
 		}
 
-		int maxLength;
-		if (tag)
-			maxLength = Activator.getDefault().getPreferenceStore()
-					.getInt(UIPreferences.HISTORY_MAX_TAG_LENGTH);
-		else if (branch)
-			maxLength = Activator.getDefault().getPreferenceStore()
-					.getInt(UIPreferences.HISTORY_MAX_BRANCH_LENGTH);
-		else
-			maxLength = MAX_LABEL_LENGTH;
-		if (txt.length() > maxLength)
-			txt = txt.substring(0, maxLength) + "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
+		if (txt.length() > 12)
+			txt = txt.substring(0,11) + "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
 
 		// highlight checked out branch
 		Font oldFont = g.getFont();
