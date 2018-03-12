@@ -20,6 +20,8 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.jobs.IJobManager;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.test.GitTestCase;
@@ -175,7 +177,18 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 	 */
 	private void waitForJobs(long maxWaitTime, Object family)
 			throws InterruptedException {
-		testUtils.waitForJobs(maxWaitTime, family);
+		Thread.sleep(50);
+		long start = System.currentTimeMillis();
+		IJobManager jobManager = Job.getJobManager();
+
+		Job[] jobs = jobManager.find(family);
+		while (jobs.length > 0) {
+			Thread.sleep(100);
+			jobs = jobManager.find(family);
+			if (System.currentTimeMillis() - start > maxWaitTime) {
+				return;
+			}
+		}
 	}
 
 	private void cleanEntryFlags() {
