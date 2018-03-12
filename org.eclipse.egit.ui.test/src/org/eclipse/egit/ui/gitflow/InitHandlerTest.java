@@ -141,7 +141,9 @@ public class InitHandlerTest extends AbstractGitflowHandlerTest {
 	}
 
 	private void fillDialog(String masterBranch) {
-		typeInto(InitDialog_developBranch, ILLEGAL_BRANCH_NAME);
+		SWTBotText developText = bot.textWithLabel(InitDialog_developBranch);
+		developText.selectAll();
+		developText.typeText(ILLEGAL_BRANCH_NAME);
 
 		SWTBotButton ok = bot.button("OK");
 		assertFalse(ok.isEnabled());
@@ -189,6 +191,6 @@ public class InitHandlerTest extends AbstractGitflowHandlerTest {
 	private void typeInto(String textLabel, String textInput) {
 		SWTBotText developText = bot.textWithLabel(textLabel);
 		developText.selectAll();
-		developText.setText(textInput);
+		developText.typeText(textInput);
 	}
 }
