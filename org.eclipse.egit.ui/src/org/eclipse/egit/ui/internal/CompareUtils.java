@@ -384,18 +384,15 @@ public class CompareUtils {
 			setChecked(CompareUtils.isReuseOpenEditor());
 		}
 
-		@Override
 		public void run() {
 			CompareUtils.setReuseOpenEditor(isChecked());
 		}
 
-		@Override
 		public void dispose() {
 			// stop listening
 			node.removePreferenceChangeListener(this);
 		}
 
-		@Override
 		public void preferenceChange(PreferenceChangeEvent event) {
 			setChecked(isReuseOpenEditor());
 
@@ -510,7 +507,6 @@ public class CompareUtils {
 		// safety check: make sure we open compare editor from UI thread
 		if (Display.getCurrent() == null) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
 					openCompareEditorRunnable(page, in);
 				}
@@ -995,7 +991,6 @@ public class CompareUtils {
 		final EditableRevision next = new EditableRevision(nextFile, encoding);
 
 		IContentChangeListener listener = new IContentChangeListener() {
-			@Override
 			public void contentChanged(IContentChangeNotifier source) {
 				final byte[] newContent = next.getModifiedContent();
 				setIndexEntryContents(repository, gitPath, newContent);
@@ -1183,7 +1178,7 @@ public class CompareUtils {
 	 *         providers.
 	 * @throws IOException
 	 */
-	public static RemoteResourceMappingContext prepareContext(
+	private static RemoteResourceMappingContext prepareContext(
 			Repository repository, String leftRev, String rightRev,
 			boolean includeLocal) throws IOException {
 		GitSynchronizeData gsd = new GitSynchronizeData(repository, leftRev,

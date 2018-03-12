@@ -66,7 +66,6 @@ public class AddRemotePage extends RepositorySelectionPage {
 			setMessage(UIText.AddRemotePage_EnterRemoteNameMessage);
 
 		remoteNameText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}

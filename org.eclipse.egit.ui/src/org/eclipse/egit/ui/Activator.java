@@ -216,7 +216,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 
-	@Override
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
 
@@ -273,7 +272,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 			private void updateUiState() {
 				Display.getCurrent().asyncExec(new Runnable() {
-					@Override
 					public void run() {
 						boolean wasActive = uiIsActive;
 						uiIsActive = Display.getCurrent().getActiveShell() != null;
@@ -294,22 +292,18 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				});
 			}
 
-			@Override
 			public void windowOpened(IWorkbenchWindow window) {
 				updateUiState();
 			}
 
-			@Override
 			public void windowDeactivated(IWorkbenchWindow window) {
 				updateUiState();
 			}
 
-			@Override
 			public void windowClosed(IWorkbenchWindow window) {
 				updateUiState();
 			}
 
-			@Override
 			public void windowActivated(IWorkbenchWindow window) {
 				updateUiState();
 				if (rcs.doReschedule)
@@ -330,7 +324,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		job.schedule();
 	}
 
-	@Override
 	public void optionsChanged(DebugOptions options) {
 		// initialize the trace stuff
 		debugOptions = options;
@@ -427,7 +420,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			return Status.OK_STATUS;
 		}
 
-		@Override
 		public void onIndexChanged(IndexChangedEvent e) {
 			if (Activator.getDefault().getPreferenceStore()
 					.getBoolean(UIPreferences.REFESH_ON_INDEX_CHANGE))
@@ -589,7 +581,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		}
 	}
 
-	@Override
 	public void stop(final BundleContext context) throws Exception {
 		if (refreshHandle != null) {
 			refreshHandle.remove();

@@ -44,7 +44,6 @@ import org.eclipse.osgi.util.NLS;
  */
 public class TagActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repo = getRepository(true, event);
 		if (repo == null)
@@ -95,7 +94,6 @@ public class TagActionHandler extends RepositoryActionHandler {
 		final boolean shouldMoveTag = dialog.shouldOverWriteTag();
 
 		Job tagJob = new Job(tagJobName) {
-			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					new TagOperation(repo, tag, shouldMoveTag).execute(monitor);

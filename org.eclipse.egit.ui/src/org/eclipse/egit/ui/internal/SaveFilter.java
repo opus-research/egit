@@ -49,7 +49,6 @@ class SaveFilter implements ISaveableFilter {
 	/* (non-Javadoc)
 	 * @see org.eclipse.ui.ISaveableFilter#select(org.eclipse.ui.Saveable, org.eclipse.ui.IWorkbenchPart[])
 	 */
-	@Override
 	public boolean select(Saveable saveable,
 			IWorkbenchPart[] containingParts) {
 		if (isDescendantOfRoots(saveable)) {

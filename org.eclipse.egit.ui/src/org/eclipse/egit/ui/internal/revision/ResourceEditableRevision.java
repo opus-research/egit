@@ -66,7 +66,6 @@ public class ResourceEditableRevision extends EditableRevision {
 					fork = false;
 			}
 			runnableContext.run(fork, false, new IRunnableWithProgress() {
-				@Override
 				public void run(IProgressMonitor myMonitor)
 						throws InvocationTargetException, InterruptedException {
 					try {
