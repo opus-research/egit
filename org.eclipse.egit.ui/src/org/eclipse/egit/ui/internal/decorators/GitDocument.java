@@ -145,12 +145,11 @@ class GitDocument extends Document implements RefsChangedListener {
 
 			tw = TreeWalk.forPath(repository, gitPath, treeId);
 			if (tw == null) {
-				if (GitTraceLocation.QUICKDIFF.isActive())
-					GitTraceLocation
-							.getTrace()
-							.trace(
-									GitTraceLocation.QUICKDIFF.getLocation(),
-									"(GitDocument) resource " + resource + " not found in " + treeId + " in " + repository + ", baseline=" + baseline); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				setResolved(null, null, null, ""); //$NON-NLS-1$
+				String msg = NLS
+						.bind(UIText.GitDocument_errorLoadTree, new Object[] {
+								treeId, baseline, resource, repository });
+				Activator.logError(msg, new Throwable());
 				setResolved(null, null, null, ""); //$NON-NLS-1$
 				return;
 			}
@@ -159,7 +158,7 @@ class GitDocument extends Document implements RefsChangedListener {
 				setResolved(null, null, null, ""); //$NON-NLS-1$
 				String msg = NLS
 						.bind(UIText.GitDocument_errorLoadTree, new Object[] {
-								treeId.getName(), baseline, resource, repository });
+								treeId, baseline, resource, repository });
 				Activator.logError(msg, new Throwable());
 				setResolved(null, null, null, ""); //$NON-NLS-1$
 				return;
@@ -180,7 +179,8 @@ class GitDocument extends Document implements RefsChangedListener {
 				if (GitTraceLocation.QUICKDIFF.isActive())
 					GitTraceLocation
 							.getTrace()
-							.trace(GitTraceLocation.QUICKDIFF.getLocation(),
+							.trace(
+									GitTraceLocation.QUICKDIFF.getLocation(),
 									"(GitDocument) has reference doc, size=" + s.length() + " bytes"); //$NON-NLS-1$ //$NON-NLS-2$
 			} else {
 				if (GitTraceLocation.QUICKDIFF.isActive())
