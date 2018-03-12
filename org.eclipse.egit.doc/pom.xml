@@ -39,10 +39,10 @@
           <execution>
             <phase>generate-sources</phase>
             <configuration>
-                <target if="update.egit.doc">
+                <tasks if="update.egit.doc">
                 <property name="compile_classpath" refid="maven.compile.classpath"/>
                 <ant target="all" inheritRefs="true" antfile="build-help.xml"/>
-              </target>
+              </tasks>
             </configuration>
             <goals>
               <goal>run</goal>
