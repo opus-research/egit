@@ -80,7 +80,6 @@ public class GitFolderResourceVariant extends GitResourceVariant {
 				NLS.bind(CoreText.GitFolderResourceVariant_fetchingMembers, this),
 				tw.getTreeCount());
 
-		int i = 0;
 		List<IResourceVariant> result = new ArrayList<IResourceVariant>();
 		try {
 			while (tw.next()) {
@@ -96,10 +95,7 @@ public class GitFolderResourceVariant extends GitResourceVariant {
 					else
 						result.add(new GitBlobResourceVariant(repo,
 								getRevCommit(), newObjectId, path));
-				if (i % 10 == 0)
-					monitor.worked(10);
-
-				i++;
+				monitor.worked(1);
 			}
 
 			members = result.toArray(new IResourceVariant[result.size()]);

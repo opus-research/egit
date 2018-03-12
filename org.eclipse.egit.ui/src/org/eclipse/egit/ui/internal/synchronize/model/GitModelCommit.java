@@ -102,7 +102,11 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	@Override
 	public int hashCode() {
-		return baseCommit.hashCode();
+		int result = getLocation().hashCode() ^ baseCommit.hashCode();
+		if (remoteCommit != null)
+			result ^= remoteCommit.hashCode();
+
+		return result;
 	}
 
 	@Override
