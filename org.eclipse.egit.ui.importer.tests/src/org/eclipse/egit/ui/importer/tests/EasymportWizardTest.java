@@ -50,7 +50,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(SWTBotJunit4ClassRunner.class)
-public class EasyImportWizardTest {
+public class EasymportWizardTest {
 
 	protected static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
 
