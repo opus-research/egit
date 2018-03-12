@@ -793,6 +793,9 @@ public class UIText extends NLS {
 	public static String ReplaceTargetSelectionDialog_ReplaceTitle;
 
 	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceTitleEmptyPath;
+
+	/** */
 	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
 
 	/** */
@@ -2165,6 +2168,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
+
+	/** */
+	public static String CompareUtils_errorCommonAncestor;
 
 	/** */
 	public static String ConfirmationPage_cantConnectToAnyTitle;
@@ -3702,9 +3708,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_OpenInEditorMenuLabel;
-
-	/** */
-	public static String CommitFileDiffViewer_ShowInMenuLabel;
 
 	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
