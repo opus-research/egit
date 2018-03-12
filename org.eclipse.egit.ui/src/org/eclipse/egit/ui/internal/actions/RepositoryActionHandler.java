@@ -39,7 +39,7 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -488,6 +488,13 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	protected IResource[] getSelectedResources() {
 		IStructuredSelection selection = getSelection();
 		return getSelectedResources(selection);
+	}
+
+	/**
+	 * @return true if all selected items map to the same repository, false otherwise.
+	 */
+	protected boolean selectionMapsToSingleRepository() {
+		return getRepository() != null;
 	}
 
 	/**
