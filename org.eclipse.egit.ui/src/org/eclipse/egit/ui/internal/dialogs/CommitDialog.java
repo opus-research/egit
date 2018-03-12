@@ -117,7 +117,7 @@ public class CommitDialog extends Dialog {
 
 	}
 
-	class CommitLabelProvider extends WorkbenchLabelProvider implements
+	static class CommitLabelProvider extends WorkbenchLabelProvider implements
 			ITableLabelProvider {
 		public String getColumnText(Object obj, int columnIndex) {
 			CommitItem item = (CommitItem) obj;
@@ -385,6 +385,7 @@ public class CommitDialog extends Dialog {
 			}
 		}
 
+		applyDialogFont(container);
 		container.pack();
 		return container;
 	}
