@@ -141,8 +141,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	/** Compare mode toggle */
 	private IAction compareModeAction;
 
+	private boolean compareMode = false;
+
 	/** Show all branches toggle */
 	private IAction showAllBranchesAction;
+
+	private boolean showAllBranches = false;
 
 	/** An error text to be shown instead of the control */
 	private StyledText errorText;
@@ -363,27 +367,32 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		showAllResourceVersionsAction
 				.setChecked(showAllFilter == showAllResourceVersionsAction.filter);
 
-		compareModeAction = new BooleanPrefAction(
-				UIPreferences.RESOURCEHISTORY_COMPARE_MODE,
-				UIText.GitHistoryPage_CompareModeMenuLabel) {
-			@Override
-			void apply(boolean value) {
-				// nothing, just switch the preference
+		compareModeAction = new Action(UIText.GitHistoryPage_compareMode,
+				IAction.AS_CHECK_BOX) {
+			public void run() {
+				compareMode = !compareMode;
+				setChecked(compareMode);
+				fileViewer.setCompareMode(compareMode);
 			}
 		};
 		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
+		compareModeAction.setChecked(compareMode);
+		compareModeAction.setText(UIText.GitHistoryPage_CompareModeMenuLabel);
 		compareModeAction.setToolTipText(UIText.GitHistoryPage_compareMode);
+		fileViewer.setCompareMode(compareMode);
 
-		showAllBranchesAction = new BooleanPrefAction(
-				UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES,
-				UIText.GitHistoryPage_ShowAllBranchesMenuLabel) {
-
-			@Override
-			void apply(boolean value) {
+		showAllBranchesAction = new Action(
+				UIText.GitHistoryPage_showAllBranches, IAction.AS_CHECK_BOX) {
+			public void run() {
+				showAllBranches = !showAllBranches;
+				setChecked(showAllBranches);
 				refresh();
 			}
 		};
 		showAllBranchesAction.setImageDescriptor(UIIcons.BRANCH);
+		showAllBranchesAction.setChecked(showAllBranches);
+		showAllBranchesAction
+				.setText(UIText.GitHistoryPage_ShowAllBranchesMenuLabel);
 		showAllBranchesAction
 				.setToolTipText(UIText.GitHistoryPage_showAllBranches);
 
@@ -417,7 +426,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	 *            switch compare mode button of the view on / off
 	 */
 	public void setCompareMode(boolean compareMode) {
-		store.setValue(UIPreferences.RESOURCEHISTORY_COMPARE_MODE, compareMode);
+		if (compareModeAction != null) {
+			this.compareMode = compareMode;
+			compareModeAction.setChecked(compareMode);
+		}
 	}
 
 	@Override
@@ -453,8 +465,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 						IHandlerService.class);
 				Command cmd = srv.getCommand(HistoryViewCommands.SHOWVERSIONS);
 				Parameterization[] parms;
-				if (store
-						.getBoolean(UIPreferences.RESOURCEHISTORY_COMPARE_MODE)) {
+				if (compareMode) {
 					try {
 						IParameter parm = cmd
 								.getParameter(HistoryViewCommands.COMPARE_MODE_PARAM);
@@ -838,7 +849,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
 				UIText.ResourceHistory_toggleCommentWrap) {
 			void apply(boolean wrap) {
-				// nothing, just set the Preference
+				commentViewer.setWrap(wrap);
 			}
 		};
 		a.apply(a.isChecked());
@@ -851,7 +862,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL,
 				UIText.ResourceHistory_toggleCommentFill) {
 			void apply(boolean fill) {
-				// nothing, just set the Preference
+				commentViewer.setFill(fill);
 			}
 		};
 		a.apply(a.isChecked());
@@ -1174,7 +1185,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		}
 
 		try {
-			if (store.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES)) {
+
+			if (showAllBranches) {
 				markStartAllRefs(Constants.R_HEADS);
 				markStartAllRefs(Constants.R_REMOTES);
 			} else
