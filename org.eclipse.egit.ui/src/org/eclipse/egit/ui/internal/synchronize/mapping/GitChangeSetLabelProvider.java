@@ -15,11 +15,9 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelWorkingTree;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
@@ -38,8 +36,7 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
 /**
  * Label provider for Git ChangeSet model.
  */
-public class GitChangeSetLabelProvider extends SynchronizationLabelProvider
-		implements IStyledLabelProvider {
+public class GitChangeSetLabelProvider extends SynchronizationLabelProvider implements IStyledLabelProvider {
 
 	private static final ILabelProvider workbenchLabelProvider = WorkbenchLabelProvider
 			.getDecoratingWorkbenchLabelProvider();
@@ -79,9 +76,7 @@ public class GitChangeSetLabelProvider extends SynchronizationLabelProvider
 				return workbenchLabelProvider.getImage(adapter);
 			}
 
-			if (element instanceof GitModelCommit
-					|| element instanceof GitModelCache
-					|| element instanceof GitModelWorkingTree)
+			if (element instanceof GitModelCommit)
 				return fImageCache.createImage(UIIcons.CHANGESET);
 
 			if (element instanceof GitModelRepository)

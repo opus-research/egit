@@ -16,6 +16,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
+import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -108,8 +109,9 @@ public abstract class GitModelObject extends PlatformObject {
 	 * initialization call's is common for all model object's.
 	 *
 	 * @return tree walk
+	 * @throws CorruptObjectException
 	 */
-	protected TreeWalk createTreeWalk() {
+	protected TreeWalk createTreeWalk() throws CorruptObjectException {
 		Repository repo = getRepository();
 		TreeWalk tw = new TreeWalk(repo);
 

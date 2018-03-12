@@ -269,7 +269,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		@Override
 		public void run() {
 			String oldName = getName();
-			String oldDescription = GitHistoryPage.this.getDescription();
+			String oldDescription = getDescription();
 			if (!isChecked()) {
 				if (showAllFilter == filter) {
 					showAllFilter = ShowFilter.SHOWALLRESOURCE;
