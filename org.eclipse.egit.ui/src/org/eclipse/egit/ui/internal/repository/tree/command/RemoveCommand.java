@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,7 +8,6 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Delete empty working directory
- *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -32,10 +31,9 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -47,7 +45,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
@@ -143,7 +140,7 @@ public class RemoveCommand extends
 		final boolean deleteWorkDir = deleteWorkingDir;
 		final boolean removeProj = removeProjects;
 
-		Job job = new Job(UIText.RemoveCommand_RemoveRepositoriesJob) {
+		Job job = new Job("Remove Repositories Job") { //$NON-NLS-1$
 
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
@@ -221,10 +218,6 @@ public class RemoveCommand extends
 					}
 			}
 			repo.close();
-
-			if (!repo.isBare())
-				closeSubmoduleRepositories(repo);
-
 			FileUtils.delete(repo.getDirectory(),
 					FileUtils.RECURSIVE | FileUtils.RETRY
 							| FileUtils.SKIP_MISSING);
@@ -244,30 +237,6 @@ public class RemoveCommand extends
 				if (isWorkingDirEmpty)
 					FileUtils.delete(workTree, FileUtils.RETRY | FileUtils.SKIP_MISSING);
 			}
-		}
-	}
-
-	private static void closeSubmoduleRepositories(Repository repo)
-			throws IOException {
-		SubmoduleWalk walk = SubmoduleWalk.forIndex(repo);
-		try {
-			while (walk.next()) {
-				Repository subRepo = walk.getRepository();
-				if (subRepo != null) {
-					RepositoryCache cache = null;
-					try {
-						cache = org.eclipse.egit.core.Activator.getDefault()
-								.getRepositoryCache();
-					} finally {
-						if (cache != null)
-							cache.lookupRepository(subRepo.getDirectory())
-									.close();
-						subRepo.close();
-					}
-				}
-			}
-		} finally {
-			walk.release();
 		}
 	}
 
@@ -301,8 +270,7 @@ public class RemoveCommand extends
 			final IPath wdPath = new Path(workDir.getAbsolutePath());
 			for (IProject prj : ResourcesPlugin.getWorkspace()
 					.getRoot().getProjects()) {
-				IPath location = prj.getLocation();
-				if (location != null && wdPath.isPrefixOf(location)) {
+				if (wdPath.isPrefixOf(prj.getLocation())) {
 					projectsToDelete.add(prj);
 				}
 			}

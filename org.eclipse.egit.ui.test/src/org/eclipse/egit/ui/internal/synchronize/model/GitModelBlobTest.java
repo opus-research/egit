@@ -27,7 +27,7 @@ import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -250,8 +250,7 @@ public class GitModelBlobTest extends GitModelTestCase {
 		assertEquals(file.getLocation(), leftLocation);
 	}
 
-	@Before
-	public void setupEnvironment() throws Exception {
+	@BeforeClass public static void setupEnvironment() throws Exception {
 		leftRepoFile = createProjectAndCommitToRepository();
 
 		Activator.getDefault().getRepositoryUtil()

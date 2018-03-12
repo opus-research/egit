@@ -33,6 +33,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.ProjectReference;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CloneOperation;
@@ -40,8 +41,7 @@ import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
@@ -76,24 +76,24 @@ public class ProjectReferenceImporter {
 		for (final Map.Entry<URIish, Map<String, Set<ProjectReference>>> entry : repositories
 				.entrySet()) {
 			final URIish gitUrl = entry.getKey();
-			final Map<String, Set<ProjectReference>> refs = entry
+			final Map<String, Set<ProjectReference>> branches = entry
 					.getValue();
 
-			for (final Map.Entry<String, Set<ProjectReference>> refEntry : refs
+			for (final Map.Entry<String, Set<ProjectReference>> branchEntry : branches
 					.entrySet()) {
-				final String refName = refEntry.getKey();
-				final Set<ProjectReference> projects = refEntry.getValue();
+				final String branch = branchEntry.getKey();
+				final Set<ProjectReference> projects = branchEntry.getValue();
 
-				final Set<String> allRefs = refs.keySet();
+				final Set<String> allBranches = branches.keySet();
 
 				File repositoryPath = null;
-				if (allRefs.size() == 1)
+				if (allBranches.size() == 1)
 					repositoryPath = findConfiguredRepository(gitUrl);
 
 				if (repositoryPath == null) {
 					try {
-						IPath workDir = getWorkingDir(gitUrl, refName, refs.keySet());
-						repositoryPath = cloneIfNecessary(gitUrl, refName, workDir, projects, monitor);
+						IPath workDir = getWorkingDir(gitUrl, branch, branches.keySet());
+						repositoryPath = cloneIfNecessary(gitUrl, branch, workDir, projects, monitor);
 					} catch (final InterruptedException e) {
 						// was canceled by user
 						return Collections.emptyList();
@@ -112,7 +112,7 @@ public class ProjectReferenceImporter {
 		return importedProjects;
 	}
 
-	private static File cloneIfNecessary(final URIish gitUrl, final String refToCheckout, final IPath workDir,
+	private static File cloneIfNecessary(final URIish gitUrl, final String branch, final IPath workDir,
 			final Set<ProjectReference> projects, IProgressMonitor monitor) throws TeamException, InterruptedException {
 
 		final File repositoryPath = workDir.append(Constants.DOT_GIT_EXT).toFile();
@@ -131,8 +131,9 @@ public class ProjectReferenceImporter {
 		} else {
 			try {
 				int timeout = 60;
+				String refName = Constants.R_HEADS + branch;
 				final CloneOperation cloneOperation = new CloneOperation(
-						gitUrl, true, null, workDir.toFile(), refToCheckout,
+						gitUrl, true, null, workDir.toFile(), refName,
 						Constants.DEFAULT_REMOTE_NAME, timeout);
 				cloneOperation.run(monitor);
 
@@ -211,10 +212,9 @@ public class ProjectReferenceImporter {
 	private static boolean repositoryAlreadyExistsForUrl(File repositoryPath,
 			URIish gitUrl) {
 		if (repositoryPath.exists()) {
-			Repository existingRepository;
+			FileRepository existingRepository;
 			try {
-				existingRepository = FileRepositoryBuilder
-						.create(repositoryPath);
+				existingRepository = new FileRepository(repositoryPath);
 			} catch (IOException e) {
 				return false;
 			}
@@ -231,8 +231,7 @@ public class ProjectReferenceImporter {
 		return false;
 	}
 
-	private static boolean containsRemoteForUrl(Config config, URIish url)
-			throws URISyntaxException {
+	private static boolean containsRemoteForUrl(Config config, URIish url) throws URISyntaxException {
 		Set<String> remotes = config.getSubsections(ConfigConstants.CONFIG_REMOTE_SECTION);
 		for (String remote : remotes) {
 			String remoteUrl = config.getString(
@@ -241,13 +240,6 @@ public class ProjectReferenceImporter {
 					ConfigConstants.CONFIG_KEY_URL);
 			URIish existingUrl = new URIish(remoteUrl);
 			if (existingUrl.equals(url))
-				return true;
-
-			// try URLs without user name, since often project sets contain
-			// anonymous URLs, and remote URL might be anonymous as well
-			URIish anonExistingUrl = existingUrl.setUser(null);
-			URIish anonUrl = url.setUser(null);
-			if (anonExistingUrl.equals(anonUrl))
 				return true;
 		}
 		return false;
@@ -271,10 +263,8 @@ public class ProjectReferenceImporter {
 								.append(IProjectDescription.DESCRIPTION_FILE_NAME));
 				final IProject project = root.getProject(projectDescription
 						.getName());
-				if (!project.exists()) {
-					project.create(projectDescription, monitor);
-					importedProjects.add(project);
-				}
+				project.create(projectDescription, monitor);
+				importedProjects.add(project);
 
 				project.open(monitor);
 				final ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(

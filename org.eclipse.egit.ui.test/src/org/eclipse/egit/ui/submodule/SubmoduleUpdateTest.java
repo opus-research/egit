@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2012, 2013 GitHub Inc and others.
+ *  Copyright (c) 2012 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
  *****************************************************************************/
 package org.eclipse.egit.ui.submodule;
 
@@ -20,7 +19,7 @@ import java.io.File;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestBase;
@@ -29,6 +28,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -62,7 +62,7 @@ public class SubmoduleUpdateTest extends GitRepositoriesViewTestBase {
 		assertProjectExistence(PROJ1, true);
 		refreshAndWait();
 		assertHasRepo(repositoryFile);
-		Repository repo = lookupRepository(repositoryFile);
+		FileRepository repo = lookupRepository(repositoryFile);
 		ObjectId repoHead = repo.resolve(Constants.HEAD);
 
 		SubmoduleAddCommand command = new SubmoduleAddCommand(repo);
@@ -73,7 +73,6 @@ public class SubmoduleUpdateTest extends GitRepositoriesViewTestBase {
 		command.setURI(uri);
 		Repository subRepo = command.call();
 		assertNotNull(subRepo);
-		subRepo.close();
 
 		Ref head = subRepo.getRef(Constants.HEAD);
 		assertNotNull(head);

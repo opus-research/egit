@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2013 Google Inc. and others.
+ * Copyright (C) 2008, Google Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
@@ -57,16 +58,12 @@ import org.eclipse.jgit.util.FS;
  */
 public class ContainerTreeIterator extends WorkingTreeIterator {
 
-	private static String computePrefix(final Repository repository,
-			final IContainer base) {
-		File workTree = repository.getWorkTree();
-		IPath location = base.getLocation();
-		if (location == null)
+	private static String computePrefix(final IContainer base) {
+		final RepositoryMapping rm = RepositoryMapping.getMapping(base);
+		if (rm == null)
 			throw new IllegalArgumentException(
-					"Location of container not found: " + base); //$NON-NLS-1$
-		Path workTreePath = new Path(workTree.getAbsolutePath());
-		IPath relativePath = location.makeRelativeTo(workTreePath);
-		return relativePath.toString();
+					"Not in a Git project: " + base);  //$NON-NLS-1$
+		return rm.getRepoRelativePath(base);
 	}
 
 	private final IContainer node;
@@ -86,8 +83,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 	 *            the part of the workspace the iterator will walk over.
 	 */
 	public ContainerTreeIterator(final Repository repository, final IContainer base) {
-		super(computePrefix(repository, base), repository.getConfig().get(
-				WorkingTreeOptions.KEY));
+		super(computePrefix(base), repository.getConfig().get(WorkingTreeOptions.KEY));
 		node = base;
 		init(entries(false));
 		initRootIterator(repository);
@@ -180,12 +176,11 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 		List<Entry> entries = new ArrayList<Entry>(resources.length);
 
-		boolean inheritableResourceFilter = addFilteredEntriesIfFiltersActive(
+		boolean inheritableResourceFilter = addFilteredEntries(
 				hasInheritedResourceFilters, resources, entries);
 
 		for (IResource resource : resources)
-			if (!resource.isLinked())
-				entries.add(new ResourceEntry(resource, inheritableResourceFilter));
+			entries.add(new ResourceEntry(resource, inheritableResourceFilter));
 
 		return entries.toArray(new Entry[entries.size()]);
 	}
@@ -204,7 +199,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 	 * @return true if we now have resource filters that are inherited, false if
 	 *         there are no resource filters which are inherited.
 	 */
-	private boolean addFilteredEntriesIfFiltersActive(
+	private boolean addFilteredEntries(
 			final boolean hasInheritedResourceFilters,
 			final IResource[] memberResources, final List<Entry> entries) {
 		// Inheritable resource filters must be propagated.
@@ -227,51 +222,37 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			}
 
 			Set<File> resourceEntries = new HashSet<File>();
-			for (IResource resource : memberResources)
-				// Make sure linked resources are ignored here.
-				// This is particularly important in the case of a linked
-				// resource which targets a normally filtered/hidden file
-				// within the same location. In such case, ignoring it here
-				// ensures the actual target gets included in the code below.
-				if (!resource.isLinked()) {
-					IPath location = resource.getLocation();
-					if (location != null)
-						resourceEntries.add(location.toFile());
-				}
+			for (IResource resource : memberResources) {
+				IPath location = resource.getLocation();
+				if (location != null)
+					resourceEntries.add(location.toFile());
+			}
 
-			addFilteredEntries(resourceEntries, entries);
+			IPath containerLocation = node.getLocation();
+			if (containerLocation != null) {
+				File folder = containerLocation.toFile();
+				File[] children = folder.listFiles();
+				for (File child : children) {
+					if (resourceEntries.contains(child))
+						continue;
+
+					IPath childLocation = new Path(child.getAbsolutePath());
+					IWorkspaceRoot root = node.getWorkspace().getRoot();
+					IContainer container = root.getContainerForLocation(childLocation);
+					// Check if the container is accessible in the workspace.
+					// This may seem strange, as it was not returned from
+					// members() above, but it's the case for nested projects
+					// that are filtered directly.
+					if (container != null && container.isAccessible())
+						// Resource filters does not cross the non-member line
+						// -> stop inheriting resource filter here (false)
+						entries.add(new ResourceEntry(container, false));
+					else
+						entries.add(new FileEntry(child, FS.DETECTED));
+				}
+			}
 		}
 		return inheritableResourceFilter;
-	}
-
-	private void addFilteredEntries(final Set<File> existingResourceEntries,
-			final List<Entry> addToEntries) {
-		IPath containerLocation = node.getLocation();
-		if (containerLocation == null)
-			return;
-
-		File folder = containerLocation.toFile();
-		File[] children = folder.listFiles();
-		if (children == null)
-			return;
-
-		for (File child : children) {
-			if (existingResourceEntries.contains(child))
-				continue; // ok if linked resources are ignored earlier on
-			IPath childLocation = new Path(child.getAbsolutePath());
-			IWorkspaceRoot root = node.getWorkspace().getRoot();
-			IContainer container = root.getContainerForLocation(childLocation);
-			// Check if the container is accessible in the workspace.
-			// This may seem strange, as it was not returned from
-			// members() above, but it's the case for nested projects
-			// that are filtered directly.
-			if (container != null && container.isAccessible())
-				// Resource filters does not cross the non-member line
-				// -> stop inheriting resource filter here (false)
-				addToEntries.add(new ResourceEntry(container, false));
-			else
-				addToEntries.add(new FileEntry(child, FS.DETECTED));
-		}
 	}
 
 	/**
@@ -290,9 +271,9 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			this.hasInheritedResourceFilters = hasInheritedResourceFilters;
 
 			FileMode mode = null;
+			File file = asFile();
 			try {
-				File file = asFile();
-				if (FS.DETECTED.supportsSymlinks() && file != null
+				if (FS.DETECTED.supportsSymlinks()
 						&& FS.DETECTED.isSymLink(file))
 					mode = FileMode.SYMLINK;
 				else {
@@ -342,11 +323,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			if (length < 0)
 				if (rsrc instanceof IFile || mode == FileMode.SYMLINK) {
 					try {
-						File file = asFile();
-						if (file != null)
-							length = FS.DETECTED.length(asFile());
-						else
-							length = 0;
+						length = FS.DETECTED.length(asFile());
 					} catch (IOException e) {
 						length = 0;
 					}
@@ -394,21 +371,18 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			return rsrc;
 		}
 
-		/**
-		 * @return file of the resource or null
-		 */
 		private File asFile() {
-			return ContainerTreeIterator.asFile(rsrc);
+			return rsrc.getLocation().toFile();
 		}
 	}
 
-	private static File asFile(IResource resource) {
-		final IPath location = resource.getLocation();
+	private File asFile() {
+		final IPath location = node.getLocation();
 		return location != null ? location.toFile() : null;
 	}
 
 	protected byte[] idSubmodule(Entry e) {
-		File nodeFile = asFile(node);
+		File nodeFile = asFile();
 		if (nodeFile != null)
 			return idSubmodule(nodeFile, e);
 		return super.idSubmodule(e);

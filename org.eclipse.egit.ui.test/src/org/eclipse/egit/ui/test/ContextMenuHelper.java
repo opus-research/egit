@@ -150,6 +150,7 @@ public class ContextMenuHelper {
 		return menuItem != null;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static MenuItem getMenuItem(final AbstractSWTBot<?> bot,
 			final String... texts) {
 		MenuItem theItem = null;
@@ -160,7 +161,7 @@ public class ContextMenuHelper {
 			control.notifyListeners(SWT.MenuDetect, new Event());
 			Menu menu = control.getMenu();
 			for (String text : texts) {
-				Matcher<?> matcher = allOf(instanceOf(MenuItem.class),
+				Matcher<Object> matcher = allOf(instanceOf(MenuItem.class),
 						withMnemonic(text));
 				theItem = show(menu, matcher);
 				if (theItem != null)

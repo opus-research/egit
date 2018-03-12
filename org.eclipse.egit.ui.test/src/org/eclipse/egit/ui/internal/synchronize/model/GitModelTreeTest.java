@@ -16,7 +16,7 @@ import static org.mockito.Mockito.mock;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.ui.Activator;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class GitModelTreeTest extends GitModelTestCase {
@@ -36,10 +36,10 @@ public class GitModelTreeTest extends GitModelTestCase {
 		// given
 		GitModelTree left = createModelTree(getTreeLocation());
 		GitModelTree right = createModelTree(getTreeLocation());
-
+		
 		// when
 		boolean actual = left.equals(right);
-
+		
 		// then
 		assertTrue(actual);
 	}
@@ -96,8 +96,7 @@ public class GitModelTreeTest extends GitModelTestCase {
 		assertFalse(actual);
 	}
 
-	@Before
-	public void setupEnvironment() throws Exception {
+	@BeforeClass public static void setupEnvironment() throws Exception {
 		leftRepoFile = createProjectAndCommitToRepository();
 
 		Activator.getDefault().getRepositoryUtil()
