@@ -241,7 +241,7 @@ class CommitGraphTable {
 		table.getTable().addMouseMoveListener(new MouseMoveListener() {
 			public void mouseMove(MouseEvent e) {
 				synchronized (this) {
-					if (hoverShell == null || hoverShell.isDisposed())
+					if (hoverShell == null)
 						return;
 					hoverShell.setVisible(false);
 					hoverShell.dispose();
@@ -253,10 +253,8 @@ class CommitGraphTable {
 		table.getTable().addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if ( allCommits != null)
-					allCommits.dispose();
-				if (renderer != null)
-					renderer.dispose();
+				allCommits.dispose();
+				renderer.dispose();
 			}
 		});
 	}
