@@ -407,10 +407,6 @@ public class StagingView extends ViewPart {
 			protected CommitProposalProcessor getCommitProposalProcessor() {
 				return commitProposalProcessor;
 			}
-			@Override
-			protected IHandlerService getHandlerService() {
-				return (IHandlerService) getSite().getService(IHandlerService.class);
-			}
 		};
 		commitMessageText.setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TEXT_BORDER);
@@ -952,10 +948,11 @@ public class StagingView extends ViewPart {
 		Set<StagingEntry.Action> availableActions = EnumSet.noneOf(StagingEntry.Action.class);
 		for (Iterator it = selection.iterator(); it.hasNext(); ) {
 			StagingEntry stagingEntry = (StagingEntry) it.next();
-			if (availableActions.isEmpty())
+			if (availableActions.isEmpty()) {
 				availableActions.addAll(stagingEntry.getAvailableActions());
-			else
+			} else {
 				availableActions.retainAll(stagingEntry.getAvailableActions());
+			}
 		}
 		return availableActions;
 	}
