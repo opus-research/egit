@@ -64,7 +64,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			if (visible && (cloneDestination.cloneSettingsChanged())) {
 				setCallerRunsCloneOperation(true);
 				try {
-					performClone(currentSearchResult.getGitRepositoryInfo());
+					performClone(new URIish(currentSearchResult.getGitRepositoryInfo().getCloneUri()), getCredentials());
 					importWithDirectoriesPage.getControl().getDisplay().asyncExec(new Runnable() {
 
 						public void run() {
@@ -223,7 +223,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					IWorkingSet[] workingSetArray = projectsImportPage
 							.getSelectedWorkingSets();
 					workingSets.addAll(Arrays.asList(workingSetArray));
-					repository[0] = selectRepoPage.getRepository();
+					repository[0] = getClonedRepository();
 				}
 			});
 			ProjectUtils.createProjects(projectsToCreate, repository[0],
@@ -235,7 +235,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			final File[] repoDir = new File[1];
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 				public void run() {
-					repoDir[0] = selectRepoPage.getRepository().getDirectory();
+					repoDir[0] = getClonedRepository().getDirectory();
 				}
 			});
 			final List<IProject> previousProjects = Arrays
@@ -280,7 +280,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					defaultLocation[0] = createGeneralProjectPage
 							.isDefaultLocation();
 					path[0] = importWithDirectoriesPage.getPath();
-					repoDir[0] = selectRepoPage.getRepository().getDirectory();
+					repoDir[0] =  getClonedRepository().getDirectory();
 				}
 			});
 			try {
