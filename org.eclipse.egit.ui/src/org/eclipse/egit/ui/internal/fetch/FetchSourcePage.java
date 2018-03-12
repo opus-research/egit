@@ -136,7 +136,7 @@ public class FetchSourcePage extends WizardPage {
 	private List<Ref> getRemoteRefs() {
 		if (remoteRefs == null) {
 			URIish uriToCheck;
-			List<Ref> proposals = new ArrayList<>();
+			List<Ref> proposals = new ArrayList<Ref>();
 			uriToCheck = config.getURIs().get(0);
 			final ListRemoteOperation lop = new ListRemoteOperation(repository,
 					uriToCheck, Activator.getDefault().getPreferenceStore()

@@ -14,9 +14,9 @@ import java.util.List;
 
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
@@ -27,6 +27,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -82,11 +83,9 @@ public class FilteredBranchesWidget {
 		branchesViewer.getTree().setLinesVisible(false);
 		branchesViewer.getTree().setHeaderVisible(true);
 
-		TreeColumn nameColumn = createColumn(
-				UIText.BranchSelectionTree_NameColumn, branchesViewer,
-				new DecoratedBranchLabelProvider(gfRepo.getRepository(), prefix));
+		TreeColumn nameColumn = createColumn(UIText.BranchSelectionTree_NameColumn, branchesViewer, createNameLabelProvider());
 		TreeColumn idColumn = createColumn(UIText.BranchSelectionTree_IdColumn, branchesViewer, new ColumnLabelProvider() {
-
+			
 			@Override
 			public String getText(Object element) {
 				if (element instanceof Ref) {
@@ -99,7 +98,7 @@ public class FilteredBranchesWidget {
 				return super.getText(element);
 			}});
 		TreeColumn msgColumn = createColumn(UIText.BranchSelectionTree_MessageColumn, branchesViewer, new ColumnLabelProvider() {
-
+			
 			@Override
 			public String getText(Object element) {
 				if (element instanceof Ref) {
@@ -146,9 +145,29 @@ public class FilteredBranchesWidget {
 		};
 	}
 
+	private ColumnLabelProvider createNameLabelProvider() {
+		return new ColumnLabelProvider() {
+
+			@Override
+			public String getText(Object element) {
+				if (element instanceof Ref) {
+					String name = ((Ref) element).getName();
+					return name.substring(prefix.length());
+				}
+				return super.getText(element);
+			}
+
+			@Override
+			public Image getImage(Object element) {
+				return RepositoryTreeNodeType.REF.getIcon();
+			}
+
+		};
+	}
+
 	@SuppressWarnings("unchecked") // conversion to conform to List<Ref>
 	List<Ref> getSelection() {
-		return ((IStructuredSelection) branchesViewer.getSelection()).toList();
+		return branchesViewer.getStructuredSelection().toList();
 	}
 
 	TreeViewer getBranchesList() {

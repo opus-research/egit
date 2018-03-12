@@ -50,7 +50,7 @@ public class CheckoutCommitHandler extends AbstractHistoryCommandHandler {
 		} else if (nodes.size() == 1) {
 			op = BranchOperationUI.checkout(repo, nodes.get(0).getName());
 		} else {
-			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<>(
+			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<Ref>(
 					HandlerUtil.getActiveShellChecked(event), nodes,
 					UIText.CheckoutHandler_SelectBranchTitle,
 					UIText.CheckoutHandler_SelectBranchMessage, SWT.SINGLE);

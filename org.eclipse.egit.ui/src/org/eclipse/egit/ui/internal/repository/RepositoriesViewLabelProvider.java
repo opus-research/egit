@@ -64,7 +64,7 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 	/**
 	 * A map of regular images to their decorated counterpart.
 	 */
-	private Map<Image, Image> decoratedImages = new HashMap<>();
+	private Map<Image, Image> decoratedImages = new HashMap<Image, Image>();
 
 	private ResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
@@ -288,7 +288,7 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 
 		Ref head;
 		try {
-			head = repository.exactRef(Constants.HEAD);
+			head = repository.getRef(Constants.HEAD);
 		} catch (IOException e) {
 			return string;
 		}

@@ -163,7 +163,7 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 			allRemotes = RemoteConfig.getAllRemoteConfigs(repository
 					.getConfig());
 		} catch (URISyntaxException e) {
-			allRemotes = new ArrayList<>();
+			allRemotes = new ArrayList<RemoteConfig>();
 		}
 
 		RemoteConfig defaultConfig = null;
@@ -596,7 +596,7 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 				Ref source;
 				try {
 					// TODO better checks for wild-cards and such
-					source = repository.findRef(spec.getDestination());
+					source = repository.getRef(spec.getDestination());
 				} catch (IOException e1) {
 					source = null;
 				}
@@ -632,7 +632,7 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 	private void addDefaultOriginWarningIfNeeded(Composite parent) {
 		if (!showBranchInfo)
 			return;
-		List<String> otherBranches = new ArrayList<>();
+		List<String> otherBranches = new ArrayList<String>();
 		String currentBranch;
 		try {
 			currentBranch = repository.getBranch();

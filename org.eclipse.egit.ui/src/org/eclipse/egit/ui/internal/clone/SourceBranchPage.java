@@ -73,7 +73,7 @@ class SourceBranchPage extends WizardPage {
 
 	private Ref head;
 
-	private final List<Ref> availableRefs = new ArrayList<>();
+	private final List<Ref> availableRefs = new ArrayList<Ref>();
 
 	private Label label;
 
