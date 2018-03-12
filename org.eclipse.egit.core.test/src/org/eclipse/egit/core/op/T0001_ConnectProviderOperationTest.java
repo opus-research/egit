@@ -40,7 +40,8 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 				project.getProject());
 		operation.run(null);
 
-		assertFalse(RepositoryProvider.isShared(project.getProject()));
+		// We are shared because we declared as shared
+		assertTrue(RepositoryProvider.isShared(project.getProject()));
 		assertTrue(!gitDir.exists());
 	}
 
