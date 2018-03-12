@@ -14,20 +14,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.StringTokenizer;
 
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.preferences.ConfigurationEditorComponent;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.TitleAreaDialog;
-import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Repository;
@@ -35,27 +31,21 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
-import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Menu;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.ToolBar;
-import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.preferences.ScopedPreferenceStore;
 import org.eclipse.ui.views.properties.IPropertyDescriptor;
 import org.eclipse.ui.views.properties.IPropertySource;
+import org.eclipse.ui.views.properties.IPropertySource2;
 import org.eclipse.ui.views.properties.PropertyDescriptor;
 import org.eclipse.ui.views.properties.PropertySheetPage;
+import org.eclipse.ui.views.properties.TextPropertyDescriptor;
 
 /**
- * Properties for repository and user configuration (read-only).
- * <p>
- * Depending on which mode is selected, either the user configuration, the
- * repository configuration, or the effective configuration is shown.
+ * Properties for repository configuration
+ *
  */
-public class RepositoryPropertySource implements IPropertySource {
+public class RepositoryPropertySource implements IPropertySource,
+		IPropertySource2 {
 
 	private static final String USER_ID_PREFIX = "user"; //$NON-NLS-1$
 
@@ -63,201 +53,175 @@ public class RepositoryPropertySource implements IPropertySource {
 
 	private static final String EFFECTIVE_ID_PREFIX = "effe"; //$NON-NLS-1$
 
-	private static final String CHANGEMODEACTIONID = "ChangeMode"; //$NON-NLS-1$
+	private static final String PREFERENCE_KEYS = "RepositoryPropertySource.ConfiguredKeys"; //$NON-NLS-1$
 
-	private static final String SINGLEVALUEACTIONID = "SingleValueToggle"; //$NON-NLS-1$
+	private Action configureKeyAction;
+
+	private Action modeToggleAction;
+
+	private Action restoreKeyAction;
 
 	private final PropertySheetPage myPage;
 
-	private final StoredConfig userHomeConfig;
+	private final FileBasedConfig userHomeConfig;
 
 	private final StoredConfig repositoryConfig;
 
 	private final StoredConfig effectiveConfig;
 
-	private ActionContributionItem changeModeAction;
-
-	private ActionContributionItem editAction;
-
-	private ActionContributionItem singleValueToggleAction;
-
 	/**
-	 * @param repository
+	 * @param rep
 	 *            the repository
 	 * @param page
-	 *            the page showing the properties
 	 */
-	public RepositoryPropertySource(Repository repository,
-			PropertySheetPage page) {
+	public RepositoryPropertySource(Repository rep, PropertySheetPage page) {
+
 		myPage = page;
 
-		effectiveConfig = repository.getConfig();
+		makeActions();
+		addActions();
+
+		effectiveConfig = rep.getConfig();
 		userHomeConfig = SystemReader.getInstance().openUserConfig(FS.DETECTED);
 
 		if (effectiveConfig instanceof FileBasedConfig) {
 			File configFile = ((FileBasedConfig) effectiveConfig).getFile();
-			repositoryConfig = new FileBasedConfig(configFile, repository
-					.getFS());
+			repositoryConfig = new FileBasedConfig(configFile, rep.getFS());
 		} else {
 			repositoryConfig = effectiveConfig;
 		}
 
-		synchronized (myPage) {
-			// check if the actions are already there, if not, create them
-			IActionBars bars = myPage.getSite().getActionBars();
+		try {
+			effectiveConfig.load();
+			userHomeConfig.load();
+			repositoryConfig.load();
+		} catch (IOException e) {
+			showExceptionMessage(e);
+		} catch (ConfigInvalidException e) {
+			showExceptionMessage(e);
+		}
+	}
 
-			changeModeAction = (ActionContributionItem) bars
-					.getToolBarManager().find(CHANGEMODEACTIONID);
-			singleValueToggleAction = (ActionContributionItem) bars
-					.getToolBarManager().find(SINGLEVALUEACTIONID);
+	private void makeActions() {
 
-			if (changeModeAction != null) {
-				return;
+		configureKeyAction = new Action(
+				UIText.RepositoryPropertySource_ConfigureKeysAction) {
+
+			@Override
+			public String getId() {
+				return "ConfigKeyActionId"; //$NON-NLS-1$
 			}
 
-			changeModeAction = new ActionContributionItem(new Action(
-					DisplayMode.REPO.getText(), IAction.AS_DROP_DOWN_MENU) {
-				@Override
-				public String getId() {
-					return CHANGEMODEACTIONID;
-				}
-
-				@Override
-				public void run() {
-					MenuManager mgr = new MenuManager();
-					ToolItem item = (ToolItem) changeModeAction.getWidget();
-					ToolBar control = item.getParent();
-					final Menu ctxMenu = mgr.createContextMenu(control);
-
-					for (final DisplayMode aMode : DisplayMode.values()) {
-						mgr.add(new Action(aMode.getText()) {
-							@Override
-							public void run() {
-								changeModeAction.getAction().setText(
-										aMode.getText());
-								editAction.getAction().setEnabled(
-										aMode != DisplayMode.EFFECTIVE);
-								myPage.refresh();
-							}
-
-							@Override
-							public boolean isEnabled() {
-								return aMode != getCurrentMode();
-							}
-
-							@Override
-							public boolean isChecked() {
-								return aMode == getCurrentMode();
-							}
-
-							@Override
-							public int getStyle() {
-								return IAction.AS_CHECK_BOX;
-							}
-						});
+			@Override
+			public void run() {
+				ConfigureKeysDialog dlg = new ConfigureKeysDialog(myPage
+						.getSite().getShell(), getConfiguredKeys());
+				if (dlg.open() == Window.OK)
+					try {
+						setConfiguredKeys(dlg.getActiveKeys());
+						myPage.refresh();
+					} catch (IOException e) {
+						showExceptionMessage(e);
 					}
 
-					ctxMenu.setVisible(true);
-				}
+			}
 
-				@Override
-				public String getToolTipText() {
-					return UIText.RepositoryPropertySource_SelectModeTooltip;
-				}
+		};
 
-				@Override
-				public int getStyle() {
-					return IAction.AS_DROP_DOWN_MENU;
-				}
+		modeToggleAction = new Action(
+				UIText.RepositoryPropertySource_EffectiveConfigurationAction) {
+			// TODO icon
+			@Override
+			public String getId() {
+				return "ViewModeToggle"; //$NON-NLS-1$
+			}
 
-			});
+			@Override
+			public void run() {
+				myPage.refresh();
+			}
 
-			editAction = new ActionContributionItem(new Action(
-					UIText.RepositoryPropertySource_EditConfigButton,
-					UIIcons.EDITCONFIG) {
-				@Override
-				public String getId() {
-					return "Edit"; //$NON-NLS-1$
-				}
+			@Override
+			public int getStyle() {
+				return IAction.AS_CHECK_BOX;
+			}
 
-				@Override
-				public void run() {
+		};
 
-					final StoredConfig config;
+		restoreKeyAction = new Action(
+				UIText.RepositoryPropertySource_RestoreStandardAction) {
 
-					switch (getCurrentMode()) {
-					case EFFECTIVE:
-						return;
-					case USER:
-						config = userHomeConfig;
-						break;
-					case REPO:
-						config = repositoryConfig;
-						break;
-					default:
-						return;
-					}
+			@Override
+			public String getId() {
+				return "RestoreKeys"; //$NON-NLS-1$
+			}
 
-					new EditDialog(myPage.getSite().getShell(),
-							(FileBasedConfig) config, getCurrentMode()
-									.getText()).open();
+			@Override
+			public void run() {
+				try {
+					setConfiguredKeys(new ArrayList<String>());
 					myPage.refresh();
+				} catch (IOException e) {
+					showExceptionMessage(e);
 				}
+			}
 
-				@Override
-				public int getStyle() {
-					return IAction.AS_PUSH_BUTTON;
-				}
-			});
+		};
+	}
 
-			singleValueToggleAction = new ActionContributionItem(new Action(
-					UIText.RepositoryPropertySource_SingleValueButton) {
-				@Override
-				public String getId() {
-					return SINGLEVALUEACTIONID;
-				}
+	private void addActions() {
 
-				@Override
-				public void run() {
-					myPage.refresh();
-				}
+		boolean refreshToolbar = false;
+		IActionBars bars = myPage.getSite().getActionBars();
 
-				@Override
-				public int getStyle() {
-					return IAction.AS_CHECK_BOX;
-				}
+		if (bars.getToolBarManager().find(modeToggleAction.getId()) == null) {
+			bars.getToolBarManager().add(modeToggleAction);
+			refreshToolbar = true;
+		}
 
-				@Override
-				public String getToolTipText() {
-					return UIText.RepositoryPropertySource_SuppressMultipleValueTooltip;
-				}
-			});
+		if (bars.getMenuManager().find(configureKeyAction.getId()) == null)
+			bars.getMenuManager().add(configureKeyAction);
 
-			bars.getToolBarManager().add(new Separator());
-			bars.getToolBarManager().add(changeModeAction);
-			bars.getToolBarManager().add(singleValueToggleAction);
-			bars.getToolBarManager().add(editAction);
+		if (bars.getMenuManager().find(restoreKeyAction.getId()) == null)
+			bars.getMenuManager().add(restoreKeyAction);
 
+		if (refreshToolbar)
 			bars.getToolBarManager().update(false);
-		}
 	}
 
-	private DisplayMode getCurrentMode() {
-		String actionText = changeModeAction.getAction().getText();
-		for (DisplayMode aMode : DisplayMode.values()) {
-			if (aMode.getText() == actionText)
-				return aMode;
+	private List<String> getConfiguredKeys() {
+
+		List<String> result = new ArrayList<String>();
+		ScopedPreferenceStore store = new ScopedPreferenceStore(
+				new InstanceScope(), Activator.getPluginId());
+		String keys = store.getString(PREFERENCE_KEYS);
+		if (keys.length() > 0) {
+			StringTokenizer tok = new StringTokenizer(keys, " "); //$NON-NLS-1$
+			while (tok.hasMoreTokens()) {
+				result.add(tok.nextToken());
+			}
+		} else {
+			result.addAll(ConfigureKeysDialog.standardKeys);
 		}
-		return null;
+		return result;
 	}
 
-	private boolean getSingleValueMode() {
-		if (singleValueToggleAction != null)
-			return singleValueToggleAction.getAction().isChecked();
-		return false;
+	private void setConfiguredKeys(List<String> keys) throws IOException {
+
+		StringBuilder sb = new StringBuilder();
+		for (String key : keys) {
+			sb.append(key);
+			sb.append(" "); //$NON-NLS-1$
+		}
+		ScopedPreferenceStore store = new ScopedPreferenceStore(
+				new InstanceScope(), Activator.getPluginId());
+		store.putValue(PREFERENCE_KEYS, sb.toString());
+		store.save();
+
 	}
 
 	private Object getValueFromConfig(Config config, String keyString) {
+
 		StringTokenizer tok = new StringTokenizer(keyString, "."); //$NON-NLS-1$
 
 		String section;
@@ -274,14 +238,11 @@ public class RepositoryPropertySource implements IPropertySource {
 			subsection = tok.nextToken();
 			name = tok.nextToken();
 		} else {
-			return ""; //$NON-NLS-1$
+			// TODO exception?
+			return null;
 		}
 
-		if (getSingleValueMode())
-			valueList = new String[] { config.getString(section, subsection,
-					name) };
-		else
-			valueList = config.getStringList(section, subsection, name);
+		valueList = config.getStringList(section, subsection, name);
 
 		if (valueList == null || valueList.length == 0)
 			return null;
@@ -291,13 +252,14 @@ public class RepositoryPropertySource implements IPropertySource {
 		}
 
 		StringBuilder sb = new StringBuilder();
-		for (String value : valueList) {
+		for (String value: valueList){
 			sb.append('[');
 			sb.append(value);
 			sb.append(']');
 		}
 
 		return sb.toString();
+
 	}
 
 	public Object getEditableValue() {
@@ -305,6 +267,9 @@ public class RepositoryPropertySource implements IPropertySource {
 	}
 
 	public IPropertyDescriptor[] getPropertyDescriptors() {
+
+		// initFromConfig();
+
 		try {
 			userHomeConfig.load();
 			repositoryConfig.load();
@@ -317,67 +282,101 @@ public class RepositoryPropertySource implements IPropertySource {
 
 		List<IPropertyDescriptor> resultList = new ArrayList<IPropertyDescriptor>();
 
-		StoredConfig config;
-		String category;
-		String prefix;
-		switch (getCurrentMode()) {
-		case EFFECTIVE:
-			prefix = EFFECTIVE_ID_PREFIX;
-			category = UIText.RepositoryPropertySource_EffectiveConfigurationCategory;
-			config = effectiveConfig;
-			break;
-		case REPO: {
-			prefix = REPO_ID_PREFIX;
-			String location = ""; //$NON-NLS-1$
-			if (repositoryConfig instanceof FileBasedConfig) {
-				location = ((FileBasedConfig) repositoryConfig).getFile()
-						.getAbsolutePath();
-			}
-			category = NLS
-					.bind(
-							UIText.RepositoryPropertySource_RepositoryConfigurationCategory,
-							location);
-			config = repositoryConfig;
-			break;
-		}
-		case USER: {
-			prefix = USER_ID_PREFIX;
-			String location = ""; //$NON-NLS-1$
-			if (userHomeConfig instanceof FileBasedConfig) {
-				location = ((FileBasedConfig) userHomeConfig).getFile()
-						.getAbsolutePath();
-			}
-			category = NLS
-					.bind(
-							UIText.RepositoryPropertySource_GlobalConfigurationCategory,
-							location);
+		List<String> configuredKeys = getConfiguredKeys();
 
-			config = userHomeConfig;
-			break;
+		boolean effectiveMode = false;
+
+		ActionContributionItem item = (ActionContributionItem) myPage.getSite()
+				.getActionBars().getToolBarManager().find(
+						modeToggleAction.getId());
+		if (item != null) {
+			effectiveMode = ((Action) item.getAction()).isChecked();
 		}
-		default:
-			return new IPropertyDescriptor[0];
-		}
-		for (String key : config.getSections()) {
-			for (String sectionItem : config.getNames(key)) {
-				String sectionId = key + "." + sectionItem; //$NON-NLS-1$
-				PropertyDescriptor desc = new PropertyDescriptor(prefix
-						+ sectionId, sectionId);
-				desc.setCategory(category);
-				resultList.add(desc);
+
+		if (effectiveMode) {
+			for (String key : configuredKeys) {
+
+				for (String sub : getSubSections(effectiveConfig, key)) {
+					PropertyDescriptor desc = new PropertyDescriptor(
+							EFFECTIVE_ID_PREFIX + sub, sub);
+
+					desc
+							.setCategory(UIText.RepositoryPropertySource_EffectiveConfigurationCategory);
+					resultList.add(desc);
+				}
+
 			}
-			for (String sub : config.getSubsections(key)) {
-				for (String sectionItem : config.getNames(key, sub)) {
-					String sectionId = key + "." + sub + "." + sectionItem; //$NON-NLS-1$ //$NON-NLS-2$
-					PropertyDescriptor desc = new PropertyDescriptor(prefix
-							+ sectionId, sectionId);
-					desc.setCategory(category);
+		} else {
+
+			String categoryString = UIText.RepositoryPropertySource_GlobalConfigurationCategory
+					+ userHomeConfig.getFile().getAbsolutePath();
+			for (String key : configuredKeys) {
+
+				// no remote configuration globally....
+				if (key.startsWith(RepositoriesView.REMOTE + ".")) //$NON-NLS-1$
+					continue;
+
+				for (String sub : getSubSections(effectiveConfig, key)) {
+					TextPropertyDescriptor desc = new TextPropertyDescriptor(
+							USER_ID_PREFIX + sub, sub);
+					desc.setCategory(categoryString);
+					resultList.add(desc);
+				}
+			}
+
+			categoryString = UIText.RepositoryPropertySource_RepositoryConfigurationCategory;
+			if (repositoryConfig instanceof FileBasedConfig) {
+				categoryString += ((FileBasedConfig) repositoryConfig)
+						.getFile().getAbsolutePath();
+			}
+
+			boolean editable = true;
+
+			for (String key : configuredKeys) {
+
+				// remote stuff is not configurable
+				editable = !key.startsWith("remote"); //$NON-NLS-1$
+
+				for (String sub : getSubSections(effectiveConfig, key)) {
+					PropertyDescriptor desc;
+					if (editable)
+						desc = new TextPropertyDescriptor(REPO_ID_PREFIX + sub,
+								sub);
+					else
+						desc = new PropertyDescriptor(REPO_ID_PREFIX + sub, sub);
+					desc.setCategory(categoryString);
 					resultList.add(desc);
 				}
 			}
 		}
 
 		return resultList.toArray(new IPropertyDescriptor[0]);
+	}
+
+	private List<String> getSubSections(Config configuration, String key) {
+
+		List<String> result = new ArrayList<String>();
+
+		if (key.indexOf(".?.") < 0) { //$NON-NLS-1$
+			result.add(key);
+			return result;
+		}
+
+		StringTokenizer stok = new StringTokenizer(key, "."); //$NON-NLS-1$
+		if (stok.countTokens() == 3) {
+			String section = stok.nextToken();
+			String subsection = stok.nextToken();
+			String name = stok.nextToken();
+			if (subsection.equals("?")) { //$NON-NLS-1$
+				Set<String> subs = configuration.getSubsections(section);
+				for (String sub : subs)
+					result.add(section + "." + sub + "." + name); //$NON-NLS-1$ //$NON-NLS-2$
+				return result;
+			} else {
+				result.add(key);
+			}
+		}
+		return result;
 	}
 
 	public Object getPropertyValue(Object id) {
@@ -398,95 +397,75 @@ public class RepositoryPropertySource implements IPropertySource {
 	}
 
 	public boolean isPropertySet(Object id) {
-		return false;
+		String actId = ((String) id);
+		Object value = null;
+		if (actId.startsWith(USER_ID_PREFIX)) {
+			value = getValueFromConfig(userHomeConfig, actId.substring(4));
+		} else if (actId.startsWith(REPO_ID_PREFIX)) {
+			value = getValueFromConfig(repositoryConfig, actId.substring(4));
+		} else if (actId.startsWith(EFFECTIVE_ID_PREFIX)) {
+			value = getValueFromConfig(effectiveConfig, actId.substring(4));
+		}
+		return value != null;
 	}
 
 	public void resetPropertyValue(Object id) {
-		// no editing here
+		setPropertyValue(id, null);
 	}
 
 	public void setPropertyValue(Object id, Object value) {
-		// no editing here
+
+		String actId = (String) id;
+		try {
+			if (actId.startsWith(USER_ID_PREFIX)) {
+				setConfigValue(userHomeConfig, actId.substring(4),
+						(String) value);
+			}
+			if (actId.startsWith(REPO_ID_PREFIX)) {
+				setConfigValue(repositoryConfig, actId.substring(4),
+						(String) value);
+			}
+		} catch (IOException e) {
+			showExceptionMessage(e);
+		}
+
+	}
+
+	public boolean isPropertyResettable(Object id) {
+		return isPropertySet(id);
+	}
+
+	private void setConfigValue(StoredConfig configuration, String key,
+			String value) throws IOException {
+		// we un-set empty strings, as the config API does not allow to
+		// distinguish this case
+		// (null is returned, even if the value is set to "", but in the
+		// effective configuration
+		// this results in shadowing of the base configured values
+		StringTokenizer tok = new StringTokenizer(key, "."); //$NON-NLS-1$
+		if (tok.countTokens() == 2) {
+			if (value == null || value.length() == 0) {
+				configuration.unset(tok.nextToken(), null, tok.nextToken());
+			} else {
+				configuration.setString(tok.nextToken(), null, tok.nextToken(),
+						value);
+			}
+		}
+		if (tok.countTokens() == 3) {
+			if (value == null || value.length() == 0) {
+				configuration.unset(tok.nextToken(), tok.nextToken(), tok
+						.nextToken());
+			} else {
+				configuration.setString(tok.nextToken(), tok.nextToken(), tok
+						.nextToken(), value);
+			}
+
+		}
+		configuration.save();
 	}
 
 	private void showExceptionMessage(Exception e) {
-		Activator.handleError(UIText.RepositoryPropertySource_ErrorHeader, e,
-				true);
+		org.eclipse.egit.ui.Activator.handleError(UIText.RepositoryPropertySource_ErrorHeader, e, true);
 	}
 
-	private enum DisplayMode {
-		/* The effective configuration as obtained from the repository */
-		EFFECTIVE(UIText.RepositoryPropertySource_EffectiveConfigurationAction),
-		/* The user specific configuration */
-		USER(UIText.RepositoryPropertySource_GlobalConfigurationMenu),
-		/* The repository specific configuration */
-		REPO(UIText.RepositoryPropertySource_RepositoryConfigurationButton);
-
-		/**
-		 * @return the human-readable String for this mode
-		 */
-		String getText() {
-			return this.text;
-		}
-
-		private final String text;
-
-		private DisplayMode(String text) {
-			this.text = text;
-		}
-	}
-
-	/**
-	 * Wraps the editor component into a dialog
-	 */
-	private final static class EditDialog extends TitleAreaDialog {
-		private final FileBasedConfig myConfig;
-
-		private final String myTitle;
-
-		public EditDialog(Shell shell, FileBasedConfig config, String title) {
-			super(shell);
-			myConfig = config;
-			setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
-			myTitle = title;
-		}
-
-		@Override
-		protected Control createDialogArea(Composite parent) {
-			Composite main = (Composite) super.createDialogArea(parent);
-			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).grab(true,
-					true).applyTo(main);
-			Control result = new ConfigurationEditorComponent(main, myConfig,
-					true) {
-				@Override
-				protected void setErrorMessage(String message) {
-					EditDialog.this.setErrorMessage(message);
-				}
-			}.createContents();
-			applyDialogFont(main);
-			return result;
-		}
-
-		@Override
-		protected void configureShell(Shell newShell) {
-			super.configureShell(newShell);
-			newShell
-					.setText(UIText.RepositoryPropertySource_EditConfigurationTitle);
-			newShell.setSize(700, 600);
-		}
-
-		@Override
-		public void create() {
-			super.create();
-			setTitle(myTitle);
-			setMessage(UIText.RepositoryPropertySource_EditorMessage);
-		}
-
-		@Override
-		protected void createButtonsForButtonBar(Composite parent) {
-			// OK button only
-			createButton(parent, IDialogConstants.OK_ID,
-					IDialogConstants.OK_LABEL, true);
-		}
-	}
 }
