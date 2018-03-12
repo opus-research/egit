@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (c) 2013 Robin Stocker <robin@nibor.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -68,8 +68,6 @@ public class PushBranchPage extends WizardPage {
 
 	private UpstreamConfigComponent upstreamConfigComponent;
 
-	private boolean forceUpdateSelected = false;
-
 	/** Only set if user selected "New Remote" */
 	private AddRemotePage addRemotePage;
 
@@ -120,10 +118,6 @@ public class PushBranchPage extends WizardPage {
 
 	boolean isRebaseSelected() {
 		return upstreamConfig == UpstreamConfig.REBASE;
-	}
-
-	boolean isForceUpdateSelected() {
-		return forceUpdateSelected;
 	}
 
 	public void createControl(Composite parent) {
@@ -195,17 +189,6 @@ public class PushBranchPage extends WizardPage {
 					}
 				});
 
-		final Button forceUpdateButton = new Button(inputPanel, SWT.CHECK);
-		forceUpdateButton.setText(UIText.PushBranchPage_ForceUpdateButton);
-		forceUpdateButton.setSelection(false);
-		forceUpdateButton.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, false).span(3, 1).create());
-		forceUpdateButton.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				forceUpdateSelected = forceUpdateButton.getSelection();
-			}
-		});
-
 		setDefaultUpstreamConfig();
 
 		setControl(main);
@@ -238,22 +221,12 @@ public class PushBranchPage extends WizardPage {
 	}
 
 	private void setDefaultUpstreamConfig() {
-		String branchName = Repository.shortenRefName(ref.getName());
-		boolean alreadyConfigured = repository.getConfig()
-				.getSubsections(ConfigConstants.CONFIG_BRANCH_SECTION)
-				.contains(branchName);
-		UpstreamConfig config;
-		if (alreadyConfigured) {
-			boolean rebase = repository.getConfig().getBoolean(
-					ConfigConstants.CONFIG_BRANCH_SECTION, branchName,
-					ConfigConstants.CONFIG_KEY_REBASE, false);
-			config = rebase ? UpstreamConfig.REBASE : UpstreamConfig.MERGE;
-		} else {
-			config = UpstreamConfig.getDefault(repository, Constants.R_REMOTES
-					+ Constants.DEFAULT_REMOTE_NAME + "/" + branchName); //$NON-NLS-1$
-		}
-		upstreamConfigComponent.setUpstreamConfig(config);
-		upstreamConfig = config;
+		UpstreamConfig defaultUpstreamConfig = UpstreamConfig.getDefault(
+				repository,
+				Constants.R_REMOTES + Constants.DEFAULT_REMOTE_NAME
+						+ "/" + Repository.shortenRefName(ref.getName())); //$NON-NLS-1$
+		upstreamConfigComponent.setUpstreamConfig(defaultUpstreamConfig);
+		upstreamConfig = defaultUpstreamConfig;
 	}
 
 	private void showNewRemoteDialog() {
