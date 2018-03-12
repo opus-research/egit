@@ -28,10 +28,7 @@ import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
 public class GitModelCommit extends GitModelObjectContainer implements
 		ISynchronizationCompareInput {
 
-	/**
-	 * Common ancestor commit for wrapped commit object
-	 */
-	protected final RevCommit ancestorCommit;
+	private RevCommit ancestorCommit;
 
 	/**
 	 * @param parent
@@ -59,18 +56,14 @@ public class GitModelCommit extends GitModelObjectContainer implements
 	 * @param commit
 	 *            instance of commit that will be associated with this model
 	 *            object
-	 * @param ancestorCommit
-	 *            common ancestor commit for object that is wrapped
 	 * @param direction
 	 *            use {@link Differencer#LEFT} and {@link Differencer#RIGHT} to
 	 *            determinate commit direction (is it incoming or outgoing)
 	 * @throws IOException
 	 */
 	protected GitModelCommit(GitModelObject parent, RevCommit commit,
-			RevCommit ancestorCommit, int direction) throws IOException {
+			int direction) throws IOException {
 		super(parent, commit, direction);
-
-		this.ancestorCommit = ancestorCommit;
 	}
 
 	@Override
@@ -102,7 +95,11 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	@Override
 	public int hashCode() {
-		return baseCommit.hashCode();
+		int result = getLocation().hashCode() ^ baseCommit.hashCode();
+		if (remoteCommit != null)
+			result ^= remoteCommit.hashCode();
+
+		return result;
 	}
 
 	@Override
@@ -120,8 +117,8 @@ public class GitModelCommit extends GitModelObjectContainer implements
 			int ancestorNth = tw.addTree(ancestorCommit.getTree());
 
 			while (tw.next()) {
-				GitModelObject obj = getModelObject(tw, ancestorCommit, ancestorNth,
-						baseNth, actualNth);
+				GitModelObject obj = getModelObject(tw, ancestorNth, baseNth,
+						actualNth);
 				if (obj != null)
 					result.add(obj);
 			}
@@ -131,6 +128,14 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 		return result.toArray(new GitModelObject[result.size()]);
 	}
+
+	/**
+	 * @return ancestor commit for this model node
+	 */
+	protected RevCommit getAncestorCommit() {
+		return ancestorCommit;
+	}
+
 
 	private RevCommit calculateAncestor(RevCommit actual) throws IOException {
 		RevWalk rw = new RevWalk(getRepository());
