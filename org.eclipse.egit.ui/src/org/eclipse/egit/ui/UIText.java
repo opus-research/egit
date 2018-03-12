@@ -22,12 +22,6 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_filterText;
 
 	/** */
-	public static String AddToIndexAction_addingFilesFailed;
-
-	/** */
-	public static String AddToIndexAction_indexesWithUnmergedEntries;
-
-	/** */
 	public static String WizardProjectsImportPage_ImportProjectsTitle;
 
 	/** */
