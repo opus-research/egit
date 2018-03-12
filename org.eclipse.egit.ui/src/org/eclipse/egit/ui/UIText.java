@@ -1129,6 +1129,9 @@ public class UIText extends NLS {
 	public static String SourceBranchPage_cannotCreateTemp;
 
 	/** */
+	public static String SourceBranchPage_CompositeTransportErrorMessage;
+
+	/** */
 	public static String CloneDestinationPage_title;
 
 	/** */
@@ -1616,12 +1619,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String HistoryPage_findbar_notFound;
-
-	/** */
-	public static String HistoryPreferencePage_MaxBranchLength;
-
-	/** */
-	public static String HistoryPreferencePage_MaxTagLength;
 
 	/** */
 	public static String PullOperationUI_ConnectionProblem;
@@ -2567,6 +2564,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialogPreferencePage_formatting;
+
+	/** */
+	public static String CommitDialogPreferencePage_includeUntrackedFiles;
+
+	/** */
+	public static String CommitDialogPreferencePage_includeUntrackedFilesTooltip;
 
 	/** */
 	public static String CommitDialogPreferencePage_signedOffBy;
