@@ -17,7 +17,6 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
@@ -59,14 +58,11 @@ public class PasteCommand extends
 			}
 
 			if (!RepositoryCache.FileKey.isGitRepository(file, FS.DETECTED)) {
-				// try if .git folder is one level below
-				file = new File(file, Constants.DOT_GIT_EXT);
-				if (!RepositoryCache.FileKey.isGitRepository(file, FS.DETECTED)) {
-					errorMessage = NLS
-							.bind(UIText.RepositoriesView_ClipboardContentNoGitRepoMessage,
-									content);
-					return null;
-				}
+				errorMessage = NLS
+						.bind(
+								UIText.RepositoriesView_ClipboardContentNoGitRepoMessage,
+								content);
+				return null;
 			}
 
 			if (util.addConfiguredRepository(file)) {
