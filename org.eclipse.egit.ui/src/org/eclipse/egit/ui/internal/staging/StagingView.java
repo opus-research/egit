@@ -703,8 +703,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		unstagedViewer
-				.setComparator(new UnstagedComparator(getSortCheckState()));
+		unstagedViewer.setComparator(
+				new StagingEntryComparator(getSortCheckState(), getPreferenceStore()
+						.getBoolean(UIPreferences.STAGING_VIEW_FILENAME_MODE)));
 		enableAutoExpand(unstagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
 
@@ -1009,6 +1010,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
+		stagedViewer.setComparator(
+				new StagingEntryComparator(getSortCheckState(), getPreferenceStore()
+						.getBoolean(UIPreferences.STAGING_VIEW_FILENAME_MODE)));
 		enableAutoExpand(stagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(stagedViewer);
 
@@ -1375,14 +1379,17 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 			@Override
 			public void run() {
-				UnstagedComparator comparator = (UnstagedComparator) unstagedViewer
+				StagingEntryComparator comparator = (StagingEntryComparator) unstagedViewer
 						.getComparator();
-				comparator.setAlphabeticSort(isChecked());
+				comparator.setAlphabeticSort(!isChecked());
+				comparator = (StagingEntryComparator) stagedViewer.getComparator();
+				comparator.setAlphabeticSort(!isChecked());
 				unstagedViewer.refresh();
+				stagedViewer.refresh();
 			}
 		};
 
-		sortAction.setImageDescriptor(UIIcons.ALPHABETICALLY_SORT);
+		sortAction.setImageDescriptor(UIIcons.STATE_SORT);
 		sortAction.setId(SORT_ITEM_TOOLBAR_ID);
 		sortAction.setChecked(getSortCheckState());
 
@@ -1679,9 +1686,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 				getLabelProvider(unstagedViewer).setFileNameMode(enable);
 				getContentProvider(stagedViewer).setFileNameMode(enable);
 				getContentProvider(unstagedViewer).setFileNameMode(enable);
-				refreshViewersPreservingExpandedElements();
+				StagingEntryComparator comparator = (StagingEntryComparator) unstagedViewer
+						.getComparator();
+				comparator.setFileNamesFirst(enable);
+				comparator = (StagingEntryComparator) stagedViewer.getComparator();
+				comparator.setFileNamesFirst(enable);
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
+				refreshViewersPreservingExpandedElements();
 			}
 		};
 		fileNameModeAction.setChecked(getPreferenceStore().getBoolean(
@@ -3312,19 +3324,31 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	/**
-	 * This comparator sorts the {@link StagingEntry}s in a grouped or in a
-	 * alphabetically order. The grouped order is also in a alphabetically order
-	 * sorted.
+	 * This comparator sorts the {@link StagingEntry}s alphabetically or groups
+	 * them by state. If grouped by state the entries in the same group are also
+	 * ordered alphabetically.
 	 */
-	private static class UnstagedComparator extends ViewerComparator {
+	private static class StagingEntryComparator extends ViewerComparator {
 
 		private boolean alphabeticSort;
 
 		private Comparator<String> comparator;
 
-		private UnstagedComparator(boolean alphabeticSort) {
+		private boolean fileNamesFirst;
+
+		private StagingEntryComparator(boolean alphabeticSort,
+				boolean fileNamesFirst) {
 			this.alphabeticSort = alphabeticSort;
+			this.setFileNamesFirst(fileNamesFirst);
 			comparator = CommonUtils.STRING_ASCENDING_COMPARATOR;
+		}
+
+		public boolean isFileNamesFirst() {
+			return fileNamesFirst;
+		}
+
+		public void setFileNamesFirst(boolean fileNamesFirst) {
+			this.fileNamesFirst = fileNamesFirst;
 		}
 
 		private void setAlphabeticSort(boolean sort) {
@@ -3355,19 +3379,23 @@ public class StagingView extends ViewPart implements IShowInSource {
 				return cat1 - cat2;
 			}
 
-			String name1 = getStagingEntryName(e1);
-			String name2 = getStagingEntryName(e2);
+			String name1 = getStagingEntryText(e1);
+			String name2 = getStagingEntryText(e2);
 
 			return comparator.compare(name1, name2);
 		}
 
-		private String getStagingEntryName(Object element) {
-			String name = ""; //$NON-NLS-1$
+		private String getStagingEntryText(Object element) {
+			String text = ""; //$NON-NLS-1$
 			StagingEntry stagingEntry = getStagingEntry(element);
 			if (stagingEntry != null) {
-				name = stagingEntry.getName();
+				if (isFileNamesFirst()) {
+					text = stagingEntry.getName();
+				} else {
+					text = stagingEntry.getPath();
+				}
 			}
-			return name;
+			return text;
 		}
 
 		@Nullable
@@ -3387,15 +3415,30 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		private int getState(StagingEntry entry) {
 			switch (entry.getState()) {
-			case UNTRACKED:
+			case CONFLICTING:
 				return 1;
-			case MISSING:
-				return 2;
 			case MODIFIED:
+				return 2;
+			case MODIFIED_AND_ADDED:
 				return 3;
+			case MODIFIED_AND_CHANGED:
+				return 4;
+			case ADDED:
+				return 5;
+			case CHANGED:
+				return 6;
+			case MISSING:
+				return 7;
+			case MISSING_AND_CHANGED:
+				return 8;
+			case REMOVED:
+				return 9;
+			case UNTRACKED:
+				return 10;
 			default:
 				return super.category(entry);
 			}
 		}
+
 	}
 }
