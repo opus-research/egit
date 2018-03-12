@@ -16,9 +16,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
@@ -265,21 +265,15 @@ public class ProjectUtil {
 	 */
 	public static IProject[] getProjectsContaining(Repository repository,
 			Collection<String> fileList) throws CoreException {
-		Set<IProject> result = new HashSet<IProject>();
-		Set<File> handledPaths = new TreeSet<File>();
+		Set<IProject> result = new LinkedHashSet<IProject>();
+		File workTree = repository.getWorkTree();
 
 		for (String member : fileList) {
-			File file = new File(repository.getWorkTree(), member);
-
-			if (handledPaths.contains(file))
-				continue;
+			File file = new File(workTree, member);
 
 			IContainer container = findContainerFast(file);
-			if (container != null && container instanceof IProject)
+			if (container instanceof IProject)
 				result.add((IProject) container);
-
-			// remember to avoid re-calculation
-			handledPaths.add(file);
 		}
 
 		return result.toArray(new IProject[result.size()]);
