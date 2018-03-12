@@ -143,9 +143,7 @@ class RepositoryTreeNode<T> {
 		switch (myType) {
 		case REPO:
 		case PROJECTS:
-		case REMOTES:
 		case BRANCHES:
-		case WORKINGDIR:
 			result = prime
 					* result
 					+ ((myObject == null) ? 0 : ((Repository) myObject)
@@ -158,17 +156,14 @@ class RepositoryTreeNode<T> {
 							.hashCode());
 			break;
 		case PROJ:
-		case FILE:
-		case FOLDER:
 			result = prime
 					* result
 					+ ((myObject == null) ? 0 : ((File) myObject).getPath()
 							.hashCode());
 			break;
-		case REMOTE:
-			result = prime * result
-					+ ((myObject == null) ? 0 : myObject.hashCode());
 
+		default:
+			break;
 		}
 
 		result = prime * result
@@ -223,19 +218,16 @@ class RepositoryTreeNode<T> {
 		case PROJECTS:
 		case REMOTES:
 		case BRANCHES:
-		case WORKINGDIR:
 			return ((Repository) myObject).getDirectory().equals(
 					((Repository) otherObject).getDirectory());
 		case REF:
 			return ((Ref) myObject).getName().equals(
 					((Ref) otherObject).getName());
 		case PROJ:
-		case FOLDER:
-		case FILE:
 			return ((File) myObject).getPath().equals(
 					((File) otherObject).getPath());
 		case REMOTE:
-			return myObject.equals(otherObject);
+				return myObject.equals(otherObject);
 		}
 		return false;
 	}
@@ -248,16 +240,10 @@ class RepositoryTreeNode<T> {
 		PROJ(PlatformUI.getWorkbench().getSharedImages().getImage(
 				SharedImages.IMG_OBJ_PROJECT_CLOSED)), //
 		BRANCHES(UIIcons.BRANCHES.createImage()), //
-		FILE(PlatformUI.getWorkbench().getSharedImages().getImage(
-				ISharedImages.IMG_OBJ_FILE)), //
-		FOLDER(PlatformUI.getWorkbench().getSharedImages().getImage(
-				ISharedImages.IMG_OBJ_FOLDER)), //
 		PROJECTS(PlatformUI.getWorkbench().getSharedImages().getImage(
-				SharedImages.IMG_OBJ_PROJECT_CLOSED)), //
+				ISharedImages.IMG_OBJ_FOLDER)), //
 		REMOTES(UIIcons.REMOTE_REPOSITORY.createImage()), //
 		REMOTE(PlatformUI.getWorkbench().getSharedImages().getImage(
-				ISharedImages.IMG_OBJ_FOLDER)), //
-		WORKINGDIR(PlatformUI.getWorkbench().getSharedImages().getImage(
 				ISharedImages.IMG_OBJ_FOLDER))
 
 		;
