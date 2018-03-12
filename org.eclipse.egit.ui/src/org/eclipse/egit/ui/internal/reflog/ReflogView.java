@@ -205,13 +205,14 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 			}
 
 			private RevCommit getCommit(final ReflogEntry entry) {
+				RevCommit c = null;
 				try (RevWalk walk = new RevWalk(getRepository())) {
 					walk.setRetainBody(true);
-					return walk.parseCommit(entry.getNewId());
+					c = walk.parseCommit(entry.getNewId());
 				} catch (IOException ignored) {
 					// ignore
-					return null;
 				}
+				return c;
 			}
 		});
 
