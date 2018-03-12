@@ -22,9 +22,7 @@ import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -201,34 +199,23 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 
 		myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand().getNode(
 				"testRemote").select();
+		String shellText = NLS.bind(
+				UIText.ConfigureRemoteWizard_WizardTitle_Change, "testRemote");
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("ConfigureFetchCommand"));
-
-		String shellText = UIText.SimpleConfigureFetchDialog_WindowTitle;
 		shell = bot.shell(shellText);
-		// change uri
-		shell.bot().button(UIText.SimpleConfigureFetchDialog_ChangeUriButton)
-				.click();
+		// change is 0
+		shell.bot().button(UIText.ConfigureUriPage_Change_button).click();
 		shell = bot.shell(UIText.SelectUriWiazrd_Title);
 		shell.bot().text().setText("file:///" + remoteRepositoryFile.getPath());
+		// finish is 1
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
-		// back to dialog
 		shell = bot.shell(shellText);
-		// add refSpec
-		shell.bot().button(UIText.SimpleConfigureFetchDialog_AddRefSpecButton)
-				.click();
-		shell = bot.shell(UIText.SimpleFetchRefSpecWizard_WizardTitle);
-		shell.bot().textWithLabel(UIText.FetchSourcePage_SourceLabel).setText(
-				"refs/heads/*");
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
-		shell.bot().textWithLabel(UIText.FetchDestinationPage_DestinationLabel).setText(
-				"refs/remotes/testRemote/*");
+		// all branches
+		shell.bot().button(UIText.RefSpecPanel_predefinedAll).click();
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
-		// back to dialog
-		shell = bot.shell(shellText);
-		// save
-		shell.bot().button(UIText.SimpleConfigureFetchDialog_SaveButton).click();
 		refreshAndWait();
 		// assert 1 children
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
@@ -251,41 +238,16 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("ConfigurePushCommand"));
-		
-		shellText = UIText.SimpleConfigurePushDialog_WindowTitle;
 		shell = bot.shell(shellText);
-		shell.bot().button(UIText.SimpleConfigurePushDialog_AddPushUriButton).click();
-		
-		// back to dialog
-		shell = bot.shell(shellText);
+		shell.bot().button(UIText.ConfigureUriPage_Add_button).click();
 		shell = bot.shell(UIText.SelectUriWiazrd_Title);
 		shell.bot().text().setText("file:///" + remoteRepositoryFile.getPath());
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		shell = bot.shell(shellText);
-		// Add is on two buttons
-		shell.bot().button(UIText.SimpleConfigurePushDialog_AddRefSpecButton, 1).click();
-		// add push spec
-		shell = bot.shell(UIText.RefSpecDialog_WindowTitle);
-		// focus for update of other fields
-		
-		shell.bot().textWithLabel(UIText.RefSpecDialog_SourceBranchPushLabel).setText("HEAD");
-		shell.bot().textWithLabel(UIText.RefSpecDialog_DestinationPushLabel).setText("refs/for/master");
-		final Text text = shell.bot().textWithLabel(
-				UIText.RefSpecDialog_DestinationPushLabel).widget;
-		shell.display.syncExec(new Runnable() {
-
-			public void run() {
-				text.setFocus();
-				text.notifyListeners(SWT.Modify, new Event());
-			}
-		});
-
-		
-		shell.bot().button(IDialogConstants.OK_LABEL).click();
-		
-		// back to dialog
-		shell = bot.shell(shellText);		
-		shell.bot().button(UIText.SimpleConfigurePushDialog_SaveButton).click();
+		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		// all branches
+		shell.bot().button(UIText.RefSpecPanel_predefinedAll).click();
+		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
 		// assert 2 children
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
