@@ -31,6 +31,7 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
@@ -75,7 +76,6 @@ import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
-import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
@@ -265,10 +265,8 @@ public class CommitFileDiffViewer extends TableViewer {
 		mgr.add(compareWorkingTreeVersion);
 		mgr.add(blame);
 
-		MenuManager showInSubMenu = new MenuManager(
-				UIText.CommitFileDiffViewer_ShowInMenuLabel);
-		showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN
-				.create(site.getWorkbenchWindow()));
+		MenuManager showInSubMenu = UIUtils.createShowInMenu(
+				site.getWorkbenchWindow());
 
 		mgr.add(new Separator());
 		mgr.add(showInSubMenu);
@@ -383,21 +381,15 @@ public class CommitFileDiffViewer extends TableViewer {
 	 * @see IShowInSource#getShowInContext()
 	 */
 	public ShowInContext getShowInContext() {
-		if (db.isBare())
-			return null;
-		IPath workTreePath = new Path(db.getWorkTree().getAbsolutePath());
 		IStructuredSelection selection = (IStructuredSelection) getSelection();
-		List<Object> elements = new ArrayList<Object>();
-		for (Object selectedElement : selection.toList()) {
-			FileDiff fileDiff = (FileDiff) selectedElement;
-			IPath path = workTreePath.append(fileDiff.getPath());
-			IFile file = ResourceUtil.getFileForLocation(path);
+		List<IFile> files = new ArrayList<IFile>();
+		for (Object element : selection.toList()) {
+			FileDiff fileDiff = (FileDiff) element;
+			IFile file = ResourceUtil.getFileForLocation(db, fileDiff.getPath());
 			if (file != null)
-				elements.add(file);
-			else
-				elements.add(path);
+				files.add(file);
 		}
-		return new ShowInContext(null, new StructuredSelection(elements));
+		return new ShowInContext(null, new StructuredSelection(files));
 	}
 
 	private void openFileInEditor(String filePath) {
