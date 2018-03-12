@@ -89,11 +89,6 @@ public class JobFamilies {
 	public final static Object DISCONNECT = new Object();
 
 	/**
-	 * Staging View refresh
-	 */
-	public static final Object STAGING_VIEW_REFRESH = new Object();
-
-	/**
 	 * Add to index job
 	 */
 	public static final Object ADD_TO_INDEX = new Object();
@@ -127,4 +122,24 @@ public class JobFamilies {
 	 * Show annotations git job
 	 */
 	public static final Object BLAME = new Object();
+
+	/**
+	 * Submodule add git job
+	 */
+	public static final Object SUBMODULE_ADD = new Object();
+
+	/**
+	 * Submodule sync git job
+	 */
+	public static final Object SUBMODULE_SYNC = new Object();
+
+	/**
+	 * Submodule update git job
+	 */
+	public static final Object SUBMODULE_UPDATE = new Object();
+
+	/**
+	 * Stash git job
+	 */
+	public static final Object STASH = new Object();
 }
