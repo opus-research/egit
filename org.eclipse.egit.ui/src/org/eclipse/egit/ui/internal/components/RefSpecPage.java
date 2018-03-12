@@ -49,11 +49,11 @@ public class RefSpecPage extends BaseWizardPage {
 
 	private final Repository local;
 
+	private final RepositorySelectionPage repoPage;
+
 	private final boolean pushPage;
 
 	private RepositorySelection validatedRepoSelection;
-
-	private RepositorySelection currentRepoSelection;
 
 	private RefSpecPanel specsPanel;
 
@@ -77,10 +77,15 @@ public class RefSpecPage extends BaseWizardPage {
 	 * @param pushPage
 	 *            true if this page is used for push specifications selection,
 	 *            false if it used for fetch specifications selection.
+	 * @param repoPage
+	 *            repository selection page - must be predecessor of this page
+	 *            in wizard.
 	 */
-	public RefSpecPage(final Repository local, final boolean pushPage) {
+	public RefSpecPage(final Repository local, final boolean pushPage,
+			final RepositorySelectionPage repoPage) {
 		super(RefSpecPage.class.getName());
 		this.local = local;
+		this.repoPage = repoPage;
 		this.pushPage = pushPage;
 		if (pushPage) {
 			setTitle(UIText.RefSpecPage_titlePush);
@@ -90,18 +95,14 @@ public class RefSpecPage extends BaseWizardPage {
 			setDescription(UIText.RefSpecPage_descriptionFetch);
 		}
 
-	}
-
-	/**
-	 * @param selection
-	 */
-	public void setSelection(RepositorySelection selection) {
-		if (!selection.equals(validatedRepoSelection)) {
-			currentRepoSelection = selection;
-			setPageComplete(false);
-		} else
-			checkPage();
-		revalidate();
+		repoPage.addSelectionListener(new SelectionChangeListener() {
+			public void selectionChanged() {
+				if (!repoPage.selectionEquals(validatedRepoSelection))
+					setPageComplete(false);
+				else
+					checkPage();
+			}
+		});
 	}
 
 	public void createControl(Composite parent) {
@@ -213,15 +214,13 @@ public class RefSpecPage extends BaseWizardPage {
 	}
 
 	private void revalidate() {
+		final RepositorySelection newRepoSelection = repoPage.getSelection();
 
-		if (currentRepoSelection != null && currentRepoSelection.equals(validatedRepoSelection)) {
+		if (repoPage.selectionEquals(validatedRepoSelection)) {
 			// nothing changed on previous page
 			checkPage();
 			return;
 		}
-
-		if (currentRepoSelection == null)
-			return;
 
 		specsPanel.clearRefSpecs();
 		specsPanel.setEnable(false);
@@ -232,7 +231,7 @@ public class RefSpecPage extends BaseWizardPage {
 		transportError = null;
 		getControl().getDisplay().asyncExec(new Runnable() {
 			public void run() {
-				revalidateImpl(currentRepoSelection);
+				revalidateImpl(newRepoSelection);
 			}
 		});
 	}
@@ -273,28 +272,29 @@ public class RefSpecPage extends BaseWizardPage {
 		specsPanel.setAssistanceData(local, listRemotesOp.getRemoteRefs(),
 				actRemoteName);
 
-		if (!pushPage) {
-			tagsAutoFollowButton.setSelection(false);
-			tagsFetchTagsButton.setSelection(false);
-			tagsNoTagsButton.setSelection(false);
-		}
-
 		if (newRepoSelection.isConfigSelected()) {
 			saveButton.setVisible(true);
 			saveButton.setText(NLS.bind(UIText.RefSpecPage_saveSpecifications,
 					actRemoteName));
 			saveButton.getParent().layout();
-			final TagOpt tagOpt = newRepoSelection.getConfig().getTagOpt();
-			switch (tagOpt) {
-			case AUTO_FOLLOW:
-				tagsAutoFollowButton.setSelection(true);
-				break;
-			case FETCH_TAGS:
-				tagsFetchTagsButton.setSelection(true);
-				break;
-			case NO_TAGS:
-				tagsNoTagsButton.setSelection(true);
-				break;
+
+			if (!pushPage) {
+				tagsAutoFollowButton.setSelection(false);
+				tagsFetchTagsButton.setSelection(false);
+				tagsNoTagsButton.setSelection(false);
+
+				final TagOpt tagOpt = newRepoSelection.getConfig().getTagOpt();
+				switch (tagOpt) {
+				case AUTO_FOLLOW:
+					tagsAutoFollowButton.setSelection(true);
+					break;
+				case FETCH_TAGS:
+					tagsFetchTagsButton.setSelection(true);
+					break;
+				case NO_TAGS:
+					tagsNoTagsButton.setSelection(true);
+					break;
+				}
 			}
 		} else if (!pushPage)
 			tagsAutoFollowButton.setSelection(true);
