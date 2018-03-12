@@ -84,17 +84,19 @@ public class RepositoryCache {
 		Repository[] repositories = org.eclipse.egit.core.Activator
 				.getDefault().getRepositoryCache().getAllRepositories();
 		Repository repository = null;
-		IPath repositoryPath = null;
+		int segmentCount = 0;
 		for (Repository r : repositories) {
 			if (!r.isBare()) {
 				try {
 					IPath repoPath = new Path(r.getWorkTree()
 							.getCanonicalPath());
-					if (repoPath.isPrefixOf(resource.getLocation())) {
-						if (repository == null || repositoryPath == null
-								|| repositoryPath.isPrefixOf(repoPath)) {
+					IPath location = resource.getLocation();
+					if (location != null
+							&& repoPath.isPrefixOf(resource.getLocation())) {
+						if (repository == null
+								|| repoPath.segmentCount() > segmentCount) {
 							repository = r;
-							repositoryPath = repoPath;
+							segmentCount = repoPath.segmentCount();
 						}
 					}
 				} catch (IOException e) {
