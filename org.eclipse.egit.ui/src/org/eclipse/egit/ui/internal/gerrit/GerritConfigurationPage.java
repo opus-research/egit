@@ -38,11 +38,11 @@ import org.eclipse.ui.PlatformUI;
  * Wizard page that offers simplified configuration if upstream repository
  * is hosted by Gerrit.
  */
-class GerritConfigurationPage extends WizardPage {
+public class GerritConfigurationPage extends WizardPage {
 
 	private final static int GERRIT_DEFAULT_SSH_PORT = 29418;
 
-	private static final String GERRIT_HTTP_PATH_PREFIX = "/r/p"; //$NON-NLS-1$
+	private static final String GERRIT_HTTP_PATH_PREFIX = "/p"; //$NON-NLS-1$
 
 	private String helpContext = null;
 

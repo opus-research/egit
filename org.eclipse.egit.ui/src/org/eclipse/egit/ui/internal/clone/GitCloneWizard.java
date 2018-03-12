@@ -20,6 +20,7 @@ import java.net.URISyntaxException;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.gerrit.GerritConfigurationPage;
 import org.eclipse.egit.ui.internal.provisional.wizards.NoRepositoryInfoException;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.util.FileUtils;
@@ -52,6 +53,16 @@ public class GitCloneWizard extends AbstractGitCloneWizard {
 		setNeedsProgressMonitor(true);
 		validSource.setHelpContext(HELP_CONTEXT);
 		cloneDestination.setHelpContext(HELP_CONTEXT);
+		gerritConfiguration = new GerritConfigurationPage() {
+
+			@Override
+			public void setVisible(boolean visible) {
+				if (visible)
+					setSelection(getRepositorySelection().getURI());
+				super.setVisible(visible);
+			}
+		};
+		gerritConfiguration.setHelpContext(HELP_CONTEXT);
 	}
 
 	/**
@@ -90,12 +101,13 @@ public class GitCloneWizard extends AbstractGitCloneWizard {
 
 	@Override
 	protected void addPostClonePages() {
-		// no pages to add
+		addPage(gerritConfiguration);
 	}
 
 	@Override
 	public boolean canFinish() {
-		return cloneDestination.isPageComplete();
+		return cloneDestination.isPageComplete() &&
+			gerritConfiguration.isPageComplete();
 	}
 
 	@Override

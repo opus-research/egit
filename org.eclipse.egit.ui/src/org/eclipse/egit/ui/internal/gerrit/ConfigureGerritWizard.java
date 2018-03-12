@@ -152,7 +152,7 @@ public class ConfigureGerritWizard extends Wizard {
 	}
 
 	private void configureFetchNotes() {
-		String notesRef = Constants.R_NOTES + "review"; //$NON-NLS-1$
+		String notesRef = Constants.R_NOTES + "*"; //$NON-NLS-1$
 		List<RefSpec> fetchRefSpecs = remoteConfig.getFetchRefSpecs();
 		for (RefSpec refSpec : fetchRefSpecs) {
 			if(refSpec.matchSource(notesRef))
