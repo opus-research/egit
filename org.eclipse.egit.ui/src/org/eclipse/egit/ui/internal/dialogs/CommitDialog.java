@@ -277,6 +277,7 @@ public class CommitDialog extends Dialog {
 			public void widgetSelected(SelectionEvent arg0) {
 				if (!amendingButton.getSelection()) {
 					originalChangeId = null;
+					authorText.setText(author);
 				}
 				else {
 					saveOriginalChangeId();
@@ -288,8 +289,8 @@ public class CommitDialog extends Dialog {
 						commitText.setText(curText
 								+ previousCommitMessage.replaceAll(
 										"\n", Text.DELIMITER)); //$NON-NLS-1$
-						authorText.setText(previousAuthor);
 					}
+					authorText.setText(previousAuthor);
 				}
 				refreshChangeIdText();
 			}
@@ -612,9 +613,8 @@ public class CommitDialog extends Dialog {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
 		String path = mapping.getRepoRelativePath(file);
 		Repository repo = mapping.getRepository();
-		AdaptableFileTreeIterator fileTreeIterator =
-			new AdaptableFileTreeIterator(repo.getWorkTree(),
-					ResourcesPlugin.getWorkspace().getRoot());
+		AdaptableFileTreeIterator fileTreeIterator = new AdaptableFileTreeIterator(
+				repo, ResourcesPlugin.getWorkspace().getRoot());
 		IndexDiff indexDiff = new IndexDiff(repo, Constants.HEAD, fileTreeIterator);
 		Set<String> repositoryPaths = Collections.singleton(path);
 		indexDiff.setFilter(PathFilterGroup.createFromStrings(repositoryPaths));

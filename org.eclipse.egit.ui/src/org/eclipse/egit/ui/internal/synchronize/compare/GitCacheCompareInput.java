@@ -51,9 +51,4 @@ public class GitCacheCompareInput extends GitCompareInput {
 		return getFileRevisionTypedElement(gitPath, baseCommit, repo);
 	}
 
-	@Override
-	public ITypedElement getAncestor() {
-		return getRight();
-	}
-
 }
