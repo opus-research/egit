@@ -28,7 +28,7 @@ import org.eclipse.jgit.transport.URIish;
  * Used for "remote" configuration of a Repository
  *
  */
-public class NewRemoteWizard extends Wizard {
+class NewRemoteWizard extends Wizard {
 
 	final RepositoryConfig myConfiguration;
 
