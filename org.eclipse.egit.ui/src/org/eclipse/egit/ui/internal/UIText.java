@@ -534,9 +534,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_rebaseMenuItem;
 
 	/** */
-	public static String GitHistoryPage_rebaseInteractiveMenuItem;
-
-	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
@@ -4550,6 +4547,21 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_Pull;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionFetchHead;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionHead;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionHeadSymbolic;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionOrigHead;
+
+	/** */
+	public static String GitLabelProvider_RefDescriptionStash;
 
 	/** */
 	public static String GitLabelProvider_UnableToRetrieveLabel;
