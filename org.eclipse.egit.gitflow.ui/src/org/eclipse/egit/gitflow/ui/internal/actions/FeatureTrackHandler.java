@@ -9,8 +9,6 @@
 package org.eclipse.egit.gitflow.ui.internal.actions;
 
 import static org.eclipse.egit.gitflow.op.GitFlowOperation.SEP;
-import static org.eclipse.egit.gitflow.ui.Activator.error;
-import static org.eclipse.egit.gitflow.ui.internal.JobFamilies.GITFLOW_FAMILY;
 import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
 import static org.eclipse.jgit.lib.Constants.R_REMOTES;
 
@@ -28,9 +26,13 @@ import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.op.FeatureListOperation;
 import org.eclipse.egit.gitflow.op.FeatureTrackOperation;
+
+import static org.eclipse.egit.gitflow.ui.Activator.error;
+
 import org.eclipse.egit.gitflow.ui.Activator;
+import static org.eclipse.egit.gitflow.ui.internal.JobFamilies.GITFLOW_FAMILY;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
-import org.eclipse.egit.gitflow.ui.internal.dialogs.FeatureBranchSelectionDialog;
+import org.eclipse.egit.gitflow.ui.internal.dialog.AbstractGitFlowBranchSelectionDialog;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
@@ -45,9 +47,6 @@ public class FeatureTrackHandler extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final GitFlowRepository gfRepo = GitFlowHandlerUtil.getRepository(event);
-		if (gfRepo == null) {
-			return error(UIText.Handlers_noGitflowRepositoryFound);
-		}
 		final List<Ref> refs = new ArrayList<Ref>();
 		Shell activeShell = HandlerUtil.getActiveShell(event);
 
@@ -72,19 +71,23 @@ public class FeatureTrackHandler extends AbstractHandler {
 		}
 		refs.addAll(remoteFeatures);
 
-		FeatureBranchSelectionDialog dialog = new FeatureBranchSelectionDialog(
-				HandlerUtil.getActiveShell(event), refs,
-				UIText.FeatureCheckoutHandler_selectFeature,
-				UIText.FeatureTrackHandler_remoteFeatures,
-				R_REMOTES + DEFAULT_REMOTE_NAME + SEP + gfRepo.getConfig().getFeaturePrefix(), gfRepo);
-
+		AbstractGitFlowBranchSelectionDialog<Ref> dialog = new AbstractGitFlowBranchSelectionDialog<Ref>(
+				activeShell, refs,
+				UIText.FeatureTrackHandler_selectFeature,
+				UIText.FeatureTrackHandler_remoteFeatures) {
+			@Override
+			protected String getPrefix() {
+				return R_REMOTES + DEFAULT_REMOTE_NAME + SEP
+						+ gfRepo.getConfig().getFeaturePrefix();
+			}
+		};
 		if (dialog.open() != Window.OK) {
 			return Status.CANCEL_STATUS;
 		}
 
 		Ref ref = dialog.getSelectedNode();
 		FeatureTrackOperation featureTrackOperation = new FeatureTrackOperation(
-				gfRepo, ref, timeout);
+				gfRepo, ref);
 		JobUtil.scheduleUserWorkspaceJob(featureTrackOperation,
 				UIText.FeatureTrackHandler_trackingFeature, GITFLOW_FAMILY);
 

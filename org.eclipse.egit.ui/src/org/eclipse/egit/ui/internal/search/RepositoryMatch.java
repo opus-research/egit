@@ -27,7 +27,7 @@ import org.eclipse.ui.model.IWorkbenchAdapter;
 public class RepositoryMatch extends PlatformObject implements
 		IWorkbenchAdapter {
 
-	private List<RepositoryCommit> commits = new ArrayList<>();
+	private List<RepositoryCommit> commits = new ArrayList<RepositoryCommit>();
 
 	private Repository repository;
 

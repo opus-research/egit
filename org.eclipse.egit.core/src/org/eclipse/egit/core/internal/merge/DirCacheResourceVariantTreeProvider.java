@@ -66,7 +66,7 @@ public class DirCacheResourceVariantTreeProvider implements
 					.getResourceHandleForLocation(path);
 			// Resource variants only make sense for IResources. Do not consider
 			// files outside of the workspace or otherwise non accessible.
-			if (resource.getProject() == null
+			if (resource == null || resource.getProject() == null
 					|| !resource.getProject().isAccessible()) {
 				continue;
 			}
@@ -107,27 +107,22 @@ public class DirCacheResourceVariantTreeProvider implements
 		knownResources.addAll(remoteCache.getKnownResources());
 	}
 
-	@Override
 	public IResourceVariantTree getBaseTree() {
 		return baseTree;
 	}
 
-	@Override
 	public IResourceVariantTree getRemoteTree() {
 		return remoteTree;
 	}
 
-	@Override
 	public IResourceVariantTree getSourceTree() {
 		return sourceTree;
 	}
 
-	@Override
 	public Set<IResource> getKnownResources() {
 		return knownResources;
 	}
 
-	@Override
 	public Set<IResource> getRoots() {
 		return roots;
 	}

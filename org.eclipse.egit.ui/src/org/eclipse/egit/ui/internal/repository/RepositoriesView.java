@@ -30,6 +30,7 @@ import java.util.Set;
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -110,7 +111,6 @@ import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
-import org.eclipse.ui.IURIEditorInput;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -159,7 +159,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 
 	private static final long DEFAULT_REFRESH_DELAY = 1000;
 
-	private final Set<Repository> repositories = new HashSet<>();
+	private final Set<Repository> repositories = new HashSet<Repository>();
 
 	private final RefsChangedListener myRefsChangedListener;
 
@@ -167,7 +167,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 
 	private final ConfigChangedListener myConfigChangeListener;
 
-	private final List<ListenerHandle> myListeners = new LinkedList<>();
+	private final List<ListenerHandle> myListeners = new LinkedList<ListenerHandle>();
 
 	private Job scheduledJob;
 
@@ -231,23 +231,18 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 			@Override
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
-				if (!reactOnSelection || part == RepositoriesView.this) {
+				if (!reactOnSelection)
 					return;
-				}
 
 				// this may happen if we switch between editors
 				if (part instanceof IEditorPart) {
 					IEditorInput input = ((IEditorPart) part).getEditorInput();
-					if (input instanceof IFileEditorInput) {
+					if (input instanceof IFileEditorInput)
 						reactOnSelection(new StructuredSelection(
 								((IFileEditorInput) input).getFile()));
-					} else if (input instanceof IURIEditorInput) {
-						reactOnSelection(new StructuredSelection(input));
-					}
 
-				} else {
+				} else
 					reactOnSelection(selection);
-				}
 			}
 		};
 	}
@@ -559,7 +554,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	 *            the paths to show
 	 */
 	private void showPaths(final List<IPath> paths) {
-		final List<RepositoryTreeNode> nodesToShow = new ArrayList<>();
+		final List<RepositoryTreeNode> nodesToShow = new ArrayList<RepositoryTreeNode>();
 
 		Map<Repository, Collection<String>> pathsByRepo = ResourceUtil.splitPathsByRepository(paths);
 		for (Map.Entry<Repository, Collection<String>> entry : pathsByRepo.entrySet()) {
@@ -742,7 +737,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		ISelection selection = context.getSelection();
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ss = (IStructuredSelection) selection;
-			List<IPath> paths = new ArrayList<>();
+			List<IPath> paths = new ArrayList<IPath>();
 			for (Iterator it = ss.iterator(); it.hasNext();) {
 				Object element = it.next();
 				IResource resource = AdapterUtils.adapt(element, IResource.class);
@@ -798,14 +793,13 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	}
 
 	private static List<Object> getShowInElements(IStructuredSelection selection) {
-		List<Object> elements = new ArrayList<>();
+		List<Object> elements = new ArrayList<Object>();
 		for (Object element : selection.toList()) {
 			if (element instanceof FileNode || element instanceof FolderNode
 					|| element instanceof WorkingDirNode) {
 				RepositoryTreeNode treeNode = (RepositoryTreeNode) element;
 				IPath path = treeNode.getPath();
-				IResource resource = ResourceUtil.getResourceForLocation(path,
-						false);
+				IResource resource = ResourceUtil.getResourceForLocation(path);
 				if (resource != null)
 					elements.add(resource);
 			} else if (element instanceof RepositoryNode) {
@@ -829,7 +823,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	 * @return the HistoryPageInput corresponding to the selection, or null
 	 */
 	private static HistoryPageInput getHistoryPageInput(IStructuredSelection selection) {
-		List<File> files = new ArrayList<>();
+		List<File> files = new ArrayList<File>();
 		Repository repo = null;
 		for (Object element : selection.toList()) {
 			Repository nodeRepository;
@@ -860,24 +854,15 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	private void reactOnSelection(ISelection selection) {
 		if (selection instanceof StructuredSelection) {
 			StructuredSelection ssel = (StructuredSelection) selection;
-			if (ssel.size() != 1) {
+			if (ssel.size() != 1)
 				return;
-			}
-			if (ssel.getFirstElement() instanceof IResource) {
+			if (ssel.getFirstElement() instanceof IResource)
 				showResource((IResource) ssel.getFirstElement());
-				return;
-			}
-			IResource adapted = AdapterUtils.adapt(ssel.getFirstElement(),
-					IResource.class);
-			if (adapted != null) {
-				showResource(adapted);
-				return;
-			}
-			File file = AdapterUtils.adapt(ssel.getFirstElement(), File.class);
-			if (file != null) {
-				IPath path = new Path(file.getAbsolutePath());
-				showPaths(Arrays.asList(path));
-				return;
+			if (ssel.getFirstElement() instanceof IAdaptable) {
+				IResource adapted = CommonUtils.getAdapter(((IAdaptable) ssel
+						.getFirstElement()), IResource.class);
+				if (adapted != null)
+					showResource(adapted);
 			}
 		}
 	}

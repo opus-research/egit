@@ -21,7 +21,6 @@ import org.eclipse.egit.ui.internal.GitLabels;
 import org.eclipse.jgit.lib.BranchTrackingStatus;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * Helper class to create decoratable resources
@@ -53,11 +52,6 @@ public class DecoratableResourceHelper {
 	static String getShortBranch(Repository repository) throws IOException {
 		return Activator.getDefault().getRepositoryUtil()
 				.getShortBranch(repository);
-	}
-
-	static RevCommit getHeadCommit(Repository repository) {
-		return Activator.getDefault().getRepositoryUtil()
-				.parseHeadCommit(repository);
 	}
 
 	static String getBranchStatus(Repository repo) throws IOException {

@@ -87,7 +87,6 @@ public class CommitSearchDialogTest extends LocalRepositoryTestCase {
 		assertEquals(1, repos.length);
 		Object repoData = UIThreadRunnable.syncExec(new Result<Object>() {
 
-			@Override
 			public Object run() {
 				return repos[0].widget.getData();
 			}
@@ -95,12 +94,10 @@ public class CommitSearchDialogTest extends LocalRepositoryTestCase {
 		assertTrue(repoData instanceof RepositoryMatch);
 		assertEquals(repository.getDirectory(), ((RepositoryMatch) repoData)
 				.getRepository().getDirectory());
-		final SWTBotTreeItem[] commits = TestUtil.expandAndWait(repos[0])
-				.getItems();
+		final SWTBotTreeItem[] commits = repos[0].expand().getItems();
 		assertEquals(1, commits.length);
 		Object commitData = UIThreadRunnable.syncExec(new Result<Object>() {
 
-			@Override
 			public Object run() {
 				return commits[0].widget.getData();
 			}

@@ -103,8 +103,7 @@ public class TreeWalkResourceVariantTreeProvider implements
 					.getResourceHandleForLocation(path);
 			// Resource variants only make sense for IResources. Do not consider
 			// files outside of the workspace or otherwise non accessible.
-			if (resource.getProject() != null
-					&& resource.getProject().isAccessible()) {
+			if (resource != null && resource.getProject().isAccessible()) {
 				if (modeBase != 0) {
 					baseCache.setVariant(resource,
 							TreeParserResourceVariant.create(repository, base));
@@ -146,27 +145,22 @@ public class TreeWalkResourceVariantTreeProvider implements
 		knownResources.addAll(theirsCache.getKnownResources());
 	}
 
-	@Override
 	public IResourceVariantTree getBaseTree() {
 		return baseTree;
 	}
 
-	@Override
 	public IResourceVariantTree getRemoteTree() {
 		return theirsTree;
 	}
 
-	@Override
 	public IResourceVariantTree getSourceTree() {
 		return oursTree;
 	}
 
-	@Override
 	public Set<IResource> getKnownResources() {
 		return knownResources;
 	}
 
-	@Override
 	public Set<IResource> getRoots() {
 		return roots;
 	}

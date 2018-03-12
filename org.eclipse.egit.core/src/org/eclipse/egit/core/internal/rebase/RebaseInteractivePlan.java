@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2016 SAP AG and others
+ * Copyright (c) 2013 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,13 +7,11 @@
  *
  * Contributors:
  *    Tobias Pfeifer (SAP AG) - initial implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 485511
  *******************************************************************************/
 package org.eclipse.egit.core.internal.rebase;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,7 +20,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.egit.core.Activator;
@@ -105,7 +102,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 		public void planWasUpdatedFromRepository(RebaseInteractivePlan plan);
 	}
 
-	private CopyOnWriteArrayList<RebaseInteractivePlanChangeListener> planChangeListeners = new CopyOnWriteArrayList<RebaseInteractivePlanChangeListener>();
+	private ArrayList<RebaseInteractivePlanChangeListener> planChangeListeners = new ArrayList<RebaseInteractivePlanChangeListener>();
 
 	private List<PlanElement> todoList;
 
@@ -113,9 +110,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 
 	private JoinedList<List<PlanElement>, PlanElement> planList;
 
-	private final WeakReference<Repository> repositoryRef;
-
-	private final File myGitDir;
+	private final Repository repository;
 
 	private ListenerHandle refsChangedListener;
 
@@ -147,31 +142,26 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	}
 
 	private RebaseInteractivePlan(Repository repo) {
-		this.repositoryRef = new WeakReference<>(repo);
-		this.myGitDir = repo.getDirectory().getAbsoluteFile();
-		reparsePlan(repo);
-		registerIndexDiffChangeListener(repo);
+		this.repository = repo;
+		reparsePlan();
+		registerIndexDiffChangeListener();
 		registerRefChangedListener();
 	}
 
-	private void registerIndexDiffChangeListener(Repository repository) {
-		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator.getDefault()
-				.getIndexDiffCache().getIndexDiffCacheEntry(repository);
-		if (entry != null) {
-			entry.addIndexDiffChangedListener(this);
-		}
+	private void registerIndexDiffChangeListener() {
+		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator
+				.getDefault().getIndexDiffCache()
+				.getIndexDiffCacheEntry(this.repository);
+
+		entry.addIndexDiffChangedListener(this);
 	}
 
 	private void unregisterIndexDiffChangeListener() {
-		Repository repository = getRepository();
-		if (repository != null) {
-			IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator
-					.getDefault().getIndexDiffCache()
-					.getIndexDiffCacheEntry(repository);
-			if (entry != null) {
-				entry.removeIndexDiffChangedListener(this);
-			}
-		}
+		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator
+				.getDefault().getIndexDiffCache()
+				.getIndexDiffCacheEntry(this.repository);
+
+		entry.removeIndexDiffChangedListener(this);
 	}
 
 	private void registerRefChangedListener() {
@@ -182,10 +172,9 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	/**
 	 * Reparse plan when {@code IndexDiff} changed
 	 */
-	@Override
 	public void indexDiffChanged(Repository repo, IndexDiffData indexDiffData) {
-		if (getRepository() == repo)
-			reparsePlan(repo);
+		if (RebaseInteractivePlan.this.repository == repo)
+			reparsePlan();
 	}
 
 	/**
@@ -193,11 +182,10 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	 *
 	 * @param event
 	 */
-	@Override
 	public void onRefsChanged(RefsChangedEvent event) {
 		Repository repo = event.getRepository();
-		if (getRepository() == repo)
-			reparsePlan(repo);
+		if (this.repository == repo)
+			reparsePlan();
 	}
 
 	/**
@@ -207,9 +195,9 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	 * will create a new {@link RebaseInteractivePlan} instance.
 	 */
 	public void dispose() {
-		reparsePlan(getRepository());
+		reparsePlan();
 		notifyPlanWasUpdatedFromRepository();
-		planRegistry.remove(myGitDir);
+		planRegistry.remove(this.repository.getDirectory());
 		planList.clear();
 		planChangeListeners.clear();
 		unregisterIndexDiffChangeListener();
@@ -228,7 +216,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	 * @return the repository
 	 */
 	public Repository getRepository() {
-		return repositoryRef.get();
+		return repository;
 	}
 
 	/**
@@ -241,7 +229,9 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	 */
 	public boolean addRebaseInteractivePlanChangeListener(
 			RebaseInteractivePlanChangeListener listener) {
-		return planChangeListeners.addIfAbsent(listener);
+		if (planChangeListeners.contains(listener))
+			return false;
+		return planChangeListeners.add(listener);
 	}
 
 	/**
@@ -259,14 +249,14 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 
 	private void notifyPlanElementsOrderChange(PlanElement element, int oldIndex,
 			int newIndex) {
-		persist(getRepository());
+		persist();
 		for (RebaseInteractivePlanChangeListener listener : planChangeListeners)
 			listener.planElementsOrderChanged(this, element, oldIndex, newIndex);
 	}
 
 	private void notifyPlanElementActionChange(PlanElement element,
 			ElementAction oldType, ElementAction newType) {
-		persist(getRepository());
+		persist();
 		for (RebaseInteractivePlanChangeListener listener : planChangeListeners)
 			listener.planElementTypeChanged(this, element, oldType, newType);
 	}
@@ -276,18 +266,16 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 			listener.planWasUpdatedFromRepository(this);
 	}
 
-	private void reparsePlan(Repository repository) {
-		if (repository != null) {
-			try (RevWalk walk = new RevWalk(repository.newObjectReader())) {
-				doneList = parseDone(repository, walk);
-				todoList = parseTodo(repository, walk);
-			}
-			planList = JoinedList.wrap(doneList, todoList);
-			notifyPlanWasUpdatedFromRepository();
+	private void reparsePlan() {
+		try (RevWalk walk = new RevWalk(repository.newObjectReader())) {
+			doneList = parseDone(walk);
+			todoList = parseTodo(walk);
 		}
+		planList = JoinedList.wrap(doneList, todoList);
+		notifyPlanWasUpdatedFromRepository();
 	}
 
-	private List<PlanElement> parseTodo(Repository repository, RevWalk walk) {
+	private List<PlanElement> parseTodo(RevWalk walk) {
 		List<RebaseTodoLine> rebaseTodoLines;
 		try {
 			rebaseTodoLines = repository.readRebaseTodo(REBASE_TODO, true);
@@ -299,7 +287,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 		return todoElements;
 	}
 
-	private List<PlanElement> parseDone(Repository repository, RevWalk walk) {
+	private List<PlanElement> parseDone(RevWalk walk) {
 		List<RebaseTodoLine> rebaseDoneLines;
 		try {
 			rebaseDoneLines = repository.readRebaseTodo(REBASE_DONE, false);
@@ -367,9 +355,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	 *         {@link RepositoryState#REBASING_INTERACTIVE}
 	 */
 	public boolean isRebasingInteractive() {
-		Repository repository = getRepository();
-		return repository != null && repository
-				.getRepositoryState() == RepositoryState.REBASING_INTERACTIVE;
+		return repository.getRepositoryState() == RepositoryState.REBASING_INTERACTIVE;
 	}
 
 	/**
@@ -417,17 +403,12 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	 * Only {@link PlanElement Elements} of {@link ElementType#TODO} are
 	 * persisted.
 	 *
-	 * @param repository
-	 *            the plan belongs to
-	 *
 	 * @return true if the todo file has been written successfully, otherwise
 	 *         false
 	 */
-	private boolean persist(Repository repository) {
-		if (repository == null || repository
-				.getRepositoryState() != RepositoryState.REBASING_INTERACTIVE) {
+	public boolean persist() {
+		if (!isRebasingInteractive())
 			return false;
-		}
 		List<RebaseTodoLine> todoLines = new LinkedList<RebaseTodoLine>();
 		for (PlanElement element : planList.getSecondList())
 			todoLines.add(element.getRebaseTodoLine());
@@ -449,7 +430,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	public void parse() throws IOException {
 		if (!isRebasingInteractive())
 			return;
-		reparsePlan(getRepository());
+		reparsePlan();
 	}
 
 	/**
@@ -976,26 +957,22 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 			modCount++;
 		}
 
-		@Override
 		public T get(int index) {
 			RelativeIndex<T> rel = mapAbsolutIndex(index);
 			return rel.getList().get(rel.getRelativeIndex());
 		}
 
-		@Override
 		public T remove(int index) {
 			RelativeIndex<T> rel = mapAbsolutIndex(index);
 			modCount++;
 			return rel.getList().remove(rel.getRelativeIndex());
 		}
 
-		@Override
 		public T set(int index, T element) {
 			RelativeIndex<T> rel = mapAbsolutIndex(index);
 			return rel.getList().set(rel.getRelativeIndex(), element);
 		}
 
-		@Override
 		public int size() {
 			return firstList.size() + secondList.size();
 		}

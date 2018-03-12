@@ -8,7 +8,6 @@
  * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
- * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,11 +23,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -39,16 +37,14 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
-import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
-import org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
@@ -56,7 +52,7 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
@@ -72,21 +68,14 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextListener;
-import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
-import org.eclipse.jface.text.presentation.IPresentationReconciler;
-import org.eclipse.jface.text.presentation.PresentationReconciler;
-import org.eclipse.jface.text.rules.DefaultDamagerRepairer;
-import org.eclipse.jface.text.rules.IToken;
-import org.eclipse.jface.text.rules.Token;
+import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
+import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
 import org.eclipse.jface.text.source.ISourceViewer;
-import org.eclipse.jface.text.source.SourceViewerConfiguration;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ISelection;
@@ -151,6 +140,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.editors.text.EditorsUI;
+import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.IShowInTargetList;
 import org.eclipse.ui.part.ShowInContext;
@@ -159,7 +149,7 @@ import org.eclipse.ui.progress.UIJob;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
-		TableLoader, IShowInSource, IShowInTargetList {
+		ISchedulingRule, TableLoader, IShowInSource, IShowInTargetList {
 
 	private static final int INITIAL_ITEM = -1;
 
@@ -302,7 +292,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		private GitHistoryPage historyPage;
 
 		GitHistoryPageActions(GitHistoryPage historyPage) {
-			actionsToDispose = new ArrayList<>();
+			actionsToDispose = new ArrayList<IWorkbenchAction>();
 			this.historyPage = historyPage;
 			createActions();
 		}
@@ -633,18 +623,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 	}
 
-	private static class HistoryPageRule implements ISchedulingRule {
-		@Override
-		public boolean contains(ISchedulingRule rule) {
-			return this == rule;
-		}
-
-		@Override
-		public boolean isConflicting(ISchedulingRule rule) {
-			return this == rule;
-		}
-	}
-
 	private static final String POPUP_ID = "org.eclipse.egit.ui.historyPageContributions"; //$NON-NLS-1$
 
 	private static final String DESCRIPTION_PATTERN = "{0} - {1}"; //$NON-NLS-1$
@@ -738,6 +716,20 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			final String prop = event.getProperty();
+			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(prop)) {
+				Object oldValue = event.getOldValue();
+				if (oldValue == null || !oldValue.equals(event.getNewValue())) {
+					graph.setRelativeDate(isShowingRelativeDates());
+					graph.getTableView().refresh();
+				}
+			}
+			if (UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES.equals(prop)) {
+				Object oldValue = event.getOldValue();
+				if (oldValue == null || !oldValue.equals(event.getNewValue())) {
+					graph.setShowEmailAddresses(isShowingEmailAddresses());
+					graph.getTableView().refresh();
+				}
+			}
 			if (UIPreferences.HISTORY_MAX_BRANCH_LENGTH.equals(prop)
 					|| UIPreferences.HISTORY_MAX_TAG_LENGTH.equals(prop))
 				graph.getTableView().refresh();
@@ -763,10 +755,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	private ScrolledComposite commentAndDiffScrolledComposite;
 
 	private Composite commentAndDiffComposite;
-
-	private volatile boolean resizing;
-
-	private final HistoryPageRule pageSchedulingRule;
 
 	/**
 	 * Determine if the input can be shown in this viewer.
@@ -809,11 +797,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	public GitHistoryPage() {
 		trace = GitTraceLocation.HISTORYVIEW.isActive();
-		pageSchedulingRule = new HistoryPageRule();
-		if (trace) {
+		if (trace)
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation());
-		}
 	}
 
 	@Override
@@ -855,6 +841,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr,
 				this, resources);
 
+		graph.setRelativeDate(isShowingRelativeDates());
+		graph.setShowEmailAddresses(isShowingEmailAddresses());
 		Activator.getDefault().getPreferenceStore()
 				.addPropertyChangeListener(listener);
 
@@ -886,7 +874,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				.getBackground());
 
 
-		HyperlinkSourceViewer.Configuration configuration = new HyperlinkSourceViewer.Configuration(
+		TextSourceViewerConfiguration configuration = new TextSourceViewerConfiguration(
 				EditorsUI.getPreferenceStore()) {
 
 			@Override
@@ -895,63 +883,23 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			}
 
 			@Override
-			protected IHyperlinkDetector[] internalGetHyperlinkDetectors(
+			public IHyperlinkPresenter getHyperlinkPresenter(
 					ISourceViewer sourceViewer) {
-				IHyperlinkDetector[] registered = super.internalGetHyperlinkDetectors(
-						sourceViewer);
-				// Always add our special detector for commit hyperlinks; we
-				// want those to show always.
-				if (registered == null) {
-					return new IHyperlinkDetector[] {
-							new CommitMessageViewer.KnownHyperlinksDetector() };
-				} else {
-					IHyperlinkDetector[] result = new IHyperlinkDetector[registered.length
-							+ 1];
-					System.arraycopy(registered, 0, result, 0,
-							registered.length);
-					result[registered.length] = new CommitMessageViewer.KnownHyperlinksDetector();
-					return result;
-				}
+				return new MultipleHyperlinkPresenter(PlatformUI.getWorkbench()
+						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB()) {
+
+					@Override
+					public void hideHyperlinks() {
+						// We want links to always show.
+					}
+
+				};
 			}
 
 			@Override
-			public String[] getConfiguredContentTypes(
-					ISourceViewer sourceViewer) {
-				return new String[] { IDocument.DEFAULT_CONTENT_TYPE,
-						CommitMessageViewer.HEADER_CONTENT_TYPE,
-						CommitMessageViewer.FOOTER_CONTENT_TYPE };
+			public IHyperlinkDetector[] getHyperlinkDetectors(ISourceViewer sourceViewer) {
+				return getRegisteredHyperlinkDetectors(sourceViewer);
 			}
-
-			@Override
-			public IPresentationReconciler getPresentationReconciler(
-					ISourceViewer viewer) {
-				PresentationReconciler reconciler = new PresentationReconciler();
-				reconciler.setDocumentPartitioning(
-						getConfiguredDocumentPartitioning(viewer));
-				DefaultDamagerRepairer hyperlinkDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(this, viewer));
-				reconciler.setDamager(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				reconciler.setRepairer(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				TextAttribute headerDefault = new TextAttribute(
-						PlatformUI.getWorkbench().getDisplay()
-								.getSystemColor(SWT.COLOR_DARK_GRAY));
-				DefaultDamagerRepairer headerDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(this, viewer, headerDefault));
-				reconciler.setDamager(headerDamagerRepairer,
-						CommitMessageViewer.HEADER_CONTENT_TYPE);
-				reconciler.setRepairer(headerDamagerRepairer,
-						CommitMessageViewer.HEADER_CONTENT_TYPE);
-				DefaultDamagerRepairer footerDamagerRepairer = new DefaultDamagerRepairer(
-						new FooterTokenScanner(this, viewer));
-				reconciler.setDamager(footerDamagerRepairer,
-						CommitMessageViewer.FOOTER_CONTENT_TYPE);
-				reconciler.setRepairer(footerDamagerRepairer,
-						CommitMessageViewer.FOOTER_CONTENT_TYPE);
-				return reconciler;
-			}
-
 		};
 
 		commentViewer.configure(configuration);
@@ -967,10 +915,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		commentAndDiffScrolledComposite.addControlListener(new ControlAdapter() {
 			@Override
 			public void controlResized(ControlEvent e) {
-				if (!resizing && commentViewer.getTextWidget()
-						.getWordWrap()) {
+				if (commentViewer.getTextWidget().getWordWrap())
 					resizeCommentAndDiffScrolledComposite();
-				}
 			}
 		});
 
@@ -979,7 +925,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				ISelection selection = event.getSelection();
-				List<FileDiff> diffs = new ArrayList<>();
+				List<FileDiff> diffs = new ArrayList<FileDiff>();
 				if (selection instanceof IStructuredSelection) {
 					IStructuredSelection sel = (IStructuredSelection) selection;
 					for (Object obj : sel.toList())
@@ -1028,13 +974,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 			}
 		});
-		int[] weights = UIPreferences.stringToIntArray(store.getString(key), 2);
-		if (weights == null) {
-			// Corrupted preferences?
-			weights = UIPreferences
-					.stringToIntArray(store.getDefaultString(key), 2);
-		}
-		sf.setWeights(weights);
+		sf.setWeights(UIPreferences.stringToIntArray(store.getString(key), 2));
 	}
 
 	private Composite createMainPanel(final Composite parent) {
@@ -1238,11 +1178,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					((IWorkbenchAction) i).dispose();
 		}
 		renameTracker.reset(null);
-		if (job != null) {
-			job.cancel();
-			job = null;
-		}
-		Job.getJobManager().cancel(JobFamilies.HISTORY_DIFF);
 		super.dispose();
 	}
 
@@ -1423,10 +1358,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					showHead = true;
 					break;
 				}
-			} else if (o instanceof HistoryPageInput) {
+			} else if (o instanceof HistoryPageInput)
 				input = (HistoryPageInput) o;
-			} else {
-				IResource resource = AdapterUtils.adapt(o, IResource.class);
+			else if (o instanceof IAdaptable) {
+				IResource resource = CommonUtils.getAdapter(((IAdaptable) o), IResource.class);
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(resource);
@@ -1439,14 +1374,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			}
 			if (repo == null) {
 				repo = AdapterUtils.adapt(o, Repository.class);
-				if (repo != null) {
-					File file = AdapterUtils.adapt(o, File.class);
-					if (file == null) {
-						input = new HistoryPageInput(repo);
-					} else {
-						input = new HistoryPageInput(repo, new File[] { file });
-					}
-				}
+				if (repo != null)
+					input = new HistoryPageInput(repo);
 			}
 			selection = AdapterUtils.adapt(o, RevCommit.class);
 
@@ -1878,7 +1807,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			throws IllegalStateException {
 		final ArrayList<FilterPath> paths;
 		if (inResources != null) {
-			paths = new ArrayList<>(inResources.length);
+			paths = new ArrayList<FilterPath>(inResources.length);
 			for (final IResource r : inResources) {
 				final RepositoryMapping map = RepositoryMapping.getMapping(r);
 				if (map == null)
@@ -1914,7 +1843,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			IPath workdirPath = new Path(db.getWorkTree().getPath());
 			IPath gitDirPath = new Path(db.getDirectory().getPath());
 			int segmentCount = workdirPath.segmentCount();
-			paths = new ArrayList<>(inFiles.length);
+			paths = new ArrayList<FilterPath>(inFiles.length);
 			for (File file : inFiles) {
 				IPath filePath;
 				boolean isRegularFile;
@@ -1943,7 +1872,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					paths.add(new FilterPath(pathToAdd.toString(), isRegularFile));
 			}
 		} else
-			paths = new ArrayList<>(0);
+			paths = new ArrayList<FilterPath>(0);
 		return paths;
 	}
 
@@ -2015,7 +1944,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void formatDiffs(final List<FileDiff> diffs) {
-		Job.getJobManager().cancel(JobFamilies.HISTORY_DIFF);
 		if (diffs.isEmpty()) {
 			if (UIUtils.isUsable(diffViewer)) {
 				IDocument document = new Document();
@@ -2029,26 +1957,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		Job formatJob = new Job(UIText.GitHistoryPage_FormatDiffJobName) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
-				int maxLines = Activator.getDefault().getPreferenceStore()
-						.getInt(UIPreferences.HISTORY_MAX_DIFF_LINES);
 				final IDocument document = new Document();
 				final DiffStyleRangeFormatter formatter = new DiffStyleRangeFormatter(
-						document, document.getLength(), maxLines);
+						document);
 
 				monitor.beginTask("", diffs.size()); //$NON-NLS-1$
 				for (FileDiff diff : diffs) {
-					if (monitor.isCanceled()) {
+					if (monitor.isCanceled())
 						break;
-					}
-					if (diff.getCommit().getParentCount() > 1) {
+					if (diff.getCommit().getParentCount() > 1)
 						break;
-					}
-					if (document.getNumberOfLines() > maxLines) {
-						break;
-					}
 					monitor.setTaskName(diff.getPath());
 					try {
 						formatter.write(repository, diff);
@@ -2057,16 +1975,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					}
 					monitor.worked(1);
 				}
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
 				monitor.done();
 				UIJob uiJob = new UIJob(UIText.GitHistoryPage_FormatDiffJobName) {
 					@Override
 					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
-						if (uiMonitor.isCanceled()) {
-							return Status.CANCEL_STATUS;
-						}
 						if (UIUtils.isUsable(diffViewer)) {
 							diffViewer.setDocument(document);
 							diffViewer.setFormatter(formatter);
@@ -2074,24 +1986,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 						}
 						return Status.OK_STATUS;
 					}
-
-					@Override
-					public boolean belongsTo(Object family) {
-						return JobFamilies.HISTORY_DIFF.equals(family);
-					}
 				};
-				uiJob.setRule(pageSchedulingRule);
-				GitHistoryPage.this.schedule(uiJob);
+				uiJob.schedule();
 				return Status.OK_STATUS;
 			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				return JobFamilies.HISTORY_DIFF.equals(family);
-			}
 		};
-		formatJob.setRule(pageSchedulingRule);
-		schedule(formatJob);
+		formatJob.schedule();
 	}
 
 	private void setWrap(boolean wrap) {
@@ -2101,32 +2001,19 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void resizeCommentAndDiffScrolledComposite() {
-		resizing = true;
-		long start = 0;
-		int lines = 0;
-		if (trace) {
-			IDocument document = diffViewer.getDocument();
-			lines = document != null ? document.getNumberOfLines() : 0;
-			System.out.println("Lines: " + lines); //$NON-NLS-1$
-			if (lines > 1) {
-				new Exception("resizeCommentAndDiffScrolledComposite") //$NON-NLS-1$
-						.printStackTrace(System.out);
-			}
-			start = System.currentTimeMillis();
+		int widthHint;
+		if (commentViewer.getTextWidget().getWordWrap()) {
+			widthHint = commentAndDiffScrolledComposite.getClientArea().width;
+			if (commentAndDiffScrolledComposite.getVerticalBar() != null
+					&& !commentAndDiffScrolledComposite.getVerticalBar().isVisible())
+				widthHint -= commentAndDiffScrolledComposite.getVerticalBar().getSize().x;
+		} else {
+			widthHint = SWT.DEFAULT;
 		}
-
 		Point size = commentAndDiffComposite
-				.computeSize(SWT.DEFAULT, SWT.DEFAULT);
+				.computeSize(widthHint, SWT.DEFAULT);
+		commentAndDiffComposite.setSize(size);
 		commentAndDiffScrolledComposite.setMinSize(size);
-		resizing = false;
-
-		if (trace) {
-			long stop = System.currentTimeMillis();
-			long time = stop - start;
-			long lps = (lines * 1000) / (time + 1);
-			System.out
-					.println("Resize + diff: " + time + " ms, line/s: " + lps); //$NON-NLS-1$ //$NON-NLS-2$
-		}
 	}
 
 	private TreeWalk createFileWalker(RevWalk walk, Repository db, List<FilterPath> paths) {
@@ -2138,24 +2025,24 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				&& allRegularFiles(paths)) {
 			pathFilters = paths;
 
-			List<String> selectedPaths = new ArrayList<>(paths.size());
+			List<String> selectedPaths = new ArrayList<String>(paths.size());
 			for (FilterPath filterPath : paths)
 				selectedPaths.add(filterPath.getPath());
 
-			fileViewerInterestingPaths = new HashSet<>(selectedPaths);
+			fileViewerInterestingPaths = new HashSet<String>(selectedPaths);
 			TreeFilter followFilter = createFollowFilterFor(selectedPaths);
 			walk.setTreeFilter(followFilter);
 			walk.setRevFilter(renameTracker.getFilter());
 
 		} else if (paths.size() > 0) {
 			pathFilters = paths;
-			List<String> stringPaths = new ArrayList<>(paths.size());
+			List<String> stringPaths = new ArrayList<String>(paths.size());
 			for (FilterPath p : paths)
 				stringPaths.add(p.getPath());
 
 			walk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
 					.createFromStrings(stringPaths), TreeFilter.ANY_DIFF));
-			fileViewerInterestingPaths = new HashSet<>(stringPaths);
+			fileViewerInterestingPaths = new HashSet<String>(stringPaths);
 		} else {
 			pathFilters = null;
 			walk.setTreeFilter(TreeFilter.ALL);
@@ -2176,7 +2063,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		DiffConfig diffConfig = currentRepo.getConfig().get(DiffConfig.KEY);
 
-		List<TreeFilter> followFilters = new ArrayList<>(paths.size());
+		List<TreeFilter> followFilters = new ArrayList<TreeFilter>(paths.size());
 		for (String path : paths)
 			followFilters.add(createFollowFilter(path, diffConfig));
 
@@ -2246,7 +2133,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	private void loadInitialHistory(@NonNull RevWalk walk) {
 		job = new GenerateHistoryJob(this, graph.getControl(), walk, resources);
-		job.setRule(pageSchedulingRule);
+		job.setRule(this);
 		job.setLoadHint(INITIAL_ITEM);
 		if (trace)
 			GitTraceLocation.getTrace().trace(
@@ -2285,7 +2172,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		IWorkbenchPartSite site = getPartSite();
 		if (site != null) {
 			final IWorkbenchSiteProgressService p;
-			p = AdapterUtils.adapt(site, IWorkbenchSiteProgressService.class);
+			p = CommonUtils.getAdapter(site, IWorkbenchSiteProgressService.class);
 			if (p != null) {
 				p.schedule(j, 0, true /* use half-busy cursor */);
 				return;
@@ -2360,6 +2247,24 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 	}
 
+	static boolean isShowingRelativeDates() {
+		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE);
+	}
+
+	private boolean isShowingEmailAddresses() {
+		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES);
+	}
+
+	@Override
+	public boolean contains(ISchedulingRule rule) {
+		return this == rule;
+	}
+
+	@Override
+	public boolean isConflicting(ISchedulingRule rule) {
+		return this == rule;
+	}
+
 	@Override
 	public ShowInContext getShowInContext() {
 		if (fileViewer != null && fileViewer.getControl().isFocusControl())
@@ -2382,53 +2287,5 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	public String getRenamedPath(String path, ObjectId commit) {
 		return renameTracker.getPath(commit, path);
-	}
-
-	private static class FooterTokenScanner extends HyperlinkTokenScanner {
-
-		private static final Pattern ITALIC_LINE = Pattern
-				.compile("^[A-Z](?:[A-Za-z]+-)+by: "); //$NON-NLS-1$
-
-		private final IToken italicToken;
-
-		public FooterTokenScanner(SourceViewerConfiguration configuration,
-				ISourceViewer viewer) {
-			super(configuration, viewer);
-			Object defaults = defaultToken.getData();
-			TextAttribute italic;
-			if (defaults instanceof TextAttribute) {
-				TextAttribute defaultAttribute = (TextAttribute) defaults;
-				int style = defaultAttribute.getStyle() ^ SWT.ITALIC;
-				italic = new TextAttribute(defaultAttribute.getForeground(),
-						defaultAttribute.getBackground(), style,
-						defaultAttribute.getFont());
-			} else {
-				italic = new TextAttribute(null, null, SWT.ITALIC);
-			}
-			italicToken = new Token(italic);
-		}
-
-		@Override
-		protected IToken scanToken() {
-			// If we're at a "Signed-off-by" or similar footer line, make it
-			// italic.
-			try {
-				IRegion region = document
-						.getLineInformationOfOffset(currentOffset);
-				if (currentOffset == region.getOffset()) {
-					String line = document.get(currentOffset,
-							region.getLength());
-					Matcher m = ITALIC_LINE.matcher(line);
-					if (m.find()) {
-						currentOffset = Math.min(endOfRange,
-								currentOffset + region.getLength());
-						return italicToken;
-					}
-				}
-			} catch (BadLocationException e) {
-				// Ignore and return null below.
-			}
-			return null;
-		}
 	}
 }

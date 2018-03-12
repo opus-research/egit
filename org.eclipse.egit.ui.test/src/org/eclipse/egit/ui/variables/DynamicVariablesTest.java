@@ -180,7 +180,6 @@ public class DynamicVariablesTest extends EGitTestCase {
 				findMember);
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				selectionProvider.setSelection(structuredSelection);
 			}

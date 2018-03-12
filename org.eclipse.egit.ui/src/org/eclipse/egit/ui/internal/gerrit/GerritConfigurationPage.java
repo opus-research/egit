@@ -272,7 +272,7 @@ class GerritConfigurationPage extends WizardPage {
 
 	private void setDefaults(URIish uri, String targetBranch) {
 		URIish newPushURI = uri;
-		if (Protocol.SSH.handles(uri) && uri.getPort() < 0) {
+		if (Protocol.SSH.handles(uri)) {
 			newPushURI = newPushURI.setPort(GERRIT_DEFAULT_SSH_PORT);
 		} else if (Protocol.GIT.handles(uri)) {
 			newPushURI = newPushURI.setScheme(Protocol.SSH.getDefaultScheme());
@@ -318,7 +318,7 @@ class GerritConfigurationPage extends WizardPage {
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<>();
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
 				// make the simplest possible pattern check: allow "*"
 				// for multiple characters
@@ -348,7 +348,7 @@ class GerritConfigurationPage extends WizardPage {
 					pattern = null;
 				}
 
-				Set<String> proposals = new TreeSet<>();
+				Set<String> proposals = new TreeSet<String>();
 
 				try {
 					// propose the names of the remote tracking

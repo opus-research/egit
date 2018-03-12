@@ -86,9 +86,6 @@ public class CoreText extends NLS {
 	public static String InitOperation_initialCommit;
 
 	/** */
-	public static String InitOperation_localMasterDoesNotExist;
-
-	/** */
 	public static String ReleaseFinishOperation_releaseOf;
 
 	/** */
@@ -98,6 +95,6 @@ public class CoreText extends NLS {
 	public static String ReleaseStartOperation_releaseNameAlreadyExists;
 
 	/** */
-	public static String StartOperation_unableToFindCommitFor;
+	public static String ReleaseStartOperation_unableToFindCommit;
 
 }

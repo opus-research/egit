@@ -23,7 +23,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -172,7 +171,7 @@ class RefUpdateElement extends WorkbenchAdapter {
 			walk.setRetainBody(true);
 			walk.markStart(walk.parseCommit(update.getNewObjectId()));
 			walk.markUninteresting(walk.parseCommit(end.getObjectId()));
-			List<RepositoryCommit> commits = new ArrayList<>();
+			List<RepositoryCommit> commits = new ArrayList<RepositoryCommit>();
 			for (RevCommit commit : walk)
 				commits.add(new RepositoryCommit(repo, commit));
 			return commits.toArray(new RepositoryCommit[commits.size()]);
@@ -256,14 +255,11 @@ class RefUpdateElement extends WorkbenchAdapter {
 								StyledString.DECORATIONS_STYLER);
 				} else {
 					String separator = update.isFastForward() ? ".." : "..."; //$NON-NLS-1$ //$NON-NLS-2$
-					ObjectId objectId = oldRef.getObjectId();
-					Object oldName = objectId != null
-							? objectId.abbreviate(7).name() : "?"; //$NON-NLS-1$
 					styled.append(MessageFormat.format(
 							UIText.RefUpdateElement_CommitRangeDecoration,
 							update.getNewObjectId().abbreviate(7).name(),
-									separator, oldName),
-							StyledString.DECORATIONS_STYLER);
+							separator, oldRef.getObjectId().abbreviate(7)
+									.name()), StyledString.DECORATIONS_STYLER);
 					styled.append(' ');
 					styled.append(MessageFormat.format(
 							UIText.RefUpdateElement_CommitCountDecoration,

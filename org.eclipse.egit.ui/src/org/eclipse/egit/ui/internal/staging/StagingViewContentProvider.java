@@ -130,11 +130,11 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		if (content == null || content.length == 0)
 			return new Object[0];
 
-		List<Object> roots = new ArrayList<>();
-		Map<IPath, List<Object>> childrenForPath = new HashMap<>();
+		List<Object> roots = new ArrayList<Object>();
+		Map<IPath, List<Object>> childrenForPath = new HashMap<IPath, List<Object>>();
 
-		Set<IPath> folderPaths = new HashSet<>();
-		Map<IPath, String> childSegments = new HashMap<>();
+		Set<IPath> folderPaths = new HashSet<IPath>();
+		Map<IPath, String> childSegments = new HashMap<IPath, String>();
 
 		for (StagingEntry file : content) {
 			IPath folderPath = file.getParentPath();
@@ -167,7 +167,7 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		IPath workingDirectory = new Path(repository.getWorkTree()
 				.getAbsolutePath());
 
-		List<StagingFolderEntry> folderEntries = new ArrayList<>();
+		List<StagingFolderEntry> folderEntries = new ArrayList<StagingFolderEntry>();
 		for (IPath folderPath : folderPaths) {
 			IPath parent = folderPath.removeLastSegments(1);
 			// Find first existing parent node, but stop at root
@@ -211,7 +211,7 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 			IPath path, Object child) {
 		List<Object> children = childrenForPath.get(path);
 		if (children == null) {
-			children = new ArrayList<>();
+			children = new ArrayList<Object>();
 			childrenForPath.put(path, children);
 		}
 		children.add(child);
@@ -232,7 +232,7 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 	}
 
 	List<StagingEntry> getStagingEntriesFiltered(StagingFolderEntry folder) {
-		List<StagingEntry> stagingEntries = new ArrayList<>();
+		List<StagingEntry> stagingEntries = new ArrayList<StagingEntry>();
 		for (StagingEntry stagingEntry : content) {
 			if (folder.getLocation().isPrefixOf(stagingEntry.getLocation())) {
 				if (isInFilter(stagingEntry))
@@ -285,7 +285,7 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 
 		repository = update.repository;
 
-		Set<StagingEntry> nodes = new TreeSet<>(
+		Set<StagingEntry> nodes = new TreeSet<StagingEntry>(
 				new Comparator<StagingEntry>() {
 					@Override
 					public int compare(StagingEntry o1, StagingEntry o2) {
@@ -420,9 +420,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 	private void setSymlinkFileMode(IndexDiffData indexDiff,
 			Collection<StagingEntry> entries) {
 		final Set<String> symlinks = indexDiff.getSymlinks();
-		if (symlinks.isEmpty()) {
-			return;
-		}
 		for (StagingEntry stagingEntry : entries) {
 			if (symlinks.contains(stagingEntry.getPath()))
 				stagingEntry.setSymlink(true);
@@ -441,9 +438,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 	private void setSubmoduleFileMode(IndexDiffData indexDiff,
 			Collection<StagingEntry> entries) {
 		final Set<String> submodules = indexDiff.getSubmodules();
-		if (submodules.isEmpty()) {
-			return;
-		}
 		for (StagingEntry stagingEntry : entries) {
 			if (submodules.contains(stagingEntry.getPath()))
 				stagingEntry.setSubmodule(true);

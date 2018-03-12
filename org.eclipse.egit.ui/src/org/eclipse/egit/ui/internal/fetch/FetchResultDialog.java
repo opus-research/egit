@@ -68,10 +68,16 @@ public class FetchResultDialog extends TitleAreaDialog {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				Shell shell = PlatformUI.getWorkbench()
-						.getModalDialogShellProvider().getShell();
-				new FetchResultDialog(shell, repository, result, sourceString)
-						.open();
+				PlatformUI.getWorkbench().getDisplay().asyncExec(
+						new Runnable() {
+							@Override
+							public void run() {
+								Shell shell = PlatformUI.getWorkbench()
+										.getActiveWorkbenchWindow().getShell();
+								new FetchResultDialog(shell, repository,
+										result, sourceString).open();
+							}
+						});
 			}
 		});
 	}
@@ -111,9 +117,8 @@ public class FetchResultDialog extends TitleAreaDialog {
 				@Override
 				public void run() {
 					Dialog dlg = SimpleConfigureFetchDialog.getDialog(
-							PlatformUI.getWorkbench()
-									.getModalDialogShellProvider().getShell(),
-							localDb);
+							PlatformUI.getWorkbench().getDisplay()
+									.getActiveShell(), localDb);
 					dlg.open();
 				}
 			});

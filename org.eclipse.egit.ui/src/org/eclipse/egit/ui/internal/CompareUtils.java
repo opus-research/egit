@@ -19,7 +19,6 @@ package org.eclipse.egit.ui.internal;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
@@ -27,17 +26,18 @@ import org.eclipse.compare.IContentChangeListener;
 import org.eclipse.compare.IContentChangeNotifier;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.DefaultScope;
@@ -225,6 +225,14 @@ public class CompareUtils {
 		}
 		return ancestor;
 	}
+/**
+	 * @param element
+	 * @param adapterType
+	 * @return the adapted element, or null
+	 */
+	public static Object getAdapter(Object element, Class adapterType) {
+		return getAdapter(element, adapterType, false);
+	}
 
 	/**
 	 * @param ci
@@ -235,6 +243,35 @@ public class CompareUtils {
 			return ci.substring(0, 7);
 		else
 			return ci;
+	}
+
+	/**
+	 * @param element
+	 * @param adapterType
+	 * @param load
+	 * @return the adapted element, or null
+	 */
+	private static Object getAdapter(Object element, Class adapterType,
+			boolean load) {
+		if (adapterType.isInstance(element))
+			return element;
+		if (element instanceof IAdaptable) {
+			Object adapted = CommonUtils.getAdapter(((IAdaptable) element), adapterType);
+			if (adapterType.isInstance(adapted))
+				return adapted;
+		}
+		if (load) {
+			Object adapted = Platform.getAdapterManager().loadAdapter(element,
+					adapterType.getName());
+			if (adapterType.isInstance(adapted))
+				return adapted;
+		} else {
+			Object adapted = Platform.getAdapterManager().getAdapter(element,
+					adapterType);
+			if (adapterType.isInstance(adapted))
+				return adapted;
+		}
+		return null;
 	}
 
 	/**
@@ -406,31 +443,23 @@ public class CompareUtils {
 
 	/**
 	 * Opens a compare editor comparing the working directory version of the
-	 * given file or link with the version of that file corresponding to
+	 * given IFile with the version of that file corresponding to
 	 * {@code refName}.
 	 *
 	 * @param repository
 	 *            The repository to load file revisions from.
 	 * @param file
-	 *            Resource to compare revisions for. Must be either
-	 *            {@link IFile} or a symbolic link to directory ({@link IFolder}).
+	 *            File to compare revisions for.
 	 * @param refName
 	 *            Reference to compare with the workspace version of
 	 *            {@code file}. Can be either a commit ID, a reference or a
 	 *            branch name.
 	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this page if
-	 *            any is available. Otherwise open a new one.
+	 *            If not {@null} try to re-use a compare editor on this
+	 *            page if any is available. Otherwise open a new one.
 	 */
 	private static void compareWorkspaceWithRef(final Repository repository,
-			final IResource file, final String refName, final IWorkbenchPage page) {
-		if (file == null) {
-			return;
-		}
-		final IPath location = file.getLocation();
-		if(location == null){
-			return;
-		}
+			final IFile file, final String refName, final IWorkbenchPage page) {
 
 		Job job = new Job(UIText.CompareUtils_jobName) {
 
@@ -444,23 +473,12 @@ public class CompareUtils {
 				if (mapping == null) {
 					return Activator.createErrorStatus(
 							NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-									location, repository));
+									file.getLocation(), repository));
 				}
-
-				final ITypedElement base;
-				if (Files.isSymbolicLink(location.toFile().toPath())) {
-					base = new LocalNonWorkspaceTypedElement(repository,
-							location);
-				} else if (file instanceof IFile) {
-					base = SaveableCompareEditorInput
-							.createFileElement((IFile) file);
-				} else {
-					return Activator.createErrorStatus(
-							NLS.bind(UIText.CompareUtils_wrongResourceArgument,
-									location, file));
-				}
-
 				final String gitPath = mapping.getRepoRelativePath(file);
+				final ITypedElement base = SaveableCompareEditorInput
+						.createFileElement(file);
+
 				CompareEditorInput in;
 				try {
 					in = prepareCompareInput(repository, gitPath, base, refName);
@@ -541,7 +559,7 @@ public class CompareUtils {
 				}
 				final String gitPath = getRepoRelativePath(location, repository);
 				final ITypedElement base = new LocalNonWorkspaceTypedElement(
-						repository, location);
+						location);
 
 				CompareEditorInput in;
 				try {
@@ -640,13 +658,13 @@ public class CompareUtils {
 	public static void compare(IResource[] resources, Repository repository,
 			String leftRev, String rightRev, boolean includeLocal,
 			IWorkbenchPage page) throws IOException {
-		boolean useTreeCompare = shouldUseTreeCompare(resources);
-		if (!useTreeCompare) {
-			if (includeLocal) {
-				compareWorkspaceWithRef(repository, resources[0],
+		if (resources.length == 1 && resources[0] instanceof IFile
+				&& canDirectlyOpenInCompare((IFile) resources[0])) {
+			if (includeLocal)
+				compareWorkspaceWithRef(repository, (IFile) resources[0],
 						rightRev, page);
-			} else {
-				final IResource file = resources[0];
+			else {
+				final IFile file = (IFile) resources[0];
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
 				if (mapping == null) {
@@ -658,27 +676,9 @@ public class CompareUtils {
 
 				compareBetween(repository, gitPath, leftRev, rightRev, page);
 			}
-		} else {
+		} else
 			GitModelSynchronize.synchronize(resources, repository, leftRev,
 					rightRev, includeLocal);
-		}
-	}
-
-	private static boolean shouldUseTreeCompare(IResource[] resources) {
-		if (resources.length == 1) {
-			IResource resource = resources[0];
-			if (resource instanceof IFile) {
-				return !canDirectlyOpenInCompare((IFile) resource);
-			} else {
-				IPath location = resource.getLocation();
-				if (location != null
-						&& Files.isSymbolicLink(location.toFile().toPath())) {
-					// for directory *link*, file compare must be used
-					return false;
-				}
-			}
-		}
-		return true;
 	}
 
 	/**
@@ -726,19 +726,18 @@ public class CompareUtils {
 	public static void compare(IResource[] resources, Repository repository,
 			String leftPath, String rightPath, String leftRev, String rightRev,
 			boolean includeLocal, IWorkbenchPage page) throws IOException {
-		boolean useTreeCompare = shouldUseTreeCompare(resources);
-		if (!useTreeCompare) {
-			if (includeLocal) {
-				compareWorkspaceWithRef(repository, resources[0],
+		if (resources.length == 1 && resources[0] instanceof IFile
+				&& canDirectlyOpenInCompare((IFile) resources[0])) {
+			if (includeLocal)
+				compareWorkspaceWithRef(repository, (IFile) resources[0],
 						rightRev, page);
-			} else {
+			else {
 				compareBetween(repository, leftPath, rightPath, leftRev,
 						rightRev, page);
 			}
-		} else {
+		} else
 			GitModelSynchronize.synchronize(resources, repository, leftRev,
 					rightRev, includeLocal);
-		}
 	}
 
 	/**
@@ -934,7 +933,7 @@ public class CompareUtils {
 	 */
 	public static ITypedElement getHeadTypedElement(Repository repository, String repoRelativePath) {
 		try {
-			Ref head = repository.exactRef(Constants.HEAD);
+			Ref head = repository.getRef(Constants.HEAD);
 			if (head == null || head.getObjectId() == null)
 				// Initial import, not yet a HEAD commit
 				return new EmptyTypedElement(""); //$NON-NLS-1$
