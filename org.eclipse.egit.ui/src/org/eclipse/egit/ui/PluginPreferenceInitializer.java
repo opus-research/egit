@@ -66,6 +66,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.FINDTOOLBAR_IGNORE_CASE, true);
 		store.setDefault(UIPreferences.FINDTOOLBAR_FIND_IN, 2);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE, true);
+		store.setDefault(UIPreferences.COMMIT_DIALOG_CREATE_CHANGE_ID, false);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY, false);
 
 		store.setDefault(UIPreferences.REFESH_ON_INDEX_CHANGE, true);
@@ -79,8 +80,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 
 		store.setDefault(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT,
 				GitChangeSetLabelProvider.DEFAULT_CHANGESET_FORMAT);
-		store.setDefault(UIPreferences.SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL,
-				false);
 		store.setDefault(UIPreferences.DATE_FORMAT,
 				GitChangeSetLabelProvider.DEFAULT_DATE_FORMAT);
 		store.setDefault(UIPreferences.HISTORY_MAX_NUM_COMMITS, 10000);

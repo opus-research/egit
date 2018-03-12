@@ -520,10 +520,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 					}
 					for (RevCommit revCommit : commits)
 						commitCombo.add(revCommit);
-
-					// Set combo selection if a tag is selected
-					if (tag != null)
-						commitCombo.setSelectedElement(tag.getObject());
 				}
 				composite.layout(true);
 			}
