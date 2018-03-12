@@ -294,7 +294,7 @@ public class BranchOperationUI {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.CHECKOUT))
+				if (JobFamilies.CHECKOUT.equals(family))
 					return true;
 				return super.belongsTo(family);
 			}
@@ -374,78 +374,65 @@ public class BranchOperationUI {
 	}
 
 	private String getTargetWithDialog() {
-		final String[] dialogResult = new String[1];
-		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			public void run() {
-				AbstractBranchSelectionDialog dialog;
-				switch (mode) {
-				case MODE_CHECKOUT:
-					dialog = new CheckoutDialog(getShell(), repository);
-					break;
-				case MODE_CREATE:
-					CreateBranchWizard wiz;
-					try {
-						if (base == null)
-							base = repository.getFullBranch();
-						wiz = new CreateBranchWizard(repository, base);
-					} catch (IOException e) {
-						wiz = new CreateBranchWizard(repository);
-					}
-					new WizardDialog(getShell(), wiz).open();
-					return;
-				case MODE_DELETE:
-					new DeleteBranchDialog(getShell(), repository).open();
-					return;
-				case MODE_RENAME:
-					new RenameBranchDialog(getShell(), repository).open();
-					return;
-				default:
-					return;
-				}
-
-				if (dialog.open() != Window.OK)
-					return;
-
-				dialogResult[0] = dialog.getRefName();
+		AbstractBranchSelectionDialog dialog;
+		switch (mode) {
+		case MODE_CHECKOUT:
+			dialog = new CheckoutDialog(getShell(), repository);
+			break;
+		case MODE_CREATE:
+			CreateBranchWizard wiz;
+			try {
+				if (base == null)
+					base = repository.getFullBranch();
+				wiz = new CreateBranchWizard(repository, base);
+			} catch (IOException e) {
+				wiz = new CreateBranchWizard(repository);
 			}
-		});
-		return dialogResult[0];
+			new WizardDialog(getShell(), wiz).open();
+			return null;
+		case MODE_DELETE:
+			new DeleteBranchDialog(getShell(), repository).open();
+			return null;
+		case MODE_RENAME:
+			new RenameBranchDialog(getShell(), repository).open();
+			return null;
+		default:
+			return null;
+		}
+
+		if (dialog.open() != Window.OK) {
+			return null;
+		}
+		return dialog.getRefName();
 	}
 
 	private String getTargetWithCheckoutRemoteTrackingDialog() {
-		final String[] dialogResult = new String[1];
-		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			public void run() {
-				String[] buttons = new String[] {
-						UIText.BranchOperationUI_CheckoutRemoteTrackingAsLocal,
-						UIText.BranchOperationUI_CheckoutRemoteTrackingCommit,
-						IDialogConstants.CANCEL_LABEL };
-				MessageDialog questionDialog = new MessageDialog(
-						getShell(),
-						UIText.BranchOperationUI_CheckoutRemoteTrackingTitle,
-						null,
-						UIText.BranchOperationUI_CheckoutRemoteTrackingQuestion,
-						MessageDialog.QUESTION, buttons, 0);
-				int result = questionDialog.open();
-				if (result == 0) {
-					// Check out as new local branch
-					CreateBranchWizard wizard = new CreateBranchWizard(repository,
-							target);
-					WizardDialog createBranchDialog = new WizardDialog(getShell(),
-							wizard);
-					createBranchDialog.open();
-					return;
-				} else if (result == 1) {
-					// Check out commit
-					dialogResult[0] = target;
-					return;
-				} else {
-					// Cancel
-					return;
-				}
-			}
-		});
-		return dialogResult[0];
+		String[] buttons = new String[] {
+				UIText.BranchOperationUI_CheckoutRemoteTrackingAsLocal,
+				UIText.BranchOperationUI_CheckoutRemoteTrackingCommit,
+				IDialogConstants.CANCEL_LABEL };
+		MessageDialog questionDialog = new MessageDialog(
+				getShell(),
+				UIText.BranchOperationUI_CheckoutRemoteTrackingTitle,
+				null,
+				UIText.BranchOperationUI_CheckoutRemoteTrackingQuestion,
+				MessageDialog.QUESTION, buttons, 0);
+		int result = questionDialog.open();
+		if (result == 0) {
+			// Check out as new local branch
+			CreateBranchWizard wizard = new CreateBranchWizard(repository,
+					target);
+			WizardDialog createBranchDialog = new WizardDialog(getShell(),
+					wizard);
+			createBranchDialog.open();
+			return null;
+		} else if (result == 1) {
+			// Check out commit
+			return target;
+		} else {
+			// Cancel
+			return null;
+		}
 	}
 
 	private Shell getShell() {
@@ -525,39 +512,31 @@ public class BranchOperationUI {
 	private boolean shouldCancelBecauseOfRunningLaunches() {
 		if (mode == MODE_CHECKOUT)
 			return false;
-		final IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
 		if (!store
 				.getBoolean(UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING))
 			return false;
 
-		final ILaunchConfiguration launchConfiguration = getRunningLaunchConfiguration();
+		ILaunchConfiguration launchConfiguration = getRunningLaunchConfiguration();
 		if (launchConfiguration != null) {
-			final Boolean[] dialogResult = new Boolean[1];
-			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				public void run() {
-					String[] buttons = new String[] {
-							UIText.BranchOperationUI_Continue,
-							IDialogConstants.CANCEL_LABEL };
-					String message = NLS.bind(UIText.BranchOperationUI_RunningLaunchMessage,
-							launchConfiguration.getName());
-					MessageDialogWithToggle continueDialog = new MessageDialogWithToggle(
-							getShell(), UIText.BranchOperationUI_RunningLaunchTitle,
-							null, message, MessageDialog.NONE, buttons, 0,
-							UIText.BranchOperationUI_RunningLaunchDontShowAgain, false);
-					int result = continueDialog.open();
-					// cancel
-					if (result == IDialogConstants.CANCEL_ID || result == SWT.DEFAULT) {
-						dialogResult[0] = Boolean.TRUE;
-						return;
-					}
-					boolean dontWarnAgain = continueDialog.getToggleState();
-					if (dontWarnAgain)
-						store.setValue(
-								UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
-								false);
-				}
-			});
-			return dialogResult[0].booleanValue();
+			String[] buttons = new String[] {
+					UIText.BranchOperationUI_Continue,
+					IDialogConstants.CANCEL_LABEL };
+			String message = NLS.bind(UIText.BranchOperationUI_RunningLaunchMessage,
+					launchConfiguration.getName());
+			MessageDialogWithToggle continueDialog = new MessageDialogWithToggle(
+					getShell(), UIText.BranchOperationUI_RunningLaunchTitle,
+					null, message, MessageDialog.NONE, buttons, 0,
+					UIText.BranchOperationUI_RunningLaunchDontShowAgain, false);
+			int result = continueDialog.open();
+			// cancel
+			if (result == IDialogConstants.CANCEL_ID || result == SWT.DEFAULT)
+				return true;
+			boolean dontWarnAgain = continueDialog.getToggleState();
+			if (dontWarnAgain)
+				store.setValue(
+						UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
+						false);
 		}
 		return false;
 	}
