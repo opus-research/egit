@@ -2377,6 +2377,9 @@ public class UIText extends NLS {
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
 
 	/** */
+	public static String DeleteBranchCommand_DeletingBranchesProgress;
+
+	/** */
 	public static String DeleteBranchDialog_DialogMessage;
 
 	/** */
@@ -3504,9 +3507,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitSelectionDialog_WindowTitle;
-
-	/** */
-	public static String CommitUI_commitFailed;
 
 	/** */
 	public static String EgitUiEditorUtils_openFailed;
