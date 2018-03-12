@@ -72,7 +72,7 @@ public class CommitDialogTester {
 			SWTWorkbenchBot workbenchBot) {
 		SWTBotTree projectExplorerTree = workbenchBot
 				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
-		util.getProjectItems(projectExplorerTree, projectName)[0].select();
+		util.getProjectItem(projectExplorerTree, projectName).select();
 		String menuString = util.getPluginLocalizedValue("CommitAction_label");
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
 				menuString);
@@ -145,8 +145,10 @@ public class CommitDialogTester {
 		if (select) {
 			if (!button.isChecked())
 				button.select();
-		} else if (button.isChecked())
-			button.deselect();
+		} else {
+			if (button.isChecked())
+				button.deselect();
+		}
 	}
 
 	public int getRowCount() {
