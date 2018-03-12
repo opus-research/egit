@@ -37,7 +37,9 @@ public class SelectionPropertyTester extends PropertyTester {
 		Collection<?> collection = (Collection<?>) receiver;
 		if (collection.isEmpty())
 			return false;
-		if ("projectsSingleRepository".equals(property)) { //$NON-NLS-1$
+		if ("projectSingleRepository".equals(property)) { //$NON-NLS-1$
+			if (collection.size() != 1)
+				return false;
 
 			Repository repository = getRepositoryOfProjects(collection, true);
 			return testRepositoryProperties(repository, args);
