@@ -144,7 +144,8 @@ public class GitProjectPropertyPage extends PropertyPage {
 	}
 
 	private RepositoryCommit getCommit(Repository repository, ObjectId objectId) {
-		try (RevWalk walk = new RevWalk(repository)) {
+		RevWalk walk = new RevWalk(repository);
+		try {
 			RevCommit commit = walk.parseCommit(objectId);
 			for (RevCommit parent : commit.getParents())
 				walk.parseBody(parent);
@@ -153,6 +154,8 @@ public class GitProjectPropertyPage extends PropertyPage {
 			Activator.showError(NLS.bind(
 					UIText.GitProjectPropertyPage_UnableToGetCommit,
 					objectId.name()), e);
+		} finally {
+			walk.release();
 		}
 		return null;
 	}
