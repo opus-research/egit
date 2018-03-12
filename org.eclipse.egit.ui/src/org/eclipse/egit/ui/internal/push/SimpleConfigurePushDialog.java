@@ -580,7 +580,6 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 									PushResultDialog dlg = new PushResultDialog(
 											getShell(), repository, result, op
 													.getDestinationString());
-									dlg.showConfigureButton(false);
 									dlg.open();
 								} catch (CoreException e) {
 									Activator.handleError(e.getMessage(), e,
