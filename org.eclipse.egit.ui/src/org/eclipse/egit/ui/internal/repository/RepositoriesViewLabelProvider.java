@@ -12,8 +12,6 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -21,23 +19,22 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
-import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.BaseLabelProvider;
+import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeColumn;
 
 /**
  * Label Provider for the Git Repositories View
  */
-public class RepositoriesViewLabelProvider extends LabelProvider {
-
-	/**
-	 * A map of regular images to their decorated counterpart.
-	 */
-	private Map<Image, Image> decoratedImages = new HashMap<Image, Image>();
+public class RepositoriesViewLabelProvider extends BaseLabelProvider implements
+		ITableLabelProvider {
 
 	// private DefaultInformationControl infoControl;
 
@@ -48,6 +45,9 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 	RepositoriesViewLabelProvider(final TreeViewer viewer) {
 
 		viewer.setLabelProvider(this);
+		Tree tree = viewer.getTree();
+		TreeColumn col = new TreeColumn(tree, SWT.NONE);
+		col.setWidth(400);
 		// we could implement some hover here to display additional information
 		// viewer.getTree().addMouseTrackListener(new MouseTrackAdapter() {
 		//
@@ -130,14 +130,12 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 
 	}
 
-	@Override
-	public Image getImage(Object element) {
+	public Image getColumnImage(Object element, int columnIndex) {
 		return decorateImage(
 				((RepositoryTreeNode) element).getType().getIcon(), element);
 	}
 
-	@Override
-	public String getText(Object element) {
+	public String getColumnText(Object element, int columnIndex) {
 
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
 		switch (node.getType()) {
@@ -183,16 +181,6 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 		}
 	}
 
-	@Override
-	public void dispose() {
-		// dispose of our decorated images
-		for (Image image : decoratedImages.values()) {
-			image.dispose();
-		}
-		decoratedImages.clear();
-		super.dispose();
-	}
-
 	private Image decorateImage(final Image image, Object element) {
 
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
@@ -205,7 +193,23 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 			try {
 				String branch = node.getBranch();
 				if (refName.equals(branch)) {
-					return getDecoratedImage(image);
+					CompositeImageDescriptor cd = new CompositeImageDescriptor() {
+
+						@Override
+						protected Point getSize() {
+							return new Point(image.getBounds().width, image
+									.getBounds().width);
+						}
+
+						@Override
+						protected void drawCompositeImage(int width, int height) {
+							drawImage(image.getImageData(), 0, 0);
+							drawImage(UIIcons.OVR_CHECKEDOUT.getImageData(), 0,
+									0);
+
+						}
+					};
+					return cd.createImage();
 				}
 			} catch (IOException e1) {
 				// simply ignore here
@@ -219,7 +223,23 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 			for (IProject proj : ResourcesPlugin.getWorkspace().getRoot()
 					.getProjects()) {
 				if (proj.getLocation().equals(new Path(file.getAbsolutePath()))) {
-					return getDecoratedImage(image);
+					CompositeImageDescriptor cd = new CompositeImageDescriptor() {
+
+						@Override
+						protected Point getSize() {
+							return new Point(image.getBounds().width, image
+									.getBounds().width);
+						}
+
+						@Override
+						protected void drawCompositeImage(int width, int height) {
+							drawImage(image.getImageData(), 0, 0);
+							drawImage(UIIcons.OVR_CHECKEDOUT.getImageData(), 0,
+									0);
+
+						}
+					};
+					return cd.createImage();
 				}
 			}
 			return image;
@@ -227,34 +247,6 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 		default:
 			return image;
 		}
-	}
-
-	private Image getDecoratedImage(final Image image) {
-		// check if we have a decorated image yet or not
-		Image decoratedImage = decoratedImages.get(image);
-		if (decoratedImage == null) {
-			// create one
-			CompositeImageDescriptor cd = new CompositeImageDescriptor() {
-
-				@Override
-				protected Point getSize() {
-					Rectangle bounds = image.getBounds();
-					return new Point(bounds.width, bounds.height);
-				}
-
-				@Override
-				protected void drawCompositeImage(int width, int height) {
-					drawImage(image.getImageData(), 0, 0);
-					drawImage(UIIcons.OVR_CHECKEDOUT.getImageData(), 0,
-							0);
-
-				}
-			};
-			decoratedImage = cd.createImage();
-			// store it
-			decoratedImages.put(image, decoratedImage);
-		}
-		return decoratedImage;
 	}
 
 }
