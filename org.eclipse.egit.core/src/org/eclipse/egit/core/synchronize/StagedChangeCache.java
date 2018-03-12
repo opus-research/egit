@@ -38,7 +38,7 @@ public class StagedChangeCache {
 
 	/**
 	 * @param repo
-	 *            repository with should be scanned
+	 *            repository which should be scanned
 	 * @return list of changes in git staging area
 	 */
 	public static Map<String, Change> build(Repository repo) {

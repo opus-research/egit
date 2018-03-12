@@ -4225,9 +4225,6 @@ public class UIText extends NLS {
 	/** */
 	public static String FetchChangeFromGerritCommand_noRepositorySelectedMessage;
 
-	/** */
-	public static String GitOpenInCompareAction_cannotRetriveCommitWithId;
-
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
