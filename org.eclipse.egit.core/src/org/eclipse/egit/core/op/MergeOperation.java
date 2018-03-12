@@ -1,6 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
- * Copyright (C) 2012, Tomasz Zarna <Tomasz.Zarna@pl.ibm.com>
+ * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (C) 2012, 2013 Tomasz Zarna <tzarna@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,7 +14,6 @@
 package org.eclipse.egit.core.op;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -31,6 +30,7 @@ import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
+import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
@@ -56,6 +56,8 @@ public class MergeOperation implements IEGitOperation {
 	private MergeStrategy mergeStrategy;
 
 	private boolean squash;
+
+	private FastForwardMode fastForwardMode;
 
 	private MergeResult mergeResult;
 
@@ -89,6 +91,14 @@ public class MergeOperation implements IEGitOperation {
 		this.squash = squash;
 	}
 
+	/**
+	 * @param ffmode set the fast forward mode
+	 * @since 3.0
+	 */
+	public void setFastForwardMode(FastForwardMode ffmode) {
+		this.fastForwardMode = ffmode;
+	}
+
 	public void execute(IProgressMonitor m) throws CoreException {
 		if (mergeResult != null)
 			throw new CoreException(new Status(IStatus.ERROR, Activator
@@ -107,11 +117,17 @@ public class MergeOperation implements IEGitOperation {
 				mymonitor.worked(1);
 				MergeCommand merge;
 				try {
+					FastForwardMode ffmode = fastForwardMode;
+					if (ffmode == null)
+						ffmode = Activator.getDefault().getRepositoryUtil()
+								.getFastForwardMode(repository);
 					Ref ref = repository.getRef(refName);
 					if (ref != null)
-						merge = git.merge().include(ref);
+						merge = git.merge().include(ref).setFastForward(ffmode);
 					else
-						merge = git.merge().include(ObjectId.fromString(refName));
+						merge = git.merge()
+								.include(ObjectId.fromString(refName))
+								.setFastForward(ffmode);
 				} catch (IOException e) {
 					throw new TeamException(CoreText.MergeOperation_InternalError, e);
 				}
@@ -129,17 +145,8 @@ public class MergeOperation implements IEGitOperation {
 				} catch (ConcurrentRefUpdateException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedRefUpdate, e);
 				} catch (CheckoutConflictException e) {
-					StringBuilder builder = new StringBuilder();
-					for (String f : e.getConflictingPaths()) {
-						builder.append("\n"); //$NON-NLS-1$
-						builder.append(f);
-					}
-					throw new TeamException(
-								new Status(
-									IStatus.INFO,
-									Activator.getPluginId(),
-									MessageFormat.format(CoreText.MergeOperation_CheckoutConflict,
-									builder.toString())));
+					mergeResult = new MergeResult(e.getConflictingPaths());
+					return;
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
 				} finally {
@@ -164,6 +171,4 @@ public class MergeOperation implements IEGitOperation {
 	public ISchedulingRule getSchedulingRule() {
 		return ResourcesPlugin.getWorkspace().getRoot();
 	}
-
-
 }

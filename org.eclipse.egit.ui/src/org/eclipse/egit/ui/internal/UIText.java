@@ -1,11 +1,11 @@
 /*******************************************************************************
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2010, 2013 Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * All rights reserved. This program and the accompanying materials
@@ -13,7 +13,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui;
+package org.eclipse.egit.ui.internal;
 
 import org.eclipse.osgi.util.NLS;
 
@@ -37,9 +37,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
-
-	/** */
-	public static String AbstractHistoryCommanndHandler_NoUniqueRepository;
 
 	/** */
 	public static String AbstractRebaseCommand_DialogTitle;
@@ -426,6 +423,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_CheckoutMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_CheckoutMenuLabel2;
+
+	/** */
 	public static String GitHistoryPage_CompareModeMenuLabel;
 
 	/** */
@@ -642,6 +642,9 @@ public class UIText extends NLS {
 	public static String ProjectsPreferencePage_RestoreBranchProjects;
 
 	/** */
+	public static String ProjectsPreferencePage_AutoIgnoreDerivedResources;
+
+	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -667,6 +670,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitProjectsImportPage_NoProjectsMessage;
+
+	/** */
+	public static String GitProjectsImportPage_SearchForNestedProjects;
 
 	/** */
 	public static String RebaseCurrentRefCommand_RebaseCanceledMessage;
@@ -900,7 +906,31 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
+	public static String CleanRepositoryPage_cleanDirs;
+
+	/** */
+	public static String CleanRepositoryPage_cleanFiles;
+
+	/** */
+	public static String CleanRepositoryPage_cleaningItems;
+
+	/** */
+	public static String CleanRepositoryPage_findingItems;
+
+	/** */
+	public static String CleanRepositoryPage_includeIgnored;
+
+	/** */
+	public static String CleanRepositoryPage_message;
+
+	/** */
+	public static String CleanRepositoryPage_title;
+
+	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
+
+	/** */
+	public static String CheckoutConflictDialog_conflictMessage;
 
 	/** */
 	public static String CheckoutDialog_Message;
@@ -1623,6 +1653,12 @@ public class UIText extends NLS {
 	public static String ResetTargetSelectionDialog_ResetTypeSoftButton;
 
 	/** */
+	public static String ResetTargetSelectionDialog_ResetTypeHEADHardButton;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetTypeHEADMixedButton;
+
+	/** */
 	public static String ResetTargetSelectionDialog_SelectBranchForResetMessage;
 
 	/** */
@@ -1768,9 +1804,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PullResultDialog_RebaseStatusLabel;
-
-	/** */
-	public static String PullResultDialog_RebaseStoppedMessage;
 
 	/** */
 	public static String PushAction_wrongURIDescription;
@@ -2523,6 +2556,9 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_ProvideRefNameMessage;
 
 	/** */
+	public static String FetchGerritChangePage_RunInBackground;
+
+	/** */
 	public static String FetchGerritChangePage_SuggestedRefNamePattern;
 
 	/** */
@@ -2758,6 +2794,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchResultDialog_CheckoutConflictsTitle;
+
+	/** */
+	public static String BranchResultDialog_dontShowAgain;
 
 	/** */
 	public static String CheckoutDialog_ErrorCouldNotCreateNewRef;
@@ -3153,9 +3192,6 @@ public class UIText extends NLS {
 	public static String GitCompareFileRevisionEditorInput_LocalLabel;
 
 	/** */
-	public static String GitCompareFileRevisionEditorInput_IndexLabel;
-
-	/** */
 	public static String GitCompareFileRevisionEditorInput_LocalRevision;
 
 	/** */
@@ -3396,6 +3432,9 @@ public class UIText extends NLS {
 	public static String MergeResultDialog_id;
 
 	/** */
+	public static String MergeResultDialog_conflicts;
+
+	/** */
 	public static String MergeResultDialog_failed;
 
 	/** */
@@ -3427,6 +3466,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeTargetSelectionDialog_TitleMergeWithBranch;
+
+	/** */
+	public static String MergeTargetSelectionDialog_FastForwardGroup;
+
+	/** */
+	public static String MergeTargetSelectionDialog_FastForwardButton;
+
+	/** */
+	public static String MergeTargetSelectionDialog_NoFastForwardButton;
+
+	/** */
+	public static String MergeTargetSelectionDialog_OnlyFastForwardButton;
 
 	/** */
 	public static String MergeTargetSelectionDialog_MergeTypeGroup;
@@ -3818,6 +3869,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitTraceConfigurationDialog_TraceFileLocationLabel;
+
+	/** */
+	public static String ImportProjectsWrongSelection;
+
+	/** */
+	public static String ImportProjectsSelectionInRepositoryRequired;
 
 	/** */
 	public static String LocalFileRevision_CurrentVersion;
@@ -4283,6 +4340,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_RefAlreadyExistsMessage;
+
+	/** */
+	public static String ValidationUtils_RefNameConflictsWithExistingMessage;
 
 	/** */
 	public static String ValidationUtils_PleaseEnterNameMessage;
