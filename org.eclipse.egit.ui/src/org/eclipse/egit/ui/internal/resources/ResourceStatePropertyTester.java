@@ -18,7 +18,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
-import org.eclipse.egit.ui.internal.resources.IResourceState.Staged;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -46,7 +45,7 @@ public class ResourceStatePropertyTester extends PropertyTester {
 		 * {@code true} if the collection contains at least one item with
 		 * unstaged changes.
 		 */
-		HAS_UNCHANGED_CHANGES,
+		HAS_UNSTAGED_CHANGES,
 
 		/**
 		 * {@code true} if the collection contain at least one item that is not
@@ -109,11 +108,11 @@ public class ResourceStatePropertyTester extends PropertyTester {
 					.get(indexDiffData, resource);
 			switch (property) {
 			case HAS_STAGED_CHANGES:
-				if (state.staged() != Staged.NOT_STAGED) {
+				if (state.isStaged()) {
 					return true;
 				}
 				break;
-			case HAS_UNCHANGED_CHANGES:
+			case HAS_UNSTAGED_CHANGES:
 				if (!state.isTracked() || state.isDirty()) {
 					return true;
 				}
@@ -129,11 +128,11 @@ public class ResourceStatePropertyTester extends PropertyTester {
 	}
 
 	@Nullable
-	Property toProperty(@NonNull String value) {
+	private Property toProperty(@NonNull String value) {
 		if ("hasStagedChanges".equals(value)) { //$NON-NLS-1$
 			return Property.HAS_STAGED_CHANGES;
 		} else if ("hasUnstagedChanges".equals(value)) { //$NON-NLS-1$
-			return Property.HAS_UNCHANGED_CHANGES;
+			return Property.HAS_UNSTAGED_CHANGES;
 		} else if ("hasNotIgnoredResources".equals(value)) { //$NON-NLS-1$
 			return Property.HAS_NOT_IGNORED_RESOURCES;
 		}

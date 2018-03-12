@@ -88,7 +88,6 @@ import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.resources.IResourceState.Staged;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IAction;
@@ -2005,8 +2004,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 					openWorkingTreeVersion.setEnabled(!submoduleSelected
 							&& anyElementIsExistingFile(fileSelection));
 					menuMgr.add(openWorkingTreeVersion);
-					String label = stagingEntryList.get(0)
-							.staged() != Staged.NOT_STAGED
+					String label = stagingEntryList.get(0).isStaged()
 									? UIText.CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel
 									: UIText.StagingView_CompareWithIndexMenuLabel;
 					Action openCompareWithIndex = new Action(label) {
