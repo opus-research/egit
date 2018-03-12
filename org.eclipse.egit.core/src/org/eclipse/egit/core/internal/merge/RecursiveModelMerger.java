@@ -216,6 +216,11 @@ public class RecursiveModelMerger extends RecursiveMerger {
 							final TreeParserResourceVariant theirsVariant = (TreeParserResourceVariant) subscriber.getRemoteTree().getResourceVariant(handledFile);
 							markConflict(filePath, builder, baseVariant,
 									oursVariant, theirsVariant);
+						} else if (mergeContext.getDiffTree().getDiff(
+								handledFile) == null) {
+							// If no diff, the model merger does... nothing
+							// Make sure this file will be added to the index.
+							makeInSync.add(filePath);
 						}
 					}
 				} catch (CoreException e) {
