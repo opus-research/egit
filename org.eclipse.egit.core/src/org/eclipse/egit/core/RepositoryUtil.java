@@ -476,8 +476,10 @@ public class RepositoryUtil {
 	 *
 	 * @param path
 	 *            Path to be checked
-	 * @return true if the path matches an ignore rule
+	 * @return true if the path matches an ignore rule or no repository mapping
+	 *         could be found, false otherwise
 	 * @throws IOException
+	 * @since 2.3
 	 */
 	public static boolean isIgnored(IPath path) throws IOException {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
@@ -486,15 +488,20 @@ public class RepositoryUtil {
 		Repository repository = mapping.getRepository();
 		String repoRelativePath = mapping.getRepoRelativePath(path);
 		TreeWalk walk = new TreeWalk(repository);
-		walk.addTree(new FileTreeIterator(repository));
-		walk.setFilter(PathFilter.create(repoRelativePath));
-		while (walk.next()) {
-			WorkingTreeIterator workingTreeIterator = walk.getTree(0,
-					WorkingTreeIterator.class);
-			if (walk.getPathString().equals(repoRelativePath))
-				return workingTreeIterator.isEntryIgnored();
-			if (workingTreeIterator.getEntryFileMode().equals(FileMode.TREE))
-				walk.enterSubtree();
+		try {
+			walk.addTree(new FileTreeIterator(repository));
+			walk.setFilter(PathFilter.create(repoRelativePath));
+			while (walk.next()) {
+				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
+						WorkingTreeIterator.class);
+				if (walk.getPathString().equals(repoRelativePath))
+					return workingTreeIterator.isEntryIgnored();
+				if (workingTreeIterator.getEntryFileMode()
+						.equals(FileMode.TREE))
+					walk.enterSubtree();
+			}
+		} finally {
+			walk.release();
 		}
 		return false;
 	}
