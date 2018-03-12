@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +7,8 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
+
+import static org.eclipse.jgit.treewalk.filter.TreeFilter.ANY_DIFF;
 
 import java.io.IOException;
 
@@ -18,7 +19,8 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.IndexDiffFilter;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
+import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
 
 /**
  * Representation of working tree in EGit ChangeSet model
@@ -56,12 +58,12 @@ public class GitModelWorkingTree extends GitModelCache {
 		tw.setRecursive(true);
 
 		Repository repo = getRepository();
-		int dcIndex = tw.addTree(new DirCacheIterator(repo.readDirCache()));
-		int ftIndex = tw.addTree(new FileTreeIterator(repo));
-		IndexDiffFilter idf = new IndexDiffFilter(dcIndex, ftIndex, true);
-		tw.setFilter(idf);
-
+		tw.addTree(new DirCacheIterator(repo.readDirCache()));
+		tw.addTree(new FileTreeIterator(repo));
 		dirCacheIteratorNth = 0;
+
+		NotIgnoredFilter notIgnoredFilter = new NotIgnoredFilter(1);
+		tw.setFilter(AndTreeFilter.create(ANY_DIFF, notIgnoredFilter));
 
 		return tw;
 	}
