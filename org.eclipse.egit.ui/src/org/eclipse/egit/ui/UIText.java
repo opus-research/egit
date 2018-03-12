@@ -1681,6 +1681,9 @@ public class UIText extends NLS {
 	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
 
 	/** */
+	public static String ConfigureRemoteWizard_WizardTitle_Change;
+
+	/** */
 	public static String ConfigureRemoteWizard_WizardTitle_New;
 
 	/** */
