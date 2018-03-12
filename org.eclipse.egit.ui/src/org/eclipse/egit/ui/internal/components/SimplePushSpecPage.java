@@ -160,8 +160,7 @@ public class SimplePushSpecPage extends WizardPage {
 
 	@Override
 	public boolean isPageComplete() {
-		return remoteRefName.getText() != null
-				&& remoteRefName.getText().length() > 0;
+		return !remoteRefName.getText().isEmpty();
 	}
 
 	/**
