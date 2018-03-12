@@ -9,6 +9,8 @@
 package org.eclipse.egit.ui.internal.synchronize;
 
 import static org.eclipse.egit.ui.UIIcons.EXPAND_ALL;
+import static org.eclipse.egit.ui.UIIcons.PULL;
+import static org.eclipse.egit.ui.UIIcons.PUSH;
 import static org.eclipse.egit.ui.UIText.GitActionContributor_ExpandAll;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.ADD_TO_INDEX;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.COMMIT_ACTION;
@@ -17,12 +19,16 @@ import static org.eclipse.egit.ui.internal.actions.ActionCommands.PUSH_ACTION;
 import static org.eclipse.egit.ui.internal.synchronize.model.SupportedContextActionsHelper.canPush;
 import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.NAVIGATE_GROUP;
 import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.P_TOOLBAR_MENU;
+import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.SYNCHRONIZE_GROUP;
 import static org.eclipse.ui.ISources.ACTIVE_MENU_SELECTION_NAME;
 import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 
 import org.eclipse.core.expressions.IEvaluationContext;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.synchronize.action.ExpandAllModelAction;
 import org.eclipse.egit.ui.internal.synchronize.action.OpenWorkingFileAction;
+import org.eclipse.egit.ui.internal.synchronize.action.PullAction;
+import org.eclipse.egit.ui.internal.synchronize.action.PushAction;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.SupportedContextActionsHelper;
 import org.eclipse.jface.action.IContributionItem;
@@ -31,7 +37,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration;
 import org.eclipse.team.ui.synchronize.ISynchronizePageSite;
 import org.eclipse.team.ui.synchronize.ModelSynchronizeParticipant;
-import org.eclipse.team.ui.synchronize.ModelSynchronizeParticipantActionGroup;
+import org.eclipse.team.ui.synchronize.SynchronizePageActionGroup;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -40,7 +46,7 @@ import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 
-class GitActionContributor extends ModelSynchronizeParticipantActionGroup {
+class GitActionContributor extends SynchronizePageActionGroup {
 
 	private static final String GIT_ACTIONS = "gitActions"; //$NON-NLS-1$
 
@@ -112,6 +118,16 @@ class GitActionContributor extends ModelSynchronizeParticipantActionGroup {
 				GitActionContributor_ExpandAll, configuration);
 		expandAllAction.setImageDescriptor(EXPAND_ALL);
 		appendToGroup(P_TOOLBAR_MENU, NAVIGATE_GROUP, expandAllAction);
+
+		PullAction pullAction = new PullAction(
+				UIText.GitActionContributor_Pull, configuration);
+		pullAction.setImageDescriptor(PULL);
+		appendToGroup(P_TOOLBAR_MENU, SYNCHRONIZE_GROUP, pullAction);
+
+		PushAction pushAction = new PushAction(
+				UIText.GitActionContributor_Push, configuration);
+		pushAction.setImageDescriptor(PUSH);
+		appendToGroup(P_TOOLBAR_MENU, SYNCHRONIZE_GROUP, pushAction);
 
 		ISynchronizePageSite site = configuration.getSite();
 		IWorkbenchSite ws = site.getWorkbenchSite();
