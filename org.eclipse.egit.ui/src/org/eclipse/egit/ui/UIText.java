@@ -665,18 +665,6 @@ public class UIText extends NLS {
 	public static String CheckoutHandler_SelectBranchTitle;
 
 	/** */
-	public static String CherryPickHandler_NoCherryPickPerformedMessage;
-
-	/** */
-	public static String CherryPickHandler_NoCherryPickPerformedTitle;
-
-	/** */
-	public static String CherryPickOperation_Failed;
-
-	/** */
-	public static String CherryPickOperation_InternalError;
-
-	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
 
 	/** */
@@ -1901,9 +1889,6 @@ public class UIText extends NLS {
 	public static String FileRevisionEditorInput_NameAndRevisionTitle;
 
 	/** */
-	public static String FileTreeContentProvider_NonWorkspaceResourcesNode;
-
-	/** */
 	public static String FindToolbar_changeto_id;
 
 	/** */
@@ -1941,12 +1926,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchAction_repositoryState;
-
-	/** */
-	public static String BranchResultDialog_CheckoutConflictsMessage;
-
-	/** */
-	public static String BranchResultDialog_CheckoutConflictsTitle;
 
 	/** */
 	public static String BranchSelectionDialog_TitleCheckout;
@@ -2664,27 +2643,6 @@ public class UIText extends NLS {
 	public static String NewRepositoryWizard_WizardTitle;
 
 	/** */
-	public static String NonDeletedFilesDialog_NonDeletedFilesMessage;
-
-	/** */
-	public static String NonDeletedFilesDialog_NonDeletedFilesTitle;
-
-	/** */
-	public static String NonDeletedFilesDialog_RetryDeleteButton;
-
-	/** */
-	public static String NonDeletedFilesTree_FileSystemPathsButton;
-
-	/** */
-	public static String NonDeletedFilesTree_RepoRelativePathsButton;
-
-	/** */
-	public static String NonDeletedFilesTree_RepositoryLabel;
-
-	/** */
-	public static String NonDeletedFilesTree_ResourcePathsButton;
-
-	/** */
 	public static String RemoteConnectionPreferencePage_TimeoutLabel;
 
 	/** */
@@ -2725,18 +2683,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RenameBranchCommand_WrongNameMessage;
-
-	/** */
-	public static String RevertHandler_AlreadyRevertedMessae;
-
-	/** */
-	public static String RevertHandler_NoRevertTitle;
-
-	/** */
-	public static String RevertOperation_Failed;
-
-	/** */
-	public static String RevertOperation_InternalError;
 
 	/** */
 	public static String SelectSynchronizeResourceDialog_header;
