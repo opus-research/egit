@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commands.shared;
 
+import java.text.MessageFormat;
 import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -83,7 +84,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 
 	private void startRebaseJob(final RebaseOperation rebase,
 			final Repository repository, final RebaseCommand.Operation operation) {
-		JobUtil.scheduleUserJob(rebase, jobname, JobFamilies.REBASE,
+		JobUtil.scheduleUserWorkspaceJob(rebase, jobname, JobFamilies.REBASE,
 				new JobChangeAdapter() {
 					@Override
 					public void aboutToRun(IJobChangeEvent event) {
@@ -126,7 +127,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 							});
 						else if (result.isOK()) {
 							if (rebase.getResult().getStatus() == Status.UNCOMMITTED_CHANGES) {
-								handleUncommittedChanges(rebase, repository,
+								handleUncommittedChanges(repository,
 										rebase.getResult()
 												.getUncommittedChanges());
 							} else {
@@ -184,15 +185,19 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 				});
 	}
 
-	private void handleUncommittedChanges(final RebaseOperation rebase,
-			final Repository repository, final List<String> files) {
+	private void handleUncommittedChanges(final Repository repository,
+			final List<String> files) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
+				String repoName = Activator.getDefault().getRepositoryUtil()
+						.getRepositoryName(repository);
 				CleanupUncomittedChangesDialog cleanupUncomittedChangesDialog = new CleanupUncomittedChangesDialog(
 						shell,
-						UIText.AbstractRebaseCommandHandler_cleanupDialog_title,
+						MessageFormat
+								.format(UIText.AbstractRebaseCommandHandler_cleanupDialog_title,
+										repoName),
 						UIText.AbstractRebaseCommandHandler_cleanupDialog_text,
 						repository, files);
 				cleanupUncomittedChangesDialog.open();

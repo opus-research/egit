@@ -13,6 +13,7 @@ package org.eclipse.egit.ui.internal.fetch;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -24,6 +25,7 @@ import org.eclipse.egit.core.op.FetchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchResult;
@@ -96,6 +98,8 @@ public class FetchOperationUI {
 	 */
 	public FetchResult execute(IProgressMonitor monitor) throws CoreException {
 		try {
+			if (op.getCredentialsProvider() == null)
+				op.setCredentialsProvider(new EGitCredentialsProvider());
 			op.run(monitor);
 			return op.getOperationResult();
 		} catch (InvocationTargetException e) {
@@ -109,10 +113,12 @@ public class FetchOperationUI {
 	 * completion
 	 */
 	public void start() {
-		Job job = new Job(NLS.bind(UIText.FetchOperationUI_FetchJobName,
+		Job job = new WorkspaceJob(NLS.bind(
+				UIText.FetchOperationUI_FetchJobName,
 				sourceString)) {
+
 			@Override
-			protected IStatus run(IProgressMonitor monitor) {
+			public IStatus runInWorkspace(IProgressMonitor monitor) {
 				try {
 					execute(monitor);
 				} catch (CoreException e) {

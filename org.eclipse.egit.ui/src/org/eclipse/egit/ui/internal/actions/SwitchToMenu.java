@@ -18,6 +18,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -29,6 +30,7 @@ import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.CheckoutEntry;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.ReflogEntry;
@@ -49,7 +51,7 @@ import org.eclipse.ui.services.IServiceLocator;
 public class SwitchToMenu extends ContributionItem implements
 		IWorkbenchContribution {
 	/** the maximum number of branches to show in the sub-menu */
-	private static final int MAX_NUM_MENU_ENTRIES = 20;
+	static final int MAX_NUM_MENU_ENTRIES = 20;
 
 	private ISelectionService srv;
 
@@ -116,7 +118,19 @@ public class SwitchToMenu extends ContributionItem implements
 		newBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				BranchOperationUI.create(repository).start();
+				String sourceRef = repository.getConfig().getString(
+						ConfigConstants.CONFIG_WORKFLOW_SECTION, null,
+						ConfigConstants.CONFIG_KEY_DEFBRANCHSTARTPOINT);
+				try {
+					Ref ref = repository.getRef(sourceRef);
+					if (ref != null)
+						BranchOperationUI.createWithRef(repository,
+								ref.getName()).start();
+					else
+						BranchOperationUI.create(repository).start();
+				} catch (IOException e1) {
+					BranchOperationUI.create(repository).start();
+				}
 			}
 		});
 		new MenuItem(menu, SWT.SEPARATOR);
@@ -124,7 +138,8 @@ public class SwitchToMenu extends ContributionItem implements
 			String currentBranch = repository.getFullBranch();
 			Map<String, Ref> localBranches = repository.getRefDatabase().getRefs(
 					Constants.R_HEADS);
-			TreeMap<String, Ref> sortedRefs = new TreeMap<String, Ref>();
+			TreeMap<String, Ref> sortedRefs = new TreeMap<String, Ref>(
+					CommonUtils.STRING_ASCENDING_COMPARATOR);
 
 			// Add the MAX_NUM_MENU_ENTRIES most recently used branches first
 			List<ReflogEntry> reflogEntries = repository.getReflogReader(
