@@ -22,16 +22,15 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.search.internal.core.text.PatternConstructor;
 import org.eclipse.search.ui.ISearchQuery;
 import org.eclipse.search.ui.ISearchResult;
 
@@ -139,15 +138,6 @@ public class CommitSearchQuery implements ISearchQuery {
 			matchers.add(new ParentMatcher());
 	}
 
-	/**
-	 * Get text pattern being searched for
-	 *
-	 * @return pattern
-	 */
-	public String getPattern() {
-		return this.settings.getTextPattern();
-	}
-
 	private Repository getRepository(String name) throws IOException {
 		Repository repository = null;
 		File path = new File(name);
@@ -164,7 +154,7 @@ public class CommitSearchQuery implements ISearchQuery {
 			throws OperationCanceledException {
 		this.result.removeAll();
 
-		Pattern pattern = PatternUtils.createPattern(
+		Pattern pattern = PatternConstructor.createPattern(
 				this.settings.getTextPattern(),
 				this.settings.isCaseSensitive(), this.settings.isRegExSearch());
 		List<String> paths = settings.getRepositories();
@@ -194,25 +184,12 @@ public class CommitSearchQuery implements ISearchQuery {
 		RevWalk walk = new RevWalk(repository);
 		try {
 			walk.setRetainBody(true);
-			List<RevCommit> commits = new LinkedList<RevCommit>();
-			if (this.settings.isAllBranches()) {
-				for (Ref ref : repository.getRefDatabase()
-						.getRefs(Constants.R_HEADS).values())
-					if (!ref.isSymbolic())
-						commits.add(walk.parseCommit(ref.getObjectId()));
-				for (Ref ref : repository.getRefDatabase()
-						.getRefs(Constants.R_REMOTES).values())
-					if (!ref.isSymbolic())
-						commits.add(walk.parseCommit(ref.getObjectId()));
-			} else {
-				ObjectId headCommit = repository.resolve(Constants.HEAD);
-				if (headCommit != null)
-					commits.add(walk.parseCommit(headCommit));
-			}
-
-			if (!commits.isEmpty()) {
-				walk.markStart(commits);
-				for (RevCommit commit : walk) {
+			RevCommit commit = walk.parseCommit(repository
+					.resolve(Constants.HEAD));
+			if (commit != null) {
+				walk.markStart(commit);
+				commit = walk.next();
+				while (commit != null) {
 					if (monitor.isCanceled())
 						throw new OperationCanceledException();
 					for (SearchMatcher matcher : this.matchers)
@@ -221,6 +198,7 @@ public class CommitSearchQuery implements ISearchQuery {
 									commit));
 							break;
 						}
+					commit = walk.next();
 				}
 			}
 		} finally {

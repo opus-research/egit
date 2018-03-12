@@ -11,10 +11,10 @@
 package org.eclipse.egit.ui.internal.pull;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -22,17 +22,16 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.IJobChangeListener;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.PullOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.api.PullResult;
-import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
@@ -41,13 +40,14 @@ import org.eclipse.ui.PlatformUI;
 /**
  * UI wrapper for {@link PullOperation}
  */
-public class PullOperationUI extends JobChangeAdapter {
+public class PullOperationUI extends JobChangeAdapter implements
+		IJobChangeListener {
 	private static final IStatus NOT_TRIED_STATUS = new Status(IStatus.ERROR,
 			Activator.getPluginId(), UIText.PullOperationUI_NotTriedMessage);
 
 	private final Repository[] repositories;
 
-	private final Map<Repository, Object> results = new LinkedHashMap<Repository, Object>();
+	private final Map<Repository, Object> results = new HashMap<Repository, Object>();
 
 	private final PullOperation pullOperation;
 
@@ -151,11 +151,6 @@ public class PullOperationUI extends JobChangeAdapter {
 									shell,
 									UIText.PullOperationUI_PullCanceledWindowTitle,
 									UIText.PullOperationUI_PullOperationCanceledMessage);
-				} else if (status.getException() instanceof TransportException) {
-					ErrorDialog.openError(shell,
-							UIText.PullOperationUI_PullFailed,
-							UIText.PullOperationUI_ConnectionProblem,
-							status);
 				} else
 					Activator.handleError(status.getMessage(), status
 							.getException(), true);

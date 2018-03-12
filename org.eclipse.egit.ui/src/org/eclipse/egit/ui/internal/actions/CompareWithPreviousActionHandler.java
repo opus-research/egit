@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2012 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,15 +7,11 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    François Rey - gracefully ignore linked resources
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
@@ -27,18 +23,20 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.IEGitOperation;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.dialogs.CommitSelectDialog;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
+import org.eclipse.egit.ui.internal.job.JobUtil;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.window.Window;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.FollowFilter;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
 import org.eclipse.ui.PartInitException;
@@ -65,53 +63,27 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 			this.resource = resource;
 		}
 
-		public void execute(IProgressMonitor monitor) throws CoreException {
-			final List<PreviousCommit> previousList;
-			try {
-				previousList = findPreviousCommits();
-			} catch (IOException e) {
-				Activator.handleError(e.getMessage(), e, true);
-				return;
-			}
-			final AtomicReference<PreviousCommit> previous = new AtomicReference<PreviousCommit>();
-			if (previousList.size() == 0) {
-				showNotFoundDialog();
-				return;
-			} else if (previousList.size() > 1){
-				final List<RevCommit> commits = new ArrayList<RevCommit>();
-				for (PreviousCommit pc: previousList)
-					commits.add(pc.commit);
-				HandlerUtil.getActiveShell(event).getDisplay()
-						.syncExec(new Runnable() {
-							public void run() {
-								CommitSelectDialog dlg = new CommitSelectDialog(
-										HandlerUtil.getActiveShell(event),
-										commits);
-								if (dlg.open() == Window.OK)
-									for (PreviousCommit pc: previousList)
-										if (pc.commit.equals(dlg.getSelectedCommit())){
-											   previous.set(pc);
-											   break;
-										   }
-							}
-						});
-			}
-			else
-				previous.set(previousList.get(0));
+		private String getRepositoryPath() {
+			return RepositoryMapping.getMapping(resource.getProject())
+					.getRepoRelativePath(resource);
+		}
 
-			if (previous.get() == null)
-				return;
-			if (resource instanceof IFile) {
-				final ITypedElement base = SaveableCompareEditorInput
-						.createFileElement((IFile) resource);
-				PreviousCommit pc = previous.get();
-				ITypedElement next = CompareUtils.getFileRevisionTypedElement(
-						pc.path, pc.commit, repository);
-				CompareEditorInput input = new GitCompareFileRevisionEditorInput(
-						base, next, null);
-				CompareUI.openCompareEditor(input);
-			} else
-				openCompareTreeView(previous.get().commit);
+		public void execute(IProgressMonitor monitor) throws CoreException {
+			RevCommit previous = findPreviousCommit();
+			if (previous != null)
+				if (resource instanceof IFile) {
+					final ITypedElement base = SaveableCompareEditorInput
+							.createFileElement((IFile) resource);
+					ITypedElement next = CompareUtils
+							.getFileRevisionTypedElement(getRepositoryPath(),
+									previous, repository);
+					CompareEditorInput input = new GitCompareFileRevisionEditorInput(
+							base, next, null);
+					CompareUI.openCompareEditor(input);
+				} else
+					openCompareTreeView(previous);
+			else
+				showNotFoundDialog();
 		}
 
 		private void openCompareTreeView(final RevCommit previous) {
@@ -130,6 +102,26 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 					}
 				}
 			});
+		}
+
+		private RevCommit findPreviousCommit() {
+			RevWalk rw = new RevWalk(repository);
+			try {
+				String path = getRepositoryPath();
+				if (path.length() > 0)
+					rw.setTreeFilter(FollowFilter.create(path));
+				RevCommit headCommit = rw.parseCommit(repository.getRef(
+						Constants.HEAD).getObjectId());
+				rw.markStart(headCommit);
+				headCommit = rw.next();
+				if (headCommit != null)
+					return rw.next();
+			} catch (IOException e) {
+				Activator.handleError(e.getMessage(), e, true);
+			} finally {
+				rw.dispose();
+			}
+			return null;
 		}
 
 		private void showNotFoundDialog() {
@@ -170,12 +162,5 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 					UIText.CompareWithPreviousActionHandler_TaskGeneratingInput,
 					null);
 		return null;
-	}
-
-	@Override
-	public boolean isEnabled() {
-		IResource[] selectedResources = getSelectedResources();
-		return super.isEnabled() && selectedResources.length == 1 &&
-				selectionMapsToSingleRepository();
 	}
 }

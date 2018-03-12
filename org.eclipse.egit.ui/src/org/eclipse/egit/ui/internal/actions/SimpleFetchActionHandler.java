@@ -12,7 +12,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.fetch.FetchOperationUI;
 import org.eclipse.egit.ui.internal.fetch.SimpleConfigureFetchDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -45,9 +45,8 @@ public class SimpleFetchActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		final Repository repository = getRepository();
-		return repository != null
+		return getRepository() != null
 				&& SimpleConfigureFetchDialog
-						.getConfiguredRemote(repository) != null;
+						.getConfiguredRemote(getRepository()) != null;
 	}
 }

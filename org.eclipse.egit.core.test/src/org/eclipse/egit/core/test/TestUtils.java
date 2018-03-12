@@ -2,7 +2,6 @@
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +27,6 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.lib.ObjectId;
@@ -45,19 +42,6 @@ public class TestUtils {
 	public final static String COMMITTER = "The Commiter <The.committer@some.com>";
 
 	/**
-	 * Return the base directory in which temporary directories are created.
-	 * Current implementation returns a "temporary" folder in the user home.
-	 *
-	 * @return a "temporary" folder in the user home that may not exist.
-	 * @throws IOException
-	 */
-	public File getBaseTempDir() throws IOException {
-		File userHome = FS.DETECTED.userHome();
-		File rootDir = new File(userHome, "EGitCoreTestTempDir");
-		return rootDir;
-	}
-
-	/**
 	 * Create a "temporary" directory
 	 *
 	 * @param name
@@ -67,7 +51,9 @@ public class TestUtils {
 	 * @throws IOException
 	 */
 	public File createTempDir(String name) throws IOException {
-		File result = new File(getBaseTempDir(), name);
+		File userHome = FS.DETECTED.userHome();
+		File rootDir = new File(userHome, "EGitCoreTestTempDir");
+		File result = new File(rootDir, name);
 		if (result.exists())
 			FileUtils.delete(result, FileUtils.RECURSIVE | FileUtils.RETRY);
 		return result;
@@ -79,7 +65,8 @@ public class TestUtils {
 	 * @throws IOException
 	 */
 	public void deleteTempDirs() throws IOException {
-		File rootDir = getBaseTempDir();
+		File userHome = FS.DETECTED.userHome();
+		File rootDir = new File(userHome, "EGitCoreTestTempDir");
 		if (rootDir.exists())
 			FileUtils.delete(rootDir, FileUtils.RECURSIVE | FileUtils.RETRY);
 	}
@@ -114,11 +101,11 @@ public class TestUtils {
 	 * @param content
 	 *            the contents
 	 * @return the file
-	 * @throws CoreException
+	 * @throws Exception
 	 *             if the file can not be created
-	 * @throws UnsupportedEncodingException
 	 */
-	public IFile addFileToProject(IProject project, String path, String content) throws CoreException, UnsupportedEncodingException {
+	public IFile addFileToProject(IProject project, String path, String content)
+			throws Exception {
 		IPath filePath = new Path(path);
 		IFolder folder = null;
 		for (int i = 0; i < filePath.segmentCount() - 1; i++) {
@@ -143,33 +130,20 @@ public class TestUtils {
 	 * @param file
 	 * @param newContent
 	 * @return the file
-	 * @throws CoreException
-	 * @throws UnsupportedEncodingException
+	 * @throws Exception
 	 */
-	public IFile changeContentOfFile(IProject project, IFile file, String newContent) throws UnsupportedEncodingException, CoreException {
+	public IFile changeContentOfFile(IProject project, IFile file, String newContent)
+			throws Exception {
 		file.setContents(new ByteArrayInputStream(newContent.getBytes(project
 				.getDefaultCharset())), 0, null);
 		return file;
 	}
 
 	/**
-	 * Create a project in the base directory of temp dirs
-	 *
-	 * @param projectName
-	 *            project name
-	 * @return the project with a location pointing to the local file system
-	 * @throws Exception
-	 */
-	public IProject createProjectInLocalFileSystem(
-			String projectName) throws Exception {
-		return createProjectInLocalFileSystem(getBaseTempDir(), projectName);
-	}
-
-	/**
 	 * Create a project in the local file system
 	 *
 	 * @param parentFile
-	 *            the parent directory
+	 *            the parent
 	 * @param projectName
 	 *            project name
 	 * @return the project with a location pointing to the local file system
@@ -277,10 +251,6 @@ public class TestUtils {
 			map.put(args[i], args[i+1]);
 		}
 		return map;
-	}
-
-	File getWorkspaceSupplement() throws IOException {
-		return createTempDir("wssupplement");
 	}
 
 }

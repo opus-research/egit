@@ -35,6 +35,14 @@ public class FileRevisionTypedElement extends StorageTypedElement {
 	/**
 	 * @param fileRevision
 	 *            the file revision
+	 */
+	public FileRevisionTypedElement(IFileRevision fileRevision) {
+		this(fileRevision, null);
+	}
+
+	/**
+	 * @param fileRevision
+	 *            the file revision
 	 * @param localEncoding
 	 *            the encoding of the local file that corresponds to the given
 	 *            file revision

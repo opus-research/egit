@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui.view.repositories;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -19,9 +20,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
-import org.eclipse.core.commands.State;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -35,24 +34,23 @@ import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
-import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand;
+import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.test.Eclipse;
-import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
 import org.junit.After;
 
 /**
@@ -61,23 +59,29 @@ import org.junit.After;
 public abstract class GitRepositoriesViewTestBase extends
 		LocalRepositoryTestCase {
 
+	protected static final RepositoriesViewLabelProvider labelProvider = new RepositoriesViewLabelProvider();
+
 	// test utilities
 	protected static final TestUtil myUtil = new TestUtil();
-
-	// the human-readable view name
-	protected final static String viewName = myUtil
-			.getPluginLocalizedValue("GitRepositoriesView_name");
 
 	protected static final GitRepositoriesViewTestUtils myRepoViewUtil = new GitRepositoriesViewTestUtils();
 
 	// the "Git Repositories View" bot
 	private SWTBotView viewbot;
 
+	// the human-readable view name
+	protected final static String viewName = myUtil
+			.getPluginLocalizedValue("GitRepositoriesView_name");
+
+	// the human readable Git category
+	private final static String gitCategory = myUtil
+			.getPluginLocalizedValue("GitCategory_name");
+
 	/**
 	 * remove all configured repositories from the view
 	 */
 	protected static void clearView() {
-		InstanceScope.INSTANCE.getNode(Activator.getPluginId()).remove(
+		new InstanceScope().getNode(Activator.getPluginId()).remove(
 				RepositoryUtil.PREFS_DIRECTORIES);
 	}
 
@@ -147,9 +151,9 @@ public abstract class GitRepositoriesViewTestBase extends
 		untracked.addAll(Arrays.asList(commitables));
 		// commit to stable
 		CommitOperation op = new CommitOperation(commitables,
-				untracked, "Test Author <test.author@test.com>",
-				"Test Committer <test.commiter@test.com>",
-				"Initial commit");
+				new ArrayList<IFile>(), untracked,
+				"Test Author <test.author@test.com>",
+				"Test Committer <test.commiter@test.com>", "Initial commit");
 		op.execute(null);
 
 		// now create a stable branch (from master)
@@ -180,7 +184,8 @@ public abstract class GitRepositoriesViewTestBase extends
 
 		myRepository.getConfig().save();
 		// and push
-		PushOperationUI pa = new PushOperationUI(myRepository, "push", 0, false);
+		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
+		PushOperationUI pa = new PushOperationUI(myRepository, config, 0, false);
 		pa.execute(null);
 		TestUtil.joinJobs(JobFamilies.PUSH);
 		try {
@@ -214,15 +219,6 @@ public abstract class GitRepositoriesViewTestBase extends
 		updateRef.update();
 	}
 
-	protected static void setVerboseBranchMode(boolean state) {
-		ICommandService srv = (ICommandService) PlatformUI.getWorkbench()
-				.getService(ICommandService.class);
-		State verboseBranchModeState = srv.getCommand(
-				ToggleBranchCommitCommand.ID).getState(
-				ToggleBranchCommitCommand.TOGGLE_STATE);
-		verboseBranchModeState.setValue(Boolean.valueOf(state));
-	}
-
 	@After
 	public void afterBase() {
 		new Eclipse().reset();
@@ -230,10 +226,18 @@ public abstract class GitRepositoriesViewTestBase extends
 
 	protected SWTBotView getOrOpenView() throws Exception {
 		if (viewbot == null) {
-			viewbot = myRepoViewUtil.openRepositoriesView(bot);
+			bot.menu("Window").menu("Show View").menu("Other...").click();
+			SWTBotShell shell = bot.shell("Show View").activate();
+			shell.bot().tree().expandNode(gitCategory).getNode(viewName)
+					.select();
+			shell.bot().button(IDialogConstants.OK_LABEL).click();
+			TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
+
+			viewbot = bot.viewByTitle(viewName);
+
+			assertNotNull("Repositories View should not be null", viewbot);
 		} else
 			viewbot.setFocus();
-		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
 		return viewbot;
 	}
 
@@ -253,15 +257,15 @@ public abstract class GitRepositoriesViewTestBase extends
 
 	protected void assertEmpty() throws Exception {
 		final SWTBotView view = getOrOpenView();
-		view.bot().label(UIText.RepositoriesView_messsageEmpty);
+		final SWTBotTreeItem[] items = view.bot().tree().getAllItems();
+		assertTrue("Tree should have no items", items.length == 0);
 	}
 
 	protected void refreshAndWait() throws Exception {
 		RepositoriesView view = (RepositoriesView) getOrOpenView()
 				.getReference().getPart(false);
-		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.REPO_VIEW_REFRESH, 60, TimeUnit.SECONDS);
 		view.refresh();
-		jobJoiner.join();
+		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
 	}
 
 	@SuppressWarnings("boxing")

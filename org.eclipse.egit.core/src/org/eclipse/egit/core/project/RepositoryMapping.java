@@ -4,9 +4,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Shunichi Fuji <palglowr@gmail.com>
  * Copyright (C) 2008, Google Inc.
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2013, François Rey <eclipse.org_@_francois_._rey_._name>
- * Copyright (C) 2013, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,8 +11,6 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 package org.eclipse.egit.core.project;
-
-import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
 
 import java.io.File;
 import java.io.IOException;
@@ -181,22 +176,9 @@ public class RepositoryMapping {
 	}
 
 	public String toString() {
-		IPath absolutePath = getGitDirAbsolutePath();
 		return "RepositoryMapping[" //$NON-NLS-1$
-				+ format(containerPathString)
-				+ " -> '" //$NON-NLS-1$
-				+ format(gitDirPathString)
-				+ "', absolute path: '"  //$NON-NLS-1$
-				+ format(absolutePath) + "' ]"; //$NON-NLS-1$
-	}
-
-	private String format(Object o) {
-		if (o == null)
-			return "<null>"; //$NON-NLS-1$
-		else if (o.toString().length() == 0)
-			return "<empty>"; //$NON-NLS-1$
-		else
-			return o.toString();
+				+ containerPathString + " -> " //$NON-NLS-1$
+				+ gitDirPathString + "]"; //$NON-NLS-1$
 	}
 
 	/**
@@ -206,58 +188,32 @@ public class RepositoryMapping {
 	 * bother.
 	 *
 	 * @param rsrc
-	 * @return the path relative to the Git repository, including base name. An
-	 *         empty string (<code>""</code>) if passed resource corresponds to
-	 *         working directory (root). <code>null</code> if the path cannot be
-	 *         determined.
+	 * @return the path relative to the Git repository, including base name.
+	 *         <code>null</code> if the path cannot be determined.
 	 */
 	public String getRepoRelativePath(final IResource rsrc) {
+		final int pfxLen = workdirPrefix.length();
 		IPath location = rsrc.getLocation();
 		if (location == null)
 			return null;
-		return getRepoRelativePath(location);
-	}
-
-	/**
-	 * This method should only be called for resources that are actually in this
-	 * repository, so we can safely assume that their path prefix matches
-	 * {@link #getWorkTree()}. Testing that here is rather expensive so we don't
-	 * bother.
-	 *
-	 * @param location
-	 * @return the path relative to the Git repository, including base name. An
-	 *         empty string (<code>""</code>) if passed location corresponds to
-	 *         working directory (root). <code>null</code> if the path cannot be
-	 *         determined.
-	 */
-	public String getRepoRelativePath(IPath location) {
-		final int pfxLen = workdirPrefix.length();
 		final String p = location.toString();
 		final int pLen = p.length();
 		if (pLen > pfxLen)
 			return p.substring(pfxLen);
-		if (pLen == pfxLen - 1)
-			return ""; //$NON-NLS-1$
+		else if (p.length() == pfxLen - 1)
+			return "";  //$NON-NLS-1$
 		return null;
 	}
 
 	/**
-	 * Get the repository mapping for a resource. If the given resource is a
-	 * linked resource, the raw location of the resource will be used to
-	 * determine a repository mapping.
+	 * Get the repository mapping for a resource
 	 *
 	 * @param resource
-	 * @return the RepositoryMapping for this resource, or null for non
-	 *         GitProvider.
+	 * @return the RepositoryMapping for this resource,
+	 *         or null for non GitProvider.
 	 */
 	public static RepositoryMapping getMapping(final IResource resource) {
-		if (isNonWorkspace(resource))
-			return null;
-
-		if (resource.isLinked(IResource.CHECK_ANCESTORS))
-			return getMapping(resource.getLocation());
-
-		IProject project = resource.getProject();
+		final IProject project = resource.getProject();
 		if (project == null)
 			return null;
 
@@ -269,32 +225,6 @@ public class RepositoryMapping {
 			return null;
 
 		return ((GitProvider)rp).getData().getRepositoryMapping(resource);
-	}
-
-	/**
-	 * Get the repository mapping for a path if it exists.
-	 *
-	 * @param path
-	 * @return the RepositoryMapping for this path,
-	 *         or null for non GitProvider.
-	 */
-	public static RepositoryMapping getMapping(IPath path) {
-		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects();
-
-		for (IProject project : projects) {
-			if (isNonWorkspace(project))
-				continue;
-			RepositoryMapping mapping = getMapping(project);
-			if (mapping == null)
-				continue;
-
-			IPath workingTree = new Path(mapping.getWorkTree().toString());
-			if (workingTree.isPrefixOf(path))
-				return mapping;
-		}
-
-		return null;
 	}
 
 	/**
@@ -326,13 +256,9 @@ public class RepositoryMapping {
 	 * @return The GIT DIR absolute path
 	 */
 	public synchronized IPath getGitDirAbsolutePath() {
-		if (gitDirAbsolutePath == null) {
-			if (container != null) {
-				IPath cloc = container.getLocation();
-				if (cloc != null)
-					gitDirAbsolutePath = cloc.append(getGitDirPath());
-			}
-		}
+		if (gitDirAbsolutePath == null)
+			gitDirAbsolutePath = container.getLocation()
+					.append(getGitDirPath());
 		return gitDirAbsolutePath;
 	}
 }

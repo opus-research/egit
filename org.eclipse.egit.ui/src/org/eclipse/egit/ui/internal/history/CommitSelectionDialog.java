@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,44 +10,30 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map.Entry;
 
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.diff.DiffConfig;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.FollowFilter;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.OrTreeFilter;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
@@ -64,8 +50,6 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 
 	private final Repository repository;
 
-	private final IResource[] filterResources;
-
 	private CommitGraphTable table;
 
 	private SWTCommitList allCommits;
@@ -79,24 +63,9 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 	 * @param repository
 	 */
 	public CommitSelectionDialog(Shell parentShell, Repository repository) {
-		this(parentShell, repository, null);
-	}
-
-	/**
-	 * Create a commit selection dialog which shows only commits which changed
-	 * the given resources.
-	 *
-	 * @param parentShell
-	 * @param repository
-	 * @param filterResources
-	 *            the resources to use to filter commits, null for no filter
-	 */
-	public CommitSelectionDialog(Shell parentShell, Repository repository,
-			IResource[] filterResources) {
 		super(parentShell);
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repository = repository;
-		this.filterResources = filterResources;
 	}
 
 	@Override
@@ -104,10 +73,7 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(1, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
-		final ResourceManager resources = new LocalResourceManager(
-				JFaceResources.getResources());
-		UIUtils.hookDisposal(main, resources);
-		table = new CommitGraphTable(main, null, resources);
+		table = new CommitGraphTable(main);
 		table.getTableView().addSelectionChangedListener(
 				new ISelectionChangedListener() {
 					public void selectionChanged(SelectionChangedEvent event) {
@@ -122,14 +88,13 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 				});
 		table.getTableView().addOpenListener(new IOpenListener() {
 			public void open(OpenEvent event) {
-				if (getButton(OK).isEnabled())
-					buttonPressed(OK);
+				buttonPressed(OK);
 			}
 		});
 		// allow for some room here
 		GridDataFactory.fillDefaults().grab(true, true).minSize(SWT.DEFAULT,
 				400).applyTo(table.getControl());
-		allCommits = new SWTCommitList(table.getControl(), resources);
+		allCommits = new SWTCommitList(getShell().getDisplay());
 		return main;
 	}
 
@@ -155,7 +120,6 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 												UIText.CommitSelectionDialog_BuildingCommitListMessage,
 												IProgressMonitor.UNKNOWN);
 								SWTWalk currentWalk = new SWTWalk(repository);
-								currentWalk.setTreeFilter(createTreeFilter());
 								currentWalk
 										.sort(RevSort.COMMIT_TIME_DESC, true);
 								currentWalk.sort(RevSort.BOUNDARY, true);
@@ -233,7 +197,7 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 				.toString()));
 		setMessage(UIText.CommitSelectionDialog_DialogMessage);
 		table.setInput(highlightFlag, allCommits, allCommits
-				.toArray(new SWTCommit[allCommits.size()]), null, true);
+				.toArray(new SWTCommit[allCommits.size()]), null);
 	}
 
 	private void markStartAllRefs(RevWalk currentWalk, String prefix)
@@ -248,31 +212,4 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		}
 	}
 
-	private TreeFilter createTreeFilter() {
-		if (filterResources == null)
-			return TreeFilter.ALL;
-
-		List<TreeFilter> filters = new ArrayList<TreeFilter>();
-		for (IResource resource : filterResources) {
-			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-			if (mapping != null) {
-				DiffConfig diffConfig = mapping.getRepository().getConfig().get(DiffConfig.KEY);
-				String path = mapping.getRepoRelativePath(resource);
-				if (path != null && !"".equals(path)) { //$NON-NLS-1$
-					if (resource.getType() == IResource.FILE)
-						filters.add(FollowFilter.create(path, diffConfig));
-					else
-						filters.add(AndTreeFilter.create(
-								PathFilter.create(path), TreeFilter.ANY_DIFF));
-				}
-			}
-		}
-
-		if (filters.isEmpty())
-			return TreeFilter.ALL;
-		else if (filters.size() == 1)
-			return filters.get(0);
-		else
-			return OrTreeFilter.create(filters);
-	}
 }

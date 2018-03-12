@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,115 +8,76 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.compare.structuremergeviewer.Differencer;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
-import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Commit;
-import org.eclipse.egit.ui.internal.synchronize.model.TreeBuilder.FileModelFactory;
-import org.eclipse.egit.ui.internal.synchronize.model.TreeBuilder.TreeModelFactory;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.egit.core.Activator;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
 
 /**
  * Git commit object representation in Git ChangeSet
  */
 public class GitModelCommit extends GitModelObjectContainer implements
-		HasProjects {
+		ISynchronizationCompareInput {
 
-	private final Commit commit;
-
-	private final Repository repo;
-
-	private final IProject[] projects;
-
-	private GitModelObject[] children;
+	/**
+	 * Common ancestor commit for wrapped commit object
+	 */
+	protected final RevCommit ancestorCommit;
 
 	/**
 	 * @param parent
-	 *            parent object
-	 * @param repo
-	 *            repository associated with this object
+	 *            instance of repository model object that is parent for this
+	 *            commit
 	 * @param commit
 	 *            instance of commit that will be associated with this model
 	 *            object
-	 * @param projects
-	 *            list of changed projects
+	 * @param direction
+	 * @throws IOException
 	 */
-	public GitModelCommit(GitModelRepository parent, Repository repo,
-			Commit commit, IProject[] projects) {
-		super(parent);
-		this.repo = repo;
-		this.commit = commit;
-		this.projects = projects;
+	public GitModelCommit(GitModelRepository parent, RevCommit commit,
+			int direction) throws IOException {
+		super(parent, commit, direction);
+
+		this.ancestorCommit = calculateAncestor(commit);
+	}
+
+	/**
+	 * Constructor for child classes.
+	 *
+	 * @param parent
+	 *            instance of repository model object that is parent for this
+	 *            commit
+	 * @param commit
+	 *            instance of commit that will be associated with this model
+	 *            object
+	 * @param ancestorCommit
+	 *            common ancestor commit for object that is wrapped
+	 * @param direction
+	 *            use {@link Differencer#LEFT} and {@link Differencer#RIGHT} to
+	 *            determinate commit direction (is it incoming or outgoing)
+	 * @throws IOException
+	 */
+	protected GitModelCommit(GitModelObject parent, RevCommit commit,
+			RevCommit ancestorCommit, int direction) throws IOException {
+		super(parent, commit, direction);
+
+		this.ancestorCommit = ancestorCommit;
 	}
 
 	@Override
 	public IPath getLocation() {
-		return new Path(repo.getWorkTree().getAbsolutePath());
-	}
-
-	public IProject[] getProjects() {
-		return projects;
-	}
-
-	@Override
-	public int getKind() {
-		return commit.getDirection() | Differencer.CHANGE;
-	}
-
-	@Override
-	public int repositoryHashCode() {
-		return repo.getWorkTree().hashCode();
-	}
-
-	@Override
-	public String getName() {
-		return commit.getShortMessage();
-	}
-
-	@Override
-	public GitModelObject[] getChildren() {
-		if (children == null)
-			children = createChildren();
-		return children;
-	}
-
-	private GitModelObject[] createChildren() {
-		FileModelFactory fileModelFactory = new FileModelFactory() {
-			public GitModelBlob createFileModel(GitModelObjectContainer parent,
-					Repository repository, Change change, IPath fullPath) {
-				return new GitModelBlob(parent, repository, change, fullPath);
-			}
-
-			public boolean isWorkingTree() {
-				return false;
-			}
-		};
-		TreeModelFactory treeModelFactory = new TreeModelFactory() {
-			public GitModelTree createTreeModel(GitModelObjectContainer parent,
-					IPath fullPath, int kind) {
-				return new GitModelTree(parent, fullPath, kind);
-			}
-		};
-		return TreeBuilder.build(this, repo, commit.getChildren(),
-				fileModelFactory, treeModelFactory);
-	}
-
-	/**
-	 * @return cached commit object
-	 */
-	public Commit getCachedCommitObj() {
-		return commit;
-	}
-
-	@Override
-	public void dispose() {
-		if (children != null) {
-			for (GitModelObject child : children)
-				child.dispose();
-			children = null;
-		}
+		return new Path(getRepository().getWorkTree().toString());
 	}
 
 	@Override
@@ -124,25 +85,67 @@ public class GitModelCommit extends GitModelObjectContainer implements
 		if (obj == this)
 			return true;
 
-		if (obj == null)
-			return false;
+		if (obj instanceof GitModelCommit && !(obj instanceof GitModelTree)
+				&& !(obj instanceof GitModelBlob)) {
+			GitModelCommit objCommit = (GitModelCommit) obj;
 
-		if (obj.getClass() != getClass())
-			return false;
+			return objCommit.getBaseCommit().equals(baseCommit)
+					&& objCommit.getParent().equals(getParent());
+		}
 
-		GitModelCommit objCommit = (GitModelCommit) obj;
-
-		return objCommit.commit.getId().equals(commit.getId());
+		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return commit.hashCode();
+		return baseCommit.hashCode() ^ getParent().hashCode();
 	}
 
 	@Override
 	public String toString() {
-		return "ModelCommit[" + commit.getId() + "]"; //$NON-NLS-1$//$NON-NLS-2$
+		return "ModelCommit[" + baseCommit.getId() + "]"; //$NON-NLS-1$//$NON-NLS-2$
+	}
+
+	@Override
+	protected GitModelObject[] getChildrenImpl() {
+		TreeWalk tw = createTreeWalk();
+		List<GitModelObject> result = new ArrayList<GitModelObject>();
+
+		try {
+			RevTree actualTree = baseCommit.getTree();
+
+			int baseNth = tw.addTree(actualTree);
+			int remoteNth = -1;
+			if (remoteCommit != null)
+				remoteNth = tw.addTree(remoteCommit.getTree());
+			int ancestorNth = tw.addTree(ancestorCommit.getTree());
+
+			while (tw.next()) {
+				GitModelObject obj = getModelObject(tw, ancestorCommit, ancestorNth,
+						remoteNth, baseNth);
+				if (obj != null)
+					result.add(obj);
+			}
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+		}
+
+		return result.toArray(new GitModelObject[result.size()]);
+	}
+
+	private RevCommit calculateAncestor(RevCommit actual) throws IOException {
+		RevWalk rw = new RevWalk(getRepository());
+		rw.setRevFilter(RevFilter.MERGE_BASE);
+
+		for (RevCommit parent : actual.getParents()) {
+			RevCommit parentCommit = rw.parseCommit(parent.getId());
+			rw.markStart(parentCommit);
+		}
+
+		rw.markStart(rw.parseCommit(actual.getId()));
+
+		RevCommit result = rw.next();
+		return result != null ? result : rw.parseCommit(ObjectId.zeroId());
 	}
 
 }

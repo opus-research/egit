@@ -14,7 +14,7 @@
 package org.eclipse.egit.ui.internal.dialogs;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.window.Window;
@@ -37,8 +37,7 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public RenameBranchDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
-				| EXPAND_LOCAL_BRANCHES_NODE);
+		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES);
 	}
 
 	private InputDialog getRefNameInputDialog(String prompt,

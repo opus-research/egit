@@ -12,7 +12,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.internal.push.SimpleConfigurePushDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -38,7 +38,7 @@ public class SimplePushActionHandler extends RepositoryActionHandler {
 
 		int timeout = Activator.getDefault().getPreferenceStore().getInt(
 				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-		PushOperationUI op = new PushOperationUI(repository, config.getName(), timeout,
+		PushOperationUI op = new PushOperationUI(repository, config, timeout,
 				false);
 		op.start();
 		return null;
@@ -46,9 +46,8 @@ public class SimplePushActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		final Repository repository = getRepository();
-		return repository != null
+		return getRepository() != null
 				&& SimpleConfigurePushDialog
-						.getConfiguredRemote(repository) != null;
+						.getConfiguredRemote(getRepository()) != null;
 	}
 }

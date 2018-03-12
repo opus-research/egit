@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,12 +12,8 @@ package org.eclipse.egit.ui.internal.repository.tree;
 
 import java.io.File;
 
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * A node in the Git Repositories view tree
@@ -25,7 +21,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
  * @param <T>
  *            the type
  */
-public abstract class RepositoryTreeNode<T> extends PlatformObject implements Comparable<RepositoryTreeNode> {
+public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTreeNode> {
 
 	private final Repository myRepository;
 
@@ -74,13 +70,6 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 	 */
 	public Repository getRepository() {
 		return myRepository;
-	}
-
-	/**
-	 * @return the path of the file, folder or repository
-	 */
-	public IPath getPath() {
-		return new Path(getRepository().getWorkTree().getAbsolutePath());
 	}
 
 	/**
@@ -142,10 +131,6 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 			// fall through
 		case ADDITIONALREFS:
 			// fall through
-		case SUBMODULES:
-			// fall through
-		case STASH:
-			// fall through
 		case WORKINGDIR:
 			result = prime
 					* result
@@ -179,8 +164,6 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 		case FETCH:
 			// fall through
 		case BRANCHHIERARCHY:
-			// fall through
-		case STASHED_COMMIT:
 			// fall through
 		case ERROR:
 			result = prime * result
@@ -262,10 +245,6 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 			// fall through
 		case ERROR:
 			// fall through
-		case SUBMODULES:
-			// fall through
-		case STASH:
-			// fall through
 		case WORKINGDIR:
 			return 0;
 
@@ -281,9 +260,6 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 		case FOLDER:
 			return ((File) myObject).getName().compareTo(
 					((File) otherNode.getObject()).getName());
-		case STASHED_COMMIT:
-			return ((RevCommit) myObject).compareTo(((RevCommit) otherNode
-					.getObject()));
 		case TAG:
 			// fall through
 		case ADDITIONALREF:
@@ -292,29 +268,21 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 			return ((Ref) myObject).getName().compareTo(
 					((Ref) otherNode.getObject()).getName());
 		case REPO:
-			int nameCompare = getDirectoryContainingRepo((Repository) myObject)
-					.getName()
-					.compareTo(
-							getDirectoryContainingRepo((Repository) otherNode.getObject())
-									.getName());
+			int nameCompare = ((Repository) myObject).getDirectory()
+					.getParentFile().getName().compareTo(
+							(((Repository) otherNode.getObject())
+									.getDirectory().getParentFile().getName()));
 			if (nameCompare != 0)
 				return nameCompare;
 			// if the name is not unique, let's look at the whole path
-			return getDirectoryContainingRepo((Repository) myObject)
-					.getParentFile()
-					.getPath()
-					.compareTo(
-							getDirectoryContainingRepo((Repository) otherNode.getObject())
-									.getParentFile().getPath());
+			return ((Repository) myObject).getDirectory().getParentFile()
+					.getParentFile().getPath().compareTo(
+							(((Repository) otherNode.getObject())
+									.getDirectory().getParentFile()
+									.getParentFile().getPath()));
+
 		}
 		return 0;
-	}
-
-	private File getDirectoryContainingRepo(Repository repo) {
-		if (!repo.isBare())
-			return repo.getDirectory().getParentFile();
-		else
-			return repo.getDirectory();
 	}
 
 	private boolean checkObjectsEqual(Object otherObject) {
@@ -330,10 +298,6 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 		case REMOTETRACKING:
 			// fall through
 		case ADDITIONALREFS:
-			// fall through
-		case SUBMODULES:
-			// fall through
-		case STASH:
 			// fall through
 		case WORKINGDIR:
 			return ((Repository) myObject).getDirectory().equals(
@@ -360,22 +324,10 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 			// fall through
 		case BRANCHHIERARCHY:
 			// fall through
-		case STASHED_COMMIT:
-			// fall through
 		case TAGS:
 			return myObject.equals(otherObject);
 		}
 		return false;
 	}
 
-	public Object getAdapter(Class adapter) {
-		if (Repository.class == adapter && myRepository != null)
-			return myRepository;
-		return super.getAdapter(adapter);
-	}
-
-	@Override
-	public String toString() {
-		return "RepositoryNode[" + myType + ", " + myObject.toString() + "]";   //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
-	}
 }

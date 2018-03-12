@@ -10,7 +10,6 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,7 +24,7 @@ import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -458,16 +457,9 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 		for (PluginNode plugin : PLUGIN_LIST) {
 			Properties props = new Properties();
 			try {
-				URL resource = Platform.getBundle(plugin.getPlugin())
-						.getResource(".options"); //$NON-NLS-1$
-				if (resource != null) {
-					InputStream is = resource.openStream();
-					try {
-						props.load(is);
-					} finally {
-						is.close();
-					}
-				}
+				InputStream is = Platform.getBundle(plugin.getPlugin())
+						.getResource(".options").openStream(); //$NON-NLS-1$
+				props.load(is);
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
 			}
@@ -505,16 +497,9 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 		for (PluginNode plugin : PLUGIN_LIST) {
 			Properties props = new Properties();
 			try {
-				URL resource = Platform.getBundle(plugin.getPlugin())
-						.getResource(".options"); //$NON-NLS-1$
-				if (resource != null) {
-					InputStream is = resource.openStream();
-					try {
-						props.load(is);
-					} finally {
-						is.close();
-					}
-				}
+				InputStream is = Platform.getBundle(plugin.getPlugin())
+						.getResource(".options").openStream(); //$NON-NLS-1$
+				props.load(is);
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
 			}

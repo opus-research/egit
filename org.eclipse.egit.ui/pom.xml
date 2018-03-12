@@ -16,19 +16,28 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.ui</artifactId>
   <packaging>eclipse-plugin</packaging>
 
-  <name>Git Team Provider (UI)</name>
+  <name>Git Team Provider (UI) (Incubation)</name>
 
+  <!-- workaround for https://issues.sonatype.org/browse/TYCHO-168 -->
   <build>
+    <resources>
+      <resource>
+        <directory>src</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.tycho</groupId>
-        <artifactId>tycho-source-plugin</artifactId>
+        <groupId>org.sonatype.tycho</groupId>
+        <artifactId>maven-osgi-source-plugin</artifactId>
       </plugin>
     </plugins>
     <pluginManagement>

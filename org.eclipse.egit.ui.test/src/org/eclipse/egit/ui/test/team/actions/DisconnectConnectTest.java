@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -17,8 +17,8 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
@@ -64,10 +64,6 @@ public class DisconnectConnectTest extends LocalRepositoryTestCase {
 		mapping = RepositoryMapping.getMapping(project);
 		assertNull(mapping);
 		SWTBotShell connectDialog = openConnectDialog();
-		// test the "share with repository in parent folder" scenario
-		connectDialog.bot()
-				.checkBox(UIText.ExistingOrNewPage_InternalModeCheckbox)
-				.select();
 		connectDialog.bot().tree().getAllItems()[0].select();
 		connectDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
@@ -83,7 +79,7 @@ public class DisconnectConnectTest extends LocalRepositoryTestCase {
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String menuString = util
 				.getPluginLocalizedValue("DisconnectAction_label");
-		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
 				menuString);
 	}
 

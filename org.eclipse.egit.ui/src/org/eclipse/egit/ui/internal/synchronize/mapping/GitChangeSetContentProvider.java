@@ -19,15 +19,12 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.GitSubscriberMergeContext;
 import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObjectContainer;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRoot;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.team.core.mapping.ISynchronizationContext;
@@ -91,7 +88,6 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 			ResourceMapping rm = getResourceMapping(object);
 			GitSubscriberMergeContext ctx = (GitSubscriberMergeContext) getContext();
 			ResourceMappingContext rmCtx = new GitSubscriberResourceMappingContext(
-					(GitResourceVariantTreeSubscriber) ctx.getSubscriber(),
 					ctx.getSyncData());
 			try {
 				ResourceTraversal[] traversals = rm.getTraversals(rmCtx, new NullProgressMonitor());
@@ -113,9 +109,6 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 	public void dispose() {
 		if (provider != null)
 			provider.dispose();
-		if (modelRoot != null)
-			modelRoot.dispose();
-		traversalCache.clear();
 
 		super.dispose();
 	}
@@ -127,10 +120,8 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 	}
 
 	protected boolean isVisible(ISynchronizationContext context, Object object) {
-		if (object instanceof GitModelRepository
-				|| object instanceof GitModelCommit
-				|| object instanceof GitModelCache) {
-			int kind = ((GitModelObjectContainer) object).getKind();
+		if (object instanceof GitModelCommit) {
+			int kind = ((GitModelCommit) object).getKind();
 			switch (getConfiguration().getMode()) {
 			case ISynchronizePageConfiguration.OUTGOING_MODE:
 				return (kind & Differencer.RIGHT) != 0;

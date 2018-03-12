@@ -10,13 +10,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test.team.actions;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -95,9 +96,9 @@ public class PushActionTest extends LocalRepositoryTestCase {
 		pushDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 		SWTBotShell confirm = bot.shell(NLS.bind(UIText.ResultDialog_title,
 				destination));
-		String result = confirm.bot().tree().getAllItems()[0].getText();
+		String result = confirm.bot().table().getTableItem(0).getText(3);
 
-		assertTrue("Wrong result", result.contains(previous.substring(0, 7)));
+		assertTrue("Wrong result", previous.startsWith(result.substring(0, 7)));
 
 		confirm.close();
 
@@ -114,12 +115,12 @@ public class PushActionTest extends LocalRepositoryTestCase {
 			pushDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
 		pushDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 		confirm = bot.shell(NLS.bind(UIText.ResultDialog_title, destination));
-		result = confirm.bot().tree().getAllItems()[0].getText();
+		result = confirm.bot().table().getTableItem(0).getText(3);
 
 		confirm.close();
 
-		assertTrue("Wrong result",
-				result.contains(UIText.PushResultTable_statusUpToDate));
+		assertEquals("Wrong result", UIText.PushResultTable_statusUpToDate,
+				result);
 	}
 
 	private SWTBotShell openPushDialog() throws Exception {

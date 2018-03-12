@@ -3,8 +3,6 @@
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2013, Tobias Pfeifer <to.pfeifer@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,12 +19,6 @@ package org.eclipse.egit.ui;
  * All plug-in preferences shall be referenced by a constant in this class.
  */
 public class UIPreferences {
-	/** */
-	public final static String RESOURCEHISTORY_SHOW_RELATIVE_DATE = "resourcehistory_show_relative_date"; //$NON-NLS-1$
-	/** */
-	public final static String RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES = "resourcehistory_show_email_addresses"; //$NON-NLS-1$
-	/** */
-	public final static String RESOURCEHISTORY_SHOW_NOTES = "resourcehistory_show_notes"; //$NON-NLS-1$
 	/** */
 	public final static String RESOURCEHISTORY_SHOW_COMMENT_WRAP = "resourcehistory_show_comment_wrap"; //$NON-NLS-1$
 	/** */
@@ -46,10 +38,6 @@ public class UIPreferences {
 	/** */
 	public final static String RESOURCEHISTORY_SHOW_ALL_BRANCHES = "resourcehistory_show_all_branches"; //$NON-NLS-1$
 	/** */
-	public final static String RESOURCEHISTORY_SHOW_ADDITIONAL_REFS = "resourcehistory_show_additionalrefs"; //$NON-NLS-1$
-	/** */
-	public static final String RESOURCEHISTORY_FOLLOW_RENAMES = "resourcehistory_follow_renames"; //$NON-NLS-1$
-	/** */
 	public final static String RESOURCEHISTORY_COMPARE_MODE = "resourcehistory_compare_mode"; //$NON-NLS-1$
 	/** */
 	public final static String FINDTOOLBAR_IGNORE_CASE = "findtoolbar_ignore_case"; //$NON-NLS-1$
@@ -67,14 +55,7 @@ public class UIPreferences {
 	public final static String COMMIT_DIALOG_HARD_WRAP_MESSAGE = "commit_dialog_hard_wrap_message"; //$NON-NLS-1$
 	/** */
 	public final static String COMMIT_DIALOG_SIGNED_OFF_BY = "commit_dialog_signed_off_by"; //$NON-NLS-1$
-	/** */
-	public final static String COMMIT_DIALOG_HISTORY_SIZE = "commit_dialog_history_size"; //$NON-NLS-1$
-	/** */
-	public final static String COMMIT_DIALOG_HISTORY_MESSAGES = "commit_dialog_history_messages"; //$NON-NLS-1$
-	/** */
-	public final static String COMMIT_DIALOG_INCLUDE_UNTRACKED = "commit_dialog_include_untracked"; //$NON-NLS-1$
-	/** */
-	public final static String CHECKOUT_PROJECT_RESTORE = "restore_projects_on_checkout"; //$NON-NLS-1$
+
 	/** */
 	public final static String THEME_CommitGraphNormalFont = "org.eclipse.egit.ui.CommitGraphNormalFont"; //$NON-NLS-1$
 	/** */
@@ -94,12 +75,6 @@ public class UIPreferences {
 	/** */
 	public final static String THEME_DiffHunkForegroundColor = "org.eclipse.egit.ui.DiffHunkForegroundColor"; //$NON-NLS-1$
 	/** */
-	public final static String THEME_DiffHeadlineBackgroundColor = "org.eclipse.egit.ui.DiffHeadlineBackgroundColor"; //$NON-NLS-1$
-	/** */
-	public final static String THEME_DiffHeadlineForegroundColor = "org.eclipse.egit.ui.DiffHeadlineForegroundColor"; //$NON-NLS-1$
-	/** */
-	public final static String THEME_DiffHeadlineFont = "org.eclipse.egit.ui.DiffHeadlineFont"; //$NON-NLS-1$
-	/** */
 	public final static String THEME_DiffAddBackgroundColor = "org.eclipse.egit.ui.DiffAddBackgroundColor"; //$NON-NLS-1$
 	/** */
 	public final static String THEME_DiffAddForegroundColor = "org.eclipse.egit.ui.DiffAddForegroundColor"; //$NON-NLS-1$
@@ -107,8 +82,11 @@ public class UIPreferences {
 	public final static String THEME_DiffRemoveBackgroundColor = "org.eclipse.egit.ui.DiffRemoveBackgroundColor"; //$NON-NLS-1$
 	/** */
 	public final static String THEME_DiffRemoveForegroundColor = "org.eclipse.egit.ui.DiffRemoveForegroundColor"; //$NON-NLS-1$
+
 	/** */
 	public final static String DECORATOR_RECOMPUTE_ANCESTORS = "decorator_recompute_ancestors"; //$NON-NLS-1$
+	/** */
+	public final static String DECORATOR_RECURSIVE_LIMIT = "decorator_recursive_limit"; //$NON-NLS-1$
 	/** */
 	public final static String DECORATOR_FILETEXT_DECORATION = "decorator_filetext_decoration"; //$NON-NLS-1$
 	/** */
@@ -132,15 +110,7 @@ public class UIPreferences {
 	/** */
 	public final static String SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL = "sync_view_show_changeset_model"; //$NON-NLS-1$
 	/** */
-	public final static String SYNC_VIEW_LAST_SELECTED_MODEL = "sync_view_last_selected_model"; //$NON-NLS-1$
-	/** */
-	public static final String SYNC_VIEW_FETCH_BEFORE_LAUNCH = "sync_view_fetch_before_launch"; //$NON-NLS-1$
-	/** */
 	public final static String DATE_FORMAT = "date_format"; //$NON-NLS-1$
-	/** */
-	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";  //$NON-NLS-1$
-	/** */
-	public static final String DEFAULT_CHANGESET_FORMAT = "[{author}] ({date}) {short_message}"; //$NON-NLS-1$
 	/** */
 	public static final String REFESH_ON_INDEX_CHANGE = "refesh_on_index_change"; //$NON-NLS-1$
 	/** */
@@ -158,37 +128,13 @@ public class UIPreferences {
 	/** */
 	public static final String SHOW_HOME_DIR_WARNING = "show_home_drive_warning"; //$NON-NLS-1$
 	/** */
-	public static final String SHOW_GIT_PREFIX_WARNING = "show_git_prefix_warning"; //$NON-NLS-1$
-	/** */
 	public static final String SHOW_DETACHED_HEAD_WARNING = "show_detached_head_warning"; //$NON-NLS-1$
 	/** */
 	public static final String TREE_COMPARE_SHOW_EQUALS = "CompareTreeView_ShowEquals"; //$NON-NLS-1$
 	/** */
 	public static final String HISTORY_MAX_NUM_COMMITS = "HistoryView_MaxNumberOfCommmits"; //$NON-NLS-1$
 	/** */
-	public static final String HISTORY_MAX_TAG_LENGTH = "HistoryView_MaxTagLength"; //$NON-NLS-1$
-	/** */
-	public static final String HISTORY_MAX_BRANCH_LENGTH = "HistoryView_MaxBranchLength"; //$NON-NLS-1$
-	/** */
 	public static final String HISTORY_SHOW_TAG_SEQUENCE = "HistoryView_ShowTagSequence"; //$NON-NLS-1$
-	/** */
-	public static final String STAGING_VIEW_SHOW_NEW_COMMITS = "StagingView_ShowNewCommits"; //$NON-NLS-1$
-	/** */
-	public static final String STAGING_VIEW_COLUMN_LAYOUT = "StagingView_ColumnLayout"; //$NON-NLS-1$
-	/** */
-	public static final String STAGING_VIEW_SYNC_SELECTION = "StagingView_SyncWithSelection"; //$NON-NLS-1$
-	/** */
-	public static final String STAGING_VIEW_FILENAME_MODE = "StagingView_FileNameMode"; //$NON-NLS-1$
-	/** */
-	public static final String PAGE_COMMIT_PREFERENCES = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
-	/** */
-	public static final String BLAME_IGNORE_WHITESPACE = "Blame_IgnoreWhitespace"; //$NON-NLS-1$
-	/** */
-	public static final String CLONE_WIZARD_STORE_SECURESTORE = "CloneWizard_StoreInSecureStore"; //$NON-NLS-1$
-	/** */
-	public static final String CLONE_WIZARD_IMPORT_PROJECTS = "CloneWizard_ImportProjects"; //$NON-NLS-1$
-	/** */
-	public static final String CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG = "CloneWizard_ShowDetailedFailureDialog"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array

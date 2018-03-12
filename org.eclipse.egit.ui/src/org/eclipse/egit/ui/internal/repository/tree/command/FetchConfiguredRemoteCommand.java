@@ -20,7 +20,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.fetch.FetchOperationUI;
 import org.eclipse.egit.ui.internal.fetch.SimpleConfigureFetchDialog;
 import org.eclipse.egit.ui.internal.repository.tree.FetchNode;
@@ -30,6 +30,7 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.ui.ISources;
 
 /**
  * Fetches from the remote
@@ -58,7 +59,8 @@ public class FetchConfiguredRemoteCommand extends
 	public void setEnabled(Object evaluationContext) {
 		if (evaluationContext instanceof IEvaluationContext) {
 			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
-			Object selection = getSelection(ctx);
+			Object selection = ctx
+					.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
 			if (selection instanceof IStructuredSelection) {
 				IStructuredSelection sel = (IStructuredSelection) selection;
 				if (sel.getFirstElement() instanceof RepositoryTreeNode) {
@@ -84,15 +86,6 @@ public class FetchConfiguredRemoteCommand extends
 			try {
 				RemoteNode remote = (RemoteNode) node.getParent();
 				return  new RemoteConfig(node.getRepository().getConfig(),
-						remote.getObject());
-			} catch (URISyntaxException e) {
-				throw new ExecutionException(e.getMessage());
-			}
-
-		if (node instanceof RemoteNode)
-			try {
-				RemoteNode remote = (RemoteNode) node;
-				return new RemoteConfig(node.getRepository().getConfig(),
 						remote.getObject());
 			} catch (URISyntaxException e) {
 				throw new ExecutionException(e.getMessage());

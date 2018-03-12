@@ -19,13 +19,24 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.DeleteBranchOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 
 /**
@@ -35,6 +46,47 @@ import org.eclipse.swt.widgets.Shell;
 public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 
 	private final Set<Ref> selectedRefs = new HashSet<Ref>();
+
+	private static final class BranchLabelProvider extends LabelProvider {
+		@Override
+		public String getText(Object element) {
+			RefNode refNode = (RefNode) element;
+			return refNode.getObject().getName();
+		}
+
+		@Override
+		public Image getImage(Object element) {
+			return RepositoryTreeNodeType.REF.getIcon();
+		}
+	}
+
+	private static final class BranchMessageDialog extends MessageDialog {
+		private final List<RefNode> nodes;
+
+		private BranchMessageDialog(Shell parentShell, List<RefNode> nodes) {
+			super(parentShell, UIText.RepositoriesView_ConfirmDeleteTitle,
+					null, UIText.RepositoriesView_ConfirmBranchDeletionMessage,
+					MessageDialog.QUESTION, new String[] {
+							IDialogConstants.OK_LABEL,
+							IDialogConstants.CANCEL_LABEL }, 0);
+			this.nodes = nodes;
+		}
+
+		@Override
+		protected Control createCustomArea(Composite parent) {
+			Composite area = new Composite(parent, SWT.NONE);
+			area.setLayoutData(new GridData(GridData.FILL_BOTH));
+			area.setLayout(new FillLayout());
+
+			TableViewer branchesList = new TableViewer(area);
+			branchesList.setContentProvider(ArrayContentProvider.getInstance());
+			branchesList.setLabelProvider(new BranchLabelProvider());
+			branchesList.setInput(nodes);
+			return area;
+		}
+
+	}
+
 	private String currentBranch;
 
 	/**
@@ -42,8 +94,7 @@ public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public DeleteBranchDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo, SHOW_LOCAL_BRANCHES
-				| EXPAND_LOCAL_BRANCHES_NODE | SHOW_REMOTE_BRANCHES
+		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
 				| ALLOW_MULTISELECTION);
 		try {
 			currentBranch = repo.getFullBranch();
@@ -102,7 +153,7 @@ public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 				if (result == DeleteBranchOperation.REJECTED_UNMERGED) {
 					List<RefNode> nodes = extractSelectedRefNodes();
 
-					MessageDialog messageDialog = new UnmergedBranchDialog<RefNode>(
+					MessageDialog messageDialog = new BranchMessageDialog(
 							getShell(), nodes);
 
 					if (messageDialog.open() == Window.OK)

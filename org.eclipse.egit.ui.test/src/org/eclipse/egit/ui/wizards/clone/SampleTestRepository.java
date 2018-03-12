@@ -20,7 +20,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.revwalk.RevBlob;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTag;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.Daemon;
 import org.eclipse.jgit.transport.DaemonClient;
 import org.eclipse.jgit.transport.resolver.FileResolver;
@@ -85,11 +85,12 @@ public class SampleTestRepository {
 	/**
 	 * Create a bare repository, generate some sample data and start git daemon
 	 * on a free port
-	 * 
+	 *
 	 * @param n
 	 *            hint how many random commits should be generated
-	 * @param serveHttp
-	 * 
+	 * @param
+	 * 			  serveHttp 
+	 *
 	 * @throws Exception
 	 */
 	public SampleTestRepository(int n, boolean serveHttp) throws Exception {
@@ -158,7 +159,7 @@ public class SampleTestRepository {
 		d.setRepositoryResolver(resolver);
 		d.start();
 		uri = "git://localhost:" + d.getAddress().getPort() + "/" + REPO_NAME
-				+ Constants.DOT_GIT_EXT;
+				+ Constants.DOT_GIT;
 	}
 
 	private void serveHttp() throws Exception{

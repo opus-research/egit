@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,13 +10,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.view.repositories;
 
-import static org.eclipse.swtbot.swt.finder.waits.Conditions.shellCloses;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -24,13 +20,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -75,7 +70,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	@BeforeClass
 	public static void beforeClass() throws Exception {
-		setVerboseBranchMode(false);
 		repositoryFile = createProjectAndCommitToRepository();
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				repositoryFile);
@@ -201,9 +195,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		SWTBotTreeItem item = myRepoViewUtil.getRootItem(tree, repositoryFile);
 		item.select();
-		ContextMenuHelper.clickContextMenuSync(tree,
-				myUtil.getPluginLocalizedValue("ShowIn"),
-				"Properties");
+		ContextMenuHelper.clickContextMenu(tree, myUtil
+				.getPluginLocalizedValue("OpenPropertiesCommand"));
 		SWTBotView propertieView = bot.viewById("org.eclipse.ui.views.PropertySheet");
 		assertTrue(propertieView.isActive());
 	}
@@ -246,14 +239,14 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals(Constants.DOT_GIT, wizardNode);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		shell.bot().label("Import Projects"); // wait for import projects page
-		assertEquals(0, shell.bot().tree().getAllItems().length);
+		assertTrue(shell.bot().tree().getAllItems().length == 0);
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// go to project with .project
 		shell.bot().tree().getAllItems()[0].getNode(PROJ1).select();
 		// next is 1
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		bot.button(UIText.WizardProjectsImportPage_deselectAll).click();
-		assertEquals(1, shell.bot().tree().getAllItems().length);
+		assertTrue(shell.bot().tree().getAllItems().length == 1);
 		assertTrue(!shell.bot().button(IDialogConstants.FINISH_LABEL)
 				.isEnabled());
 		shell.bot().button(UIText.WizardProjectsImportPage_selectAll).click();
@@ -288,7 +281,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals(PROJ2, wizardNode);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		shell.bot().text(" " + UIText.GitProjectsImportPage_NoProjectsMessage);
-		assertEquals(0, shell.bot().tree().getAllItems().length);
+		assertTrue(shell.bot().tree().getAllItems().length == 0);
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// import as general
 		shell.bot().radio(UIText.GitSelectWizardPage_ImportAsGeneralButton).click();
@@ -345,7 +338,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		shell.bot().text(UIText.WizardProjectsImportPage_ImportProjectsDescription);
 		shell.bot().tree().getAllItems()[0].check();
 		// add to working set
-		shell.bot().checkBox("Add project to working sets").select();
+		shell.bot().checkBox().select();
 		// create new working set
 		shell.bot().button("Select...").click();
 		SWTBotShell workingSetDialog = bot.shell("Select Working Sets");
@@ -552,7 +545,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 				tree, repositoryFile).expand();
 		SWTBotTreeItem masterNode = localBranchesItem.getNode("master");
 		masterNode.select();
-		ContextMenuHelper.clickContextMenuSync(tree, myUtil
+		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewCheckout.label"));
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		ContextMenuHelper.clickContextMenu(tree, myUtil
@@ -607,7 +600,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 				repositoryFile).expand();
 		// delete both
 		localBranchesItem.select("abc", "123");
-		ContextMenuHelper.clickContextMenuSync(tree, myUtil
+		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		refreshAndWait();
 
@@ -618,55 +611,4 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals("stable", items[1].getText());
 	}
 
-	@Test
-	public void testDeleteFileInProject() throws Exception {
-		SWTBotTree tree = getOrOpenView().bot().tree();
-		refreshAndWait();
-
-		IProject project1 = ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ1);
-		// Make sure that the refresh doesn't happen on delete and cause a timeout
-		project1.refreshLocal(IResource.DEPTH_INFINITE, null);
-
-		SWTBotTreeItem folder = findWorkdirNode(tree, PROJ1, FOLDER);
-		folder.getNode(FILE1).select();
-
-		ContextMenuHelper.clickContextMenu(tree,
-				myUtil.getPluginLocalizedValue("RepoViewDeleteFile.label"));
-
-		SWTBotShell confirm = bot.shell("Delete Resources");
-		confirm.bot().button(IDialogConstants.OK_LABEL).click();
-		bot.waitUntil(shellCloses(confirm));
-		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
-
-		assertThat(folder.getNodes(), not(hasItem(FILE1)));
-		assertThat(folder.getNodes(), hasItem(FILE2));
-	}
-
-	@Test
-	public void testDeleteFileNotInProject() throws Exception {
-		SWTBotTree tree = getOrOpenView().bot().tree();
-		refreshAndWait();
-
-		SWTBotTreeItem folder = findWorkdirNode(tree, PROJ2, FOLDER);
-		folder.getNode(FILE1).select();
-
-		ContextMenuHelper.clickContextMenu(tree,
-				myUtil.getPluginLocalizedValue("RepoViewDeleteFile.label"));
-
-		SWTBotShell confirm = bot.shell(UIText.DeleteResourcesOperationUI_confirmActionTitle);
-		confirm.bot().button(IDialogConstants.OK_LABEL).click();
-		bot.waitUntil(shellCloses(confirm));
-		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
-
-		folder = findWorkdirNode(tree, PROJ2, FOLDER);
-		assertThat(folder.getNodes(), not(hasItem(FILE1)));
-		assertThat(folder.getNodes(), hasItem(FILE2));
-	}
-
-	private SWTBotTreeItem findWorkdirNode(SWTBotTree tree, String... nodes) throws Exception {
-		SWTBotTreeItem item = myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand();
-		for (String node : nodes)
-			item = item.getNode(node).expand();
-		return item;
-	}
 }

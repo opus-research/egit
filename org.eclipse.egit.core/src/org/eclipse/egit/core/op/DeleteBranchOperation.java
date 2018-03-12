@@ -11,7 +11,6 @@ package org.eclipse.egit.core.op;
 import static java.util.Arrays.asList;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -21,10 +20,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.CannotDeleteCurrentBranchException;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NotMergedException;
 import org.eclipse.jgit.lib.Ref;
@@ -106,15 +104,12 @@ public class DeleteBranchOperation implements IEGitOperation {
 							CoreText.DeleteBranchOperation_TaskName, branches
 									.iterator().next().getName());
 				else {
-					StringBuilder names = new StringBuilder();
-					for (Iterator<Ref> it = branches.iterator(); it.hasNext(); ) {
-						Ref ref = it.next();
-						names.append(ref.getName());
-						if (it.hasNext())
-							names.append(", "); //$NON-NLS-1$
-					}
+					String names = ""; //$NON-NLS-1$
+					for (Ref ref : branches)
+						names = names + ref.getName() + ", "; //$NON-NLS-1$
 					taskName = NLS.bind(
-							CoreText.DeleteBranchOperation_TaskName, names);
+							CoreText.DeleteBranchOperation_TaskName,
+							names.substring(0, names.length() - 2));
 				}
 				actMonitor.beginTask(taskName, branches.size());
 				for (Ref branch : branches) {
@@ -129,8 +124,6 @@ public class DeleteBranchOperation implements IEGitOperation {
 						status = REJECTED_CURRENT;
 						break;
 					} catch (JGitInternalException e) {
-						throw new CoreException(Activator.error(e.getMessage(), e));
-					} catch (GitAPIException e) {
 						throw new CoreException(Activator.error(e.getMessage(), e));
 					}
 					actMonitor.worked(1);

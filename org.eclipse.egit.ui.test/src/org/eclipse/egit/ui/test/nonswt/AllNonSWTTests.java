@@ -8,16 +8,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test.nonswt;
 
-import org.eclipse.egit.ui.internal.actions.LinkedResourcesTest;
-import org.eclipse.egit.ui.internal.decorators.DecoratableResourceAdapterTest;
 import org.eclipse.egit.ui.internal.synchronize.model.AllGitModelTests;
+import org.eclipse.egit.ui.test.nonswt.decoration.DecoratableResourceHelperTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
-@SuiteClasses({ DecoratableResourceAdapterTest.class,
-		LinkedResourcesTest.class,
+@SuiteClasses({ DecoratableResourceHelperTest.class,
 		AllGitModelTests.class })
 public class AllNonSWTTests {
 	// Empty class

@@ -18,8 +18,8 @@ import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitTag;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -95,11 +95,10 @@ class CommitFileRevision extends GitFileRevision {
 	public ITag[] getTags() {
 		final Collection<GitTag> ret = new ArrayList<GitTag>();
 		for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
-			Ref ref = db.peel(tag.getValue());
-			ObjectId refId = ref.getPeeledObjectId();
-			if (refId == null)
-				refId = ref.getObjectId();
-			if (!AnyObjectId.equals(refId, commit))
+			final ObjectId ref = tag.getValue().getPeeledObjectId();
+			if (ref == null)
+				continue;
+			if (!AnyObjectId.equals(ref, commit))
 				continue;
 			ret.add(new GitTag(tag.getKey()));
 		}
