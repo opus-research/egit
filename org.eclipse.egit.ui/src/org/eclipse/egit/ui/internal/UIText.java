@@ -588,9 +588,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_fetchBeforeSynchronization;
 
 	/** */
-	public static String GitPreferenceRoot_GitConsoleBinPath;
-
-	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
 
 	/** */
