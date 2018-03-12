@@ -559,7 +559,7 @@ public class CompareUtils {
 				}
 				final String gitPath = getRepoRelativePath(location, repository);
 				final ITypedElement base = new LocalNonWorkspaceTypedElement(
-						repository, location);
+						location);
 
 				CompareEditorInput in;
 				try {
