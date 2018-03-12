@@ -65,10 +65,7 @@ public class CommitSearchDialogTest extends LocalRepositoryTestCase {
 	@Test
 	public void openCommitTabOnSearchDialog() throws Exception {
 		bot.menu("Search").menu("Search...").click();
-		SWTBotShell shell = bot.shell("Search");
-		if (!shell.isActive()) {
-			shell.activate();
-		}
+		SWTBotShell shell = bot.activeShell();
 		shell.bot().tabItem("Git Search").activate();
 		shell.bot().comboBox().setText(commit.name());
 		SWTBotButton search = shell.bot().button("Search");
