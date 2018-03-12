@@ -115,12 +115,12 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 
 	public ITypedElement getLeft() {
 		return CompareUtils.getFileRevisionTypedElement(gitPath, baseCommit,
-				repo, baseId);
+				repo, remoteId);
 	}
 
 	public ITypedElement getRight() {
 		return CompareUtils.getFileRevisionTypedElement(gitPath, remoteCommit,
-				repo, remoteId);
+				repo, baseId);
 	}
 
 	public void addCompareInputChangeListener(
