@@ -331,14 +331,11 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 	private void assertSynchronizeNoChange() {
 		// 0 => title, 1 => ?, 2 => "no result" Label
 		SWTBotLabel syncViewLabel = bot.viewByTitle("Synchronize").bot()
-				.label(0);
+				.label(2);
 
 		String noResultLabel = syncViewLabel.getText();
-		if (!noResultLabel.contains("No changes in 'Git (" + PROJ1 + ")'.")) {
-			syncViewLabel = bot.viewByTitle("Synchronize").bot().label(2);
-			assertTrue(noResultLabel.contains("No changes in 'Git (" + PROJ1
-					+ ")'."));
-		}
+		assertTrue(noResultLabel.contains("No changes in 'Git (" + PROJ1
+				+ ")'."));
 	}
 
 	private void assertSynchronizeFile1Changed() {
