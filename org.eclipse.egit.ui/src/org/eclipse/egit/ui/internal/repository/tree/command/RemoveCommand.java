@@ -177,7 +177,6 @@ public class RemoveCommand extends
 					try {
 						for (RepositoryNode node : selectedNodes) {
 							Repository repo = node.getRepository();
-							repo.close();
 							if (!repo.isBare() && deleteWorkDir)
 								FileUtils.delete(repo.getWorkTree(),
 										FileUtils.RECURSIVE | FileUtils.RETRY);
