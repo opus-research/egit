@@ -114,7 +114,7 @@ public class CreatePatchOperationTest extends GitTestCase {
 		operation.execute(null);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testNullCommit() throws Exception {
 		new CreatePatchOperation(testRepository.getRepository(), null);
 	}
