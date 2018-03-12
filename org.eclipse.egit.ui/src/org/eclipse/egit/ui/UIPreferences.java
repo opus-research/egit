@@ -22,6 +22,8 @@ public class UIPreferences {
 	/** */
 	public final static String RESOURCEHISTORY_SHOW_RELATIVE_DATE = "resourcehistory_show_relative_date"; //$NON-NLS-1$
 	/** */
+	public final static String RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES = "resourcehistory_show_email_addresses"; //$NON-NLS-1$
+	/** */
 	public final static String RESOURCEHISTORY_SHOW_NOTES = "resourcehistory_show_notes"; //$NON-NLS-1$
 	/** */
 	public final static String RESOURCEHISTORY_SHOW_COMMENT_WRAP = "resourcehistory_show_comment_wrap"; //$NON-NLS-1$
@@ -172,6 +174,8 @@ public class UIPreferences {
 	public static final String CLONE_WIZARD_STORE_SECURESTORE = "CloneWizard_StoreInSecureStore"; //$NON-NLS-1$
 	/** */
 	public static final String CLONE_WIZARD_IMPORT_PROJECTS = "CloneWizard_ImportProjects"; //$NON-NLS-1$
+	/** */
+	public static final String CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG = "CloneWizard_ShowDetailedFailureDialog"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array
