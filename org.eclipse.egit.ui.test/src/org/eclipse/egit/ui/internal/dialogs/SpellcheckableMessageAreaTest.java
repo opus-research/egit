@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2010, Robin Stocker
  * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,10 +12,7 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.List;
-
-import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
-import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea.WrapEdit;
+import org.eclipse.egit.core.internal.Utils;
 import org.junit.Test;
 
 public class SpellcheckableMessageAreaTest {
@@ -83,6 +81,12 @@ public class SpellcheckableMessageAreaTest {
 	}
 
 	@Test
+	public void dontWrapWordLongerThanOneLineAndKeepSpaceAtFront() {
+		String input = " 1234567890123456789012345678901234567890123456789012345678901234567890123456789012";
+		assertWrappedEquals(input, input);
+	}
+
+	@Test
 	public void wrapSecondLongLine() {
 		String input = "First line\n123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789.12";
 		String expected = "First line\n123456789 123456789 123456789 123456789 123456789 123456789 123456789\n123456789.12";
@@ -113,6 +117,57 @@ public class SpellcheckableMessageAreaTest {
 		assertWrappedEquals(input, input);
 	}
 
+	@Test
+	public void lineAfterWrappedWordShouldNotBeJoined() {
+		String input = "000000001 000000002 000000003 000000004 000000005 000000006 000000007 000000008\n000000009";
+		String expected = "000000001 000000002 000000003 000000004 000000005 000000006 000000007\n000000008\n000000009";
+		assertWrappedEquals(expected, input);
+	}
+
+	@Test
+	public void lineAfterWrappedWordShouldNotBeJoined2() {
+		String input = "000000001 000000002 000000003 000000004 000000005 000000006 000000007 000000008\n"
+				+ "000000009 000000010 000000011 000000012 000000013 000000014 000000015 000000016";
+		String expected = "000000001 000000002 000000003 000000004 000000005 000000006 000000007\n"
+				+ "000000008\n"
+				+ "000000009 000000010 000000011 000000012 000000013 000000014 000000015\n"
+				+ "000000016";
+		assertWrappedEquals(expected, input);
+	}
+
+	@Test
+	public void lineAfterWrappedLineShouldBeJoinedAndFollowingLineWrappedCorrectly() {
+		String input = "000000001 000000002 000000003 000000004 000000005 000000006 000000007 "
+				+ "000000008 000000009 000000010 000000011 000000012 000000013 000000014\n"
+				+ "000000015 000000016 000000017 000000018 000000019 000000020 000000021";
+		String expected = "000000001 000000002 000000003 000000004 000000005 000000006 000000007\n"
+				+ "000000008 000000009 000000010 000000011 000000012 000000013 000000014\n"
+				+ "000000015 000000016 000000017 000000018 000000019 000000020 000000021";
+		assertWrappedEquals(expected, input);
+	}
+
+	@Test
+	public void lineAfterWrappedWordShouldNotBeJoinedIfItsEmpty() {
+		String input = "000000001 000000002 000000003 000000004 000000005 000000006 000000007 000000008\n\nNew paragraph";
+		String expected = "000000001 000000002 000000003 000000004 000000005 000000006 000000007\n000000008\n\nNew paragraph";
+		assertWrappedEquals(expected, input);
+	}
+
+	@Test
+	public void lineAfterWrappedWordShouldNotBeJoinedIfItStartsWithASymbol() {
+		String input = "* 000000001 000000002 000000003 000000004 000000005 000000006 000000007 000000008\n* Bullet 2";
+		String expected = "* 000000001 000000002 000000003 000000004 000000005 000000006 000000007\n000000008\n* Bullet 2";
+		assertWrappedEquals(expected, input);
+	}
+
+	@Test
+	public void lineAfterWrappedWordShouldNotBeJoined3() {
+		String input = "* 000000001 000000002 000000003 000000004 000000005 000000006 000000007 000000008\n(paren)";
+		String expected = "* 000000001 000000002 000000003 000000004 000000005 000000006 000000007\n000000008\n(paren)";
+		assertWrappedEquals(expected, input);
+	}
+
+
 	private static void assertWrappedEquals(String expected, String input) {
 		assertWrappedEqualsOnUnix(expected, input);
 		assertWrappedEqualsOnWindows(expected, input);
@@ -130,14 +185,7 @@ public class SpellcheckableMessageAreaTest {
 	}
 
 	private static String wrap(String text, String lineDelimiter) {
-		StringBuilder sb = new StringBuilder(text);
-		List<WrapEdit> wrapEdits = SpellcheckableMessageArea
-				.calculateWrapEdits(text,
-						SpellcheckableMessageArea.MAX_LINE_WIDTH, lineDelimiter);
-		for (WrapEdit wrapEdit : wrapEdits) {
-			sb.replace(wrapEdit.getStart(),
-					wrapEdit.getStart() + wrapEdit.getLength(), lineDelimiter);
-		}
-		return sb.toString();
+		String wrapped = SpellcheckableMessageArea.hardWrap(Utils.normalizeLineEndings(text));
+		return wrapped.replaceAll("\n", lineDelimiter);
 	}
 }

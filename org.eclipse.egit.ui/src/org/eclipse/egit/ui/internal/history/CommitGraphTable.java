@@ -67,6 +67,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -676,7 +677,15 @@ class CommitGraphTable {
 			IStructuredSelection selection = (IStructuredSelection) table
 					.getSelection();
 			RevCommit commit = (RevCommit) selection.getFirstElement();
-			return commit;
+			RevWalk walk = new org.eclipse.jgit.revwalk.RevWalk(input.getRepository());
+			try {
+				return walk.parseCommit(commit.getId());
+			} catch (IOException e) {
+				throw new RuntimeException(
+						"Could not parse commit " + commit.getId(), e); //$NON-NLS-1$
+			} finally {
+				walk.release();
+			}
 		}
 
 		private void writeToFile(final String fileName, String content)
@@ -745,6 +754,12 @@ class CommitGraphTable {
 					popupMgr.add(getCommandContributionItem(
 							HistoryViewCommands.SHOW_BLAME,
 							UIText.CommitFileDiffViewer_ShowAnnotationsMenuLabel));
+			}
+
+			if (selectionSize > 0) {
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
+						UIText.CommitGraphTable_OpenCommitLabel));
 			}
 
 			if (selectionSize == 1) {
@@ -845,9 +860,6 @@ class CommitGraphTable {
 			// copy and such after additions
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
-			popupMgr.add(getCommandContributionItem(
-					HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
-					UIText.CommitGraphTable_OpenCommitLabel));
 			popupMgr.add(new Separator());
 		}
 
