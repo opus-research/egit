@@ -97,8 +97,6 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 				.button(IDialogConstants.OK_LABEL).click();
 		selectDialog = bot.shell(UIText.CommitSelectDialog_WindowTitle);
 		// Select first parent, which should be the master commit
-		String firstCommitMessage = selectDialog.bot().table().cell(0, 1);
-		assertEquals("Master commit", firstCommitMessage);
 		selectDialog.bot().table().select(0);
 		executeReplace(selectDialog);
 
