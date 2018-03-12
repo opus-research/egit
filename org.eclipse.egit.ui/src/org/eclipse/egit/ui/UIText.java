@@ -203,10 +203,10 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_taskFoundSingleCommit;
 
 	/** */
-	public static String GerritConfigurationPage_BranchTooltipHover;
+	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
 
 	/** */
-	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
+	public static String GerritConfigurationPage_configurePushToGerrit;
 
 	/** */
 	public static String GerritConfigurationPage_errorBranchName;
@@ -228,9 +228,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GerritConfigurationPage_title;
-
-	/** */
-	public static String GerritConfigurationPage_UserLabel;
 
 	/** */
 	public static String EGitCredentialsProvider_errorReadingCredentials;
@@ -555,6 +552,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_IncompleteListTooltip;
+
+	/** */
+	public static String GitHistoryPage_InRevisionCommentSubMenuLabel;
 
 	/** */
 	public static String GitHistoryPage_ListIncompleteWarningMessage;
@@ -1695,6 +1695,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String HistoryPreferencePage_MaxTagLength;
+
+	/** */
+	public static String HistoryPreferencePage_ShowGroupLabel;
+
+	/** */
+	public static String HistoryPreferencePage_ShowInRevCommentGroupLabel;
 
 	/** */
 	public static String HistoryPreferencePage_toggleAdditionalRefs;
