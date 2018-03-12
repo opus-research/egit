@@ -11,7 +11,6 @@ package org.eclipse.egit.core.op;
 import static java.util.Arrays.asList;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -105,13 +104,9 @@ public class DeleteBranchOperation implements IEGitOperation {
 							CoreText.DeleteBranchOperation_TaskName, branches
 									.iterator().next().getName());
 				else {
-					StringBuilder names = new StringBuilder();
-					for (Iterator<Ref> it = branches.iterator(); it.hasNext(); ) {
-						Ref ref = it.next();
-						names.append(ref.getName());
-						if (it.hasNext())
-							names.append(", "); //$NON-NLS-1$
-					}
+					String names = ""; //$NON-NLS-1$
+					for (Ref ref : branches)
+						names = names + ref.getName() + ", "; //$NON-NLS-1$
 					taskName = NLS.bind(
 							CoreText.DeleteBranchOperation_TaskName,
 							names.substring(0, names.length() - 2));
