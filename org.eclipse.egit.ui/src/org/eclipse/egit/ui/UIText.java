@@ -1135,6 +1135,18 @@ public class UIText extends NLS {
 	public static String RefContentProposal_unknownObject;
 
 	/** */
+	public static String ReflogView_ErrorOnOpenCommit;
+
+	/** */
+	public static String ReflogView_FromColumnHeader;
+
+	/** */
+	public static String ReflogView_MessageColumnHeader;
+
+	/** */
+	public static String ReflogView_ToColumnHeader;
+
+	/** */
 	public static String RefSpecDialog_AutoSuggestCheckbox;
 
 	/** */
@@ -3927,9 +3939,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
-
-	/** */
-	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

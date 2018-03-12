@@ -76,7 +76,7 @@ public class GitModelBlobTest extends GitModelTestCase {
 	}
 
 	@Test
-	public void shouldBeSymetric() throws Exception {
+	public void shouldBeSymmetric() throws Exception {
 		// given
 		GitModelBlob left = createGitModelBlob(zeroId(), getFile1Location());
 		GitModelBlob right = createGitModelBlob(zeroId(), getFile1Location());
@@ -90,13 +90,11 @@ public class GitModelBlobTest extends GitModelTestCase {
 	}
 
 	@Test
-	public void shouldBeSymetric1() throws Exception {
+	public void shouldBeSymmetric1() throws Exception {
 		// given
 		GitModelBlob left = createGitModelBlob(zeroId(), getFile1Location());
 		GitModelCommit right = new GitModelCommit(createModelRepository(),
 				getCommit(leftRepoFile, HEAD), LEFT);
-		// GitModelBlob right = createGitModelBlob(zeroId(),
-		// getFile1Location());
 
 		// when
 		boolean actual1 = left.equals(right);
