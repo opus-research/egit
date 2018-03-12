@@ -113,16 +113,8 @@ class RepositoryTreeNode<T> {
 	 * <td>{@link String}</td>
 	 * </tr>
 	 * <tr>
-	 * <td>{@link RepositoryTreeNodeType#LOCALBRANCHES}</td>
-	 * <td>{@link String}</td>
-	 * </tr>
-	 * <tr>
-	 * <td>{@link RepositoryTreeNodeType#REMOTEBRANCHES}</td>
-	 * <td>{@link String}</td>
-	 * </tr>
-	 * <tr>
-	 * <td>{@link RepositoryTreeNodeType#TAGS}</td>
-	 * <td>{@link String}</td>
+	 * <td>{@link RepositoryTreeNodeType#REF}</td>
+	 * <td>{@link Ref}</td>
 	 * </tr>
 	 * <tr>
 	 * <td>{@link RepositoryTreeNodeType#REMOTE}</td>
@@ -159,13 +151,7 @@ class RepositoryTreeNode<T> {
 					+ ((myObject == null) ? 0 : ((Repository) myObject)
 							.getDirectory().hashCode());
 			break;
-		case HEAD:
-			// fall through
 		case REF:
-			// fall through
-		case TAG:
-			// fall through
-		case SYMBOLICREF:
 			result = prime
 					* result
 					+ ((myObject == null) ? 0 : ((Ref) myObject).getName()
@@ -179,19 +165,9 @@ class RepositoryTreeNode<T> {
 					+ ((myObject == null) ? 0 : ((File) myObject).getPath()
 							.hashCode());
 			break;
-		case LOCALBRANCHES:
-			// fall through
-		case REMOTEBRANCHES:
-			// fall through
-		case TAGS:
-			// fall through
 		case REMOTE:
-			// fall through
 		case PUSH:
-			// fall through
 		case FETCH:
-			// fall through
-		case SYMBOLICREFS:
 			result = prime * result
 					+ ((myObject == null) ? 0 : myObject.hashCode());
 
@@ -253,12 +229,6 @@ class RepositoryTreeNode<T> {
 			return ((Repository) myObject).getDirectory().equals(
 					((Repository) otherObject).getDirectory());
 		case REF:
-			// fall through
-		case HEAD:
-			// fall through
-		case TAG:
-			// fall through
-		case SYMBOLICREF:
 			return ((Ref) myObject).getName().equals(
 					((Ref) otherObject).getName());
 		case PROJ:
@@ -267,18 +237,8 @@ class RepositoryTreeNode<T> {
 			return ((File) myObject).getPath().equals(
 					((File) otherObject).getPath());
 		case REMOTE:
-			// fall through
 		case FETCH:
-			// fall through
 		case PUSH:
-			// fall through
-		case LOCALBRANCHES:
-			// fall through
-		case REMOTEBRANCHES:
-			// fall through
-		case SYMBOLICREFS:
-			// fall through
-		case TAGS:
 			return myObject.equals(otherObject);
 		}
 		return false;
@@ -287,22 +247,11 @@ class RepositoryTreeNode<T> {
 	enum RepositoryTreeNodeType {
 
 		REPO(UIIcons.REPOSITORY.createImage()), //
+		REF(PlatformUI.getWorkbench().getSharedImages().getImage(
+				ISharedImages.IMG_OBJ_FOLDER)), //
 		PROJ(PlatformUI.getWorkbench().getSharedImages().getImage(
 				SharedImages.IMG_OBJ_PROJECT_CLOSED)), //
 		BRANCHES(UIIcons.BRANCHES.createImage()), //
-		REF(UIIcons.BRANCH.createImage()), //
-		HEAD(PlatformUI.getWorkbench().getSharedImages().getImage(
-				ISharedImages.IMG_OBJ_FILE)), // TODO icon
-		LOCALBRANCHES(PlatformUI.getWorkbench().getSharedImages().getImage(
-				ISharedImages.IMG_OBJ_FOLDER)), //
-		REMOTEBRANCHES(PlatformUI.getWorkbench().getSharedImages().getImage(
-				ISharedImages.IMG_OBJ_FOLDER)), //
-		TAGS(UIIcons.TAGS.createImage()), //
-		SYMBOLICREFS(PlatformUI.getWorkbench().getSharedImages().getImage(
-				ISharedImages.IMG_OBJ_FOLDER)), //
-		SYMBOLICREF(PlatformUI.getWorkbench().getSharedImages().getImage(
-				ISharedImages.IMG_OBJ_FILE)), // TODO icon
-		TAG(UIIcons.TAG.createImage()), //
 		FILE(PlatformUI.getWorkbench().getSharedImages().getImage(
 				ISharedImages.IMG_OBJ_FILE)), //
 		FOLDER(PlatformUI.getWorkbench().getSharedImages().getImage(

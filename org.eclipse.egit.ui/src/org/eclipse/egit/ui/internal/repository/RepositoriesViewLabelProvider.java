@@ -146,19 +146,10 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 			return (directory.getParentFile().getName() + " - " + directory //$NON-NLS-1$
 					.getAbsolutePath());
 		case FILE:
-			// fall through
-		case FOLDER:
+		case FOLDER: // fall through
 			return ((File) node.getObject()).getName();
 		case BRANCHES:
 			return UIText.RepositoriesView_Branches_Nodetext;
-		case LOCALBRANCHES:
-			return UIText.RepositoriesViewLabelProvider_LocalBranchesNodetext;
-		case REMOTEBRANCHES:
-			return UIText.RepositoriesViewLabelProvider_RemoteBrancheNodetext;
-		case TAGS:
-			return UIText.RepositoriesViewLabelProvider_TagsNodeText;
-		case SYMBOLICREFS:
-			return UIText.RepositoriesViewLabelProvider_SymbolicRefNodeText;
 		case REMOTES:
 			return UIText.RepositoriesView_RemotesNodeText;
 		case REMOTE:
@@ -166,18 +157,14 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 		case PROJECTS:
 			return UIText.RepositoriesView_ExistingProjects_Nodetext;
 		case REF:
-			// fall through
-		case HEAD:
-			// fall through
-		case TAG:
-			// fall through
-		case SYMBOLICREF:
 			Ref ref = (Ref) node.getObject();
 			// shorten the name
 			String refName = node.getRepository().shortenRefName(ref.getName());
 			if (ref.isSymbolic()) {
-				refName = refName + " - " //$NON-NLS-1$
-						+ ref.getLeaf().getName();
+				refName = refName
+						+ " - " //$NON-NLS-1$
+						+ node.getRepository().shortenRefName(
+								ref.getLeaf().getName());
 			}
 			return refName;
 		case PROJ:
@@ -187,7 +174,8 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 
 		case WORKINGDIR:
 
-			return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
+			return UIText.RepositoriesView_WorkingDir_treenode
+					+ " - " //$NON-NLS-1$
 					+ node.getRepository().getWorkDir().getAbsolutePath();
 
 		case PUSH: // fall through
@@ -261,7 +249,8 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 				@Override
 				protected void drawCompositeImage(int width, int height) {
 					drawImage(image.getImageData(), 0, 0);
-					drawImage(UIIcons.OVR_CHECKEDOUT.getImageData(), 0, 0);
+					drawImage(UIIcons.OVR_CHECKEDOUT.getImageData(), 0,
+							0);
 
 				}
 			};
