@@ -36,7 +36,6 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
@@ -47,6 +46,8 @@ import org.eclipse.jgit.util.FS;
  */
 public class RepositorySelectionPage extends BaseWizardPage {
 	private static final int REMOTE_CONFIG_TEXT_MAX_LENGTH = 80;
+
+	private static final String DEFAULT_REMOTE_NAME = "origin"; //$NON-NLS-1$
 
 	private static final int S_GIT = 0;
 
@@ -131,7 +132,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	 * @param configuredRemotes
 	 *            list of configured remotes that user may select as an
 	 *            alternative to manual URI specification. Remotes appear in
-	 *            given order in GUI, with {@value Constants#DEFAULT_REMOTE_NAME} as the
+	 *            given order in GUI, with {@value #DEFAULT_REMOTE_NAME} as the
 	 *            default choice. List may be null or empty - no remotes
 	 *            configurations appear in this case. Note that the provided
 	 *            list may be changed by this constructor.
@@ -494,7 +495,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 	private RemoteConfig selectDefaultRemoteConfig() {
 		for (final RemoteConfig rc : configuredRemotes)
-			if (getTextForRemoteConfig(rc) == Constants.DEFAULT_REMOTE_NAME)
+			if (getTextForRemoteConfig(rc) == DEFAULT_REMOTE_NAME)
 				return rc;
 		return configuredRemotes.get(0);
 	}
