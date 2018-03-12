@@ -407,6 +407,12 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_FilterSubMenuLabel;
+
+	/** */
+	public static String GitHistoryPage_ShowSubMenuLabel;
+
+	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
 
 	/** */
@@ -1458,9 +1464,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_NewValueButton;
-
-	/** */
-	public static String ConfigurationEditorComponent_NoConfigLocationKnown;
 
 	/** */
 	public static String ConfigurationEditorComponent_NoEntrySelectedMessage;
