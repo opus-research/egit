@@ -44,8 +44,7 @@ import org.eclipse.jface.viewers.IColorProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.RepositoryCache.FileKey;
+import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -404,37 +403,32 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 			return;
 
 		for (File child : children) {
-			if (monitor.isCanceled())
+			if (monitor.isCanceled()) {
 				return;
-			if (!child.isDirectory())
-				continue;
+			}
 
-			if (FileKey.isGitRepository(child, FS.DETECTED)) {
+			if (child.isDirectory()
+					&& RepositoryCache.FileKey.isGitRepository(child,
+							FS.DETECTED)) {
 				try {
 					strings.add(child.getCanonicalPath());
 				} catch (IOException e) {
 					// ignore here
 				}
-				monitor.setTaskName(NLS
-						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
-								Integer.valueOf(strings.size())));
-			} else if (FileKey.isGitRepository(new File(child,
-					Constants.DOT_GIT), FS.DETECTED)) {
-				try {
-					strings.add(new File(child, Constants.DOT_GIT)
-							.getCanonicalPath());
-				} catch (IOException e) {
-					// ignore here
-				}
-				monitor.setTaskName(NLS
-						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
-								Integer.valueOf(strings.size())));
-			} else if (lookForNestedRepositories) {
+				monitor
+						.setTaskName(NLS
+								.bind(
+										UIText.RepositorySearchDialog_RepositoriesFound_message,
+										Integer.valueOf(strings.size())));
+				if (!lookForNestedRepositories)
+					return;
+			} else if (child.isDirectory()) {
 				monitor.subTask(child.getPath());
 				findGitDirsRecursive(child, strings, monitor,
 						lookForNestedRepositories);
 			}
 		}
+
 	}
 
 	private HashSet<String> getCheckedItems() {
