@@ -56,7 +56,6 @@ import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -378,8 +377,8 @@ class ExistingOrNewPage extends WizardPage {
 				File gitDir = new File(repositoryToCreate.getText(),
 						Constants.DOT_GIT);
 				try {
-					Repository repository = FileRepositoryBuilder
-							.create(gitDir);
+					Repository repository = new RepositoryBuilder().setGitDir(
+							gitDir).build();
 					repository.create();
 					for (IProject project : getProjects(false).keySet()) {
 						// If we don't refresh the project directories right
