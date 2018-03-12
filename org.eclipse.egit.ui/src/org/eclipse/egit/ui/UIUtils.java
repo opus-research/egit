@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
@@ -27,28 +26,18 @@ import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.FontRegistry;
-import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Resource;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.ToolBar;
-import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
-import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 
 /**
@@ -137,16 +126,6 @@ public class UIUtils {
 	public static Font getBoldFont(final String id) {
 		return PlatformUI.getWorkbench().getThemeManager().getCurrentTheme()
 				.getFontRegistry().getBold(id);
-	}
-
-	/**
-	 * @param id
-	 *            see {@link FontRegistry#getItalic(String)}
-	 * @return the font
-	 */
-	public static Font getItalicFont(final String id) {
-		return PlatformUI.getWorkbench().getThemeManager().getCurrentTheme()
-				.getFontRegistry().getItalic(id);
 	}
 
 	/**
@@ -441,71 +420,4 @@ public class UIUtils {
 		});
 	}
 
-	/**
-	 * Get editor image for path
-	 *
-	 * @param path
-	 * @return image descriptor
-	 */
-	public static ImageDescriptor getEditorImage(final String path) {
-		if (path != null && path.length() > 0) {
-			final String name = new Path(path).lastSegment();
-			if (name != null)
-				return PlatformUI.getWorkbench().getEditorRegistry()
-						.getImageDescriptor(name);
-		}
-		return PlatformUI.getWorkbench().getSharedImages()
-				.getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
-	}
-
-	/**
-	 * Get size of image descriptor as point.
-	 *
-	 * @param descriptor
-	 * @return size
-	 */
-	public static Point getSize(ImageDescriptor descriptor) {
-		ImageData data = descriptor.getImageData();
-		if (data == null)
-			return new Point(0, 0);
-		return new Point(data.width, data.height);
-	}
-
-	/**
-	 * Add expand all and collapse all toolbar items to the given toolbar bound
-	 * to the given tree viewer
-	 *
-	 * @param toolbar
-	 * @param viewer
-	 * @return given toolbar
-	 */
-	public static ToolBar addExpansionItems(final ToolBar toolbar,
-			final AbstractTreeViewer viewer) {
-		ToolItem collapseItem = new ToolItem(toolbar, SWT.PUSH);
-		Image collapseImage = UIIcons.COLLAPSEALL.createImage();
-		UIUtils.hookDisposal(collapseItem, collapseImage);
-		collapseItem.setImage(collapseImage);
-		collapseItem.setToolTipText(UIText.UIUtils_CollapseAll);
-		collapseItem.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				viewer.collapseAll();
-			}
-
-		});
-
-		ToolItem expandItem = new ToolItem(toolbar, SWT.PUSH);
-		Image expandImage = UIIcons.EXPAND_ALL.createImage();
-		UIUtils.hookDisposal(expandItem, expandImage);
-		expandItem.setImage(expandImage);
-		expandItem.setToolTipText(UIText.UIUtils_ExpandAll);
-		expandItem.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				viewer.expandAll();
-			}
-
-		});
-		return toolbar;
-	}
 }

@@ -15,7 +15,10 @@
 package org.eclipse.egit.ui.internal.commit;
 
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
@@ -45,14 +48,18 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
-import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.lib.UserConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -71,6 +78,8 @@ public class CommitUI  {
 	private Set<String> notTracked;
 
 	private Set<String> files;
+
+	private RevCommit previousCommit;
 
 	private boolean amendAllowed = true;
 
@@ -144,17 +153,28 @@ public class CommitUI  {
 			return;
 		}
 
-		CommitHelper commitHelper = new CommitHelper(repo);
-
-		if (!commitHelper.canCommit()) {
+		Repository mergeRepository = null;
+		boolean isMergedResolved = false;
+		boolean isCherryPickResolved = false;
+		RepositoryState state = repo.getRepositoryState();
+		if (!state.canCommit()) {
 			MessageDialog.openError(
 					shell,
 					UIText.CommitAction_cannotCommit,
-					commitHelper.getCannotCommitMessage());
+					NLS.bind(UIText.CommitAction_repositoryState,
+							state.getDescription()));
 			return;
+		} else if (state.equals(RepositoryState.MERGING_RESOLVED)) {
+			isMergedResolved = true;
+			mergeRepository = repo;
+		} else if (state.equals(RepositoryState.CHERRY_PICKING_RESOLVED)) {
+			isCherryPickResolved = true;
+			mergeRepository = repo;
 		}
+		if (amendAllowed)
+			loadPreviousCommit();
 		if (files.isEmpty()) {
-			if (amendAllowed && commitHelper.getPreviousCommit() != null) {
+			if (amendAllowed && previousCommit != null) {
 				boolean result = MessageDialog.openQuestion(shell,
 						UIText.CommitAction_noFilesToCommit,
 						UIText.CommitAction_amendCommit);
@@ -169,16 +189,40 @@ public class CommitUI  {
 			}
 		}
 
+		String author = null;
+		String committer = null;
+		final UserConfig config = repo.getConfig().get(UserConfig.KEY);
+		author = config.getAuthorName();
+		final String authorEmail = config.getAuthorEmail();
+		author = author + " <" + authorEmail + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+
+		committer = config.getCommitterName();
+		final String committerEmail = config.getCommitterEmail();
+		committer = committer + " <" + committerEmail + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+
 		CommitDialog commitDialog = new CommitDialog(shell);
 		commitDialog.setAmending(amending);
 		commitDialog.setAmendAllowed(amendAllowed);
 		commitDialog.setFiles(repo, files, indexDiff);
 		commitDialog.setPreselectedFiles(getSelectedFiles());
 		commitDialog.setPreselectAll(preselectAll);
-		commitDialog.setAuthor(commitHelper.getAuthor());
-		commitDialog.setCommitter(commitHelper.getCommitter());
-		commitDialog.setAllowToChangeSelection(!commitHelper.isMergedResolved && !commitHelper.isCherryPickResolved);
-		commitDialog.setCommitMessage(commitHelper.getCommitMessage());
+		commitDialog.setAuthor(author);
+		commitDialog.setCommitter(committer);
+		commitDialog.setAllowToChangeSelection(!isMergedResolved && !isCherryPickResolved);
+
+		if (previousCommit != null) {
+			commitDialog.setPreviousCommitMessage(previousCommit.getFullMessage());
+			PersonIdent previousAuthor = previousCommit.getAuthorIdent();
+			commitDialog.setPreviousAuthor(previousAuthor.getName()
+					+ " <" + previousAuthor.getEmailAddress() + ">"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		if (isMergedResolved || isCherryPickResolved) {
+			commitDialog.setCommitMessage(getMergeResolveMessage(mergeRepository));
+		}
+
+		if (isCherryPickResolved) {
+			commitDialog.setAuthor(getCherryPickOriginalAuthor(mergeRepository));
+		}
 
 		if (commitDialog.open() != IDialogConstants.OK_ID)
 			return;
@@ -197,33 +241,17 @@ public class CommitUI  {
 		if (commitDialog.isAmending())
 			commitOperation.setAmending(true);
 		commitOperation.setComputeChangeId(commitDialog.getCreateChangeId());
-		commitOperation.setCommitAll(commitHelper.isMergedResolved);
-		if (commitHelper.isMergedResolved)
+		commitOperation.setCommitAll(isMergedResolved);
+		if (isMergedResolved)
 			commitOperation.setRepository(repo);
-		performCommit(repo, commitOperation, false);
-		return;
-	}
-
-	/**
-	 * Uses a Job to perform the given CommitOperation
-	 * @param repository
-	 * @param commitOperation
-	 * @param openNewCommit
-	 */
-	public static void performCommit(final Repository repository,
-			final CommitOperation commitOperation, final boolean openNewCommit) {
 		String jobname = UIText.CommitAction_CommittingChanges;
 		Job job = new Job(jobname) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				RevCommit commit = null;
 				try {
 					commitOperation.execute(monitor);
-					commit = commitOperation.getCommit();
-					CommitMessageComponentStateManager.deleteState(
-							repository);
 					RepositoryMapping mapping = RepositoryMapping
-							.findRepositoryMapping(repository);
+							.findRepositoryMapping(repo);
 					if (mapping != null)
 						mapping.fireRepositoryChanged();
 				} catch (CoreException e) {
@@ -232,8 +260,6 @@ public class CommitUI  {
 				} finally {
 					GitLightweightDecorator.refresh();
 				}
-				if (openNewCommit && commit != null)
-					openCommit(repository, commit);
 				return Status.OK_STATUS;
 			}
 
@@ -247,17 +273,7 @@ public class CommitUI  {
 		};
 		job.setUser(true);
 		job.schedule();
-	}
-
-	private static void openCommit(final Repository repository,
-			final RevCommit newCommit) {
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-
-			public void run() {
-				CommitEditor.openQuiet(new RepositoryCommit(repository,
-						newCommit));
-			}
-		});
+		return;
 	}
 
 	private IProject[] getProjectsOfRepositories() {
@@ -278,6 +294,7 @@ public class CommitUI  {
 		indexChanges = new LinkedHashSet<String>();
 		notTracked = new LinkedHashSet<String>();
 		amending = false;
+		previousCommit = null;
 		indexDiff = null;
 	}
 
@@ -317,6 +334,17 @@ public class CommitUI  {
 			}
 		}
 		return preselectionCandidates;
+	}
+
+	private void loadPreviousCommit() {
+		try {
+			ObjectId parentId = repo.resolve(Constants.HEAD);
+			if (parentId != null)
+				previousCommit = new RevWalk(repo).parseCommit(parentId);
+		} catch (IOException e) {
+			Activator.handleError(UIText.CommitAction_errorRetrievingCommit, e,
+					true);
+		}
 	}
 
 	private void buildIndexHeadDiffList(IProject[] selectedProjects,
@@ -365,6 +393,56 @@ public class CommitUI  {
 				files.add(filename);
 			category.add(filename);
 		}
+	}
+
+	private String getMergeResolveMessage(Repository mergeRepository) {
+		File mergeMsg = new File(mergeRepository.getDirectory(), Constants.MERGE_MSG);
+		FileReader reader;
+		try {
+			reader = new FileReader(mergeMsg);
+			BufferedReader br = new BufferedReader(reader);
+			try {
+				StringBuilder message = new StringBuilder();
+				String s;
+				String newLine = newLine();
+				while ((s = br.readLine()) != null) {
+					message.append(s).append(newLine);
+				}
+				return message.toString();
+			} catch (IOException e) {
+				MessageDialog.openError(shell,
+						UIText.CommitAction_MergeHeadErrorTitle,
+						UIText.CommitAction_ErrorReadingMergeMsg);
+				throw new IllegalStateException(e);
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					// Empty
+				}
+			}
+		} catch (FileNotFoundException e) {
+			MessageDialog.openError(shell,
+					UIText.CommitAction_MergeHeadErrorTitle,
+					UIText.CommitAction_MergeHeadErrorMessage);
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private String getCherryPickOriginalAuthor(Repository mergeRepository) {
+		try {
+			ObjectId cherryPickHead = mergeRepository.readCherryPickHead();
+			PersonIdent author = new RevWalk(mergeRepository).parseCommit(cherryPickHead).getAuthorIdent();
+			return author.getName() + " <" + author.getEmailAddress() + ">";  //$NON-NLS-1$//$NON-NLS-2$
+		} catch (IOException e) {
+			Activator.handleError(UIText.CommitAction_errorRetrievingCommit, e,
+					true);
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private String newLine() {
+		return System.getProperty("line.separator"); //$NON-NLS-1$
 	}
 
 }
