@@ -31,7 +31,10 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryCache.FileKey;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -63,8 +66,8 @@ public class ProjectUtil {
 			IPath projectLocation = p.getLocation();
 			if (!p.isOpen() || projectLocation == null)
 				continue;
-			String projectFilePath = projectLocation
-					.append(".project").toOSString(); //$NON-NLS-1$
+			String projectFilePath = projectLocation.append(
+					IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
 			File projectFile = new File(projectFilePath);
 			if (projectFile.exists()) {
 				final File file = p.getLocation().toFile();
@@ -100,7 +103,11 @@ public class ProjectUtil {
 			for (IProject p : projects) {
 				if (monitor.isCanceled())
 					break;
-				String projectFilePath = p.getLocation().append(".project").toOSString();  //$NON-NLS-1$
+				IPath projectLocation = p.getLocation();
+				if (projectLocation == null)
+					continue;
+				String projectFilePath = projectLocation.append(
+						IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
 				File projectFile = new File(projectFilePath);
 				if (projectFile.exists())
 						p.refreshLocal(IResource.DEPTH_INFINITE,
@@ -180,13 +187,17 @@ public class ProjectUtil {
 		if (directory == null)
 			return false;
 
+		if (directory.getName().equals(Constants.DOT_GIT)
+				&& FileKey.isGitRepository(directory, FS.DETECTED))
+			return false;
+
 		IProgressMonitor pm = monitor;
 		if (pm == null)
 			pm = new NullProgressMonitor();
 		else if (pm.isCanceled())
 			return false;
 
-		monitor.subTask(NLS.bind(CoreText.ProjectUtil_taskCheckingDirectory,
+		pm.subTask(NLS.bind(CoreText.ProjectUtil_taskCheckingDirectory,
 				directory.getPath()));
 
 		final File[] contents = directory.listFiles();
