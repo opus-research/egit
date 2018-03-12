@@ -257,13 +257,9 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			PlanElement firstSelectedEntry = (PlanElement) obj;
 			PlanElement lastSelectedEntry = firstSelectedEntry;
 
-			// select action item for first selected plan row
-			ElementAction type = firstSelectedEntry.getPlanElementAction();
-			unselectAllActionItemsExecpt(getItemFor(type));
-
-			// unselect it, if other plan rows have different type
 			if (structured.size() > 1) {
 				// multi selection
+				ElementAction type = firstSelectedEntry.getPlanElementAction();
 				for (Iterator iterator = structured.iterator(); iterator
 						.hasNext();) {
 					Object selectedObj = iterator.next();
@@ -274,6 +270,10 @@ public class RebaseInteractiveStepActionToolBarProvider {
 						unselectAllActionItemsExecpt(null);
 					}
 				}
+			} else {
+				// single selection
+				unselectAllActionItemsExecpt(getItemFor(firstSelectedEntry
+						.getPlanElementAction()));
 			}
 
 			enableMoveButtons(firstSelectedEntry, lastSelectedEntry);

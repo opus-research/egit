@@ -4,6 +4,7 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2011, Stefan Lay <stefan.lay@sap.com>
+ * Copyright (C) 2014, Marc-Andre Laperle <marc-andre.laperle@ericsson.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -48,6 +49,7 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -120,7 +122,11 @@ class CommitMessageViewer extends SourceViewer implements
 
 	private ListenerHandle refsChangedListener;
 
-	private StyleRange[] styleRanges;
+	private BooleanPrefAction showTagSequencePrefAction;
+
+	private BooleanPrefAction wrapCommentsPrefAction;
+
+	private BooleanPrefAction fillParagraphsPrefAction;
 
 	CommitMessageViewer(final Composite parent, final IPageSite site, IWorkbenchPartSite partSite) {
 		super(parent, null, SWT.H_SCROLL | SWT.V_SCROLL | SWT.READ_ONLY);
@@ -139,10 +145,6 @@ class CommitMessageViewer extends SourceViewer implements
 					t.setCursor(SYS_LINK_CURSOR);
 				else
 					t.setCursor(sys_normalCursor);
-				if (styleRanges != null) {
-					for (StyleRange sr : styleRanges)
-						getTextWidget().setStyleRange(sr);
-				}
 			}
 		});
 		// react on link click
@@ -241,29 +243,35 @@ class CommitMessageViewer extends SourceViewer implements
 
 		IPersistentPreferenceStore pstore = (IPersistentPreferenceStore) store;
 
-		Action showTagSequence = new BooleanPrefAction(pstore, UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, UIText.ResourceHistory_ShowTagSequence) {
+		showTagSequencePrefAction = new BooleanPrefAction(pstore,
+				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
+				UIText.ResourceHistory_ShowTagSequence) {
 			@Override
 			protected void apply(boolean value) {
 				// nothing, just toggle
 			}
 		};
-		mgr.add(showTagSequence);
+		mgr.add(showTagSequencePrefAction);
 
-		Action wrapComments = new BooleanPrefAction(pstore, UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP, UIText.ResourceHistory_toggleCommentWrap) {
+		wrapCommentsPrefAction = new BooleanPrefAction(pstore,
+				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
+				UIText.ResourceHistory_toggleCommentWrap) {
 			@Override
 			protected void apply(boolean value) {
 				// nothing, just toggle
 			}
 		};
-		mgr.add(wrapComments);
+		mgr.add(wrapCommentsPrefAction);
 
-		Action fillParagraphs = new BooleanPrefAction(pstore, UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL, UIText.ResourceHistory_toggleCommentFill) {
+		fillParagraphsPrefAction = new BooleanPrefAction(pstore,
+				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL,
+				UIText.ResourceHistory_toggleCommentFill) {
 			@Override
 			protected void apply(boolean value) {
 				// nothing, just toggle
 			}
 		};
-		mgr.add(fillParagraphs);
+		mgr.add(fillParagraphsPrefAction);
 
 	}
 
@@ -300,7 +308,8 @@ class CommitMessageViewer extends SourceViewer implements
 						for (StyleRange styleRange : hyperlinkDetectorStyleRanges)
 							styleRangeList.add(styleRange);
 
-						styleRanges = new StyleRange[styleRangeList.size()];
+						StyleRange[] styleRanges = new StyleRange[styleRangeList
+								.size()];
 						styleRangeList.toArray(styleRanges);
 
 						// Style ranges must be in order.
@@ -314,9 +323,7 @@ class CommitMessageViewer extends SourceViewer implements
 							}
 						});
 
-						text.setStyleRanges(new StyleRange[0]);
-						for (StyleRange sr : styleRanges)
-							text.setStyleRange(sr);
+						text.setStyleRanges(styleRanges);
 					}
 				});
 			}
@@ -334,6 +341,10 @@ class CommitMessageViewer extends SourceViewer implements
 		if (refsChangedListener != null)
 			refsChangedListener.remove();
 		refsChangedListener = null;
+		showTagSequencePrefAction.dispose();
+		wrapCommentsPrefAction.dispose();
+		fillParagraphsPrefAction.dispose();
+
 		super.handleDispose();
 	}
 
@@ -352,17 +363,22 @@ class CommitMessageViewer extends SourceViewer implements
 		if (input == commit)
 			return;
 		currentDiffs.clear();
-		styleRanges = null;
 		commit = (PlotCommit<?>) input;
-		allRefs = getBranches();
-		if (refsChangedListener != null)
+		if (refsChangedListener != null) {
 			refsChangedListener.remove();
-		refsChangedListener = db.getListenerList().addRefsChangedListener(new RefsChangedListener() {
+			refsChangedListener = null;
+		}
 
-			public void onRefsChanged(RefsChangedEvent event) {
-				allRefs = getBranches();
-			}
-		});
+		if (db != null) {
+			allRefs = getBranches(db);
+			refsChangedListener = db.getListenerList().addRefsChangedListener(
+					new RefsChangedListener() {
+
+						public void onRefsChanged(RefsChangedEvent event) {
+							allRefs = getBranches(db);
+						}
+					});
+		}
 		format();
 	}
 
@@ -374,11 +390,12 @@ class CommitMessageViewer extends SourceViewer implements
 		this.db = repository;
 	}
 
-	private List<Ref> getBranches()  {
+	private static List<Ref> getBranches(Repository repo)  {
 		List<Ref> ref = new ArrayList<Ref>();
 		try {
-			ref.addAll(db.getRefDatabase().getRefs(Constants.R_HEADS).values());
-			ref.addAll(db.getRefDatabase().getRefs(Constants.R_REMOTES).values());
+			RefDatabase refDb = repo.getRefDatabase();
+			ref.addAll(refDb.getRefs(Constants.R_HEADS).values());
+			ref.addAll(refDb.getRefs(Constants.R_REMOTES).values());
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}
@@ -392,7 +409,7 @@ class CommitMessageViewer extends SourceViewer implements
 	}
 
 	private void format() {
-		if (commit == null) {
+		if (db == null || commit == null) {
 			setDocument(new Document("")); //$NON-NLS-1$
 			return;
 		}
