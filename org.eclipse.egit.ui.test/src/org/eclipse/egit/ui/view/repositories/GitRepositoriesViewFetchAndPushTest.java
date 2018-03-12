@@ -52,7 +52,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	private File clonedRepositoryFile2;
 
 	@Before
-	public void before() throws Exception {
+	public void beforeClass() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
 		// now let's clone the remote repository
@@ -74,7 +74,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		op.run(null);
 
 		clonedRepositoryFile2 = new File(workdir, Constants.DOT_GIT);
+	}
 
+	@Before
+	public void before() throws Exception {
 		clearView();
 		deleteAllProjects();
 	}
