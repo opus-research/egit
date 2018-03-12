@@ -398,11 +398,7 @@ public class CloneDestinationPage extends WizardPage {
 		clonedRemote = getRemote();
 	}
 
-	/**
-	 * @return whether user updated clone settings
-	 * @since 4.0.0
-	 */
-	public boolean cloneSettingsChanged() {
+	boolean cloneSettingsChanged() {
 		boolean cloneSettingsChanged = false;
 		if (clonedDestination == null || !clonedDestination.equals(getDestinationFile()) ||
 				clonedInitialBranch == null || !clonedInitialBranch.equals(getInitialBranch()) ||
