@@ -28,11 +28,8 @@ import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.push.PushBranchWizard;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
-import org.eclipse.egit.ui.internal.push.PushToGerritWizard;
-import org.eclipse.egit.ui.internal.push.PushWizard;
 import org.eclipse.egit.ui.internal.push.SimpleConfigurePushDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.api.errors.AbortedByHookException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
@@ -57,17 +54,7 @@ public class CommitJob extends Job {
 
 	private boolean openCommitEditor;
 
-	private PushMode pushMode;
-
-	/**
-	 * where to push changes
-	 */
-	public enum PushMode {
-		/** use {@link PushWizard} */
-		UPSTREAM,
-		/** use {@link PushToGerritWizard} */
-		GERRIT;
-	}
+	private boolean pushUpstream;
 
 	/**
 	 * @param repository
@@ -96,12 +83,11 @@ public class CommitJob extends Job {
 
 	/**
 	 * Sets this job to push the changes upstream after successfully committing.
-	 *
-	 * @param pushMode
+	 * @param pushUpstream
 	 * @return this commit job instance
 	 */
-	public CommitJob setPushUpstream(final PushMode pushMode) {
-		this.pushMode = pushMode;
+	public CommitJob setPushUpstream(boolean pushUpstream) {
+		this.pushUpstream = pushUpstream;
 		return this;
 	}
 
@@ -135,8 +121,8 @@ public class CommitJob extends Job {
 		if (commit != null) {
 			if (openCommitEditor)
 				openCommitEditor(commit);
-			if (pushMode != null)
-				pushUpstream(commit, pushMode);
+			if (pushUpstream)
+				pushUpstream(commit);
 		}
 		return Status.OK_STATUS;
 	}
@@ -165,18 +151,17 @@ public class CommitJob extends Job {
 		});
 	}
 
-	private void pushUpstream(final RevCommit commit, final PushMode pushTo) {
+	private void pushUpstream(final RevCommit commit) {
 		RemoteConfig config = SimpleConfigurePushDialog
 				.getConfiguredRemote(repository);
-
-		if (pushTo == PushMode.GERRIT) {
-			final Wizard pushWizard = new PushToGerritWizard(repository);
-			openPushWizard(pushWizard);
-		}
-		else {
 		if (config == null) {
-				try {
-					Wizard pushWizard = null;
+			final Display display = Display.getDefault();
+			display.asyncExec(new Runnable() {
+
+				@Override
+				public void run() {
+					try {
+						PushBranchWizard pushWizard = null;
 						String fullBranch = repository.getFullBranch();
 						if (fullBranch != null
 								&& fullBranch.startsWith(Constants.R_HEADS)) {
@@ -186,33 +171,23 @@ public class CommitJob extends Job {
 							pushWizard = new PushBranchWizard(repository,
 									commit.getId());
 						}
-						openPushWizard(pushWizard);
-				} catch (IOException e) {
-					Activator.handleError(
-							NLS.bind(UIText.CommitUI_pushFailedMessage, e), e,
-							true);
+						WizardDialog wizardDialog = new WizardDialog(display
+								.getActiveShell(), pushWizard);
+						wizardDialog.setHelpAvailable(true);
+						wizardDialog.open();
+					} catch (IOException e) {
+						Activator.handleError(
+								NLS.bind(UIText.CommitUI_pushFailedMessage, e),
+								e, true);
+					}
 				}
+			});
 		} else {
 			PushOperationUI op = new PushOperationUI(repository,
 					config.getName(), false);
 			op.start();
 		}
-		}
 
-	}
-
-	private void openPushWizard(final Wizard pushWizard) {
-		final Display display = Display.getDefault();
-		display.asyncExec(new Runnable() {
-
-			@Override
-			public void run() {
-				WizardDialog wizardDialog = new WizardDialog(display
-				.getActiveShell(), pushWizard);
-				wizardDialog.setHelpAvailable(true);
-				wizardDialog.open();
-			}
-		});
 	}
 
 	@Override

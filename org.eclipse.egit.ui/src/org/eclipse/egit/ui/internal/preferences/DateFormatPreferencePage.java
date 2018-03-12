@@ -154,12 +154,7 @@ public class DateFormatPreferencePage extends FieldEditorPreferencePage
 				.getString(UIPreferences.DATE_FORMAT);
 		String initialValue = getPreferenceStore()
 				.getString(UIPreferences.DATE_FORMAT_CHOICE);
-		GitDateFormatter.Format initialFormat = fromString(initialValue);
-		FormatInfo info = DATA.get(initialFormat);
-		dateFormat.setEnabled(initialFormat == null, pane);
-		dateFormat.setStringValue(
-				initialFormat == null ? lastCustomValue : info.format);
-		formatExplanation.setText(info.explanation);
+		updateFields(initialValue);
 	}
 
 	@Override
@@ -176,22 +171,35 @@ public class DateFormatPreferencePage extends FieldEditorPreferencePage
 					if (format == null) {
 						lastCustomValue = dateFormat.getStringValue();
 					}
-					format = fromString((String) event.getNewValue());
-					FormatInfo info = DATA.get(format);
-					formatExplanation.setText(info.explanation);
-					if (format == null) {
-						dateFormat.getTextControl(getFieldEditorParent())
-								.setEnabled(true);
-						dateFormat.setStringValue(lastCustomValue);
-					} else {
-						dateFormat.getTextControl(getFieldEditorParent())
-								.setEnabled(false);
-						dateFormat.setStringValue(info.format);
-						updatePreview(format);
-					}
+					updateFields((String) event.getNewValue());
 				}
 			}
 		});
+	}
+
+	private void updateFields(String newSelection) {
+		GitDateFormatter.Format format = fromString(newSelection);
+		FormatInfo info = DATA.get(format);
+		formatExplanation.setText(info.explanation);
+		if (format == null) {
+			dateFormat.getTextControl(getFieldEditorParent()).setEnabled(true);
+			dateFormat.setStringValue(lastCustomValue);
+		} else {
+			dateFormat.getTextControl(getFieldEditorParent()).setEnabled(false);
+			dateFormat.setStringValue(info.format);
+			updatePreview(format);
+		}
+	}
+
+	@Override
+	protected void performDefaults() {
+		super.performDefaults();
+		// We don't get property changed events when the default values are
+		// restored...
+		lastCustomValue = getPreferenceStore()
+				.getDefaultString(UIPreferences.DATE_FORMAT);
+		updateFields(getPreferenceStore()
+				.getDefaultString(UIPreferences.DATE_FORMAT_CHOICE));
 	}
 
 	private GitDateFormatter.Format fromString(String value) {
@@ -203,7 +211,6 @@ public class DateFormatPreferencePage extends FieldEditorPreferencePage
 	}
 
 	private void updatePreview(SimpleDateFormat format) {
-		format.setTimeZone(SAMPLE.getTimeZone());
 		dateFormatPreview.setText(format.format(SAMPLE.getWhen()));
 	}
 
@@ -270,9 +277,17 @@ public class DateFormatPreferencePage extends FieldEditorPreferencePage
 
 	private static TimeZone getDifferentTimeZone() {
 		TimeZone localTimeZone = TimeZone.getDefault();
-		int offset = (localTimeZone.getRawOffset() / 3600 / 1000 - 6) * 3600
-				* 1000; // 6h to the West, full hour
-		return TimeZone.getTimeZone(TimeZone.getAvailableIDs(offset)[0]);
+		int offset = (localTimeZone.getRawOffset() / 3600 / 1000 - 6);
+		// 6h to the West, full hour. Now get back to a sane range:
+		if (offset < -12) {
+			offset += 24;
+		}
+		String[] zoneIds = TimeZone.getAvailableIDs(offset * 3600 * 1000);
+		if (zoneIds.length == 0) {
+			// Huh?
+			return localTimeZone;
+		}
+		return TimeZone.getTimeZone(zoneIds[0]);
 	}
 
 	private static final class FormatInfo {

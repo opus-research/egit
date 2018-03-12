@@ -7,6 +7,7 @@
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
  * Copyright (C) 2015, Denis Zygann <d.zygann@web.de>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +22,7 @@ import java.net.URL;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.swt.graphics.Image;
 
 /**
@@ -47,7 +49,7 @@ public class UIIcons {
 	public final static ImageDescriptor OVR_CONFLICT;
 
 	/** Decoration for tracked resources that we want to ignore changes in. */
-	public final static ImageDescriptor OVR_ASSUMEVALID;
+	public final static ImageDescriptor OVR_ASSUMEUNCHANGED;
 
 	/** Decoration for tracked resources that are dirty. */
 	public final static ImageDescriptor OVR_DIRTY;
@@ -311,6 +313,9 @@ public class UIIcons {
 	/** Sort alphabetically icon */
 	public final static ImageDescriptor ALPHABETICALLY_SORT;
 
+	/** {@link #BRANCH} overlaid with {@link #OVR_CHECKEDOUT}. */
+	public final static ImageDescriptor CHECKED_OUT_BRANCH;
+
 	/** base URL */
 	public final static URL base;
 
@@ -322,7 +327,7 @@ public class UIIcons {
 		OVR_STAGED_RENAME = map("ovr/staged_renamed.gif"); //$NON-NLS-1$
 		OVR_UNTRACKED = map("ovr/untracked.gif"); //$NON-NLS-1$
 		OVR_CONFLICT = map("ovr/conflict.gif"); //$NON-NLS-1$
-		OVR_ASSUMEVALID = map("ovr/assume_valid.gif"); //$NON-NLS-1$
+		OVR_ASSUMEUNCHANGED = map("ovr/assume_unchanged.gif"); //$NON-NLS-1$
 		OVR_DIRTY = map("ovr/dirty.gif"); //$NON-NLS-1$
 		OVR_SYMLINK = map("ovr/symlink_ovr.gif"); //$NON-NLS-1$
 		ELCL16_FIND = map("elcl16/find.gif"); //$NON-NLS-1$
@@ -415,6 +420,8 @@ public class UIIcons {
 		DONE_STEP = map("obj16/done_step.gif"); //$NON-NLS-1$
 		CURRENT_STEP = map("obj16/current_step.gif"); //$NON-NLS-1$
 		ALPHABETICALLY_SORT = map("obj16/alphab_sort_co.gif"); //$NON-NLS-1$
+		CHECKED_OUT_BRANCH = new DecorationOverlayDescriptor(BRANCH,
+				OVR_CHECKEDOUT, IDecoration.TOP_LEFT);
 	}
 
 	private static ImageDescriptor map(final String icon) {

@@ -1,30 +1,28 @@
 /*******************************************************************************
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- *
+ * Copyright (c) 2016, Red Hat Inc. and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Mickael Istria (Red Hat Inc.) - [485124] initial implementation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import static org.eclipse.egit.ui.internal.actions.ActionCommands.REMOVE_FROM_INDEX;
-
-import org.eclipse.egit.core.op.RemoveFromIndexOperation;
-
-
 /**
- * An action to remove files from Git index.
+ * An action for asking user to specify a pull operation (via wizard) and run it
  *
- * @see RemoveFromIndexOperation
+ * @see PullWithOptionsActionHandler
  */
-public class RemoveFromIndexAction extends RepositoryAction {
+public class PullWithOptionsAction extends RepositoryAction {
 
 	/**
-	 * Constructs this action
+	 *
 	 */
-	public RemoveFromIndexAction() {
-		super(REMOVE_FROM_INDEX, new RemoveFromIndexActionHandler());
+	public PullWithOptionsAction() {
+		super(ActionCommands.PULL_WITH_OPTIONS,
+				new PullWithOptionsActionHandler());
 	}
 
 }

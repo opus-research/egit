@@ -10,6 +10,7 @@
  *
  * Contributors:
  *    Tobias Baumann <tobbaumann@gmail.com> - Bug 373969, 473544
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 481683
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
@@ -75,7 +76,6 @@ import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitJob;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
-import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
@@ -88,8 +88,6 @@ import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IAction;
@@ -139,6 +137,8 @@ import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -188,6 +188,7 @@ import org.eclipse.ui.IPartListener2;
 import org.eclipse.ui.IPartService;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
+import org.eclipse.ui.IURIEditorInput;
 import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -1058,8 +1059,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			@Override
 			public void updateChangeIdToggleSelection(boolean selection) {
 				addChangeIdAction.setChecked(selection);
-				commitAndPushButton
-						.setImage(selection ? getImage(UIIcons.GERRIT) : null);
 			}
 
 			@Override
@@ -1274,6 +1273,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 			IResource resource = getResource((IEditorPart) part);
 			if (resource != null) {
 				sel = new StructuredSelection(resource);
+			} else {
+				Repository repository = getRepository((IEditorPart) part);
+				if (repository != null) {
+					sel = new StructuredSelection(repository);
+				}
 			}
 		} else {
 			ISelection selection = part.getSite().getPage().getSelection();
@@ -1284,12 +1288,21 @@ public class StagingView extends ViewPart implements IShowInSource {
 		return sel;
 	}
 
+	@Nullable
+	private static Repository getRepository(IEditorPart part) {
+		IEditorInput input = part.getEditorInput();
+		if (!(input instanceof IURIEditorInput)) {
+			return null;
+		}
+		return AdapterUtils.adapt(input, Repository.class);
+	}
+
 	private static IResource getResource(IEditorPart part) {
 		IEditorInput input = part.getEditorInput();
 		if (input instanceof IFileEditorInput) {
 			return ((IFileEditorInput) input).getFile();
 		} else {
-			return CommonUtils.getAdapter(input, IResource.class);
+			return AdapterUtils.adapt(input, IResource.class);
 		}
 	}
 
@@ -1753,7 +1766,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		// For the normal resource undo/redo actions to be active, so that files
 		// deleted via the "Delete" action in the staging view can be restored.
-		IUndoContext workspaceContext = CommonUtils.getAdapter(ResourcesPlugin.getWorkspace(), IUndoContext.class);
+		IUndoContext workspaceContext = AdapterUtils.adapt(ResourcesPlugin.getWorkspace(), IUndoContext.class);
 		undoRedoActionGroup = new UndoRedoActionGroup(getViewSite(), workspaceContext, true);
 		undoRedoActionGroup.fillActionBars(actionBars);
 
@@ -1989,11 +2002,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 						}
 					};
 					openWorkingTreeVersion.setEnabled(!submoduleSelected
-							&& anyElementExistsInWorkspace(fileSelection));
+							&& anyElementIsExistingFile(fileSelection));
 					menuMgr.add(openWorkingTreeVersion);
-
-					Action openCompareWithIndex = new Action(
-							UIText.StagingView_CompareWithIndexMenuLabel) {
+					String label = stagingEntryList.get(0).isStaged()
+									? UIText.CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel
+									: UIText.StagingView_CompareWithIndexMenuLabel;
+					Action openCompareWithIndex = new Action(label) {
 						@Override
 						public void run() {
 							runCommand(ActionCommands.COMPARE_WITH_INDEX_ACTION,
@@ -2073,12 +2087,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	}
 
-	private boolean anyElementExistsInWorkspace(IStructuredSelection s) {
+	private boolean anyElementIsExistingFile(IStructuredSelection s) {
 		for (Object element : s.toList()) {
 			if (element instanceof StagingEntry) {
 				StagingEntry entry = (StagingEntry) element;
-				if (entry.getFile() != null && entry.getFile().exists())
+				if (entry.getType() != IResource.FILE) {
+					continue;
+				}
+				if (entry.getLocation().toFile().exists()) {
 					return true;
+				}
 			}
 		}
 		return false;
@@ -2148,10 +2166,59 @@ public class StagingView extends ViewPart implements IShowInSource {
 		IStructuredSelection selection;
 		private final boolean headRevision;
 
-		ReplaceAction(String text, IStructuredSelection selection, boolean headRevision) {
+		ReplaceAction(String text, @NonNull IStructuredSelection selection,
+				boolean headRevision) {
 			super(text);
 			this.selection = selection;
 			this.headRevision = headRevision;
+		}
+
+		private void getSelectedFiles(@NonNull List<String> files,
+				@NonNull List<String> inaccessibleFiles) {
+			Iterator iterator = selection.iterator();
+			while (iterator.hasNext()) {
+				Object selectedItem = iterator.next();
+				if (selectedItem instanceof StagingEntry) {
+					StagingEntry stagingEntry = (StagingEntry) selectedItem;
+					String path = stagingEntry.getPath();
+					files.add(path);
+					IFile resource = stagingEntry.getFile();
+					if (resource == null || !resource.isAccessible()) {
+						inaccessibleFiles.add(path);
+					}
+				}
+			}
+		}
+
+		private void replaceWith(@NonNull List<String> files,
+				@NonNull List<String> inaccessibleFiles) {
+			Repository repository = currentRepository;
+			if (files.isEmpty() || repository == null) {
+				return;
+			}
+			CheckoutCommand checkoutCommand = new Git(repository)
+					.checkout();
+			if (headRevision) {
+				checkoutCommand.setStartPoint(Constants.HEAD);
+			}
+			for (String path : files) {
+				checkoutCommand.addPath(path);
+			}
+			try {
+				checkoutCommand.call();
+				if (!inaccessibleFiles.isEmpty()) {
+					IndexDiffCacheEntry indexDiffCacheForRepository = org.eclipse.egit.core.Activator
+							.getDefault().getIndexDiffCache()
+							.getIndexDiffCacheEntry(repository);
+					if (indexDiffCacheForRepository != null) {
+						indexDiffCacheForRepository
+								.refreshFiles(inaccessibleFiles);
+					}
+				}
+			} catch (Exception e) {
+				Activator.handleError(UIText.StagingView_checkoutFailed, e,
+						true);
+			}
 		}
 
 		@Override
@@ -2159,10 +2226,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 			boolean performAction = MessageDialog.openConfirm(form.getShell(),
 					UIText.DiscardChangesAction_confirmActionTitle,
 					UIText.DiscardChangesAction_confirmActionMessage);
-			if (!performAction)
-				return ;
-			String[] files = getSelectedFiles(selection);
-			replaceWith(files, headRevision);
+			if (!performAction) {
+				return;
+			}
+			List<String> files = new ArrayList<>();
+			List<String> inaccessibleFiles = new ArrayList<>();
+			getSelectedFiles(files, inaccessibleFiles);
+			replaceWith(files, inaccessibleFiles);
 		}
 	}
 
@@ -2234,34 +2304,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 	}
 
-	private void replaceWith(String[] files, boolean headRevision) {
-		if (files == null || files.length == 0)
-			return;
-		CheckoutCommand checkoutCommand = new Git(currentRepository).checkout();
-		if (headRevision)
-			checkoutCommand.setStartPoint(Constants.HEAD);
-		for (String path : files)
-			checkoutCommand.addPath(path);
-		try {
-			checkoutCommand.call();
-		} catch (Exception e) {
-			Activator.handleError(UIText.StagingView_checkoutFailed, e, true);
-		}
-	}
-
-	private String[] getSelectedFiles(IStructuredSelection selection) {
-		List<String> result = new ArrayList<String>();
-		Iterator iterator = selection.iterator();
-		while (iterator.hasNext()) {
-			Object selectedItem = iterator.next();
-			if (selectedItem instanceof StagingEntry) {
-				StagingEntry stagingEntry = (StagingEntry) selectedItem;
-				result.add(stagingEntry.getPath());
-			}
-		}
-		return result.toArray(new String[result.size()]);
-	}
-
 	private static List<IPath> getSelectedPaths(IStructuredSelection selection) {
 		List<IPath> paths = new ArrayList<IPath>();
 		Iterator iterator = selection.iterator();
@@ -2287,8 +2329,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 				return false;
 			StagingEntry stagingEntry = (StagingEntry) selectedObject;
 			IFile file = stagingEntry.getFile();
-			if (file == null)
+			if (file == null || !file.isAccessible()) {
 				return true;
+			}
 		}
 		return false;
 	}
@@ -2359,10 +2402,23 @@ public class StagingView extends ViewPart implements IShowInSource {
 			if (currentRepository != repoNode.getRepository()) {
 				reload(repoNode.getRepository());
 			}
+		} else if (firstElement instanceof Repository) {
+			Repository repo = (Repository) firstElement;
+			if (currentRepository != repo) {
+				reload(repo);
+			}
 		} else {
-			IResource resource = CommonUtils.getAdapterForObject(firstElement,
+			IResource resource = AdapterUtils.adapt(firstElement,
 					IResource.class);
-			showResource(resource);
+			if (resource != null) {
+				showResource(resource);
+			} else {
+				Repository repo = AdapterUtils.adapt(firstElement,
+						Repository.class);
+				if (repo != null && currentRepository != repo) {
+					reload(repo);
+				}
+			}
 		}
 	}
 
@@ -3150,16 +3206,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 		if (amendPreviousCommitAction.isChecked())
 			commitOperation.setAmending(true);
-		final boolean gerritMode = addChangeIdAction.isChecked();
-		commitOperation.setComputeChangeId(gerritMode);
-
-		PushMode pushMode = null;
-		if (pushUpstream) {
-			pushMode = gerritMode ? PushMode.GERRIT : PushMode.UPSTREAM;
-		}
+		commitOperation.setComputeChangeId(addChangeIdAction.isChecked());
 		final Job commitJob = new CommitJob(currentRepository, commitOperation)
-				.setOpenCommitEditor(openNewCommitsAction.isChecked())
-				.setPushUpstream(pushMode);
+			.setOpenCommitEditor(openNewCommitsAction.isChecked())
+			.setPushUpstream(pushUpstream);
 
 		// don't allow to do anything as long as commit is in progress
 		enableAllWidgets(false);

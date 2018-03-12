@@ -16,13 +16,17 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>4.2.0-SNAPSHOT</version>
+    <version>4.3.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.mylyn.ui.test</artifactId>
   <packaging>eclipse-test-plugin</packaging>
 
   <name>EGit Mylyn UI Test Plug-in</name>
+
+  <properties>
+    <uitest.vmparams>-Xmx512m -XX:MaxPermSize=256m</uitest.vmparams>
+  </properties>
 
   <profiles>
     <profile>
@@ -34,30 +38,6 @@
       </activation>
       <properties>
         <maven.test.skip>true</maven.test.skip>
-      </properties>
-    </profile>
-    <profile>
-      <id>macosx</id>
-      <activation>
-        <os>
-          <name>mac os x</name>
-          <family>mac</family>
-        </os>
-      </activation>
-      <properties>
-        <ui.test.vmargs>-Xmx512m -XX:MaxPermSize=256m -XstartOnFirstThread</ui.test.vmargs>
-      </properties>
-    </profile>
-    <profile>
-      <id>other-os</id>
-      <activation>
-        <os>
-          <name>not-mac</name>
-          <family>!mac</family>
-        </os>
-      </activation>
-      <properties>
-        <ui.test.vmargs>-Xmx512m -XX:MaxPermSize=256m</ui.test.vmargs>
       </properties>
     </profile>
   </profiles>

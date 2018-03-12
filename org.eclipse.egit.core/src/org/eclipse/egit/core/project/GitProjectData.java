@@ -48,8 +48,8 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
@@ -581,7 +581,10 @@ public class GitProjectData {
 				return Status.OK_STATUS;
 			} catch (TeamException e) {
 				return new Status(IStatus.ERROR, Activator.getPluginId(),
-						CoreText.GitProjectData_UnmappingGoneResourceFailed, e);
+						MessageFormat.format(
+								CoreText.GitProjectData_UnmappingGoneResourceFailed,
+								project.getName()),
+						e);
 			}
 		}
 	}
