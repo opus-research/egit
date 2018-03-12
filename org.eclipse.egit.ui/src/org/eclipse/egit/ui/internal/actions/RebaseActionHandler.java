@@ -10,7 +10,7 @@ package org.eclipse.egit.ui.internal.actions;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.internal.commands.shared.RebaseCurrentRefCommandHandler;
+import org.eclipse.egit.ui.internal.commands.shared.RebaseCurrentRefCommand;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 
@@ -24,7 +24,7 @@ import org.eclipse.jgit.lib.RepositoryState;
 public class RebaseActionHandler extends RepositoryActionHandler {
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		RebaseCurrentRefCommandHandler rebaseCurrent = new RebaseCurrentRefCommandHandler();
+		RebaseCurrentRefCommand rebaseCurrent = new RebaseCurrentRefCommand();
 		rebaseCurrent.setEnabled(event.getApplicationContext());
 		// Because the enabled state is for both starting a new rebase as well
 		// as working with an existing rebase, it can be that this is executed
@@ -48,7 +48,6 @@ public class RebaseActionHandler extends RepositoryActionHandler {
 		// must enable this because otherwise the menu items can not be opened.
 		RepositoryState state = repo.getRepositoryState();
 		return state.isRebasing()
-				|| RebaseCurrentRefCommandHandler
-						.isEnabledForState(repo, state);
+				|| RebaseCurrentRefCommand.isEnabledForState(repo, state);
 	}
 }
