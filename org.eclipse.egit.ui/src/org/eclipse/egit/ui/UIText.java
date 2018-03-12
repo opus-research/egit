@@ -4,6 +4,7 @@
  * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -203,10 +204,10 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_taskFoundSingleCommit;
 
 	/** */
-	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
+	public static String GerritConfigurationPage_BranchTooltipHover;
 
 	/** */
-	public static String GerritConfigurationPage_configurePushToGerrit;
+	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
 
 	/** */
 	public static String GerritConfigurationPage_errorBranchName;
@@ -228,6 +229,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GerritConfigurationPage_title;
+
+	/** */
+	public static String GerritConfigurationPage_UserLabel;
 
 	/** */
 	public static String EGitCredentialsProvider_errorReadingCredentials;
@@ -552,6 +556,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_IncompleteListTooltip;
+
+	/** */
+	public static String GitHistoryPage_InRevisionCommentSubMenuLabel;
 
 	/** */
 	public static String GitHistoryPage_ListIncompleteWarningMessage;
@@ -1692,6 +1699,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String HistoryPreferencePage_MaxTagLength;
+
+	/** */
+	public static String HistoryPreferencePage_ShowGroupLabel;
+
+	/** */
+	public static String HistoryPreferencePage_ShowInRevCommentGroupLabel;
 
 	/** */
 	public static String HistoryPreferencePage_toggleAdditionalRefs;
@@ -2927,6 +2940,9 @@ public class UIText extends NLS {
 	public static String DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox;
 
 	/** */
+	public static String DeleteRepositoryConfirmDialog_DeleteProjectsCheckbox;
+
+	/** */
 	public static String DeleteTagCommand_messageConfirmMultipleTag;
 
 	/** */
@@ -2937,6 +2953,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DeleteTagCommand_titleConfirm;
+
+	/** */
+	public static String DeleteResourcesOperationUI_confirmActionTitle;
+
+	/** */
+	public static String DeleteResourcesOperationUI_confirmActionMessage;
+
+	/** */
+	public static String DeleteResourcesOperationUI_deleteFailed;
 
 	/** */
 	public static String IgnoreActionHandler_addToGitignore;
@@ -3374,6 +3399,15 @@ public class UIText extends NLS {
 	public static String MergeTargetSelectionDialog_TitleMergeWithBranch;
 
 	/** */
+	public static String MergeTargetSelectionDialog_MergeTypeGroup;
+
+	/** */
+	public static String MergeTargetSelectionDialog_MergeTypeCommitButton;
+
+	/** */
+	public static String MergeTargetSelectionDialog_MergeTypeSquashButton;
+
+	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
 
 	/** */
@@ -3411,6 +3445,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MultiPullResultDialog_UpdatedMessage;
+
+	/** */
+	public static String MultiPullResultDialog_UpdatedOneMessage;
 
 	/** */
 	public static String MultiPullResultDialog_UpdateStatusColumnHeader;
@@ -4395,6 +4432,9 @@ public class UIText extends NLS {
 	public static String StagingView_Commit;
 
 	/** */
+	public static String StagingView_CommitToolTip;
+
+	/** */
 	public static String StagingView_checkoutFailed;
 
 	/** */
@@ -4441,6 +4481,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_StageItemMenuLabel;
+
+	/** */
+	public static String StagingView_DeleteItemMenuLabel;
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
