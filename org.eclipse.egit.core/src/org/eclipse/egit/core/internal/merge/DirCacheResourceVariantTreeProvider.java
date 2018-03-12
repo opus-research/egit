@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2014, Obeo.
+ * Copyright (C) 2015, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,7 +15,6 @@ import java.util.Set;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.internal.storage.GitLocalResourceVariant;
 import org.eclipse.egit.core.internal.storage.IndexResourceVariant;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.dircache.DirCache;
@@ -35,9 +34,9 @@ public class DirCacheResourceVariantTreeProvider implements
 		GitResourceVariantTreeProvider {
 	private final IResourceVariantTree baseTree;
 
-	private final IResourceVariantTree oursTree;
+	private final IResourceVariantTree sourceTree;
 
-	private final IResourceVariantTree theirsTree;
+	private final IResourceVariantTree remoteTree;
 
 	private final Set<IResource> roots;
 
@@ -50,18 +49,15 @@ public class DirCacheResourceVariantTreeProvider implements
 	 * @param repository
 	 *            The repository which DirCache info we need to cache as
 	 *            IResourceVariantTrees.
-	 * @param useWorkspace
-	 *            Whether we should use local data instead of what's in the
-	 *            index for our side.
 	 * @throws IOException
 	 *             if we somehow cannot read the DirCache.
 	 */
-	public DirCacheResourceVariantTreeProvider(Repository repository,
-			boolean useWorkspace) throws IOException {
+	public DirCacheResourceVariantTreeProvider(Repository repository)
+			throws IOException {
 		final DirCache cache = repository.readDirCache();
 		final GitResourceVariantCache baseCache = new GitResourceVariantCache();
-		final GitResourceVariantCache oursCache = new GitResourceVariantCache();
-		final GitResourceVariantCache theirsCache = new GitResourceVariantCache();
+		final GitResourceVariantCache sourceCache = new GitResourceVariantCache();
+		final GitResourceVariantCache remoteCache = new GitResourceVariantCache();
 
 		for (int i = 0; i < cache.getEntryCount(); i++) {
 			final DirCacheEntry entry = cache.getEntry(i);
@@ -79,15 +75,11 @@ public class DirCacheResourceVariantTreeProvider implements
 						IndexResourceVariant.create(repository, entry));
 				break;
 			case DirCacheEntry.STAGE_2:
-				if (useWorkspace)
-					oursCache.setVariant(resource, new GitLocalResourceVariant(
-							resource));
-				else
-					oursCache.setVariant(resource,
-							IndexResourceVariant.create(repository, entry));
+				sourceCache.setVariant(resource,
+						IndexResourceVariant.create(repository, entry));
 				break;
 			case DirCacheEntry.STAGE_3:
-				theirsCache.setVariant(resource,
+				remoteCache.setVariant(resource,
 						IndexResourceVariant.create(repository, entry));
 				break;
 			default:
@@ -96,18 +88,18 @@ public class DirCacheResourceVariantTreeProvider implements
 		}
 
 		baseTree = new GitCachedResourceVariantTree(baseCache);
-		oursTree = new GitCachedResourceVariantTree(oursCache);
-		theirsTree = new GitCachedResourceVariantTree(theirsCache);
+		sourceTree = new GitCachedResourceVariantTree(sourceCache);
+		remoteTree = new GitCachedResourceVariantTree(remoteCache);
 
 		roots = new LinkedHashSet<IResource>();
 		roots.addAll(baseCache.getRoots());
-		roots.addAll(oursCache.getRoots());
-		roots.addAll(theirsCache.getRoots());
+		roots.addAll(sourceCache.getRoots());
+		roots.addAll(remoteCache.getRoots());
 
 		knownResources = new LinkedHashSet<IResource>();
 		knownResources.addAll(baseCache.getKnownResources());
-		knownResources.addAll(oursCache.getKnownResources());
-		knownResources.addAll(theirsCache.getKnownResources());
+		knownResources.addAll(sourceCache.getKnownResources());
+		knownResources.addAll(remoteCache.getKnownResources());
 	}
 
 	public IResourceVariantTree getBaseTree() {
@@ -115,11 +107,11 @@ public class DirCacheResourceVariantTreeProvider implements
 	}
 
 	public IResourceVariantTree getRemoteTree() {
-		return theirsTree;
+		return remoteTree;
 	}
 
 	public IResourceVariantTree getSourceTree() {
-		return oursTree;
+		return sourceTree;
 	}
 
 	public Set<IResource> getKnownResources() {
