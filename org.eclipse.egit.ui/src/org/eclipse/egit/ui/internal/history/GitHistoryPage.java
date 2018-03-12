@@ -1384,7 +1384,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					repositoryName });
 		} else {
 			// user has selected multiple resources and then hits Team->Show in
-			// History (the generic history view can not deal with multiple
+			// History (the generic history view cannot deal with multiple
 			// selection)
 			int count = 0;
 			StringBuilder b = new StringBuilder();
@@ -2013,7 +2013,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 	}
 
-	private boolean isShowingRelativeDates() {
+	static boolean isShowingRelativeDates() {
 		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE);
 	}
 

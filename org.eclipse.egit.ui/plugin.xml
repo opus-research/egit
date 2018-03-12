@@ -3,6 +3,7 @@
 <plugin>
    <extension-point id="commitMessageProvider" name="%CommitMessageProviderExtension-point.name" schema="schema/commitMessageProvider.exsd"/>
    <extension-point id="cloneSourceProvider" name="%CloneSourceProviderExtension-point.name" schema="schema/cloneSourceProvider.exsd"/>
+   <extension-point id="branchNameProvider" name="%BranchNameProviderExtension-point.name" schema="schema/branchNameProvider.exsd"/>
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.eclipse.egit.ui.PluginPreferenceInitializer"/>
    </extension>
@@ -957,6 +958,24 @@
             commandId="org.eclipse.egit.ui.internal.reflog.OpenInCommitViewerCommand">
          <class
                class="org.eclipse.egit.ui.internal.reflog.command.OpenInCommitViewerHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.jgit.lib.ReflogEntry">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+            <handler
+            commandId="org.eclipse.egit.ui.history.Reset">
+         <class
+               class="org.eclipse.egit.ui.internal.reflog.command.ResetHandler">
          </class>
          <activeWhen>
             <and>
@@ -4567,6 +4586,22 @@
             icon="icons/obj16/squash.gif">
       </image>
       <image
+            commandId="org.eclipse.egit.ui.history.Reword"
+            icon="icons/obj16/reword.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.commit.Reword"
+            icon="icons/obj16/reword.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.history.Edit"
+            icon="icons/obj16/editconfig.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.commit.Edit"
+            icon="icons/obj16/editconfig.gif">
+      </image>
+      <image
             commandId="org.eclipse.egit.ui.commit.Checkout"
             icon="icons/obj16/checkout.gif">
       </image>
@@ -4765,6 +4800,10 @@
       <image
             commandId="org.eclipse.egit.ui.commit.Revert"
             icon="icons/obj16/revert.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.commit.ShowInHistory"
+            icon="icons/obj16/history.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.clean"
@@ -5228,6 +5267,26 @@
             name="%SquashCommitsCommand.name">
       </command>
       <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.RewordHandler"
+            id="org.eclipse.egit.ui.history.Reword"
+            name="%RewordCommitCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.commit.command.RewordHandler"
+            id="org.eclipse.egit.ui.commit.Reword"
+            name="%RewordCommitCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.EditHandler"
+            id="org.eclipse.egit.ui.history.Edit"
+            name="%EditCommitCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.commit.command.EditHandler"
+            id="org.eclipse.egit.ui.commit.Edit"
+            name="%EditCommitCommand.name">
+      </command>
+      <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.RevertHandler"
             id="org.eclipse.egit.ui.history.Revert"
             name="%RevertCommand.name">
@@ -5236,6 +5295,11 @@
             defaultHandler="org.eclipse.egit.ui.internal.commit.command.RevertHandler"
             id="org.eclipse.egit.ui.commit.Revert"
             name="%RevertCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.commit.command.ShowInHistoryHandler"
+            id="org.eclipse.egit.ui.commit.ShowInHistory"
+            name="%ShowInHistoryCommand.name">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.MergeHandler"
