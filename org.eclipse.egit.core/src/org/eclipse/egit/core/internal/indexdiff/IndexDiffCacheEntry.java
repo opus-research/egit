@@ -142,6 +142,8 @@ public class IndexDiffCacheEntry {
 	private void scheduleReloadJob() {
 		if (reloadJob != null)
 			reloadJob.cancel();
+		if (!checkRepository())
+			return;
 		reloadJob = new Job(getReloadJobName()) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
@@ -167,12 +169,6 @@ public class IndexDiffCacheEntry {
 					}
 					notifyListeners();
 					return Status.OK_STATUS;
-				} catch (RuntimeException e) {
-					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.INDEXDIFFCACHE.getLocation(),
-							"Calculating IndexDiff failed", e); //$NON-NLS-1$
-					scheduleReloadJob();
-					return Status.OK_STATUS;
 				} finally {
 					lock.unlock();
 				}
@@ -187,6 +183,14 @@ public class IndexDiffCacheEntry {
 
 		};
 		reloadJob.schedule();
+	}
+
+	private boolean checkRepository() {
+		if (Activator.getDefault() == null)
+			return false;
+		if (!repository.getDirectory().exists())
+			return false;
+		return true;
 	}
 
 	private void waitForWorkspaceLock() {
@@ -209,6 +213,8 @@ public class IndexDiffCacheEntry {
 
 	private void scheduleUpdateJob(final Collection<String> filesToUpdate,
 			final Collection<IFile> fileResourcesToUpdate) {
+		if (!checkRepository())
+			return;
 		Job job = new Job(getReloadJobName()) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
@@ -236,12 +242,6 @@ public class IndexDiffCacheEntry {
 								.toString());
 					}
 					notifyListeners();
-					return Status.OK_STATUS;
-				} catch (RuntimeException e) {
-					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.INDEXDIFFCACHE.getLocation(),
-							"Calculating IndexDiff failed", e); //$NON-NLS-1$
-					scheduleReloadJob();
 					return Status.OK_STATUS;
 				} finally {
 					lock.unlock();
