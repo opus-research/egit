@@ -17,7 +17,6 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.osgi.service.localization.BundleLocalization;
@@ -28,7 +27,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
@@ -198,17 +196,6 @@ public class TestUtil {
 				return null;
 			}
 		}, timeout);
-	}
-
-	/**
-	 * Disables usage of proxy servers
-	 */
-	public static void disableProxy() {
-		BundleContext context = Activator.getDefault().getBundle().getBundleContext();
-		ServiceReference serviceReference = context.getServiceReference(IProxyService.class.getName());
-		IProxyService proxyService = (IProxyService) context.getService(serviceReference);
-		proxyService.setSystemProxiesEnabled(false);
-		proxyService.setProxiesEnabled(false);
 	}
 
 }
