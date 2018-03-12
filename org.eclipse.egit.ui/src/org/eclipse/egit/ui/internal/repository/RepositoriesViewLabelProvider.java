@@ -101,7 +101,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 						+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
 			else
 				return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
-						+ node.getRepository().getWorkTree().getAbsolutePath();
+						+ node.getRepository().getWorkDir().getAbsolutePath();
 		case PUSH:
 			// fall through
 		case FETCH:

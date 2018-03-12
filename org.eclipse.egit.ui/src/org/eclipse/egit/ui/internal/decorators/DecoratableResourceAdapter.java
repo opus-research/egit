@@ -29,6 +29,7 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -349,12 +350,12 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			treeWalk.addTree(new EmptyTreeIterator());
 
 		// Index
-		treeWalk.addTree(new DirCacheIterator(repository.readDirCache()));
+		treeWalk.addTree(new DirCacheIterator(DirCache.read(repository)));
 
 		// Working directory
 		IProject project = resource.getProject();
 		IWorkspaceRoot workspaceRoot = resource.getWorkspace().getRoot();
-		File repoRoot = repository.getWorkTree();
+		File repoRoot = repository.getWorkDir();
 
 		if (repoRoot.equals(project.getLocation().toFile()))
 			treeWalk.addTree(new ContainerTreeIterator(project));
