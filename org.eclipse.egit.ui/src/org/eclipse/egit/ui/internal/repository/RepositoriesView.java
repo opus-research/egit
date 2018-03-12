@@ -230,15 +230,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 	public void createPartControl(Composite parent) {
 
 		Composite main = new Composite(parent, SWT.NONE);
-		GridLayout layout = new GridLayout(1, false);
-		layout.marginHeight = 0;
-		layout.marginWidth = 0;
-		parent.setLayout(layout);
+		main.setLayout(new GridLayout(1, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
-		layout = new GridLayout(1, false);
-		layout.marginHeight = 0;
-		layout.marginWidth = 0;
-		main.setLayout(layout);
+		main.setLayout(new GridLayout(1, false));
 
 		tv = new TreeViewer(main);
 		tv.setContentProvider(new RepositoriesViewContentProvider());
