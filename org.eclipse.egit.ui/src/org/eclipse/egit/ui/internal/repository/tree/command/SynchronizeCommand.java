@@ -40,21 +40,11 @@ public class SynchronizeCommand extends
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final RepositoryTreeNode node = getSelectedNodes(event).get(0);
-		final String refName = getRefName(node);
-		if (refName == null)
+		Object object = node.getObject();
+		if (!(object instanceof Ref))
 			return null;
 
-		String secondRefName = Constants.HEAD;
-		if (getSelectedNodes(event).size() == 2) {
-			secondRefName = getRefName(getSelectedNodes(event).get(1));
-			if (secondRefName == null)
-				return null;
-		}
-
-		final String secondRefNameParam = secondRefName;
-
-		final boolean includeLocal = getSelectedNodes(event).size() == 1;
-
+		final Ref ref = (Ref) object;
 		final Repository repo = node.getRepository();
 		Job job = new Job(NLS.bind(
 				UIText.SelectSynchronizeResourceDialog_selectProject, repo
@@ -64,8 +54,8 @@ public class SynchronizeCommand extends
 			protected IStatus run(IProgressMonitor monitor) {
 				GitSynchronizeData data;
 				try {
-					data = new GitSynchronizeData(repo, secondRefNameParam,
-							refName, includeLocal);
+					data = new GitSynchronizeData(node
+							.getRepository(), Constants.HEAD, ref.getName(), true);
 
 					Set<IProject> projects = data.getProjects();
 					IResource[] resources = projects
@@ -83,15 +73,6 @@ public class SynchronizeCommand extends
 		job.schedule();
 
 		return null;
-	}
-
-	private String getRefName(final RepositoryTreeNode node) {
-		Object object = node.getObject();
-		if (!(object instanceof Ref))
-			return null;
-
-		Ref ref = (Ref) object;
-		return ref.getName();
 	}
 
 }
