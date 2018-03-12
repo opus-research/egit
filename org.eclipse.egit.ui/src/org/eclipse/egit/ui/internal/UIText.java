@@ -4659,12 +4659,6 @@ public class UIText extends NLS {
 	/** */
 	public static String GitScmUrlImportWizardPage_counter;
 
-	/** */
-	public static String BranchConfigurationBlock_label;
-
-	/** */
-	public static String BranchConfigurationBlock_select;
-
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
