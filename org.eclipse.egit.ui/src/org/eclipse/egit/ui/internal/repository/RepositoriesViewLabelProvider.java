@@ -23,9 +23,9 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -40,8 +40,7 @@ import org.eclipse.swt.graphics.Rectangle;
 /**
  * Label Provider for the Git Repositories View
  */
-public class RepositoriesViewLabelProvider extends LabelProvider implements
-		IStyledLabelProvider {
+public class RepositoriesViewLabelProvider extends LabelProvider implements IStyledLabelProvider {
 
 	/**
 	 * A map of regular images to their decorated counterpart.
@@ -81,14 +80,11 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 
 		case TAG:
 			// fall through
-		case ADDITIONALREF:
-			// fall through
 		case REF:
 			// if the branch or tag is checked out,
 			// we want to decorate the corresponding
 			// node with a little check indicator
 			String refName = ((Ref) node.getObject()).getName();
-			Ref leaf = ((Ref) node.getObject()).getLeaf();
 
 			String branchName;
 			String compareString;
@@ -119,17 +115,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 					RevWalk rw = new RevWalk(node.getRepository());
 					RevCommit commit = rw.parseCommit(id);
 					compareString = commit.getId().name();
-				} else if (refName.equals(Constants.HEAD))
-					return getDecoratedImage(image);
-				else {
-					String leafname = leaf.getName();
-					if (leafname.startsWith(Constants.R_REFS)
-							&& leafname.equals(node.getRepository()
-									.getFullBranch()))
-						return getDecoratedImage(image);
-					else if (leaf.getObjectId().equals(
-							node.getRepository().resolve(Constants.HEAD)))
-						return getDecoratedImage(image);
+				} else {
 					// some other symbolic reference
 					return image;
 				}
@@ -192,32 +178,17 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 			case REPO:
 				Repository repository = (Repository) node.getObject();
 				File directory = repository.getDirectory();
-				StyledString string = new StyledString(directory
-						.getParentFile().getName());
-				string
-						.append(
-								" - " + directory.getAbsolutePath(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-				string
-						.append(
-								" [" + repository.getBranch() + "]", StyledString.DECORATIONS_STYLER); //$NON-NLS-1$//$NON-NLS-2$
+				StyledString string = new StyledString(directory.getParentFile().getName());
+				string.append(" - " + directory.getAbsolutePath(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
+				string.append(" [" + repository.getBranch() + "]", StyledString.DECORATIONS_STYLER);  //$NON-NLS-1$//$NON-NLS-2$
 				return string;
-			case ADDITIONALREF:
+			case SYMBOLICREF:
 				Ref ref = (Ref) node.getObject();
 				// shorten the name
-				StyledString refName = new StyledString(node.getRepository()
-						.shortenRefName(ref.getName()));
+				StyledString refName = new StyledString(node.getRepository().shortenRefName(ref.getName()));
 				if (ref.isSymbolic()) {
 					refName.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-					refName.append(ref.getLeaf().getName(),
-							StyledString.QUALIFIER_STYLER);
-					refName.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-					refName.append(ref.getLeaf().getObjectId().name(),
-							StyledString.QUALIFIER_STYLER);
-				} else {
-					refName.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-					refName.append(ref.getObjectId().name(),
-							StyledString.QUALIFIER_STYLER);
-
+					refName.append(ref.getLeaf().getName(), StyledString.QUALIFIER_STYLER);
 				}
 				return refName;
 			case WORKINGDIR:
@@ -252,7 +223,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 				// fall through
 			case TAGS:
 				// fall through;
-			case ADDITIONALREFS:
+			case SYMBOLICREFS:
 				// fall through
 			case REMOTES:
 				// fall through
@@ -298,7 +269,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 			return fullPath.lastSegment();
 		case TAGS:
 			return UIText.RepositoriesViewLabelProvider_TagsNodeText;
-		case ADDITIONALREFS:
+		case SYMBOLICREFS:
 			return UIText.RepositoriesViewLabelProvider_SymbolicRefNodeText;
 		case REMOTES:
 			return UIText.RepositoriesView_RemotesNodeText;
@@ -310,18 +281,13 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 			// fall through
 		case TAG:
 			// fall through
-		case ADDITIONALREF:
+		case SYMBOLICREF:
 			Ref ref = (Ref) node.getObject();
 			// shorten the name
 			String refName = node.getRepository().shortenRefName(ref.getName());
 			if (ref.isSymbolic()) {
-				refName = refName
-						+ " - " //$NON-NLS-1$
-						+ ref.getLeaf().getName()
-						+ " - " + ref.getLeaf().getObjectId(); //$NON-NLS-1$
-			} else {
 				refName = refName + " - " //$NON-NLS-1$
-						+ ref.getObjectId().name();
+				+ ref.getLeaf().getName();
 			}
 			if (node.getParent().getType() == RepositoryTreeNodeType.BRANCHHIERARCHY) {
 				int index = refName.lastIndexOf('/');

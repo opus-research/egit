@@ -10,13 +10,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree;
 
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 
 /**
- * Represents the "Additional Reference" node
+ * Represents the "Symbolic References" node
  */
-public class AdditionalRefNode extends RepositoryTreeNode<Ref> {
+public class SymbolicRefsNode extends RepositoryTreeNode<Repository> {
 
 	/**
 	 * Constructs the node.
@@ -25,12 +24,10 @@ public class AdditionalRefNode extends RepositoryTreeNode<Ref> {
 	 *            the parent node (may be null)
 	 * @param repository
 	 *            the {@link Repository}
-	 * @param ref
-	 *            the named reference
 	 */
-	public AdditionalRefNode(RepositoryTreeNode parent, Repository repository,
-			Ref ref) {
-		super(parent, RepositoryTreeNodeType.ADDITIONALREF, repository, ref);
+	public SymbolicRefsNode(RepositoryTreeNode parent, Repository repository) {
+		super(parent, RepositoryTreeNodeType.SYMBOLICREFS, repository,
+				repository);
 	}
 
 }
