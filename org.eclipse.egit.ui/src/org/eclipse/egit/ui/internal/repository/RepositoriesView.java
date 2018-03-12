@@ -611,7 +611,7 @@ public class RepositoriesView extends CommonNavigator {
 				if (needsNewInput)
 					initRepositoriesAndListeners();
 
-				tv.getCommonNavigator().getSite().getShell().getDisplay().asyncExec(new Runnable() {
+				Display.getDefault().asyncExec(new Runnable() {
 					public void run() {
 						if (!UIUtils.isUsable(tv))
 							return;
