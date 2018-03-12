@@ -93,10 +93,10 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		assertEquals(2, testnodes.size());
 		List<String> test2nodes = remotesItem.getNode("test2").expand()
 				.getNodes();
-		assertEquals(2, test2nodes.size());
+		assertTrue(test2nodes.size() == 2);
 		// error node should be shown
 		remotesItem.getNode("test3").expand().getNodes();
-		assertEquals(1, remotesItem.getNode("test3").expand().getNodes().size());
+		assertTrue(remotesItem.getNode("test3").expand().getNodes().size() == 1);
 
 		// test the properties view on remote
 		remotesItem.getNode("test").select();
@@ -207,7 +207,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertEquals(2, children.size());
+		assertTrue(children.size() == 2);
 		item.getNode(0).select();
 		// we remove the fetch, the URI is copied into push
 		ContextMenuHelper.clickContextMenu(tree, myUtil
@@ -217,7 +217,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertEquals(1, children.size());
+		assertTrue(children.size() == 1);
 		item.getNode(0).select();
 		// now we also remove the push
 		ContextMenuHelper.clickContextMenu(tree, myUtil
@@ -227,7 +227,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertEquals(0, children.size());
+		assertTrue(children.size() == 0);
 
 		myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand().getNode(
 				"testRemote").select();
@@ -326,7 +326,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertEquals(1, children.size());
+		assertTrue(children.size() == 1);
 		item.select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewRemoveRemote.label"));
@@ -339,7 +339,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertEquals(1, children.size());
+		assertTrue(children.size() == 1);
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewRemoveRemote.label"));

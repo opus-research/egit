@@ -1,5 +1,8 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2012 Chris Aniszczyk <caniszczyk@gmail.com> and others.
+ * Copyright (c) 2011, Chris Aniszczyk <caniszczyk@gmail.com>
+ * Copyright (c) 2011, Matthias Sohn <matthias.sohn@sap.com>
+ * and others.
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -36,13 +39,14 @@ import org.eclipse.jface.layout.TreeColumnLayout;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ColumnWeightData;
+import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
@@ -76,7 +80,6 @@ import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
-import org.eclipse.ui.OpenAndLinkWithEditorHelper;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.contexts.IContextService;
 import org.eclipse.ui.dialogs.FilteredTree;
@@ -275,45 +278,35 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			}
 		});
 
-		new OpenAndLinkWithEditorHelper(refLogTableTreeViewer) {
-			@Override
-			protected void linkToEditor(ISelection selection) {
-				// Not supported
+		refLogTableTreeViewer.addOpenListener(new IOpenListener() {
 
-			}
-			@Override
-			protected void open(ISelection sel, boolean activate) {
-				handleOpen(sel, OpenStrategy.activateOnOpen());
-			}
-			@Override
-			protected void activate(ISelection selection) {
-				handleOpen(selection, true);
-			}
-			private void handleOpen(ISelection selection, boolean activateOnOpen) {
-				if (selection instanceof IStructuredSelection)
-					if (selection.isEmpty())
-						return;
+			public void open(OpenEvent event) {
+				IStructuredSelection selection = (IStructuredSelection) event
+						.getSelection();
+				if (selection.isEmpty())
+					return;
 				Repository repo = getRepository();
 				if (repo == null)
 					return;
 				RevWalk walk = new RevWalk(repo);
 				try {
-					for (Object element : ((IStructuredSelection)selection).toArray()) {
+					for (Object element : selection.toArray()) {
 						ReflogEntry entry = (ReflogEntry) element;
 						ObjectId id = entry.getNewId();
 						if (id == null || id.equals(ObjectId.zeroId()))
 							id = entry.getOldId();
 						if (id != null && !id.equals(ObjectId.zeroId()))
 							CommitEditor.openQuiet(new RepositoryCommit(repo,
-									walk.parseCommit(id)), activateOnOpen);
+									walk.parseCommit(id)));
 					}
 				} catch (IOException e) {
 					Activator.logError(UIText.ReflogView_ErrorOnOpenCommit, e);
 				} finally {
 					walk.release();
 				}
+
 			}
-		};
+		});
 
 		selectionChangedListener = new ISelectionListener() {
 			public void selectionChanged(IWorkbenchPart part,

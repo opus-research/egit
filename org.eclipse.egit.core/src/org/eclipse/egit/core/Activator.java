@@ -43,6 +43,7 @@ import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.eclipse.team.core.RepositoryProvider;
+import org.eclipse.team.core.Team;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -223,6 +224,9 @@ public class Activator extends Plugin implements DebugOptionsListener {
 							return false;
 						if (resource.getType() != IResource.PROJECT)
 							return true;
+						// shouldn't happen for projects
+						if (Team.isIgnoredHint(resource))
+							return false;
 						if (RepositoryMapping.getMapping(resource) != null)
 							return false;
 						final IProject project = (IProject) resource;

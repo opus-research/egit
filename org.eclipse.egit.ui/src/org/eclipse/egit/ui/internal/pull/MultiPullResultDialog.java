@@ -9,12 +9,10 @@
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Daniel Megert <daniel_megert@ch.ibm.com> - remove unnecessary @SuppressWarnings
  *    Markus Keller <markus_keller@ch.ibm.com> - Open multiple detail dialogs from MultiPullResultDialog at once
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Use correct syntax when a single ref was updated
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.pull;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,7 +39,6 @@ import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
@@ -113,8 +110,6 @@ public class MultiPullResultDialog extends Dialog {
 				else {
 					int updated = pullRes.getFetchResult()
 							.getTrackingRefUpdates().size();
-					if ( updated == 1)
-						return UIText.MultiPullResultDialog_UpdatedOneMessage;
 					return NLS.bind(
 							UIText.MultiPullResultDialog_UpdatedMessage,
 							Integer.valueOf(updated));
@@ -187,8 +182,9 @@ public class MultiPullResultDialog extends Dialog {
 						.getSelection();
 				boolean enabled = false;
 				for (Entry<Repository, Object> entry : (List<Entry<Repository, Object>>) sel
-						.toList())
+						.toList()) {
 					enabled |= entry.getValue() instanceof PullResult;
+				}
 				getButton(DETAIL_BUTTON).setEnabled(enabled);
 			}
 		});
@@ -242,7 +238,6 @@ public class MultiPullResultDialog extends Dialog {
 			int yOffset = 0;
 			int yDelta = -trim.y - 3;
 
-			final LinkedList<PullResultDialog> dialogs= new LinkedList<PullResultDialog>();
 			IStructuredSelection sel = (IStructuredSelection) tv.getSelection();
 			for (Entry<Repository, Object> item : (List<Entry<Repository, Object>>) sel
 					.toList()) {
@@ -253,7 +248,7 @@ public class MultiPullResultDialog extends Dialog {
 					xOffset += xDelta;
 					yOffset += yDelta;
 
-					final PullResultDialog dialog = new PullResultDialog(shell,
+					PullResultDialog dialog = new PullResultDialog(shell,
 							item.getKey(), (PullResult) item.getValue()) {
 						private Point initialLocation;
 
@@ -273,36 +268,20 @@ public class MultiPullResultDialog extends Dialog {
 							if (resultShell != null
 									&& !resultShell.isDisposed()) {
 								Point location = resultShell.getLocation();
-								if (location.equals(initialLocation)) {
-									resultShell.setVisible(false);
+								if (location.equals(initialLocation))
 									resultShell.setLocation(location.x - x,
 											location.y - y);
-								}
 							}
 							boolean result = super.close();
 
 							// activate next result dialog (not the multi-result dialog):
-
-							// TODO: This doesn't work due to https://bugs.eclipse.org/388667 :
-//							Shell[] subShells = shell.getShells();
-//							if (subShells.length > 0) {
-//								subShells[subShells.length - 1].setActive();
-//							}
-
-							dialogs.remove(this);
-							if (dialogs.size() > 0)
-								dialogs.getLast().getShell().setActive();
-
+							Shell[] subShells = shell.getShells();
+							if (subShells.length > 0) {
+								subShells[subShells.length - 1].setActive();
+							}
 							return result;
 						}
 					};
-					dialog.create();
-					dialog.getShell().addShellListener(new ShellAdapter() {
-						public void shellActivated(org.eclipse.swt.events.ShellEvent e) {
-							dialogs.remove(dialog);
-							dialogs.add(dialog);
-						}
-					});
 					dialog.open();
 				}
 			}

@@ -2,7 +2,6 @@
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -370,7 +369,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 			tagName = tagNameText.getText();
 			if (commitCombo != null)
 				tagCommit = commitCombo.getValue();
-			tagMessage = tagMessageText.getCommitMessage();
+			tagMessage = tagMessageText.getText();
 			overwriteTag = overwriteButton.getSelection();
 			//$FALL-THROUGH$ continue propagating OK button action
 		default:
