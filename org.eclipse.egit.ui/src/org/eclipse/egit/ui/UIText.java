@@ -187,6 +187,12 @@ public class UIText extends NLS {
 	public static String GitCloneWizard_abortingCloneTitle;
 
 	/** */
+	public static String GitCloneWizard_CloneFailedHeading;
+
+	/** */
+	public static String GitCloneWizard_CloneCanceledMessage;
+
+	/** */
 	public static String GitCloneWizard_title;
 
 	/** */
@@ -1354,9 +1360,6 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_parent;
 
 	/** */
-	public static String CommitMessageViewer_SelectOneCommitMessage;
-
-	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
@@ -1628,12 +1631,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FileRevisionEditorInput_NameAndRevisionTitle;
-
-	/** */
-	public static String FindToolbar_NextTooltip;
-
-	/** */
-	public static String FindToolbar_PreviousTooltip;
 
 	/** */
 	public static String WindowCachePreferencePage_title;
@@ -2217,9 +2214,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
-
-	/** */
-	public static String CommitFileDiffViewer_SelectOneCommitMessage;
 
 	/** */
 	public static String GitSynchronizeWizard_synchronize;

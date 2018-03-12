@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Simple entity for remote and local repositories containing only repo name and
- * list of refs associated with it.
+ * list of refs associated wit it.
  */
 public class SyncRepoEntity {
 
