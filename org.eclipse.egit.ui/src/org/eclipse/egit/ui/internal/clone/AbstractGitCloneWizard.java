@@ -1,12 +1,15 @@
 /*******************************************************************************
- * Copyright (c) 2011 SAP AG.
+ * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
+ * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
+ * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (C) 2011, Stefan Lay <stefan.lay@sap.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Stefan Lay (SAP AG) - initial implementation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.clone;
 
