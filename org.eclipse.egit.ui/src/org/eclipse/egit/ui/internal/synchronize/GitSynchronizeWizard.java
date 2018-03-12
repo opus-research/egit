@@ -12,10 +12,7 @@
 package org.eclipse.egit.ui.internal.synchronize;
 
 import java.io.IOException;
-import java.util.List;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.wizard.Wizard;
@@ -25,8 +22,7 @@ import org.eclipse.jface.wizard.Wizard;
  */
 public class GitSynchronizeWizard extends Wizard {
 
-	private GitSynchronizeWizardPage page2;
-	private GitPreconfiguredSynchronizeWizardPage page1;
+	private GitSynchronizeWizardPage page;
 
 	/**
 	 * Instantiates a new wizard for synchronizing resources that are being
@@ -38,29 +34,14 @@ public class GitSynchronizeWizard extends Wizard {
 
 	@Override
 	public void addPages() {
-		page1 = new GitPreconfiguredSynchronizeWizardPage();
-		page2 = new GitSynchronizeWizardPage();
-		addPage(page1);
-		addPage(page2);
-	}
-
-	@Override
-	public boolean canFinish() {
-		if (page1.requiresCustomeConfiguration())
-			return page2.isPageComplete();
-
-		return page1.isPageComplete();
+		page = new GitSynchronizeWizardPage();
+		addPage(page);
 	}
 
 	@Override
 	public boolean performFinish() {
 		try {
-			GitSynchronizeDataSet syncData = page1.getSyncData();
-			List<IProject> projects = page1.getProjects();
-			syncData.addAll(page2.getSyncData());
-			projects.addAll(page2.getProjects());
-			GitModelSynchronize.launch(syncData,
-					projects.toArray(new IProject[projects.size()]));
+			GitModelSynchronize.launch(page.getSyncData(), page.getProjects());
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}
