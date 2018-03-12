@@ -5,7 +5,7 @@
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * All rights reserved. This program and the accompanying materials
@@ -1077,7 +1077,10 @@ public class UIText extends NLS {
 	public static String RepositoryAction_multiRepoSelectionTitle;
 
 	/** */
-	public static String RepositoryCommit_UserAndDate;
+	public static String RepositoryCommit_AuthorDate;
+
+	/** */
+	public static String RepositoryCommit_AuthorDateCommitter;
 
 	/** */
 	public static String RepositoryLocationPage_info;
@@ -1629,6 +1632,21 @@ public class UIText extends NLS {
 	public static String ResetQuickdiffBaselineHandler_NoTargetMessage;
 
 	/** */
+	public static String ResetTargetSelectionDialog_AuthorLabel;
+
+	/** */
+	public static String ResetTargetSelectionDialog_CommitLabel;
+
+	/** */
+	public static String ResetTargetSelectionDialog_CommitterLabel;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ExpressionLabel;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ExpressionTooltip;
+
+	/** */
 	public static String ResetTargetSelectionDialog_ResetButton;
 
 	/** */
@@ -1660,6 +1678,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ResetTargetSelectionDialog_SelectBranchForResetMessage;
+
+	/** */
+	public static String ResetTargetSelectionDialog_SubjectLabel;
+
+	/** */
+	public static String ResetTargetSelectionDialog_UnresolvableExpressionError;
 
 	/** */
 	public static String ResetTargetSelectionDialog_WindowTitle;
@@ -2661,6 +2685,9 @@ public class UIText extends NLS {
 	public static String FileDiffContentProvider_errorGettingDifference;
 
 	/** */
+	public static String FileDiffLabelProvider_RenamedFromToolTip;
+
+	/** */
 	public static String FileRevisionEditorInput_NameAndRevisionTitle;
 
 	/** */
@@ -3192,6 +3219,12 @@ public class UIText extends NLS {
 	public static String GitCompareFileRevisionEditorInput_LocalLabel;
 
 	/** */
+	public static String GitCompareFileRevisionEditorInput_IndexLabel;
+
+	/** */
+	public static String GitCompareFileRevisionEditorInput_IndexEditableLabel;
+
+	/** */
 	public static String GitCompareFileRevisionEditorInput_LocalRevision;
 
 	/** */
@@ -3658,7 +3691,7 @@ public class UIText extends NLS {
 	 * "Find Broken Externalized Strings" tool will not be
 	 * able to find the corresponding bundle file.
 	 */
-	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.uitext"; //$NON-NLS-1$
+	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.internal.uitext"; //$NON-NLS-1$
 
 	/** */
 	public static String CommitAction_commit;
@@ -4001,6 +4034,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RemoveCommand_ConfirmDeleteBareRepositoryTitle;
+
+	/** */
+	public static String RemoveCommand_RemoveRepositoriesJob;
 
 	/** */
 	public static String RenameBranchDialog_DialogMessage;
@@ -4618,6 +4654,9 @@ public class UIText extends NLS {
 	public static String StagingView_DeleteItemMenuLabel;
 
 	/** */
+	public static String StagingView_Find;
+
+	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
 
 	/** */
@@ -4760,6 +4799,21 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitModelSynchronizeParticipant_noCachedSourceVariant;
+
+	/** */
+	public static String GitScmUrlImportWizardPage_title;
+
+	/** */
+	public static String GitScmUrlImportWizardPage_description;
+
+	/** */
+	public static String GitScmUrlImportWizardPage_importMaster;
+
+	/** */
+	public static String GitScmUrlImportWizardPage_importVersion;
+
+	/** */
+	public static String GitScmUrlImportWizardPage_counter;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

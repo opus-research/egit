@@ -4,8 +4,8 @@
  * Copyright (C) 2006, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
+ * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, 2013 François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -39,12 +39,14 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jgit.diff.DiffConfig;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
@@ -75,6 +77,7 @@ import org.eclipse.ui.ide.ResourceUtil;
  * A helper class for Team Actions on Git controlled projects
  */
 abstract class RepositoryActionHandler extends AbstractHandler {
+
 	private IEvaluationContext evaluationContext;
 
 	private IStructuredSelection mySelection;
@@ -91,6 +94,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	}
 
 	/**
+	 * Retrieve the list of projects that contains the given resources. All
+	 * resources must actually map to a project shared with egit, otherwise an
+	 * empty array is returned. In case of a linked resource, the project
+	 * returned is the one that contains the link target and is shared with
+	 * egit, if any, otherwise an empty array is also returned.
+	 *
 	 * @param selection
 	 * @return the projects hosting the selected resources
 	 */
@@ -98,8 +107,13 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			IStructuredSelection selection) {
 		Set<IProject> ret = new LinkedHashSet<IProject>();
 		for (IResource resource : (IResource[]) getSelectedAdaptables(
-				selection, IResource.class))
-			ret.add(resource.getProject());
+				selection, IResource.class)) {
+			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+			if (mapping != null && (mapping.getContainer() instanceof IProject))
+				ret.add((IProject) mapping.getContainer());
+			else
+				return new IProject[0];
+		}
 		ret.addAll(extractProjectsFromMappings(selection));
 
 		return ret.toArray(new IProject[ret.size()]);
@@ -110,14 +124,28 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		Set<IProject> ret = new LinkedHashSet<IProject>();
 		for (ResourceMapping mapping : (ResourceMapping[]) getSelectedAdaptables(
 				selection, ResourceMapping.class)) {
-			IProject[] projects = mapping.getProjects();
-			if (projects != null)
-				ret.addAll(Arrays.asList(projects));
+			IProject[] mappedProjects = mapping.getProjects();
+			if (mappedProjects != null && mappedProjects.length != 0) {
+				// Some mappings (WorkingSetResourceMapping) return the projects
+				// in unpredictable order. Sort them like the navigator to
+				// correspond to the order the user usually sees.
+				List<IProject> projects = new ArrayList<IProject>(
+						Arrays.asList(mappedProjects));
+				Collections
+						.sort(projects, CommonUtils.RESOURCE_NAME_COMPARATOR);
+				ret.addAll(projects);
+			}
 		}
 		return ret;
 	}
 
 	/**
+	 * Retrieve the list of projects that contains the selected resources. All
+	 * resources must actually map to a project shared with egit, otherwise an
+	 * empty array is returned. In case of a linked resource, the project
+	 * returned is the one that contains the link target and is shared with
+	 * egit, if any, otherwise an empty array is also returned.
+	 *
 	 * @param event
 	 * @return the projects hosting the selected resources
 	 * @throws ExecutionException
@@ -128,6 +156,15 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return getProjectsForSelectedResources(selection);
 	}
 
+	/**
+	 * Retrieve the list of projects that contains the selected resources. All
+	 * resources must actually map to a project shared with egit, otherwise an
+	 * empty array is returned. In case of a linked resource, the project
+	 * returned is the one that contains the link target and is shared with
+	 * egit, if any, otherwise an empty array is also returned.
+	 *
+	 * @return the projects hosting the selected resources
+	 */
 	protected IProject[] getProjectsForSelectedResources() {
 		IStructuredSelection selection = getSelection();
 		return getProjectsForSelectedResources(selection);
@@ -136,7 +173,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	/**
 	 * @param projects
 	 *            a list of projects
-	 * @return the repositories that projects map to iff all projects are mapped
+	 * @return the repositories that projects map to if all projects are mapped
 	 */
 	protected Repository[] getRepositoriesFor(final IProject[] projects) {
 		Set<Repository> ret = new LinkedHashSet<Repository>();
@@ -683,7 +720,9 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		RevWalk rw = new RevWalk(repository);
 		try {
 			if (path.length() > 0) {
-				FollowFilter filter = FollowFilter.create(path);
+				DiffConfig diffConfig = repository.getConfig().get(
+						DiffConfig.KEY);
+				FollowFilter filter = FollowFilter.create(path, diffConfig);
 				rw.setTreeFilter(filter);
 			}
 
@@ -723,4 +762,15 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		}
 	}
 
+	/**
+	 * By default egit operates only on resources that map to a project shared
+	 * with egit. For linked resources the project that contains the link
+	 * target, if any, must be shared with egit.
+	 *
+	 * @return the projects hosting the selected resources
+	 */
+	@Override
+	public boolean isEnabled() {
+		return getProjectsForSelectedResources().length > 0;
+	}
 }
