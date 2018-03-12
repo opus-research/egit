@@ -66,10 +66,14 @@ public class DirCacheResourceVariantTreeProvider implements
 					.getResourceHandleForLocation(path);
 			// Resource variants only make sense for IResources. Do not consider
 			// files outside of the workspace or otherwise non accessible.
-			if (resource == null || !resource.getProject().isAccessible())
+			if (resource == null || resource.getProject() == null
+					|| !resource.getProject().isAccessible()) {
 				continue;
-
+			}
 			switch (entry.getStage()) {
+			case DirCacheEntry.STAGE_0:
+				// Skipped on purpose (no conflict)
+				break;
 			case DirCacheEntry.STAGE_1:
 				baseCache.setVariant(resource,
 						IndexResourceVariant.create(repository, entry));
@@ -83,7 +87,8 @@ public class DirCacheResourceVariantTreeProvider implements
 						IndexResourceVariant.create(repository, entry));
 				break;
 			default:
-				break;
+				throw new IllegalStateException(
+						"Invalid stage: " + entry.getStage()); //$NON-NLS-1$
 			}
 		}
 

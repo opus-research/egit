@@ -98,7 +98,7 @@ public class TreeWalkResourceVariantTreeProvider implements
 					.getResourceHandleForLocation(path);
 			// Resource variants only make sense for IResources. Do not consider
 			// files outside of the workspace or otherwise non accessible.
-			if (resource == null || resource.getProject().isAccessible()) {
+			if (resource != null && resource.getProject().isAccessible()) {
 				if (modeBase != 0)
 					baseCache.setVariant(resource,
 							TreeParserResourceVariant.create(repository, base));

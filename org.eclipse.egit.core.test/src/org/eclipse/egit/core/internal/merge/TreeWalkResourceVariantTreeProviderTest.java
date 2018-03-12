@@ -19,7 +19,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.NameConflictTreeWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.team.core.variants.IResourceVariant;
 import org.junit.Test;
@@ -54,43 +53,45 @@ public class TreeWalkResourceVariantTreeProviderTest extends VariantsTestCase {
 		// end setup
 
 		// as if we tried to merge branch into master
-		RevWalk walk = new RevWalk(repo);
-		RevTree baseTree = walk.parseTree(baseCommit.getId());
-		RevTree sourceTree = walk.parseTree(repo.resolve(MASTER));
-		RevTree remoteTree = walk.parseTree(repo.resolve(BRANCH));
-		TreeWalk tw = new NameConflictTreeWalk(repo);
-		tw.addTree(baseTree);
-		tw.addTree(sourceTree);
-		tw.addTree(remoteTree);
-		TreeWalkResourceVariantTreeProvider treeProvider = new TreeWalkResourceVariantTreeProvider(
-				repo, tw, 0, 1, 2);
+		try (RevWalk walk = new RevWalk(repo)) {
+			RevTree baseTree = walk.parseTree(baseCommit.getId());
+			RevTree sourceTree = walk.parseTree(repo.resolve(MASTER));
+			RevTree remoteTree = walk.parseTree(repo.resolve(BRANCH));
+			TreeWalk tw = new TreeWalk(repo);
+			tw.addTree(baseTree);
+			tw.addTree(sourceTree);
+			tw.addTree(remoteTree);
+			TreeWalkResourceVariantTreeProvider treeProvider = new TreeWalkResourceVariantTreeProvider(
+					repo, tw, 0, 1, 2);
 
-		assertEquals(1, treeProvider.getRoots().size());
-		assertTrue(treeProvider.getRoots().contains(iProject));
+			assertEquals(1, treeProvider.getRoots().size());
+			assertTrue(treeProvider.getRoots().contains(iProject));
 
-		assertTrue(treeProvider.getKnownResources().contains(iFile1));
-		assertTrue(treeProvider.getKnownResources().contains(iFile2));
+			assertTrue(treeProvider.getKnownResources().contains(iFile1));
+			assertTrue(treeProvider.getKnownResources().contains(iFile2));
 
-		IResourceVariant file1BaseVariant = treeProvider.getBaseTree()
-				.getResourceVariant(iFile1);
-		IResourceVariant file2BaseVariant = treeProvider.getBaseTree()
-				.getResourceVariant(iFile2);
-		assertContentEquals(file1BaseVariant, INITIAL_CONTENT_1);
-		assertContentEquals(file2BaseVariant, INITIAL_CONTENT_2);
+			IResourceVariant file1BaseVariant = treeProvider.getBaseTree()
+					.getResourceVariant(iFile1);
+			IResourceVariant file2BaseVariant = treeProvider.getBaseTree()
+					.getResourceVariant(iFile2);
+			assertContentEquals(file1BaseVariant, INITIAL_CONTENT_1);
+			assertContentEquals(file2BaseVariant, INITIAL_CONTENT_2);
 
-		IResourceVariant file1TheirsVariant = treeProvider.getRemoteTree()
-				.getResourceVariant(iFile1);
-		IResourceVariant file2TheirsVariant = treeProvider.getRemoteTree()
-				.getResourceVariant(iFile2);
-		assertContentEquals(file1TheirsVariant, INITIAL_CONTENT_1);
-		assertContentEquals(file2TheirsVariant, branchChanges
-				+ INITIAL_CONTENT_2);
+			IResourceVariant file1TheirsVariant = treeProvider.getRemoteTree()
+					.getResourceVariant(iFile1);
+			IResourceVariant file2TheirsVariant = treeProvider.getRemoteTree()
+					.getResourceVariant(iFile2);
+			assertContentEquals(file1TheirsVariant, INITIAL_CONTENT_1);
+			assertContentEquals(file2TheirsVariant, branchChanges
+					+ INITIAL_CONTENT_2);
 
-		IResourceVariant file1OursVariant = treeProvider.getSourceTree()
-				.getResourceVariant(iFile1);
-		IResourceVariant file2OursVariant = treeProvider.getSourceTree()
-				.getResourceVariant(iFile2);
-		assertContentEquals(file1OursVariant, INITIAL_CONTENT_1 + masterChanges);
-		assertContentEquals(file2OursVariant, INITIAL_CONTENT_2);
+			IResourceVariant file1OursVariant = treeProvider.getSourceTree()
+					.getResourceVariant(iFile1);
+			IResourceVariant file2OursVariant = treeProvider.getSourceTree()
+					.getResourceVariant(iFile2);
+			assertContentEquals(file1OursVariant, INITIAL_CONTENT_1
+					+ masterChanges);
+			assertContentEquals(file2OursVariant, INITIAL_CONTENT_2);
+		}
 	}
 }

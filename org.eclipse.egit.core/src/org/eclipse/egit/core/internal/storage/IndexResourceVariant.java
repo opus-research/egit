@@ -21,8 +21,9 @@ import org.eclipse.team.core.TeamException;
  * DirCache information.
  */
 public class IndexResourceVariant extends AbstractGitResourceVariant {
-	private IndexResourceVariant(Repository repository, String path, String fileName, boolean isContainer, ObjectId objectId, int rawMode) {
-		super(repository, path, fileName, isContainer, objectId, rawMode);
+	private IndexResourceVariant(Repository repository, String path,
+			boolean isContainer, ObjectId objectId, int rawMode) {
+		super(repository, path, isContainer, objectId, rawMode);
 	}
 
 	/**
@@ -38,19 +39,12 @@ public class IndexResourceVariant extends AbstractGitResourceVariant {
 	public static IndexResourceVariant create(Repository repository,
 			DirCacheEntry entry) {
 		final String path = entry.getPathString();
-		final String fileName;
-		int lastSeparator = path.lastIndexOf('/');
-		if (lastSeparator > 0)
-			fileName = path.substring(lastSeparator + 1);
-		else
-			fileName = path;
-
 		final boolean isContainer = FileMode.TREE.equals(entry.getFileMode());
 		final ObjectId objectId = entry.getObjectId();
 		final int rawMode = entry.getRawMode();
 
-		return new IndexResourceVariant(repository, path, fileName,
-				isContainer, objectId, rawMode);
+		return new IndexResourceVariant(repository, path, isContainer,
+				objectId, rawMode);
 	}
 
 	public IStorage getStorage(IProgressMonitor monitor) throws TeamException {

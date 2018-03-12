@@ -25,11 +25,11 @@ import org.eclipse.team.internal.core.mapping.SyncInfoToDiffConverter;
 
 /**
  * This implementation of a {@link ResourceVariantTreeSubscriber} takes its
- * input from an {@link GitResourceVariantTreeProvider}.
+ * input from a {@link GitResourceVariantTreeProvider}.
  * <p>
  * This allows us to hijack all calls from the default subscriber for "local"
  * resources to our actual source tree, which could be the local working
- * directory as well as it could be a remote branch.
+ * directory as well as it could be a branch.
  * </p>
  */
 public class GitResourceVariantTreeSubscriber extends
