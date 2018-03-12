@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011, 2014 GitHub Inc and others.
+ *  Copyright (c) 2011, 2013 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Marc-Andre Laperle (Ericsson) - Set the input to null when not visible
  *****************************************************************************/
 package org.eclipse.egit.ui.internal.blame;
 
@@ -98,10 +97,6 @@ public class BlameInformationControl extends AbstractInformationControl
 	private int revisionRulerLineNumber;
 
 	private Composite diffComposite;
-
-	private Link showAnnotationsLink;
-
-	private SelectionAdapter showAnnotationsLinkSelectionAdapter;
 
 	/**
 	 * Create the information control for showing details on hover.
@@ -226,23 +221,6 @@ public class BlameInformationControl extends AbstractInformationControl
 	}
 
 	public void setInput(Object input) {
-		if (input == null) {
-			// Make sure we don't hold a reference to this when nothing is
-			// shown, it can be big
-			this.revision = null;
-			if (showAnnotationsLink != null) {
-				// This listener can also hold a reference because of a final
-				// parameter, see createDiffLinkAndText(final RevCommit
-				// parent...)
-				if (!showAnnotationsLink.isDisposed())
-					showAnnotationsLink
-							.removeSelectionListener(showAnnotationsLinkSelectionAdapter);
-				showAnnotationsLink = null;
-				showAnnotationsLinkSelectionAdapter = null;
-			}
-			return;
-		}
-
 		this.revision = (BlameRevision) input;
 
 		// Remember line number that was hovered over when the input was set.
@@ -344,17 +322,15 @@ public class BlameInformationControl extends AbstractInformationControl
 				UIText.BlameInformationControl_DiffHeaderLabel, parentId,
 				parentMessage));
 
-		showAnnotationsLink = new Link(header, SWT.NONE);
+		Link showAnnotationsLink = new Link(header, SWT.NONE);
 		showAnnotationsLink
 				.setText(UIText.BlameInformationControl_ShowAnnotationsLink);
-		showAnnotationsLinkSelectionAdapter = new SelectionAdapter() {
+		showAnnotationsLink.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				blameParent(parent, diff, parentLine);
 			}
-		};
-		showAnnotationsLink
-				.addSelectionListener(showAnnotationsLinkSelectionAdapter);
+		});
 
 		DiffViewer diffText = new DiffViewer(diffComposite, null, SWT.NONE);
 		diffText.setEditable(false);
@@ -415,16 +391,9 @@ public class BlameInformationControl extends AbstractInformationControl
 
 	private void showCommitInHistory() {
 		getShell().dispose();
-		IHistoryView part;
-		try {
-			part = (IHistoryView) PlatformUI.getWorkbench()
-					.getActiveWorkbenchWindow().getActivePage()
-					.showView(IHistoryView.VIEW_ID);
-		} catch (PartInitException e) {
-			Activator.logError(e.getLocalizedMessage(), e);
-			return;
-		}
-
+		IHistoryView part = (IHistoryView) PlatformUI.getWorkbench()
+				.getActiveWorkbenchWindow().getActivePage()
+				.findView(IHistoryView.VIEW_ID);
 		if (part == null)
 			return;
 
@@ -461,11 +430,5 @@ public class BlameInformationControl extends AbstractInformationControl
 		} catch (CoreException e) {
 			Activator.logError(UIText.ShowBlameHandler_errorMessage, e);
 		}
-	}
-
-	public void setVisible(boolean visible) {
-		super.setVisible(visible);
-		if (!visible)
-			setInput(null);
 	}
 }

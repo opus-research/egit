@@ -4,7 +4,6 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2011, Stefan Lay <stefan.lay@sap.com>
- * Copyright (C) 2014, Marc-Andre Laperle <marc-andre.laperle@ericsson.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,6 +14,8 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import org.eclipse.core.runtime.ListenerList;
@@ -26,7 +27,6 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
-import org.eclipse.egit.ui.internal.history.FormatJob.FormatResult;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
@@ -48,7 +48,6 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -121,11 +120,7 @@ class CommitMessageViewer extends SourceViewer implements
 
 	private ListenerHandle refsChangedListener;
 
-	private BooleanPrefAction showTagSequencePrefAction;
-
-	private BooleanPrefAction wrapCommentsPrefAction;
-
-	private BooleanPrefAction fillParagraphsPrefAction;
+	private StyleRange[] styleRanges;
 
 	CommitMessageViewer(final Composite parent, final IPageSite site, IWorkbenchPartSite partSite) {
 		super(parent, null, SWT.H_SCROLL | SWT.V_SCROLL | SWT.READ_ONLY);
@@ -144,6 +139,10 @@ class CommitMessageViewer extends SourceViewer implements
 					t.setCursor(SYS_LINK_CURSOR);
 				else
 					t.setCursor(sys_normalCursor);
+				if (styleRanges != null) {
+					for (StyleRange sr : styleRanges)
+						getTextWidget().setStyleRange(sr);
+				}
 			}
 		});
 		// react on link click
@@ -242,35 +241,29 @@ class CommitMessageViewer extends SourceViewer implements
 
 		IPersistentPreferenceStore pstore = (IPersistentPreferenceStore) store;
 
-		showTagSequencePrefAction = new BooleanPrefAction(pstore,
-				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
-				UIText.ResourceHistory_ShowTagSequence) {
+		Action showTagSequence = new BooleanPrefAction(pstore, UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, UIText.ResourceHistory_ShowTagSequence) {
 			@Override
 			protected void apply(boolean value) {
 				// nothing, just toggle
 			}
 		};
-		mgr.add(showTagSequencePrefAction);
+		mgr.add(showTagSequence);
 
-		wrapCommentsPrefAction = new BooleanPrefAction(pstore,
-				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
-				UIText.ResourceHistory_toggleCommentWrap) {
+		Action wrapComments = new BooleanPrefAction(pstore, UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP, UIText.ResourceHistory_toggleCommentWrap) {
 			@Override
 			protected void apply(boolean value) {
 				// nothing, just toggle
 			}
 		};
-		mgr.add(wrapCommentsPrefAction);
+		mgr.add(wrapComments);
 
-		fillParagraphsPrefAction = new BooleanPrefAction(pstore,
-				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL,
-				UIText.ResourceHistory_toggleCommentFill) {
+		Action fillParagraphs = new BooleanPrefAction(pstore, UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL, UIText.ResourceHistory_toggleCommentFill) {
 			@Override
 			protected void apply(boolean value) {
 				// nothing, just toggle
 			}
 		};
-		mgr.add(fillParagraphsPrefAction);
+		mgr.add(fillParagraphs);
 
 	}
 
@@ -286,7 +279,44 @@ class CommitMessageViewer extends SourceViewer implements
 				final FormatJob job = (FormatJob) event.getJob();
 				text.getDisplay().asyncExec(new Runnable() {
 					public void run() {
-						applyFormatJobResultInUI(job.getFormatResult());
+						if (text.isDisposed())
+							return;
+
+						setDocument(new Document(job.getFormatResult()
+								.getCommitInfo()));
+
+						// Combine the style ranges from the format job and the
+						// style ranges for hyperlinks found by registered
+						// hyperlink detectors.
+						List<StyleRange> styleRangeList = new ArrayList<StyleRange>();
+						for (StyleRange styleRange : job.getFormatResult()
+								.getStyleRange())
+							styleRangeList.add(styleRange);
+
+						StyleRange[] hyperlinkDetectorStyleRanges = UIUtils
+								.getHyperlinkDetectorStyleRanges(
+										CommitMessageViewer.this,
+										fHyperlinkDetectors);
+						for (StyleRange styleRange : hyperlinkDetectorStyleRanges)
+							styleRangeList.add(styleRange);
+
+						styleRanges = new StyleRange[styleRangeList.size()];
+						styleRangeList.toArray(styleRanges);
+
+						// Style ranges must be in order.
+						Arrays.sort(styleRanges, new Comparator<StyleRange>() {
+							public int compare(StyleRange o1, StyleRange o2) {
+								if (o2.start > o1.start)
+									return -1;
+								if (o1.start > o2.start)
+									return 1;
+								return 0;
+							}
+						});
+
+						text.setStyleRanges(new StyleRange[0]);
+						for (StyleRange sr : styleRanges)
+							text.setStyleRange(sr);
 					}
 				});
 			}
@@ -304,10 +334,6 @@ class CommitMessageViewer extends SourceViewer implements
 		if (refsChangedListener != null)
 			refsChangedListener.remove();
 		refsChangedListener = null;
-		showTagSequencePrefAction.dispose();
-		wrapCommentsPrefAction.dispose();
-		fillParagraphsPrefAction.dispose();
-
 		super.handleDispose();
 	}
 
@@ -326,22 +352,17 @@ class CommitMessageViewer extends SourceViewer implements
 		if (input == commit)
 			return;
 		currentDiffs.clear();
+		styleRanges = null;
 		commit = (PlotCommit<?>) input;
-		if (refsChangedListener != null) {
+		allRefs = getBranches();
+		if (refsChangedListener != null)
 			refsChangedListener.remove();
-			refsChangedListener = null;
-		}
+		refsChangedListener = db.getListenerList().addRefsChangedListener(new RefsChangedListener() {
 
-		if (db != null) {
-			allRefs = getBranches(db);
-			refsChangedListener = db.getListenerList().addRefsChangedListener(
-					new RefsChangedListener() {
-
-						public void onRefsChanged(RefsChangedEvent event) {
-							allRefs = getBranches(db);
-						}
-					});
-		}
+			public void onRefsChanged(RefsChangedEvent event) {
+				allRefs = getBranches();
+			}
+		});
 		format();
 	}
 
@@ -353,12 +374,11 @@ class CommitMessageViewer extends SourceViewer implements
 		this.db = repository;
 	}
 
-	private static List<Ref> getBranches(Repository repo)  {
+	private List<Ref> getBranches()  {
 		List<Ref> ref = new ArrayList<Ref>();
 		try {
-			RefDatabase refDb = repo.getRefDatabase();
-			ref.addAll(refDb.getRefs(Constants.R_HEADS).values());
-			ref.addAll(refDb.getRefs(Constants.R_REMOTES).values());
+			ref.addAll(db.getRefDatabase().getRefs(Constants.R_HEADS).values());
+			ref.addAll(db.getRefDatabase().getRefs(Constants.R_REMOTES).values());
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}
@@ -372,7 +392,7 @@ class CommitMessageViewer extends SourceViewer implements
 	}
 
 	private void format() {
-		if (db == null || commit == null) {
+		if (commit == null) {
 			setDocument(new Document("")); //$NON-NLS-1$
 			return;
 		}
@@ -397,29 +417,6 @@ class CommitMessageViewer extends SourceViewer implements
 														 * use the half-busy
 														 * cursor in the part
 														 */);
-	}
-
-	private void applyFormatJobResultInUI(FormatResult formatResult) {
-		StyledText text = getTextWidget();
-		if (!UIUtils.isUsable(text))
-			return;
-
-		setDocument(new Document(formatResult.getCommitInfo()));
-
-		// Set style ranges from format job. We know that they are already
-		// ordered and don't overlap.
-		text.setStyleRanges(formatResult.getStyleRange());
-
-		StyleRange[] hyperlinkStyleRanges = UIUtils
-				.getHyperlinkDetectorStyleRanges(CommitMessageViewer.this,
-						fHyperlinkDetectors);
-
-		// Apply hyperlink style ranges one by one. setStyleRange takes care to
-		// do the right thing in case they overlap with an existing style range.
-		// If we combined them with the above style ranges and set them all at
-		// once, we would have to manually remove overlapping ones.
-		for (StyleRange styleRange : hyperlinkStyleRanges)
-			text.setStyleRange(styleRange);
 	}
 
 	static final class ObjectLink extends StyleRange {
