@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
-import java.math.BigInteger;
 import java.util.Comparator;
 import java.util.regex.Pattern;
 
@@ -45,7 +44,8 @@ public class CommonUtils {
 				if (o2Numbers.length() == 0)
 					o2Numbers = "0"; //$NON-NLS-1$
 
-				return new BigInteger(o1Numbers).compareTo(new BigInteger(o2Numbers));
+				return Integer.parseInt(o2Numbers)
+						- Integer.parseInt(o1Numbers);
 			}
 
 			return charCompare;
