@@ -28,7 +28,6 @@ import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Repository;
@@ -71,59 +70,6 @@ public class RepositoryPropertySource implements IPropertySource {
 	private static final String REPO_ID_PREFIX = "repo"; //$NON-NLS-1$
 
 	private static final String EFFECTIVE_ID_PREFIX = "effe"; //$NON-NLS-1$
-
-	private static class EditAction extends Action {
-
-		private RepositoryPropertySource source;
-
-		public EditAction(String text, ImageDescriptor image,
-				RepositoryPropertySource source) {
-			super(text, image);
-			this.source = source;
-		}
-
-		public EditAction setSource(RepositoryPropertySource source) {
-			this.source = source;
-			return this;
-		}
-
-		@Override
-		public String getId() {
-			return EDITACTIONID;
-		}
-
-		@Override
-		public void run() {
-			final StoredConfig config;
-
-			DisplayMode mode = source.getCurrentMode();
-			switch (mode) {
-			case EFFECTIVE:
-				return;
-			case SYSTEM:
-				config = source.systemConfig;
-				break;
-			case USER:
-				config = source.userHomeConfig;
-				break;
-			case REPO:
-				config = source.repositoryConfig;
-				break;
-			default:
-				return;
-			}
-
-			new EditDialog(source.myPage.getSite().getShell(),
-					(FileBasedConfig) config, mode.getText()).open();
-			source.myPage.refresh();
-		}
-
-		@Override
-		public int getStyle() {
-			return IAction.AS_PUSH_BUTTON;
-		}
-
-	}
 
 	private final PropertySheetPage myPage;
 
@@ -171,11 +117,6 @@ public class RepositoryPropertySource implements IPropertySource {
 					.getToolBarManager().find(CHANGEMODEACTIONID);
 			singleValueToggleAction = (ActionContributionItem) bars
 					.getToolBarManager().find(SINGLEVALUEACTIONID);
-
-			editAction = ((ActionContributionItem) bars.getToolBarManager()
-					.find(EDITACTIONID));
-			if (editAction != null)
-				((EditAction) editAction.getAction()).setSource(this);
 
 			if (changeModeAction != null) {
 				return;
@@ -238,9 +179,46 @@ public class RepositoryPropertySource implements IPropertySource {
 
 			});
 
-			editAction = new ActionContributionItem(new EditAction(
+			editAction = new ActionContributionItem(new Action(
 					UIText.RepositoryPropertySource_EditConfigButton,
-					UIIcons.EDITCONFIG, this));
+					UIIcons.EDITCONFIG) {
+				@Override
+				public String getId() {
+					return EDITACTIONID;
+				}
+
+				@Override
+				public void run() {
+
+					final StoredConfig config;
+
+					switch (getCurrentMode()) {
+					case EFFECTIVE:
+						return;
+					case SYSTEM:
+						config = systemConfig;
+						break;
+					case USER:
+						config = userHomeConfig;
+						break;
+					case REPO:
+						config = repositoryConfig;
+						break;
+					default:
+						return;
+					}
+
+					new EditDialog(myPage.getSite().getShell(),
+							(FileBasedConfig) config, getCurrentMode()
+									.getText()).open();
+					myPage.refresh();
+				}
+
+				@Override
+				public int getStyle() {
+					return IAction.AS_PUSH_BUTTON;
+				}
+			});
 
 			singleValueToggleAction = new ActionContributionItem(new Action(
 					UIText.RepositoryPropertySource_SingleValueButton) {
@@ -497,8 +475,8 @@ public class RepositoryPropertySource implements IPropertySource {
 		@Override
 		protected Control createDialogArea(Composite parent) {
 			Composite main = (Composite) super.createDialogArea(parent);
-			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL)
-					.grab(true, true).applyTo(main);
+			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).grab(true,
+					true).applyTo(main);
 			editor = new ConfigurationEditorComponent(main, myConfig, true) {
 				@Override
 				protected void setErrorMessage(String message) {
@@ -519,7 +497,8 @@ public class RepositoryPropertySource implements IPropertySource {
 		@Override
 		protected void configureShell(Shell newShell) {
 			super.configureShell(newShell);
-			newShell.setText(UIText.RepositoryPropertySource_EditConfigurationTitle);
+			newShell
+					.setText(UIText.RepositoryPropertySource_EditConfigurationTitle);
 			newShell.setSize(700, 600);
 		}
 
