@@ -551,7 +551,9 @@ public class RepositorySelectionPage extends WizardPage {
 		userText.setLayoutData(createFieldGridData());
 		userText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
-				setURI(uri.setUser(nullString(userText.getText())));
+				Protocol protocol = getProtocol();
+				if (protocol != Protocol.HTTP && protocol != Protocol.HTTPS)
+					setURI(uri.setUser(nullString(userText.getText())));
 				user = userText.getText();
 			}
 		});
@@ -867,13 +869,19 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void updateAuthGroup() {
-		int idx = scheme.getSelectionIndex();
-		if (idx >= 0) {
-			Protocol p = Protocol.values()[idx];
+		Protocol p = getProtocol();
+		if (p != null) {
 			hostText.setEnabled(p.hasHost());
 			portText.setEnabled(p.hasPort());
 			setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
+	}
+
+	private Protocol getProtocol() {
+		int idx = scheme.getSelectionIndex();
+		if (idx >= 0)
+			return Protocol.values()[idx];
+		return null;
 	}
 
 	@Override
