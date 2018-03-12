@@ -1104,19 +1104,13 @@
                <count
                      value="1">
                </count>
-               <iterate>
-	               <or>
-		               <instanceof
-		                     value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-		               </instanceof>
-		               <instanceof
-		                     value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-		               </instanceof>
-		               <instanceof
-		                     value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-		               </instanceof>
-	               </or>
-               </iterate>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
             </and>
          </activeWhen>
       </handler>
@@ -1701,30 +1695,6 @@
                            </test>
                         </not>
                      </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.team.Push"
-               icon="icons/obj16/push.gif"
-               label="%RepoViewPushBranch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-	                     <instanceof
-	                           value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-	                     </instanceof>
-	                     <instanceof
-	                           value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-	                     </instanceof>
-                     </or>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2328,10 +2298,12 @@
                   <count
                         value="1">
                   </count>
-                  <iterate>
-	                     <instanceof
-	                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-	                     </instanceof>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -3588,10 +3560,6 @@
             icon="icons/obj16/new_tag_obj.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.history.PushCommit"
-            icon="icons/obj16/push.gif">
-      </image>
-      <image
             commandId="org.eclipse.egit.ui.history.CheckoutCommand"
             icon="icons/obj16/checkout.gif">
       </image>
@@ -4079,11 +4047,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CreateTagOnCommitHandler"
             id="org.eclipse.egit.ui.history.CreateTag"
             name="%CreateTagCommand.name">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.PushCommitHandler"
-            id="org.eclipse.egit.ui.history.PushCommit"
-            name="%PushCommit.name">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.ResetHandler"
