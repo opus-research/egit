@@ -175,7 +175,6 @@ public class CommitOperation implements IEGitOperation {
 		return result;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -184,7 +183,6 @@ public class CommitOperation implements IEGitOperation {
 			monitor = m;
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				if (commitAll)
 					commitAll();
@@ -227,7 +225,6 @@ public class CommitOperation implements IEGitOperation {
 			}
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repo);
 	}

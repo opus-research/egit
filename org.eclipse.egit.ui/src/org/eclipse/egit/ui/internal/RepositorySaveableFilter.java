@@ -40,7 +40,6 @@ public class RepositorySaveableFilter extends SaveFilter {
 		this.workDir = new Path(repository.getWorkTree().getAbsolutePath());
 	}
 
-	@Override
 	public boolean select(Saveable saveable, IWorkbenchPart[] containingParts) {
 		boolean selected = super.select(saveable, containingParts);
 		if (!selected)

@@ -31,7 +31,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ExceptionCollector;
@@ -42,8 +41,6 @@ import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -53,7 +50,6 @@ import org.eclipse.jface.viewers.ILightweightLabelDecorator;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.osgi.util.TextProcessor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -90,7 +86,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * Collector for keeping the error view from filling up with exceptions
 	 */
 	private static final ExceptionCollector EXCEPTION_COLLECTOR = new ExceptionCollector(
-			UIText.Decorator_exceptionMessageCommon, Activator.getPluginId(),
+			UIText.Decorator_exceptionMessage, Activator.getPluginId(),
 			IStatus.ERROR, Activator.getDefault().getLog());
 
 	private static final List<String> FONT_IDS = Arrays.asList(
@@ -132,7 +128,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 			final List<String> actColors) {
 		final Display display = PlatformUI.getWorkbench().getDisplay();
 		display.syncExec(new Runnable() {
-			@Override
 			public void run() {
 				ITheme theme  = PlatformUI.getWorkbench().getThemeManager().getCurrentTheme();
 				for (int i = 0; i < actColors.size(); i++) {
@@ -164,30 +159,23 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @see org.eclipse.jface.viewers.ILightweightLabelDecorator#decorate(java.lang.Object,
 	 *      org.eclipse.jface.viewers.IDecoration)
 	 */
-	@Override
 	public void decorate(Object element, IDecoration decoration) {
 		// Don't decorate if UI plugin is not running
-		if (Activator.getDefault() == null) {
+		if (Activator.getDefault() == null)
 			return;
-		}
 
 		// Don't decorate if the workbench is not running
-		if (!PlatformUI.isWorkbenchRunning()) {
+		if (!PlatformUI.isWorkbenchRunning())
 			return;
-		}
 
 		final IResource resource = getResource(element);
 		try {
-			if (resource == null) {
+			if (resource == null)
 				decorateResourceMapping(element, decoration);
-			} else {
+			else
 				decorateResource(resource, decoration);
-			}
 		} catch (CoreException e) {
 			handleException(resource, e);
-		} catch (Exception e) {
-			handleException(resource, new CoreException(Activator
-					.createErrorStatus(NLS.bind(UIText.Decorator_exceptionMessage, resource), e)));
 		}
 	}
 
@@ -198,65 +186,46 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @param decoration the decoration
 	 * @throws CoreException
 	 */
-	private void decorateResource(@NonNull IResource resource,
-			IDecoration decoration) throws CoreException {
+	private void decorateResource(IResource resource, IDecoration decoration) throws CoreException {
 		IndexDiffData indexDiffData = getIndexDiffDataOrNull(resource);
 
-		if(indexDiffData == null) {
+		if(indexDiffData == null)
 			return;
-		}
+
 		IDecoratableResource decoratableResource = null;
 		final DecorationHelper helper = new DecorationHelper(
 				Activator.getDefault().getPreferenceStore());
 		try {
 			decoratableResource = new DecoratableResourceAdapter(indexDiffData, resource);
 		} catch (IOException e) {
-			throw new CoreException(Activator.createErrorStatus(
-					NLS.bind(UIText.Decorator_exceptionMessage, resource), e));
+			throw new CoreException(Activator.createErrorStatus(UIText.Decorator_exceptionMessage, e));
 		}
 		helper.decorate(decoration, decoratableResource);
 	}
 
-	@Nullable
 	static IndexDiffData getIndexDiffDataOrNull(IResource resource) {
-		if (resource.getType() == IResource.ROOT) {
+		if (resource.getType() == IResource.ROOT)
 			return null;
-		}
 
 		// Don't decorate non-existing resources
-		if (!resource.exists() && !resource.isPhantom()) {
+		if (!resource.exists() && !resource.isPhantom())
 			return null;
-		}
 
 		// Make sure we're dealing with a project under Git revision control
 		final RepositoryMapping mapping = RepositoryMapping
 				.getMapping(resource);
-		if (mapping == null) {
+		if (mapping == null)
 			return null;
-		}
 
-		Repository repo = mapping.getRepository();
-		if(repo == null){
-			return null;
-		}
-
-		// For bare repository just return empty data
-		if (repo.isBare()) {
-			return new IndexDiffData();
-		}
-		
 		// Cannot decorate linked resources
-		if (mapping.getRepoRelativePath(resource) == null) {
+		if (mapping.getRepoRelativePath(resource) == null)
 			return null;
-		}
 
-		IndexDiffCacheEntry diffCacheEntry = org.eclipse.egit.core.Activator
+		IndexDiffData indexDiffData = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
-				.getIndexDiffCacheEntry(repo);
-		if (diffCacheEntry == null) {
-			return null;
-		}
-		return diffCacheEntry.getIndexDiff();
+				.getIndexDiffCacheEntry(mapping.getRepository()).getIndexDiff();
+
+		return indexDiffData;
 	}
 
 	/**
@@ -274,8 +243,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		try {
 			decoRes = new DecoratableResourceMapping(mapping);
 		} catch (IOException e) {
-			throw new CoreException(Activator.createErrorStatus(
-					NLS.bind(UIText.Decorator_exceptionMessage, element), e));
+			throw new CoreException(Activator.createErrorStatus(UIText.Decorator_exceptionMessage, e));
 		}
 
 		/*
@@ -345,7 +313,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 				this.descriptor = descriptor;
 			}
 
-			@Override
 			public ImageData getImageData() {
 				if (data == null) {
 					data = descriptor.getImageData();
@@ -650,7 +617,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 */
 	public static void refresh() {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				Activator.getDefault().getWorkbench().getDecoratorManager()
 						.update(DECORATOR_ID);
@@ -666,7 +632,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 *
 	 * @see org.eclipse.jface.util.IPropertyChangeListener#propertyChange(org.eclipse.jface.util.PropertyChangeEvent)
 	 */
-	@Override
 	public void propertyChange(PropertyChangeEvent event) {
 		final String prop = event.getProperty();
 		// If the property is of any interest to us
@@ -685,7 +650,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 		}
 	}
 
-	@Override
 	public void indexDiffChanged(Repository repository,
 			IndexDiffData indexDiffData) {
 		// clear calculated repo data
@@ -734,7 +698,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 				this);
 		// Re-trigger decoration process (in UI thread)
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				fireLabelProviderChanged(event);
 			}

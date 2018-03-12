@@ -187,16 +187,16 @@ public class ProjectReferenceImporter {
 	 */
 	private static IPath getWorkingDir(URIish gitUrl, String branch,
 			Set<String> allBranches) {
-		final IPath defaultRepoLocation = new Path(
-				RepositoryUtil.getDefaultRepositoryDir());
+		final IPath workspaceLocation = ResourcesPlugin.getWorkspace()
+				.getRoot().getRawLocation();
 		final String humanishName = gitUrl.getHumanishName();
 		String extendedName;
-		if (allBranches.size() == 1 || branch.equals(Constants.MASTER)) {
+		if (allBranches.size() == 1 || branch.equals(Constants.MASTER))
 			extendedName = humanishName;
-		} else {
+		else
 			extendedName = humanishName + "_" + branch; //$NON-NLS-1$
-		}
-		return defaultRepoLocation.append(extendedName);
+		final IPath workDir = workspaceLocation.append(extendedName);
+		return workDir;
 	}
 
 	static File findConfiguredRepository(URIish gitUrl) {

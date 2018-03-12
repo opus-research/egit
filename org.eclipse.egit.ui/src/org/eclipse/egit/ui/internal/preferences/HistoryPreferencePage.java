@@ -37,12 +37,10 @@ public class HistoryPreferencePage extends FieldEditorPreferencePage implements
 		super(GRID);
 	}
 
-	@Override
 	protected IPreferenceStore doGetPreferenceStore() {
 		return Activator.getDefault().getPreferenceStore();
 	}
 
-	@Override
 	public void init(final IWorkbench workbench) {
 		// Do nothing.
 	}
@@ -92,9 +90,6 @@ public class HistoryPreferencePage extends FieldEditorPreferencePage implements
 				UIPreferences.HISTORY_MAX_BRANCH_LENGTH,
 				UIText.HistoryPreferencePage_MaxBranchLength,
 				showGroup));
-		addField(new IntegerFieldEditor(UIPreferences.HISTORY_MAX_DIFF_LINES,
-				UIText.HistoryPreferencePage_MaxDiffLines, showGroup));
-
 		addField(new BooleanFieldEditor(UIPreferences.HISTORY_CUT_AT_START,
 				UIText.HistoryPreferencePage_toggleShortenAtStart, showGroup));
 		updateMargins(showGroup);
@@ -103,9 +98,6 @@ public class HistoryPreferencePage extends FieldEditorPreferencePage implements
 		GridDataFactory.fillDefaults().grab(true, false).span(2, 1)
 				.applyTo(commentGroup);
 		commentGroup.setText(UIText.HistoryPreferencePage_ShowInRevCommentGroupLabel);
-		addField(new BooleanFieldEditor(
-				UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE,
-				UIText.ResourceHistory_ShowBranchSequence, commentGroup));
 		addField(new BooleanFieldEditor(
 				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
 				UIText.ResourceHistory_ShowTagSequence, commentGroup));

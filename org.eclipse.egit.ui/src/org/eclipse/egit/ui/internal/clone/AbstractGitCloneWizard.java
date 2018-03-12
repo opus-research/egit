@@ -61,7 +61,6 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IWorkingSet;
@@ -246,26 +245,21 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		final CloneOperation op = new CloneOperation(uri, allSelected,
 				selectedBranches, workdir, ref != null ? ref.getName() : null,
 				remoteName, timeout);
-		CredentialsProvider credentialsProvider = null;
-		if (credentials != null) {
-			credentialsProvider = new EGitCredentialsProvider(
-					credentials.getUser(), credentials.getPassword());
-		} else {
-			credentialsProvider = new EGitCredentialsProvider();
-		}
-		op.setCredentialsProvider(credentialsProvider);
+		if (credentials != null)
+			op.setCredentialsProvider(new EGitCredentialsProvider(
+					credentials.getUser(), credentials.getPassword()));
+		else
+			op.setCredentialsProvider(new EGitCredentialsProvider());
 		op.setCloneSubmodules(cloneDestination.isCloneSubmodules());
 
 		configureFetchSpec(op, gitRepositoryInfo, remoteName);
 		configurePush(op, gitRepositoryInfo, remoteName);
 		configureRepositoryConfig(op, gitRepositoryInfo);
-		configureGerrit(op, gitRepositoryInfo, credentialsProvider, remoteName,
-				timeout);
+		configureGerrit(op, gitRepositoryInfo, remoteName, timeout);
 
 		if (cloneDestination.isImportProjects()) {
 			final IWorkingSet[] sets = cloneDestination.getWorkingSets();
 			op.addPostCloneTask(new PostCloneTask() {
-				@Override
 				public void execute(Repository repository,
 						IProgressMonitor monitor) throws CoreException {
 					importProjects(repository, sets);
@@ -354,12 +348,9 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	}
 
 	private void configureGerrit(CloneOperation op,
-			GitRepositoryInfo gitRepositoryInfo,
-			CredentialsProvider credentialsProvider, String remoteName,
-			int timeout) {
+			GitRepositoryInfo gitRepositoryInfo, String remoteName, int timeout) {
 		ConfigureGerritAfterCloneTask task = new ConfigureGerritAfterCloneTask(
-				gitRepositoryInfo.getCloneUri(), remoteName,
-				credentialsProvider, timeout);
+				gitRepositoryInfo.getCloneUri(), remoteName, timeout);
 		op.addPostCloneTask(task);
 	}
 
@@ -370,7 +361,6 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		Job importJob = new WorkspaceJob(MessageFormat.format(
 				UIText.GitCloneWizard_jobImportProjects, repoName)) {
 
-			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {
 				List<File> files = new ArrayList<File>();
 				ProjectUtil.findProjectFiles(files, repository.getWorkTree(),
@@ -401,7 +391,6 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	public void runCloneOperation(IWizardContainer container, final GitRepositoryInfo repositoryInfo) {
 		try {
 			container.run(true, true, new IRunnableWithProgress() {
-				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
 					executeCloneOperation(cloneOperation, repositoryInfo, monitor);

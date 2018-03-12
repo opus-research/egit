@@ -89,7 +89,6 @@ public enum GitTraceLocation implements ITraceLocation {
 	/**
 	 * @return <code>true</code> if this location is active
 	 */
-	@Override
 	public boolean isActive() {
 		return this.active;
 	}
@@ -97,7 +96,6 @@ public enum GitTraceLocation implements ITraceLocation {
 	/**
 	 * The location to use as the option argument when tracing.
 	 */
-	@Override
 	public String getLocation() {
 		return this.location;
 	}

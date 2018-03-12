@@ -19,8 +19,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
@@ -46,6 +46,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.RepositoryProvider;
 
 class GitDocument extends Document implements RefsChangedListener {
 	private final IResource resource;
@@ -71,14 +72,13 @@ class GitDocument extends Document implements RefsChangedListener {
 					GitTraceLocation.QUICKDIFF.getLocation(),
 					"(GitDocument) create: " + resource); //$NON-NLS-1$
 		GitDocument ret = null;
-		if (ResourceUtil.isSharedWithGit(resource.getProject())) {
+		if (RepositoryProvider.getProvider(resource.getProject()) instanceof GitProvider) {
 			ret = new GitDocument(resource);
 			ret.populate();
 			final Repository repository = ret.getRepository();
-			if (repository != null) {
+			if (repository != null)
 				ret.myRefsChangedHandle = repository.getListenerList()
 						.addRefsChangedListener(ret);
-			}
 		}
 		return ret;
 	}
@@ -262,7 +262,6 @@ class GitDocument extends Document implements RefsChangedListener {
 		disposed = true;
 	}
 
-	@Override
 	public void onRefsChanged(final RefsChangedEvent event) {
 		cancelReloadJob();
 

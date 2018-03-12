@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2015 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, 2014 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,7 +10,6 @@
  *     Dariusz Luksza <dariusz@luksza.org> - initial API and implementation
  *     Laurent Goubet <laurent.goubet@obeo.fr> - Logical Model enhancements
  *     Gunnar Wagenknecht <gunnar@wagenknecht.org> - Logical Model enhancements
- *     Axel Richard <axel.richard@obeo.fr> - Logical Model enhancements
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
@@ -26,6 +25,7 @@ import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IEncodedStorage;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ModelProvider;
@@ -144,7 +144,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		setSecondaryId(Long.toString(System.currentTimeMillis()));
 	}
 
-	@Override
 	protected void initializeConfiguration(
 			final ISynchronizePageConfiguration configuration) {
 		configuration.setProperty(ISynchronizePageConfiguration.P_VIEWER_ID,
@@ -175,7 +174,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 		configuration.addPropertyChangeListener(new IPropertyChangeListener() {
 
-			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				String property = event.getProperty();
 				if (property.equals(
@@ -252,12 +250,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 						final ITypedElement newSource = new FileRevisionTypedElement(
 								revision, getLocalEncoding(resource));
 						((ResourceDiffCompareInput) input).setLeft(newSource);
-					}
-					if (input.getRight() == null) {
-						final ITypedElement newEmptyRemote = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
-								resource.getName());
-						((ResourceDiffCompareInput) input)
-								.setRight(newEmptyRemote);
 					}
 				} catch (TeamException e) {
 					// Keep the input from super as-is
@@ -401,14 +393,9 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		IPath path = Path.fromPortableString(containerPath);
 		IContainer mappedContainer = ResourcesPlugin.getWorkspace().getRoot()
 				.getContainerForLocation(path);
-		if (mappedContainer == null) {
+		GitProjectData projectData = GitProjectData.get((IProject) mappedContainer);
+		if (projectData == null)
 			return null;
-		}
-		GitProjectData projectData = GitProjectData
-				.get(mappedContainer.getProject());
-		if (projectData == null) {
-			return null;
-		}
 		RepositoryMapping mapping = projectData.getRepositoryMapping(mappedContainer);
 		if (mapping != null)
 			return mapping.getRepository();

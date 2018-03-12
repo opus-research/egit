@@ -28,7 +28,6 @@ public class RevUtilsTest extends GitTestCase {
 	private TestRepository testRepository;
 	private Repository repository;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -36,7 +35,6 @@ public class RevUtilsTest extends GitTestCase {
 		repository = testRepository.getRepository();
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();

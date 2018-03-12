@@ -310,13 +310,12 @@ public class PushWizard extends Wizard {
 			if (resultToCompare == null || !result.equals(resultToCompare)) {
 				PlatformUI.getWorkbench().getDisplay().asyncExec(
 						new Runnable() {
-							@Override
 							public void run() {
 								final Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
 								final Dialog dialog = new PushResultDialog(
 										shell, localDb, result,
-										destinationString, false);
+										destinationString);
 								dialog.open();
 							}
 						});

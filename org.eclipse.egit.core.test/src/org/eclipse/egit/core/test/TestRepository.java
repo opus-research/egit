@@ -252,7 +252,6 @@ public class TestRepository {
 	public void trackAllFiles(IProject project) throws CoreException {
 		project.accept(new IResourceVisitor() {
 
-			@Override
 			public boolean visit(IResource resource) throws CoreException {
 				if (resource instanceof IFile) {
 					try {
@@ -447,14 +446,10 @@ public class TestRepository {
 			return true;
 
 		Ref ref = repository.getRef(Constants.HEAD);
-		try (RevWalk rw = new RevWalk(repository)) {
-			RevCommit c = rw.parseCommit(ref.getObjectId());
+		RevCommit c = new RevWalk(repository).parseCommit(ref.getObjectId());
+		TreeWalk tw = TreeWalk.forPath(repository, getRepoRelativePath(absolutePath), c.getTree());
 
-			try (TreeWalk tw = TreeWalk.forPath(repository,
-					getRepoRelativePath(absolutePath), c.getTree())) {
-				return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
-			}
-		}
+		return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
 	}
 
 	public long lastModifiedInIndex(String path) throws IOException {

@@ -35,7 +35,6 @@ public class RepositoryPropertyPage extends PropertyPage {
 
 	private ConfigurationEditorComponent editor;
 
-	@Override
 	protected Control createContents(Composite parent) {
 		Composite displayArea = new Composite(parent, SWT.NONE);
 		GridLayoutFactory.fillDefaults().applyTo(displayArea);
@@ -51,13 +50,12 @@ public class RepositoryPropertyPage extends PropertyPage {
 			config = new FileBasedConfig(configFile, repo.getFS());
 			config.addChangeListener(new ConfigChangedListener() {
 
-				@Override
 				public void onConfigChanged(ConfigChangedEvent event) {
 					repo.fireEvent(new ConfigChangedEvent());
 				}
 			});
 		}
-		editor = new ConfigurationEditorComponent(displayArea, config, true) {
+		editor = new ConfigurationEditorComponent(displayArea, config, true, false) {
 			@Override
 			protected void setErrorMessage(String message) {
 				RepositoryPropertyPage.this.setErrorMessage(message);
@@ -67,7 +65,6 @@ public class RepositoryPropertyPage extends PropertyPage {
 		return displayArea;
 	}
 
-	@Override
 	protected void performDefaults() {
 		if (editor != null)
 			try {
@@ -78,7 +75,6 @@ public class RepositoryPropertyPage extends PropertyPage {
 		super.performDefaults();
 	}
 
-	@Override
 	public boolean performOk() {
 		if (editor != null)
 			try {

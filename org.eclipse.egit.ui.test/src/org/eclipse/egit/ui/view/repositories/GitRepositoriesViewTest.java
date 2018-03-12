@@ -28,7 +28,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
@@ -47,7 +46,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.IWorkingSetManager;
 import org.eclipse.ui.PlatformUI;
@@ -86,7 +84,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	/**
 	 * First level should have 5 children
-	 *
+	 * 
 	 * @throws Exception
 	 */
 	@Test
@@ -100,7 +98,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	/**
 	 * Open (expand, file->editor, branch->checkout)
-	 *
+	 * 
 	 * @throws Exception
 	 */
 	@Test
@@ -121,8 +119,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		fileiItem.doubleClick();
 		assertTrue(bot.activeEditor().getTitle().equals(FILE1));
 		bot.activeEditor().close();
-		TestUtil.processUIEvents();
-
 		// open a branch (checkout)
 		checkoutWithDoubleClick(tree, "master");
 		String contentMaster = getTestFileContent();
@@ -140,8 +136,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_CheckoutConfirmationTitle);
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
-		TestUtil.processUIEvents();
-		TestUtil.waitForJobs(50, 5000);
 		refreshAndWait();
 	}
 
@@ -165,7 +159,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	/**
 	 * Checks the first level of the working directory
-	 *
+	 * 
 	 * @throws Exception
 	 */
 	@Test
@@ -185,7 +179,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	/**
 	 * Checks is some context menus are available, should be replaced with real
 	 * tests
-	 *
+	 * 
 	 * @throws Exception
 	 */
 	@Test
@@ -217,7 +211,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		ContextMenuHelper.clickContextMenuSync(tree,
 				myUtil.getPluginLocalizedValue("ShowIn"),
 				"Properties");
-		SWTBotView propertieView = bot.viewById(IPageLayout.ID_PROP_SHEET);
+		SWTBotView propertieView = bot.viewById("org.eclipse.ui.views.PropertySheet");
 		assertTrue(propertieView.isActive());
 	}
 
@@ -387,7 +381,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		IAdaptable[] elements = workingSet.getElements();
 		assertEquals("Wrong number of projects in working set", 1,
 				elements.length);
-		IProject project = Utils.getAdapter(elements[0], IProject.class);
+		IProject project = (IProject) elements[0].getAdapter(IProject.class);
 		assertEquals("Wrong project in working set", projectName, project
 				.getName());
 	}
@@ -419,19 +413,19 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		myRepoViewUtil.getRootItem(tree, repositoryFile).select();
 		// the selection should be root
-		assertTrue(tree.selection().get(0, 0).contains(REPO1));
+		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
 
 		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 
 		// the selection should be still be root
-		assertTrue(tree.selection().get(0, 0).contains(REPO1));
+		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
 
 		// activate the link with selection
 		toggleLinkWithSelection();
 
 		// the selection should be still be root
-		assertTrue(tree.selection().get(0, 0).contains(REPO1));
+		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
 
 		// select again the project
 		projectExplorerTree = TestUtil.getExplorerTree();
@@ -446,7 +440,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	/**
 	 * Link with editor, both ways
-	 *
+	 * 
 	 * @throws Exception
 	 */
 	@Test

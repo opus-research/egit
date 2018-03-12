@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.variables;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -26,7 +25,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -50,7 +48,6 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 	private static final String GIT_WORK_TREE = "git_work_tree"; //$NON-NLS-1$
 	private static final String GIT_BRANCH = "git_branch"; //$NON-NLS-1$
 
-	@Override
 	public String resolveValue(IDynamicVariable variable, String argument)
 			throws CoreException {
 		if (variable.getName().equals(GIT_DIR))
@@ -70,9 +67,6 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
 		if (mapping != null) {
 			String repoRelativePath = mapping.getRepoRelativePath(res);
-			if (repoRelativePath == null) {
-				return ""; //$NON-NLS-1$
-			}
 			if (repoRelativePath.equals("")) //$NON-NLS-1$
 				return "."; //$NON-NLS-1$
 			else
@@ -90,17 +84,13 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 			return ""; //$NON-NLS-1$
 	}
 
-	@NonNull
 	private String getGitWorkTree(String argument) throws CoreException {
 		IResource res = getResource(argument);
 		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
-		if (mapping != null) {
-			File workTree = mapping.getWorkTree();
-			if (workTree != null) {
-				return workTree.getAbsolutePath();
-			}
-		}
-		return ""; //$NON-NLS-1$
+		if (mapping != null)
+			return mapping.getWorkTree().getAbsolutePath();
+		else
+			return ""; //$NON-NLS-1$
 	}
 
 	private String getGitBranch(String argument) throws CoreException {
@@ -155,7 +145,6 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 		else {
 			final IResource[] resource = new IResource[1];
 			display.syncExec(new Runnable() {
-				@Override
 				public void run() {
 					resource[0] = getSelectedResource();
 				}

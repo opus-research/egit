@@ -45,7 +45,6 @@ public class RebaseOperationTest extends GitTestCase {
 
 	Git git;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -90,11 +89,10 @@ public class RebaseOperationTest extends GitTestCase {
 		RebaseResult res = op.getResult();
 		assertEquals(RebaseResult.Status.UP_TO_DATE, res.getStatus());
 
-		try (RevWalk rw = new RevWalk(repository)) {
-			RevCommit newTopic = rw.parseCommit(repository.resolve(TOPIC));
-			assertEquals(topicCommit, newTopic);
-			assertEquals(first, newTopic.getParent(0));
-		}
+		RevCommit newTopic = new RevWalk(repository).parseCommit(repository
+				.resolve(TOPIC));
+		assertEquals(topicCommit, newTopic);
+		assertEquals(first, newTopic.getParent(0));
 	}
 
 	@Test
@@ -135,10 +133,9 @@ public class RebaseOperationTest extends GitTestCase {
 		RebaseResult res = op.getResult();
 		assertEquals(RebaseResult.Status.OK, res.getStatus());
 
-		try (RevWalk rw = new RevWalk(repository)) {
-			RevCommit newTopic = rw.parseCommit(repository.resolve(TOPIC));
-			assertEquals(second, newTopic.getParent(0));
-		}
+		RevCommit newTopic = new RevWalk(repository).parseCommit(repository
+				.resolve(TOPIC));
+		assertEquals(second, newTopic.getParent(0));
 	}
 
 	@Test

@@ -17,7 +17,6 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class CleanActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Repository repository = getRepository();
 

@@ -43,7 +43,6 @@ public class CommitLabelProvider extends BaseLabelProvider implements
 	public CommitLabelProvider() {
 	}
 
-	@Override
 	public String getColumnText(final Object element, final int columnIndex) {
 		final RevCommit c = (RevCommit) element;
 		if (columnIndex == 0)
@@ -106,7 +105,6 @@ public class CommitLabelProvider extends BaseLabelProvider implements
 		return lastCommitter;
 	}
 
-	@Override
 	public Image getColumnImage(final Object element, final int columnIndex) {
 		return null;
 	}

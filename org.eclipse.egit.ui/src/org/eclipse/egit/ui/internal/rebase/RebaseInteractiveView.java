@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Tobias Pfeifer (SAP AG) - initial implementation
- *    Tobias Baumann (tobbaumann@gmail.com) - Bug 473950
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.rebase;
 
@@ -100,10 +99,8 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
-import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
@@ -162,27 +159,11 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	private IPreferenceChangeListener prefListener;
 
-	private InitialSelection initialSelection;
-
-	@Override
-	public void init(IViewSite site) throws PartInitException {
-		super.init(site);
+	/**
+	 * View for handling interactive rebase
+	 */
+	public RebaseInteractiveView() {
 		setPartName(UIText.InteractiveRebaseView_this_partName);
-		initInitialSelection(site);
-	}
-
-	private void initInitialSelection(IViewSite site) {
-		this.initialSelection = new InitialSelection(
-				site.getWorkbenchWindow().getSelectionService().getSelection());
-		if (!isViewInputDerivableFromSelection(initialSelection.selection)) {
-			this.initialSelection.activeEditor = site.getPage()
-					.getActiveEditor();
-		}
-	}
-
-	private static boolean isViewInputDerivableFromSelection(Object o) {
-		return o instanceof StructuredSelection
-				&& ((StructuredSelection) o).size() == 1;
 	}
 
 	/**
@@ -195,8 +176,11 @@ public class RebaseInteractiveView extends ViewPart implements
 		if (o == null)
 			return;
 
-		if (isViewInputDerivableFromSelection(o)) {
-			o = ((StructuredSelection) o).getFirstElement();
+		if (o instanceof StructuredSelection) {
+			StructuredSelection sel = (StructuredSelection) o;
+			if (sel.size() != 1)
+				return;
+			o = sel.getFirstElement();
 		}
 		Repository repo = null;
 		if (o instanceof RepositoryTreeNode<?>)
@@ -256,7 +240,6 @@ public class RebaseInteractiveView extends ViewPart implements
 		final FormToolkit toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				toolkit.dispose();
 			}
@@ -277,7 +260,6 @@ public class RebaseInteractiveView extends ViewPart implements
 		createLocalDragandDrop();
 		planTreeViewer.addDoubleClickListener(new IDoubleClickListener() {
 
-			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				PlanElement element = (PlanElement) ((IStructuredSelection) event
 						.getSelection()).getFirstElement();
@@ -313,7 +295,6 @@ public class RebaseInteractiveView extends ViewPart implements
 		});
 
 		prefListener = new IPreferenceChangeListener() {
-			@Override
 			public void preferenceChange(PreferenceChangeEvent event) {
 				if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey()))
 					return;
@@ -327,7 +308,6 @@ public class RebaseInteractiveView extends ViewPart implements
 
 				// Unselect repository as it has been removed
 				Display.getDefault().asyncExec(new Runnable() {
-					@Override
 					public void run() {
 						currentRepository = null;
 						showRepository(null);
@@ -359,8 +339,6 @@ public class RebaseInteractiveView extends ViewPart implements
 		};
 		linkSelectionAction.setImageDescriptor(UIIcons.ELCL16_SYNCED);
 		toolbar.add(linkSelectionAction);
-
-		reactOnInitalSelection();
 	}
 
 	private void createCommandToolBar(Form theForm, FormToolkit toolkit) {
@@ -489,7 +467,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	private void setupRepositoryViewSelectionChangeListener() {
 		selectionChangedListener = new ISelectionListener() {
 
-			@Override
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
 				if (!listenOnRepositoryViewSelection
@@ -509,22 +486,6 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		ISelectionService srv = CommonUtils.getService(getSite(), ISelectionService.class);
 		srv.addPostSelectionListener(selectionChangedListener);
-	}
-
-	private void reactOnInitalSelection() {
-		selectionChangedListener.selectionChanged(initialSelection.activeEditor,
-				initialSelection.selection);
-		this.initialSelection = null;
-	}
-
-	private static final class InitialSelection {
-		ISelection selection;
-
-		IEditorPart activeEditor;
-
-		InitialSelection(ISelection selection) {
-			this.selection = selection;
-		}
 	}
 
 	private class RebaseCommandItemSelectionListener extends SelectionAdapter {
@@ -550,7 +511,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	private class PlanViewerSelectionChangedListener implements
 			ISelectionChangedListener {
 
-		@Override
 		public void selectionChanged(SelectionChangedEvent event) {
 			if (event == null)
 				return;
@@ -881,7 +841,6 @@ public class RebaseInteractiveView extends ViewPart implements
 		if (!isReady())
 			return;
 		asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				Tree t = planTreeViewer.getTree();
 				if (t.isDisposed())
@@ -960,7 +919,6 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		MenuManager manager = new MenuManager();
 		manager.addMenuListener(new IMenuListener() {
-			@Override
 			public void menuAboutToShow(IMenuManager menuManager) {
 				boolean selectionNotEmpty = !planViewer.getSelection()
 						.isEmpty();
@@ -1026,19 +984,16 @@ public class RebaseInteractiveView extends ViewPart implements
 		return dndEnabled;
 	}
 
-	@Override
 	public void planWasUpdatedFromRepository(final RebaseInteractivePlan plan) {
 		refresh();
 	}
 
-	@Override
 	public void planElementTypeChanged(
 			RebaseInteractivePlan rebaseInteractivePlan, PlanElement element,
 			ElementAction oldType, ElementAction newType) {
 		planTreeViewer.refresh(element, true);
 	}
 
-	@Override
 	public void planElementsOrderChanged(
 			RebaseInteractivePlan rebaseInteractivePlan, PlanElement element,
 			int oldIndex, int newIndex) {

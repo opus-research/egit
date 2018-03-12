@@ -32,7 +32,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
-import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.operations.GitScopeOperation;
 import org.eclipse.egit.ui.internal.operations.GitScopeOperationFactory;
@@ -136,7 +135,6 @@ public class GitScopeUtilTest extends LocalRepositoryTestCase {
 
 		final IResource[] selectedResources = new IResource[] { modelFile };
 		UIThreadRunnable.asyncExec(new VoidResult() {
-			@Override
 			public void run() {
 				try {
 					GitScopeUtil.getRelatedChanges(part, selectedResources);
@@ -168,7 +166,6 @@ public class GitScopeUtilTest extends LocalRepositoryTestCase {
 			final IResource[] selectedResources) {
 		final IResource[][] relatedChanges = new IResource[1][];
 		UIThreadRunnable.syncExec(new VoidResult() {
-			@Override
 			public void run() {
 				try {
 					relatedChanges[0] = GitScopeUtil.getRelatedChanges(part,
@@ -233,7 +230,7 @@ public class GitScopeUtilTest extends LocalRepositoryTestCase {
 		}
 
 		private ResourceMapping getMappingAdapter(IResource resource) {
-			return Utils.getAdapter(resource, ResourceMapping.class);
+			return (ResourceMapping) resource.getAdapter(ResourceMapping.class);
 		}
 	}
 }

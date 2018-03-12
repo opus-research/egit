@@ -47,7 +47,6 @@ public class TaskReferenceFactory implements IAdapterFactory {
 	private static final String BUGTRACK_SECTION = "bugtracker"; //$NON-NLS-1$
 	private static final String BUGTRACK_URL = "url"; //$NON-NLS-1$
 
-	@Override
 	@SuppressWarnings({ "rawtypes" })
 	public Class[] getAdapterList() {
 		final Class[] c = new Class[ADAPTER_TYPES.length];
@@ -55,7 +54,6 @@ public class TaskReferenceFactory implements IAdapterFactory {
 		return c;
 	}
 
-	@Override
 	@SuppressWarnings("rawtypes")
 	public Object getAdapter(Object adaptableObject, Class adapterType) {
 		if (!AbstractTaskReference.class.equals(adapterType))
@@ -81,13 +79,14 @@ public class TaskReferenceFactory implements IAdapterFactory {
 	private AbstractTaskReference adaptFromRevCommit(RevCommit commit) {
 		Repository[] repositories = Activator.getDefault().getRepositoryCache().getAllRepositories();
 		for (Repository r : repositories) {
+			RevWalk revWalk = new RevWalk(r);
 
 			String repoUrl = null;
 			String message = null;
 			long timestamp = 0;
 
 			// try to get repository url and commit message
-			try (RevWalk revWalk = new RevWalk(r)) {
+			try {
 				RevCommit revCommit = revWalk.parseCommit(commit);
 				if (revCommit != null) {
 					repoUrl = getRepoUrl(r);
@@ -128,9 +127,8 @@ public class TaskReferenceFactory implements IAdapterFactory {
 			GitModelRepository parent = (GitModelRepository) modelCommit.getParent();
 			Repository repo = parent.getRepository();
 			AbbreviatedObjectId id = modelCommit.getCachedCommitObj().getId();
-			try (RevWalk rw = new RevWalk(repo)) {
-				commit = rw.lookupCommit(id.toObjectId());
-			}
+
+			commit = new RevWalk(repo).lookupCommit(id.toObjectId());
 		}
 		return commit;
 	}

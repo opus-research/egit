@@ -213,7 +213,6 @@ public class FindToolbar extends Composite {
 		referenceItem.setImage(branchesIcon);
 
 		prefsDropDown.addListener(SWT.Selection, new Listener() {
-			@Override
 			public void handleEvent(Event event) {
 				if (event.detail == SWT.ARROW) {
 					// Arrow clicked, show drop down menu
@@ -257,11 +256,9 @@ public class FindToolbar extends Composite {
 		progressBar.setMaximum(100);
 
 		patternField.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				final FindToolbarThread finder = createFinder();
 				getDisplay().timerExec(200, new Runnable() {
-					@Override
 					public void run() {
 						finder.start();
 					}
@@ -270,7 +267,6 @@ public class FindToolbar extends Composite {
 		});
 
 		final Listener findButtonsListener = new Listener() {
-			@Override
 			public void handleEvent(Event event) {
 				if (patternField.getText().length() > 0
 						&& findResults.size() == 0) {
@@ -330,7 +326,6 @@ public class FindToolbar extends Composite {
 		});
 
 		caseItem.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				store.setValue(UIPreferences.FINDTOOLBAR_IGNORE_CASE,
 						caseItem.getSelection());
@@ -367,7 +362,6 @@ public class FindToolbar extends Composite {
 	private void registerDisposal() {
 		addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				prefsMenu.dispose();
 				errorBackgroundColor.dispose();
@@ -386,7 +380,6 @@ public class FindToolbar extends Composite {
 	private MenuItem createFindInMenuItem() {
 		final MenuItem menuItem = new MenuItem(prefsMenu, SWT.RADIO);
 		menuItem.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				selectFindInItem(menuItem);
 			}

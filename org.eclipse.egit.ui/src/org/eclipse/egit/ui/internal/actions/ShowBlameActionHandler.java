@@ -17,7 +17,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.internal.storage.CommitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -37,7 +36,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
 public class ShowBlameActionHandler extends RepositoryActionHandler {
 
 	/** @see org.eclipse.core.commands.IHandler#execute(org.eclipse.core.commands.ExecutionEvent) */
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		Data data = getData(getSelection(event));
 
@@ -67,15 +65,20 @@ public class ShowBlameActionHandler extends RepositoryActionHandler {
 			return null;
 
 		Object element = selection.getFirstElement();
-		IResource resource = AdapterUtils.adapt(element, IResource.class);
-		if (resource instanceof IStorage) {
-			IStorage storage = (IStorage) resource;
-			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+		if (element instanceof IResource) {
+			IResource resource = (IResource) element;
 
-			if (mapping != null) {
-				String repoRelativePath = mapping.getRepoRelativePath(resource);
-				return new Data(mapping.getRepository(), repoRelativePath,
-						storage, null);
+			if (resource instanceof IStorage) {
+				IStorage storage = (IStorage) resource;
+				RepositoryMapping mapping = RepositoryMapping
+						.getMapping(resource);
+
+				if (mapping != null) {
+					String repoRelativePath = mapping
+							.getRepoRelativePath(resource);
+					return new Data(mapping.getRepository(), repoRelativePath,
+							storage, null);
+				}
 			}
 		} else if (element instanceof CommitFileRevision) {
 			CommitFileRevision revision = (CommitFileRevision) element;
