@@ -28,7 +28,6 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -120,7 +119,7 @@ public class RepositorySelectionPage extends WizardPage {
 
 	private String password = EMPTY_STRING;
 
-	private boolean storeInSecureStore;
+	private boolean storeInSecureStore = true;
 
 	private String helpContext = null;
 
@@ -355,9 +354,6 @@ public class RepositorySelectionPage extends WizardPage {
 			setTitle(UIText.RepositorySelectionPage_destinationSelectionTitle);
 			setDescription(UIText.RepositorySelectionPage_destinationSelectionDescription);
 		}
-
-		storeInSecureStore = getPreferenceStore().getBoolean(
-				UIPreferences.CLONE_WIZARD_STORE_SECURESTORE);
 	}
 
 	/**
@@ -996,9 +992,4 @@ public class RepositorySelectionPage extends WizardPage {
 		}
 		checkPage();
 	}
-
-	private IPreferenceStore getPreferenceStore() {
-		return Activator.getDefault().getPreferenceStore();
-	}
-
 }
