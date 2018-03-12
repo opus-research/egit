@@ -41,8 +41,6 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -108,15 +106,13 @@ public class GitCreatePatchWizard extends Wizard {
 		String pageTitle = UIText.GitCreatePatchWizard_SelectLocationTitle;
 		String pageDescription = UIText.GitCreatePatchWizard_SelectLocationDescription;
 
-		locationPage = new LocationPage(pageTitle, pageTitle,
-				UIIcons.WIZBAN_CREATE_PATCH);
+		locationPage = new LocationPage(pageTitle, pageTitle, UIIcons.WIZBAN_CREATE_PATCH);
 		locationPage.setDescription(pageDescription);
 		addPage(locationPage);
 
 		pageTitle = UIText.GitCreatePatchWizard_SelectOptionsTitle;
 		pageDescription = UIText.GitCreatePatchWizard_SelectOptionsDescription;
-		optionsPage = new OptionsPage(pageTitle, pageTitle,
-				UIIcons.WIZBAN_CREATE_PATCH);
+		optionsPage = new OptionsPage(pageTitle, pageTitle, UIIcons.WIZBAN_CREATE_PATCH);
 		optionsPage.setDescription(pageDescription);
 		addPage(optionsPage);
 	}
@@ -127,8 +123,7 @@ public class GitCreatePatchWizard extends Wizard {
 				commit);
 		boolean useGitFormat = optionsPage.gitFormat.getSelection();
 		operation.useGitFormat(useGitFormat);
-		if(useGitFormat)
-			operation.setContextLines(Integer.parseInt(optionsPage.contextLines.getText()));
+		operation.setContextLines(Integer.parseInt(optionsPage.contextLines.getText()));
 
 		final boolean isFile = locationPage.fsRadio.getSelection();
 		final String fileName = locationPage.fsPathText.getText();
@@ -400,25 +395,15 @@ public class GitCreatePatchWizard extends Wizard {
 
 		public void createControl(Composite parent) {
 			final Composite composite = new Composite(parent, SWT.NULL);
-			GridLayout gridLayout = new GridLayout();
-			gridLayout.numColumns = 3;
+			GridLayout gridLayout = new GridLayout(2, false);
 			composite.setLayout(gridLayout);
 			composite.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
 			GridData gd = new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING);
-			gd.horizontalSpan = 3;
+			gd.horizontalSpan = 2;
 			gitFormat = new Button(composite, SWT.CHECK);
 			gitFormat.setText(UIText.GitCreatePatchWizard_GitFormat);
 			gitFormat.setLayoutData(gd);
-			gitFormat.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					updateEnablement();
-				}
-			});
-
-			Label spacer= new Label(composite, SWT.NONE);
-			GridDataFactory.swtDefaults().hint(50, SWT.DEFAULT).applyTo(spacer);
 
 			contextLinesLabel = new Label(composite, SWT.NONE);
 			contextLinesLabel.setText(UIText.GitCreatePatchWizard_LinesOfContext);
@@ -433,22 +418,13 @@ public class GitCreatePatchWizard extends Wizard {
 			});
 			GridDataFactory.swtDefaults().hint(30, SWT.DEFAULT).applyTo(contextLines);
 
-			updateEnablement();
 			Dialog.applyDialogFont(composite);
 			setControl(composite);
 		}
 
-		private void updateEnablement() {
-			boolean useGitFormat = gitFormat.getSelection();
-			contextLines.setEnabled(useGitFormat);
-			contextLinesLabel.setEnabled(useGitFormat);
-		}
-
 		private void validatePage() {
 			boolean pageValid = true;
-			if(gitFormat.getSelection())
-				pageValid = validateContextLines();
-
+			pageValid = validateContextLines();
 			if (pageValid) {
 				setMessage(null);
 				setErrorMessage(null);

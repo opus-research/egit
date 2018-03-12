@@ -11,10 +11,12 @@
 package org.eclipse.egit.ui.internal.pull;
 
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.fetch.FetchResultDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jgit.api.MergeResult;
@@ -46,6 +48,8 @@ public class PullResultDialog extends Dialog {
 
 	private final PullResult result;
 
+	private final boolean hasUpdates;
+
 	/**
 	 * @param shell
 	 * @param repo
@@ -56,6 +60,26 @@ public class PullResultDialog extends Dialog {
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repo = repo;
 		this.result = result;
+		hasUpdates = hasFetchResults() || hasMergeResults()
+				|| hasRebaseResults();
+	}
+
+	private boolean hasFetchResults() {
+		final FetchResult fetchResult = result.getFetchResult();
+		return fetchResult != null
+				&& !fetchResult.getTrackingRefUpdates().isEmpty();
+	}
+
+	private boolean hasMergeResults() {
+		final MergeResult mergeResult = result.getMergeResult();
+		return mergeResult != null
+				&& mergeResult.getMergeStatus() != MergeStatus.ALREADY_UP_TO_DATE;
+	}
+
+	private boolean hasRebaseResults() {
+		final RebaseResult rebaseResult = result.getRebaseResult();
+		return rebaseResult != null
+				&& rebaseResult.getStatus() != Status.UP_TO_DATE;
 	}
 
 	@Override
@@ -71,7 +95,8 @@ public class PullResultDialog extends Dialog {
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				fetchResultGroup);
 		FetchResult fRes = result.getFetchResult();
-		if (fRes != null && !fRes.getTrackingRefUpdates().isEmpty()) {
+		if (hasFetchResults()) {
+			GridLayoutFactory.fillDefaults().applyTo(fetchResultGroup);
 			FetchResultDialog dlg = new FetchResultDialog(getParentShell(),
 					repo, fRes, result.getFetchedFrom());
 			Control fresult = dlg.createFetchResultTable(fetchResultGroup);
@@ -81,6 +106,7 @@ public class PullResultDialog extends Dialog {
 						.hint(SWT.DEFAULT, 130).applyTo(fresult);
 
 		} else {
+			GridLayoutFactory.swtDefaults().applyTo(fetchResultGroup);
 			Label noResult = new Label(fetchResultGroup, SWT.NONE);
 			if (result.getFetchedFrom().equals(".")) //$NON-NLS-1$
 				noResult
@@ -94,18 +120,17 @@ public class PullResultDialog extends Dialog {
 		Group mergeResultGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		mergeResultGroup
 				.setText(UIText.PullResultDialog_MergeResultGroupHeader);
-		GridLayoutFactory.fillDefaults().applyTo(mergeResultGroup);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				mergeResultGroup);
-		MergeResult mRes = result.getMergeResult();
-		RebaseResult rRes = result.getRebaseResult();
-		if (mRes != null
-				&& mRes.getMergeStatus() != MergeStatus.ALREADY_UP_TO_DATE) {
+		if (hasMergeResults()) {
+			GridLayoutFactory.fillDefaults().applyTo(mergeResultGroup);
 			MergeResultDialog dlg = new MergeResultDialog(getParentShell(),
-					repo, mRes);
+					repo, result.getMergeResult());
 			dlg.createDialogArea(mergeResultGroup);
-		} else if (rRes != null && rRes.getStatus() != Status.UP_TO_DATE) {
-			switch (rRes.getStatus()) {
+		} else if (hasRebaseResults()) {
+			Status status = result.getRebaseResult().getStatus();
+			GridLayoutFactory.fillDefaults().applyTo(mergeResultGroup);
+			switch (status) {
 			case OK:
 				// fall through
 			case FAST_FORWARD:
@@ -127,8 +152,9 @@ public class PullResultDialog extends Dialog {
 			Label statusLabel = new Label(mergeResultGroup, SWT.NONE);
 			statusLabel.setText(UIText.PullResultDialog_RebaseStatusLabel);
 			Text statusText = new Text(mergeResultGroup, SWT.READ_ONLY);
-			statusText.setText(rRes.getStatus().name());
+			statusText.setText(status.name());
 		} else {
+			GridLayoutFactory.swtDefaults().applyTo(mergeResultGroup);
 			Label noResult = new Label(mergeResultGroup, SWT.NONE);
 			noResult
 					.setText(UIText.PullResultDialog_MergeAlreadyUpToDateMessage);
@@ -146,5 +172,10 @@ public class PullResultDialog extends Dialog {
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
 		newShell.setText(UIText.PullResultDialog_DialogTitle);
+	}
+
+	@Override
+	protected IDialogSettings getDialogBoundsSettings() {
+		return hasUpdates ? UIUtils.getDialogBoundSettings(getClass()) : null;
 	}
 }
