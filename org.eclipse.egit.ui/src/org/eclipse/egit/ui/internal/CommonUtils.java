@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -58,7 +57,8 @@ public class CommonUtils {
 
 				int result;
 
-				if (Character.isDigit(o1Part.charAt(0)) && Character.isDigit(o2Part.charAt(0))) {
+				if (Character.isDigit(o1Part.charAt(0))
+						&& Character.isDigit(o2Part.charAt(0))) {
 					o1Part = stripLeadingZeros(o1Part);
 					o2Part = stripLeadingZeros(o2Part);
 					result = o1Part.length() - o2Part.length();
@@ -82,7 +82,8 @@ public class CommonUtils {
 	 */
 	public static final Comparator<Ref> REF_ASCENDING_COMPARATOR = new Comparator<Ref>() {
 		public int compare(Ref o1, Ref o2) {
-			return STRING_ASCENDING_COMPARATOR.compare(o1.getName(), o2.getName());
+			return STRING_ASCENDING_COMPARATOR.compare(o1.getName(),
+					o2.getName());
 		}
 	};
 
