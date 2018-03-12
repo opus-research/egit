@@ -10,9 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -112,27 +109,4 @@ public class TestUtil {
 	public static void joinJobs(Object family) throws InterruptedException  {
 		Job.getJobManager().join(family, null);
 	}
-
-	/**
-	 * Appends content to given file.
-	 *
-	 * @param file
-	 * @param content
-	 * @param append
-	 *            if true, then bytes will be written to the end of the file
-	 *            rather than the beginning
-	 * @throws IOException
-	 */
-	public static void appendFileContent(File file, String content, boolean append)
-			throws IOException {
-		FileWriter fw = null;
-		try {
-			fw = new FileWriter(file, append);
-			fw.append(content);
-		} finally {
-			if (fw != null)
-				fw.close();
-		}
-	}
-
 }
