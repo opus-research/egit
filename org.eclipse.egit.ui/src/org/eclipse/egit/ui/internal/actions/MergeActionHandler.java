@@ -143,7 +143,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 	public static boolean checkMergeIsPossible(Repository repository, Shell shell) {
 		String message = null;
 		try {
-			Ref head = repository.exactRef(Constants.HEAD);
+			Ref head = repository.getRef(Constants.HEAD);
 			if (head == null || !head.isSymbolic())
 				message = UIText.MergeAction_HeadIsNoBranch;
 			else if (!repository.getRepositoryState().equals(

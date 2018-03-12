@@ -401,7 +401,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	@Ignore
 	public void testRebaseAlreadyUpToDate() throws Exception {
 		Repository repo = lookupRepository(repoFile);
-		Ref stable = repo.findRef("stable");
+		Ref stable = repo.getRef("stable");
 		SWTBotTable table = getHistoryViewTable(PROJ1);
 		SWTBotTableItem stableItem = getTableItemWithId(table, stable.getObjectId());
 

@@ -60,7 +60,7 @@ public class CreateBranchWizard extends Wizard {
 				if (base.startsWith(Constants.R_HEADS)
 						|| base.startsWith(Constants.R_REMOTES)
 						|| base.startsWith(Constants.R_TAGS)) {
-					Ref currentBranch = repository.findRef(base);
+					Ref currentBranch = repository.getRef(base);
 					myPage = new CreateBranchPage(repository, currentBranch);
 				} else {
 					// the page only knows some special Refs

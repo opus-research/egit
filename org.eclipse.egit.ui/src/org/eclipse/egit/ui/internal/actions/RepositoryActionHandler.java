@@ -479,7 +479,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				rw.setTreeFilter(filter);
 			}
 
-			Ref head = repository.exactRef(Constants.HEAD);
+			Ref head = repository.getRef(Constants.HEAD);
 			if (head == null) {
 				return result;
 			}
