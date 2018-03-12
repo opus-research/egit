@@ -107,13 +107,7 @@ public class CommitUI  {
 	public CommitUI(Shell shell, Repository[] repos,
 			IResource[] selectedResources) {
 		this.shell = shell;
-		this.repos = new Repository[repos.length];
-		// keep our own copy
-		System.arraycopy(repos, 0, this.repos, 0, repos.length);
-		this.selectedResources = new IResource[selectedResources.length];
-		// keep our own copy
-		System.arraycopy(selectedResources, 0, this.selectedResources, 0,
-				selectedResources.length);
+		this.repos = repos;
 		this.selectedResources = selectedResources;
 	}
 
