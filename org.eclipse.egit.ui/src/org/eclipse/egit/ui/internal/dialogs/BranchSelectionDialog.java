@@ -42,7 +42,6 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -79,8 +78,6 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 
 	private boolean preselectedBranch;
 
-	private MergeStrategyDialogHelper helper;
-
 	/**
 	 * @param parentShell
 	 * @param nodes
@@ -88,34 +85,15 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 	 * @param message
 	 * @param style
 	 *            only {@link SWT#SINGLE} and {@link SWT#MULTI} are supported
-	 * @param mergeStrategyOption
-	 *            Whether to offer the possibility to select a specific merge
-	 *            strategy
 	 */
 	public BranchSelectionDialog(Shell parentShell, List<T> nodes, String title,
- String message, int style, boolean mergeStrategyOption) {
+			String message, int style) {
 		super(parentShell, title, null, message, MessageDialog.QUESTION,
 				new String[] { IDialogConstants.OK_LABEL,
 						IDialogConstants.CANCEL_LABEL }, 0);
 		this.nodes = nodes;
 		this.style = style;
 		this.multiMode = (this.style & SWT.MULTI) > 0;
-		if (mergeStrategyOption) {
-			helper = new MergeStrategyDialogHelper();
-		}
-	}
-
-	/**
-	 * @param parentShell
-	 * @param nodes
-	 * @param title
-	 * @param message
-	 * @param style
-	 *            only {@link SWT#SINGLE} and {@link SWT#MULTI} are supported
-	 */
-	public BranchSelectionDialog(Shell parentShell, List<T> nodes,
-			String title, String message, int style) {
-		this(parentShell, nodes, title, message, style, false);
 	}
 
 	@Override
@@ -230,11 +208,6 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 				}
 			});
 		}
-
-		if (helper != null) {
-			helper.createMergeStrategyGroup(parent);
-		}
-
 		return area;
 	}
 
@@ -328,13 +301,5 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 	 */
 	public List<T> getSelectedNodes() {
 		return selected;
-	}
-
-	/**
-	 * @return The selected merge strategy, can be <code>null</code>, which
-	 *         indicates that the default JGit strategy must be used.
-	 */
-	public MergeStrategy getSelectedStrategy() {
-		return helper.getSelectedStrategy();
 	}
 }

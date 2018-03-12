@@ -681,10 +681,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 		private final Class<?> implementedBy;
 
-		private final String contributorId;
-
-		private final String helpContextId;
-
 		/**
 		 * @param name
 		 *            The referred strategy's name, to use for retrieving the
@@ -699,33 +695,9 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		 */
 		public MergeStrategyDescriptor(String name, String label,
 				Class<?> implementedBy) {
-			this(name, label, implementedBy, null, null);
-		}
-
-		/**
-		 * @param name
-		 *            The referred strategy's name, to use for retrieving the
-		 *            strategy from MergeRegistry via
-		 *            {@link MergeStrategy#get(String)}
-		 * @param label
-		 *            The label to display to users so they can select the
-		 *            strategy they need
-		 * @param implementedBy
-		 *            The class of the MergeStrategy registered through the
-		 *            mergeStrategy extension point
-		 * @param contributorId
-		 *            The contributor ID
-		 * @param helpContextId
-		 *            The help context ID
-		 */
-		public MergeStrategyDescriptor(String name, String label,
-				Class<?> implementedBy, String contributorId,
-				String helpContextId) {
 			this.name = name;
 			this.label = label;
 			this.implementedBy = implementedBy;
-			this.contributorId = contributorId;
-			this.helpContextId = helpContextId;
 		}
 
 		/**
@@ -749,20 +721,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		 */
 		public Class<?> getImplementedBy() {
 			return implementedBy;
-		}
-
-		/**
-		 * @return The contributor ID.
-		 */
-		public String getContributorId() {
-			return contributorId;
-		}
-
-		/**
-		 * @return The help context ID.
-		 */
-		public String getHelpContextId() {
-			return helpContextId;
 		}
 	}
 
@@ -832,11 +790,12 @@ public class Activator extends Plugin implements DebugOptionsListener {
 							if (MergeStrategy.get(name) == null) {
 								MergeStrategy.register(name, strategy);
 							}
-							strategies.put(name, new MergeStrategyDescriptor(
-									name, element.getAttribute("label"), //$NON-NLS-1$
-									strategy.getClass(), element
-											.getContributor().getName(),
-									element.getAttribute("helpContextId"))); //$NON-NLS-1$
+							strategies
+									.put(name,
+											new MergeStrategyDescriptor(
+													name,
+													element.getAttribute("label"), //$NON-NLS-1$
+													strategy.getClass()));
 						}
 					}
 				} catch (CoreException e) {

@@ -56,11 +56,13 @@ import org.eclipse.team.core.TeamException;
  * This class implements the merge of a ref with the current head
  *
  */
-public class MergeOperation extends AbstractMergingOperation {
+public class MergeOperation implements IEGitOperation {
 
 	private final Repository repository;
 
 	private final String refName;
+
+	private final MergeStrategy mergeStrategy;
 
 	private Boolean squash;
 
@@ -84,6 +86,7 @@ public class MergeOperation extends AbstractMergingOperation {
 			@NonNull String refName) {
 		this.repository = repository;
 		this.refName = refName;
+		this.mergeStrategy = Activator.getDefault().getPreferredMergeStrategy();
 	}
 
 	/**
@@ -103,7 +106,8 @@ public class MergeOperation extends AbstractMergingOperation {
 		this.refName = refName;
 		MergeStrategy strategy = null;
 		strategy = MergeStrategy.get(mergeStrategyName);
-		setMergeStrategy(strategy);
+		this.mergeStrategy = strategy != null ? strategy : Activator.getDefault()
+				.getPreferredMergeStrategy();
 	}
 
 	/**
@@ -173,9 +177,8 @@ public class MergeOperation extends AbstractMergingOperation {
 					if (squash != null) {
 						merge.setSquash(squash.booleanValue());
 					}
-					MergeStrategy strategy = getApplicableMergeStrategy();
-					if (strategy != null) {
-						merge.setStrategy(strategy);
+					if (mergeStrategy != null) {
+						merge.setStrategy(mergeStrategy);
 					}
 					if (message != null) {
 						merge.setMessage(message);

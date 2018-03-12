@@ -274,8 +274,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		branchTree.setContentProvider(new RepositoriesViewContentProvider());
 		ColumnViewerToolTipSupport.enableFor(branchTree);
 
-		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300)
-				.minSize(SWT.DEFAULT, 200).applyTo(
+		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300).applyTo(
 				tree);
 		branchTree.addSelectionChangedListener(new ISelectionChangedListener() {
 

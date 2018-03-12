@@ -35,8 +35,6 @@ public class RebaseTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 	private boolean preserveMerges = false;
 
-	private MergeStrategyDialogHelper helper;
-
 	/**
 	 * @param parentShell
 	 * @param repo
@@ -45,7 +43,6 @@ public class RebaseTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		super(parentShell, repo, getMergeTarget(repo), SHOW_LOCAL_BRANCHES
 				| SHOW_REMOTE_BRANCHES | EXPAND_REMOTE_BRANCHES_NODE
 				| getSelectSetting(repo));
-		helper = new MergeStrategyDialogHelper();
 	}
 
 	@Override
@@ -131,8 +128,6 @@ public class RebaseTargetSelectionDialog extends AbstractBranchSelectionDialog {
 				preserveMerges = preserveMergesButton.getSelection();
 			}
 		});
-
-		helper.createMergeStrategyGroup(parent);
 	}
 
 	/**
