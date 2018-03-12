@@ -584,17 +584,17 @@ public class CompareUtils {
 			destCommit = getHeadTypedElement(repository, gitPath);
 		else {
 			final ObjectId destCommitId = repository.resolve(refName);
-			try (RevWalk rw = new RevWalk(repository)) {
-				RevCommit commit = rw.parseCommit(destCommitId);
-				destCommit = getFileRevisionTypedElement(gitPath, commit,
-						repository);
+			RevWalk rw = new RevWalk(repository);
+			RevCommit commit = rw.parseCommit(destCommitId);
+			rw.release();
+			destCommit = getFileRevisionTypedElement(gitPath, commit,
+					repository);
 
-				if (base != null && commit != null) {
-					final ObjectId headCommitId = repository
-							.resolve(Constants.HEAD);
-					commonAncestor = getFileRevisionTypedElementForCommonAncestor(
-							gitPath, headCommitId, destCommitId, repository);
-				}
+			if (base != null && commit != null) {
+				final ObjectId headCommitId = repository
+						.resolve(Constants.HEAD);
+				commonAncestor = getFileRevisionTypedElementForCommonAncestor(
+						gitPath, headCommitId, destCommitId, repository);
 			}
 		}
 
@@ -845,11 +845,11 @@ public class CompareUtils {
 			typedElement = getHeadTypedElement(repository, gitPath);
 		else {
 			final ObjectId id = repository.resolve(rev);
-			try (final RevWalk rw = new RevWalk(repository)) {
-				final RevCommit revCommit = rw.parseCommit(id);
-				typedElement = getFileRevisionTypedElement(gitPath, revCommit,
-						repository);
-			}
+			final RevWalk rw = new RevWalk(repository);
+			final RevCommit revCommit = rw.parseCommit(id);
+			rw.release();
+			typedElement = getFileRevisionTypedElement(gitPath,
+					revCommit, repository);
 		}
 		return typedElement;
 	}
@@ -919,7 +919,8 @@ public class CompareUtils {
 				return new EmptyTypedElement(""); //$NON-NLS-1$
 
 			RevCommit latestFileCommit;
-			try (RevWalk rw = new RevWalk(repository)) {
+			RevWalk rw = new RevWalk(repository);
+			try {
 				RevCommit headCommit = rw.parseCommit(head.getObjectId());
 				rw.markStart(headCommit);
 				rw.setTreeFilter(AndTreeFilter.create(
@@ -929,6 +930,8 @@ public class CompareUtils {
 				// Fall back to HEAD
 				if (latestFileCommit == null)
 					latestFileCommit = headCommit;
+			} finally {
+				rw.release();
 			}
 
 			return CompareUtils.getFileRevisionTypedElement(repoRelativePath, latestFileCommit, repository);

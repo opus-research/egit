@@ -205,12 +205,15 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 			}
 
 			private RevCommit getCommit(final ReflogEntry entry) {
+				RevWalk walk = new RevWalk(getRepository());
+				walk.setRetainBody(true);
 				RevCommit c = null;
-				try (RevWalk walk = new RevWalk(getRepository())) {
-					walk.setRetainBody(true);
+				try {
 					c = walk.parseCommit(entry.getNewId());
 				} catch (IOException ignored) {
 					// ignore
+				} finally {
+					walk.release();
 				}
 				return c;
 			}
@@ -298,7 +301,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				Repository repo = getRepository();
 				if (repo == null)
 					return;
-				try (RevWalk walk = new RevWalk(repo)) {
+				RevWalk walk = new RevWalk(repo);
+				try {
 					for (Object element : ((IStructuredSelection)selection).toArray()) {
 						ReflogEntry entry = (ReflogEntry) element;
 						ObjectId id = entry.getNewId();
@@ -310,6 +314,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 					}
 				} catch (IOException e) {
 					Activator.logError(UIText.ReflogView_ErrorOnOpenCommit, e);
+				} finally {
+					walk.release();
 				}
 			}
 		};

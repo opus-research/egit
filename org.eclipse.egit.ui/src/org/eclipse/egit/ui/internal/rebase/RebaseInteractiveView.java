@@ -275,8 +275,9 @@ public class RebaseInteractiveView extends ViewPart implements
 			private RepositoryCommit loadCommit(
 					AbbreviatedObjectId abbreviatedObjectId) {
 				if (abbreviatedObjectId != null) {
-					try (RevWalk walk = new RevWalk(
-							RebaseInteractiveView.this.currentRepository)) {
+					RevWalk walk = new RevWalk(
+							RebaseInteractiveView.this.currentRepository);
+					try {
 						Collection<ObjectId> resolved = walk.getObjectReader()
 								.resolve(abbreviatedObjectId);
 						if (resolved.size() == 1) {
@@ -288,6 +289,8 @@ public class RebaseInteractiveView extends ViewPart implements
 						}
 					} catch (IOException e) {
 						return null;
+					} finally {
+						walk.release();
 					}
 				}
 				return null;
