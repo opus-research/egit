@@ -25,12 +25,13 @@ import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -111,10 +112,11 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		// first time: expect new branch
 		TestUtil.joinJobs(JobFamilies.PUSH);
 		SWTBotShell confirmed = bot.shell(dialogTitle);
-		SWTBotTreeItem[] treeItems = confirmed.bot().tree().getAllItems();
+		SWTBotTable table = confirmed.bot().table();
+		int rowCount = table.rowCount();
 		boolean newBranch = false;
-		for (SWTBotTreeItem item : treeItems) {
-			newBranch = item.getText().contains(
+		for (int i = 0; i < rowCount; i++) {
+			newBranch = table.getTableItem(i).getText(3).equals(
 					UIText.PushResultTable_statusOkNewBranch);
 			if (newBranch)
 				break;
@@ -129,10 +131,11 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimplePushCommand"));
 
 		confirmed = bot.shell(dialogTitle);
-		treeItems = confirmed.bot().tree().getAllItems();
+		table = confirmed.bot().table();
+		rowCount = table.rowCount();
 		boolean uptodate = false;
-		for (SWTBotTreeItem item : treeItems) {
-			uptodate = item.getText().contains(
+		for (int i = 0; i < rowCount; i++) {
+			uptodate = table.getTableItem(i).getText(3).equals(
 					UIText.PushResultTable_statusUpToDate);
 			if (uptodate)
 				break;
@@ -152,10 +155,12 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimplePushCommand"));
 
 		confirmed = bot.shell(dialogTitle);
-		treeItems = confirmed.bot().tree().getAllItems();
+		table = confirmed.bot().table();
+		rowCount = table.rowCount();
 		newBranch = false;
-		for (SWTBotTreeItem item : treeItems) {
-			newBranch = item.getText().contains(objectIdBefore);
+		for (int i = 0; i < rowCount; i++) {
+			newBranch = table.getTableItem(i).getText(3).startsWith(
+					objectIdBefore);
 			if (newBranch)
 				break;
 		}
@@ -191,7 +196,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
 		SWTBotShell confirm = bot.shell(dialogTitle);
-		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
+		assertEquals("Wrong result table row count", 0, confirm.bot().table()
 				.rowCount());
 		confirm.close();
 
@@ -202,7 +207,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		objid = objid.substring(0, 7);
 		touchAndSubmit(null);
 		// push from other repository
-		PushOperationUI op =new PushOperationUI(repository, "origin", 0, false);
+		RemoteConfig config = new RemoteConfig(repository.getConfig(), "origin");
+		PushOperationUI op =new PushOperationUI(repository, config, 0, false);
 		op.start();
 
 		String pushdialogTitle = NLS.bind(UIText.ResultDialog_title,
@@ -221,10 +227,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		TestUtil.joinJobs(JobFamilies.FETCH);
 		confirm = bot.shell(dialogTitle);
-		SWTBotTreeItem[] treeItems = confirm.bot().tree().getAllItems();
+		SWTBotTable table = confirm.bot().table();
 		boolean found = false;
-		for (SWTBotTreeItem item : treeItems) {
-			found = item.getText().contains(objid);
+		for (int i = 0; i < table.rowCount(); i++) {
+			found = table.getTableItem(i).getText(2).startsWith(objid);
 			if (found)
 				break;
 		}
@@ -237,7 +243,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
 		confirm = bot.shell(dialogTitle);
-		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
+		assertEquals("Wrong result table row count", 0, confirm.bot().table()
 				.rowCount());
 	}
 }

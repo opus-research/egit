@@ -9,6 +9,8 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test;
 
+import static org.eclipse.jgit.lib.Constants.HEAD;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -406,19 +408,19 @@ public class TestRepository {
 	}
 
 	public boolean inIndex(String path) throws IOException {
-		return getDirCacheEntry(path) != null;
-	}
+		String repoPath = getRepoRelativePath(path);
+		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
 
-	public boolean removedFromIndex(String path) throws IOException {
-		DirCacheEntry dc = getDirCacheEntry(path);
-		if (dc == null)
-			return true;
+		DirCacheEntry dcEntry = dc.getEntry(repoPath);
+		if (dcEntry == null)
+			return false;
 
-		Ref ref = repository.getRef(Constants.HEAD);
-		RevCommit c = new RevWalk(repository).parseCommit(ref.getObjectId());
-		TreeWalk tw = TreeWalk.forPath(repository, path, c.getTree());
+		Ref headRef = repository.getRef(HEAD);
+		RevCommit commit = new RevWalk(repository).parseCommit(headRef.getObjectId());
 
-		return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
+		TreeWalk tw = TreeWalk.forPath(repository, repoPath, commit.getTree());
+		// check does object ID's for given file are different in repo and in index
+		return tw == null || !dcEntry.getObjectId().equals(tw.getObjectId(0));
 	}
 
 	public long lastModifiedInIndex(String path) throws IOException {
@@ -488,10 +490,4 @@ public class TestRepository {
 		disconnect.execute(null);
 	}
 
-	private DirCacheEntry getDirCacheEntry(String path) throws IOException {
-		String repoPath = getRepoRelativePath(path);
-		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
-
-		return dc.getEntry(repoPath);
-	}
 }

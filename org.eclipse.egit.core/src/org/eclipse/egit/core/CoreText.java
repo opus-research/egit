@@ -225,9 +225,6 @@ public class CoreText extends NLS {
 	public static String PushOperation_InternalExceptionOccurredMessage;
 
 	/** */
-	public static String PushOperation_ExceptionOccurredDuringPushOnUriMessage;
-
-	/** */
 	public static String PushOperation_resultCancelled;
 
 	/** */

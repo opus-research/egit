@@ -10,8 +10,9 @@
 package org.eclipse.egit.core.op;
 
 import static org.eclipse.egit.core.project.RepositoryMapping.findRepositoryMapping;
-import static org.eclipse.jgit.lib.Constants.HEAD;
+import static org.eclipse.jgit.lib.FileMode.MISSING;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
@@ -20,9 +21,19 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.ResetCommand;
+import org.eclipse.egit.core.CoreText;
+import org.eclipse.jgit.dircache.DirCache;
+import org.eclipse.jgit.dircache.DirCacheEditor;
+import org.eclipse.jgit.dircache.DirCacheEntry;
+import org.eclipse.jgit.dircache.DirCacheIterator;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.FileMode;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
 
 /**
  *
@@ -52,21 +63,29 @@ public class RemoveFromIndexOperation implements IEGitOperation {
 		else
 			monitor = m;
 
-		ResetCommand resetCommand = new Git(repo).reset();
-		resetCommand.setRef(HEAD);
-		monitor.worked(1);
-
-		for (String path : paths) {
-			resetCommand.addPath(path);
-			monitor.worked(1);
+		final DirCache dirCache;
+		final DirCacheEditor edit;
+		try {
+			dirCache = repo.lockDirCache();
+			edit = dirCache.editor();
+		} catch (IOException e) {
+			throw new CoreException(Activator.error(
+					CoreText.RemoveFromIndexOperation_failed, e));
 		}
 
 		try {
-			resetCommand.call();
-			monitor.worked(1);
-		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
+			for (String path : paths) {
+				updateDirCache(path, edit);
+				monitor.worked(20);
+			}
+			try {
+				edit.commit();
+			} catch (IOException e) {
+				throw new CoreException(Activator.error(
+						CoreText.RemoveFromIndexOperation_failed, e));
+			}
 		} finally {
+			dirCache.unlock();
 			monitor.done();
 			findRepositoryMapping(repo).fireRepositoryChanged();
 		}
@@ -74,6 +93,57 @@ public class RemoveFromIndexOperation implements IEGitOperation {
 
 	public ISchedulingRule getSchedulingRule() {
 		return null;
+	}
+
+	private void updateDirCache(String path, final DirCacheEditor edit)
+			throws CoreException {
+		RevCommit headRev = getHeadRev();
+		boolean isContainer = new File(repo.getWorkTree(), path).isDirectory();
+		try {
+			final TreeWalk tw = TreeWalk.forPath(repo, path, headRev.getTree());
+
+			if (tw != null) {
+				if (isContainer)
+					tw.addTree(new DirCacheIterator(edit.getDirCache()));
+				do {
+					if (tw.isSubtree())
+						tw.enterSubtree();
+					else if (tw.getRawMode(0) == MISSING.getBits())
+						edit.add(new DirCacheEditor.DeletePath(tw.getPathString()));
+					else {
+						final FileMode fileMode = tw.getFileMode(0);
+						final ObjectId objectId = tw.getObjectId(0);
+						edit.add(new DirCacheEditor.PathEdit(tw.getPathString()) {
+							@Override
+							public void apply(DirCacheEntry ent) {
+								ent.setFileMode(fileMode);
+								ent.setObjectId(objectId);
+								// for index & working tree compare
+								ent.setLastModified(0);
+							}
+						});
+					}
+				} while (tw.next());
+			} else {
+				if (isContainer)
+					edit.add(new DirCacheEditor.DeleteTree(path));
+				else
+					edit.add(new DirCacheEditor.DeletePath(path));
+			}
+		} catch (IOException e) {
+			throw new CoreException(Activator.error(
+					CoreText.RemoveFromIndexOperation_failed, e));
+		}
+	}
+
+	private RevCommit getHeadRev() throws CoreException {
+		try {
+			final Ref head = repo.getRef(Constants.HEAD);
+			return new RevWalk(repo).parseCommit(head.getObjectId());
+		} catch (IOException e) {
+			throw new CoreException(Activator.error(
+					CoreText.RemoveFromIndexOperation_failed, e));
+		}
 	}
 
 }
