@@ -5,9 +5,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Tobias Baumann <tobbaumann@gmail.com> - Bug 373969, 473544
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
@@ -169,18 +166,15 @@ import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
-import org.eclipse.ui.IMemento;
 import org.eclipse.ui.IPartListener2;
 import org.eclipse.ui.IPartService;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
-import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.forms.IFormColors;
@@ -207,19 +201,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private static final String EMPTY_STRING = ""; //$NON-NLS-1$
 
-	private static final String MEMENTO_HORIZONTAL_SASH_FORM_WEIGHT = "HORIZONTAL_SASH_FORM_WEIGHT"; //$NON-NLS-1$
-
-	private static final String MEMENTO_STAGING_SASH_FORM_WEIGHT = "STAGING_SASH_FORM_WEIGHT"; //$NON-NLS-1$
-
-	private IMemento memento;
-
-	private ISelection initialSelection;
-
 	private FormToolkit toolkit;
 
 	private Form form;
-
-	private SashForm horizontalSashForm;
 
 	private Section stagedSection;
 
@@ -268,8 +252,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private Action stagedExpandAllAction;
 
 	private Action stagedCollapseAllAction;
-
-	private Action compareModeAction;
 
 	private Repository currentRepository;
 
@@ -394,7 +376,18 @@ public class StagingView extends ViewPart implements IShowInSource {
 				return;
 			}
 			IWorkbenchPart part = partRef.getPart(false);
-			StructuredSelection sel = getSelectionOfPart(part);
+			StructuredSelection sel = null;
+			if (part instanceof IEditorPart) {
+				IResource resource = getResource((IEditorPart) part);
+				if (resource != null) {
+					sel = new StructuredSelection(resource);
+				}
+			} else {
+				ISelection selection = partRef.getPage().getSelection();
+				if (selection instanceof StructuredSelection) {
+					sel = (StructuredSelection) selection;
+				}
+			}
 			if (isViewHidden) {
 				// remember last selection in the part so that we can
 				// synchronize on it as soon as we will be visible
@@ -406,6 +399,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 				}
 			}
 
+		}
+
+		private IResource getResource(IEditorPart part) {
+			IEditorInput input = part.getEditorInput();
+			if (input instanceof IFileEditorInput) {
+				return ((IFileEditorInput) input).getFile();
+			} else {
+				return CommonUtils.getAdapter(input, IResource.class);
+			}
 		}
 
 		private void updateHiddenState(IWorkbenchPartReference partRef,
@@ -561,15 +563,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	@Override
-	public void init(IViewSite site, IMemento viewMemento)
-			throws PartInitException {
-		super.init(site, viewMemento);
-		this.memento = viewMemento;
-		this.initialSelection = site.getWorkbenchWindow().getSelectionService()
-				.getSelection();
-	}
-
-	@Override
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
 
@@ -596,7 +589,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		toolkit.decorateFormHeading(form);
 		GridLayoutFactory.swtDefaults().applyTo(form.getBody());
 
-		horizontalSashForm = new SashForm(form.getBody(), SWT.NONE);
+		SashForm horizontalSashForm = new SashForm(form.getBody(), SWT.NONE);
 		toolkit.adapt(horizontalSashForm, true, true);
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(horizontalSashForm);
@@ -1042,9 +1035,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		unstagedViewer.addFilter(filter);
 		stagedViewer.addFilter(filter);
 
-		restoreSashFormWeights();
-		reactOnInitialSelection();
-
 		IWorkbenchSiteProgressService service = CommonUtils.getService(
 				getSite(), IWorkbenchSiteProgressService.class);
 		if (service != null && reactOnSelection)
@@ -1052,77 +1042,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			// that the view is busy (e.g. reload() will trigger this job in
 			// background!).
 			service.showBusyForFamily(org.eclipse.egit.core.JobFamilies.INDEX_DIFF_CACHE_UPDATE);
-	}
-
-	private void restoreSashFormWeights() {
-		if (memento != null) {
-			restoreSashFormWeights(horizontalSashForm,
-					MEMENTO_HORIZONTAL_SASH_FORM_WEIGHT);
-			restoreSashFormWeights(stagingSashForm,
-					MEMENTO_STAGING_SASH_FORM_WEIGHT);
-		}
-	}
-
-	private void restoreSashFormWeights(SashForm sashForm, String mementoKey) {
-		String weights = memento.getString(mementoKey);
-		if (weights != null && !weights.isEmpty()) {
-			sashForm.setWeights(stringToIntArray(weights));
-		}
-	}
-
-	private static int[] stringToIntArray(String s) {
-		String[] parts = s.split(","); //$NON-NLS-1$
-		int[] ints = new int[parts.length];
-		for (int i = 0; i < parts.length; i++) {
-			ints[i] = Integer.valueOf(parts[i]).intValue();
-		}
-		return ints;
-	}
-
-	private void reactOnInitialSelection() {
-		StructuredSelection sel = null;
-		if (initialSelection instanceof StructuredSelection) {
-			sel = (StructuredSelection) initialSelection;
-		} else if (initialSelection != null && !initialSelection.isEmpty()) {
-			sel = getSelectionOfActiveEditor();
-		}
-		if (sel != null) {
-			reactOnSelection(sel);
-		}
-		initialSelection = null;
-	}
-
-	private StructuredSelection getSelectionOfActiveEditor() {
-		IEditorPart activeEditor = getSite().getPage().getActiveEditor();
-		if (activeEditor == null) {
-			return null;
-		}
-		return getSelectionOfPart(activeEditor);
-	}
-
-	private static StructuredSelection getSelectionOfPart(IWorkbenchPart part) {
-		StructuredSelection sel = null;
-		if (part instanceof IEditorPart) {
-			IResource resource = getResource((IEditorPart) part);
-			if (resource != null) {
-				sel = new StructuredSelection(resource);
-			}
-		} else {
-			ISelection selection = part.getSite().getPage().getSelection();
-			if (selection instanceof StructuredSelection) {
-				sel = (StructuredSelection) selection;
-			}
-		}
-		return sel;
-	}
-
-	private static IResource getResource(IEditorPart part) {
-		IEditorInput input = part.getEditorInput();
-		if (input instanceof IFileEditorInput) {
-			return ((IFileEditorInput) input).getFile();
-		} else {
-			return CommonUtils.getAdapter(input, IResource.class);
-		}
 	}
 
 	private void executeRebaseOperation(AbstractRebaseCommandHandler command) {
@@ -1423,21 +1342,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		toolbar.add(new Separator());
 
-		compareModeAction = new Action(UIText.StagingView_CompareMode,
-				IAction.AS_CHECK_BOX) {
-			@Override
-			public void run() {
-				getPreferenceStore().setValue(
-						UIPreferences.STAGING_VIEW_COMPARE_MODE, isChecked());
-			}
-		};
-		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
-		compareModeAction.setChecked(getPreferenceStore()
-				.getBoolean(UIPreferences.STAGING_VIEW_COMPARE_MODE));
-
-		toolbar.add(compareModeAction);
-		toolbar.add(new Separator());
-
 		openNewCommitsAction = new Action(UIText.StagingView_OpenNewCommits,
 				IAction.AS_CHECK_BOX) {
 
@@ -1570,7 +1474,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		dropdownMenu.add(openNewCommitsAction);
 		dropdownMenu.add(columnLayoutAction);
 		dropdownMenu.add(fileNameModeAction);
-		dropdownMenu.add(compareModeAction);
 
 		actionBars.setGlobalActionHandler(ActionFactory.DELETE.getId(), new GlobalDeleteActionHandler());
 
@@ -1700,14 +1603,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		case MODIFIED_AND_ADDED:
 		case UNTRACKED:
 		default:
-			if (Activator.getDefault().getPreferenceStore().getBoolean(
-					UIPreferences.STAGING_VIEW_COMPARE_MODE)) {
-				// compare with index
-				runCommand(ActionCommands.COMPARE_WITH_INDEX_ACTION, selection);
-			} else {
-				openSelectionInEditor(selection);
-			}
-
+			// compare with index
+			runCommand(ActionCommands.COMPARE_WITH_INDEX_ACTION, selection);
 		}
 	}
 
@@ -1763,15 +1660,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 					openWorkingTreeVersion.setEnabled(!submoduleSelected
 							&& anyElementExistsInWorkspace(fileSelection));
 					menuMgr.add(openWorkingTreeVersion);
-
-					Action openCompareWithIndex = new Action(
-							UIText.StagingView_CompareWithIndexMenuLabel) {
-						public void run() {
-							runCommand(ActionCommands.COMPARE_WITH_INDEX_ACTION,
-									fileSelection);
-						};
-					};
-					menuMgr.add(openCompareWithIndex);
 				}
 
 				Set<StagingEntry.Action> availableActions = getAvailableActions(fileSelection);
@@ -2867,31 +2755,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 	@Override
 	public void setFocus() {
 		unstagedViewer.getControl().setFocus();
-	}
-
-	@Override
-	public void saveState(IMemento viewMemento) {
-		super.saveState(viewMemento);
-		saveSashFormWeights(viewMemento);
-	}
-
-	private void saveSashFormWeights(IMemento viewMemento) {
-		viewMemento.putString(MEMENTO_HORIZONTAL_SASH_FORM_WEIGHT,
-				intArrayToString(horizontalSashForm.getWeights()));
-		viewMemento.putString(MEMENTO_STAGING_SASH_FORM_WEIGHT,
-				intArrayToString(stagingSashForm.getWeights()));
-	}
-
-	private static String intArrayToString(int[] ints) {
-		StringBuilder res = new StringBuilder();
-		if (ints != null && ints.length > 0) {
-			res.append(String.valueOf(ints[0]));
-			for (int i = 1; i < ints.length; i++) {
-				res.append(',');
-				res.append(String.valueOf(ints[i]));
-			}
-		}
-		return res.toString();
 	}
 
 	@Override
