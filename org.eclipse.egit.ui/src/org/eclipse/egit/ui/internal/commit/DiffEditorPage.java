@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011 GitHub Inc.
+ *  Copyright (c) 2011, 2015 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -22,6 +22,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.FileDiff;
 import org.eclipse.jface.action.Action;
@@ -67,6 +68,7 @@ public class DiffEditorPage extends FormPage {
 			update();
 		}
 
+		@Override
 		public void update() {
 			if (code == ITextOperationTarget.REDO)
 				return;
@@ -81,6 +83,7 @@ public class DiffEditorPage extends FormPage {
 						: Boolean.FALSE);
 		}
 
+		@Override
 		public void run() {
 			if (code != -1)
 				target.doOperation(code);
@@ -133,9 +136,9 @@ public class DiffEditorPage extends FormPage {
 
 		Job job = new Job(UIText.DiffEditorPage_TaskGeneratingDiff) {
 
+			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				RepositoryCommit commit = (RepositoryCommit) getEditor()
-						.getAdapter(RepositoryCommit.class);
+				RepositoryCommit commit = CommonUtils.getAdapter(getEditor(), RepositoryCommit.class);
 				FileDiff diffs[] = getDiffs(commit);
 				monitor.beginTask("", diffs.length); //$NON-NLS-1$
 				Repository repository = commit.getRepository();
@@ -153,6 +156,7 @@ public class DiffEditorPage extends FormPage {
 				monitor.done();
 				new UIJob(UIText.DiffEditorPage_TaskUpdatingViewer) {
 
+					@Override
 					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
 						if (UIUtils.isUsable(viewer)) {
 							viewer.setDocument(document);
@@ -190,6 +194,7 @@ public class DiffEditorPage extends FormPage {
 
 		viewer.addSelectionChangedListener(new ISelectionChangedListener() {
 
+			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				copyAction.update();
 				selectAllAction.update();
@@ -200,6 +205,7 @@ public class DiffEditorPage extends FormPage {
 	/**
 	 * @see org.eclipse.ui.forms.editor.FormPage#createFormContent(org.eclipse.ui.forms.IManagedForm)
 	 */
+	@Override
 	protected void createFormContent(IManagedForm managedForm) {
 		Composite body = managedForm.getForm().getBody();
 		GridLayoutFactory.fillDefaults().numColumns(1).applyTo(body);

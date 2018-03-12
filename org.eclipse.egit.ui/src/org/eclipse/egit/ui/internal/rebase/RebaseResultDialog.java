@@ -115,6 +115,7 @@ public class RebaseResultDialog extends MessageDialog {
 
 		if(result.getStatus() == Status.CONFLICTS) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					Shell shell = PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getShell();
@@ -134,6 +135,7 @@ public class RebaseResultDialog extends MessageDialog {
 			return;
 		}
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
@@ -351,9 +353,7 @@ public class RebaseResultDialog extends MessageDialog {
 
 		boolean conflictListFailure = false;
 		DirCache dc = null;
-		RevWalk rw = null;
-		try {
-			rw = new RevWalk(repo);
+		try (RevWalk rw = new RevWalk(repo)) {
 			// the commits might not have been fully loaded
 			RevCommit commit = rw.parseCommit(result.getCurrentCommit());
 			commitMessage.getTextWidget().setText(commit.getFullMessage());
@@ -371,8 +371,6 @@ public class RebaseResultDialog extends MessageDialog {
 			// the file list will be empty
 			conflictListFailure = true;
 		} finally {
-			if (rw != null)
-				rw.release();
 			if (dc != null)
 				dc.unlock();
 		}
@@ -446,6 +444,7 @@ public class RebaseResultDialog extends MessageDialog {
 		startMergeButton.setEnabled(mergeToolAvailable);
 		startMergeButton.addSelectionListener(new SelectionListener() {
 
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (startMergeButton.getSelection())
 					nextSteps
@@ -454,6 +453,7 @@ public class RebaseResultDialog extends MessageDialog {
 									UIText.RebaseResultDialog_NextStepsAfterResolveConflicts);
 			}
 
+			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -464,11 +464,13 @@ public class RebaseResultDialog extends MessageDialog {
 		skipCommitButton.setText(UIText.RebaseResultDialog_SkipCommitButton);
 		skipCommitButton.addSelectionListener(new SelectionListener() {
 
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (skipCommitButton.getSelection())
 					nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
 			}
 
+			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -480,11 +482,13 @@ public class RebaseResultDialog extends MessageDialog {
 				.setText(UIText.RebaseResultDialog_AbortRebaseRadioText);
 		abortRebaseButton.addSelectionListener(new SelectionListener() {
 
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (abortRebaseButton.getSelection())
 					nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
 			}
 
+			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -495,12 +499,14 @@ public class RebaseResultDialog extends MessageDialog {
 		doNothingButton.setText(UIText.RebaseResultDialog_DoNothingRadioText);
 		doNothingButton.addSelectionListener(new SelectionListener() {
 
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (doNothingButton.getSelection())
 					nextSteps.getTextWidget().setText(
 							UIText.RebaseResultDialog_NextStepsDoNothing);
 			}
 
+			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
