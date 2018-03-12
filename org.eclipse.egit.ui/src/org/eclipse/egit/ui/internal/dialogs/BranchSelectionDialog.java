@@ -202,14 +202,11 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 
 	private void checkPage() {
 		Button ok = getButton(OK);
-		if (ok.isDisposed()) {
+		if (ok.isDisposed() || fTree.isDisposed()) {
 			return;
 		}
 
 		if (multiMode) {
-			if (fTree != null && fTree.isDisposed()) {
-				return;
-			}
 			ok.setEnabled(
 					fTree.getCheckboxTreeViewer().getCheckedLeafCount() > 0);
 		} else {
