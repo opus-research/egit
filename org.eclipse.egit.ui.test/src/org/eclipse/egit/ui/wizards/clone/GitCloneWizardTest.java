@@ -19,20 +19,25 @@ import java.io.File;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.egit.ui.common.EGitTestCase;
-import org.eclipse.egit.ui.common.GitImportRepoWizard;
-import org.eclipse.egit.ui.common.RepoPropertiesPage;
-import org.eclipse.egit.ui.common.RepoRemoteBranchesPage;
-import org.eclipse.egit.ui.common.WorkingCopyPage;
+import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
+import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(SWTBotJunit4ClassRunner.class)
-public class GitCloneWizardTest extends EGitTestCase {
+public class GitCloneWizardTest {
+	static {
+		System.setProperty("org.eclipse.swtbot.playback.delay", "50");
+	}
+
+	private static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
 
 	private GitImportRepoWizard importWizard;
 
@@ -40,8 +45,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 	public void updatesParameterFieldsInImportDialogWhenURIIsUpdated()
 			throws Exception {
 
-		importWizard.openWizard();
-		RepoPropertiesPage propertiesPage = importWizard.openCloneWizard();
+		RepoPropertiesPage propertiesPage = importWizard.openWizard();
 
 		propertiesPage.setURI("git://www.jgit.org/EGIT");
 		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT", "git",
@@ -173,11 +177,10 @@ public class GitCloneWizardTest extends EGitTestCase {
 	@SuppressWarnings("boxing")
 	@Test
 	public void canCloneARemoteRepo() throws Exception {
-		File destRepo = new File(ResourcesPlugin.getWorkspace().getRoot()
-				.getLocation().toFile(), "egit");
+		File destRepo = new File(ResourcesPlugin.getWorkspace()
+				.getRoot().getLocation().toFile(), "egit");
 
-		importWizard.openWizard();
-		RepoPropertiesPage propertiesPage = importWizard.openCloneWizard();
+		RepoPropertiesPage propertiesPage = importWizard.openWizard();
 
 		RepoRemoteBranchesPage remoteBranches = propertiesPage
 				.nextToRemoteBranches("git://repo.or.cz/egit.git");
@@ -220,8 +223,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 
 	@Test
 	public void clonedRepositoryShouldExistOnFileSystem() throws Exception {
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
+		RepoPropertiesPage repoProperties = importWizard.openWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://repo.or.cz/egit.git");
 		WorkingCopyPage workingCopy = remoteBranches.nextToWorkingCopy();
@@ -231,11 +233,10 @@ public class GitCloneWizardTest extends EGitTestCase {
 	@Test
 	public void alteringSomeParametersDuringClone() throws Exception {
 
-		File destRepo = new File(ResourcesPlugin.getWorkspace().getRoot()
-				.getLocation().toFile(), "egit2");
+		File destRepo = new File(ResourcesPlugin.getWorkspace()
+				.getRoot().getLocation().toFile(), "egit2");
 
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
+		RepoPropertiesPage repoProperties = importWizard.openWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://repo.or.cz/egit.git");
 		remoteBranches.deselectAllBranches();
@@ -272,8 +273,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 
 	@Test
 	public void invalidHostnameFreezesDialog() throws Exception {
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
+		RepoPropertiesPage repoProperties = importWizard.openWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://no.example.com/EGIT");
 		remoteBranches
@@ -286,8 +286,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 	// an error. Perhaps set a higher timeout for this test ?
 	@Ignore
 	public void invalidPortFreezesDialog() throws Exception {
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
+		RepoPropertiesPage repoProperties = importWizard.openWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://localhost:80/EGIT");
 		remoteBranches
@@ -300,8 +299,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 	// an error. Perhaps set a higher timeout for this test ?
 	@Ignore
 	public void timeoutToASocketFreezesDialog() throws Exception {
-		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
+		RepoPropertiesPage repoProperties = importWizard.openWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://www.example.com/EGIT");
 		remoteBranches
@@ -315,6 +313,24 @@ public class GitCloneWizardTest extends EGitTestCase {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
 		importWizard = new GitImportRepoWizard();
+	}
+
+	// TODO: push this in the junit class runner. This can then be shared across
+	// all tests.
+	@BeforeClass
+	public static void closeWelcomePage() {
+		try {
+			bot.viewByTitle("Welcome").close();
+		} catch (WidgetNotFoundException e) {
+			// somebody else probably closed it, lets not feel bad about it.
+		}
+	}
+
+	// TODO: push this in the junit class runner. This can then be shared across
+	// all tests.
+	@After
+	public void resetWorkbench() {
+		new Eclipse().reset();
 	}
 
 }
