@@ -159,11 +159,4 @@ public class UpstreamConfigComponent {
 		mergeRadio.setEnabled(enabled);
 		rebaseRadio.setEnabled(enabled);
 	}
-
-	/**
-	 * @param enable
-	 */
-	public void setCheckboxEnabled(boolean enable) {
-		this.configureUpstreamCheck.setEnabled(enable);
-	}
 }
