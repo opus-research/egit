@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
-import org.eclipse.egit.ui.internal.reflog.ReflogView;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.team.ui.history.IHistoryView;
@@ -43,8 +42,7 @@ public class GitRepositoriesPerspectiveFactory implements IPerspectiveFactory {
 		layout.addShowViewShortcut(ISynchronizeView.VIEW_ID);
 		// shortcut to Staging view
 		layout.addShowViewShortcut(StagingView.VIEW_ID);
-		// shortcut to Reflog view
-		layout.addShowViewShortcut(ReflogView.VIEW_ID);
+
 	}
 
 }

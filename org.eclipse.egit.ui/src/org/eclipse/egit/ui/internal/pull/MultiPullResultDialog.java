@@ -31,6 +31,7 @@ import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.lib.Repository;
@@ -73,6 +74,7 @@ public class MultiPullResultDialog extends Dialog {
 		public Image getColumnImage(Object element, int columnIndex) {
 			if (columnIndex != 3)
 				return null;
+			boolean error = false;
 			Entry<Repository, Object> item = (Entry<Repository, Object>) element;
 			Object resultOrError = item.getValue();
 			if (resultOrError instanceof IStatus)
@@ -80,8 +82,31 @@ public class MultiPullResultDialog extends Dialog {
 						ISharedImages.IMG_ELCL_STOP);
 
 			PullResult res = (PullResult) item.getValue();
-			boolean success = res.isSuccessful();
-			if (!success)
+			MergeResult mres = res.getMergeResult();
+			if (mres != null) {
+				switch (mres.getMergeStatus()) {
+				case ALREADY_UP_TO_DATE:
+				case FAST_FORWARD:
+				case MERGED:
+					break;
+				default:
+					error = true;
+					break;
+				}
+			}
+			RebaseResult rres = res.getRebaseResult();
+			if (rres != null) {
+				switch (rres.getStatus()) {
+				case ABORTED:
+				case FAILED:
+				case STOPPED:
+					break;
+				default:
+					error = true;
+					break;
+				}
+			}
+			if (error)
 				return PlatformUI.getWorkbench().getSharedImages().getImage(
 						ISharedImages.IMG_ELCL_STOP);
 			return null;
@@ -132,11 +157,7 @@ public class MultiPullResultDialog extends Dialog {
 					IStatus status = (IStatus) item.getValue();
 					return status.getMessage();
 				}
-				PullResult res = (PullResult) item.getValue();
-				if (res.isSuccessful())
-					return UIText.MultiPullResultDialog_OkStatus;
-				else
-					return UIText.MultiPullResultDialog_FailedStatus;
+				return UIText.MultiPullResultDialog_OkStatus;
 			default:
 				return null;
 			}

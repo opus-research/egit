@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.httpauth;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -65,7 +64,6 @@ public class PushTest extends EGitTestCase {
 		assertTrue(file.exists());
 		localRepository = Activator.getDefault().getRepositoryCache()
 				.lookupRepository(new File(localRepoPath, ".git"));
-		assertNotNull(localRepository);
 	}
 
 	@Test
@@ -105,14 +103,10 @@ public class PushTest extends EGitTestCase {
 
 	@After
 	public void tearDown() throws Exception {
-		if (remoteRepository != null)
-			remoteRepository.shutDown();
+		remoteRepository.shutDown();
 		Activator.getDefault().getRepositoryCache().clear();
-		if (localRepository != null)
-			localRepository.close();
-		if (localRepoPath != null)
-			FileUtils.delete(localRepoPath, FileUtils.RECURSIVE
-					| FileUtils.RETRY);
+		localRepository.close();
+		FileUtils.delete(localRepoPath, FileUtils.RECURSIVE | FileUtils.RETRY);
 	}
 
 }
