@@ -1085,12 +1085,24 @@ public class StagingView extends ViewPart implements IShowInSource {
 			return SWT.VERTICAL;
 	}
 
+	private void enableAllWidgets(boolean enabled) {
+		if (isDisposed())
+			return;
+		enableCommitWidgets(enabled);
+		enableStagingWidgets(enabled);
+	}
+
+	private void enableStagingWidgets(boolean enabled) {
+		if (isDisposed())
+			return;
+		unstagedViewer.getControl().setEnabled(enabled);
+		stagedViewer.getControl().setEnabled(enabled);
+	}
+
 	private void enableCommitWidgets(boolean enabled) {
 		if (isDisposed())
 			return;
 
-		unstagedViewer.getControl().setEnabled(enabled);
-		stagedViewer.getControl().setEnabled(enabled);
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		enableAuthorText(enabled);
@@ -2079,15 +2091,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 					return;
 
 				final IndexDiffData indexDiff = doReload(repository);
-				boolean indexDiffAvailable;
-				boolean noConflicts;
-				if (indexDiff == null) {
-					indexDiffAvailable = false;
-					noConflicts = true;
-				} else {
-					indexDiffAvailable = true;
-					noConflicts = indexDiff.getConflicting().isEmpty();
-				}
+				boolean indexDiffAvailable = (indexDiff != null);
 
 				if (repositoryChanged) {
 					// Reset paths, they're from the old repository
@@ -2120,10 +2124,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 				updateRebaseButtonVisibility(repository.getRepositoryState()
 						.isRebasing());
 
-
 				boolean commitEnabled = indexDiffAvailable
 						&& repository.getRepositoryState().canCommit()
-						&& noConflicts;
+						&& indexDiff.getConflicting().isEmpty();
 				commitButton.setEnabled(commitEnabled);
 
 				boolean commitAndPushEnabled = commitEnabled
@@ -2132,12 +2135,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 				boolean rebaseContinueEnabled = indexDiffAvailable
 						&& repository.getRepositoryState().isRebasing()
-						&& noConflicts;
+						&& indexDiff.getConflicting().isEmpty();
 				rebaseContinueButton.setEnabled(rebaseContinueEnabled);
 
 				form.setText(StagingView.getRepositoryName(repository));
 				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
-				enableCommitWidgets(indexDiffAvailable && noConflicts);
+				enableCommitWidgets(indexDiffAvailable
+						&& indexDiff.getConflicting().isEmpty());
 				updateSectionText();
 			}
 		});
@@ -2400,14 +2404,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 			.setPushUpstream(pushUpstream);
 
 		// don't allow to do anything as long as commit is in progress
-		enableCommitWidgets(false);
+		enableAllWidgets(false);
 		commitJob.addJobChangeListener(new JobChangeAdapter() {
 			@Override
 			public void done(IJobChangeEvent event) {
 				PlatformUI.getWorkbench().getDisplay()
 						.asyncExec(new Runnable() {
 							public void run() {
-								enableCommitWidgets(true);
+								enableAllWidgets(true);
 							}
 						});
 			}
@@ -2416,7 +2420,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) getSite()
 				.getService(IWorkbenchSiteProgressService.class);
 		if (service != null)
-			service.schedule(commitJob);
+			service.schedule(commitJob, 0, true);
 		else
 			commitJob.schedule();
 
