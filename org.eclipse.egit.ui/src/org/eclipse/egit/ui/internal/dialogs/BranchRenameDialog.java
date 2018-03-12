@@ -80,8 +80,9 @@ public class BranchRenameDialog extends TitleAreaDialog {
 			prefix = Constants.R_REMOTES;
 		else
 			prefix = null;
+		String shortName = null;
 		if (prefix != null) {
-			String shortName = Repository.shortenRefName(branchToRename
+			shortName = Repository.shortenRefName(branchToRename
 					.getName());
 			setMessage(NLS.bind(UIText.BranchRenameDialog_Message, shortName));
 			final IInputValidator inputValidator = ValidationUtils
@@ -96,6 +97,12 @@ public class BranchRenameDialog extends TitleAreaDialog {
 		} else
 			setErrorMessage(NLS.bind(
 					UIText.BranchRenameDialog_WrongPrefixErrorMessage, oldName));
+
+		if (shortName != null) {
+			name.setText(shortName);
+			name.setSelection(0, shortName.length());
+		}
+
 		getButton(OK).setEnabled(false);
 	}
 
