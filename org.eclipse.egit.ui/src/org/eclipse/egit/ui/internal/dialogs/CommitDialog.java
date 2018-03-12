@@ -77,6 +77,7 @@ import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
@@ -202,15 +203,20 @@ public class CommitDialog extends TitleAreaDialog {
 		private ResourceManager resourceManager = new LocalResourceManager(
 				JFaceResources.getResources());
 
+		private final Image SUBMODULE = UIIcons.REPOSITORY.createImage();
+
 		private Image getEditorImage(CommitItem item) {
-			Image image = DEFAULT;
-			String name = new Path(item.path).lastSegment();
-			if (name != null) {
-				ImageDescriptor descriptor = PlatformUI.getWorkbench()
-						.getEditorRegistry().getImageDescriptor(name);
-				image = (Image) this.resourceManager.get(descriptor);
-			}
-			return image;
+			if (!item.submodule) {
+				Image image = DEFAULT;
+				String name = new Path(item.path).lastSegment();
+				if (name != null) {
+					ImageDescriptor descriptor = PlatformUI.getWorkbench()
+							.getEditorRegistry().getImageDescriptor(name);
+					image = (Image) this.resourceManager.get(descriptor);
+				}
+				return image;
+			} else
+				return SUBMODULE;
 		}
 
 		private Image getDecoratedImage(Image base, ImageDescriptor decorator) {
@@ -251,6 +257,7 @@ public class CommitDialog extends TitleAreaDialog {
 		}
 
 		public void dispose() {
+			SUBMODULE.dispose();
 			resourceManager.dispose();
 			super.dispose();
 		}
@@ -478,6 +485,7 @@ public class CommitDialog extends TitleAreaDialog {
 		for (String path : paths) {
 			CommitItem item = new CommitItem();
 			item.status = getFileStatus(path, indexDiff);
+			item.submodule = FileMode.GITLINK == indexDiff.getIndexMode(path);
 			item.path = path;
 			items.add(item);
 		}
@@ -865,6 +873,11 @@ public class CommitDialog extends TitleAreaDialog {
 		ColumnViewerToolTipSupport.enableFor(filesViewer);
 		filesViewer.setContentProvider(ArrayContentProvider.getInstance());
 		filesViewer.setUseHashlookup(true);
+		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
+				.getDialogSettings();
+		if (settings.get(SHOW_UNTRACKED_PREF) != null)
+			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
+					.booleanValue();
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items.toArray());
 		filesViewer.getTable().setMenu(getContextMenu());
@@ -881,12 +894,6 @@ public class CommitDialog extends TitleAreaDialog {
 		showUntrackedItem.setImage(showUntrackedImage);
 		showUntrackedItem
 				.setToolTipText(UIText.CommitDialog_ShowUntrackedFiles);
-		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
-				.getDialogSettings();
-		if (settings.get(SHOW_UNTRACKED_PREF) != null) {
-			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
-					.booleanValue();
-		}
 		showUntrackedItem.setSelection(showUntracked);
 		showUntrackedItem.addSelectionListener(new SelectionAdapter() {
 
@@ -948,11 +955,16 @@ public class CommitDialog extends TitleAreaDialog {
 			filesViewer.setAllGrayed(true);
 			filesViewer.setAllChecked(true);
 		} else {
+			final boolean includeUntracked = getPreferenceStore().getBoolean(
+					UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED);
 			for (CommitItem item : items) {
-				if ((preselectAll || preselectedFiles.contains(item.path)) &&
-						item.status != Status.UNTRACKED &&
-						item.status != Status.ASSUME_UNCHANGED)
-					filesViewer.setChecked(item, true);
+				if (!preselectAll && !preselectedFiles.contains(item.path))
+					continue;
+				if (item.status == Status.ASSUME_UNCHANGED)
+					continue;
+				if (!includeUntracked && item.status == Status.UNTRACKED)
+					continue;
+				filesViewer.setChecked(item, true);
 			}
 		}
 
@@ -1165,6 +1177,8 @@ class CommitItem {
 	Status status;
 
 	String path;
+
+	boolean submodule;
 
 	/** The ordinal of this {@link Enum} is used to provide the "native" sorting of the list */
 	public static enum Status {
