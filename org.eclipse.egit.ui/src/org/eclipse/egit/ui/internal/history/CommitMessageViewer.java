@@ -803,7 +803,7 @@ class CommitMessageViewer extends TextViewer implements
 					- matcher.start(), null, null, SWT.ITALIC));
 		}
 
-		// build the list of file diffs asynchronously to ensure UI
+		// build the asynchronously to ensure UI
 		// responsiveness
 		if (!currentDiffs.isEmpty() && commit.getParentCount() == 1)
 			buildDiffs(d, styles, monitor, trace);
