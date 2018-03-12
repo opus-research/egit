@@ -31,8 +31,6 @@ import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.osgi.util.NLS;
@@ -93,11 +91,7 @@ public class MergeOperation implements IEGitOperation {
 				mymonitor.worked(1);
 				MergeCommand merge;
 				try {
-					Ref ref = repository.getRef(refName);
-					if (ref != null)
-						merge = git.merge().include(ref);
-					else
-						merge = git.merge().include(ObjectId.fromString(refName));
+					merge = git.merge().include(repository.getRef(refName));
 				} catch (IOException e) {
 					throw new TeamException(CoreText.MergeOperation_InternalError, e);
 				}

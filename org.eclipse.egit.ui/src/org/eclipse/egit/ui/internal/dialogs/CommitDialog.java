@@ -449,6 +449,10 @@ public class CommitDialog extends Dialog {
 	 * @return the calculated commit message
 	 */
 	private String calculateCommitMessage() {
+		if(commitMessage != null) {
+			// special case for ament or merge
+			return commitMessage;
+		}
 		String calculatedCommitMessage = null;
 
 		Set<IResource> resources = new HashSet<IResource>();
@@ -674,7 +678,7 @@ public class CommitDialog extends Dialog {
 		IndexDiff indexDiff = new IndexDiff(repo, Constants.HEAD, fileTreeIterator);
 		Set<String> repositoryPaths = Collections.singleton(path);
 		indexDiff.setFilter(PathFilterGroup.createFromStrings(repositoryPaths));
-		indexDiff.diff(null, 0, 0, ""); //$NON-NLS-1$
+		indexDiff.diff();
 		return getFileStatus(path, indexDiff);
 	}
 
