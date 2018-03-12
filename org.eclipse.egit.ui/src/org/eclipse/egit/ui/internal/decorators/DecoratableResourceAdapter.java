@@ -93,10 +93,8 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		String repoRelativePath = makeRepoRelative(resource);
 
 		// ignored
-		Set<String> ignoredFiles = indexDiffData.getIgnored();
-		ignored = containsPrefixPath(ignoredFiles, repoRelativePath);
 		Set<String> untracked = indexDiffData.getUntracked();
-		tracked = !untracked.contains(repoRelativePath) && !ignored;
+		tracked = !untracked.contains(repoRelativePath);
 
 		Set<String> added = indexDiffData.getAdded();
 		Set<String> removed = indexDiffData.getRemoved();
@@ -122,14 +120,8 @@ class DecoratableResourceAdapter extends DecoratableResource {
 	private void extractContainerProperties() {
 		String repoRelativePath = makeRepoRelative(resource) + "/"; //$NON-NLS-1$
 
-		Set<String> ignoredFiles = indexDiffData.getIgnored();
-		ignored = containsPrefixPath(ignoredFiles, repoRelativePath);
-
 		// only file can be not tracked.
-		if (ignored)
-			tracked = false;
-		else
-			tracked = true; // TODO: implement decoration for untracked folders
+		tracked = true;
 
 		// containers are marked as staged whenever file was added, removed or
 		// changed
@@ -166,17 +158,4 @@ class DecoratableResourceAdapter extends DecoratableResource {
 				return true;
 		return false;
 	}
-
-	private boolean containsPrefixPath(Set<String> collection, String path) {
-		// when prefix is empty we are handling repository root, therefore we
-		// should return true whenever collection isn't empty
-		if (path.length() == 1 && !collection.isEmpty())
-			return true;
-
-		for (String entry : collection)
-			if (path.startsWith(entry))
-				return true;
-		return false;
-	}
-
 }
