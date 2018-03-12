@@ -1,12 +1,13 @@
+package org.eclipse.egit.ui.test.team.actions;
+
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui.test.team.actions;
 
 import static org.junit.Assert.assertEquals;
 
@@ -19,17 +20,16 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarToggleButton;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -38,12 +38,14 @@ import org.junit.runner.RunWith;
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class CommitNonWSChangesTest extends LocalRepositoryTestCase {
-	private File repositoryFile;
+	private static File repositoryFile;
 
-	private Repository repository;
+	private static Repository repository;
 
-	@Before
-	public void setup() throws Exception {
+	protected static final GitRepositoriesViewTestUtils myRepoViewUtil = new GitRepositoriesViewTestUtils();
+
+	@BeforeClass
+	public static void setup() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		Activator.getDefault().getRepositoryUtil()
 				.addConfiguredRepository(repositoryFile);
@@ -59,18 +61,16 @@ public class CommitNonWSChangesTest extends LocalRepositoryTestCase {
 		clickOnCommit();
 
 		SWTBotShell commitDialog = bot.shell(UIText.CommitDialog_CommitChanges);
-		SWTBotToolbarToggleButton showUntracked = commitDialog.bot()
-				.toolbarToggleButtonWithTooltip(
-						UIText.CommitDialog_ShowUntrackedFiles);
-		if (!showUntracked.isChecked())
-			showUntracked.select();
-
-		SWTBotTree tree = commitDialog.bot().tree();
-		assertEquals("Wrong row count", 4, tree.rowCount());
-		assertTreeLineContent(tree, 0, "GeneralProject/.project");
-		assertTreeLineContent(tree, 1, "GeneralProject/folder/test.txt");
-		assertTreeLineContent(tree, 2, "GeneralProject/folder/test2.txt");
-		assertTreeLineContent(tree, 3, "ProjectWithoutDotProject/.project");
+		SWTBotTable table = commitDialog.bot().table();
+		assertEquals("Wrong row count", 4, table.rowCount());
+		assertTableLineContent(table, 0, "Rem., not staged",
+				"GeneralProject/.project");
+		assertTableLineContent(table, 1, "Rem., not staged",
+				"GeneralProject/folder/test.txt");
+		assertTableLineContent(table, 2, "Rem., not staged",
+				"GeneralProject/folder/test2.txt");
+		assertTableLineContent(table, 3, "Untracked",
+				"ProjectWithoutDotProject/.project");
 
 		commitDialog.bot().textWithLabel(UIText.CommitDialog_Author)
 				.setText(TestUtil.TESTAUTHOR);
@@ -79,7 +79,7 @@ public class CommitNonWSChangesTest extends LocalRepositoryTestCase {
 		commitDialog.bot()
 				.styledTextWithLabel(UIText.CommitDialog_CommitMessage)
 				.setText("Delete Project GeneralProject");
-		selectAllCheckboxes(tree);
+		selectAllCheckboxes(table);
 		commitDialog.bot().button(UIText.CommitDialog_Commit).click();
 		// wait until commit is completed
 		Job.getJobManager().join(JobFamilies.COMMIT, null);
@@ -93,20 +93,20 @@ public class CommitNonWSChangesTest extends LocalRepositoryTestCase {
 				.button(IDialogConstants.NO_LABEL).click();
 	}
 
-	private void assertTreeLineContent(SWTBotTree tree, int rowIndex,
-			String file) {
-		SWTBotTreeItem treeItem = tree.getAllItems()[rowIndex];
-		assertEquals(file, treeItem.cell(1));
+	private void assertTableLineContent(SWTBotTable table, int rowIndex,
+			String status, String file) {
+		assertEquals(status, table.getTableItem(rowIndex).getText(0));
+		assertEquals(file, table.getTableItem(rowIndex).getText(1));
 	}
 
-	private void selectAllCheckboxes(SWTBotTree tree) {
-		for (int i = 0; i < tree.rowCount(); i++) {
-			tree.getAllItems()[i].check();
+	private void selectAllCheckboxes(SWTBotTable table) {
+		for (int i = 0; i < table.rowCount(); i++) {
+			table.getTableItem(i).check();
 		}
 	}
 
 	private void clickOnCommit() throws Exception {
-		SWTBotView repoView = TestUtil.showView(RepositoriesView.VIEW_ID);
+		SWTBotView repoView = myRepoViewUtil.openRepositoriesView(bot);
 		SWTBotTree tree = repoView.bot().tree();
 		TestUtil.waitUntilTreeHasNodeContainsText(bot, tree, REPO1, 10000);
 		tree.getAllItems()[0].contextMenu("Commit...").click();

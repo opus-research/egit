@@ -30,32 +30,47 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class LinkedResourcesTest extends LocalRepositoryTestCase {
 
 	// the standalone temporary directory
-	private File standaloneDirectory;
+	private static File standaloneDirectory;
 
 	private static final String LINKED_FILE = "LinkedFile";
 
 	private static final String STANDALONE_FOLDER = "StandaloneFolder";
 
+	private File gitDir;
+
 	private IProject project;
 
 	@Before
 	public void setUp() throws Exception {
-		createProjectAndCommitToRepository();
+		gitDir = createProjectAndCommitToRepository();
 		project = ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ1);
-		// create standalone temporary directory
-		standaloneDirectory = testUtils.createTempDir(STANDALONE_FOLDER);
+		// create our standalone temporary directory in the user space
+		File userHome = FS.DETECTED.userHome();
+		standaloneDirectory = new File(userHome, STANDALONE_FOLDER);
 		if (standaloneDirectory.exists())
 			FileUtils.delete(standaloneDirectory, FileUtils.RECURSIVE
 					| FileUtils.RETRY);
 		if (!standaloneDirectory.exists())
 			FileUtils.mkdir(standaloneDirectory, true);
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		deleteAllProjects();
+		shutDownRepositories();
+		FileUtils.delete(gitDir.getParentFile(), FileUtils.RECURSIVE
+				| FileUtils.RETRY);
+		FileUtils.delete(standaloneDirectory, FileUtils.RECURSIVE
+				| FileUtils.RETRY);
 	}
 
 	private List<RepositoryActionHandler> getRepositoryActionHandlerList()
