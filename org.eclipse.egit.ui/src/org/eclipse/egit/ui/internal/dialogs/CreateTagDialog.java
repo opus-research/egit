@@ -30,6 +30,7 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IInputValidator;
@@ -133,8 +134,9 @@ public class CreateTagDialog extends TitleAreaDialog {
 		private final Image IMG_LIGHTTAG;
 
 		private TagLabelProvider() {
-			IMG_TAG = UIIcons.TAG_ANNOTATED.createImage();
-			IMG_LIGHTTAG = UIIcons.TAG.createImage();
+			IMG_TAG = UIIcons.TAG.createImage();
+			IMG_LIGHTTAG = SWTUtils.getDecoratedImage(IMG_TAG,
+					UIIcons.OVR_LIGHTTAG);
 		}
 
 		public Image getColumnImage(Object element, int columnIndex) {
