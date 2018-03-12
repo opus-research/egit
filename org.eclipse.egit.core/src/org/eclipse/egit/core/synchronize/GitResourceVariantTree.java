@@ -216,8 +216,6 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 	private IResourceVariant findFolderVariant(IResource resource,
 			Repository repository) {
 		File workDir = repository.getWorkDir();
-		if (resource.getLocation() == null)
-			return null;
 		File resourceLocation = resource.getLocation().toFile();
 		String resLocationAbsolutePath = resourceLocation.getAbsolutePath();
 
@@ -225,8 +223,10 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 			String entryName = entry.getKey();
 			File file = new File(workDir, entryName);
 
-			if (file.getAbsolutePath().startsWith(resLocationAbsolutePath))
+			if (file.getAbsolutePath().startsWith(resLocationAbsolutePath)) {
 				return new GitFolderResourceVariant(resource);
+			}
+
 		}
 
 		return null;
@@ -234,11 +234,8 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 
 	private IResourceVariant findFileVariant(IResource resource,
 			Repository repository) throws TeamException {
-		RepositoryMapping repoMapping = RepositoryMapping.getMapping(resource);
-		if (repoMapping == null)
-			return null;
-
-		String gitPath = repoMapping.getRepoRelativePath(resource);
+		String gitPath = RepositoryMapping.getMapping(resource)
+				.getRepoRelativePath(resource);
 		ObjectId objectId = updated.get(gitPath);
 		if (objectId != null) {
 			File root = repository.getWorkDir();
@@ -269,8 +266,8 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 
 	public void flushVariants(IResource resource, int depth)
 			throws TeamException {
-		if (!gsdData.getData(resource.getProject()).shouldIncludeLocal())
-			store.flushBytes(resource, depth);
+		// nothing do to here
+		// TODO implement ?
 	}
 
 	@Override
@@ -363,10 +360,7 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 	protected IResourceVariant fetchVariant(IResource resource, int depth,
 			IProgressMonitor monitor) throws TeamException {
 		try {
-			if (resource != null)
-				return fetchVariant(resource, monitor);
-			else
-				return null;
+			return fetchVariant(resource, monitor);
 		} finally {
 			monitor.done();
 		}
