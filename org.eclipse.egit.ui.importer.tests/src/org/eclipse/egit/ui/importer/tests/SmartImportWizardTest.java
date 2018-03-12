@@ -27,15 +27,19 @@ import org.eclipse.core.resources.IWorkspaceDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.results.BoolResult;
+import org.eclipse.swtbot.swt.finder.waits.DefaultCondition;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.internal.wizards.datatransfer.SmartImportJob;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -46,7 +50,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(SWTBotJunit4ClassRunner.class)
-public class EasymportWizardTest {
+public class SmartImportWizardTest {
 
 	protected static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
 
@@ -133,13 +137,14 @@ public class EasymportWizardTest {
 		Set<IProject> newProjects = null;
 
 		bot.menu("File").menu("Import...").click();
-		bot.tree().expandNode("Git").select("Projects from Git (with smart import)");
+		expandAndWait(bot.tree().getTreeItem("Git"))
+				.select("Projects from Git (with smart import)");
 		bot.button("Next >").click();
 		bot.tree().select("Clone URI");
 		bot.button("Next >").click();
 		bot.text().setText("https://git.eclipse.org/r/jgit/jgit");
 		bot.button("Next >").click();
-		waitForNextEnabled(30); // Time to fetch branch info, up to 30sec
+		waitForButtonEnabled("Next >", 30); // Time to fetch branch info
 		bot.button("Deselect All").click();
 		bot.tree().getTreeItem("master").check();
 		bot.button("Next >").click();
@@ -147,13 +152,11 @@ public class EasymportWizardTest {
 		try {
 			bot.text().setText(tmpDir.toString());
 			bot.button("Next >").click();
-			waitForNextEnabled(180); // Time to clone repo, up to 3 minutes
-			bot.button("Next >").click();
+			waitForButtonEnabled("Finish", 180); // Time to clone repo
 			bot.button("Finish").click();
 
-			bot.shell("Nested Projects");
-			waitForLabel("Completed", 30);
-			bot.button("OK").click();
+			Job.getJobManager().join(SmartImportJob.class,
+					new NullProgressMonitor());
 
 			newProjects = new HashSet<>(Arrays.asList(ResourcesPlugin.getWorkspace().getRoot().getProjects()));
 			newProjects.removeAll(initialProjects);
@@ -175,11 +178,12 @@ public class EasymportWizardTest {
 		}
 	}
 
-	private void waitForNextEnabled(final long timeoutInSec) {
+	private void waitForButtonEnabled(final String buttonLabel,
+			final long timeoutInSec) {
 		bot.waitWhile(new ICondition() {
 			@Override
 			public boolean test() throws Exception {
-				return !bot.button("Next >").isEnabled();
+				return !bot.button(buttonLabel).isEnabled();
 			}
 
 			@Override
@@ -189,35 +193,29 @@ public class EasymportWizardTest {
 
 			@Override
 			public String getFailureMessage() {
-				return "Next > button not enabled within " + timeoutInSec
+				return buttonLabel + " button not enabled within "
+						+ timeoutInSec
 						+ "sec";
 			}
 		}, timeoutInSec * 1000L);
 	}
 
-	private void waitForLabel(final String label, final long timeoutInSec) {
-		bot.waitUntil(new ICondition() {
-			@Override
-			public boolean test() throws Exception {
-				try {
-					bot.label(label);
-					return true;
-				} catch (WidgetNotFoundException e) {
-					return false;
-				}
-			}
+	private SWTBotTreeItem expandAndWait(final SWTBotTreeItem treeItem) {
+		treeItem.expand();
+		new SWTBot().waitUntil(new DefaultCondition() {
 
 			@Override
-			public void init(SWTBot swtBot) {
-				// Nothing
+			public boolean test() {
+				SWTBotTreeItem[] children = treeItem.getItems();
+				return children != null && children.length > 0;
 			}
 
 			@Override
 			public String getFailureMessage() {
-				return "Label '" + label + "' not found in " + timeoutInSec
-						+ "sec";
+				return "No children found for " + treeItem.getText();
 			}
-		}, timeoutInSec * 1000L);
+		});
+		return treeItem;
 	}
 
 }
