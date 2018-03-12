@@ -5,7 +5,6 @@
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  * Copyright (C) 2013, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2014, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -302,6 +301,12 @@ public class CoreText extends NLS {
 	public static String RevertCommitOperation_reverting;
 
 	/** */
+	public static String RewordCommitOperation_rewording;
+
+	/** */
+	public static String EditCommitOperation_editing;
+
+	/** */
 	public static String BranchOperation_closingMissingProject;
 
 	/** */
@@ -372,9 +377,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitProjectData_UnmappingGoneResourceFailed;
-
-	/** */
-	public static String GitResourceVariantTreeSubscriber_name;
 
 	/** */
 	public static String GitResourceVariantTreeSubscriber_fetchTaskName;
