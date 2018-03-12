@@ -13,17 +13,44 @@ package org.eclipse.egit.ui.internal.branch;
 import java.io.File;
 import java.util.List;
 
-import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.egit.core.internal.job.JobUtil;
+import org.eclipse.egit.core.op.ResetOperation;
+import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.commit.CommitUI;
 import org.eclipse.egit.ui.internal.dialogs.NonDeletedFilesDialog;
+import org.eclipse.egit.ui.internal.dialogs.NonDeletedFilesTree;
+import org.eclipse.egit.ui.internal.stash.StashCreateUI;
+import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jgit.api.CheckoutResult;
+import org.eclipse.jgit.api.ResetCommand.ResetType;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 
 /**
  * Display the result of a Branch operation.
  */
-public class BranchResultDialog {
+public class BranchResultDialog extends MessageDialog {
+	private static final Image INFO = PlatformUI.getWorkbench()
+			.getSharedImages().getImage(ISharedImages.IMG_OBJS_INFO_TSK);
+
+	private final CheckoutResult result;
+
+	private final Repository repository;
+
+	private static String target;
 
 	/**
 	 * @param result
@@ -34,12 +61,13 @@ public class BranchResultDialog {
 	 */
 	public static void show(final CheckoutResult result,
 			final Repository repository, final String target) {
+		BranchResultDialog.target = target;
 		if (result.getStatus() == CheckoutResult.Status.CONFLICTS)
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 				public void run() {
 					Shell shell = PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getShell();
-					new CheckoutConflictDialog(shell, repository, result.getConflictList())
+					new BranchResultDialog(shell, repository, result, target)
 							.open();
 				}
 			});
@@ -63,5 +91,74 @@ public class BranchResultDialog {
 				}
 			});
 		}
+	}
+
+	/**
+	 * @param shell
+	 * @param repository
+	 * @param result
+	 * @param target
+	 */
+	private BranchResultDialog(Shell shell, Repository repository,
+			CheckoutResult result, String target) {
+		super(shell, UIText.BranchResultDialog_CheckoutConflictsTitle, INFO,
+				NLS.bind(UIText.BranchResultDialog_CheckoutConflictsMessage,
+						Repository.shortenRefName(target)),
+				MessageDialog.INFORMATION,
+				new String[] { IDialogConstants.OK_LABEL }, 0);
+		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
+		this.repository = repository;
+		this.result = result;
+	}
+
+	@Override
+	protected Control createCustomArea(Composite parent) {
+		Composite main = new Composite(parent, SWT.NONE);
+		main.setLayout(new GridLayout(1, false));
+		GridDataFactory.fillDefaults().indent(0, 0).grab(true, true)
+				.applyTo(main);
+		new NonDeletedFilesTree(main, repository, this.result.getConflictList());
+		applyDialogFont(main);
+
+		return main;
+	}
+
+	protected void buttonPressed(int buttonId) {
+		boolean shouldCheckout = false;
+		switch (buttonId) {
+		case IDialogConstants.PROCEED_ID:
+			CommitUI commitUI = new CommitUI(getShell(), repository, new IResource[0], true);
+			shouldCheckout = commitUI.commit();
+			break;
+		case IDialogConstants.ABORT_ID:
+			final ResetOperation operation = new ResetOperation(repository,
+					Constants.HEAD, ResetType.HARD);
+			String jobname = NLS.bind(UIText.ResetAction_reset, Constants.HEAD);
+			JobUtil.scheduleUserJob(operation, jobname, JobFamilies.RESET);
+			shouldCheckout = true;
+			break;
+		case IDialogConstants.SKIP_ID:
+			StashCreateUI stashCreateUI = new StashCreateUI(getShell(), repository);
+			shouldCheckout = stashCreateUI.createStash();
+			break;
+		case IDialogConstants.OK_ID:
+			super.buttonPressed(buttonId);
+		}
+		if (shouldCheckout) {
+			super.buttonPressed(buttonId);
+			BranchOperationUI op = BranchOperationUI.checkout(repository, target);
+			op.start();
+		}
+	}
+
+	@Override
+	protected void createButtonsForButtonBar(Composite parent) {
+		super.createButtonsForButtonBar(parent);
+		createButton(parent, IDialogConstants.PROCEED_ID,
+				UIText.BranchResultDialog_buttonCommit, false);
+		createButton(parent, IDialogConstants.SKIP_ID,
+				UIText.BranchResultDialog_buttonStash, false);
+		createButton(parent, IDialogConstants.ABORT_ID,
+				UIText.BranchResultDialog_buttonReset, false);
 	}
 }

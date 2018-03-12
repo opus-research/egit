@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
- *
+ * Copyright (C) 2010, 2012 Jens Baumgart <jens.baumgart@sap.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,24 +17,21 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
-import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
-import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.api.MergeResult;
-import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
@@ -53,6 +49,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.OpenAndLinkWithEditorHelper;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
@@ -68,19 +65,6 @@ public class MergeResultDialog extends Dialog {
 	private final Repository repository;
 
 	private ObjectReader objectReader;
-
-	/**
-	 * @param parentShell
-	 * @param repository
-	 * @param mergeResult
-	 * @return the created dialog
-	 */
-	public static Dialog getDialog(Shell parentShell, Repository repository, MergeResult mergeResult) {
-		if(mergeResult.getMergeStatus() == MergeStatus.CHECKOUT_CONFLICT)
-			return new CheckoutConflictDialog(parentShell, repository, mergeResult.getCheckoutConflicts());
-		else
-			return new MergeResultDialog(parentShell, repository, mergeResult);
-	}
 
 	/**
 	 * @param parentShell
@@ -191,17 +175,30 @@ public class MergeResultDialog extends Dialog {
 				.align(SWT.FILL, SWT.FILL).span(2, 1)
 				.applyTo(viewer.getControl());
 		viewer.setInput(mergeResult);
-		viewer.addOpenListener(new IOpenListener() {
 
-			public void open(OpenEvent event) {
-				ISelection selection = event.getSelection();
+		new OpenAndLinkWithEditorHelper(viewer) {
+			@Override
+			protected void linkToEditor(ISelection selection) {
+				// Not supported
+
+			}
+			@Override
+			protected void open(ISelection selection, boolean activate) {
+				handleOpen(selection, OpenStrategy.activateOnOpen());
+			}
+			@Override
+			protected void activate(ISelection selection) {
+				handleOpen(selection, true);
+			}
+			private void handleOpen(ISelection selection, boolean activateOnOpen) {
 				if (selection instanceof IStructuredSelection)
 					for (Object element : ((IStructuredSelection) selection)
 							.toArray())
 						if (element instanceof RepositoryCommit)
-							CommitEditor.openQuiet((RepositoryCommit) element);
+							CommitEditor.openQuiet((RepositoryCommit) element, activateOnOpen);
 			}
-		});
+		};
+
 		return composite;
 	}
 
