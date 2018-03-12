@@ -33,11 +33,9 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DefaultTextDoubleClickStrategy;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -122,6 +120,8 @@ class CommitMessageViewer extends SourceViewer implements
 	private List<Ref> allRefs;
 
 	private ListenerHandle refsChangedListener;
+
+	private StyleRange[] styleRanges;
 
 	private BooleanPrefAction showTagSequencePrefAction;
 
@@ -309,8 +309,7 @@ class CommitMessageViewer extends SourceViewer implements
 						for (StyleRange styleRange : hyperlinkDetectorStyleRanges)
 							styleRangeList.add(styleRange);
 
-						StyleRange[] styleRanges = new StyleRange[styleRangeList
-								.size()];
+						styleRanges = new StyleRange[styleRangeList.size()];
 						styleRangeList.toArray(styleRanges);
 
 						// Style ranges must be in order.
@@ -325,38 +324,10 @@ class CommitMessageViewer extends SourceViewer implements
 						});
 
 						text.setStyleRanges(styleRanges);
-
-						revealFirstDiff();
 					}
-
 				});
 			}
 		});
-	}
-
-	/**
-	 * Tries to reveal the first line of the first currently selected diff in
-	 * the diff viewer
-	 */
-	private void revealFirstDiff() {
-		if (currentDiffs.isEmpty())
-			return;
-
-		String lineToSelect = currentDiffs.get(0).getPath();
-		int linesNmbr = getDocument().getNumberOfLines();
-		for (int i = 1; i < linesNmbr; i++) {
-			try {
-				IRegion lineInfo = getDocument().getLineInformation(i);
-				String line = getDocument().get(lineInfo.getOffset(),
-						lineInfo.getLength());
-				if (line.contains(lineToSelect)) {
-					setTopIndex(i);
-					return;
-				}
-			} catch (BadLocationException e) {
-				// don't care
-			}
-		}
 	}
 
 	@Override
@@ -392,6 +363,7 @@ class CommitMessageViewer extends SourceViewer implements
 		if (input == commit)
 			return;
 		currentDiffs.clear();
+		styleRanges = null;
 		commit = (PlotCommit<?>) input;
 		allRefs = getBranches();
 		if (refsChangedListener != null)

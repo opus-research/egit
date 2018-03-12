@@ -939,7 +939,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				}
 
 				if (input.getSingleFile() != null)
-					fileViewer.revealFirstInterestingElement();
+					fileViewer.selectFirstInterestingElement();
 			}
 		});
 		commentViewer
