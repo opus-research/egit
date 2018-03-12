@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.project.GitProjectData;
@@ -17,7 +16,6 @@ import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
-import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 /** Preferences for our window cache. */
 public class WindowCachePreferencePage extends FieldEditorPreferencePage
@@ -30,9 +28,7 @@ public class WindowCachePreferencePage extends FieldEditorPreferencePage
 	public WindowCachePreferencePage() {
 		super(GRID);
 		setTitle(UIText.WindowCachePreferencePage_title);
-		ScopedPreferenceStore store = new ScopedPreferenceStore(
-				new InstanceScope(), Activator.getPluginId());
-		setPreferenceStore(store);
+		setPreferenceStore(Activator.getDefault().getPreferenceStore());
 	}
 
 	@Override

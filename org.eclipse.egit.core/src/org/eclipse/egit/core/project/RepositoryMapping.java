@@ -37,7 +37,7 @@ import org.eclipse.jgit.lib.GitIndex.Entry;
  */
 public class RepositoryMapping {
 	static boolean isInitialKey(final String key) {
-		return key.endsWith(".gitdir");  //$NON-NLS-1$
+		return key.endsWith(".gitdir");
 	}
 
 	private final String containerPath;
@@ -92,9 +92,9 @@ public class RepositoryMapping {
 				gitdirPath = remainder.toPortableString().substring(device.length());
 		} else if (gLocParent.isPrefixOf(cLoc)) {
 			cnt = cLoc.segmentCount() - cLoc.matchingFirstSegments(gLocParent);
-			p = "";  //$NON-NLS-1$
+			p = "";
 			while (cnt-- > 0) {
-				p += "../";  //$NON-NLS-1$
+				p += "../";
 			}
 			p += gLoc.segment(gLoc.segmentCount() - 1);
 			gitdirPath = p;
@@ -143,8 +143,8 @@ public class RepositoryMapping {
 			workdirPrefix = getWorkDir().getAbsolutePath();
 		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
-		if (!workdirPrefix.endsWith("/"))  //$NON-NLS-1$
-			workdirPrefix += "/";  //$NON-NLS-1$
+		if (!workdirPrefix.endsWith("/"))
+			workdirPrefix += "/";
 	}
 
 	/**
@@ -168,13 +168,11 @@ public class RepositoryMapping {
 	}
 
 	synchronized void store(final Properties p) {
-		p.setProperty(containerPath + ".gitdir", gitdirPath);  //$NON-NLS-1$
+		p.setProperty(containerPath + ".gitdir", gitdirPath);
 	}
 
 	public String toString() {
-		return "RepositoryMapping[" //$NON-NLS-1$
-				+ containerPath + " -> " //$NON-NLS-1$
-				+ gitdirPath + "]"; //$NON-NLS-1$
+		return "RepositoryMapping[" + containerPath + " -> " + gitdirPath + "]";
 	}
 
 	/**
@@ -223,7 +221,7 @@ public class RepositoryMapping {
 		if (pLen > pfxLen)
 			return p.substring(pfxLen);
 		else if (p.length() == pfxLen - 1)
-			return "";  //$NON-NLS-1$
+			return "";
 		return null;
 	}
 
