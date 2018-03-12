@@ -116,7 +116,8 @@ public class PushWizard extends Wizard {
 			}
 		};
 		confirmPage.setHelpContext(HELP_CONTEXT);
-		setDefaultPageImageDescriptor(UIIcons.WIZBAN_PUSH);
+		// TODO use/create another cool icon
+		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
 	}
 

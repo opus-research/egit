@@ -38,7 +38,7 @@
          <action
                class="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspaceAction"
                id="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspace"
-               icon="$nl$/icons/obj16/synchronize.png"
+               icon="$nl$/icons/obj16/remotespec.gif"
                label="%SynchronizeWorkspace_label"
                menubarPath="team.main/group3"/>
      </objectContribution>
@@ -330,73 +330,6 @@
                </or>
             </iterate>
          </and>
-      </definition>
-      <definition id="org.eclipse.egit.ui.resourcesSingleRepository">
-         <or>
-            <test
-                  property="GitSelection.resourcesSingleRepository">
-            </test>
-            <with variable="activePart">
-               <instanceof
-                     value="org.eclipse.ui.IEditorPart">
-               </instanceof>
-               <with
-                     variable="activeEditorInput">
-                  <adapt
-                        type="org.eclipse.core.resources.IResource">
-                     <test
-                           property="GitResource.isShared">
-                     </test>
-                  </adapt>
-               </with>
-            </with>
-         </or>
-      </definition>
-      <definition id="org.eclipse.egit.ui.fileOrFolderInRepository">
-         <or>
-            <test
-                  property="GitSelection.fileOrFolderInRepository">
-            </test>
-            <with variable="activePart">
-               <instanceof
-                     value="org.eclipse.ui.IEditorPart">
-               </instanceof>
-               <with
-                     variable="activeEditorInput">
-                  <adapt
-                        type="org.eclipse.core.resources.IResource">
-                     <test
-                           property="GitResource.isShared">
-                     </test>
-                  </adapt>
-               </with>
-            </with>
-         </or>
-      </definition>
-      <definition id="org.eclipse.egit.ui.fileOrFolderInRepositoryWithGerritConfiguration">
-         <or>
-            <test
-                  property="GitSelection.fileOrFolderInRepository"
-                  args="hasGerritConfiguration">
-            </test>
-            <with variable="activePart">
-               <instanceof
-                     value="org.eclipse.ui.IEditorPart">
-               </instanceof>
-               <with
-                     variable="activeEditorInput">
-                  <adapt
-                        type="org.eclipse.core.resources.IResource">
-                     <test
-                           property="GitResource.isShared">
-                     </test>
-                     <test
-                           property="GitResource.hasGerritConfiguration">
-                     </test>
-                  </adapt>
-               </with>
-            </with>
-         </or>
       </definition>
    </extension>
 
@@ -748,7 +681,7 @@
          <action
            class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamConfigAction"
            definitionId="org.eclipse.egit.ui.team.Pull"
-           icon="icons/obj16/pull.png"
+           icon="icons/obj16/pull.gif"
            id="org.eclipse.egit.ui.actionpull"
            label="%PullIntoCurrentBranchMenuLabel"
            menubarPath="org.eclipse.egit.ui.gitmenu/repo"
@@ -759,7 +692,7 @@
 		 <action
            class="org.eclipse.egit.ui.internal.actions.SimpleFetchAction"
            definitionId="org.eclipse.egit.ui.team.SimpleFetch"
-           icon="icons/obj16/fetch.png"
+           icon="icons/obj16/fetch.gif"
            id="org.eclipse.egit.ui.actionfetch"
            label="%FetchFromUpstreamAction.label"
            menubarPath="org.eclipse.egit.ui.gitmenu/repo"
@@ -770,7 +703,7 @@
 		 <action
            class="org.eclipse.egit.ui.internal.actions.PushUpstreamOrBranchAction"
            definitionId="org.eclipse.egit.ui.team.SimplePush"
-           icon="icons/obj16/push.png"
+           icon="icons/obj16/push.gif"
            id="org.eclipse.egit.ui.actionpush"
            label="%PushToUpstreamAction.label"
            menubarPath="org.eclipse.egit.ui.gitmenu/repo"
@@ -834,7 +767,7 @@
          <action
            class="org.eclipse.egit.ui.internal.actions.CommitAction"
            definitionId="org.eclipse.egit.ui.team.Commit"
-           icon="icons/obj16/commit.png"
+           icon="icons/obj16/commit.gif"
            id="org.eclipse.egit.ui.actioncommit"
            label="%CommitAction_label"
            menubarPath="org.eclipse.egit.ui.gitmenu/repositoryGroup"
@@ -1042,9 +975,9 @@
          </class>
          <activeWhen>
             <or>
-               <reference
-                     definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-               </reference>
+               <test
+                     property="GitSelection.resourcesSingleRepository">
+               </test>
                <and>
                   <count
                         value="1">
@@ -1259,9 +1192,8 @@
          </class>
          <activeWhen>
             <or>
-               <reference
-                     definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-               </reference>
+               <test property="GitSelection.resourcesSingleRepository">
+               </test>
                <and>
                   <count
                         value="1">
@@ -1607,9 +1539,9 @@
                class="org.eclipse.egit.ui.internal.actions.ShowHistoryActionHandler">
          </class>
          <activeWhen>
-            <reference
-                  definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-            </reference>
+            <test
+                  property="GitSelection.resourcesSingleRepository">
+            </test>
          </activeWhen>
       </handler>
       <handler
@@ -1914,9 +1846,9 @@
             class="org.eclipse.egit.ui.internal.actions.UntrackActionHandler"
             commandId="org.eclipse.egit.ui.team.Untrack">
          <activeWhen>
-            <reference
-                  definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-            </reference>
+            <test
+                  property="GitSelection.resourcesSingleRepository">
+            </test>
          </activeWhen>
       </handler>
       <handler
@@ -2226,7 +2158,7 @@
          </command>
          <command
                commandId="org.eclipse.egit.ui.team.Push"
-               icon="icons/obj16/push.png"
+               icon="icons/obj16/push.gif"
                label="%RepoViewPushBranch.label"
                style="push">
             <visibleWhen
@@ -2245,7 +2177,7 @@
          </command>
          <command
                commandId="org.eclipse.egit.ui.team.Push"
-               icon="icons/obj16/push.png"
+               icon="icons/obj16/push.gif"
                label="%RepoViewPushTag.label"
                style="push">
             <visibleWhen
@@ -2444,7 +2376,7 @@
          </command>
          <command
                commandId="org.eclipse.egit.ui.team.Synchronize"
-               icon="icons/obj16/synchronize.png"
+               icon="icons/obj16/remotespec.gif"
                label="%RepoViewSynchronize.label"
                style="push">
             <visibleWhen
@@ -2475,7 +2407,7 @@
          </command>
          <command
                commandId="org.eclipse.egit.ui.team.Synchronize"
-               icon="icons/obj16/synchronize.png"
+               icon="icons/obj16/remotespec.gif"
                label="%RepoViewSynchronizeEachOther.label"
                style="push">
             <visibleWhen
@@ -2527,7 +2459,7 @@
          </command>
          <command
                commandId="org.eclipse.egit.ui.team.SimplePush"
-               icon="icons/obj16/push.png"
+               icon="icons/obj16/push.gif"
                label="%RepoViewPushSimpleLabel"
                style="push">
             <visibleWhen
@@ -2553,7 +2485,7 @@
          </command>
          <command
                commandId="org.eclipse.egit.ui.team.SimpleFetch"
-               icon="icons/obj16/fetch.png"
+               icon="icons/obj16/fetch.gif"
                label="%RepoViewFetchSimple.label"
                style="push">
             <visibleWhen
@@ -2862,7 +2794,7 @@
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=repo-1">
          <command
                commandId="org.eclipse.egit.ui.team.Commit"
-               icon="icons/obj16/commit.png"
+               icon="icons/obj16/commit.gif"
                label="%RepoViewCommit.label"
                style="push">
             <visibleWhen
@@ -3012,7 +2944,7 @@
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=repo-commit">
          <command
                commandId="org.eclipse.egit.ui.team.SimplePush"
-               icon="icons/obj16/push.png"
+               icon="icons/obj16/push.gif"
                label="%PushToUpstreamCommand.label"
                style="push">
             <visibleWhen
@@ -3033,7 +2965,7 @@
          </command>
          <command
                commandId="org.eclipse.egit.ui.team.SimpleFetch"
-               icon="icons/obj16/fetch.png"
+               icon="icons/obj16/fetch.gif"
                label="%FetchFromUpstreamCommand.label"
                style="push">
             <visibleWhen
@@ -3119,7 +3051,7 @@
          </dynamic>
          <command
                commandId="org.eclipse.egit.ui.team.Pull"
-               icon="icons/obj16/pull.png"
+               icon="icons/obj16/pull.gif"
                label="%RepoViewPullMenu.label"
                style="push">
             <visibleWhen
@@ -3145,7 +3077,7 @@
                label="%RemoteSubMenu.label">
             <command
                   commandId="org.eclipse.egit.ui.team.Push"
-                  icon="icons/obj16/push.png"
+                  icon="icons/obj16/push.gif"
                   label="%RepoViewPush.label"
                   style="push">
                <visibleWhen
@@ -3182,7 +3114,7 @@
             </command>
             <command
                   commandId="org.eclipse.egit.ui.team.Fetch"
-                  icon="icons/obj16/fetch.png"
+                  icon="icons/obj16/fetch.gif"
                   label="%RepoViewFetch.label"
                   style="push">
                <visibleWhen
@@ -3805,9 +3737,9 @@
                   style="push">
                <visibleWhen
                      checkEnabled="false">
-                  <reference
-                        definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-                  </reference>
+                  <test
+                        property="GitSelection.resourcesSingleRepository">
+                  </test>
                </visibleWhen>
             </command>
             <menu
@@ -3856,17 +3788,6 @@
                   </test>
                </visibleWhen>
             </dynamic>
-            <command
-                  commandId="org.eclipse.egit.ui.team.Pull"
-                  label="%PullIntoCurrentBranchMenuLabel"
-                  style="push">
-               <visibleWhen
-                     checkEnabled="false">
-                  <test
-                        property="GitSelection.projectsWithRepositories">
-                  </test>
-               </visibleWhen>
-            </command>
             <separator
                   name="org.eclipse.egit.ui.remoteSeparator"
                   visible="true">
@@ -3957,9 +3878,9 @@
                   label="%RepositorySubMenu.label">
                <visibleWhen
                      checkEnabled="false">
-                     <reference
-                           definitionId="org.eclipse.egit.ui.fileOrFolderInRepository">
-                     </reference>
+                     <test
+                           property="GitSelection.fileOrFolderInRepository">
+                     </test>
                </visibleWhen>
                <separator
                      name="group1"
@@ -3990,9 +3911,10 @@
                      style="push">
                   <visibleWhen
                         checkEnabled="false">
-                     <reference
-                           definitionId="org.eclipse.egit.ui.fileOrFolderInRepositoryWithGerritConfiguration">
-                     </reference>
+                     <test
+                           property="GitSelection.fileOrFolderInRepository"
+                           args="hasGerritConfiguration">
+                     </test>
                   </visibleWhen>
                </command>
                <command
@@ -4001,9 +3923,10 @@
                      style="push">
                   <visibleWhen
                         checkEnabled="false">
-                     <reference
-                           definitionId="org.eclipse.egit.ui.fileOrFolderInRepositoryWithGerritConfiguration">
-                     </reference>
+                     <test
+                           property="GitSelection.fileOrFolderInRepository"
+                           args="hasGerritConfiguration">
+                     </test>
                   </visibleWhen>
                </command>
                <separator
@@ -4048,7 +3971,7 @@
                   visible="true" />
                <menu
                   label="%SynchronizeWith_label"
-                  icon="$nl$/icons/obj16/synchronize.png">
+                  icon="$nl$/icons/obj16/remotespec.gif">
                   <dynamic
                      class="org.eclipse.egit.ui.internal.actions.SynchronizeWithMenu"
                      id="org.eclipse.egit.ui.synchronize">
@@ -4109,9 +4032,9 @@
                      style="push">
                   <visibleWhen
                         checkEnabled="false">
-                     <reference
-                           definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-                     </reference>
+                     <test
+                           property="GitSelection.resourcesSingleRepository">
+                     </test>
                   </visibleWhen>
                </command>
                <command
@@ -4120,9 +4043,9 @@
                      style="push">
                   <visibleWhen
                         checkEnabled="false">
-                     <reference
-                           definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-                     </reference>
+                     <test
+                           property="GitSelection.resourcesSingleRepository">
+                     </test>
                   </visibleWhen>
                </command>
                <command
@@ -4132,9 +4055,9 @@
                      style="push">
                   <visibleWhen
                         checkEnabled="false">
-                     <reference
-                           definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-                     </reference>
+                     <test
+                           property="GitSelection.resourcesSingleRepository">
+                     </test>
                   </visibleWhen>
                </command>
             </menu>
@@ -4142,6 +4065,17 @@
                   name="group2"
                   visible="true">
             </separator>
+            <command
+                  commandId="org.eclipse.egit.ui.team.Pull"
+                  label="%PullIntoCurrentBranchMenuLabel"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="false">
+                  <test
+                        property="GitSelection.projectsWithRepositories">
+                  </test>
+               </visibleWhen>
+            </command>
             <separator
                   name="group3"
                   visible="true">
@@ -4233,9 +4167,9 @@
                   style="push">
                <visibleWhen
                      checkEnabled="false">
-                  <reference
-                        definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-                  </reference>
+                  <test
+                        property="GitSelection.resourcesSingleRepository">
+                  </test>
                </visibleWhen>
             </command>
             <separator
@@ -4260,9 +4194,9 @@
                   style="push">
                <visibleWhen
                      checkEnabled="false">
-                  <reference
-                        definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-                  </reference>
+                  <test
+                        property="GitSelection.resourcesSingleRepository">
+                  </test>
                </visibleWhen>
             </command>
             <command
@@ -4271,9 +4205,9 @@
                   style="push">
                <visibleWhen
                      checkEnabled="false">
-                  <reference
-                        definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
-                  </reference>
+                  <test
+                        property="GitSelection.resourcesSingleRepository">
+                  </test>
                </visibleWhen>
             </command>
             <separator
@@ -4346,33 +4280,6 @@
                   </adapt>
                </with>
             </visibleWhen>
-          </command>
-      </menuContribution>
-      <menuContribution
-            allPopups="false"
-            locationURI="popup:org.eclipse.egit.ui.historyPageContributions?after=additions">
-            <command
-               commandId="org.eclipse.egit.ui.ImportChangedProjectsCommandId"
-               icon="icons/obj16/import_prj.gif"
-               label="%ImportChangedProjects.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <not>
-                     <count
-                           value="0">
-                     </count>
-                  </not>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.jgit.revplot.PlotCommit">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
          </command>
       </menuContribution>
    </extension>
@@ -4427,13 +4334,6 @@
             name="%ImportProjectsCommand"
             description="%ImportProjectsCommand_description"
             >
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ImportChangedProjectsCommand"
-            id="org.eclipse.egit.ui.ImportChangedProjectsCommandId"
-            name="%ImportChangedProjectsCommand"
-            description="%ImportProjectsCommand_description">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -4663,11 +4563,11 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.Squash"
-            icon="icons/obj16/squash-down.png">
+            icon="icons/obj16/squash.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.commit.Squash"
-            icon="icons/obj16/squash-down.png">
+            icon="icons/obj16/squash.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.Reword"
@@ -4699,7 +4599,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewNewRemote"
-            icon="icons/obj16/synchronize.png">
+            icon="icons/obj16/remotespec.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.CreateTag"
@@ -4707,7 +4607,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.PushCommit"
-            icon="icons/obj16/push.png">
+            icon="icons/obj16/push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.CheckoutCommand"
@@ -4763,31 +4663,31 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Fetch"
-            icon="icons/obj16/fetch.png">
+            icon="icons/obj16/fetch.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.ConfigureUpstreamFetch"
-            icon="icons/obj16/fetch.png">
+            icon="icons/obj16/fetch.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.ConfigureUpstreamPush"
-            icon="icons/obj16/push.png">
+            icon="icons/obj16/push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Push"
-            icon="icons/obj16/push.png">
+            icon="icons/obj16/push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.PushBranch"
-            icon="icons/obj16/push.png">
+            icon="icons/obj16/push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.PushTags"
-            icon="icons/obj16/push.png">
+            icon="icons/obj16/push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.FetchGerritChange"
-            icon="icons/obj16/gerrit_fetch.png">
+            icon="icons/obj16/gerrit_fetch.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.AddToIndex"
@@ -4799,15 +4699,15 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Commit"
-            icon="icons/obj16/commit.png">
+            icon="icons/obj16/commit.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.SimpleFetch"
-            icon="icons/obj16/fetch.png">
+            icon="icons/obj16/fetch.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.SimplePush"
-            icon="icons/obj16/push.png">
+            icon="icons/obj16/push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Ignore"
@@ -4827,7 +4727,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Pull"
-            icon="icons/obj16/pull.png">
+            icon="icons/obj16/pull.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Reset"
@@ -4835,7 +4735,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Synchronize"
-            icon="icons/obj16/synchronize.png">
+            icon="icons/obj16/remotespec.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Tag"
@@ -4911,7 +4811,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.PushHeadToGerrit"
-            icon="icons/obj16/gerrit_push.png">
+            icon="icons/obj16/gerrit_push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote"
@@ -5682,18 +5582,5 @@
         file-names=".gitignore"
         priority="normal"
         name="%GitIgnoreContentTypeName"/>
-  </extension>
-  <extension
-        point="org.eclipse.ui.trace.traceComponents">
-     <component
-           id="org.eclipse.egit.ui.traceComponent"
-           label="%extension.traceComponent.name">
-        <bundle
-              name="org.eclipse.egit.core">
-        </bundle>
-        <bundle
-              name="org.eclipse.egit.ui">
-        </bundle>
-     </component>
   </extension>
 </plugin>
