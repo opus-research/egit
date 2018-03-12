@@ -39,9 +39,6 @@ public class UIText extends NLS {
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
-	public static String AbstractHistoryCommanndHandler_NoUniqueRepository;
-
-	/** */
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
@@ -424,6 +421,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_CheckoutMenuLabel;
+
+	/** */
+	public static String GitHistoryPage_CheckoutMenuLabel2;
 
 	/** */
 	public static String GitHistoryPage_CompareModeMenuLabel;
@@ -898,6 +898,27 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
+
+	/** */
+	public static String CleanRepositoryPage_cleanDirs;
+
+	/** */
+	public static String CleanRepositoryPage_cleanFiles;
+
+	/** */
+	public static String CleanRepositoryPage_cleaningItems;
+
+	/** */
+	public static String CleanRepositoryPage_findingItems;
+
+	/** */
+	public static String CleanRepositoryPage_includeIgnored;
+
+	/** */
+	public static String CleanRepositoryPage_message;
+
+	/** */
+	public static String CleanRepositoryPage_title;
 
 	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
@@ -1624,6 +1645,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ResetTargetSelectionDialog_ResetTypeSoftButton;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetTypeHEADHardButton;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetTypeHEADMixedButton;
 
 	/** */
 	public static String ResetTargetSelectionDialog_SelectBranchForResetMessage;
