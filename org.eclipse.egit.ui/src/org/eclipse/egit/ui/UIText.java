@@ -407,6 +407,12 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_FilterSubMenuLabel;
+
+	/** */
+	public static String GitHistoryPage_ShowSubMenuLabel;
+
+	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
 
 	/** */
@@ -579,9 +585,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoryPropertySource_RepositoryConfigurationCategory;
-
-	/** */
-	public static String RepositoryPropertySource_SystemConfigurationMenu;
 
 	/** */
 	public static String RepositoryPropertySource_SelectModeTooltip;
@@ -1497,12 +1500,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_WrongNumberOfTokensMessage;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_systemSettingTabTitle;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_userSettingTabTitle;
 
 	/** */
 	public static String ConfigureRemoteWizard_WizardTitle_Change;
