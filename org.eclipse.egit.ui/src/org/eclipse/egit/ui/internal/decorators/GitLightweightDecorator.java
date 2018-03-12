@@ -684,7 +684,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @see org.eclipse.core.resources.IResourceChangeListener#resourceChanged(org.eclipse.core.resources.IResourceChangeEvent)
 	 */
 	public void resourceChanged(IResourceChangeEvent event) {
-		final long currentTime = System.currentTimeMillis();
 		final Set<IResource> resourcesToUpdate = new HashSet<IResource>();
 
 		try { // Compute the changed resources by looking at the delta
@@ -722,7 +721,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 					// Ignore resources that haven't been changed within the
 					// last 10 seconds
-					if (currentTime - resource.getLocalTimeStamp() > 10000)
+					if (System.currentTimeMillis()
+							- resource.getLocalTimeStamp() > 10000)
 						return false;
 
 					// Don't include ignored resources
