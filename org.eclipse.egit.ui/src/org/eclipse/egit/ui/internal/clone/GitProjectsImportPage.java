@@ -18,12 +18,9 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
@@ -49,7 +46,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -57,7 +53,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.TreeItem;
-import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.PatternFilter;
@@ -70,81 +65,10 @@ import org.eclipse.ui.dialogs.WorkingSetGroup;
  */
 public class GitProjectsImportPage extends WizardPage {
 
-	private class ProjectFolder {
-
-		public ProjectFolder(String name) {
-			super();
-			this.name = name;
-		}
-
-		private String name;
-
-		private List<ProjectRecord> projects = new ArrayList<ProjectRecord>();
-
-		private Map<String, ProjectFolder> subfolders = new HashMap<String, ProjectFolder>();
-
-		private void addProject(ProjectRecord project) {
-			projects.add(project);
-		}
-
-		private void addProjectFolder(ProjectFolder folder) {
-			subfolders.put(folder.getName(), folder);
-		}
-
-		public List<ProjectRecord> getProjects() {
-			return projects;
-		}
-
-		public Collection<ProjectFolder> getSubfolders() {
-			return subfolders.values();
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public boolean hasFolder(String folder) {
-			return getFolder(folder) != null;
-		}
-
-		public ProjectFolder getFolder(String folder) {
-			return subfolders.get(folder);
-		}
-
-	}
-
 	private final class ProjectLabelProvider extends GitLabelProvider implements
 			IColorProvider {
 
-		@Override
-		public String getText(Object element) {
-			if (element instanceof ProjectFolder)
-				return ((ProjectFolder) element).getName();
-
-			return super.getText(element);
-		}
-
-		@Override
-		public Image getImage(Object element) {
-			if (element instanceof ProjectFolder)
-				return PlatformUI.getWorkbench().getSharedImages()
-						.getImage(ISharedImages.IMG_OBJ_FOLDER);
-
-			return super.getImage(element);
-		}
-
 		public Color getForeground(Object element) {
-			if(element instanceof ProjectFolder) {
-				ProjectFolder projectFolder = (ProjectFolder) element;
-				boolean hasValidProjects = hasValidProjects(projectFolder);
-				if(!hasValidProjects) {
-					return PlatformUI.getWorkbench().getDisplay().getSystemColor(
-							SWT.COLOR_GRAY);
-				} else {
-					return null;
-				}
-			}
-
 			if (isProjectInWorkspace(((ProjectRecord) element).getProjectName()))
 				return PlatformUI.getWorkbench().getDisplay().getSystemColor(
 						SWT.COLOR_GRAY);
@@ -163,7 +87,7 @@ public class GitProjectsImportPage extends WizardPage {
 
 	private CachedCheckboxTreeViewer projectsList;
 
-	private ProjectFolder rootFolder = new ProjectFolder("root"); //$NON-NLS-1$
+	private ProjectRecord[] selectedProjects = new ProjectRecord[0];
 
 	private IProject[] wsProjects;
 
@@ -179,8 +103,6 @@ public class GitProjectsImportPage extends WizardPage {
 	private Button deselectAll;
 
 	private WorkingSetGroup workingSetGroup;
-
-	private List<ProjectRecord> availableProjects = new ArrayList<ProjectRecord>();
 
 	/**
 	 * Creates a new project creation wizard page.
@@ -261,24 +183,11 @@ public class GitProjectsImportPage extends WizardPage {
 		projectsList.addCheckStateListener(new ICheckStateListener() {
 
 			public void checkStateChanged(CheckStateChangedEvent event) {
-				Object element = event.getElement();
-				if(element instanceof ProjectFolder) {
-					ProjectFolder projectFolder = (ProjectFolder) element;
-					List<ProjectRecord> projects = projectFolder.getProjects();
-					for (ProjectRecord projectRecord : projects) {
-						checkProject(projectRecord);
-					}
+				ProjectRecord element = (ProjectRecord) event.getElement();
+				if (isProjectInWorkspace(element.getProjectName())) {
+					projectsList.setChecked(element, false);
 				}
-				if(element instanceof ProjectRecord)
-					checkProject((ProjectRecord)element);
-
 				enableSelectAllButtons();
-			}
-
-			private void checkProject(ProjectRecord project) {
-				if (isProjectInWorkspace(project.getProjectName())) {
-					projectsList.setChecked(project, false);
-				}
 			}
 		});
 
@@ -288,26 +197,15 @@ public class GitProjectsImportPage extends WizardPage {
 		projectsList.setContentProvider(new ITreeContentProvider() {
 
 			public Object[] getChildren(Object parentElement) {
-				if(parentElement instanceof ProjectFolder) {
-					ProjectFolder projectFolder = (ProjectFolder) parentElement;
-					return getFolderChildren(projectFolder);
-				}
 				return children;
 			}
 
-			private Object[] getFolderChildren(ProjectFolder projectFolder) {
-				ArrayList<Object> list = new ArrayList<Object>();
-				list.addAll(projectFolder.getSubfolders());
-				list.addAll(projectFolder.getProjects());
-				return list.toArray(new Object[projectFolder.getSubfolders().size() + projectFolder.getProjects().size()]);
-			}
-
 			public Object[] getElements(Object inputElement) {
-				return getFolderChildren(rootFolder);
+				return selectedProjects;
 			}
 
 			public boolean hasChildren(Object element) {
-				return element instanceof ProjectFolder;
+				return false;
 			}
 
 			public Object getParent(Object element) {
@@ -371,7 +269,7 @@ public class GitProjectsImportPage extends WizardPage {
 			public void widgetSelected(SelectionEvent e) {
 				for (TreeItem item : projectsList.getTree().getItems())
 					projectsList.setChecked(item.getData(), false);
-				projectsList.refresh();
+				projectsList.setInput(this); // filter away selected projects
 				enableSelectAllButtons();
 				setPageComplete(false);
 			}
@@ -381,35 +279,13 @@ public class GitProjectsImportPage extends WizardPage {
 	}
 
 	private void selectAllNewProjects() {
-		selectProjectRecordsInFolder(rootFolder);
-	}
-
-	private void selectProjectRecordsInFolder(ProjectFolder folder) {
-		List<ProjectRecord> projects = folder.getProjects();
-		for (ProjectRecord record : projects) {
+		for (TreeItem item : projectsList.getTree().getItems()) {
+			ProjectRecord record = (ProjectRecord) item.getData();
 			if (!isProjectInWorkspace(record.getProjectName()))
-				projectsList.setChecked(record, true);
-			else
-				projectsList.setChecked(record, false);
+				projectsList.setChecked(item.getData(), true);
 		}
-
-		Collection<ProjectFolder> subfolders = folder.getSubfolders();
-		for (ProjectFolder projectFolder : subfolders) {
-			selectProjectRecordsInFolder(projectFolder);
-			if(hasValidProjects(projectFolder))
-				projectsList.setChecked(projectFolder, true);
-		}
-
 	}
 
-	private boolean hasValidProjects(ProjectFolder projectFolder) {
-		List<ProjectRecord> folderProjects = projectFolder.getProjects();
-		for (ProjectRecord projectRecord : folderProjects) {
-			if(!isProjectInWorkspace(projectRecord.getProjectName()))
-				return true;
-		}
-		return false;
-	}
 	/**
 	 * Create the area where you select the root directory for the projects.
 	 *
@@ -437,6 +313,7 @@ public class GitProjectsImportPage extends WizardPage {
 	void setProjectsList(final String path) {
 		// on an empty path empty selectedProjects
 		if (path == null || path.length() == 0) {
+			selectedProjects = new ProjectRecord[0];
 			projectsList.refresh(true);
 			checkPageComplete();
 			lastPath = path;
@@ -465,6 +342,7 @@ public class GitProjectsImportPage extends WizardPage {
 					monitor.beginTask(
 							UIText.WizardProjectsImportPage_SearchingMessage,
 							100);
+					selectedProjects = new ProjectRecord[0];
 					Collection<File> files = new ArrayList<File>();
 					monitor.worked(10);
 					if (directory.isDirectory()) {
@@ -474,20 +352,15 @@ public class GitProjectsImportPage extends WizardPage {
 							return;
 						}
 						Iterator<File> filesIterator = files.iterator();
+						selectedProjects = new ProjectRecord[files.size()];
+						int index = 0;
 						monitor.worked(50);
 						monitor
 								.subTask(UIText.WizardProjectsImportPage_ProcessingMessage);
 						while (filesIterator.hasNext()) {
 							File file = filesIterator.next();
-							ProjectRecord projectRecord = new ProjectRecord(file);
-
-							ProjectFolder folderForProject = rootFolder;
-							if(!file.getParentFile().equals(directory)) {
-								folderForProject = createDeepFolder(file, directory);
-							}
-
-							folderForProject.addProject(projectRecord);
-							availableProjects.add(projectRecord);
+							selectedProjects[index] = new ProjectRecord(file);
+							index++;
 						}
 
 						if (files.isEmpty())
@@ -503,33 +376,6 @@ public class GitProjectsImportPage extends WizardPage {
 					monitor.done();
 				}
 
-				private ProjectFolder createDeepFolder(File file, File root) {
-					// collect folders in reverse order
-					File parent = file.getParentFile();
-					LinkedList<File> subfolders = new LinkedList<File>();
-					while(!root.equals(parent)) {
-						subfolders.add(parent);
-						parent = parent.getParentFile();
-					}
-
-					// strip out project folder itself
-					subfolders.removeFirst();
-
-					ProjectFolder currentFolder = rootFolder;
-					while(!subfolders.isEmpty()) {
-						File newChild = subfolders.removeLast();
-						if(!currentFolder.hasFolder(newChild.getName())) {
-							ProjectFolder newFolder = new ProjectFolder(newChild.getName());
-							currentFolder.addProjectFolder(newFolder);
-							currentFolder = newFolder;
-						} else {
-							currentFolder = currentFolder.getFolder(newChild.getName());
-						}
-					}
-
-					return currentFolder;
-				}
-
 			});
 		} catch (InvocationTargetException e) {
 			Activator.logError(e.getMessage(), e);
@@ -538,7 +384,7 @@ public class GitProjectsImportPage extends WizardPage {
 		}
 
 		projectsList.refresh(true);
-		if (getValidProjects().length < availableProjects.size()) {
+		if (getValidProjects().length < selectedProjects.length) {
 			setMessage(UIText.WizardProjectsImportPage_projectsInWorkspace,
 					WARNING);
 		} else {
@@ -608,13 +454,13 @@ public class GitProjectsImportPage extends WizardPage {
 	 */
 	public ProjectRecord[] getValidProjects() {
 		List<ProjectRecord> validProjects = new ArrayList<ProjectRecord>();
-		for (ProjectRecord projectRecord : availableProjects) {
-			if (!isProjectInWorkspace(projectRecord.getProjectName()))
-				validProjects.add(projectRecord);
+		for (int i = 0; i < selectedProjects.length; i++) {
+			if (!isProjectInWorkspace(selectedProjects[i].getProjectName())) {
+				validProjects.add(selectedProjects[i]);
+			}
 		}
 		return validProjects.toArray(new ProjectRecord[validProjects.size()]);
 	}
-
 
 	/**
 	 * Determine if the project with the given name is in the current workspace.
@@ -642,9 +488,8 @@ public class GitProjectsImportPage extends WizardPage {
 	 */
 	public Set<ProjectRecord> getCheckedProjects() {
 		HashSet<ProjectRecord> ret = new HashSet<ProjectRecord>();
-		for (Object selected : projectsList.getCheckedLeafElements()) {
-				ret.add((ProjectRecord) selected);
-		}
+		for (Object selected : projectsList.getCheckedElements())
+			ret.add((ProjectRecord) selected);
 
 		return ret;
 	}
