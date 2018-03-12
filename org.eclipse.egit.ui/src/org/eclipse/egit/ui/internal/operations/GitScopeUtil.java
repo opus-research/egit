@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.team.core.subscribers.Subscriber;
@@ -62,20 +61,13 @@ public class GitScopeUtil {
 		if (resources == null)
 			return new IResource[0];
 		IResource[] resourcesInScope;
-		// Only builds the logical model if the preference holds true
-		if (Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.USE_LOGICAL_MODEL)) {
-
-			try {
-				resourcesInScope = findRelatedChanges(part, resources);
-			} catch (InvocationTargetException e) {
-				Activator.handleError(
-						UIText.CommitActionHandler_errorBuildingScope,
-						e.getCause(), true);
-				// fallback to initial resource set
-				resourcesInScope = resources;
-			}
-		} else {
+		try {
+			resourcesInScope = findRelatedChanges(part, resources);
+		} catch (InvocationTargetException e) {
+			Activator.handleError(
+					UIText.CommitActionHandler_errorBuildingScope,
+					e.getCause(), true);
+			// fallback to initial resource set
 			resourcesInScope = resources;
 		}
 		return resourcesInScope;
@@ -129,7 +121,6 @@ public class GitScopeUtil {
 	 * @return ResourceMappings
 	 */
 	private static ResourceMapping[] getResourceMappings(IResource[] resources) {
-		// TODO Checks each call for prefrence
 		List<ResourceMapping> result = new ArrayList<ResourceMapping>();
 		for (IResource resource : resources)
 			result.add(getResourceMapping(resource));
@@ -169,14 +160,14 @@ public class GitScopeUtil {
 			IProgressMonitor monitor) throws InterruptedException,
 			InvocationTargetException {
 
-			SubscriberScopeManager manager = GitScopeUtil
-					.createScopeManager(selectedResources);
-			GitScopeOperation buildScopeOperation = GitScopeOperationFactory
-					.getFactory().createGitScopeOperation(part, manager);
+		SubscriberScopeManager manager = GitScopeUtil
+				.createScopeManager(selectedResources);
+		GitScopeOperation buildScopeOperation = GitScopeOperationFactory
+				.getFactory().createGitScopeOperation(part, manager);
 
-			buildScopeOperation.run(new SubProgressMonitor(monitor, 50));
+		buildScopeOperation.run(new SubProgressMonitor(monitor, 50));
 
-			return buildScopeOperation.getRelevantResources();
+		return buildScopeOperation.getRelevantResources();
 	}
 
 }
