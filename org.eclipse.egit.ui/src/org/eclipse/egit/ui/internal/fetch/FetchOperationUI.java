@@ -139,11 +139,4 @@ public class FetchOperationUI {
 			}
 		});
 	}
-
-	/**
-	 * @return the string denoting the remote source
-	 */
-	public String getSourceString(){
-		return sourceString;
-	}
 }
