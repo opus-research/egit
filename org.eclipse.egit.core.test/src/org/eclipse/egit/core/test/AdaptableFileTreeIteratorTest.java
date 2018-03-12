@@ -12,10 +12,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Collections;
 import java.util.Set;
 
@@ -26,7 +24,7 @@ import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
@@ -43,12 +41,11 @@ public class AdaptableFileTreeIteratorTest extends GitTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 
-		repository = FileRepositoryBuilder.create(gitDir);
+		repository = new FileRepository(gitDir);
 		repository.create();
 
 		file = new File(project.getProject().getLocation().toFile(), "a.txt");
-		final Writer fileWriter = new OutputStreamWriter(new FileOutputStream(
-				file), "UTF-8");
+		final FileWriter fileWriter = new FileWriter(file);
 		fileWriter.write("aaaaaaaaaaa");
 		fileWriter.close();
 

@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,8 +15,6 @@ import java.io.File;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
-import org.eclipse.egit.ui.internal.history.FindToolbar;
-import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jgit.util.FS;
 
@@ -41,7 +38,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		int[] w;
 
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE, true);
-		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES, false);
+		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_NOTES, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_REV_DETAIL, true);
@@ -49,7 +46,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_TOOLTIPS, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS, true);
-		store.setDefault(UIPreferences.RESOURCEHISTORY_FOLLOW_RENAMES, true);
+		store.setDefault(UIPreferences.RESOURCEHISTORY_FOLLOW_RENAMES, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_COMPARE_MODE, false);
 
 		store.setDefault(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS, true);
@@ -72,8 +69,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.RESOURCEHISTORY_REV_SPLIT, UIPreferences.intArrayToString(w));
 
 		store.setDefault(UIPreferences.FINDTOOLBAR_IGNORE_CASE, true);
-		store.setDefault(UIPreferences.FINDTOOLBAR_FIND_IN,
-				FindToolbar.PREFS_FINDIN_ALL);
+		store.setDefault(UIPreferences.FINDTOOLBAR_FIND_IN, 2);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE, true);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY, false);
 
@@ -85,7 +81,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.SHOW_HOME_DIR_WARNING, true);
 		store.setDefault(UIPreferences.SHOW_GIT_PREFIX_WARNING, true);
 		store.setDefault(UIPreferences.SHOW_DETACHED_HEAD_WARNING, true);
-		store.setDefault(UIPreferences.SHOW_CHECKOUT_CONFIRMATION, true);
 
 
 		store.setDefault(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT,
@@ -99,8 +94,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, false);
 		store.setDefault(UIPreferences.BLAME_IGNORE_WHITESPACE, false);
 		store.setDefault(UIPreferences.REMOTE_CONNECTION_TIMEOUT, 30 /* seconds */);
-		store.setDefault(UIPreferences.STAGING_VIEW_PRESENTATION,
-				StagingView.Presentation.LIST.name());
 		store.setDefault(UIPreferences.STAGING_VIEW_FILENAME_MODE, true);
 		store.setDefault(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE, false);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HISTORY_SIZE, 10);

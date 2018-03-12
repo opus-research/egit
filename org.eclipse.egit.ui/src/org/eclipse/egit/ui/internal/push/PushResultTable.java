@@ -11,9 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.egit.core.op.PushOperationResult;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.WorkbenchStyledLabelProvider;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
@@ -50,7 +50,6 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.ui.OpenAndLinkWithEditorHelper;
-import org.eclipse.ui.model.IWorkbenchAdapter3;
 
 /**
  * Table displaying push operation results.
@@ -110,8 +109,12 @@ class PushResultTable {
 		final IStyledLabelProvider styleProvider = new WorkbenchStyledLabelProvider() {
 
 			public StyledString getStyledText(Object element) {
-				if (element instanceof IWorkbenchAdapter3)
-					return ((IWorkbenchAdapter3) element).getStyledText(element);
+				// TODO Replace with use of IWorkbenchAdapter3 when 3.6 is no
+				// longer supported
+				if (element instanceof RefUpdateElement)
+					return ((RefUpdateElement) element).getStyledText(element);
+				if (element instanceof RepositoryCommit)
+					return ((RepositoryCommit) element).getStyledText(element);
 
 				return super.getStyledText(element);
 			}

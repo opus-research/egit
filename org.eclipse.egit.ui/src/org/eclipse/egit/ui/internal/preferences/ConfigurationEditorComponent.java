@@ -27,7 +27,7 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -165,8 +165,9 @@ public class ConfigurationEditorComponent {
 	public void restore() throws IOException {
 		if (changeablePath) {
 			try {
-				IEclipsePreferences node = InstanceScope.INSTANCE
-						.getNode(org.eclipse.egit.core.Activator.getPluginId());
+				IEclipsePreferences node = new InstanceScope()
+						.getNode(org.eclipse.egit.core.Activator
+								.getPluginId());
 				node.remove(GitCorePreferences.core_gitPrefix);
 				node.flush();
 				// Create a temporary FS instance to compute the Git prefix
@@ -242,7 +243,7 @@ public class ConfigurationEditorComponent {
 							}
 							location.setText(file);
 							try {
-								IEclipsePreferences node = InstanceScope.INSTANCE
+								IEclipsePreferences node = new InstanceScope()
 										.getNode(org.eclipse.egit.core.Activator
 												.getPluginId());
 								node.put(GitCorePreferences.core_gitPrefix,
@@ -398,15 +399,9 @@ public class ConfigurationEditorComponent {
 						else
 							entry.addValue(dlg.getValue());
 						markDirty();
-					} else if (st.countTokens() > 2) {
-						int n = st.countTokens();
+					} else if (st.countTokens() == 3) {
 						String sectionName = st.nextToken();
-						StringBuilder b = new StringBuilder(st.nextToken());
-						for (int i = 0; i < n - 3; i++) {
-							b.append(DOT);
-							b.append(st.nextToken());
-						}
-						String subSectionName = b.toString();
+						String subSectionName = st.nextToken();
 						String entryName = st.nextToken();
 						Entry entry = ((GitConfig) tv.getInput()).getEntry(
 								sectionName, subSectionName, entryName);

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010, SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,34 +35,7 @@ import org.hamcrest.Matcher;
 public class ContextMenuHelper {
 
 	/**
-	 * Clicks the context menu matching the text, executing the action
-	 * synchronously (blocking until the action completes).
-	 * <p>
-	 * This should be used if the action requires no more UI interaction.
-	 *
-	 * @param bot
-	 *
-	 * @param texts
-	 *            the text on the context menu.
-	 * @throws WidgetNotFoundException
-	 *             if the widget is not found.
-	 * @throws SWTException
-	 *             if the menu item is disabled (the root cause being an
-	 *             {@link IllegalStateException})
-	 */
-	public static void clickContextMenuSync(final AbstractSWTBot<?> bot,
-			final String... texts) {
-		clickContextMenuWithRetry(bot, true, texts);
-	}
-
-	/**
-	 * Clicks the context menu matching the text, executing the action
-	 * asynchronously (non-blocking).
-	 * <p>
-	 * This should only be used when further UI interaction is part of the
-	 * action, e.g. a dialog or wizard. Using
-	 * {@link #clickContextMenuSync(AbstractSWTBot, String...)} is preferred in
-	 * other cases.
+	 * Clicks the context menu matching the text.
 	 *
 	 * @param bot
 	 *
@@ -76,17 +49,12 @@ public class ContextMenuHelper {
 	 */
 	public static void clickContextMenu(final AbstractSWTBot<?> bot,
 			final String... texts) {
-		clickContextMenuWithRetry(bot, false, texts);
-	}
-
-	private static void clickContextMenuWithRetry(final AbstractSWTBot<?> bot,
-			final boolean sync, final String... texts) {
 		int failCount = 0;
 		int maxFailCount = 4;
 		long sleepTime = 250;
 		while (failCount <= maxFailCount)
 			try {
-				clickContextMenuInternal(bot, sync, texts);
+				clickContextMenuInternal(bot, texts);
 				if (failCount > 0)
 					System.out.println("Retrying clickContextMenu succeeded");
 				break;
@@ -109,7 +77,7 @@ public class ContextMenuHelper {
 	}
 
 	private static void clickContextMenuInternal(final AbstractSWTBot<?> bot,
-			final boolean sync, final String... texts) {
+			final String... texts) {
 		// show
 		final MenuItem menuItem = UIThreadRunnable
 				.syncExec(new WidgetResult<MenuItem>() {
@@ -127,7 +95,7 @@ public class ContextMenuHelper {
 					+ Arrays.asList(texts));
 
 		// click
-		click(menuItem, sync);
+		click(menuItem);
 
 		// hide
 		UIThreadRunnable.syncExec(new VoidResult() {
@@ -150,6 +118,7 @@ public class ContextMenuHelper {
 		return menuItem != null;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static MenuItem getMenuItem(final AbstractSWTBot<?> bot,
 			final String... texts) {
 		MenuItem theItem = null;
@@ -160,7 +129,7 @@ public class ContextMenuHelper {
 			control.notifyListeners(SWT.MenuDetect, new Event());
 			Menu menu = control.getMenu();
 			for (String text : texts) {
-				Matcher<?> matcher = allOf(instanceOf(MenuItem.class),
+				Matcher<Object> matcher = allOf(instanceOf(MenuItem.class),
 						withMnemonic(text));
 				theItem = show(menu, matcher);
 				if (theItem != null)
@@ -232,22 +201,18 @@ public class ContextMenuHelper {
 		return null;
 	}
 
-	private static void click(final MenuItem menuItem, boolean sync) {
+	private static void click(final MenuItem menuItem) {
 		final Event event = new Event();
 		event.time = (int) System.currentTimeMillis();
 		event.widget = menuItem;
 		event.display = menuItem.getDisplay();
 		event.type = SWT.Selection;
 
-		VoidResult toExecute = new VoidResult() {
+		UIThreadRunnable.asyncExec(menuItem.getDisplay(), new VoidResult() {
 			public void run() {
 				menuItem.notifyListeners(SWT.Selection, event);
 			}
-		};
-		if (sync)
-			UIThreadRunnable.syncExec(menuItem.getDisplay(), toExecute);
-		else
-			UIThreadRunnable.asyncExec(menuItem.getDisplay(), toExecute);
+		});
 	}
 
 	private static void hide(final Menu menu) {

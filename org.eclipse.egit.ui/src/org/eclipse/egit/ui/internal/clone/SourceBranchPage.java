@@ -29,9 +29,9 @@ import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.dialogs.SourceBranchFailureDialog;
@@ -49,7 +49,7 @@ import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -306,10 +306,9 @@ class SourceBranchPage extends WizardPage {
 			return;
 
 		final ListRemoteOperation listRemoteOp;
-		final URIish uri = newRepoSelection.getURI();
 		try {
-			final Repository db = FileRepositoryBuilder
-					.create(new File("/tmp")); //$NON-NLS-1$
+			final URIish uri = newRepoSelection.getURI();
+			final Repository db = new FileRepository(new File("/tmp")); //$NON-NLS-1$
 			int timeout = Activator.getDefault().getPreferenceStore().getInt(
 					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 			listRemoteOp = new ListRemoteOperation(db, uri, timeout);
@@ -328,7 +327,7 @@ class SourceBranchPage extends WizardPage {
 			Throwable why = e.getCause();
 			transportError(why);
 			if (showDetailedFailureDialog())
-				SourceBranchFailureDialog.show(getShell(), uri);
+				SourceBranchFailureDialog.show(getShell(), transportError);
 			return;
 		} catch (IOException e) {
 			transportError(UIText.SourceBranchPage_cannotCreateTemp);
@@ -373,7 +372,6 @@ class SourceBranchPage extends WizardPage {
 	}
 
 	private void transportError(final Throwable why) {
-		Activator.logError(why.getMessage(), why);
 		Throwable cause = why.getCause();
 		if (why instanceof TransportException && cause != null)
 			transportError(NLS.bind(getMessage(why), why.getMessage(),

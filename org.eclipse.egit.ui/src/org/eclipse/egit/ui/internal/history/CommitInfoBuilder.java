@@ -34,7 +34,7 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.history.CommitMessageViewer.ObjectLink;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.diff.DiffFormatter;
@@ -273,8 +273,7 @@ public class CommitInfoBuilder {
 		}
 		int h0 = d.length();
 		d.append(msg);
-		if (!msg.endsWith(LF))
-			d.append(LF);
+		d.append(LF);
 
 		Matcher matcher = p.matcher(msg);
 		while (matcher.find()) {
@@ -323,7 +322,6 @@ public class CommitInfoBuilder {
 			IOException {
 		RevWalk revWalk = new RevWalk(db);
 		try {
-			revWalk.setRetainBody(false);
 			return RevWalkUtils.findBranchesReachableFrom(commit, revWalk, allRefs);
 		} finally {
 			revWalk.dispose();
@@ -394,14 +392,14 @@ public class CommitInfoBuilder {
 						public synchronized void write(byte[] b, int off,
 								int len) {
 							super.write(b, off, len);
-							try {
-								if (currentEncoding[0] == null)
-									d.append(toString("UTF-8")); //$NON-NLS-1$
-								else
-									d.append(toString(currentEncoding[0]));
-							} catch (UnsupportedEncodingException e) {
+							if (currentEncoding[0] == null)
 								d.append(toString());
-							}
+							else
+								try {
+									d.append(toString(currentEncoding[0]));
+								} catch (UnsupportedEncodingException e) {
+									d.append(toString());
+								}
 							reset();
 						}
 
@@ -413,17 +411,12 @@ public class CommitInfoBuilder {
 				if (monitor.isCanceled())
 					throw new OperationCanceledException();
 				if (currentDiff.getBlobs().length == 2) {
-					String path = currentDiff.getNewPath();
+					String path = currentDiff.getPath();
 					monitor.setTaskName(NLS.bind(
 							UIText.CommitMessageViewer_BuildDiffTaskName, path));
 					currentEncoding[0] = CompareCoreUtils.getResourceEncoding(db,
 							path);
-					d.append(LF);
-					int start = d.length();
-					String pathLine = formatPathLine(path);
-					int len = pathLine.length();
-					d.append(pathLine).append(LF);
-					styles.add(new StyleRange(start, len, darkGrey, null));
+					d.append(formatPathLine(path)).append(LF);
 					currentDiff.outputDiff(d, db, diffFmt, true);
 					diffFmt.flush();
 				}
@@ -539,7 +532,7 @@ public class CommitInfoBuilder {
 		if (monitor.isCanceled())
 			throw new OperationCanceledException();
 		RevWalk revWalk = new RevWalk(db);
-		revWalk.setRetainBody(false);
+
 		Map<String, Ref> tagsMap = db.getTags();
 		Ref tagRef = null;
 

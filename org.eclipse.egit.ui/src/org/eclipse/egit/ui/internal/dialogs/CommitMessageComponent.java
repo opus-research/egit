@@ -7,7 +7,6 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,14 +34,14 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
-import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -126,8 +125,6 @@ public class CommitMessageComponent {
 
 	private String commitMessage = null;
 
-	private String commitMessageBeforeAmending = EMPTY_STRING;
-
 	private String previousCommitMessage = EMPTY_STRING;
 
 	private String author = null;
@@ -160,7 +157,7 @@ public class CommitMessageComponent {
 
 	private ObjectId headCommitId;
 
-	private boolean listenersEnabled;
+	private boolean listersEnabled;
 
 	/**
 	 * @param repository
@@ -185,8 +182,7 @@ public class CommitMessageComponent {
 	public void resetState() {
 		originalChangeId = null;
 		commitMessage = null;
-		commitMessageBeforeAmending = EMPTY_STRING;
-		previousCommitMessage = EMPTY_STRING;
+		previousCommitMessage =EMPTY_STRING;
 		author = null;
 		previousAuthor = null;
 		committer = null;
@@ -196,7 +192,7 @@ public class CommitMessageComponent {
 		createChangeId = false;
 		filesToCommit = new ArrayList<String>();
 		headCommitId = null;
-		listenersEnabled = false;
+		listersEnabled = false;
 	}
 
 	/**
@@ -324,7 +320,6 @@ public class CommitMessageComponent {
 	 */
 	public void setAmendAllowed(boolean amendAllowed) {
 		this.amendAllowed = amendAllowed;
-		commitMessageBeforeAmending = EMPTY_STRING;
 	}
 
 	/**
@@ -335,12 +330,9 @@ public class CommitMessageComponent {
 		if (!selection) {
 			originalChangeId = null;
 			authorText.setText(author);
-			commitText.setText(commitMessageBeforeAmending);
-			commitMessageBeforeAmending = EMPTY_STRING;
 		} else {
 			getHeadCommitInfo();
 			saveOriginalChangeId();
-			commitMessageBeforeAmending = commitText.getText();
 			commitText.setText(previousCommitMessage);
 			if (previousAuthor != null)
 				authorText.setText(previousAuthor);
@@ -389,14 +381,12 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Enable/disable listeners on commit message editor and committer text to
-	 * change data programmatically.
+	 * Disable listeners on commit message editor and committer text
+	 * to change data programmatically.
 	 * @param enable
 	 */
-	public void enableListeners(boolean enable) {
-		this.listenersEnabled = enable;
-		if (enable)
-			listener.statusUpdated();
+	public void enableListers(boolean enable) {
+		this.listersEnabled = enable;
 	}
 
 	/**
@@ -492,18 +482,11 @@ public class CommitMessageComponent {
 	private void addListeners() {
 		authorHandler = UIUtils.addPreviousValuesContentProposalToText(
 				authorText, AUTHOR_VALUES_PREF);
-		authorText.addModifyListener(new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled || !authorText.isEnabled())
-					return;
-				listener.statusUpdated();
-			}
-		});
 		committerText.addModifyListener(new ModifyListener() {
 			String oldCommitter = committerText.getText();
 
 			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled || !committerText.isEnabled())
+				if (!listersEnabled)
 					return;
 				if (signedOff) {
 					// the commit message is signed
@@ -515,18 +498,16 @@ public class CommitMessageComponent {
 							oldSignOff, newSignOff));
 					oldCommitter = newCommitter;
 				}
-				listener.statusUpdated();
 			}
 		});
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
 				committerText, COMMITTER_VALUES_PREF);
 		commitText.getTextWidget().addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled || !commitText.isEnabled())
+				if (!listersEnabled)
 					return;
 				updateSignedOffButton();
 				updateChangeIdButton();
-				listener.statusUpdated();
 			}
 		});
 	}
@@ -535,12 +516,12 @@ public class CommitMessageComponent {
 	 * Sets the defaults for change id and signed off
 	 */
 	public void setDefaults() {
-		if (repository != null)
-			createChangeId = GerritUtil.getCreateChangeId(repository
-					.getConfig());
+		createChangeId = repository.getConfig().getBoolean(
+				ConfigConstants.CONFIG_GERRIT_SECTION,
+				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false);
 		signedOff = org.eclipse.egit.ui.Activator.getDefault()
-				.getPreferenceStore()
-				.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
+		.getPreferenceStore()
+		.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
 	}
 
 	/**
@@ -550,9 +531,7 @@ public class CommitMessageComponent {
 		if (amending)
 			getHeadCommitInfo();
 
-		String calculatedCommitMessage = calculateCommitMessage(filesToCommit);
-		boolean calculatedMessageHasChangeId = findOffsetOfChangeIdLine(calculatedCommitMessage) > 0;
-		commitText.setText(calculatedCommitMessage);
+		commitText.setText(calculateCommitMessage(filesToCommit));
 		authorText.setText(getSafeString(author));
 		committerText.setText(getSafeString(committer));
 		if (amending) {
@@ -563,8 +542,7 @@ public class CommitMessageComponent {
 				originalChangeId = null;
 			}
 			refreshSignedOffBy();
-			if (!calculatedMessageHasChangeId)
-				refreshChangeIdText();
+			refreshChangeIdText();
 		}
 		updateSignedOffButton();
 		updateChangeIdButton();
@@ -673,7 +651,7 @@ public class CommitMessageComponent {
 					previousCommitMessage);
 			if (endOfChangeId < 0)
 				endOfChangeId = previousCommitMessage.length();
-			int sha1Offset = changeIdOffset + "Change-Id: I".length(); //$NON-NLS-1$
+			int sha1Offset = changeIdOffset + Text.DELIMITER.length() + "Change-Id: I".length(); //$NON-NLS-1$
 			try {
 				originalChangeId = ObjectId.fromString(previousCommitMessage
 						.substring(sha1Offset, endOfChangeId));
@@ -689,7 +667,7 @@ public class CommitMessageComponent {
 	}
 
 	private int findOffsetOfChangeIdLine(String message) {
-		return ChangeIdUtil.indexOfChangeId(message, Text.DELIMITER);
+		return message.indexOf(Text.DELIMITER + "Change-Id: I"); //$NON-NLS-1$
 	}
 
 	private void updateChangeIdButton() {
@@ -723,7 +701,7 @@ public class CommitMessageComponent {
 					cleanedText = text.substring(0, changeIdOffset);
 				else
 					cleanedText = text.substring(0, changeIdOffset)
-							+ text.substring(endOfChangeId + 1);
+							+ text.substring(endOfChangeId);
 				commitText.setText(cleanedText);
 			}
 		}

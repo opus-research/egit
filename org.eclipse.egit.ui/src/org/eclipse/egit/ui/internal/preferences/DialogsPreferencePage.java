@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,7 +10,7 @@ package org.eclipse.egit.ui.internal.preferences;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
@@ -59,9 +58,6 @@ public class DialogsPreferencePage extends FieldEditorPreferencePage implements
 				UIPreferences.SHOW_INITIAL_CONFIG_DIALOG,
 				UIText.DialogsPreferencePage_ShowInitialConfigCheckbox,
 				confirmDialogsGroup));
-		addField(new BooleanFieldEditor(
-				UIPreferences.SHOW_CHECKOUT_CONFIRMATION,
-				UIText.DialogsPreferencePage_ShowCheckoutConfirmation, confirmDialogsGroup));
 
 		addField(new BooleanFieldEditor(UIPreferences.SHOW_REBASE_CONFIRM,
 				UIText.DialogsPreferencePage_RebaseCheckbox, confirmDialogsGroup));
