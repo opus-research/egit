@@ -58,10 +58,10 @@ public class TagOperation implements IEGitOperation {
 			monitor.beginTask(NLS.bind(CoreText.TagOperation_performingTagging,
 					tag.getTag()), 3);
 
-			ObjectId tagId = updateTagObject();
+			updateTagObject();
 			monitor.worked(1);
 
-			updateRepo(tagId);
+			updateRepo();
 			monitor.worked(1);
 
 		} finally {
@@ -69,12 +69,12 @@ public class TagOperation implements IEGitOperation {
 		}
 	}
 
-	private void updateRepo(ObjectId tagId) throws TeamException {
+	private void updateRepo() throws TeamException {
 		String refName = Constants.R_TAGS + tag.getTag();
 
 		try {
 			RefUpdate tagRef = repo.updateRef(refName);
-			tagRef.setNewObjectId(tagId);
+			tagRef.setNewObjectId(tag.getTagId());
 
 			tagRef.setForceUpdate(shouldMoveTag);
 			Result updateResult = tagRef.update();
@@ -88,20 +88,18 @@ public class TagOperation implements IEGitOperation {
 		}
 	}
 
-	private ObjectId updateTagObject() throws TeamException {
+	private void updateTagObject() throws TeamException {
 		ObjectId startPointRef = tag.getObjectId();
 
 		try {
-			ObjectId tagId;
 			repo.open(startPointRef);
 			ObjectInserter inserter = repo.newObjectInserter();
 			try {
-				tagId = inserter.insert(tag);
+				inserter.insert(tag);
 				inserter.flush();
 			} finally {
 				inserter.release();
 			}
-			return tagId;
 		} catch (IOException e) {
 			throw new TeamException(NLS.bind(CoreText.TagOperation_objectIdNotFound,
 					tag.getTag(), e.getMessage()), e);
