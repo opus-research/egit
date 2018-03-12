@@ -1,14 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2013 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *    Christian Halstrick (SAP AG) - initial implementation
- *    Mathias Kinzler (SAP AG) - initial implementation
- *    Robin Rosenberg - Adoption for the history menu
+ *    Tobias Pfeifer (SAP AG) - initial implementation
  *******************************************************************************/
 
 package org.eclipse.egit.ui.internal.history.command;
@@ -20,6 +18,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commands.shared.AbstractRebaseCommandHandler;
+import org.eclipse.egit.ui.internal.rebase.RebaseInteracitveHandler;
 import org.eclipse.jgit.lib.BranchConfig;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectIdRef;
@@ -31,9 +30,11 @@ import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * Executes the Rebase
+ * Executes the Rebase (interactively) TODO: This is a copy of
+ * {@link RebaseCurrentHandler}. Refactoring (extract common code to new
+ * superclass)
  */
-public class RebaseCurrentHandler extends AbstractHistoryCommandHandler {
+public class RebaseInteractiveCurrentHandler extends AbstractHistoryCommandHandler {
 
 	@Override
 	public boolean isEnabled() {
@@ -59,9 +60,10 @@ public class RebaseCurrentHandler extends AbstractHistoryCommandHandler {
 		AbstractRebaseCommandHandler rebaseCurrentRef = new AbstractRebaseCommandHandler(
 				jobname, UIText.RebaseCurrentRefCommand_RebaseCanceledMessage) {
 			@Override
-			protected RebaseOperation createRebaseOperation(
-					ExecutionEvent event2) throws ExecutionException {
-				return new RebaseOperation(repository, ref);
+			public RebaseOperation createRebaseOperation(ExecutionEvent event2)
+					throws ExecutionException {
+				return new RebaseOperation(repository, ref,
+						RebaseInteracitveHandler.INSTANCE);
 			}
 		};
 		rebaseCurrentRef.execute(event);
