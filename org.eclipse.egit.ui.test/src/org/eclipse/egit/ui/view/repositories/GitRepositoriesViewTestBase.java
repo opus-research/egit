@@ -27,7 +27,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryUtil;
@@ -70,15 +69,10 @@ public abstract class GitRepositoriesViewTestBase extends
 	private SWTBotView viewbot;
 
 	// the human-readable view name
-	protected static String viewName;
+	protected final static String viewName = myUtil.getPluginLocalizedValue("GitRepositoriesView_name");
 
 	// the human readable Git category
-	private static String gitCategory;
-
-	static {
-		viewName = myUtil.getPluginLocalizedValue("GitRepositoriesView_name");
-		gitCategory = myUtil.getPluginLocalizedValue("GitCategory_name");
-	}
+	private final static String gitCategory = myUtil.getPluginLocalizedValue("GitCategory_name");;
 
 	/**
 	 * remove all configured repositories from the view
@@ -269,8 +263,8 @@ public abstract class GitRepositoriesViewTestBase extends
 	protected void refreshAndWait() throws Exception {
 		RepositoriesView view = (RepositoriesView) getOrOpenView()
 				.getReference().getPart(false);
-		Job refreshJob = view.refresh();
-		refreshJob.join();
+		view.refresh();
+		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
 	}
 
 	@SuppressWarnings("boxing")

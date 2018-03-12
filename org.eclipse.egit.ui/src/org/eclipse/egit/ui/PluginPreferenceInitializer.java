@@ -38,6 +38,8 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_REV_DETAIL, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_REV_COMMENT, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_TOOLTIPS, false);
+		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES, false);
+		store.setDefault(UIPreferences.RESOURCEHISTORY_COMPARE_MODE, false);
 
 		store.setDefault(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS, true);
 		store.setDefault(UIPreferences.DECORATOR_RECURSIVE_LIMIT,
@@ -62,7 +64,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 
 		store.setDefault(UIPreferences.FINDTOOLBAR_IGNORE_CASE, true);
 		store.setDefault(UIPreferences.FINDTOOLBAR_FIND_IN, 2);
-		store.setDefault(UIPreferences.COMMITTING_HARD_WRAP_MESSAGE, true);
 
 		store.setDefault(UIPreferences.REFESH_ON_INDEX_CHANGE, true);
 		store.setDefault(UIPreferences.REFESH_ONLY_WHEN_ACTIVE, true);

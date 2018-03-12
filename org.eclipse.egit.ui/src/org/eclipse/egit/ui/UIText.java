@@ -151,6 +151,12 @@ public class UIText extends NLS {
 	public static String SharingWizard_failed;
 
 	/** */
+	public static String GenerateHistoryJob_BuildingListMessage;
+
+	/** */
+	public static String GenerateHistoryJob_CancelMessage;
+
+	/** */
 	public static String GenerateHistoryJob_errorComputingHistory;
 
 	/** */
@@ -386,6 +392,24 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_HistoryGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_MergeGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_MergeMode_0_Label;
+
+	/** */
+	public static String GitPreferenceRoot_MergeMode_1_Label;
+
+	/** */
+	public static String GitPreferenceRoot_MergeMode_2_Label;
+
+	/** */
+	public static String GitPreferenceRoot_MergeModeLabel;
+
+	/** */
+	public static String GitPreferenceRoot_MergeModeTooltip;
 
 	/** */
 	public static String GitPreferenceRoot_RemoteConnectionsGroupHeader;
@@ -1279,9 +1303,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_AddChangeIdTooltip;
 
 	/** */
-	public static String CommitDialog_ConfigureLink;
-
-	/** */
 	public static String ConfigurationEditorComponent_AddButton;
 
 	/** */
@@ -1771,12 +1792,6 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_Rename;
 
 	/** */
-	public static String CommittingPreferencePage_title;
-
-	/** */
-	public static String CommittingPreferencePage_hardWrapMessage;
-
-	/** */
 	public static String Decorator_exceptionMessage;
 
 	/** */
@@ -2170,6 +2185,18 @@ public class UIText extends NLS {
 	public static String MergeAction_WrongRepositoryState;
 
 	/** */
+	public static String MergeModeDialog_DialogTitle;
+
+	/** */
+	public static String MergeModeDialog_DontAskAgainLabel;
+
+	/** */
+	public static String MergeModeDialog_MergeMode_1_Label;
+
+	/** */
+	public static String MergeModeDialog_MergeMode_2_Label;
+
+	/** */
 	public static String MergeResultDialog_couldNotFindCommit;
 
 	/** */
@@ -2333,6 +2360,9 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_CommitId;
 
 	/** */
+	public static String CommitGraphTable_Committer;
+
+	/** */
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
@@ -2472,6 +2502,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_PleaseEnterNameMessage;
+
+	/** */
+	public static String GitMergeEditorInput_MergeEditorTitle;
+
+	/** */
+	public static String GitMergeEditorInput_WorkspaceHeader;
 
 	/** */
 	public static String GitModelIndex_index;

@@ -35,6 +35,10 @@ public class UIPreferences {
 	/** */
 	public final static String RESOURCEHISTORY_SHOW_FINDTOOLBAR = "resourcehistory_show_findtoolbar"; //$NON-NLS-1$
 	/** */
+	public final static String RESOURCEHISTORY_SHOW_ALL_BRANCHES = "resourcehistory_show_all_branches"; //$NON-NLS-1$
+	/** */
+	public final static String RESOURCEHISTORY_COMPARE_MODE = "resourcehistory_compare_mode"; //$NON-NLS-1$
+	/** */
 	public final static String FINDTOOLBAR_IGNORE_CASE = "findtoolbar_ignore_case"; //$NON-NLS-1$
 	/** */
 	public final static String FINDTOOLBAR_COMMIT_ID = "findtoolbar_commit_id"; //$NON-NLS-1$
@@ -46,8 +50,6 @@ public class UIPreferences {
 	public final static String FINDTOOLBAR_COMMITTER = "findtoolbar_committer"; //$NON-NLS-1$
 	/** */
 	public final static String FINDTOOLBAR_FIND_IN = "findtoolbar_find_in"; //$NON-NLS-1$
-	/** */
-	public final static String COMMITTING_HARD_WRAP_MESSAGE = "committing_hard_wrap_message"; //$NON-NLS-1$
 
 	/** */
 	public final static String THEME_CommitGraphNormalFont = "org.eclipse.egit.ui.CommitGraphNormalFont"; //$NON-NLS-1$
@@ -55,8 +57,6 @@ public class UIPreferences {
 	public final static String THEME_CommitGraphHighlightFont = "org.eclipse.egit.ui.CommitGraphHighlightFont"; //$NON-NLS-1$
 	/** */
 	public final static String THEME_CommitMessageFont = "org.eclipse.egit.ui.CommitMessageFont"; //$NON-NLS-1$
-	/** */
-	public final static String THEME_CommitMessageEditorFont = "org.eclipse.egit.ui.CommitMessageEditorFont"; //$NON-NLS-1$
 	/** */
 	public final static String THEME_UncommittedChangeForegroundColor = "org.eclipse.egit.ui.UncommittedChangeForegroundColor"; //$NON-NLS-1$
 	/** */
@@ -94,6 +94,8 @@ public class UIPreferences {
 	public static final String REMOTE_CONNECTION_TIMEOUT = "remote_connection_timeout"; //$NON-NLS-1$
 	/** */
 	public static final String DEFAULT_REPO_DIR = "default_repository_dir"; //$NON-NLS-1$
+	/** */
+	public static final String MERGE_MODE = "merge_mode"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array
