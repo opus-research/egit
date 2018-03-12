@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Google Inc.
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -45,7 +44,6 @@ import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -485,7 +483,7 @@ public class GitProjectData {
 		if (r instanceof IContainer) {
 			c = (IContainer) r;
 		} else if (r != null) {
-			c = Utils.getAdapter(r, IContainer.class);
+			c = (IContainer) r.getAdapter(IContainer.class);
 		}
 
 		if (c == null) {
@@ -532,8 +530,11 @@ public class GitProjectData {
 				CoreText.GitProjectData_mappedResourceGone, m.toString()),
 				new FileNotFoundException(m.getContainerPath().toString()));
 		m.clear();
-		UnmapJob unmapJob = new UnmapJob(getProject());
-		unmapJob.schedule();
+		try {
+			RepositoryProvider.unmap(getProject());
+		} catch (TeamException e) {
+			Activator.logError(CoreText.GitProjectData_UnmappingGoneResourceFailed, e);
+		}
 	}
 
 	private void protect(IResource resource) {
@@ -550,28 +551,6 @@ public class GitProjectData {
 						e);
 			}
 			c = c.getParent();
-		}
-	}
-
-	private static class UnmapJob extends Job {
-
-		private final IProject project;
-
-		private UnmapJob(IProject project) {
-			super(MessageFormat.format(CoreText.GitProjectData_UnmapJobName,
-					project.getName()));
-			this.project = project;
-		}
-
-		@Override
-		protected IStatus run(IProgressMonitor monitor) {
-			try {
-				RepositoryProvider.unmap(project);
-				return Status.OK_STATUS;
-			} catch (TeamException e) {
-				return new Status(IStatus.ERROR, Activator.getPluginId(),
-						CoreText.GitProjectData_UnmappingGoneResourceFailed, e);
-			}
 		}
 	}
 }

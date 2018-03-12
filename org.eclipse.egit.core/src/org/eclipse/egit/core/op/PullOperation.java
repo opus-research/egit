@@ -30,7 +30,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.egit.core.internal.merge.StrategyRecursiveModel;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult;
@@ -43,7 +42,6 @@ import org.eclipse.jgit.api.errors.InvalidConfigurationException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -55,8 +53,6 @@ public class PullOperation implements IEGitOperation {
 	private final Map<Repository, Object> results = new LinkedHashMap<Repository, Object>();
 
 	private final int timeout;
-
-	private CredentialsProvider credentialsProvider;
 
 	/**
 	 * @param repositories
@@ -94,8 +90,6 @@ public class PullOperation implements IEGitOperation {
 						pull.setProgressMonitor(new EclipseGitProgressTransformer(
 								new SubProgressMonitor(mymonitor, 1)));
 						pull.setTimeout(timeout);
-						pull.setCredentialsProvider(credentialsProvider);
-						pull.setStrategy(new StrategyRecursiveModel());
 						pullResult = pull.call();
 						results.put(repository, pullResult);
 					} catch (DetachedHeadException e) {
@@ -151,19 +145,5 @@ public class PullOperation implements IEGitOperation {
 
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRuleForRepositories(Arrays.asList(repositories));
-	}
-
-	/**
-	 * @param credentialsProvider
-	 */
-	public void setCredentialsProvider(CredentialsProvider credentialsProvider) {
-		this.credentialsProvider = credentialsProvider;
-	}
-
-	/**
-	 * @return the operation's credentials provider
-	 */
-	public CredentialsProvider getCredentialsProvider() {
-		return credentialsProvider;
 	}
 }

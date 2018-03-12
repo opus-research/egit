@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,11 +10,11 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commands.shared;
 
-import java.text.MessageFormat;
 import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
@@ -30,6 +30,7 @@ import org.eclipse.egit.ui.internal.branch.CleanupUncomittedChangesDialog;
 import org.eclipse.egit.ui.internal.rebase.RebaseResultDialog;
 import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jgit.api.RebaseCommand;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult.Status;
@@ -37,6 +38,8 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.ISources;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
@@ -107,7 +110,6 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 							handleBeginError(repository, result);
 						} else if (result.getSeverity() == IStatus.CANCEL)
 							Display.getDefault().asyncExec(new Runnable() {
-								@Override
 								public void run() {
 									// don't use getShell(event) here since
 									// the active shell has changed since the
@@ -141,7 +143,6 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 					private void setAmending(final boolean amending,
 							final boolean openStagingView) {
 						Display.getDefault().asyncExec(new Runnable() {
-							@Override
 							public void run() {
 								try {
 									IViewPart view;
@@ -161,7 +162,6 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 										sv.reload(repository);
 										Display.getDefault().asyncExec(
 												new Runnable() {
-													@Override
 													public void run() {
 														sv.setAmending(amending);
 													}
@@ -187,17 +187,12 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 	private void handleUncommittedChanges(final Repository repository,
 			final List<String> files) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
-				String repoName = Activator.getDefault().getRepositoryUtil()
-						.getRepositoryName(repository);
 				CleanupUncomittedChangesDialog cleanupUncomittedChangesDialog = new CleanupUncomittedChangesDialog(
 						shell,
-						MessageFormat
-								.format(UIText.AbstractRebaseCommandHandler_cleanupDialog_title,
-										repoName),
+						UIText.AbstractRebaseCommandHandler_cleanupDialog_title,
 						UIText.AbstractRebaseCommandHandler_cleanupDialog_text,
 						repository, files);
 				cleanupUncomittedChangesDialog.open();
@@ -213,7 +208,6 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 	}
 
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Repository repository = getRepository(event);
 		execute(repository);
@@ -262,5 +256,34 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 	 */
 	protected abstract RebaseOperation createRebaseOperation(
 			Repository repository) throws ExecutionException;
+
+	/**
+	 * Retrieve the current selection. The global selection is used if the menu
+	 * selection is not available.
+	 *
+	 * @param ctx
+	 * @return the selection
+	 */
+	protected Object getSelection(IEvaluationContext ctx) {
+		Object selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
+		if (selection == null || !(selection instanceof ISelection))
+			selection = ctx.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
+		return selection;
+	}
+
+	/**
+	 * Extracts the editor input from the given context.
+	 *
+	 * @param ctx the context
+	 * @return the editor input for the given context or <code>null</code> if not available
+	 * @since 2.1
+	 */
+	protected IEditorInput getActiveEditorInput(IEvaluationContext ctx) {
+		Object editorInput = ctx.getVariable(ISources.ACTIVE_EDITOR_INPUT_NAME);
+		if (editorInput instanceof IEditorInput)
+			return (IEditorInput) editorInput;
+
+		return null;
+	}
 
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -34,12 +34,7 @@ import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
@@ -53,12 +48,8 @@ import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
-import org.eclipse.egit.ui.internal.revision.EditableRevision;
-import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput.EmptyTypedElement;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.internal.synchronize.compare.LocalNonWorkspaceTypedElement;
 import org.eclipse.jface.action.Action;
@@ -83,7 +74,6 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.util.IO;
 import org.eclipse.jgit.util.io.EolCanonicalizingInputStream;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
 import org.eclipse.ui.IEditorInput;
@@ -91,7 +81,6 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IReusableEditor;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 
 /**
@@ -239,8 +228,8 @@ public class CompareUtils {
 	 * @return a truncated revision identifier if it is long
 	 */
 	public static String truncatedRevision(String ci) {
-		if (ObjectId.isId(ci))
-			return ci.substring(0, 7);
+		if (ci.length() > 10)
+			return ci.substring(0, 7) + "..."; //$NON-NLS-1$
 		else
 			return ci;
 	}
@@ -256,7 +245,7 @@ public class CompareUtils {
 		if (adapterType.isInstance(element))
 			return element;
 		if (element instanceof IAdaptable) {
-			Object adapted = CommonUtils.getAdapter(((IAdaptable) element), adapterType);
+			Object adapted = ((IAdaptable) element).getAdapter(adapterType);
 			if (adapterType.isInstance(adapted))
 				return adapted;
 		}
@@ -272,35 +261,6 @@ public class CompareUtils {
 				return adapted;
 		}
 		return null;
-	}
-
-	/**
-	 * Compares two files between the given commits, taking possible renames
-	 * into account.
-	 *
-	 * @param commit1
-	 *            the "left" commit for the comparison editor
-	 * @param commit2
-	 *            the "right" commit for the comparison editor
-	 * @param commit1Path
-	 *            path to the file within commit1's tree
-	 * @param commit2Path
-	 *            path to the file within commit2's tree
-	 * @param repository
-	 *            the repository this commit was loaded out of
-	 * @param workBenchPage
-	 *            the page to open the compare editor in
-	 */
-	public static void openInCompare(RevCommit commit1, RevCommit commit2,
-			String commit1Path, String commit2Path, Repository repository,
-			IWorkbenchPage workBenchPage) {
-		final ITypedElement base = CompareUtils.getFileRevisionTypedElement(
-				commit1Path, commit1, repository);
-		final ITypedElement next = CompareUtils.getFileRevisionTypedElement(
-				commit2Path, commit2, repository);
-		CompareEditorInput in = new GitCompareFileRevisionEditorInput(base,
-				next, null);
-		CompareUtils.openInCompare(workBenchPage, in);
 	}
 
 	/**
@@ -377,18 +337,15 @@ public class CompareUtils {
 			setChecked(CompareUtils.isReuseOpenEditor());
 		}
 
-		@Override
 		public void run() {
 			CompareUtils.setReuseOpenEditor(isChecked());
 		}
 
-		@Override
 		public void dispose() {
 			// stop listening
 			node.removePreferenceChangeListener(this);
 		}
 
-		@Override
 		public void preferenceChange(PreferenceChangeEvent event) {
 			setChecked(isReuseOpenEditor());
 
@@ -451,71 +408,24 @@ public class CompareUtils {
 	 * @param page
 	 *            If not {@null} try to re-use a compare editor on this
 	 *            page if any is available. Otherwise open a new one.
+	 * @throws IOException
+	 *             If HEAD or {@code refName} can't be resolved in the given
+	 *             repository.
 	 */
-	private static void compareWorkspaceWithRef(final Repository repository,
-			final IFile file, final String refName, final IWorkbenchPage page) {
+	private static void compareWorkspaceWithRef(Repository repository,
+			IFile file, String refName, IWorkbenchPage page) throws IOException {
+		final RepositoryMapping mapping = RepositoryMapping.getMapping(file);
+		final String gitPath = mapping.getRepoRelativePath(file);
+		final ITypedElement base = SaveableCompareEditorInput
+				.createFileElement(file);
 
-		Job job = new Job(UIText.CompareUtils_jobName) {
+		CompareEditorInput in = prepareCompareInput(repository, gitPath, base,
+				refName);
 
-			@Override
-			public IStatus run(IProgressMonitor monitor) {
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
-				final RepositoryMapping mapping = RepositoryMapping
-						.getMapping(file);
-				final String gitPath = mapping.getRepoRelativePath(file);
-				final ITypedElement base = SaveableCompareEditorInput
-						.createFileElement(file);
-
-				CompareEditorInput in;
-				try {
-					in = prepareCompareInput(repository, gitPath, base, refName);
-				} catch (IOException e) {
-					return Activator.createErrorStatus(
-							UIText.CompareWithRefAction_errorOnSynchronize, e);
-				}
-
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
-				openCompareEditorRunnable(page, in);
-				return Status.OK_STATUS;
-			}
-		};
-		job.setUser(true);
-		job.schedule();
-	}
-
-	/**
-	 * Opens compare editor in UI thread. Safe to start from background threads
-	 * too - in this case the operation will be started asynchronously in UI
-	 * thread.
-	 *
-	 * @param page
-	 *            can be null
-	 * @param in
-	 *            non null
-	 */
-	private static void openCompareEditorRunnable(
-			final IWorkbenchPage page,
-			final CompareEditorInput in) {
-		// safety check: make sure we open compare editor from UI thread
-		if (Display.getCurrent() == null) {
-			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					openCompareEditorRunnable(page, in);
-				}
-			});
-			return;
-		}
-
-		if (page != null) {
+		if (page != null)
 			openInCompare(page, in);
-		} else {
+		else
 			CompareUI.openCompareEditor(in);
-		}
 	}
 
 	/**
@@ -534,39 +444,23 @@ public class CompareUtils {
 	 * @param page
 	 *            If not {@null} try to re-use a compare editor on this
 	 *            page if any is available. Otherwise open a new one.
+	 * @throws IOException
+	 *             If HEAD or {@code refName} can't be resolved in the given
+	 *             repository.
 	 */
-	private static void compareLocalWithRef(final Repository repository,
-			final IPath location, final String refName,
-			final IWorkbenchPage page) {
+	private static void compareLocalWithRef(Repository repository,
+			IPath location, String refName, IWorkbenchPage page)
+			throws IOException {
+		final String gitPath = RepositoryMapping.getMapping(location).getRepoRelativePath(location);
+		final ITypedElement base = new LocalNonWorkspaceTypedElement(location);
 
-		Job job = new Job(UIText.CompareUtils_jobName) {
+		CompareEditorInput in = prepareCompareInput(repository, gitPath, base,
+				refName);
 
-			@Override
-			public IStatus run(IProgressMonitor monitor) {
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
-				final String gitPath = getRepoRelativePath(location, repository);
-				final ITypedElement base = new LocalNonWorkspaceTypedElement(
-						location);
-
-				CompareEditorInput in;
-				try {
-					in = prepareCompareInput(repository, gitPath, base, refName);
-				} catch (IOException e) {
-					return Activator.createErrorStatus(
-							UIText.CompareWithRefAction_errorOnSynchronize, e);
-				}
-
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
-				openCompareEditorRunnable(page, in);
-				return Status.OK_STATUS;
-			}
-		};
-		job.setUser(true);
-		job.schedule();
+		if (page != null)
+			openInCompare(page, in);
+		else
+			CompareUI.openCompareEditor(in);
 	}
 
 	/*
@@ -588,17 +482,17 @@ public class CompareUtils {
 			destCommit = getHeadTypedElement(repository, gitPath);
 		else {
 			final ObjectId destCommitId = repository.resolve(refName);
-			try (RevWalk rw = new RevWalk(repository)) {
-				RevCommit commit = rw.parseCommit(destCommitId);
-				destCommit = getFileRevisionTypedElement(gitPath, commit,
-						repository);
+			RevWalk rw = new RevWalk(repository);
+			RevCommit commit = rw.parseCommit(destCommitId);
+			rw.release();
+			destCommit = getFileRevisionTypedElement(gitPath, commit,
+					repository);
 
-				if (base != null && commit != null) {
-					final ObjectId headCommitId = repository
-							.resolve(Constants.HEAD);
-					commonAncestor = getFileRevisionTypedElementForCommonAncestor(
-							gitPath, headCommitId, destCommitId, repository);
-				}
+			if (base != null && commit != null) {
+				final ObjectId headCommitId = repository
+						.resolve(Constants.HEAD);
+				commonAncestor = getFileRevisionTypedElementForCommonAncestor(
+						gitPath, headCommitId, destCommitId, repository);
 			}
 		}
 
@@ -666,65 +560,6 @@ public class CompareUtils {
 	}
 
 	/**
-	 * This can be used to compare a given set of resources between two
-	 * revisions. If only one resource is to be compared, and that resource is
-	 * not part of a more important model (as defined in
-	 * {@link #canDirectlyOpenInCompare(IFile)}, we'll open a comparison editor
-	 * for that file alone, also taking leftPath and rightPath into account.
-	 * Otherwise, we'll launch a synchronization restrained of the given
-	 * resources set.
-	 * <p>
-	 * This can also be used to synchronize the whole repository if
-	 * <code>resources</code> is empty.
-	 * </p>
-	 * <p>
-	 * Note that this can be used to compare with the index by using
-	 * {@link GitFileRevision#INDEX} as either one of the two revs.
-	 * </p>
-	 *
-	 * @param resources
-	 *            The set of resources to compare. Can be empty (in which case
-	 *            we'll synchronize the whole repository).
-	 * @param repository
-	 *            The repository to load file revisions from.
-	 * @param leftPath
-	 *            The repository relative path to be used for the left revision,
-	 *            when comparing directly.
-	 * @param rightPath
-	 *            The repository relative path to be used for the right
-	 *            revision, when comparing directly.
-	 * @param leftRev
-	 *            Left revision of the comparison (usually the local or "new"
-	 *            revision). Won't be used if <code>includeLocal</code> is
-	 *            <code>true</code>.
-	 * @param rightRev
-	 *            Right revision of the comparison (usually the "old" revision).
-	 * @param includeLocal
-	 *            If <code>true</code>, this will use the local data as the
-	 *            "left" side of the comparison.
-	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this
-	 *            page if any is available. Otherwise open a new one.
-	 * @throws IOException
-	 */
-	public static void compare(IResource[] resources, Repository repository,
-			String leftPath, String rightPath, String leftRev, String rightRev,
-			boolean includeLocal, IWorkbenchPage page) throws IOException {
-		if (resources.length == 1 && resources[0] instanceof IFile
-				&& canDirectlyOpenInCompare((IFile) resources[0])) {
-			if (includeLocal)
-				compareWorkspaceWithRef(repository, (IFile) resources[0],
-						rightRev, page);
-			else {
-				compareBetween(repository, leftPath, rightPath, leftRev,
-						rightRev, page);
-			}
-		} else
-			GitModelSynchronize.synchronize(resources, repository, leftRev,
-					rightRev, includeLocal);
-	}
-
-	/**
 	 * This can be used to compare a given file between two revisions.
 	 *
 	 * @param location
@@ -743,102 +578,45 @@ public class CompareUtils {
 	 * @param page
 	 *            If not {@null} try to re-use a compare editor on this
 	 *            page if any is available. Otherwise open a new one.
+	 * @throws IOException
 	 */
 	public static void compare(IPath location, Repository repository,
 			String leftRev, String rightRev, boolean includeLocal,
-			IWorkbenchPage page) {
+			IWorkbenchPage page) throws IOException {
 		if (includeLocal)
 			compareLocalWithRef(repository, location, rightRev, page);
 		else {
-			String gitPath = getRepoRelativePath(location, repository);
+			final String gitPath = RepositoryMapping.getMapping(location)
+					.getRepoRelativePath(location);
 			compareBetween(repository, gitPath, leftRev, rightRev, page);
 		}
 	}
 
 	private static void compareBetween(Repository repository, String gitPath,
-			String leftRev, String rightRev, IWorkbenchPage page) {
-		compareBetween(repository, gitPath, gitPath, leftRev, rightRev, page);
-	}
+			String leftRev, String rightRev, IWorkbenchPage page)
+			throws IOException {
+		final ITypedElement left = getTypedElementFor(repository, gitPath,
+				leftRev);
+		final ITypedElement right = getTypedElementFor(repository, gitPath,
+				rightRev);
 
-	/**
-	 * Compares two explicit files specified by leftGitPath and rightGitPath
-	 * between the two revisions leftRev and rightRev.
-	 *
-	 * @param repository
-	 *            The repository to load file revisions from.
-	 * @param leftGitPath
-	 *            The repository relative path to be used for the left revision.
-	 * @param rightGitPath
-	 *            The repository relative path to be used for the right
-	 *            revision.
-	 * @param leftRev
-	 *            Left revision of the comparison (usually the local or "new"
-	 *            revision). Won't be used if <code>includeLocal</code> is
-	 *            <code>true</code>.
-	 * @param rightRev
-	 *            Right revision of the comparison (usually the "old" revision).
-	 * @param page
-	 *            If not {@null} try to re-use a compare editor on this
-	 *            page if any is available. Otherwise open a new one.
-	 */
-	private static void compareBetween(final Repository repository,
-			final String leftGitPath, final String rightGitPath,
-			final String leftRev, final String rightRev,
-			final IWorkbenchPage page) {
+		final ITypedElement commonAncestor;
+		if (left != null && right != null && !GitFileRevision.INDEX.equals(leftRev)
+				&& !GitFileRevision.INDEX.equals(rightRev))
+			commonAncestor = getTypedElementForCommonAncestor(repository,
+					gitPath, leftRev, rightRev);
+		else
+			commonAncestor = null;
 
-		Job job = new Job(UIText.CompareUtils_jobName) {
+		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
+				left, right, commonAncestor, null);
+		in.getCompareConfiguration().setLeftLabel(leftRev);
+		in.getCompareConfiguration().setRightLabel(rightRev);
 
-			@Override
-			public IStatus run(IProgressMonitor monitor) {
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
-				final ITypedElement left;
-				final ITypedElement right;
-				try {
-					left = getTypedElementFor(repository, leftGitPath, leftRev);
-					right = getTypedElementFor(repository, rightGitPath,
-							rightRev);
-				} catch (IOException e) {
-					return Activator.createErrorStatus(
-							UIText.CompareWithRefAction_errorOnSynchronize, e);
-				}
-				final ITypedElement commonAncestor;
-				if (left != null && right != null
-						&& !GitFileRevision.INDEX.equals(leftRev)
-						&& !GitFileRevision.INDEX.equals(rightRev)) {
-					commonAncestor = getTypedElementForCommonAncestor(
-							repository, rightGitPath, leftRev, rightRev);
-				} else {
-					commonAncestor = null;
-				}
-
-				final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-						left, right, commonAncestor, null);
-				in.getCompareConfiguration().setLeftLabel(leftRev);
-				in.getCompareConfiguration().setRightLabel(rightRev);
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
-				openCompareEditorRunnable(page, in);
-				return Status.OK_STATUS;
-			}
-		};
-		job.setUser(true);
-		job.schedule();
-	}
-
-	private static String getRepoRelativePath(IPath location,
-			Repository repository) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-		final String gitPath;
-		if (mapping != null)
-			gitPath = mapping.getRepoRelativePath(location);
-		else {
-			IPath repoRoot = new Path(repository.getWorkTree().getPath());
-			gitPath = location.makeRelativeTo(repoRoot).toString();
-		}
-		return gitPath;
+		if (page != null)
+			openInCompare(page, in);
+		else
+			CompareUI.openCompareEditor(in);
 	}
 
 	private static ITypedElement getTypedElementFor(Repository repository, String gitPath, String rev) throws IOException {
@@ -849,11 +627,11 @@ public class CompareUtils {
 			typedElement = getHeadTypedElement(repository, gitPath);
 		else {
 			final ObjectId id = repository.resolve(rev);
-			try (final RevWalk rw = new RevWalk(repository)) {
-				final RevCommit revCommit = rw.parseCommit(id);
-				typedElement = getFileRevisionTypedElement(gitPath, revCommit,
-						repository);
-			}
+			final RevWalk rw = new RevWalk(repository);
+			final RevCommit revCommit = rw.parseCommit(id);
+			rw.release();
+			typedElement = getFileRevisionTypedElement(gitPath,
+					revCommit, repository);
 		}
 		return typedElement;
 	}
@@ -923,7 +701,8 @@ public class CompareUtils {
 				return new EmptyTypedElement(""); //$NON-NLS-1$
 
 			RevCommit latestFileCommit;
-			try (RevWalk rw = new RevWalk(repository)) {
+			RevWalk rw = new RevWalk(repository);
+			try {
 				RevCommit headCommit = rw.parseCommit(head.getObjectId());
 				rw.markStart(headCommit);
 				rw.setTreeFilter(AndTreeFilter.create(
@@ -933,6 +712,8 @@ public class CompareUtils {
 				// Fall back to HEAD
 				if (latestFileCommit == null)
 					latestFileCommit = headCommit;
+			} finally {
+				rw.release();
 			}
 
 			return CompareUtils.getFileRevisionTypedElement(repoRelativePath, latestFileCommit, repository);
@@ -980,7 +761,6 @@ public class CompareUtils {
 		final EditableRevision next = new EditableRevision(nextFile, encoding);
 
 		IContentChangeListener listener = new IContentChangeListener() {
-			@Override
 			public void contentChanged(IContentChangeNotifier source) {
 				final byte[] newContent = next.getModifiedContent();
 				setIndexEntryContents(repository, gitPath, newContent);
@@ -1110,31 +890,23 @@ public class CompareUtils {
 		 * trying to determine if the local file can be compared alone, this can
 		 * be done by relying on the local model only.
 		 */
-		// Only builds the logical model if the preference holds true
-		if (Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.USE_LOGICAL_MODEL)) {
+		final ResourceMapping[] mappings = ResourceUtil.getResourceMappings(
+				file, ResourceMappingContext.LOCAL_CONTEXT);
 
-			final ResourceMapping[] mappings = ResourceUtil
-					.getResourceMappings(file,
-							ResourceMappingContext.LOCAL_CONTEXT);
-
-			for (ResourceMapping mapping : mappings) {
-				try {
-					final ResourceTraversal[] traversals = mapping
-							.getTraversals(
-									ResourceMappingContext.LOCAL_CONTEXT, null);
-					for (ResourceTraversal traversal : traversals) {
-						final IResource[] resources = traversal.getResources();
-						for (IResource resource : resources) {
-							if (!resource.equals(file))
-								return false;
-						}
+		for (ResourceMapping mapping : mappings) {
+			try {
+				final ResourceTraversal[] traversals = mapping.getTraversals(
+						ResourceMappingContext.LOCAL_CONTEXT, null);
+				for (ResourceTraversal traversal : traversals) {
+					final IResource[] resources = traversal.getResources();
+					for (IResource resource : resources) {
+						if (!resource.equals(file))
+							return false;
 					}
-				} catch (CoreException e) {
-					Activator.logError(e.getMessage(), e);
 				}
+			} catch (CoreException e) {
+				Activator.logError(e.getMessage(), e);
 			}
-
 		}
 		return true;
 	}

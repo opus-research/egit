@@ -15,10 +15,6 @@ import java.util.Map.Entry;
 import java.util.WeakHashMap;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -58,9 +54,6 @@ class GitDocument extends Document implements RefsChangedListener {
 	private ObjectId lastBlob;
 
 	private ListenerHandle myRefsChangedHandle;
-
-	// Job that reloads the document when something has changed
-	private Job reloadJob;
 
 	private boolean disposed;
 
@@ -118,81 +111,92 @@ class GitDocument extends Document implements RefsChangedListener {
 		if (disposed)
 			return;
 
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-		if (mapping == null) {
-			setResolved(null, null, null, ""); //$NON-NLS-1$
-			return;
-		}
-		final String gitPath = mapping.getRepoRelativePath(resource);
-		if (gitPath == null) {
-			setResolved(null, null, null, ""); //$NON-NLS-1$
-			return;
-		}
-		final Repository repository = mapping.getRepository();
-		String baseline = GitQuickDiffProvider.baseline.get(repository);
-		if (baseline == null)
-			baseline = Constants.HEAD;
-		ObjectId commitId = repository.resolve(baseline);
-		if (commitId != null) {
-			if (commitId.equals(lastCommit)) {
+		TreeWalk tw = null;
+		RevWalk rw = null;
+		try {
+			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+			if (mapping == null) {
+				setResolved(null, null, null, ""); //$NON-NLS-1$
+				return;
+			}
+			final String gitPath = mapping.getRepoRelativePath(resource);
+			if (gitPath == null) {
+				setResolved(null, null, null, ""); //$NON-NLS-1$
+				return;
+			}
+			final Repository repository = mapping.getRepository();
+			String baseline = GitQuickDiffProvider.baseline.get(repository);
+			if (baseline == null)
+				baseline = Constants.HEAD;
+			ObjectId commitId = repository.resolve(baseline);
+			if (commitId != null) {
+				if (commitId.equals(lastCommit)) {
+					if (GitTraceLocation.QUICKDIFF.isActive())
+						GitTraceLocation.getTrace().trace(
+								GitTraceLocation.QUICKDIFF.getLocation(),
+								"(GitDocument) already resolved"); //$NON-NLS-1$
+					return;
+				}
+			} else {
+				if (repository.getRef(Constants.HEAD) == null) {
+					// Complain only if not an unborn branch
+					String msg = NLS.bind(UIText.GitDocument_errorResolveQuickdiff,
+							new Object[] { baseline, resource, repository });
+					Activator.logError(msg, new Throwable());
+				}
+				setResolved(null, null, null, ""); //$NON-NLS-1$
+				return;
+			}
+			rw = new RevWalk(repository);
+			RevCommit baselineCommit;
+			ObjectReader reader = null;
+			String oldPath = gitPath;
+
+			try {
+				reader = repository.newObjectReader();
+				baselineCommit = rw.parseCommit(commitId);
+				DiffConfig diffConfig = repository.getConfig().get(
+						DiffConfig.KEY);
+				if (diffConfig.getRenameDetectionType() != RenameDetectionType.FALSE) {
+					TreeWalk walk = new TreeWalk(repository);
+					CanonicalTreeParser baseLineIterator = new CanonicalTreeParser();
+					baseLineIterator.reset(reader, baselineCommit.getTree());
+					walk.addTree(baseLineIterator);
+					walk.addTree(new DirCacheIterator(repository.readDirCache()));
+					List<DiffEntry> diffs = DiffEntry.scan(walk, true);
+					RenameDetector renameDetector = new RenameDetector(
+							repository);
+					renameDetector.addAll(diffs);
+					List<DiffEntry> renames = renameDetector.compute();
+					for (DiffEntry e : renames) {
+						if (e.getNewPath().equals(gitPath)) {
+							oldPath = e.getOldPath();
+							break;
+						}
+					}
+				}
+			} catch (IOException err) {
+				String msg = NLS
+						.bind(UIText.GitDocument_errorLoadCommit, new Object[] {
+								commitId, baseline, resource, repository });
+				Activator.logError(msg, err);
+				setResolved(null, null, null, ""); //$NON-NLS-1$
+				return;
+			} finally {
+				if (reader != null)
+					reader.release();
+				rw.dispose();
+			}
+			RevTree treeId = baselineCommit.getTree();
+			if (treeId.equals(lastTree)) {
 				if (GitTraceLocation.QUICKDIFF.isActive())
 					GitTraceLocation.getTrace().trace(
 							GitTraceLocation.QUICKDIFF.getLocation(),
 							"(GitDocument) already resolved"); //$NON-NLS-1$
 				return;
 			}
-		} else {
-			if (repository.getRef(Constants.HEAD) == null) {
-				// Complain only if not an unborn branch
-				String msg = NLS.bind(UIText.GitDocument_errorResolveQuickdiff,
-						new Object[] { baseline, resource, repository });
-				Activator.logError(msg, new Throwable());
-			}
-			setResolved(null, null, null, ""); //$NON-NLS-1$
-			return;
-		}
 
-		RevCommit baselineCommit;
-		String oldPath = gitPath;
-
-		try (RevWalk rw = new RevWalk(repository);
-				ObjectReader reader = repository.newObjectReader()) {
-			baselineCommit = rw.parseCommit(commitId);
-			DiffConfig diffConfig = repository.getConfig().get(DiffConfig.KEY);
-			if (diffConfig.getRenameDetectionType() != RenameDetectionType.FALSE) {
-				TreeWalk walk = new TreeWalk(repository);
-				CanonicalTreeParser baseLineIterator = new CanonicalTreeParser();
-				baseLineIterator.reset(reader, baselineCommit.getTree());
-				walk.addTree(baseLineIterator);
-				walk.addTree(new DirCacheIterator(repository.readDirCache()));
-				List<DiffEntry> diffs = DiffEntry.scan(walk, true);
-				RenameDetector renameDetector = new RenameDetector(repository);
-				renameDetector.addAll(diffs);
-				List<DiffEntry> renames = renameDetector.compute();
-				for (DiffEntry e : renames) {
-					if (e.getNewPath().equals(gitPath)) {
-						oldPath = e.getOldPath();
-						break;
-					}
-				}
-			}
-		} catch (IOException err) {
-			String msg = NLS.bind(UIText.GitDocument_errorLoadCommit,
-					new Object[] { commitId, baseline, resource, repository });
-			Activator.logError(msg, err);
-			setResolved(null, null, null, ""); //$NON-NLS-1$
-			return;
-		}
-		RevTree treeId = baselineCommit.getTree();
-		if (treeId.equals(lastTree)) {
-			if (GitTraceLocation.QUICKDIFF.isActive())
-				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.QUICKDIFF.getLocation(),
-						"(GitDocument) already resolved"); //$NON-NLS-1$
-			return;
-		}
-
-		try (TreeWalk tw = TreeWalk.forPath(repository, oldPath, treeId)) {
+			tw = TreeWalk.forPath(repository, oldPath, treeId);
 			if (tw == null) {
 				if (GitTraceLocation.QUICKDIFF.isActive())
 					GitTraceLocation
@@ -238,10 +242,13 @@ class GitDocument extends Document implements RefsChangedListener {
 							"(GitDocument) already resolved"); //$NON-NLS-1$
 			}
 		} finally {
-			if (GitTraceLocation.QUICKDIFF.isActive()) {
+			if (tw != null)
+				tw.release();
+			if (rw != null)
+				rw.release();
+			if (GitTraceLocation.QUICKDIFF.isActive())
 				GitTraceLocation.getTrace().traceExit(
 						GitTraceLocation.QUICKDIFF.getLocation());
-			}
 		}
 
 	}
@@ -258,32 +265,19 @@ class GitDocument extends Document implements RefsChangedListener {
 			myRefsChangedHandle.remove();
 			myRefsChangedHandle = null;
 		}
-		cancelReloadJob();
 		disposed = true;
 	}
 
-	@Override
-	public void onRefsChanged(final RefsChangedEvent event) {
-		cancelReloadJob();
-
-		reloadJob = new Job(UIText.GitDocument_ReloadJobName) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
+	public void onRefsChanged(final RefsChangedEvent e) {
+		Activator.getDefault().getWorkbench().getDisplay().asyncExec(new Runnable() {
+			public void run() {
 				try {
 					populate();
-					return Status.OK_STATUS;
-				} catch (IOException e) {
-					return Activator.createErrorStatus(
-							UIText.GitDocument_ReloadJobError, e);
+				} catch (Exception e1) {
+					Activator.logError(UIText.GitDocument_errorRefreshQuickdiff, e1);
 				}
 			}
-		};
-		reloadJob.schedule();
-	}
-
-	private void cancelReloadJob() {
-		if (reloadJob != null && reloadJob.getState() != Job.NONE)
-			reloadJob.cancel();
+		});
 	}
 
 	private Repository getRepository() {

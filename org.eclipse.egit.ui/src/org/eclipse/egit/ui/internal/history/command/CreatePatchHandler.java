@@ -24,9 +24,8 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public class CreatePatchHandler extends AbstractHistoryCommandHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		List<RevCommit> selectedCommits = getSelectedCommits(event);
+		List<RevCommit> selectedCommits = getSelectedCommits();
 		RevCommit commit = selectedCommits.get(0);
 		Repository repo = getRepository(event);
 		PatchOperationUI.createPatch(getPart(event), commit, repo).start();
@@ -42,6 +41,6 @@ public class CreatePatchHandler extends AbstractHistoryCommandHandler {
 		if (selection.size() != 1)
 			return false;
 		RevCommit commit = (RevCommit) selection.getFirstElement();
-		return (commit.getParentCount() <= 1);
+		return (commit.getParentCount() == 1);
 	}
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2014 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -151,8 +151,10 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		if (branch == null)
 			return null;
 
-		String remoteName = null;
-		if (!ObjectId.isId(branch))
+		String remoteName;
+		if (ObjectId.isId(branch))
+			remoteName = Constants.DEFAULT_REMOTE_NAME;
+		else
 			remoteName = repository.getConfig().getString(
 					ConfigConstants.CONFIG_BRANCH_SECTION, branch,
 					ConfigConstants.CONFIG_REMOTE_SECTION);
@@ -167,22 +169,12 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		}
 
 		RemoteConfig configuredConfig = null;
-		RemoteConfig defaultConfig = null;
 		for (RemoteConfig config : allRemotes) {
 			if (remoteName != null && config.getName().equals(remoteName))
 				configuredConfig = config;
-			if (config.getName().equals(Constants.DEFAULT_REMOTE_NAME))
-				defaultConfig = config;
 		}
 
-		if (configuredConfig != null)
-			return configuredConfig;
-
-		if (defaultConfig != null)
-			if (!defaultConfig.getPushRefSpecs().isEmpty())
-				return defaultConfig;
-
-		return null;
+		return configuredConfig;
 	}
 
 	/**
@@ -282,7 +274,6 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		});
 
 		commonUriText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				deleteCommonUri
 						.setEnabled(commonUriText.getText().length() > 0);
@@ -296,7 +287,6 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		pushUriArea.setExpanded(!config.getPushURIs().isEmpty());
 		pushUriArea.addExpansionListener(new ExpansionAdapter() {
 
-			@Override
 			public void expansionStateChanged(ExpansionEvent e) {
 				main.layout(true, true);
 				main.getShell().pack();
@@ -364,7 +354,6 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		});
 
 		uriViewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				deleteUri.setEnabled(!uriViewer.getSelection().isEmpty());
 				changeUri.setEnabled(((IStructuredSelection) uriViewer
@@ -486,7 +475,6 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		});
 
 		specViewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				IStructuredSelection sel = (IStructuredSelection) specViewer
 						.getSelection();
@@ -575,32 +563,21 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 	public void buttonPressed(int buttonId) {
 		if (buttonId == DRY_RUN) {
 			try {
-				new ProgressMonitorDialog(getShell()).run(true, true,
+				new ProgressMonitorDialog(getShell()).run(false, true,
 						new IRunnableWithProgress() {
-							@Override
 							public void run(IProgressMonitor monitor)
 									throws InvocationTargetException,
 									InterruptedException {
-								final PushOperationUI op = new PushOperationUI(
+								PushOperationUI op = new PushOperationUI(
 										repository, config, true);
 								try {
-									final PushOperationResult result = op
+									PushOperationResult result = op
 											.execute(monitor);
-									getShell().getDisplay().asyncExec(
-											new Runnable() {
-
-												@Override
-												public void run() {
-													PushResultDialog dlg = new PushResultDialog(
-															getShell(),
-															repository,
-															result,
-															op
+									PushResultDialog dlg = new PushResultDialog(
+											getShell(), repository, result, op
 													.getDestinationString());
-													dlg.showConfigureButton(false);
-													dlg.open();
-												}
-											});
+									dlg.showConfigureButton(false);
+									dlg.open();
 								} catch (CoreException e) {
 									Activator.handleError(e.getMessage(), e,
 											true);
@@ -633,9 +610,8 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			}
 			if (buttonId == OK)
 				try {
-					new ProgressMonitorDialog(getShell()).run(true, true,
+					new ProgressMonitorDialog(getShell()).run(false, true,
 							new IRunnableWithProgress() {
-								@Override
 								public void run(IProgressMonitor monitor)
 										throws InvocationTargetException,
 										InterruptedException {
