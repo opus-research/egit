@@ -10,7 +10,7 @@
 	    id="org.eclipse.egit.ui.internal.clone.gitclonecategory"/>
       <wizard name="%Git_clone_wizard"
 	    icon="icons/obj16/import_obj.gif"
-	    class="org.eclipse.egit.ui.internal.clone.GitCloneWizard"
+	    class="org.eclipse.egit.ui.internal.clone.GitImportWizard"
 	    id="org.eclipse.egit.ui.internal.clone.GitCloneWizard"
 	    category="org.eclipse.egit.ui.internal.clone.gitclonecategory">
 	    <description>%Git_clone_description</description>
@@ -58,12 +58,6 @@
                menubarPath="team.main/projectGroup"
                tooltip="%ResetAction_tooltip">
          </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.TagAction"
-               id="org.eclipse.egit.ui.internal.actions.TagAction"
-               label="%TagAction_label"
-               menubarPath="team.main/projectGroup"
-               tooltip="%TagAction_tooltip"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.BranchAction"
                id="org.eclipse.egit.ui.internal.actions.BranchAction"

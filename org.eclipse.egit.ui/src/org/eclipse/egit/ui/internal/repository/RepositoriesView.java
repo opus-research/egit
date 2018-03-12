@@ -12,6 +12,7 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,11 +52,13 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneWizard;
-import org.eclipse.egit.ui.internal.clone.GitImportProjectsWizard;
+import org.eclipse.egit.ui.internal.clone.GitCreateProjectViaWizardWizard;
 import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.dialogs.ProgressMonitorDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -69,12 +72,18 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
+import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -95,9 +104,12 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.part.IShowInTarget;
+import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
@@ -120,7 +132,8 @@ import org.osgi.service.prefs.BackingStoreException;
  * <li>Clarification whether to show projects, perhaps configurable switch</li>
  *
  */
-public class RepositoriesView extends ViewPart implements ISelectionProvider {
+public class RepositoriesView extends ViewPart implements ISelectionProvider,
+		IShowInTarget {
 
 	/** The view ID */
 	public static final String VIEW_ID = "org.eclipse.egit.ui.RepositoriesView"; //$NON-NLS-1$
@@ -156,7 +169,16 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 
 	private IAction linkWithSelectionAction;
 
-	private static List<String> getDirs() {
+	private IAction copyAction;
+
+	private IAction pasteAction;
+
+	/**
+	 * TODO move to utility class
+	 *
+	 * @return the directories as configured for this view
+	 */
+	public static List<String> getDirs() {
 		List<String> resultStrings = new ArrayList<String>();
 		String dirs = getPrefs().get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
 		if (dirs != null && dirs.length() > 0) {
@@ -247,9 +269,21 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 
 			public void selectionChanged(SelectionChangedEvent event) {
 
+				copyAction.setEnabled(false);
+
 				IStructuredSelection ssel = (IStructuredSelection) event
 						.getSelection();
 				if (ssel.size() == 1) {
+					RepositoryTreeNode node = (RepositoryTreeNode) ssel
+							.getFirstElement();
+					// allow copy on repository, file, or folder (copying the
+					// directory)
+					if (node.getType() == RepositoryTreeNodeType.REPO
+							|| node.getType() == RepositoryTreeNodeType.WORKINGDIR
+							|| node.getType() == RepositoryTreeNodeType.FOLDER
+							|| node.getType() == RepositoryTreeNodeType.FILE) {
+						copyAction.setEnabled(true);
+					}
 					setSelection(new StructuredSelection(ssel.getFirstElement()));
 				} else {
 					setSelection(new StructuredSelection());
@@ -278,7 +312,8 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 						RepositoryTreeNode node = (RepositoryTreeNode) selectedElement;
 						// if any of the selected elements are not files, ignore
 						// the open request
-						if (node.getType() != RepositoryTreeNodeType.FILE) {
+						if (node.getType() != RepositoryTreeNodeType.FILE
+								&& node.getType() != RepositoryTreeNodeType.REF) {
 							return;
 						}
 					}
@@ -286,7 +321,15 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 					// open the files the user has selected
 					for (Object selectedElement : selectionArray) {
 						RepositoryTreeNode node = (RepositoryTreeNode) selectedElement;
-						openFile((File) node.getObject());
+						if (node.getType() == RepositoryTreeNodeType.FILE)
+							openFile((File) node.getObject());
+						else if (node.getType() == RepositoryTreeNodeType.REF) {
+							Ref ref = (Ref) node.getObject();
+							if (ref.getName().startsWith(Constants.R_HEADS)
+									|| ref.getName().startsWith(
+											Constants.R_REMOTES))
+								checkoutBranch(node, ref.getName());
+						}
 					}
 				}
 			}
@@ -387,6 +430,17 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 
 		});
 
+		MenuItem pasteItem = new MenuItem(men, SWT.PUSH);
+		pasteItem.setText(UIText.RepositoriesView_PasteMenu);
+		pasteItem.addSelectionListener(new SelectionAdapter() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				pasteAction.run();
+			}
+
+		});
+
 		MenuItem refreshItem = new MenuItem(men, SWT.PUSH);
 		refreshItem.setText(refreshAction.getText());
 		refreshItem.addSelectionListener(new SelectionAdapter() {
@@ -455,7 +509,8 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 								ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
 										project, gitDir);
 								connectProviderOperation
-										.run(new SubProgressMonitor(monitor, 20));
+										.execute(new SubProgressMonitor(
+												monitor, 20));
 
 							}
 
@@ -486,60 +541,45 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 		final RepositoryTreeNode node = (RepositoryTreeNode) sel
 				.getFirstElement();
 
-		// for Refs (branches): checkout
 		if (node.getType() == RepositoryTreeNodeType.REF) {
 
 			final Ref ref = (Ref) node.getObject();
 
-			MenuItem checkout = new MenuItem(men, SWT.PUSH);
-			checkout.setText(UIText.RepositoriesView_CheckOut_MenuItem);
-			checkout.addSelectionListener(new SelectionAdapter() {
+			// we don't check out symbolic references
+			if (!ref.isSymbolic()) {
 
-				@Override
-				public void widgetSelected(SelectionEvent e) {
+				MenuItem checkout = new MenuItem(men, SWT.PUSH);
+				checkout.setText(UIText.RepositoriesView_CheckOut_MenuItem);
 
-					final String refName = ref.getLeaf().getName();
-
-					Job job = new Job(NLS.bind(UIText.RepositoriesView_CheckingOutMessage, refName)) {
-
-						@Override
-						protected IStatus run(IProgressMonitor monitor) {
-
-							Repository repo = node.getRepository();
-
-							final BranchOperation op = new BranchOperation(
-									repo, refName);
-							IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
-
-								public void run(IProgressMonitor myMonitor)
-										throws CoreException {
-									op.run(myMonitor);
-								}
-							};
-
-							try {
-								ResourcesPlugin.getWorkspace().run(
-										wsr,
-										ResourcesPlugin.getWorkspace()
-												.getRoot(),
-										IWorkspace.AVOID_UPDATE,
-										monitor);
-								scheduleRefresh();
-							} catch (CoreException e1) {
-								return new Status(IStatus.ERROR, Activator
-										.getPluginId(), e1.getMessage(), e1);
-							}
-							return Status.OK_STATUS;
-						}
-					};
-
-					job.setUser(true);
-					job.schedule();
-
+				try {
+					if (node.getRepository().getFullBranch().equals(
+							ref.getName())) {
+						// no checkout on current branch
+						checkout.setEnabled(false);
+					}
+				} catch (IOException e2) {
+					// ignore
 				}
 
-			});
+				checkout.addSelectionListener(new SelectionAdapter() {
+
+					@Override
+					public void widgetSelected(SelectionEvent e) {
+						checkoutBranch(node, ref.getLeaf().getName());
+					}
+				});
+
+				new MenuItem(men, SWT.SEPARATOR);
+
+				createCreateBranchItem(men, node);
+				createDeleteBranchItem(men, node);
+
+			}
 		}
+
+		if (node.getType() == RepositoryTreeNodeType.LOCALBRANCHES
+				|| node.getType() == RepositoryTreeNodeType.REMOTEBRANCHES)
+			createCreateBranchItem(men, node);
 
 		// for Repository: import existing projects, remove, (delete), open
 		// properties
@@ -708,6 +748,10 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 
 			new MenuItem(men, SWT.SEPARATOR);
 
+			createImportProjectItem(men, repo, repo.getWorkDir().getPath());
+
+			new MenuItem(men, SWT.SEPARATOR);
+
 			MenuItem openPropsView = new MenuItem(men, SWT.PUSH);
 			openPropsView.setText(UIText.RepositoriesView_OpenPropertiesMenu);
 			openPropsView.addSelectionListener(new SelectionAdapter() {
@@ -724,6 +768,10 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 				}
 
 			});
+
+			new MenuItem(men, SWT.SEPARATOR);
+
+			createCopyPathItem(men, repo.getDirectory().getPath());
 		}
 
 		if (node.getType() == RepositoryTreeNodeType.REMOTES) {
@@ -763,98 +811,52 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 			boolean pushExists = rconfig != null
 					&& !rconfig.getPushURIs().isEmpty();
 
-			MenuItem configureUrlFetch = new MenuItem(men, SWT.PUSH);
-			if (fetchExists)
-				configureUrlFetch
-						.setText(UIText.RepositoriesView_ConfigureFetchMenu);
-			else
+			if (!fetchExists) {
+				MenuItem configureUrlFetch = new MenuItem(men, SWT.PUSH);
 				configureUrlFetch
 						.setText(UIText.RepositoriesView_CreateFetch_menu);
-			configureUrlFetch.addSelectionListener(new SelectionAdapter() {
 
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-
-					WizardDialog dlg = new WizardDialog(getSite().getShell(),
-							new ConfigureRemoteWizard(node.getRepository(),
-									configName, false));
-					if (dlg.open() == Window.OK)
-						scheduleRefresh();
-
-				}
-
-			});
-
-			if (fetchExists) {
-				MenuItem deleteFetch = new MenuItem(men, SWT.PUSH);
-				deleteFetch.setText(UIText.RepositoriesView_RemoveFetch_menu);
-				deleteFetch.addSelectionListener(new SelectionAdapter() {
+				configureUrlFetch.addSelectionListener(new SelectionAdapter() {
 
 					@Override
 					public void widgetSelected(SelectionEvent e) {
-						RepositoryConfig config = node.getRepository()
-								.getConfig();
-						config.unset("remote", configName, "url"); //$NON-NLS-1$ //$NON-NLS-2$
-						config.unset("remote", configName, "fetch"); //$NON-NLS-1$//$NON-NLS-2$
-						try {
-							config.save();
+
+						WizardDialog dlg = new WizardDialog(getSite()
+								.getShell(), new ConfigureRemoteWizard(node
+								.getRepository(), configName, false));
+						if (dlg.open() == Window.OK)
 							scheduleRefresh();
-						} catch (IOException e1) {
-							MessageDialog.openError(getSite().getShell(),
-									UIText.RepositoriesView_ErrorHeader, e1
-											.getMessage());
-						}
+
 					}
 
 				});
 			}
 
-			MenuItem configureUrlPush = new MenuItem(men, SWT.PUSH);
-			if (pushExists)
-				configureUrlPush
-						.setText(UIText.RepositoriesView_ConfigurePushMenu);
-			else
+			if (!pushExists) {
+				MenuItem configureUrlPush = new MenuItem(men, SWT.PUSH);
+
 				configureUrlPush
 						.setText(UIText.RepositoriesView_CreatePush_menu);
-			configureUrlPush.addSelectionListener(new SelectionAdapter() {
 
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-
-					WizardDialog dlg = new WizardDialog(getSite().getShell(),
-							new ConfigureRemoteWizard(node.getRepository(),
-									configName, true));
-					if (dlg.open() == Window.OK)
-						scheduleRefresh();
-				}
-
-			});
-
-			if (pushExists) {
-				MenuItem deleteFetch = new MenuItem(men, SWT.PUSH);
-				deleteFetch.setText(UIText.RepositoriesView_RemovePush_menu);
-				deleteFetch.addSelectionListener(new SelectionAdapter() {
+				configureUrlPush.addSelectionListener(new SelectionAdapter() {
 
 					@Override
 					public void widgetSelected(SelectionEvent e) {
-						RepositoryConfig config = node.getRepository()
-								.getConfig();
-						config.unset("remote", configName, "pushurl"); //$NON-NLS-1$ //$NON-NLS-2$
-						config.unset("remote", configName, "push"); //$NON-NLS-1$ //$NON-NLS-2$
-						try {
-							config.save();
+
+						WizardDialog dlg = new WizardDialog(getSite()
+								.getShell(), new ConfigureRemoteWizard(node
+								.getRepository(), configName, true));
+						if (dlg.open() == Window.OK)
 							scheduleRefresh();
-						} catch (IOException e1) {
-							MessageDialog.openError(getSite().getShell(),
-									UIText.RepositoriesView_ErrorHeader, e1
-											.getMessage());
-						}
+
 					}
 
 				});
 			}
 
-			new MenuItem(men, SWT.SEPARATOR);
+			if (!fetchExists || !pushExists)
+				// add a separator dynamically
+				new MenuItem(men, SWT.SEPARATOR);
 
 			MenuItem removeRemote = new MenuItem(men, SWT.PUSH);
 			removeRemote.setText(UIText.RepositoriesView_RemoveRemoteMenu);
@@ -879,9 +881,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 							config.save();
 							scheduleRefresh();
 						} catch (IOException e1) {
-							MessageDialog.openError(getSite().getShell(),
-									UIText.RepositoriesView_ErrorHeader, e1
-											.getMessage());
+							Activator.handleError(
+									UIText.RepositoriesView_ErrorHeader, e1,
+									true);
 						}
 					}
 
@@ -909,6 +911,96 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 			});
 		}
 
+		if (node.getType() == RepositoryTreeNodeType.FETCH) {
+
+			final String configName = (String) node.getParent().getObject();
+
+			MenuItem configureUrlFetch = new MenuItem(men, SWT.PUSH);
+			configureUrlFetch
+					.setText(UIText.RepositoriesView_ConfigureFetchMenu);
+
+			configureUrlFetch.addSelectionListener(new SelectionAdapter() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+
+					WizardDialog dlg = new WizardDialog(getSite().getShell(),
+							new ConfigureRemoteWizard(node.getRepository(),
+									configName, false));
+					if (dlg.open() == Window.OK)
+						scheduleRefresh();
+
+				}
+
+			});
+
+			MenuItem deleteFetch = new MenuItem(men, SWT.PUSH);
+			deleteFetch.setText(UIText.RepositoriesView_RemoveFetch_menu);
+			deleteFetch.addSelectionListener(new SelectionAdapter() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					RepositoryConfig config = node.getRepository().getConfig();
+					config.unset("remote", configName, "url"); //$NON-NLS-1$ //$NON-NLS-2$
+					config.unset("remote", configName, "fetch"); //$NON-NLS-1$//$NON-NLS-2$
+					try {
+						config.save();
+						scheduleRefresh();
+					} catch (IOException e1) {
+						MessageDialog.openError(getSite().getShell(),
+								UIText.RepositoriesView_ErrorHeader, e1
+										.getMessage());
+					}
+				}
+
+			});
+
+		}
+
+		if (node.getType() == RepositoryTreeNodeType.PUSH) {
+
+			final String configName = (String) node.getParent().getObject();
+
+			MenuItem configureUrlPush = new MenuItem(men, SWT.PUSH);
+
+			configureUrlPush.setText(UIText.RepositoriesView_ConfigurePushMenu);
+
+			configureUrlPush.addSelectionListener(new SelectionAdapter() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+
+					WizardDialog dlg = new WizardDialog(getSite().getShell(),
+							new ConfigureRemoteWizard(node.getRepository(),
+									configName, true));
+					if (dlg.open() == Window.OK)
+						scheduleRefresh();
+				}
+
+			});
+
+			MenuItem deleteFetch = new MenuItem(men, SWT.PUSH);
+			deleteFetch.setText(UIText.RepositoriesView_RemovePush_menu);
+			deleteFetch.addSelectionListener(new SelectionAdapter() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					RepositoryConfig config = node.getRepository().getConfig();
+					config.unset("remote", configName, "pushurl"); //$NON-NLS-1$ //$NON-NLS-2$
+					config.unset("remote", configName, "push"); //$NON-NLS-1$ //$NON-NLS-2$
+					try {
+						config.save();
+						scheduleRefresh();
+					} catch (IOException e1) {
+						MessageDialog.openError(getSite().getShell(),
+								UIText.RepositoriesView_ErrorHeader, e1
+										.getMessage());
+					}
+				}
+
+			});
+		}
+
 		if (node.getType() == RepositoryTreeNodeType.FILE) {
 
 			final File file = (File) node.getObject();
@@ -924,17 +1016,194 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 				}
 
 			});
-		}
 
-		if (node.getType() == RepositoryTreeNodeType.FOLDER) {
-			String path = ((File) node.getObject()).getAbsolutePath();
-			createImportProjectItem(men, node.getRepository(), path);
+			new MenuItem(men, SWT.SEPARATOR);
+			createCopyPathItem(men, file.getPath());
 		}
 
 		if (node.getType() == RepositoryTreeNodeType.WORKINGDIR) {
 			String path = node.getRepository().getWorkDir().getAbsolutePath();
 			createImportProjectItem(men, node.getRepository(), path);
+			new MenuItem(men, SWT.SEPARATOR);
+			createCopyPathItem(men, path);
 		}
+
+		if (node.getType() == RepositoryTreeNodeType.FOLDER) {
+			String path = ((File) node.getObject()).getPath();
+			createImportProjectItem(men, node.getRepository(), path);
+			new MenuItem(men, SWT.SEPARATOR);
+			createCopyPathItem(men, path);
+		}
+
+	}
+
+	private void createCopyPathItem(Menu men, final String path) {
+
+		MenuItem copyPath;
+		copyPath = new MenuItem(men, SWT.PUSH);
+		copyPath.setText(UIText.RepositoriesView_CopyPathToClipboardMenu);
+		copyPath.addSelectionListener(new SelectionAdapter() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Clipboard clipboard = new Clipboard(null);
+				TextTransfer textTransfer = TextTransfer.getInstance();
+				Transfer[] transfers = new Transfer[] { textTransfer };
+				Object[] data = new Object[] { path };
+				clipboard.setContents(data, transfers);
+				clipboard.dispose();
+			}
+
+		});
+
+	}
+
+	private void createCreateBranchItem(Menu men, final RepositoryTreeNode node) {
+
+		final boolean remoteMode;
+		final Ref ref;
+		if (node.getType() == RepositoryTreeNodeType.REF) {
+			remoteMode = node.getParent().getType() == RepositoryTreeNodeType.REMOTEBRANCHES;
+			ref = (Ref) node.getObject();
+		} else if (node.getType() == RepositoryTreeNodeType.LOCALBRANCHES) {
+			remoteMode = false;
+			ref = null;
+		} else if (node.getType() == RepositoryTreeNodeType.REMOTEBRANCHES) {
+			remoteMode = true;
+			ref = null;
+		} else
+			return;
+
+		MenuItem createLocal = new MenuItem(men, SWT.PUSH);
+		if (remoteMode)
+			createLocal.setText(UIText.RepositoriesView_NewRemoteBranchMenu);
+		else
+			createLocal.setText(UIText.RepositoriesView_NewLocalBranchMenu);
+
+		createLocal.addSelectionListener(new SelectionAdapter() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+
+				Wizard wiz = new Wizard() {
+
+					@Override
+					public void addPages() {
+						addPage(new CreateBranchPage(node.getRepository(), ref,
+								remoteMode));
+						setWindowTitle(UIText.RepositoriesView_NewBranchTitle);
+					}
+
+					@Override
+					public boolean performFinish() {
+
+						try {
+							getContainer().run(false, true,
+									new IRunnableWithProgress() {
+
+										public void run(IProgressMonitor monitor)
+												throws InvocationTargetException,
+												InterruptedException {
+											CreateBranchPage cp = (CreateBranchPage) getPages()[0];
+											try {
+												cp.createBranch(monitor);
+											} catch (CoreException ce) {
+												throw new InvocationTargetException(
+														ce);
+											} catch (IOException ioe) {
+												throw new InvocationTargetException(
+														ioe);
+											}
+
+										}
+									});
+						} catch (InvocationTargetException ite) {
+							Activator
+									.handleError(
+											UIText.RepositoriesView_BranchCreationFailureMessage,
+											ite.getCause(), true);
+							return false;
+						} catch (InterruptedException ie) {
+							// ignore here
+						}
+						return true;
+					}
+				};
+				if (new WizardDialog(getSite().getShell(), wiz).open() == Window.OK)
+					scheduleRefresh();
+			}
+
+		});
+
+	}
+
+	private void createDeleteBranchItem(Menu men, final RepositoryTreeNode node) {
+
+		final Ref ref = (Ref) node.getObject();
+
+		MenuItem deleteBranch = new MenuItem(men, SWT.PUSH);
+		deleteBranch.setText(UIText.RepositoriesView_DeleteBranchMenu);
+
+		try {
+			if (node.getRepository().getFullBranch().equals(ref.getName())) {
+				deleteBranch.setEnabled(false);
+			}
+		} catch (IOException e2) {
+			// ignore
+		}
+
+		deleteBranch.addSelectionListener(new SelectionAdapter() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+
+				if (!MessageDialog
+						.openConfirm(
+								getSite().getShell(),
+								UIText.RepositoriesView_ConfirmDeleteTitle,
+								NLS
+										.bind(
+												UIText.RepositoriesView_ConfirmBranchDeletionMessage,
+												ref.getName())))
+					return;
+
+				try {
+					new ProgressMonitorDialog(getSite().getShell()).run(false,
+							false, new IRunnableWithProgress() {
+
+								public void run(IProgressMonitor monitor)
+										throws InvocationTargetException,
+										InterruptedException {
+
+									try {
+										RefUpdate op = node.getRepository()
+												.updateRef(ref.getName());
+										op.setRefLogMessage("branch deleted", //$NON-NLS-1$
+												false);
+										// we set the force update in order
+										// to avoid having this rejected
+										// due to minor issues
+										op.setForceUpdate(true);
+										op.delete();
+										scheduleRefresh();
+									} catch (IOException ioe) {
+										throw new InvocationTargetException(ioe);
+									}
+
+								}
+							});
+				} catch (InvocationTargetException e1) {
+					Activator
+							.handleError(
+									UIText.RepositoriesView_BranchDeletionFailureMessage,
+									e1.getCause(), true);
+					e1.printStackTrace();
+				} catch (InterruptedException e1) {
+					// ignore
+				}
+			}
+
+		});
 
 	}
 
@@ -947,36 +1216,96 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 					new FileStoreEditorInput(store),
 					EditorsUI.DEFAULT_TEXT_EDITOR_ID);
 		} catch (PartInitException e) {
-			Activator.handleError(UIText.RepositoriesView_Error_WindowTitle, e, true);
+			Activator.handleError(UIText.RepositoriesView_Error_WindowTitle, e,
+					true);
 		}
+	}
+
+	private void checkoutBranch(final RepositoryTreeNode node,
+			final String refName) {
+		// for the sake of UI responsiveness, let's start a job
+		Job job = new Job(NLS.bind(UIText.RepositoriesView_CheckingOutMessage,
+				refName)) {
+
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+
+				Repository repo = node.getRepository();
+
+				final BranchOperation op = new BranchOperation(repo, refName);
+				IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
+
+					public void run(IProgressMonitor myMonitor)
+							throws CoreException {
+						op.execute(myMonitor);
+					}
+				};
+
+				try {
+					ResourcesPlugin.getWorkspace().run(wsr,
+							ResourcesPlugin.getWorkspace().getRoot(),
+							IWorkspace.AVOID_UPDATE, monitor);
+					scheduleRefresh();
+				} catch (CoreException e1) {
+					return new Status(IStatus.ERROR, Activator.getPluginId(),
+							e1.getMessage(), e1);
+				}
+
+				return Status.OK_STATUS;
+			}
+		};
+
+		job.setUser(true);
+		job.schedule();
 	}
 
 	private void createImportProjectItem(Menu men, final Repository repo,
 			final String path) {
-		MenuItem importProjects;
-		importProjects = new MenuItem(men, SWT.PUSH);
-		importProjects
-				.setText(UIText.RepositoriesView_ImportExistingProjects_MenuItem);
-		importProjects.addSelectionListener(new SelectionAdapter() {
+
+		MenuItem startWizard;
+		startWizard = new MenuItem(men, SWT.PUSH);
+		startWizard.setText(UIText.RepositoriesView_ImportProjectsMenu);
+		startWizard.addSelectionListener(new SelectionAdapter() {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// Instead of the generic ExternalProjectImportWizard
-				// from the org.eclipse.ui.ide plug-in, we use our
-				// own wizard (the generic one does not allow to set the
-				// path in 3.4; in addition, we have added project filtering
-				// capabilities)
-				Wizard wiz = new GitImportProjectsWizard(repo, path);
-
-				WizardDialog dlg = new WizardDialog(getSite().getShell(), wiz);
+				WizardDialog dlg = new WizardDialog(getSite().getShell(),
+						new GitCreateProjectViaWizardWizard(repo, path));
 				if (dlg.open() == Window.OK)
-					// TODO if we drop the "existing projects" node, we can
-					// probably do without refresh
 					scheduleRefresh();
 
 			}
 
 		});
+
+		// we could start the ImportWizard here,
+		// unfortunately, this fails within a wizard
+		// startWizard = new MenuItem(men, SWT.PUSH);
+		// startWizard.setText("Start the Import wizard...");
+		// startWizard.addSelectionListener(new SelectionAdapter() {
+		//
+		// @Override
+		// public void widgetSelected(SelectionEvent e) {
+		//
+		// IHandlerService handlerService = (IHandlerService) getSite()
+		// .getWorkbenchWindow().getWorkbench().getService(
+		// IHandlerService.class);
+		//
+		// try {
+		//					handlerService.executeCommand("org.eclipse.ui.file.import", //$NON-NLS-1$
+		// null);
+		// } catch (ExecutionException e1) {
+		// Activator.handleError(e1.getMessage(), e1, true);
+		// } catch (NotDefinedException e1) {
+		// Activator.handleError(e1.getMessage(), e1, true);
+		// } catch (NotEnabledException e1) {
+		// Activator.handleError(e1.getMessage(), e1, true);
+		// } catch (NotHandledException e1) {
+		// Activator.handleError(e1.getMessage(), e1, true);
+		// }
+		// }
+		//
+		// });
 	}
 
 	private void addActionsToToolbar() {
@@ -984,14 +1313,15 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 
 			@Override
 			public void run() {
-				GitCloneWizard wiz = new GitCloneWizard();
-				wiz.init(null, null);
-				new WizardDialog(getSite().getShell(), wiz).open();
+				WizardDialog dlg = new WizardDialog(getSite().getShell(),
+						new GitCloneWizard());
+				if (dlg.open() == Window.OK)
+					scheduleRefresh();
 			}
 		};
 		importAction.setToolTipText(UIText.RepositoriesView_Clone_Tooltip);
 
-		importAction.setImageDescriptor(UIIcons.IMPORT);
+		importAction.setImageDescriptor(UIIcons.CLONEGIT);
 
 		getViewSite().getActionBars().getToolBarManager().add(importAction);
 
@@ -1062,6 +1392,123 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 		refreshAction.setImageDescriptor(UIIcons.ELCL16_REFRESH);
 
 		getViewSite().getActionBars().getToolBarManager().add(refreshAction);
+
+		IAction collapseAllAction = new Action(
+				UIText.RepositoriesView_CollapseAllMenu) {
+
+			@Override
+			public void run() {
+				tv.collapseAll();
+			}
+		};
+
+		// copy and paste are global actions; we just implement them
+		// and register them with the global action handler
+		// we enable/disable them upon tree selection changes
+
+		copyAction = new Action("") { //$NON-NLS-1$
+
+			@Override
+			public void run() {
+				// for REPO, WORKINGDIR, FILE, FOLDER: copy directory
+				IStructuredSelection sel = (IStructuredSelection) tv
+						.getSelection();
+				if (sel.size() == 1) {
+					RepositoryTreeNode node = (RepositoryTreeNode) sel
+							.getFirstElement();
+					String dir = null;
+					if (node.getType() == RepositoryTreeNodeType.REPO) {
+						dir = node.getRepository().getDirectory().getPath();
+					} else if (node.getType() == RepositoryTreeNodeType.FILE
+							|| node.getType() == RepositoryTreeNodeType.FOLDER) {
+						dir = ((File) node.getObject()).getPath();
+					} else if (node.getType() == RepositoryTreeNodeType.WORKINGDIR) {
+						dir = node.getRepository().getWorkDir().getPath();
+					}
+					if (dir != null) {
+						Clipboard clip = null;
+						try {
+							clip = new Clipboard(getSite().getShell()
+									.getDisplay());
+							clip
+									.setContents(new Object[] { dir },
+											new Transfer[] { TextTransfer
+													.getInstance() });
+						} finally {
+							if (clip != null)
+								// we must dispose ourselves
+								clip.dispose();
+						}
+					}
+				}
+			}
+
+		};
+		copyAction.setEnabled(false);
+
+		getViewSite().getActionBars().setGlobalActionHandler(
+				ActionFactory.COPY.getId(), copyAction);
+
+		pasteAction = new Action("") { //$NON-NLS-1$
+
+			@Override
+			public void run() {
+				// we check if the pasted content is a directory
+				// repository location and try to add this
+				String errorMessage = null;
+
+				Clipboard clip = null;
+				try {
+					clip = new Clipboard(getSite().getShell().getDisplay());
+					String content = (String) clip.getContents(TextTransfer
+							.getInstance());
+					if (content == null) {
+						errorMessage = UIText.RepositoriesView_NothingToPasteMessage;
+						return;
+					}
+
+					File file = new File(content);
+					if (!file.exists() || !file.isDirectory()) {
+						errorMessage = UIText.RepositoriesView_ClipboardContentNotDirectoryMessage;
+						return;
+					}
+
+					if (!RepositoryCache.FileKey.isGitRepository(file)) {
+						errorMessage = NLS
+								.bind(
+										UIText.RepositoriesView_ClipboardContentNoGitRepoMessage,
+										content);
+						return;
+					}
+
+					if (addDir(file))
+						scheduleRefresh();
+					else
+						errorMessage = NLS.bind(
+								UIText.RepositoriesView_PasteRepoAlreadyThere,
+								content);
+				} finally {
+					if (clip != null)
+						// we must dispose ourselves
+						clip.dispose();
+					if (errorMessage != null)
+						// TODO String ext
+						MessageDialog.openWarning(getSite().getShell(),
+								UIText.RepositoriesView_PasteFailureTitle,
+								errorMessage);
+				}
+			}
+
+		};
+
+		collapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
+
+		getViewSite().getActionBars().getToolBarManager()
+				.add(collapseAllAction);
+
+		getViewSite().getActionBars().setGlobalActionHandler(
+				ActionFactory.PASTE.getId(), pasteAction);
+
 	}
 
 	/**
@@ -1091,13 +1538,28 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 
-				final List<Repository> input;
+				final List<RepositoryTreeNode<Repository>> input;
 				try {
 					input = getRepositoriesFromDirs(monitor);
 				} catch (InterruptedException e) {
 					return new Status(IStatus.ERROR, Activator.getPluginId(), e
 							.getMessage(), e);
 				}
+
+				boolean needsNewInput = tv.getInput() == null;
+				List oldInput = (List) tv.getInput();
+				if (!needsNewInput)
+					needsNewInput = oldInput.size() != input.size();
+
+				if (!needsNewInput) {
+					for (int i = 0; i < input.size(); i++) {
+						needsNewInput = !input.get(i).equals(oldInput.get(i));
+						if (needsNewInput)
+							break;
+					}
+				}
+
+				final boolean updateInput = needsNewInput;
 
 				Display.getDefault().syncExec(new Runnable() {
 
@@ -1108,7 +1570,10 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 						Object[] expanded = tv.getExpandedElements();
 						IStructuredSelection sel = (IStructuredSelection) tv
 								.getSelection();
-						tv.setInput(input);
+						if (updateInput)
+							tv.setInput(input);
+						else
+							tv.refresh();
 						tv.setExpandedElements(expanded);
 
 						Object selected = sel.getFirstElement();
@@ -1143,30 +1608,6 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 
 	}
 
-	private List<Repository> getRepositoriesFromDirs(IProgressMonitor monitor)
-			throws InterruptedException {
-
-		List<String> gitDirStrings = getDirs();
-		List<Repository> input = new ArrayList<Repository>();
-		for (String dirString : gitDirStrings) {
-			if (monitor.isCanceled()) {
-				throw new InterruptedException(
-						UIText.RepositoriesView_ActionCanceled_Message);
-			}
-			try {
-				File dir = new File(dirString);
-				if (dir.exists() && dir.isDirectory()) {
-					input.add(new Repository(dir));
-				}
-			} catch (IOException e) {
-				IStatus error = new Status(IStatus.ERROR, Activator
-						.getPluginId(), e.getMessage(), e);
-				Activator.getDefault().getLog().log(error);
-			}
-		}
-		return input;
-	}
-
 	/**
 	 * Adds a directory to the list if it is not already there
 	 *
@@ -1192,6 +1633,45 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 			saveDirs(dirs);
 			return true;
 		}
+	}
+
+	/**
+	 * Converts the directories as configured for this view into a list of
+	 * {@link Repository} objects suitable for the tree content provider
+	 * <p>
+	 * TODO move to some utility class
+	 *
+	 * @param monitor
+	 * @return a list of nodes
+	 * @throws InterruptedException
+	 */
+	public static List<RepositoryTreeNode<Repository>> getRepositoriesFromDirs(
+			IProgressMonitor monitor) throws InterruptedException {
+
+		List<String> gitDirStrings = getDirs();
+		List<RepositoryTreeNode<Repository>> input = new ArrayList<RepositoryTreeNode<Repository>>();
+
+		for (String dirString : gitDirStrings) {
+			if (monitor != null && monitor.isCanceled()) {
+				throw new InterruptedException(
+						UIText.RepositoriesView_ActionCanceled_Message);
+			}
+			try {
+				File dir = new File(dirString);
+				if (dir.exists() && dir.isDirectory()) {
+					Repository repo = new Repository(dir);
+					RepositoryTreeNode<Repository> node = new RepositoryTreeNode<Repository>(
+							null, RepositoryTreeNodeType.REPO, repo, repo);
+					input.add(node);
+				}
+			} catch (IOException e) {
+				IStatus error = new Status(IStatus.ERROR, Activator
+						.getPluginId(), e.getMessage(), e);
+				Activator.getDefault().getLog().log(error);
+			}
+		}
+		Collections.sort(input);
+		return input;
 	}
 
 	private static void saveDirs(Set<String> gitDirStrings) {
@@ -1331,6 +1811,25 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 
 		}
 
+	}
+
+	public boolean show(ShowInContext context) {
+		ISelection selection = context.getSelection();
+		if (selection instanceof IStructuredSelection) {
+			IStructuredSelection ss = (IStructuredSelection) selection;
+			if (ss.size() == 1) {
+				Object element = ss.getFirstElement();
+				if (element instanceof IAdaptable) {
+					IResource resource = (IResource) ((IAdaptable) element)
+							.getAdapter(IResource.class);
+					if (resource != null) {
+						showResource(resource);
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 }
