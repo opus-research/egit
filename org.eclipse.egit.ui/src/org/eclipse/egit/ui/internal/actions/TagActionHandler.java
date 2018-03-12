@@ -9,6 +9,7 @@
 package org.eclipse.egit.ui.internal.actions;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -20,16 +21,19 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CreateTagDialog;
+import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.TagBuilder;
-import org.eclipse.jgit.revwalk.RevObject;
+import org.eclipse.jgit.lib.Tag;
+import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 
@@ -65,12 +69,22 @@ public class TagActionHandler extends RepositoryActionHandler {
 		}
 
 		CreateTagDialog dialog = new CreateTagDialog(getShell(event),
-				currentBranchName, repo);
+				ValidationUtils
+						.getRefNameInputValidator(repo, Constants.R_TAGS),
+				currentBranchName);
+
+		// get and set commits
+		RevWalk revCommits = getRevCommits(event);
+		dialog.setRevCommitList(revCommits);
+
+		// get and set existing tags
+		List<Tag> tags = getRevTags(event);
+		dialog.setExistingTags(tags);
 
 		if (dialog.open() != IDialogConstants.OK_ID)
 			return null;
 
-		final TagBuilder tag = new TagBuilder();
+		final Tag tag = new Tag(repo);
 		PersonIdent personIdent = new PersonIdent(repo);
 		String tagName = dialog.getTagName();
 
@@ -78,15 +92,15 @@ public class TagActionHandler extends RepositoryActionHandler {
 		tag.setTagger(personIdent);
 		tag.setMessage(dialog.getTagMessage());
 
-		RevObject tagTarget;
+		ObjectId tagCommit;
 		try {
-			tagTarget = getTagTarget(dialog.getTagCommit());
+			tagCommit = getTagCommit(dialog.getTagCommit());
 		} catch (IOException e1) {
 			Activator.handleError(UIText.TagAction_unableToResolveHeadObjectId,
 					e1, true);
 			return null;
 		}
-		tag.setObjectId(tagTarget);
+		tag.setObjId(tagCommit);
 
 		String tagJobName = NLS.bind(UIText.TagAction_creating, tagName);
 		final boolean shouldMoveTag = dialog.shouldOverWriteTag();
@@ -117,17 +131,35 @@ public class TagActionHandler extends RepositoryActionHandler {
 		return getRepository() != null;
 	}
 
-	private RevObject getTagTarget(ObjectId objectId) throws IOException {
-		RevWalk rw = new RevWalk(repo);
-		try {
-			if (objectId == null) {
-				return rw.parseAny(repo.resolve(Constants.HEAD));
+	private RevWalk getRevCommits(ExecutionEvent event)
+			throws ExecutionException {
+		RevWalk revWalk = new RevWalk(repo);
+		revWalk.sort(RevSort.COMMIT_TIME_DESC, true);
+		revWalk.sort(RevSort.BOUNDARY, true);
 
-			} else {
-				return rw.parseAny(objectId);
-			}
-		} finally {
-			rw.release();
+		try {
+			AnyObjectId headId = repo.resolve(Constants.HEAD);
+			if (headId != null)
+				revWalk.markStart(revWalk.parseCommit(headId));
+		} catch (IOException e) {
+			ErrorDialog.openError(getShell(event),
+					UIText.TagAction_errorDuringTagging,
+					UIText.TagAction_errorWhileGettingRevCommits, new Status(
+							IStatus.ERROR, Activator.getPluginId(), e
+									.getMessage(), e));
 		}
+
+		return revWalk;
+	}
+
+	private ObjectId getTagCommit(ObjectId objectId) throws IOException {
+		ObjectId result = null;
+		if (objectId == null) {
+			result = repo.resolve(Constants.HEAD);
+
+		} else {
+			result = objectId;
+		}
+		return result;
 	}
 }

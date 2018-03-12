@@ -50,10 +50,6 @@ class RefUpdateElement {
 		return srcRefName == null;
 	}
 
-	PushOperationResult getPushOperationResult() {
-		return result;
-	}
-
 	boolean isSuccessfulConnection(final URIish uri) {
 		return result.isSuccessfulConnection(uri);
 	}
