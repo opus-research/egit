@@ -1131,9 +1131,6 @@ public class UIText extends NLS {
 	public static String CherryPickHandler_JobName;
 
 	/** */
-	public static String CherryPickHandler_CommitFormat;
-
-	/** */
 	public static String CherryPickHandler_ConfirmMessage;
 
 	/** */
