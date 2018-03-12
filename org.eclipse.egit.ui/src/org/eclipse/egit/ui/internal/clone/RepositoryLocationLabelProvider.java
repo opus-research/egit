@@ -48,9 +48,8 @@ class RepositoryLocationLabelProvider extends LabelProvider {
 
 	public void dispose() {
 		repoImage.dispose();
-		for (Image image  : images) {
+		for (Image image  : images)
 			image.dispose();
-		}
 	}
 
 }

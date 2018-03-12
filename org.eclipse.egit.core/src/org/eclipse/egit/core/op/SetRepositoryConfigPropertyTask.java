@@ -18,7 +18,7 @@ import org.eclipse.egit.core.op.CloneOperation.PostCloneTask;
 import org.eclipse.jgit.lib.Repository;
 
 /**
- * Sets config propertes for a repository
+ * Sets config properties for a repository
  */
 public class SetRepositoryConfigPropertyTask implements PostCloneTask {
 
