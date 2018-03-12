@@ -65,7 +65,6 @@ public class FeatureFinishHandler extends AbstractGitFlowHandler {
 			return null;
 		}
 		boolean squash = dialog.isSquash();
-		boolean keep = dialog.isKeep();
 
 		try {
 			try {
@@ -79,7 +78,6 @@ public class FeatureFinishHandler extends AbstractGitFlowHandler {
 			FeatureFinishOperation operation = new FeatureFinishOperation(
 					gfRepo);
 			operation.setSquash(squash);
-			operation.setKeep(keep);
 			String develop = gfRepo.getConfig().getDevelop();
 
 			JobUtil.scheduleUserWorkspaceJob(operation,
