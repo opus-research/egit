@@ -2197,6 +2197,9 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_ErrorCouldNotCreateNewRef;
 
 	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotDeleteRef;
+
+	/** */
 	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
 
 	/** */
@@ -2219,6 +2222,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchSelectionDialog_Rename;
+
+	/** */
+	public static String BranchSelectionDialog_Delete;
 
 	/** */
 	public static String CommitDialogPreferencePage_title;
@@ -2287,7 +2293,34 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_bindingStagedFlag;
 
 	/** */
+	public static String DecoratorPreferencesPage_bindingChangeSetAuthor;
+
+	/** */
+	public static String DecoratorPreferencesPage_bindingChangeSetCommitter;
+
+	/** */
+	public static String DecoratorPreferencesPage_bindingChangeSetDate;
+
+	/** */
+	public static String DecoratorPreferencesPage_bindingChangeSetShortMessage;
+
+	/** */
+	public static String DecoratorPreferencesPage_dateFormat;
+
+	/** */
+	public static String DecoratorPreferencesPage_dateFormatPreview;
+
+	/** */
+	public static String DecoratorPreferencesPage_wrongDateFormat;
+
+	/** */
 	public static String DecoratorPreferencesPage_selectVariablesToAdd;
+
+	/** */
+	public static String DecoratorPreferencesPage_otherDecorations;
+
+	/** */
+	public static String DecoratorPreferencesPage_changeSetLabelFormat;
 
 	/** */
 	public static String DecoratorPreferencesPage_textLabel;
@@ -2750,6 +2783,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitCombo_showSuggestedCommits;
+
+	/** */
+	public static String CommitCommand_committingNotPossible;
+
+	/** */
+	public static String CommitCommand_noProjectsImported;
 
 	/**
 	 * Do not in-line this into the static initializer as the
@@ -3216,9 +3255,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SkipRebaseCommand_JobName;
-
-	/** */
-	public static String SwitchToMenu_OtherMenuLabel;
 
 	/** */
 	public static String SynchronizeWithAction_localRepoName;
