@@ -16,7 +16,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.DirectoryFieldEditor;
@@ -51,7 +50,7 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	 * The default constructor
 	 */
 	public GitPreferenceRoot() {
-		super(FLAT);
+		super(GRID);
 	}
 
 	protected IPreferenceStore doGetPreferenceStore() {
@@ -65,7 +64,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	@Override
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
-		GridLayoutFactory.swtDefaults().margins(0, 0).applyTo(main);
 
 		Group cloningGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		cloningGroup.setText(UIText.GitPreferenceRoot_CloningRepoGroupHeader);
