@@ -13,6 +13,7 @@ package org.eclipse.egit.core.internal.util;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -31,6 +32,7 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceMappingContext;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -57,8 +59,7 @@ public class ResourceUtil {
 		IFile file = getFileForLocationURI(root, uri);
 		if (file != null)
 			return file;
-		IContainer[] containers = root.findContainersForLocationURI(uri);
-		return getExistingResourceWithShortestPath(containers);
+		return getContainerForLocationURI(root, uri);
 	}
 
 	/**
@@ -73,6 +74,20 @@ public class ResourceUtil {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		URI uri = URIUtil.toURI(location);
 		return getFileForLocationURI(root, uri);
+	}
+
+	/**
+	 * Return the corresponding container if it exists.
+	 * <p>
+	 * The returned container will be relative to the most nested non-closed project.
+	 *
+	 * @param location
+	 * @return the container, or null
+	 */
+	public static IContainer getContainerForLocation(IPath location) {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		URI uri = URIUtil.toURI(location);
+		return getContainerForLocationURI(root, uri);
 	}
 
 	/**
@@ -105,7 +120,7 @@ public class ResourceUtil {
 	 *         occurring repository
 	 */
 	public static Map<Repository, Collection<String>> splitResourcesByRepository(
-			IResource[] resources) {
+			Collection<IResource> resources) {
 		Map<Repository, Collection<String>> result = new HashMap<Repository, Collection<String>>();
 		for (IResource resource : resources) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
@@ -116,6 +131,17 @@ public class ResourceUtil {
 			addPathToMap(repositoryMapping, path, result);
 		}
 		return result;
+	}
+
+	/**
+	 * @see #splitResourcesByRepository(Collection)
+	 * @param resources
+	 * @return a map containing a list of repository relative paths for each
+	 *         occurring repository
+	 */
+	public static Map<Repository, Collection<String>> splitResourcesByRepository(
+			IResource[] resources) {
+		return splitResourcesByRepository(Arrays.asList(resources));
 	}
 
 	/**
@@ -157,6 +183,12 @@ public class ResourceUtil {
 	private static IFile getFileForLocationURI(IWorkspaceRoot root, URI uri) {
 		IFile[] files = root.findFilesForLocationURI(uri);
 		return getExistingResourceWithShortestPath(files);
+	}
+
+	private static IContainer getContainerForLocationURI(IWorkspaceRoot root,
+			URI uri) {
+		IContainer[] containers = root.findContainersForLocationURI(uri);
+		return getExistingResourceWithShortestPath(containers);
 	}
 
 	private static <T extends IResource> T getExistingResourceWithShortestPath(
@@ -213,7 +245,7 @@ public class ResourceUtil {
 					// get mappings from model provider if there are matching resources
 					final ModelProvider model = candidate.getModelProvider();
 					final ResourceMapping[] modelMappings = model.getMappings(
-							file, context, null);
+							file, context, new NullProgressMonitor());
 					for (ResourceMapping mapping : modelMappings)
 						mappings.add(mapping);
 				}
