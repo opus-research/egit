@@ -67,7 +67,6 @@ import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuListener;
@@ -75,6 +74,7 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
+import org.eclipse.jface.action.ToolBarManager;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -93,8 +93,6 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
@@ -134,12 +132,10 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IActionBars;
@@ -180,8 +176,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private static final String EMPTY_STRING = ""; //$NON-NLS-1$
 
-	private FormToolkit toolkit;
-
 	private Form form;
 
 	private Section stagedSection;
@@ -195,8 +189,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private TableViewer unstagedTableViewer;
 
 	private ToggleableWarningLabel warningLabel;
-
-	private Text searchText;
 
 	private SpellcheckableMessageArea commitMessageText;
 
@@ -327,7 +319,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
 
-		toolkit = new FormToolkit(parent.getDisplay());
+		final FormToolkit toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
@@ -405,6 +397,55 @@ public class StagingView extends ViewPart implements IShowInSource {
 		commitMessageSection = toolkit.createSection(
 				horizontalSashForm, ExpandableComposite.TITLE_BAR);
 		commitMessageSection.setText(UIText.StagingView_CommitMessage);
+
+		Composite commitMessageToolbarComposite = toolkit
+				.createComposite(commitMessageSection);
+		commitMessageToolbarComposite.setBackground(null);
+		RowLayout commitMessageRowLayout = new RowLayout();
+		commitMessageRowLayout.marginHeight = 0;
+		commitMessageRowLayout.marginWidth = 0;
+		commitMessageRowLayout.marginTop = 0;
+		commitMessageRowLayout.marginBottom = 0;
+		commitMessageRowLayout.marginLeft = 0;
+		commitMessageRowLayout.marginRight = 0;
+		commitMessageToolbarComposite.setLayout(commitMessageRowLayout);
+		commitMessageSection.setTextClient(commitMessageToolbarComposite);
+		ToolBarManager commitMessageToolBarManager = new ToolBarManager(
+				SWT.FLAT | SWT.HORIZONTAL);
+
+		amendPreviousCommitAction = new Action(
+				UIText.StagingView_Ammend_Previous_Commit, IAction.AS_CHECK_BOX) {
+
+			public void run() {
+				commitMessageComponent.setAmendingButtonSelection(isChecked());
+				updateMessage();
+			}
+		};
+		amendPreviousCommitAction.setImageDescriptor(UIIcons.AMEND_COMMIT);
+		commitMessageToolBarManager.add(amendPreviousCommitAction);
+
+		signedOffByAction = new Action(UIText.StagingView_Add_Signed_Off_By,
+				IAction.AS_CHECK_BOX) {
+
+			public void run() {
+				commitMessageComponent.setSignedOffButtonSelection(isChecked());
+			}
+		};
+		signedOffByAction.setImageDescriptor(UIIcons.SIGNED_OFF);
+		commitMessageToolBarManager.add(signedOffByAction);
+
+		addChangeIdAction = new Action(UIText.StagingView_Add_Change_ID,
+				IAction.AS_CHECK_BOX) {
+
+			public void run() {
+				commitMessageComponent.setChangeIdButtonSelection(isChecked());
+			}
+		};
+		addChangeIdAction.setImageDescriptor(UIIcons.GERRIT);
+		commitMessageToolBarManager.add(addChangeIdAction);
+
+		commitMessageToolBarManager
+				.createControl(commitMessageToolbarComposite);
 
 		Composite commitMessageComposite = toolkit
 				.createComposite(commitMessageSection);
@@ -660,27 +701,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 
 		site.setSelectionProvider(unstagedTableViewer);
-
-		ViewerFilter filter = new ViewerFilter() {
-			@Override
-			public boolean select(Viewer viewer, Object parentElement,
-					Object element) {
-				if (element instanceof StagingEntry) {
-					if (searchText != null && searchText.getText() != null
-							&& searchText.getText().trim().length() > 0) {
-						return ((StagingEntry) element)
-								.getPath()
-								.toUpperCase()
-								.contains(
-										searchText.getText().trim()
-												.toUpperCase());
-					}
-				}
-				return true;
-			}
-		};
-		unstagedTableViewer.addFilter(filter);
-		stagedTableViewer.addFilter(filter);
 	}
 
 	public ShowInContext getShowInContext() {
@@ -736,50 +756,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void updateToolbar() {
-
-		ControlContribution controlContribution = new ControlContribution(
-				"StagingView.searchText") { //$NON-NLS-1$
-			@Override
-			protected Control createControl(Composite parent) {
-				Composite toolbarComposite = toolkit.createComposite(parent,
-						SWT.NONE);
-				toolbarComposite.setBackground(null);
-				GridLayout headLayout = new GridLayout();
-				headLayout.numColumns = 2;
-				headLayout.marginHeight = 0;
-				headLayout.marginWidth = 0;
-				headLayout.marginTop = 0;
-				headLayout.marginBottom = 0;
-				headLayout.marginLeft = 0;
-				headLayout.marginRight = 0;
-				toolbarComposite.setLayout(headLayout);
-
-				searchText = new Text(toolbarComposite, SWT.SEARCH
-						| SWT.ICON_CANCEL | SWT.ICON_SEARCH);
-				searchText.setMessage(UIText.StagingView_Find);
-				GridData data = new GridData(GridData.FILL_HORIZONTAL);
-				data.widthHint = 150;
-				searchText.setLayoutData(data);
-				final Display display = Display.getCurrent();
-				searchText.addModifyListener(new ModifyListener() {
-					public void modifyText(ModifyEvent e) {
-						final StagingViewSearchThread searchThread = new StagingViewSearchThread(
-								StagingView.this);
-						display.timerExec(200, new Runnable() {
-							public void run() {
-								searchThread.start();
-							}
-						});
-					}
-				});
-				return toolbarComposite;
-			}
-		};
-
 		IActionBars actionBars = getViewSite().getActionBars();
 		IToolBarManager toolbar = actionBars.getToolBarManager();
-
-		toolbar.add(controlContribution);
 
 		refreshAction = new Action(UIText.StagingView_Refresh, IAction.AS_PUSH_BUTTON) {
 			public void run() {
@@ -802,39 +780,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		};
 		linkSelectionAction.setImageDescriptor(UIIcons.ELCL16_SYNCED);
 		toolbar.add(linkSelectionAction);
-
-		toolbar.add(new Separator());
-
-		amendPreviousCommitAction = new Action(
-				UIText.StagingView_Ammend_Previous_Commit, IAction.AS_CHECK_BOX) {
-
-			public void run() {
-				commitMessageComponent.setAmendingButtonSelection(isChecked());
-				updateMessage();
-			}
-		};
-		amendPreviousCommitAction.setImageDescriptor(UIIcons.AMEND_COMMIT);
-		toolbar.add(amendPreviousCommitAction);
-
-		signedOffByAction = new Action(UIText.StagingView_Add_Signed_Off_By,
-				IAction.AS_CHECK_BOX) {
-
-			public void run() {
-				commitMessageComponent.setSignedOffButtonSelection(isChecked());
-			}
-		};
-		signedOffByAction.setImageDescriptor(UIIcons.SIGNED_OFF);
-		toolbar.add(signedOffByAction);
-
-		addChangeIdAction = new Action(UIText.StagingView_Add_Change_ID,
-				IAction.AS_CHECK_BOX) {
-
-			public void run() {
-				commitMessageComponent.setChangeIdButtonSelection(isChecked());
-			}
-		};
-		addChangeIdAction.setImageDescriptor(UIIcons.GERRIT);
-		toolbar.add(addChangeIdAction);
 
 		toolbar.add(new Separator());
 
@@ -1049,18 +994,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 		});
 
-	}
-
-	/**
-	 * Refresh the unstaged and staged viewers
-	 */
-	public void refreshViewers() {
-		Display.getDefault().asyncExec(new Runnable() {
-			public void run() {
-				unstagedTableViewer.refresh();
-				stagedTableViewer.refresh();
-			}
-		});
 	}
 
 	private IContributionItem createShowInMenu() {
