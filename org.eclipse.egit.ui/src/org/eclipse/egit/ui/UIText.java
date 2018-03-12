@@ -2,6 +2,7 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -86,6 +87,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String AssumeUnchanged_assumeUnchanged;
+
+	/** */
+	public static String AssumeUnchanged_noAssumeUnchanged;
 
 	/** */
 	public static String WizardProjectsImportPage_ImportProjectsTitle;
@@ -2104,12 +2108,6 @@ public class UIText extends NLS {
 	public static String GitCompareFileRevisionEditorInput_RevisionLabel;
 
 	/** */
-	public static String GitCompareFileRevisionEditorInput_LocalVersion;
-
-	/** */
-	public static String GitCompareFileRevisionEditorInput_StagedVersion;
-
-	/** */
 	public static String GitCreateGeneralProjectPage_DirLabel;
 
 	/** */
@@ -2650,5 +2648,4 @@ public class UIText extends NLS {
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
-
 }
