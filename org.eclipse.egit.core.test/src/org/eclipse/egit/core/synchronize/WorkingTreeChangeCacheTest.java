@@ -8,8 +8,15 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
+import static org.eclipse.compare.structuremergeviewer.Differencer.ADDITION;
+import static org.eclipse.compare.structuremergeviewer.Differencer.CHANGE;
+import static org.eclipse.compare.structuremergeviewer.Differencer.DELETION;
+import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
@@ -206,6 +213,33 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 		assertThat(result.size(), is(2));
 		assertFileChange(result, "folder/a.txt", "a.txt");
 		assertFileChange(result, "folder/b.txt", "b.txt");
+	}
+
+	private void assertFileAddition(Map<String, Change> result, String path, String fileName) {
+		commonFileAsserts(result, path, fileName);
+		assertThat(result.get(path).getKind(), is(LEFT | ADDITION));
+		assertThat(result.get(path).getObjectId(), not(ZERO_ID));
+		assertNull(result.get(path).getRemoteObjectId());
+	}
+
+	private void assertFileDeletion(Map<String, Change> result, String path, String fileName) {
+		commonFileAsserts(result, path, fileName);
+		assertThat(result.get(path).getKind(), is(LEFT | DELETION));
+		assertThat(result.get(path).getRemoteObjectId(), not(ZERO_ID));
+		assertNull(result.get(path).getObjectId());
+	}
+
+	private void assertFileChange(Map<String, Change> result, String path, String fileName) {
+		commonFileAsserts(result, path, fileName);
+		assertThat(result.get(path).getKind(), is(LEFT | CHANGE));
+		assertThat(result.get(path).getObjectId(), not(ZERO_ID));
+		assertThat(result.get(path).getRemoteObjectId(), not(ZERO_ID));
+	}
+
+	private void commonFileAsserts(Map<String, Change> result, String path,
+			String fileName) {
+		assertTrue(result.containsKey(path));
+		assertThat(result.get(path).getName(), is(fileName));
 	}
 
 }
