@@ -254,7 +254,7 @@ public class CommitDialog extends Dialog {
 			public void widgetSelected(SelectionEvent e) {
 				String preferencePageId = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
 				PreferenceDialog dialog = PreferencesUtil
-						.createPreferenceDialogOn(null, preferencePageId,
+						.createPreferenceDialogOn(getShell(), preferencePageId,
 								new String[] { preferencePageId }, null);
 				dialog.open();
 				commitText.reconfigure();
@@ -418,8 +418,7 @@ public class CommitDialog extends Dialog {
 			// pre-emptively check any preselected files
 			for (IFile selectedFile : preselectedFiles) {
 				for (CommitItem item : items) {
-					if (item.file.equals(selectedFile) &&
-							!item.status.equals(UIText.CommitDialog_StatusUntracked)) {
+					if (item.file.equals(selectedFile)) {
 						filesViewer.setChecked(item, true);
 						break;
 					}
