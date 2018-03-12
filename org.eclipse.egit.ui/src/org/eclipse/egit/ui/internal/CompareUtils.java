@@ -182,10 +182,8 @@ public class CompareUtils {
 
 
 	/**
-	 * Creates a {@link ITypedElement} for the commit which is the common
-	 * ancestor of the provided commits. Returns null if no such commit exists
-	 * or if {@code gitPath} is not contained in the common ancestor
-	 *
+	 * Creates a {@link ITypedElement} for the commit which is the common ancestor of
+	 * the provided commits.
 	 * @param gitPath
 	 *            path within the ancestor commit's tree of the file.
 	 * @param commit1
@@ -206,12 +204,9 @@ public class CompareUtils {
 			Activator.logError(NLS.bind(UIText.CompareUtils_errorCommonAncestor,
 					commit1.getName(), commit2.getName()), e);
 		}
-		if (commonAncestor != null) {
-			ITypedElement ancestorCandidate = CompareUtils
-					.getFileRevisionTypedElement(gitPath, commonAncestor, db);
-			if (!ITypedElement.UNKNOWN_TYPE.equals(ancestorCandidate.getType()))
-				ancestor = ancestorCandidate;
-		}
+		if (commonAncestor != null)
+			ancestor = CompareUtils
+				.getFileRevisionTypedElement(gitPath, commonAncestor, db);
 		return ancestor;
 	}
 /**
