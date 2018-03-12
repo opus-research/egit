@@ -12,6 +12,7 @@
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * Copyright (C) 2014, Red Hat Inc.
  * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
+ * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -742,19 +743,37 @@ public class UIText extends NLS {
 	public static String RebaseInteractiveStepActionToolBarProvider_SkipText;
 
 	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_SkipDesc;
+
+	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_EditText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_EditDesc;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_FixupText;
 
 	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_FixupDesc;
+
+	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_MoveDownText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_MoveDownDesc;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_MoveUpText;
 
 	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_MoveUpDesc;
+
+	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_PickText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_PickDesc;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_RedoText;
@@ -763,7 +782,13 @@ public class UIText extends NLS {
 	public static String RebaseInteractiveStepActionToolBarProvider_RewordText;
 
 	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_RewordDesc;
+
+	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_SquashText;
+
+	/** */
+	public static String RebaseInteractiveStepActionToolBarProvider_SquashDesc;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_UndoText;
@@ -1900,6 +1925,9 @@ public class UIText extends NLS {
 	public static String ResourceHistory_ShowTagSequence;
 
 	/** */
+	public static String ResourceHistory_ShowBranchSequence;
+
+	/** */
 	public static String ResourceHistory_toggleRelativeDate;
 
 	/** */
@@ -2317,31 +2345,16 @@ public class UIText extends NLS {
 	public static String CommitDialog_Title;
 
 	/** */
-	public static String ConfigurationChecker_gitPrefixWarningMessage;
-
-	/** */
 	public static String ConfigurationChecker_checkConfiguration;
 
 	/** */
 	public static String ConfigurationChecker_homeNotSet;
 
 	/** */
-	public static String ConfigurationEditorComponent_BrowseForPrefix;
-
-	/** */
-	public static String ConfigurationEditorComponent_CannotChangeGitPrefixError;
-
-	/** */
 	public static String ConfigurationEditorComponent_ConfigLocationLabel;
 
 	/** */
 	public static String ConfigurationEditorComponent_EmptyStringNotAllowed;
-
-	/** */
-	public static String ConfigurationEditorComponent_GitPrefixSelectionErrorMessage;
-
-	/** */
-	public static String ConfigurationEditorComponent_GitPrefixSelectionErrorTitle;
 
 	/** */
 	public static String ConfigurationEditorComponent_KeyColumnHeader;
@@ -2440,6 +2453,9 @@ public class UIText extends NLS {
 	public static String CommitMessageComponent_AmendingCommitInRemoteBranch;
 
 	/** */
+	public static String CommitMessageComponent_MessageSecondLineNotEmpty;
+
+	/** */
 	public static String CommitMessageEditorDialog_EditCommitMessageTitle;
 
 	/** */
@@ -2501,6 +2517,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
+
+	/** */
+	public static String CompareIndexWithHeadActionHandler_nothingToDoTitle;
+
+	/** */
+	public static String CompareIndexWithHeadActionHandler_fileNotStaged;
+
+	/** */
+	public static String CompareUtils_jobName;
 
 	/** */
 	public static String CompareUtils_errorCommonAncestor;
@@ -3443,9 +3468,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_HomeDirWarning;
-
-	/** */
-	public static String DialogsPreferencePage_GitPrefixWarning;
 
 	/** */
 	public static String DialogsPreferencePage_RebaseCheckbox;
@@ -4790,6 +4812,9 @@ public class UIText extends NLS {
 	public static String CommitHelper_couldNotFindMergeMsg;
 
 	/** */
+	public static String CommitJob_AbortedByHook;
+
+	/** */
 	public static String CommitResultLabelProvider_SectionAuthor;
 
 	/** */
@@ -4958,6 +4983,9 @@ public class UIText extends NLS {
 	public static String GitVariableResolver_VariableReferencesNonExistentResource;
 
 	/** */
+	public static String GitTemplateVariableResolver_GitConfigDescription;
+
+	/** */
 	public static String StagingView_UnstagedChanges;
 
 	/** */
@@ -5034,6 +5062,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_Refresh;
+
+	/** */
+	public static String StagingView_GetRepo;
 
 	/** */
 	public static String StagingView_ReplaceWith;

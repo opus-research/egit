@@ -331,59 +331,59 @@ public class GitCommitsModelCache {
 		if (dstId.equals(srcId))
 			return new ArrayList<Commit>(0);
 
-		final RevWalk rw = new RevWalk(repo);
+		try (RevWalk rw = new RevWalk(repo)) {
 
-		final RevFlag localFlag = rw.newFlag("local"); //$NON-NLS-1$
-		final RevFlag remoteFlag = rw.newFlag("remote"); //$NON-NLS-1$
-		final RevFlagSet allFlags = new RevFlagSet();
-		allFlags.add(localFlag);
-		allFlags.add(remoteFlag);
-		rw.carry(allFlags);
+			final RevFlag localFlag = rw.newFlag("local"); //$NON-NLS-1$
+			final RevFlag remoteFlag = rw.newFlag("remote"); //$NON-NLS-1$
+			final RevFlagSet allFlags = new RevFlagSet();
+			allFlags.add(localFlag);
+			allFlags.add(remoteFlag);
+			rw.carry(allFlags);
 
-		RevCommit srcCommit = rw.parseCommit(srcId);
-		srcCommit.add(localFlag);
-		rw.markStart(srcCommit);
-		srcCommit = null; // free not needed resources
+			RevCommit srcCommit = rw.parseCommit(srcId);
+			srcCommit.add(localFlag);
+			rw.markStart(srcCommit);
+			srcCommit = null; // free not needed resources
 
-		RevCommit dstCommit = rw.parseCommit(dstId);
-		dstCommit.add(remoteFlag);
-		rw.markStart(dstCommit);
-		dstCommit = null; // free not needed resources
+			RevCommit dstCommit = rw.parseCommit(dstId);
+			dstCommit.add(remoteFlag);
+			rw.markStart(dstCommit);
+			dstCommit = null; // free not needed resources
 
-		if (pathFilter != null)
-			rw.setTreeFilter(pathFilter);
+			if (pathFilter != null)
+				rw.setTreeFilter(pathFilter);
 
-		List<Commit> result = new ArrayList<Commit>();
-		for (RevCommit revCommit : rw) {
-			if (revCommit.hasAll(allFlags))
-				break;
+			List<Commit> result = new ArrayList<Commit>();
+			for (RevCommit revCommit : rw) {
+				if (revCommit.hasAll(allFlags))
+					break;
 
-			Commit commit = new Commit();
-			commit.shortMessage = revCommit.getShortMessage();
-			commit.commitId = AbbreviatedObjectId.fromObjectId(revCommit);
-			commit.authorName = revCommit.getAuthorIdent().getName();
-			commit.committerName = revCommit.getCommitterIdent().getName();
-			commit.commitDate = revCommit.getAuthorIdent().getWhen();
+				Commit commit = new Commit();
+				commit.shortMessage = revCommit.getShortMessage();
+				commit.commitId = AbbreviatedObjectId.fromObjectId(revCommit);
+				commit.authorName = revCommit.getAuthorIdent().getName();
+				commit.committerName = revCommit.getCommitterIdent().getName();
+				commit.commitDate = revCommit.getAuthorIdent().getWhen();
 
-			RevCommit parentCommit = getParentCommit(revCommit);
-			if (revCommit.has(localFlag))
-				// Outgoing
-				commit.direction = RIGHT;
-			else if (revCommit.has(remoteFlag))
-				// Incoming
-				commit.direction = LEFT;
-			else
-				throw new GitCommitsModelDirectionException();
+				RevCommit parentCommit = getParentCommit(revCommit);
+				if (revCommit.has(localFlag))
+					// Outgoing
+					commit.direction = RIGHT;
+				else if (revCommit.has(remoteFlag))
+					// Incoming
+					commit.direction = LEFT;
+				else
+					throw new GitCommitsModelDirectionException();
 
-			commit.children = getChangedObjects(repo, revCommit,
-					parentCommit, pathFilter, commit.direction);
+				commit.children = getChangedObjects(repo, revCommit,
+						parentCommit, pathFilter, commit.direction);
 
-			if (commit.children != null)
-				result.add(commit);
+				if (commit.children != null)
+					result.add(commit);
+			}
+			rw.dispose();
+			return result;
 		}
-		rw.dispose();
-
-		return result;
 	}
 
 	private static RevCommit getParentCommit(RevCommit commit) {
@@ -396,36 +396,36 @@ public class GitCommitsModelCache {
 	private static Map<String, Change> getChangedObjects(Repository repo,
 			RevCommit commit, RevCommit parentCommit,
 			TreeFilter pathFilter, final int direction) throws IOException {
-		final TreeWalk tw = new TreeWalk(repo);
-		int commitIndex = addTree(tw, commit);
-		int parentCommitIndex = addTree(tw, parentCommit);
-
-		tw.setRecursive(true);
-		if (pathFilter == null)
-			tw.setFilter(ANY_DIFF);
-		else
-			tw.setFilter(AndTreeFilter.create(ANY_DIFF, pathFilter));
-
 		final Map<String, Change> result = new HashMap<String, GitCommitsModelCache.Change>();
-		final AbbreviatedObjectId commitId = getAbbreviatedObjectId(commit);
-		final AbbreviatedObjectId parentCommitId = getAbbreviatedObjectId(parentCommit);
+		try (final TreeWalk tw = new TreeWalk(repo)) {
+			int commitIndex = addTree(tw, commit);
+			int parentCommitIndex = addTree(tw, parentCommit);
 
-		MutableObjectId idBuf = new MutableObjectId();
-		while (tw.next()) {
-			Change change = new Change();
-			change.commitId = commitId;
-			change.remoteCommitId = parentCommitId;
-			change.name = tw.getNameString();
-			tw.getObjectId(idBuf, commitIndex);
-			change.objectId = AbbreviatedObjectId.fromObjectId(idBuf);
-			tw.getObjectId(idBuf, parentCommitIndex);
-			change.remoteObjectId = AbbreviatedObjectId.fromObjectId(idBuf);
+			tw.setRecursive(true);
+			if (pathFilter == null)
+				tw.setFilter(ANY_DIFF);
+			else
+				tw.setFilter(AndTreeFilter.create(ANY_DIFF, pathFilter));
 
-			calculateAndSetChangeKind(direction, change);
+			final AbbreviatedObjectId commitId = getAbbreviatedObjectId(commit);
+			final AbbreviatedObjectId parentCommitId = getAbbreviatedObjectId(parentCommit);
 
-			result.put(tw.getPathString(), change);
+			MutableObjectId idBuf = new MutableObjectId();
+			while (tw.next()) {
+				Change change = new Change();
+				change.commitId = commitId;
+				change.remoteCommitId = parentCommitId;
+				change.name = tw.getNameString();
+				tw.getObjectId(idBuf, commitIndex);
+				change.objectId = AbbreviatedObjectId.fromObjectId(idBuf);
+				tw.getObjectId(idBuf, parentCommitIndex);
+				change.remoteObjectId = AbbreviatedObjectId.fromObjectId(idBuf);
+
+				calculateAndSetChangeKind(direction, change);
+
+				result.put(tw.getPathString(), change);
+			}
 		}
-		tw.release();
 
 		return result.size() > 0 ? result : null;
 	}

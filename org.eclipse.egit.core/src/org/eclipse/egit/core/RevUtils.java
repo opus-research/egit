@@ -52,8 +52,7 @@ public class RevUtils {
 		Assert.isNotNull(commit1);
 		Assert.isNotNull(commit2);
 
-		RevWalk rw = new RevWalk(repo);
-		try {
+		try (RevWalk rw = new RevWalk(repo)) {
 			rw.setRetainBody(false);
 			rw.setRevFilter(RevFilter.MERGE_BASE);
 
@@ -70,8 +69,6 @@ public class RevUtils {
 			} else {
 				return null;
 			}
-		} finally {
-			rw.release();
 		}
 	}
 
@@ -84,8 +81,7 @@ public class RevUtils {
 	 */
 	public static ConflictCommits getConflictCommits(Repository repository,
 			String path) throws IOException {
-		RevWalk walk = new RevWalk(repository);
-		try {
+		try (RevWalk walk = new RevWalk(repository)) {
 			RevCommit ourCommit;
 			RevCommit theirCommit = null;
 			walk.setTreeFilter(AndTreeFilter.create(PathFilter.create(path),
@@ -117,8 +113,6 @@ public class RevUtils {
 			}
 
 			return new ConflictCommits(ourCommit, theirCommit);
-		} finally {
-			walk.release();
 		}
 	}
 
@@ -144,8 +138,7 @@ public class RevUtils {
 
 		final int skew = 24 * 60 * 60; // one day clock skew
 
-		RevWalk walk = new RevWalk(repo);
-		try {
+		try (RevWalk walk = new RevWalk(repo)) {
 			RevCommit commit = walk.parseCommit(commitId);
 			for (Ref ref : refs) {
 				RevCommit refCommit = walk.parseCommit(ref.getObjectId());
@@ -160,7 +153,6 @@ public class RevUtils {
 				if (contained)
 					return true;
 			}
-		} finally {
 			walk.dispose();
 		}
 		return false;

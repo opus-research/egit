@@ -161,8 +161,7 @@ public class RepositoryUtil {
 			}
 
 			Map<String, Date> tagMap = new HashMap<String, Date>();
-			try {
-				RevWalk rw = new RevWalk(repository);
+			try (RevWalk rw = new RevWalk(repository)) {
 				Map<String, Ref> tags = repository.getRefDatabase().getRefs(
 						Constants.R_TAGS);
 				for (Ref tagRef : tags.values()) {
@@ -328,14 +327,6 @@ public class RepositoryUtil {
 		return repos;
 	}
 
-	private String getPath(File repositoryDir) {
-		try {
-			return repositoryDir.getCanonicalPath();
-		} catch (IOException e) {
-			return repositoryDir.getAbsolutePath();
-		}
-	}
-
 	/**
 	 *
 	 * @param repositoryDir
@@ -353,7 +344,7 @@ public class RepositoryUtil {
 						CoreText.RepositoryUtil_DirectoryIsNotGitDirectory,
 						repositoryDir));
 
-			String dirString = getPath(repositoryDir);
+			String dirString = repositoryDir.getAbsolutePath();
 
 			List<String> dirStrings = getConfiguredRepositories();
 			if (dirStrings.contains(dirString)) {
@@ -374,12 +365,10 @@ public class RepositoryUtil {
 	 */
 	public boolean removeDir(File file) {
 		synchronized (prefs) {
-
-			String dir = getPath(file);
-
+			String dirString = file.getAbsolutePath();
 			Set<String> dirStrings = new HashSet<String>();
 			dirStrings.addAll(getConfiguredRepositories());
-			if (dirStrings.remove(dir)) {
+			if (dirStrings.remove(dirString)) {
 				saveDirs(dirStrings);
 				return true;
 			}
@@ -412,7 +401,7 @@ public class RepositoryUtil {
 	 * @return true if contains repository, false otherwise
 	 */
 	public boolean contains(final Repository repository) {
-		return contains(getPath(repository.getDirectory()));
+		return contains(repository.getDirectory().getAbsolutePath());
 	}
 
 	/**
@@ -461,59 +450,108 @@ public class RepositoryUtil {
 	 * @since 2.2
 	 */
 	public RevCommit parseHeadCommit(Repository repository) {
-		RevWalk walk = null;
-		try {
+		try (RevWalk walk = new RevWalk(repository)) {
 			Ref head = repository.getRef(Constants.HEAD);
 			if (head == null || head.getObjectId() == null)
 				return null;
 
-			walk = new RevWalk(repository);
 			RevCommit commit = walk.parseCommit(head.getObjectId());
 			return commit;
 		} catch (IOException e) {
 			return null;
-		} finally {
-			if (walk != null)
-				walk.release();
 		}
 	}
 
 	/**
-	 * Checks if resource with given path is to be ignored.
+	 * Checks if existing resource with given path is to be ignored.
+	 * <p>
+	 * <b>Note:</b>The check makes sense only for files which exists in the
+	 * working directory. This method returns false for paths to not existing
+	 * files or directories.
 	 *
 	 * @param path
-	 *            Path to be checked
-	 * @return true if the path matches an ignore rule or no repository mapping
-	 *         could be found, false otherwise
+	 *            Path to be checked, file or directory must exist on the disk
+	 * @return true if the path is either not inside git repository or exists
+	 *         and matches an ignore rule
 	 * @throws IOException
 	 * @since 2.3
 	 */
 	public static boolean isIgnored(IPath path) throws IOException {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
-		if (mapping == null)
+		if (mapping == null) {
 			return true; // Linked resources may not be mapped
+		}
 		Repository repository = mapping.getRepository();
 		WorkingTreeIterator treeIterator = IteratorService
 				.createInitialIterator(repository);
-		if (treeIterator == null)
+		if (treeIterator == null) {
 			return true;
+		}
 		String repoRelativePath = mapping.getRepoRelativePath(path);
-		TreeWalk walk = new TreeWalk(repository);
-		try {
+		if (repoRelativePath == null || repoRelativePath.isEmpty()) {
+			return true;
+		}
+		try (TreeWalk walk = new TreeWalk(repository)) {
 			walk.addTree(treeIterator);
 			walk.setFilter(PathFilter.create(repoRelativePath));
 			while (walk.next()) {
 				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
 						WorkingTreeIterator.class);
-				if (walk.getPathString().equals(repoRelativePath))
+				if (walk.getPathString().equals(repoRelativePath)) {
 					return workingTreeIterator.isEntryIgnored();
+				}
 				if (workingTreeIterator.getEntryFileMode()
-						.equals(FileMode.TREE))
+						.equals(FileMode.TREE)) {
 					walk.enterSubtree();
+				}
 			}
-		} finally {
-			walk.release();
 		}
+		return false;
+	}
+
+	/**
+	 * Checks if the existing resource with given path can be automatically
+	 * added to the .gitignore file.
+	 *
+	 * @param path
+	 *            Path to be checked, file or directory must exist on the disk
+	 * @return true if the file or directory at given path exists, is inside
+	 *         known git repository and does not match any existing ignore rule,
+	 *         false otherwise
+	 * @throws IOException
+	 * @since 4.1.0
+	 */
+	public static boolean canBeAutoIgnored(IPath path) throws IOException {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
+		if (mapping == null) {
+			return false; // Linked resources may not be mapped
+		}
+		Repository repository = mapping.getRepository();
+		WorkingTreeIterator treeIterator = IteratorService
+				.createInitialIterator(repository);
+		if (treeIterator == null) {
+			return false;
+		}
+		String repoRelativePath = mapping.getRepoRelativePath(path);
+		if (repoRelativePath == null || repoRelativePath.isEmpty()) {
+			return false;
+		}
+		try (TreeWalk walk = new TreeWalk(repository)) {
+			walk.addTree(treeIterator);
+			walk.setFilter(PathFilter.create(repoRelativePath));
+			while (walk.next()) {
+				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
+						WorkingTreeIterator.class);
+				if (walk.getPathString().equals(repoRelativePath)) {
+					return !workingTreeIterator.isEntryIgnored();
+				}
+				if (workingTreeIterator.getEntryFileMode()
+						.equals(FileMode.TREE)) {
+					walk.enterSubtree();
+				}
+			}
+		}
+		// path not found in tree, we should not automatically ignore it
 		return false;
 	}
 
