@@ -1629,21 +1629,6 @@ public class UIText extends NLS {
 	public static String ResetQuickdiffBaselineHandler_NoTargetMessage;
 
 	/** */
-	public static String ResetTargetSelectionDialog_AuthorLabel;
-
-	/** */
-	public static String ResetTargetSelectionDialog_CommitLabel;
-
-	/** */
-	public static String ResetTargetSelectionDialog_CommitterLabel;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ExpressionLabel;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ExpressionTooltip;
-
-	/** */
 	public static String ResetTargetSelectionDialog_ResetButton;
 
 	/** */
@@ -1675,12 +1660,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ResetTargetSelectionDialog_SelectBranchForResetMessage;
-
-	/** */
-	public static String ResetTargetSelectionDialog_SubjectLabel;
-
-	/** */
-	public static String ResetTargetSelectionDialog_UnresolvableExpressionError;
 
 	/** */
 	public static String ResetTargetSelectionDialog_WindowTitle;
@@ -2680,9 +2659,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FileDiffContentProvider_errorGettingDifference;
-
-	/** */
-	public static String FileDiffLabelProvider_RenamedFromToolTip;
 
 	/** */
 	public static String FileRevisionEditorInput_NameAndRevisionTitle;
@@ -4793,21 +4769,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitModelSynchronizeParticipant_noCachedSourceVariant;
-
-	/** */
-	public static String GitScmUrlImportWizardPage_title;
-
-	/** */
-	public static String GitScmUrlImportWizardPage_description;
-
-	/** */
-	public static String GitScmUrlImportWizardPage_importMaster;
-
-	/** */
-	public static String GitScmUrlImportWizardPage_importVersion;
-
-	/** */
-	public static String GitScmUrlImportWizardPage_counter;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
