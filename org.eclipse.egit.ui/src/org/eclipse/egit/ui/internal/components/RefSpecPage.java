@@ -13,14 +13,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.ErrorDialog;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -67,13 +65,6 @@ public class RefSpecPage extends BaseWizardPage {
 
 	private String transportError;
 
-	// special mode for configuration: the remote name is set by the wizard
-	private final String remoteName;
-
-	// hack: if there were specs when opening this page, then
-	// we allow to finish even if the specs table is empty
-	private int initialSpecSize = -1;
-
 	/**
 	 * Create specifications selection page for provided context.
 	 *
@@ -85,13 +76,10 @@ public class RefSpecPage extends BaseWizardPage {
 	 * @param repoPage
 	 *            repository selection page - must be predecessor of this page
 	 *            in wizard.
-	 * @param remoteName
-	 *            preselected remote name, may be null
 	 */
 	public RefSpecPage(final Repository local, final boolean pushPage,
-			final RepositorySelectionPage repoPage, String remoteName) {
+			final RepositorySelectionPage repoPage) {
 		super(RefSpecPage.class.getName());
-		this.remoteName = remoteName;
 		this.local = local;
 		this.repoPage = repoPage;
 		this.pushPage = pushPage;
@@ -111,23 +99,6 @@ public class RefSpecPage extends BaseWizardPage {
 					checkPage();
 			}
 		});
-	}
-
-	/**
-	 * Create specifications selection page for provided context.
-	 *
-	 * @param local
-	 *            local repository.
-	 * @param pushPage
-	 *            true if this page is used for push specifications selection,
-	 *            false if it used for fetch specifications selection.
-	 * @param repoPage
-	 *            repository selection page - must be predecessor of this page
-	 *            in wizard.
-	 */
-	public RefSpecPage(final Repository local, final boolean pushPage,
-			final RepositorySelectionPage repoPage) {
-		this(local, pushPage, repoPage, null);
 	}
 
 	public void createControl(Composite parent) {
@@ -258,12 +229,7 @@ public class RefSpecPage extends BaseWizardPage {
 			final URIish uri;
 			uri = newRepoSelection.getURI();
 			listRemotesOp = new ListRemoteOperation(local, uri);
-			getContainer().run(true, true, new IRunnableWithProgress() {
-				public void run(IProgressMonitor monitor)
-						throws InvocationTargetException, InterruptedException {
-					listRemotesOp.run(monitor);
-				}
-			});
+			getContainer().run(true, true, listRemotesOp);
 		} catch (InvocationTargetException e) {
 			final Throwable cause = e.getCause();
 			transportError(cause.getMessage());
@@ -279,21 +245,13 @@ public class RefSpecPage extends BaseWizardPage {
 		}
 
 		this.validatedRepoSelection = newRepoSelection;
-		final String actRemoteName;
-		if (remoteName == null)
-			actRemoteName = validatedRepoSelection.getConfigName();
-		else
-			actRemoteName = remoteName;
-		if (initialSpecSize < 0)
-			initialSpecSize = listRemotesOp.getRemoteRefs().size();
+		final String remoteName = validatedRepoSelection.getConfigName();
 		specsPanel.setAssistanceData(local, listRemotesOp.getRemoteRefs(),
-				actRemoteName);
+				remoteName);
 
-		if (!pushPage) {
-			tagsAutoFollowButton.setSelection(false);
-			tagsFetchTagsButton.setSelection(false);
-			tagsNoTagsButton.setSelection(false);
-		}
+		tagsAutoFollowButton.setSelection(false);
+		tagsFetchTagsButton.setSelection(false);
+		tagsNoTagsButton.setSelection(false);
 
 		if (newRepoSelection.isConfigSelected()) {
 			saveButton.setVisible(true);
@@ -312,7 +270,7 @@ public class RefSpecPage extends BaseWizardPage {
 				tagsNoTagsButton.setSelection(true);
 				break;
 			}
-		} else if (!pushPage)
+		} else
 			tagsAutoFollowButton.setSelection(true);
 
 		checkPage();
@@ -336,6 +294,6 @@ public class RefSpecPage extends BaseWizardPage {
 			return;
 		}
 		setErrorMessage(specsPanel.getErrorMessage());
-		setPageComplete(initialSpecSize > 0 || (!specsPanel.isEmpty() && specsPanel.isValid()));
+		setPageComplete(!specsPanel.isEmpty() && specsPanel.isValid());
 	}
 }

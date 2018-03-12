@@ -125,11 +125,11 @@ public class PushOperationResult {
 			if (first)
 				first = false;
 			else
-				sb.append(", ");  //$NON-NLS-1$
+				sb.append(", ");
 			sb.append(uri);
-			sb.append(" (");  //$NON-NLS-1$
+			sb.append(" (");
 			sb.append(getErrorMessage(uri));
-			sb.append(")"); //$NON-NLS-1$
+			sb.append(")");
 		}
 		return sb.toString();
 	}

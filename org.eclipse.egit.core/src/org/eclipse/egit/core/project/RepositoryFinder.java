@@ -27,7 +27,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.util.SystemReader;
 
@@ -99,7 +98,7 @@ public class RepositoryFinder {
 			throws CoreException {
 		final IPath loc = c.getLocation();
 
-		m.beginTask("", 101);  //$NON-NLS-1$
+		m.beginTask("", 101);
 		m.subTask(CoreText.RepositoryFinder_finding);
 		try {
 			if (loc != null) {
@@ -114,12 +113,7 @@ public class RepositoryFinder {
 				if (c.isLinked() || c instanceof IProject) {
 					File p = fsLoc.getParentFile();
 					while (p != null) {
-						// TODO is this the right location?
-						if (GitTraceLocation.CORE.isActive())
-							GitTraceLocation.getTrace().trace(
-									GitTraceLocation.CORE.getLocation(),
-									"Looking at candidate dir: " //$NON-NLS-1$
-											+ p);
+						System.out.println("Looking at candidate dir: " + p);
 						final File pCfg = configFor(p);
 						if (pCfg.isFile()) {
 							register(c, pCfg.getParentFile());
@@ -152,8 +146,7 @@ public class RepositoryFinder {
 	}
 
 	private File configFor(final File fsLoc) {
-		return new File(new File(fsLoc, Constants.DOT_GIT),
-				"config");  //$NON-NLS-1$
+		return new File(new File(fsLoc, Constants.DOT_GIT), "config");
 	}
 
 	private void register(final IContainer c, final File gitdir) {

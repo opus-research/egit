@@ -27,9 +27,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.Team;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.GitIndex.Entry;
@@ -81,14 +79,7 @@ public class TrackOperation implements IWorkspaceRunnable {
 						Entry entry = index.getEntry(repoPath);
 						if (entry != null) {
 							if (!entry.isAssumedValid()) {
-								// TODO is this the right location?
-								if (GitTraceLocation.CORE.isActive())
-									GitTraceLocation
-											.getTrace()
-											.trace(
-													GitTraceLocation.CORE
-															.getLocation(),
-													"Already tracked - skipping"); //$NON-NLS-1$
+								System.out.println("Already tracked - skipping");
 								continue;
 							}
 						}
@@ -116,8 +107,7 @@ public class TrackOperation implements IWorkspaceRunnable {
 										return false;
 
 								} catch (IOException e) {
-									if (GitTraceLocation.CORE.isActive())
-										GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+									e.printStackTrace();
 									throw Activator.error(CoreText.AddOperation_failed, e);
 								}
 								return true;
@@ -132,16 +122,14 @@ public class TrackOperation implements IWorkspaceRunnable {
 				m.worked(200);
 			}
 			for (RepositoryMapping rm : tomerge.keySet()) {
-				m.setTaskName(NLS.bind(CoreText.TrackOperation_writingIndex, rm.getRepository().getDirectory()));
+				m.setTaskName("Writing index for "+rm.getRepository().getDirectory());
 				rm.getRepository().getIndex().write();
 			}
 		} catch (RuntimeException e) {
-			if (GitTraceLocation.CORE.isActive())
-				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+			e.printStackTrace();
 			throw Activator.error(CoreText.AddOperation_failed, e);
 		} catch (IOException e) {
-			if (GitTraceLocation.CORE.isActive())
-				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+			e.printStackTrace();
 			throw Activator.error(CoreText.AddOperation_failed, e);
 		} finally {
 			try {
@@ -152,8 +140,7 @@ public class TrackOperation implements IWorkspaceRunnable {
 					r.fireRepositoryChanged();
 				}
 			} catch (IOException e) {
-				if (GitTraceLocation.CORE.isActive())
-					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+				e.printStackTrace();
 			} finally {
 				m.done();
 			}
