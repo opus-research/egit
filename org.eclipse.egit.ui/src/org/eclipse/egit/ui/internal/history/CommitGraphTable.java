@@ -57,7 +57,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -594,7 +593,7 @@ class CommitGraphTable {
 			}
 		}
 
-		private File createTempFile(RevCommit commit) throws IOException {
+		private File createTempFile(RevCommit commit) {
 			String tmpDir = System.getProperty("java.io.tmpdir"); //$NON-NLS-1$
 			String patchName = "egit-patch" + commit.getId().name(); //$NON-NLS-1$
 			File patchDir = new File(tmpDir, patchName);
@@ -603,7 +602,7 @@ class CommitGraphTable {
 				patchDir = new File(tmpDir, patchName + "_" + counter); //$NON-NLS-1$
 				counter++;
 			}
-			FileUtils.mkdir(patchDir);
+			patchDir.mkdir();
 			patchDir.deleteOnExit();
 			File patchFile;
 			String suggestedFileName = CreatePatchOperation

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2011 SAP AG.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Matthias Sohn (SAP AG) - imply .git if parent folder is given
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -18,7 +17,6 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
@@ -60,14 +58,11 @@ public class PasteCommand extends
 			}
 
 			if (!RepositoryCache.FileKey.isGitRepository(file, FS.DETECTED)) {
-				// try if .git folder is one level below
-				file = new File(file, Constants.DOT_GIT);
-				if (!RepositoryCache.FileKey.isGitRepository(file, FS.DETECTED)) {
-					errorMessage = NLS
-							.bind(UIText.RepositoriesView_ClipboardContentNoGitRepoMessage,
-									content);
-					return null;
-				}
+				errorMessage = NLS
+						.bind(
+								UIText.RepositoriesView_ClipboardContentNoGitRepoMessage,
+								content);
+				return null;
 			}
 
 			if (util.addConfiguredRepository(file)) {
