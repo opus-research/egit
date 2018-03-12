@@ -82,7 +82,7 @@ class GitActionContributor extends SynchronizePageActionGroup {
 			menu.appendToGroup(GIT_ACTIONS, createItem(COMMIT_ACTION));
 			IResourceState state = ResourceStateFactory.getInstance()
 					.get(resource);
-			if (state.hasUnstagedChanges()) {
+			if (!state.isTracked() || state.isDirty() || state.isMissing()) {
 				menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
 			}
 			if (state.isStaged()) {
@@ -120,7 +120,8 @@ class GitActionContributor extends SynchronizePageActionGroup {
 			if (path != null) {
 				IResourceState state = ResourceStateFactory.getInstance()
 						.get(path.toFile());
-				if (state.hasUnstagedChanges()) {
+				if (!state.isTracked() || state.isDirty()
+						|| state.isMissing()) {
 					menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
 				}
 				if (state.isStaged()) {

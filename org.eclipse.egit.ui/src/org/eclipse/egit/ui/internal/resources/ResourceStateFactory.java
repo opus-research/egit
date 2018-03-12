@@ -39,6 +39,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.resources.IResourceState.StagingState;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.annotations.Nullable;
@@ -86,8 +87,11 @@ public class ResourceStateFactory {
 				|| !ResourceUtil.isSharedWithGit(resource)) {
 			return null;
 		}
-		Repository repository = ResourceUtil.getRepository(resource);
-		return getIndexDiffDataOrNull(repository);
+		IPath path = resource.getLocation();
+		if (path == null) {
+			return null;
+		}
+		return getIndexDiffDataOrNull(path.toFile());
 	}
 
 	/**
@@ -105,20 +109,14 @@ public class ResourceStateFactory {
 		}
 		File absoluteFile = file.getAbsoluteFile();
 		IPath path = new org.eclipse.core.runtime.Path(absoluteFile.getPath());
-		Repository repository = ResourceUtil.getRepository(path);
-		return getIndexDiffDataOrNull(repository);
-	}
-
-	/**
-	 * Returns the {@link IndexDiffData} for a given {@link Repository}.
-	 *
-	 * @param repository
-	 *            to get the index diff data from
-	 * @return the IndexDiffData, or {@code null} if none.
-	 */
-	@Nullable
-	private IndexDiffData getIndexDiffDataOrNull(
-			@Nullable Repository repository) {
+		Repository repository = null;
+		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
+		if (mapping != null) {
+			repository = mapping.getRepository();
+		} else {
+			repository = Activator.getDefault().getRepositoryCache()
+					.getRepository(path);
+		}
 		if (repository == null) {
 			return null;
 		} else if (repository.isBare()) {
@@ -131,6 +129,7 @@ public class ResourceStateFactory {
 			return null;
 		}
 		return diffCacheEntry.getIndexDiff();
+
 	}
 
 	/**
@@ -218,7 +217,14 @@ public class ResourceStateFactory {
 		if (path == null) {
 			return UNKNOWN_STATE;
 		}
-		Repository repository = file.getRepository();
+		Repository repository = null;
+		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
+		if (mapping != null) {
+			repository = mapping.getRepository();
+		} else {
+			repository = Activator.getDefault().getRepositoryCache()
+					.getRepository(path);
+		}
 		if (repository == null || repository.isBare()) {
 			return UNKNOWN_STATE;
 		}
@@ -355,9 +361,6 @@ public class ResourceStateFactory {
 
 		@Nullable
 		IPath getAbsolutePath();
-
-		@Nullable
-		Repository getRepository();
 	}
 
 	private static class FileItem implements FileSystemItem {
@@ -373,11 +376,6 @@ public class ResourceStateFactory {
 		@NonNull
 		public IPath getAbsolutePath() {
 			return new org.eclipse.core.runtime.Path(file.getAbsolutePath());
-		}
-
-		@Override
-		public Repository getRepository() {
-			return ResourceUtil.getRepository(getAbsolutePath());
 		}
 
 		@Override
@@ -446,11 +444,6 @@ public class ResourceStateFactory {
 		@Nullable
 		public IPath getAbsolutePath() {
 			return resource.getLocation();
-		}
-
-		@Override
-		public Repository getRepository() {
-			return ResourceUtil.getRepository(resource);
 		}
 
 		@Override
