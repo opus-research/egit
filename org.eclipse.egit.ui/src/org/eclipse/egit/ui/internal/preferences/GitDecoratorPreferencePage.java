@@ -497,8 +497,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private Button showAssumeValid;
 
-		private Button showDirty;
-
 		public IconDecorationTab(TabFolder parent) {
 			Composite composite = SWTUtils.createHVFillComposite(parent,
 					SWTUtils.MARGINS_DEFAULT, 2);
@@ -513,15 +511,12 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					UIText.DecoratorPreferencesPage_iconsShowConflicts);
 			showAssumeValid = SWTUtils.createCheckBox(composite,
 					UIText.DecoratorPreferencesPage_iconsShowAssumeValid);
-			showDirty = SWTUtils.createCheckBox(composite,
-					UIText.GitDecoratorPreferencePage_iconsShowDirty);
 
 			showTracked.addSelectionListener(this);
 			showUntracked.addSelectionListener(this);
 			showStaged.addSelectionListener(this);
 			showConflicts.addSelectionListener(this);
 			showAssumeValid.addSelectionListener(this);
-			showDirty.addSelectionListener(this);
 
 			final TabItem tabItem = new TabItem(parent, SWT.NONE);
 			tabItem.setText(UIText.DecoratorPreferencesPage_iconLabel);
@@ -540,8 +535,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			showAssumeValid
 					.setSelection(store
 							.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON));
-			showDirty.setSelection(store
-					.getBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
 		}
 
 		public void performDefaults(IPreferenceStore store) {
@@ -560,9 +553,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			showAssumeValid
 					.setSelection(store
 							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON));
-			showDirty
-					.setSelection(store
-							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
 		}
 
 		public void performOk(IPreferenceStore store) {
@@ -576,8 +566,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					showConflicts.getSelection());
 			store.setValue(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON,
 					showAssumeValid.getSelection());
-			store.setValue(UIPreferences.DECORATOR_SHOW_DIRTY_ICON,
-					showDirty.getSelection());
 		}
 
 		public void widgetSelected(SelectionEvent e) {

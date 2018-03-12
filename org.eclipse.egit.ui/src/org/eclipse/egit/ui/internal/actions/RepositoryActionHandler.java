@@ -39,6 +39,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -261,8 +262,11 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		if (selection instanceof IStructuredSelection)
 			return (IStructuredSelection) selection;
 		if (selection instanceof TextSelection) {
-			IResource resource = ResourceUtil.getResource(HandlerUtil
-					.getVariable(event, ISources.ACTIVE_EDITOR_INPUT_NAME));
+			IEditorInput input = (IEditorInput) HandlerUtil.getVariable(event,
+					ISources.ACTIVE_EDITOR_INPUT_NAME);
+			if (input == null)
+				return StructuredSelection.EMPTY;
+			IResource resource = ResourceUtil.getResource(input);
 			if (resource != null)
 				return new StructuredSelection(resource);
 		}
@@ -287,8 +291,11 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		if (selection instanceof IStructuredSelection)
 			return (IStructuredSelection) selection;
 		if (selection instanceof TextSelection) {
-			IResource resource = ResourceUtil.getResource(ctx
-					.getVariable(ISources.ACTIVE_EDITOR_INPUT_NAME));
+			IEditorInput input = (IEditorInput) ctx
+					.getVariable(ISources.ACTIVE_EDITOR_INPUT_NAME);
+			if (input == null)
+				return StructuredSelection.EMPTY;
+			IResource resource = ResourceUtil.getResource(input);
 			if (resource != null)
 				return new StructuredSelection(resource);
 		}
