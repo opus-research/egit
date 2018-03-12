@@ -9,7 +9,16 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.TrackOperation;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
+import org.eclipse.jface.action.IAction;
 
 /**
  * An action to add resources to the Git repository.
@@ -17,10 +26,30 @@ import org.eclipse.egit.core.op.TrackOperation;
  * @see TrackOperation
  */
 public class Track extends RepositoryAction {
-	/**
-	 *
-	 */
-	public Track() {
-		super(ActionCommands.TRACK_ACTION);
+
+	@Override
+	public void execute(IAction action) {
+		final TrackOperation op = new TrackOperation(getSelectedResources());
+		String jobname = UIText.Track_addToVersionControl;
+		Job job = new Job(jobname) {
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				try {
+					op.execute(monitor);
+				} catch (CoreException e) {
+					return Activator.createErrorStatus(e.getStatus()
+							.getMessage(), e);
+				}
+				return Status.OK_STATUS;
+			}
+		};
+		job.setRule(op.getSchedulingRule());
+		job.setUser(true);
+		job.schedule();
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return getSelectedAdaptables(getSelection(), IResource.class).length > 0;
 	}
 }

@@ -92,15 +92,7 @@ public class PushWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
-		confirmPage = new ConfirmationPage(localDb) {
-			@Override
-			public void setVisible(boolean visible) {
-				if (visible)
-					setSelection(repoPage.getSelection(), refSpecPage
-							.getRefSpecs());
-				super.setVisible(visible);
-			}
-		};
+		confirmPage = new ConfirmationPage(localDb);
 		// TODO use/create another cool icon
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
@@ -192,7 +184,7 @@ public class PushWizard extends Wizard {
 				}
 
 				spec = new PushOperationSpecification();
-				for (final URIish uri : repoPage.getSelection().getAllURIs())
+				for (final URIish uri : repoPage.getSelection().getPushURIs())
 					spec.addURIRefUpdates(uri, ConfirmationPage
 							.copyUpdates(updates));
 			}
