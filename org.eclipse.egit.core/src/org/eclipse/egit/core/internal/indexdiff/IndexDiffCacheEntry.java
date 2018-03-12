@@ -15,7 +15,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -212,7 +212,7 @@ public class IndexDiffCacheEntry {
 	}
 
 	private void scheduleUpdateJob(final Collection<String> filesToUpdate,
-			final Collection<IResource> resourcesToUpdate) {
+			final Collection<IFile> fileResourcesToUpdate) {
 		if (!checkRepository())
 			return;
 		Job job = new Job(getReloadJobName()) {
@@ -225,7 +225,7 @@ public class IndexDiffCacheEntry {
 				try {
 					long startTime = System.currentTimeMillis();
 					IndexDiffData result = calcIndexDiffData(monitor,
-							getName(), filesToUpdate, resourcesToUpdate);
+							getName(), filesToUpdate, fileResourcesToUpdate);
 					if (monitor.isCanceled())
 						return Status.CANCEL_STATUS;
 					indexDiffData = result;
@@ -234,7 +234,7 @@ public class IndexDiffCacheEntry {
 						StringBuilder message = new StringBuilder(
 								NLS.bind(
 										"Updated IndexDiffData based on resource list (length = {0}) in {1} ms\n", //$NON-NLS-1$
-										Integer.valueOf(resourcesToUpdate
+										Integer.valueOf(fileResourcesToUpdate
 												.size()), Long.valueOf(time)));
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
@@ -268,7 +268,7 @@ public class IndexDiffCacheEntry {
 
 	private IndexDiffData calcIndexDiffData(IProgressMonitor monitor,
 			String jobName, Collection<String> filesToUpdate,
-			Collection<IResource> resourcesToUpdate) {
+			Collection<IFile> fileResourcesToUpdate) {
 		EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(
 				monitor);
 		final IndexDiff diffForChangedResources;
@@ -284,7 +284,7 @@ public class IndexDiffCacheEntry {
 			throw new RuntimeException(e);
 		}
 		return new IndexDiffData(indexDiffData, filesToUpdate,
-				resourcesToUpdate, diffForChangedResources);
+				fileResourcesToUpdate, diffForChangedResources);
 	}
 
 	private void notifyListeners() {
@@ -329,6 +329,7 @@ public class IndexDiffCacheEntry {
 					Activator.logError(e.getMessage(), e);
 					return;
 				}
+
 				Collection<String> filesToUpdate = visitor.getFilesToUpdate();
 				if (visitor.getGitIgnoreChanged())
 					scheduleReloadJob("A .gitignore changed"); //$NON-NLS-1$
@@ -336,7 +337,7 @@ public class IndexDiffCacheEntry {
 					scheduleReloadJob("Resource changed, no diff available"); //$NON-NLS-1$
 				else if (!filesToUpdate.isEmpty())
 					if (filesToUpdate.size() < RESOURCE_LIST_UPDATE_LIMIT)
-						scheduleUpdateJob(filesToUpdate, visitor.getResourcesToUpdate());
+						scheduleUpdateJob(filesToUpdate, visitor.getFileResourcesToUpdate());
 					else
 						// Calculate new IndexDiff if too many resources changed
 						// This happens e.g. when a project is opened
