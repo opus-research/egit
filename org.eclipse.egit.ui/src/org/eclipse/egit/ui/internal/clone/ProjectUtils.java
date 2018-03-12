@@ -65,8 +65,6 @@ public class ProjectUtils {
 						actMonitor.setTaskName(projectRecord.getProjectLabel());
 						IProject project = createExistingProject(projectRecord,
 								new SubProgressMonitor(actMonitor, 1));
-						if (project == null)
-							continue;
 						if (repository != null) {
 							ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
 									project, repository.getDirectory());
@@ -96,8 +94,6 @@ public class ProjectUtils {
 		String projectName = record.getProjectName();
 		final IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		final IProject project = workspace.getRoot().getProject(projectName);
-		if (project.exists())
-			return null;
 		if (record.getProjectDescription() == null) {
 			// error case
 			record.setProjectDescription(workspace
