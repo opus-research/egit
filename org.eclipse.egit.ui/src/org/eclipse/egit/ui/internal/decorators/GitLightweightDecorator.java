@@ -205,8 +205,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 		if (resource == null)
 			return;
 
-		// Step 1: Perform cheap tests
-
 		// Don't decorate if the workbench is not running
 		if (!PlatformUI.isWorkbenchRunning())
 			return;
@@ -224,47 +222,40 @@ public class GitLightweightDecorator extends LabelProvider implements
 		if (!resource.exists() && !resource.isPhantom())
 			return;
 
-		IDecoratableResource decoratableResource = null;
-		final DecorationHelper helper = new DecorationHelper(
-				activator.getPreferenceStore());
-
-		// Step 2: Read session properties
-
 		try {
 			final Boolean notDecoratable = (Boolean) resource
 					.getSessionProperty(NOT_DECORATABLE_KEY);
 			if (notDecoratable != null && notDecoratable.equals(Boolean.TRUE))
-				// Step 2a: Return - resource is not decoratable
+				// Resource is not decoratable, do not try again
 				return;
 
-			decoratableResource = (IDecoratableResource) resource
+			final IDecoratableResource decoratableResource = (IDecoratableResource) resource
 					.getSessionProperty(DECORATABLE_RESOURCE_KEY);
+			boolean decorated = false;
 			if (decoratableResource != null) {
-				final Long refreshed = (Long) resource
-						.getSessionProperty(REFRESHED_KEY);
-				if (refreshed != null) {
-					final Long refresh = (Long) resource.getWorkspace()
-							.getRoot().getSessionProperty(REFRESH_KEY);
-					if (refresh == null
-							|| refresh.longValue() <= refreshed.longValue()) {
-						// Condition: Stored decoratable resource exists and is
-						// up-to-date
-						//
-						// Step 2b: Apply stored decoratable resource and return
-						helper.decorate(decoration, decoratableResource);
+				// Use stored decoratable resource (even when it is outdated)
+				final DecorationHelper helper = new DecorationHelper(
+						activator.getPreferenceStore());
+				helper.decorate(decoration, decoratableResource);
+				decorated = true;
+			}
+
+			final Long refreshed = (Long) resource
+					.getSessionProperty(REFRESHED_KEY);
+			if (refreshed != null) {
+				final Long refresh = (Long) resource.getWorkspace().getRoot()
+						.getSessionProperty(REFRESH_KEY);
+				if (refresh == null
+						|| refresh.longValue() <= refreshed.longValue()) {
+					// Stored decoratable resource is up-to-date
+					if (decorated)
 						return;
-					}
 				}
 			}
 		} catch (CoreException e) {
 			handleException(resource, e);
 			return;
 		}
-
-		// Condition: Stored decoratable resource either not exists or is
-		// out-dated
-		//
-		// Step 3: Perform more expensive tests
 
 		// Don't decorate ignored resources (e.g. bin folder content)
 		if (Team.isIgnoredHint(resource))
@@ -280,28 +271,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 		if (mapping.getRepoRelativePath(resource) == null)
 			return;
 
-		// Step 4: For project nodes only: create temporary decoratable resource
-		if (resource.getType() == IResource.PROJECT) {
-			try {
-				decoratableResource = DecoratableResourceHelper
-						.createTemporaryDecoratableResource(resource
-								.getProject());
-			} catch (IOException e) {
-				handleException(
-						resource,
-						new CoreException(Activator.createErrorStatus(
-								UIText.Decorator_exceptionMessage, e)));
-				return;
-			}
-		}
-
-		// Step 5: Apply out-dated or temporary decoratable resource and
-		// continue
-		if (decoratableResource != null) {
-			helper.decorate(decoration, decoratableResource);
-		}
-
-		// Step 6: Add decoration request to the queue
+		// No (up-to-date) stored decoratable resource is available, thus
+		// decoration request is added to the queue
 		GitDecoratorJob.getJobForRepository(
 				mapping.getGitDirAbsolutePath().toString())
 				.addDecorationRequest(element);
@@ -713,6 +684,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @see org.eclipse.core.resources.IResourceChangeListener#resourceChanged(org.eclipse.core.resources.IResourceChangeEvent)
 	 */
 	public void resourceChanged(IResourceChangeEvent event) {
+		final long currentTime = System.currentTimeMillis();
 		final Set<IResource> resourcesToUpdate = new HashSet<IResource>();
 
 		try { // Compute the changed resources by looking at the delta
@@ -750,8 +722,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 					// Ignore resources that haven't been changed within the
 					// last 10 seconds
-					if (System.currentTimeMillis()
-							- resource.getLocalTimeStamp() > 10000)
+					if (currentTime - resource.getLocalTimeStamp() > 10000)
 						return false;
 
 					// Don't include ignored resources
