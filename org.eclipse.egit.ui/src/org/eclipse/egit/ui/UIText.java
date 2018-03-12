@@ -151,9 +151,6 @@ public class UIText extends NLS {
 	public static String SharingWizard_failed;
 
 	/** */
-	public static String GenerateHistoryJob_BuildingListMessage;
-
-	/** */
 	public static String GenerateHistoryJob_errorComputingHistory;
 
 	/** */
@@ -1099,7 +1096,13 @@ public class UIText extends NLS {
 	public static String PullResultDialog_FetchResultGroupHeader;
 
 	/** */
+	public static String PullResultDialog_MergeAlreadyUpToDateMessage;
+
+	/** */
 	public static String PullResultDialog_MergeResultGroupHeader;
+
+	/** */
+	public static String PullResultDialog_NothingToFetchFromLocal;
 
 	/** */
 	public static String PushAction_wrongURIDescription;
