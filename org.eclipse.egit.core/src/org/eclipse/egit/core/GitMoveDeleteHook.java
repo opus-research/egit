@@ -160,18 +160,9 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			if (dstm != null && dstm.getRepository() == srcm.getRepository()) {
 				final String dPath =
 					srcm.getRepoRelativePath(dstf) + "/"; //$NON-NLS-1$
-				MoveResult result = moveIndexContent(dPath, srcm, sPath);
-				switch (result) {
-				case SUCCESS:
-					break;
-				case FAILED:
+				if (!moveIndexContent(dPath, srcm, sPath))
 					tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(),
 							0, CoreText.MoveDeleteHook_operationError, null));
-					break;
-				case UNTRACKED:
-					// we are not responsible for moving untracked files
-					return FINISH_FOR_ME;
-				}
 				tree.standardMoveFolder(srcf, dstf, updateFlags, monitor);
 			}
 		} catch (IOException e) {
@@ -194,22 +185,10 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			final String dPath = new Path(newLocation.getAbsolutePath().substring(
 					srcm.getRepository().getWorkTree().getAbsolutePath().length() + 1) + "/").toPortableString(); //$NON-NLS-1$
 			try {
-				MoveResult result = moveIndexContent(dPath, srcm, sPath);
-				switch (result) {
-				case SUCCESS:
-					break;
-				case FAILED:
-					tree.failed(new Status(IStatus.ERROR, Activator
-							.getPluginId(), 0,
-							CoreText.MoveDeleteHook_operationError, null));
-					break;
-				case UNTRACKED:
-					// we are not responsible for moving untracked files
-					return FINISH_FOR_ME;
-				}
-
-				tree.standardMoveProject(source, description, updateFlags,
-						monitor);
+				if (!moveIndexContent(dPath, srcm, sPath))
+					tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(),
+							0, CoreText.MoveDeleteHook_operationError, null));
+				tree.standardMoveProject(source, description, updateFlags, monitor);
 			} catch (IOException e) {
 				tree.failed(new Status(IStatus.ERROR, Activator.getPluginId(), 0,
 						CoreText.MoveDeleteHook_operationError, e));
@@ -220,15 +199,13 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return FINISH_FOR_ME;
 	}
 
-	enum MoveResult{SUCCESS, FAILED, UNTRACKED}
-
-	private MoveResult moveIndexContent(String dPath,
+	private boolean moveIndexContent(String dPath,
 			final RepositoryMapping srcm, final String sPath) throws IOException {
 		final DirCache sCache = srcm.getRepository().lockDirCache();
 		final DirCacheEntry[] sEnt = sCache.getEntriesWithin(sPath);
 		if (sEnt.length == 0) {
 			sCache.unlock();
-			return MoveResult.UNTRACKED;
+			return false;
 		}
 
 		final DirCacheEditor sEdit = sCache.editor();
@@ -243,11 +220,7 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 				}
 			});
 		}
-		if (sEdit.commit())
-			return MoveResult.SUCCESS;
-		else
-			return MoveResult.FAILED;
-
+		return sEdit.commit();
 	}
 
 	private boolean cannotModifyRepository(final IResourceTree tree) {

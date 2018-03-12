@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +28,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.JFacePreferences;
@@ -46,7 +44,6 @@ import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
@@ -200,22 +197,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 			@Override
 			protected CellEditor getCellEditor(Object element) {
-				Repository repo = (Repository) element;
-				List<String> refs = new LinkedList<String>(repo.getAllRefs()
-						.keySet());
-
-				List<Ref> additionalRefs;
-				try {
-					additionalRefs = repo.getRefDatabase().getAdditionalRefs();
-				} catch (IOException e) {
-					additionalRefs = null;
-				}
-				if (additionalRefs != null)
-					for (Ref ref : additionalRefs)
-						refs.add(ref.getName());
-
-				Collections.sort(refs, CommonUtils.STRING_ASCENDING_COMPARATOR);
-
+				Set<String> refs = ((Repository) element).getAllRefs().keySet();
 				branchesEditor.setItems(refs.toArray(new String[refs.size()]));
 
 				return branchesEditor;

@@ -43,10 +43,6 @@ public class GitModelWorkingTree extends GitModelCache {
 				return new GitModelWorkingFile(modelParent, modelCommit,
 						repoId, location);
 			}
-
-			public boolean isWorkingTree() {
-				return true;
-			}
 		});
 	}
 
@@ -66,14 +62,12 @@ public class GitModelWorkingTree extends GitModelCache {
 		if (obj == this)
 			return true;
 
-		if (obj == null)
-			return false;
+		if (obj instanceof GitModelWorkingTree) {
+			GitModelCache left = (GitModelCache) obj;
+			return left.getParent().equals(getParent());
+		}
 
-		if (obj.getClass() != getClass())
-			return false;
-
-		GitModelCache left = (GitModelCache) obj;
-		return left.getParent().equals(getParent());
+		return false;
 	}
 
 	@Override
