@@ -15,6 +15,8 @@ import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Create a patch based on a commit.
@@ -26,7 +28,10 @@ public class CreatePatchHandler extends AbstractHistoryCommandHandler {
 		if (selection.size() == 1) {
 			RevCommit commit = (RevCommit) selection.getFirstElement();
             Repository repo = getRepository(event);
-			GitCreatePatchWizard.run(getPart(event), commit, repo);
+			TreeWalk fileWalker = new TreeWalk(repo);
+			fileWalker.setRecursive(true);
+			fileWalker.setFilter(TreeFilter.ANY_DIFF);
+			GitCreatePatchWizard.run(getPart(event), commit, fileWalker, repo);
 		}
 		return null;
 	}

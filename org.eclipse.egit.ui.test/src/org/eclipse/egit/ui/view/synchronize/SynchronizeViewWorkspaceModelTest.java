@@ -53,6 +53,8 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		// when
 		launchSynchronization(HEAD, R_HEADS + MASTER, false);
 
+		bot.shell("Synchronize Complete - Git").close();
+
 		// then
 		SWTBot viewBot = bot.viewByTitle("Synchronize").bot();
 		@SuppressWarnings("unchecked")
@@ -90,7 +92,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 
 		// then
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		assertEquals(1, syncViewTree.getAllItems().length);
+		assertEquals(2, syncViewTree.getAllItems().length);
 	}
 
 	@Test
@@ -112,7 +114,6 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 			throws Exception {
 		// given
 		resetRepositoryToCreateInitialTag();
-		makeChangesAndCommit(PROJ1);
 		changeFilesInProject();
 
 		// when
@@ -130,7 +131,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		deleteFileAndCommit(PROJ1);
 
 		// when
-		launchSynchronization(HEAD, HEAD + "~1", true);
+		launchSynchronization(HEAD, INITIAL_TAG, true);
 
 		// then
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();

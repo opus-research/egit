@@ -208,13 +208,6 @@ public class RepositoriesView extends CommonNavigator {
 				.getCommand("org.eclipse.egit.ui.RepositoriesLinkWithSelection"); //$NON-NLS-1$
 		reactOnSelection = (Boolean) command.getState(
 				RegistryToggleState.STATE_ID).getValue();
-
-		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) getSite()
-				.getService(IWorkbenchSiteProgressService.class);
-		if (service != null) {
-			service.showBusyForFamily(JobFamilies.REPO_VIEW_REFRESH);
-			service.showBusyForFamily(JobFamilies.CLONE);
-		}
 	}
 
 	@Override
@@ -408,20 +401,6 @@ public class RepositoriesView extends CommonNavigator {
 	}
 
 	/**
-	 * Reveals and shows the given repository in the view.
-	 *
-	 * @param repositoryToShow
-	 */
-	public void showRepository(Repository repositoryToShow) {
-		ITreeContentProvider cp = (ITreeContentProvider) getCommonViewer()
-				.getContentProvider();
-		for (Object repo : cp.getElements(getCommonViewer().getInput())) {
-			RepositoryTreeNode node = (RepositoryTreeNode) repo;
-			if (repositoryToShow.getDirectory().equals(node.getRepository().getDirectory()))
-				selectReveal(new StructuredSelection(node));
-		}
-	}
-	/**
 	 * Refresh Repositories View
 	 */
 	public void refresh() {
@@ -493,7 +472,7 @@ public class RepositoriesView extends CommonNavigator {
 							tv.setInput(ResourcesPlugin.getWorkspace()
 									.getRoot());
 						} else
-							tv.refresh(true);
+							tv.refresh(false);
 						tv.setExpandedElements(expanded);
 
 						Object selected = sel.getFirstElement();
@@ -576,10 +555,6 @@ public class RepositoriesView extends CommonNavigator {
 					}
 				}
 			}
-		}
-		if(context.getInput() instanceof IFileEditorInput) {
-			IFileEditorInput input = (IFileEditorInput) context.getInput();
-			showResource(input.getFile());
 		}
 		return false;
 	}

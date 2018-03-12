@@ -22,9 +22,6 @@ import static org.eclipse.team.internal.ui.IPreferenceIds.SYNCHRONIZING_COMPLETE
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -32,11 +29,9 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.op.ResetOperation.ResetType;
@@ -60,7 +55,6 @@ import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -81,23 +75,21 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	protected static final String EMPTY_REPOSITORY = "EmptyRepository";
 
-	static File repositoryFile;
+	protected static File repositoryFile;
 
 	@Before public void setupViews() {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
+		Activator.getDefault().getPreferenceStore()
+				.setValue(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, false);
 	}
 
 	@BeforeClass public static void setupEnvironment() throws Exception {
 		// disable perspective synchronize selection
 		TeamUIPlugin.getPlugin().getPreferenceStore().setValue(
 				SYNCHRONIZING_COMPLETE_PERSPECTIVE, NEVER);
-		Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, false);
 
 		repositoryFile = createProjectAndCommitToRepository();
-		createAndCommitDotGitignore();
-
 		createChildRepository(repositoryFile);
 		Activator.getDefault().getRepositoryUtil()
 				.addConfiguredRepository(repositoryFile);
@@ -172,7 +164,6 @@ public abstract class AbstractSynchronizeViewTest extends
 
 		GitModelSynchronize.launch(data, new IResource[] { project });
 
-		Job.getJobManager().join(JobFamilies.SYNCHRONIZE_READ_DATA, null);
 		Job.getJobManager().join(
 				ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, null);
 	}
@@ -196,15 +187,11 @@ public abstract class AbstractSynchronizeViewTest extends
 	protected SWTBot setPresentationModel(String modelName,
 			String toolbarDropDownTooltip) throws Exception {
 		SWTBotView syncView = bot.viewByTitle("Synchronize");
-		for (SWTBotToolbarButton button : syncView.getToolbarButtons()) {
-			if (button.getToolTipText().equals(toolbarDropDownTooltip)) {
-				SWTBotToolbarDropDownButton dropDown = (SWTBotToolbarDropDownButton) button;
-				dropDown.menuItem(modelName).click();
-				// hide drop down
-				dropDown.pressShortcut(KeyStroke.getInstance("ESC"));
-
-			}
-		}
+		SWTBotToolbarDropDownButton dropDown = syncView
+				.toolbarDropDownButton(toolbarDropDownTooltip);
+		dropDown.menuItem(modelName).click();
+		// hide drop down
+		dropDown.pressShortcut(KeyStroke.getInstance("ESC"));
 
 		return syncView.bot();
 	}
@@ -277,7 +264,7 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	protected SWTBotEditor getCompareEditorForFileInGitChangeSetModel()
 			throws Exception {
-		SWTBotTree syncViewTree = setPresentationModel("Git Commits")
+		SWTBotTree syncViewTree = setPresentationModel("Git Change Set")
 				.tree();
 		SWTBotTreeItem commitNode = syncViewTree.getAllItems()[0];
 		commitNode.expand();
@@ -293,26 +280,6 @@ public abstract class AbstractSynchronizeViewTest extends
 		SWTBotEditor editor = getCompareEditor(projNode, fileName);
 
 		return editor;
-	}
-
-	private static void createAndCommitDotGitignore() throws CoreException,
-			UnsupportedEncodingException {
-		IProject secondPoject = ResourcesPlugin.getWorkspace().getRoot()
-				.getProject(PROJ2);
-
-		IFile gitignore = secondPoject.getFile(".gitignore");
-		gitignore.create(
-				new ByteArrayInputStream("/.project\n".getBytes(secondPoject
-						.getDefaultCharset())), false, null);
-
-		IFile[] commitables = new IFile[] { gitignore };
-		ArrayList<IFile> untracked = new ArrayList<IFile>();
-		untracked.addAll(Arrays.asList(commitables));
-
-		CommitOperation op = new CommitOperation(commitables,
-				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
-				TestUtil.TESTCOMMITTER, "Add .gitignore file");
-		op.execute(null);
 	}
 
 	private void commit(String projectName) throws InterruptedException {

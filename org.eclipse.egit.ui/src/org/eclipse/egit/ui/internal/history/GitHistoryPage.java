@@ -207,8 +207,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 		BooleanPrefAction showRelativeDateAction;
 
-		BooleanPrefAction showNotesAction;
-
 		BooleanPrefAction wrapCommentAction;
 
 		BooleanPrefAction fillCommentAction;
@@ -253,7 +251,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			createShowCommentAction();
 			createShowFilesAction();
 			createShowRelativeDateAction();
-			createShowNotesAction();
 			createWrapCommentAction();
 			createFillCommentAction();
 
@@ -396,18 +393,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			actionsToDispose.add(showRelativeDateAction);
 		}
 
-		private void createShowNotesAction() {
-			showNotesAction = new BooleanPrefAction(
-					UIPreferences.RESOURCEHISTORY_SHOW_NOTES,
-					UIText.ResourceHistory_toggleShowNotes) {
-				void apply(boolean value) {
-					historyPage.refresh();
-				}
-			};
-			showNotesAction.apply(showNotesAction.isChecked());
-			actionsToDispose.add(showNotesAction);
-		}
-
 		private void createWrapCommentAction() {
 			wrapCommentAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
@@ -510,19 +495,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	private boolean currentShowAllBranches;
 
-	private boolean currentShowNotes;
-
-	// react on changes to the relative date preference
-	private final IPropertyChangeListener listener = new IPropertyChangeListener() {
-		public void propertyChange(PropertyChangeEvent event) {
-			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(event
-					.getProperty()))
-				if (graph.setRelativeDate(((Boolean) event.getNewValue())
-						.booleanValue()))
-					graph.getTableView().refresh();
-			}
-	};
-
 	/**
 	 * Highlight flag that can be applied to commits to make them stand out.
 	 * <p>
@@ -611,7 +583,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				.setToolTipText(UIText.GitHistoryPage_IncompleteListTooltip);
 
 		Link preferencesLink = new Link(warningComposite, SWT.NONE);
-		preferencesLink.setText(UIText.GitHistoryPage_PreferencesLink);
+		preferencesLink.setText(UIText.CommitDialog_ConfigureLink);
 		preferencesLink.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -629,6 +601,18 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				graphDetailSplit);
 		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr);
 
+		// react on changes in the date preferences
+		IPropertyChangeListener listener = new IPropertyChangeListener() {
+			public void propertyChange(PropertyChangeEvent event) {
+				if (event.getProperty().equals(
+						UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE)) {
+					if (graph.setRelativeDate(((Boolean) event.getNewValue())
+							.booleanValue()))
+						graph.getTableView().refresh();
+					return;
+				}
+			}
+		};
 		graph.setRelativeDate(Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE));
 		Activator.getDefault().getPreferenceStore()
@@ -805,7 +789,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				UIText.GitHistoryPage_ShowSubMenuLabel);
 		viewMenuMgr.add(showSubMenuMgr);
 		showSubMenuMgr.add(actions.showAllBranchesAction);
-		showSubMenuMgr.add(actions.showNotesAction);
 		showSubMenuMgr.add(actions.findAction);
 		showSubMenuMgr.add(actions.showFilesAction);
 		showSubMenuMgr.add(actions.showCommentAction);
@@ -835,9 +818,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		if (trace)
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation());
-
-		Activator.getDefault().getPreferenceStore()
-				.removePropertyChangeListener(listener);
 
 		if (myRefsChangedHandle != null) {
 			myRefsChangedHandle.remove();
@@ -1414,19 +1394,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		currentShowAllBranches = store
 			.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES);
 
-		boolean showNotesChanged = currentShowNotes != store
-				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_NOTES);
-		currentShowNotes = store
-				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_NOTES);
-
 		if (!db.equals(currentRepo)) {
 			repoChanged = true;
 			currentRepo = db;
 		}
 
 		return pathChanged
-			|| currentWalk == null || headChanged || repoChanged || allBranchesChanged
-			|| showNotesChanged;
+			|| currentWalk == null || headChanged || repoChanged || allBranchesChanged;
 	}
 
 	private AnyObjectId resolveHead(Repository db, boolean acceptNull) {
@@ -1535,8 +1509,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		currentWalk = new SWTWalk(db);
 		try {
 			currentWalk.addAdditionalRefs(db.getRefDatabase().getAdditionalRefs());
-			currentWalk.addAdditionalRefs(db.getRefDatabase().
-					getRefs(Constants.R_NOTES).values());
 		} catch (IOException e) {
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorReadingAdditionalRefs, Activator
@@ -1557,13 +1529,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				markStartAllRefs(Constants.R_TAGS);
 				markStartAdditionalRefs();
 			}
-			if (store
-					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_NOTES))
-				markStartAllRefs(Constants.R_NOTES);
-			else {
-				markUninteresting(Constants.R_NOTES);
-			}
-
 			currentWalk.markStart(currentWalk.parseCommit(headId));
 		} catch (IOException e) {
 			throw new IllegalStateException(NLS.bind(
@@ -1685,20 +1650,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		Object refTarget = currentWalk.parseAny(ref.getLeaf().getObjectId());
 		if (refTarget instanceof RevCommit)
 			currentWalk.markStart((RevCommit) refTarget);
-	}
-
-	private void markUninteresting(String prefix) throws IOException,
-			MissingObjectException, IncorrectObjectTypeException {
-		for (Entry<String, Ref> refEntry : input.getRepository()
-				.getRefDatabase().getRefs(prefix).entrySet()) {
-			Ref ref = refEntry.getValue();
-			if (ref.isSymbolic())
-				continue;
-			Object refTarget = currentWalk
-					.parseAny(ref.getLeaf().getObjectId());
-			if (refTarget instanceof RevCommit)
-				currentWalk.markUninteresting((RevCommit) refTarget);
-		}
 	}
 
 	private void cancelRefreshJob() {

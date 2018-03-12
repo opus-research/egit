@@ -22,23 +22,20 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
-import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
@@ -52,16 +49,13 @@ import org.eclipse.ui.commands.ICommandService;
 /**
  * Label Provider for the Git Repositories View
  */
-public class RepositoriesViewLabelProvider extends GitLabelProvider implements
+public class RepositoriesViewLabelProvider extends LabelProvider implements
 		IStyledLabelProvider, IStateListener {
 
 	/**
 	 * A map of regular images to their decorated counterpart.
 	 */
 	private Map<Image, Image> decoratedImages = new HashMap<Image, Image>();
-
-	private ResourceManager resourceManager = new LocalResourceManager(
-			JFaceResources.getResources());
 
 	private Image tagImage = UIIcons.TAG.createImage();
 
@@ -92,8 +86,7 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 	@Override
 	public Image getImage(Object element) {
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
-		RepositoryTreeNodeType type = node.getType();
-		if (type == RepositoryTreeNodeType.TAG) {
+		if (node.getType() == RepositoryTreeNodeType.TAG) {
 			// determine if we have a lightweight tag and
 			// use the corresponding icon
 			RevObject any;
@@ -113,17 +106,11 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 			if (any instanceof RevCommit)
 				// lightweight tag
 				return decorateImage(lightweightTagImage, element);
-		} else if (type == RepositoryTreeNodeType.FILE) {
-			Object object = node.getObject();
-			if (object instanceof File) {
-				ImageDescriptor descriptor = PlatformUI.getWorkbench()
-						.getEditorRegistry()
-						.getImageDescriptor(((File) object).getName());
-				return decorateImage((Image) resourceManager.get(descriptor),
-						element);
-			}
-		}
-		return decorateImage(node.getType().getIcon(), element);
+			else
+				// annotated or signed tag
+				return decorateImage(node.getType().getIcon(), element);
+		} else
+			return decorateImage(node.getType().getIcon(), element);
 	}
 
 	@Override
@@ -143,7 +130,6 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 		for (Image image : decoratedImages.values()) {
 			image.dispose();
 		}
-		resourceManager.dispose();
 		decoratedImages.clear();
 		tagImage.dispose();
 		lightweightTagImage.dispose();
@@ -273,7 +259,22 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 			switch (node.getType()) {
 			case REPO:
 				Repository repository = (Repository) node.getObject();
-				return getStyledTextFor(repository);
+				File directory = repository.getDirectory();
+				StyledString string = new StyledString();
+				if (!repository.isBare())
+					string.append(directory.getParentFile().getName());
+				else
+					string.append(directory.getName());
+				string
+						.append(
+								" - " + directory.getAbsolutePath(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
+				String branch = repository.getBranch();
+				if (repository.getRepositoryState() != RepositoryState.SAFE)
+					branch += " - " + repository.getRepositoryState().getDescription(); //$NON-NLS-1$
+				string
+						.append(
+								" [" + branch + "]", StyledString.DECORATIONS_STYLER); //$NON-NLS-1$//$NON-NLS-2$
+				return string;
 			case ADDITIONALREF:
 				Ref ref = (Ref) node.getObject();
 				// shorten the name
@@ -366,8 +367,12 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 	private String getSimpleText(RepositoryTreeNode node) {
 		switch (node.getType()) {
 		case REPO:
-			Repository repository = (Repository) node.getObject();
-			return super.getText(repository);
+			File directory = ((Repository) node.getObject()).getDirectory();
+			StringBuilder sb = new StringBuilder();
+			sb.append(directory.getParentFile().getName());
+			sb.append(" - "); //$NON-NLS-1$
+			sb.append(directory.getAbsolutePath());
+			return sb.toString();
 		case FILE:
 			// fall through
 		case FOLDER:
