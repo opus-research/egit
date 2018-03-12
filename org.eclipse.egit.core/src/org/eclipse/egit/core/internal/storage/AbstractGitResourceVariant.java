@@ -5,13 +5,8 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- *     Laurent Goubet <laurent.goubet@obeo.fr> - initial API and implementation
- *     Axel Richard <axel.richard@obeo.fr> - Add getPath() and getAbsolutePath()
  *******************************************************************************/
 package org.eclipse.egit.core.internal.storage;
-
-import java.io.File;
 
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -65,21 +60,6 @@ public abstract class AbstractGitResourceVariant implements IResourceVariant {
 	public String getName() {
 		int lastSeparator = path.lastIndexOf('/');
 		return path.substring(lastSeparator + 1);
-	}
-
-	/**
-	 * @return repository-relative path of this resource.
-	 */
-	public String getPath() {
-		return path;
-	}
-
-	/**
-	 * @return absolute path of this resource.
-	 */
-	public String getAbsolutePath() {
-		return repository.getWorkTree().getAbsolutePath() + File.separator
-				+ path;
 	}
 
 	public boolean isContainer() {
