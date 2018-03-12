@@ -8,14 +8,13 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.eclipse.jgit.lib.ObjectId.fromString;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 
@@ -23,12 +22,9 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class GitModelBlobTest extends GitModelTestCase {
@@ -57,11 +53,6 @@ public class GitModelBlobTest extends GitModelTestCase {
 		assertFalse(actual);
 	}
 
-	@Ignore
-	// this test case relays on
-	// org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change#equals()
-	// implementation. Unfortunately in mockito we can't execute real
-	// implementation of equals() method, therefore this test will fail
 	@Test public void shouldReturnEqualForSameData() throws Exception {
 		// given
 		GitModelBlob left = createGitModelBlob(zeroId(), zeroId(),
@@ -76,11 +67,6 @@ public class GitModelBlobTest extends GitModelTestCase {
 		assertTrue(actual);
 	}
 
-	@Ignore
-	// this test case relays on
-	// org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change#equals()
-	// implementation. Unfortunately in mockito we can't execute real
-	// implementation of equals() method, therefore this test will fail
 	@Test public void shouldReturnEqualSameData1() throws Exception {
 		// given
 		GitModelBlob left = createGitModelBlob(zeroId(), getFile1Location());
@@ -112,8 +98,7 @@ public class GitModelBlobTest extends GitModelTestCase {
 		// given
 		GitModelBlob left = createGitModelBlob(zeroId(), getFile1Location());
 		GitModelCommit right = new GitModelCommit(createModelRepository(),
-				lookupRepository(leftRepoFile), getCommit(leftRepoFile, HEAD),
-				null);
+				getCommit(leftRepoFile, HEAD), LEFT);
 
 		// when
 		boolean actual1 = left.equals(right);
@@ -188,9 +173,8 @@ public class GitModelBlobTest extends GitModelTestCase {
 	@Test public void shouldReturnNotEqualForBlobAndCommit() throws Exception {
 		// given
 		GitModelBlob left = createGitModelBlob();
-		GitModelCommit right = new GitModelCommit(createModelRepository(),
-				lookupRepository(leftRepoFile), getCommit(leftRepoFile, HEAD),
-				null);
+		GitModelCommit right = new GitModelCommit(createModelRepository(), getCommit(
+				leftRepoFile, HEAD), LEFT);
 
 		// when
 		boolean actual = left.equals(right);
@@ -202,7 +186,8 @@ public class GitModelBlobTest extends GitModelTestCase {
 	@Test public void shouldReturnNotEqualForBlobAndTree() throws Exception {
 		// given
 		GitModelBlob left = createGitModelBlob();
-		GitModelTree right = mock(GitModelTree.class);
+		GitModelTree right = new GitModelTree(createModelCommit(), getCommit(
+				leftRepoFile, HEAD), null, null, null, null, getFile1Location());
 
 		// when
 		boolean actual = left.equals(right);
@@ -215,7 +200,8 @@ public class GitModelBlobTest extends GitModelTestCase {
 			throws Exception {
 		// given
 		GitModelBlob left = createGitModelBlob();
-		GitModelCacheFile right = mock(GitModelCacheFile.class);
+		GitModelCacheFile right = new GitModelCacheFile(createModelCommit(),
+				getCommit(leftRepoFile, HEAD), null, null, getFile1Location());
 
 		// when
 		boolean actual = left.equals(right);
@@ -228,7 +214,9 @@ public class GitModelBlobTest extends GitModelTestCase {
 			throws Exception {
 		// given
 		GitModelBlob left = createGitModelBlob();
-		GitModelWorkingFile right = mock(GitModelWorkingFile.class);
+		GitModelWorkingFile right = new GitModelWorkingFile(
+				createModelCommit(), getCommit(leftRepoFile, HEAD), null,
+				getFile1Location());
 
 		// when
 		boolean actual = left.equals(right);
@@ -267,16 +255,9 @@ public class GitModelBlobTest extends GitModelTestCase {
 
 	private GitModelBlob createGitModelBlob(ObjectId baseId, ObjectId remoteId,
 			IPath location) throws Exception {
-		Change change = mock(Change.class);
-		if (baseId != null)
-			when(change.getObjectId()).thenReturn(
-					AbbreviatedObjectId.fromObjectId(baseId));
-		if (remoteId != null)
-			when(change.getRemoteObjectId()).thenReturn(
-					AbbreviatedObjectId.fromObjectId(remoteId));
-
 		return new GitModelBlob(createModelCommit(),
-				lookupRepository(leftRepoFile), change, location);
+				getCommit(leftRepoFile, HEAD), null, null, baseId,
+				remoteId, location);
 	}
 
 }
