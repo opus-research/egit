@@ -216,48 +216,6 @@
                label="%CompareWithRevisionAction_label"
                menubarPath="compareWithMenu/gitCompareWithGroup"/>
       </objectContribution>
-    <objectContribution
-            adaptable="true"
-            objectClass="org.eclipse.egit.core.GitFileRevisionReference"
-            id="org.eclipse.egit.ui.CommitFileContributions">
-
-        <action
-            class="org.eclipse.egit.ui.internal.actions.CompareSelectedWithParentAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.CompareSelectedWithParentAction"
-            label="%CompareSelectionWithParentAction_label">
-        </action>
-        <action
-            class="org.eclipse.egit.ui.internal.actions.OpenFileAtRevisionAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.OpenFileAtRevisionAction"
-            label="%OpenFileSelectedVersionAction_label">
-        </action>
-        <action
-            class="org.eclipse.egit.ui.internal.actions.CompareSelectedWithHeadAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.CompareSelectedWithHeadAction"
-            label="%CompareSelectionWithHeadAction_label">
-        </action>
-        <action
-            class="org.eclipse.egit.ui.internal.actions.OpenFileAtHeadRevisionAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.OpenFileAtHeadRevisionAction"
-            label="%OpenFileHeadVersionAction_label">
-        </action>
-        <action
-            class="org.eclipse.egit.ui.internal.actions.CompareSelectedWithWorkspaceAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.CompareSelectedWithWorkspaceAction"
-            label="%CompareSelectedWithWorkspaceAction_label">
-        </action>
-        <action
-            class="org.eclipse.egit.ui.internal.actions.OpenWorkspaceVersionAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.OpenWorkspaceVersionAction"
-            label="%OpenWorkspaceVersionAction_label">
-        </action>
-    </objectContribution>
    </extension>
 
    <extension
@@ -656,6 +614,12 @@
             defaultHandler="org.eclipse.egit.ui.internal.commands.ConfigureDebugTraceCommand"
             id="org.eclipse.egit.ui.command.configureTrace"
             name="%ConfigureTraceCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.commands.shared.FetchChangeFromGerritCommand"
+            id="org.eclipse.egit.ui.FetchGerritChange"
+            name="%FetchFromGerritCommand.name">
       </command>
    </extension>
    <extension
@@ -1386,6 +1350,24 @@
                   <iterate
                         ifEmpty="false"
                         operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.FetchGerritChange"
+               label="%FetchFromGerritCommand.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
                      <instanceof
                            value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
                      </instanceof>
@@ -2307,6 +2289,10 @@
             commandId="org.eclipse.egit.ui.team.Push"
             icon="icons/obj16/push.gif">
       </image>
+      <image
+            commandId="org.eclipse.egit.ui.FetchGerritChange"
+            icon="icons/obj16/gerrit_obj.gif">
+      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -2397,6 +2383,23 @@
             contentExtensionId="org.eclipse.egit.ui.changeSetContent"
             icon="$nl$/icons/obj16/changelog_obj.gif"
             modelProviderId="org.eclipse.egit.ui.changeSetModel"/>
+   </extension>
+   <extension point="org.eclipse.ui.navigator.viewer">
+       <viewer viewerId="org.eclipse.egit.ui.compareSynchronization">
+           <popupMenu
+                allowsPlatformContributions="false"
+                id="org.eclipse.egit.ui.compareSynchronizationMenu">
+             <insertionPoint name="gitActions" separator="true"/>
+             <insertionPoint name="file"/>
+             <insertionPoint name="file-bottom"/>
+             <insertionPoint name="edit" separator="true"/>
+             <insertionPoint name="synchronize"/>
+             <insertionPoint name="navigate" separator="true"/>
+             <insertionPoint name="modelTeam" separator="true"/>
+             <insertionPoint name="sort" separator="true"/>
+			 <insertionPoint name="additions" separator="true"/>
+          </popupMenu>
+       </viewer>
    </extension>
    <extension
          name="%TeamMenuCommandsLabel"
@@ -2538,24 +2541,14 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.SimplePushActionHandler"
-            id="org.eclipse.egit.ui.team.SimplePush"
-            name="%PushUpstreamCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.SimpleFetchActionHandler"
-            id="org.eclipse.egit.ui.team.SimpleFetch"
-            name="%FetchUpstreamCommand.name">
-      </command>
-      <command
             defaultHandler="org.eclipse.egit.ui.internal.actions.ConfigureFetchActionHandler"
-            id="org.eclipse.egit.ui.ConfigureUpstreamFetch"
+            id="org.eclipse.egit.ui.team.ConfigureFetch"
             name="%ConfigureUpstreamFetchCommand.name">
       </command>
       <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.ConfigurePushActionHandler"
-            id="org.eclipse.egit.ui.ConfigureUpstreamPush"
+            id="org.eclipse.egit.ui.team.ConfigurePush"
             name="%ConfigureUpstreamPushCommand.name">
       </command>
    </extension>
@@ -2746,6 +2739,11 @@
                      style="push">
                </command>
                <command
+                     commandId="org.eclipse.egit.ui.FetchGerritChange"
+                     label="%FetchFromGerritCommand.label"
+                     style="push">
+               </command>
+               <command
                      commandId="org.eclipse.egit.ui.team.Push"
                      label="%PushAction_label"
                      style="push">
@@ -2826,21 +2824,6 @@
                   name="projectGroup"
                   visible="true">
             </separator>
-            <visibleWhen
-                  checkEnabled="false">
-               <with
-                     variable="activeMenuSelection">
-                  <count
-                        value="+">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <adapt type="org.eclipse.core.resources.IResource">
-                     </adapt>
-                  </iterate>
-               </with>
-            </visibleWhen>
          </menu>
       </menuContribution>
    </extension>
