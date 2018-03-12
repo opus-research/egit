@@ -121,8 +121,8 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		final Repository repository = getRepository();
-		return repository != null && containsHead(repository);
+		Repository repo = getRepository();
+		return repo != null && containsHead(repo);
 	}
 
 	private RevObject getTagTarget(ObjectId objectId) throws IOException {
