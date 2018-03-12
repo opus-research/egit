@@ -145,8 +145,6 @@ public final class LogicalModels {
 	@SuppressWarnings("unchecked")
 	public static <T> T findAdapter(Set<IResource> model, Class<T> adapterClass)
 			throws CoreException {
-		if (model.isEmpty())
-			return null;
 		final IResource[] modelArray = model
 				.toArray(new IResource[model.size()]);
 		final IModelProviderDescriptor[] descriptors = ModelProvider
@@ -197,10 +195,12 @@ public final class LogicalModels {
 				if (matchingResources.length > 0) {
 					final ModelProvider modelProvider = descriptor
 							.getModelProvider();
-					final ResourceMapping[] modelMappings = modelProvider
-							.getMappings(modelArray, mappingContext,
-									new NullProgressMonitor());
-					allMappings.addAll(Arrays.asList(modelMappings));
+					for (IResource resource : model) {
+						final ResourceMapping[] modelMappings = modelProvider
+								.getMappings(resource, mappingContext,
+										new NullProgressMonitor());
+						allMappings.addAll(Arrays.asList(modelMappings));
+					}
 				}
 			} catch (CoreException e) {
 				Activator.logError(e.getMessage(), e);
