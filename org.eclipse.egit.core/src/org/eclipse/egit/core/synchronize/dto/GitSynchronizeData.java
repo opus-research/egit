@@ -10,12 +10,17 @@ package org.eclipse.egit.core.synchronize.dto;
 
 import static org.eclipse.core.runtime.Assert.isNotNull;
 import static org.eclipse.egit.core.RevUtils.getCommonAncestor;
+import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_BRANCH_SECTION;
+import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_REMOTE;
+import static org.eclipse.jgit.lib.Constants.R_HEADS;
+import static org.eclipse.jgit.lib.Constants.R_REMOTES;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -34,15 +39,21 @@ public class GitSynchronizeData {
 	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace()
 					.getRoot();
 
+	private static final Pattern BRANCH_NAME_PATTERN = Pattern.compile("^" + R_HEADS + "/.*?/"); //$NON-NLS-1$ //$NON-NLS-2$
+
 	private final boolean includeLocal;
 
 	private final Repository repo;
 
-	private final RevCommit srcRev;
+	private final String srcRemote;
 
-	private final RevCommit dstRev;
+	private final String dstRemote;
 
-	private final RevCommit commonAncestorRev;
+	private final RevCommit srcRevCommit;
+
+	private final RevCommit dstRevCommit;
+
+	private final RevCommit ancestorRevCommit;
 
 	private final Set<IProject> projects;
 
@@ -66,22 +77,25 @@ public class GitSynchronizeData {
 		isNotNull(dstRev);
 		repo = repository;
 
+		srcRemote = extractRemoteName(srcRev);
+		dstRemote = extractRemoteName(dstRev);
+
 		ObjectWalk ow = new ObjectWalk(repo);
 		if (srcRev.length() > 0)
-			this.srcRev = ow.parseCommit(repo.resolve(srcRev));
+			this.srcRevCommit = ow.parseCommit(repo.resolve(srcRev));
 		else
-			this.srcRev = null;
+			this.srcRevCommit = null;
 
 		if (dstRev.length() > 0)
-			this.dstRev = ow.parseCommit(repo.resolve(dstRev));
+			this.dstRevCommit = ow.parseCommit(repo.resolve(dstRev));
 		else
-			this.dstRev = null;
+			this.dstRevCommit = null;
 
-		if (this.dstRev != null || this.srcRev != null)
-			this.commonAncestorRev = getCommonAncestor(repo, this.srcRev,
-					this.dstRev);
+		if (this.dstRevCommit != null || this.srcRevCommit != null)
+			this.ancestorRevCommit = getCommonAncestor(repo, this.srcRevCommit,
+					this.dstRevCommit);
 		else
-			this.commonAncestorRev = null;
+			this.ancestorRevCommit = null;
 
 		this.includeLocal = includeLocal;
 		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();
@@ -104,17 +118,33 @@ public class GitSynchronizeData {
 	}
 
 	/**
+	 * @return name of source remote or {@code null} when source branch is not a
+	 *         remote branch
+	 */
+	public String getSrcRemoteName() {
+		return srcRemote;
+	}
+
+	/**
+	 * @return name of destination remote or {@code null} when destination
+	 *         branch is not a remote branch
+	 */
+	public String getDstRemoteName() {
+		return dstRemote;
+	}
+
+	/**
 	 * @return synchronize source rev name
 	 */
 	public RevCommit getSrcRevCommit() {
-		return srcRev;
+		return srcRevCommit;
 	}
 
 	/**
 	 * @return synchronize destination rev name
 	 */
 	public RevCommit getDstRevCommit() {
-		return dstRev;
+		return dstRevCommit;
 	}
 
 	/**
@@ -144,7 +174,22 @@ public class GitSynchronizeData {
 	 * @return common ancestor commit
 	 */
 	public RevCommit getCommonAncestorRev() {
-		return commonAncestorRev;
+		return ancestorRevCommit;
+	}
+
+	private String extractRemoteName(String rev) {
+		if (rev.contains(R_REMOTES)) {
+			String remote = rev.replaceAll(R_REMOTES, ""); //$NON-NLS-1$
+			return remote.substring(0, remote.indexOf("/")); //$NON-NLS-1$
+		} else {
+			String name = BRANCH_NAME_PATTERN.matcher(rev).replaceAll(""); //$NON-NLS-1$
+			String remoteTracking = repo.getConfig().getString(CONFIG_BRANCH_SECTION,
+					name, CONFIG_KEY_REMOTE);
+			if (remoteTracking != null && remoteTracking.length() > 0)
+				return remoteTracking;
+			else
+				return null;
+		}
 	}
 
 }

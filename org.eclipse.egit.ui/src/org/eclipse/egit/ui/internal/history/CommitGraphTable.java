@@ -136,6 +136,8 @@ class CommitGraphTable {
 
 	private RevCommit commitToShow;
 
+	private GraphLabelProvider graphLabelProvider;
+
 	CommitGraphTable(Composite parent) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
@@ -163,7 +165,10 @@ class CommitGraphTable {
 				((SWTCommit) element).widget = item;
 			}
 		};
-		table.setLabelProvider(new GraphLabelProvider());
+
+		graphLabelProvider = new GraphLabelProvider();
+
+		table.setLabelProvider(graphLabelProvider);
 		table.setContentProvider(new GraphContentProvider());
 		renderer = new SWTPlotRenderer(rawTable.getDisplay());
 
@@ -236,7 +241,7 @@ class CommitGraphTable {
 		table.getTable().addMouseMoveListener(new MouseMoveListener() {
 			public void mouseMove(MouseEvent e) {
 				synchronized (this) {
-					if (hoverShell == null)
+					if (hoverShell == null || hoverShell.isDisposed())
 						return;
 					hoverShell.setVisible(false);
 					hoverShell.dispose();
@@ -244,11 +249,22 @@ class CommitGraphTable {
 				}
 			}
 		});
+
+		table.getTable().addDisposeListener(new DisposeListener() {
+
+			public void widgetDisposed(DisposeEvent e) {
+				if ( allCommits != null)
+					allCommits.dispose();
+				if (renderer != null)
+					renderer.dispose();
+			}
+		});
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
 			final MenuManager menuMgr) {
 		this(parent);
+
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
 			public void focusLost(FocusEvent e) {
@@ -338,6 +354,10 @@ class CommitGraphTable {
 
 	void removeSelectionChangedListener(final ISelectionChangedListener l) {
 		table.removePostSelectionChangedListener(l);
+	}
+
+	boolean setRelativeDate(boolean booleanValue) {
+		return graphLabelProvider.setRelativeDate(booleanValue);
 	}
 
 	private boolean canDoCopy() {
@@ -652,6 +672,9 @@ class CommitGraphTable {
 			// copy and such after additions
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
+			popupMgr.add(getCommandContributionItem(
+					HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
+					UIText.CommitGraphTable_OpenCommitLabel));
 			popupMgr.add(new Separator());
 		}
 
