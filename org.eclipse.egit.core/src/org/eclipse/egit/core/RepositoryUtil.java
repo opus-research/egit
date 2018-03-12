@@ -28,24 +28,23 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.lib.CheckoutEntry;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.ReflogEntry;
-import org.eclipse.jgit.lib.ReflogReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.internal.storage.file.CheckoutEntry;
+import org.eclipse.jgit.internal.storage.file.ReflogEntry;
+import org.eclipse.jgit.internal.storage.file.ReflogReader;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
@@ -128,12 +127,8 @@ public class RepositoryUtil {
 							CheckoutEntry checkoutEntry = entry.parseCheckout();
 							if (checkoutEntry != null) {
 								Ref ref = repository.getRef(checkoutEntry.getToBranch());
-								if (ref != null) {
-									if (ref.getObjectId().getName()
-											.equals(commitId))
-										return checkoutEntry.getToBranch();
+								if (ref != null)
 									ref = repository.peel(ref);
-								}
 								if (ref != null) {
 									ObjectId id = ref.getPeeledObjectId();
 									if (id != null && id.getName().equals(commitId))

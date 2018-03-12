@@ -33,7 +33,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.ui.common.CompareEditorTester;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.swt.finder.SWTBot;
@@ -124,7 +123,8 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, INITIAL_TAG, true);
 
 		// then
-		CompareEditorTester compare = getCompareEditorForFileInWorkspaceModel(FILE1);
+		SWTBot compare = getCompareEditorForFileInWorkspaceModel(FILE1)
+				.bot();
 		assertNotNull(compare);
 	}
 
@@ -181,22 +181,24 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 
 		// compare HEAD against tag
 		launchSynchronization(HEAD, INITIAL_TAG, false);
-		CompareEditorTester outgoingCompare = getCompareEditorForFileInWorkspaceModel(
+		SWTBotEditor compEditor = getCompareEditorForFileInWorkspaceModel(
 				FILE1);
+		SWTBot outgoingCompare = compEditor.bot();
 		// save left value from compare editor
-		String outgoingLeft = outgoingCompare.getLeftEditor().getText();
+		String outgoingLeft = outgoingCompare.styledText(0).getText();
 		// save right value from compare editor
-		String outgoingRight = outgoingCompare.getRightEditor().getText();
-		outgoingCompare.close();
+		String outgoingRight = outgoingCompare.styledText(1).getText();
+		compEditor.close();
 
 		// when
 		// compare tag against HEAD
 		launchSynchronization(INITIAL_TAG, HEAD, false);
 
 		// then
-		CompareEditorTester incomingComp = getCompareEditorForFileInWorkspaceModel(FILE1);
-		String incomingLeft = incomingComp.getLeftEditor().getText();
-		String incomingRight = incomingComp.getRightEditor().getText();
+		SWTBot incomingComp = getCompareEditorForFileInWorkspaceModel(
+				FILE1).bot();
+		String incomingLeft = incomingComp.styledText(0).getText();
+		String incomingRight = incomingComp.styledText(1).getText();
 		// right side from compare editor should be equal with left
 		assertThat(outgoingLeft, equalTo(incomingRight));
 		// left side from compare editor should be equal with right
@@ -336,12 +338,14 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		assertNotSame(left, right);
 	}
 
-	protected CompareEditorTester getCompareEditorForFileInWorkspaceModel(
+	protected SWTBotEditor getCompareEditorForFileInWorkspaceModel(
 			String fileName) {
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
 
 		SWTBotTreeItem projNode = waitForNodeWithText(syncViewTree, PROJ1);
-		return getCompareEditor(projNode, fileName);
+		SWTBotEditor editor = getCompareEditor(projNode, fileName);
+
+		return editor;
 	}
 
 }

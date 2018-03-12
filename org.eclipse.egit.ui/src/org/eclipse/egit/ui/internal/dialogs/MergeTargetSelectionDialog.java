@@ -42,8 +42,6 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	private boolean mergeSquash = false;
 	private FastForwardMode fastForwardMode = null;
 
-	private boolean mergeCommit = true;
-
 	/**
 	 * @param parentShell
 	 * @param repo
@@ -123,32 +121,17 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		commit.setText(UIText.MergeTargetSelectionDialog_MergeTypeCommitButton);
 		commit.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
-				if (((Button) event.widget).getSelection()) {
+				if (((Button) event.widget).getSelection())
 					mergeSquash = false;
-					mergeCommit = true;
-				}
 			}
 		});
 
 		Button squash = new Button(mergeTypeGroup, SWT.RADIO);
-		squash.setText(UIText.MergeTargetSelectionDialog_MergeTypeNoCommitButton);
+		squash.setText(UIText.MergeTargetSelectionDialog_MergeTypeSquashButton);
 		squash.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
-				if (((Button) event.widget).getSelection()) {
-					mergeSquash = false;
-					mergeCommit = false;
-				}
-			}
-		});
-
-		Button noCommit = new Button(mergeTypeGroup, SWT.RADIO);
-		noCommit.setText(UIText.MergeTargetSelectionDialog_MergeTypeSquashButton);
-		noCommit.addListener(SWT.Selection, new Listener() {
-			public void handleEvent(Event event) {
-				if (((Button) event.widget).getSelection()) {
+				if (((Button) event.widget).getSelection())
 					mergeSquash = true;
-					mergeCommit = false;
-				}
 			}
 		});
 
@@ -195,12 +178,5 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	 */
 	public FastForwardMode getFastForwardMode() {
 		return fastForwardMode;
-	}
-
-	/**
-	 * @return whether the merge is to be committed
-	 */
-	public boolean isCommit() {
-		return mergeCommit;
 	}
 }

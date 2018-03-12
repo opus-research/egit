@@ -122,12 +122,13 @@ public class LinkedResourcesTest {
 			throws Exception {
 		// Create linked folder in project1 that points to project2
 		IFolder folder = project1.getFolder("link2project2");
-		folder.createLink(project2.getLocation(), 0, null);
+		folder.createLink(project2.getLocation(),
+				IResource.ALLOW_MISSING_LOCAL, null);
 		// Create linked file in project1 that points to a file in project2
 		IFile file = project1.getFile("link2project2folder1file1.txt");
 		file.createLink(
 				project2.getFile("project2folder1/project2folder1file1.txt")
-						.getLocation(), 0, null);
+						.getLocation(), IResource.ALLOW_MISSING_LOCAL, null);
 		// Add file to project2
 		testUtils.addFileToProject(project2,
 				"project2folder1/project2folder1file2.txt", "Hello world");

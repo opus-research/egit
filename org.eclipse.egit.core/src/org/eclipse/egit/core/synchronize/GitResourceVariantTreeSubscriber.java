@@ -27,9 +27,10 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
@@ -107,8 +108,7 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public boolean isSupervised(IResource res) throws TeamException {
 		return IResource.FILE == res.getType()
-				&& gsds.contains(res.getProject())
-				&& gsds.shouldBeIncluded(res);
+				&& gsds.contains(res.getProject()) && shouldBeIncluded(res);
 	}
 
 	/**
@@ -119,7 +119,7 @@ public class GitResourceVariantTreeSubscriber extends
 	 */
 	@Override
 	public IResource[] members(IResource res) throws TeamException {
-		if (res.getType() == IResource.FILE || !gsds.shouldBeIncluded(res))
+		if(res.getType() == IResource.FILE || !shouldBeIncluded(res))
 			return new IResource[0];
 
 		GitSynchronizeData gsd = gsds.getData(res.getProject());
@@ -241,7 +241,7 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public IDiff getDiff(IResource resource) throws CoreException {
 		final GitSynchronizeData syncData = gsds.getData(resource.getProject());
-		if (syncData == null || syncData.shouldIncludeLocal())
+		if (syncData.shouldIncludeLocal())
 			return super.getDiff(resource);
 
 		SyncInfo info = getSyncInfo(resource);
@@ -480,9 +480,8 @@ public class GitResourceVariantTreeSubscriber extends
 	 * As opposed to the other repository providers, EGit allows for
 	 * synchronization between three remote branches. This will return the
 	 * "source" tree for such synchronization use cases.
-	 * 
+	 *
 	 * @return The source tree of this subscriber.
-	 * @since 3.0
 	 */
 	protected IResourceVariantTree getSourceTree() {
 		if (sourceTree == null)
@@ -494,13 +493,12 @@ public class GitResourceVariantTreeSubscriber extends
 	/**
 	 * This can be used to retrieve the version of the given resource
 	 * corresponding to the source tree of this subscriber.
-	 * 
+	 *
 	 * @param resource
 	 *            The resource for which we need a variant.
 	 * @return The revision of the given resource cached in the source tree of
 	 *         this subscriber.
 	 * @throws TeamException
-	 * @since 3.0
 	 */
 	public IFileRevision getSourceFileRevision(IFile resource)
 			throws TeamException {
@@ -533,6 +531,27 @@ public class GitResourceVariantTreeSubscriber extends
 
 		info.init();
 		return info;
+	}
+
+	private boolean shouldBeIncluded(IResource res) {
+		if (res == null || res.isLinked(IResource.CHECK_ANCESTORS))
+			return false;
+		final IProject proj = res.getProject();
+		if (proj == null)
+			return false;
+		final GitSynchronizeData d = gsds.getData(proj);
+		if (d == null)
+			return false;
+		final Set<IContainer> includedPaths = d.getIncludedPaths();
+		if (includedPaths == null)
+			return true;
+
+		IPath path = res.getLocation();
+		for (IContainer container : includedPaths)
+			if (container.getLocation().isPrefixOf(path))
+				return true;
+
+		return false;
 	}
 
 }

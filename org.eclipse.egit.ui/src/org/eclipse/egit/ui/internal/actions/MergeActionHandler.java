@@ -58,7 +58,6 @@ public class MergeActionHandler extends RepositoryActionHandler {
 			final MergeOperation op = new MergeOperation(repository, refName);
 			op.setSquash(mergeTargetSelectionDialog.isMergeSquash());
 			op.setFastForwardMode(mergeTargetSelectionDialog.getFastForwardMode());
-			op.setCommit(mergeTargetSelectionDialog.isCommit());
 			Job job = new Job(jobname) {
 				@Override
 				protected IStatus run(IProgressMonitor monitor) {

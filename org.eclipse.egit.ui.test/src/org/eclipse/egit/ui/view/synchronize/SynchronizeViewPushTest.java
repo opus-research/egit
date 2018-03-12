@@ -8,8 +8,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.view.synchronize;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 import java.util.concurrent.TimeUnit;
 
@@ -20,8 +20,8 @@ import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.storage.file.FileBasedConfig;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -39,10 +39,10 @@ public class SynchronizeViewPushTest extends AbstractSynchronizeViewTest {
 
 	@Before
 	public void prepare() throws Exception {
-		Repository childRepository = lookupRepository(childRepositoryFile);
+		FileRepository childRepository = lookupRepository(childRepositoryFile);
 
-		Repository repository = lookupRepository(repositoryFile);
-		StoredConfig config = repository.getConfig();
+		FileRepository repository = lookupRepository(repositoryFile);
+		FileBasedConfig config = repository.getConfig();
 		RemoteConfig remoteConfig = new RemoteConfig(config, "origin");
 		remoteConfig.addURI(new URIish(childRepository.getDirectory().getParentFile().toURI().toURL()));
 		remoteConfig.addFetchRefSpec(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
@@ -59,7 +59,7 @@ public class SynchronizeViewPushTest extends AbstractSynchronizeViewTest {
 	@Test
 	public void shouldUpdateTrackingBranchOnPush() throws Exception {
 		makeChangesAndCommit(PROJ1);
-		Repository repository = lookupRepository(repositoryFile);
+		FileRepository repository = lookupRepository(repositoryFile);
 		ObjectId headId = repository.resolve(Constants.HEAD);
 
 		String trackingBranch = Constants.R_REMOTES + "origin/master";
@@ -72,10 +72,10 @@ public class SynchronizeViewPushTest extends AbstractSynchronizeViewTest {
 		jobJoiner.join();
 
 		String destinationString = repositoryFile.getParentFile().getName() + " - " + "origin";
-		SWTBotShell resultDialog = bot.shell(NLS.bind(UIText.PushResultDialog_title, destinationString));
+		SWTBotShell resultDialog = bot.shell(NLS.bind(UIText.ResultDialog_title, destinationString));
 		resultDialog.close();
 
-		Repository remoteRepository = lookupRepository(childRepositoryFile);
+		FileRepository remoteRepository = lookupRepository(childRepositoryFile);
 		ObjectId masterOnRemote = remoteRepository.resolve("master");
 		assertThat("Expected push to update branch on remote repository", masterOnRemote, is(headId));
 
