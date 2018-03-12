@@ -11,7 +11,6 @@ package org.eclipse.egit.ui.internal.synchronize.model;
 
 import java.io.IOException;
 
-import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.dircache.DirCacheIterator;
@@ -30,11 +29,13 @@ public class GitModelWorkingTree extends GitModelCache {
 	/**
 	 * @param parent
 	 *            parent of working tree instance
+	 * @param commit
+	 *            last {@link RevCommit} in repository
 	 * @throws IOException
 	 */
-	public GitModelWorkingTree(GitModelObject parent)
+	public GitModelWorkingTree(GitModelObject parent, RevCommit commit)
 			throws IOException {
-		super(parent, null, new FileModelFactory() {
+		super(parent, commit, new FileModelFactory() {
 			public GitModelBlob createFileModel(
 					GitModelObjectContainer modelParent, RevCommit modelCommit,
 					ObjectId repoId, ObjectId cacheId, IPath location)
@@ -48,35 +49,6 @@ public class GitModelWorkingTree extends GitModelCache {
 	@Override
 	public String getName() {
 		return UIText.GitModelWorkingTree_workingTree;
-	}
-
-	@Override
-	public int getKind() {
-		// changes in working tree are always outgoing modifications
-		return Differencer.RIGHT | Differencer.CHANGE;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-
-		if (obj instanceof GitModelWorkingTree) {
-			GitModelCache left = (GitModelCache) obj;
-			return left.getParent().equals(getParent());
-		}
-
-		return false;
-	}
-
-	@Override
-	public int hashCode() {
-		return getParent().hashCode();
-	}
-
-	@Override
-	public String toString() {
-		return "ModelWorkingTree"; //$NON-NLS-1$
 	}
 
 	@Override
