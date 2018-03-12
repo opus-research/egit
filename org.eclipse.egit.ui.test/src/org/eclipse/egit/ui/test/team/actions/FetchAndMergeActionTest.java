@@ -24,7 +24,6 @@ import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
-import org.eclipse.egit.ui.test.CapturingSWTBotJunit4Runner;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -37,6 +36,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -47,7 +47,7 @@ import org.junit.runner.RunWith;
 /**
  * Tests for the Team->Fetch and Team->Merge actions
  */
-@RunWith(CapturingSWTBotJunit4Runner.class)
+@RunWith(SWTBotJunit4ClassRunner.class)
 public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 	private File repositoryFile;
 

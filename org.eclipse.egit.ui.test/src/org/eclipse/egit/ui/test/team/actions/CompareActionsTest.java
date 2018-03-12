@@ -35,7 +35,6 @@ import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
-import org.eclipse.egit.ui.test.CapturingSWTBotJunit4Runner;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -49,6 +48,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.util.RawParseUtils;
+import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
@@ -64,7 +64,7 @@ import org.junit.runner.RunWith;
 /**
  * Tests for the Compare With actions
  */
-@RunWith(CapturingSWTBotJunit4Runner.class)
+@RunWith(SWTBotJunit4ClassRunner.class)
 public class CompareActionsTest extends LocalRepositoryTestCase {
 	private File repositoryFile;
 
