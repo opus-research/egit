@@ -23,7 +23,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.DiffFormatter;
-import org.eclipse.jgit.diff.EditList;
 import org.eclipse.jgit.diff.MyersDiff;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
@@ -154,9 +153,8 @@ class FileDiff {
 
 		final RawText a = getRawText(id1, reader);
 		final RawText b = getRawText(id2, reader);
-		EditList editList = MyersDiff.INSTANCE
-				.diff(RawTextComparator.DEFAULT, a, b);
-		diffFmt.format(editList, a, b);
+		final MyersDiff diff = new MyersDiff(RawTextComparator.DEFAULT, a, b);
+		diffFmt.format(diff.getEdits(), a, b);
 	}
 
 	private String getProjectRelativePath(Repository db, String repoPath) {

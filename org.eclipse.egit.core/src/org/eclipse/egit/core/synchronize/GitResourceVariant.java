@@ -21,7 +21,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.variants.IResourceVariant;
 
 abstract class GitResourceVariant implements IResourceVariant {
@@ -31,8 +30,6 @@ abstract class GitResourceVariant implements IResourceVariant {
 	private final Repository repo;
 
 	private final ObjectId objectId;
-
-	private final RevCommit revCommit;
 
 	private String name;
 
@@ -45,19 +42,16 @@ abstract class GitResourceVariant implements IResourceVariant {
 	 * Construct Git representation of {@link IResourceVariant}.
 	 *
 	 * @param repo
-	 * @param revCommit
-	 *            associated with this resource varinat
 	 * @param objectId
 	 * @param path
 	 *            should be repository relative
 	 * @throws IOException
 	 */
-	GitResourceVariant(Repository repo, RevCommit revCommit, ObjectId objectId,
-			String path) throws IOException {
+	GitResourceVariant(Repository repo, ObjectId objectId, String path)
+			throws IOException {
 		this.path = path;
 		this.repo = repo;
 		this.objectId = objectId;
-		this.revCommit = revCommit;
 	}
 
 	public String getContentIdentifier() {
@@ -76,10 +70,6 @@ abstract class GitResourceVariant implements IResourceVariant {
 		return name;
 	}
 
-	public RevCommit getRevCommit() {
-		return revCommit;
-	}
-
 	@Override
 	public int hashCode() {
 		return objectId.getName().hashCode();
@@ -87,9 +77,6 @@ abstract class GitResourceVariant implements IResourceVariant {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-
 		if (obj instanceof GitResourceVariant)
 			return objectId.equals(((GitResourceVariant) obj).getObjectId());
 
