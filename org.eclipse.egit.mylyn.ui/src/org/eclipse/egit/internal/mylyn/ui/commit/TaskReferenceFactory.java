@@ -24,8 +24,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.internal.mylyn.ui.EGitMylynUI;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
-import org.eclipse.jgit.lib.ConfigConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -139,8 +137,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 
 	private static String getRepoUrl(Repository repo) {
 		String configuredUrl = repo.getConfig().getString(BUGTRACK_SECTION, null, BUGTRACK_URL);
-		String originUrl = repo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION,
-				Constants.DEFAULT_REMOTE_NAME, ConfigConstants.CONFIG_KEY_URL);
+		String originUrl = repo.getConfig().getString("remote", "origin", "url");  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		return configuredUrl != null ? configuredUrl : originUrl;
 	}
 
