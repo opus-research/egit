@@ -127,7 +127,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 *            that caused the status, may be {@code null}
 	 * @return the status
 	 */
-	public static IStatus toStatus(int severity, String message,
+	private static IStatus toStatus(int severity, String message,
 			Throwable throwable) {
 		Throwable exc = throwable;
 		while (exc instanceof InvocationTargetException) {
@@ -203,6 +203,46 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 */
 	public static void showErrorStatus(String message, IStatus status) {
 		StatusManager.getManager().handle(status, StatusManager.SHOW);
+	}
+
+	/**
+	 * @param message
+	 * @param e
+	 */
+	public static void logError(String message, Throwable e) {
+		handleError(message, e, false);
+	}
+
+	/**
+	 * @param message
+	 * @param e
+	 */
+	public static void error(String message, Throwable e) {
+		handleError(message, e, false);
+	}
+
+	/**
+	 * Creates an error status
+	 *
+	 * @param message
+	 *            a localized message
+	 * @param throwable
+	 * @return a new Status object
+	 */
+	public static IStatus createErrorStatus(String message,
+			Throwable throwable) {
+		return toStatus(IStatus.ERROR, message, throwable);
+	}
+
+	/**
+	 * Creates an error status
+	 *
+	 * @param message
+	 *            a localized message
+	 * @return a new Status object
+	 */
+	public static IStatus createErrorStatus(String message) {
+		return toStatus(IStatus.ERROR, message, null);
 	}
 
 	/**
@@ -713,46 +753,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		KnownHosts.store();
 		super.saveDialogSettings();
 	}
-
-	/**
-	 * @param message
-	 * @param e
-	 */
-	public static void logError(String message, Throwable e) {
-		handleError(message, e, false);
-	}
-
-	/**
-	 * @param message
-	 * @param e
-	 */
-	public static void error(String message, Throwable e) {
-		handleError(message, e, false);
-	}
-
-	/**
-	 * Creates an error status
-	 *
-	 * @param message
-	 *            a localized message
-	 * @param throwable
-	 * @return a new Status object
-	 */
-	public static IStatus createErrorStatus(String message, Throwable throwable) {
-		return new Status(IStatus.ERROR, getPluginId(), message, throwable);
-	}
-
-	/**
-	 * Creates an error status
-	 *
-	 * @param message
-	 *            a localized message
-	 * @return a new Status object
-	 */
-	public static IStatus createErrorStatus(String message) {
-		return new Status(IStatus.ERROR, getPluginId(), message);
-	}
-
 	/**
 	 * @return the {@link RepositoryUtil} instance
 	 */
