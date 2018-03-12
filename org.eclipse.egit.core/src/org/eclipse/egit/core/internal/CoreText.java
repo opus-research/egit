@@ -4,13 +4,14 @@
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  * Copyright (C) 2013, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.core;
+package org.eclipse.egit.core.internal;
 
 import org.eclipse.osgi.util.NLS;
 
@@ -24,7 +25,7 @@ public class CoreText extends NLS {
 	 * "Find Broken Externalized Strings" tool will not be
 	 * able to find the corresponding bundle file.
 	 */
-	private static final String BUNDLE_NAME = "org.eclipse.egit.core.coretext"; //$NON-NLS-1$
+	private static final String BUNDLE_NAME = "org.eclipse.egit.core.internal.coretext"; //$NON-NLS-1$
 
 	/** */
 	public static String Activator_autoIgnoreDerivedResources;
@@ -148,6 +149,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitFileHistory_gitNotAttached;
+
+	/** */
+	public static String GitFileHistory_invalidCommit;
 
 	/** */
 	public static String GitFileHistory_invalidHeadRevision;
@@ -285,6 +289,9 @@ public class CoreText extends NLS {
 	public static String IndexDiffCacheEntry_reindexing;
 
 	/** */
+	public static String IndexDiffCacheEntry_reindexingIncrementally;
+
+	/** */
 	public static String IndexFileRevision_errorLookingUpPath;
 
 	/** */
@@ -364,6 +371,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitResourceVariantTree_fetchingVariant;
+
+	/** */
+	public static String GitResourceVariantTreeSubscriber_CouldNotFindSourceVariant;
 
 	/** */
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
