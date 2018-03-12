@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,8 +24,8 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.LocalFileRevision;
-import org.eclipse.egit.ui.internal.dialogs.CompareTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
+import org.eclipse.egit.ui.internal.history.CommitSelectionDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -36,63 +36,63 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
 /**
- * The "compare with ref" action. This action opens a diff editor comparing the
- * file as found in the working directory and the version in the selected ref.
+ * The "compare with commit" action. This action opens a diff editor comparing
+ * the file as found in the working directory and the version in the selected
+ * ref.
  */
-public class CompareWithRefActionHandler extends RepositoryActionHandler {
+public class CompareWithCommitActionHandler extends RepositoryActionHandler {
+
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repo = getRepository(true, event);
-		// assert all resources map to the same repository
+		IResource[] resources = getSelectedResources(event);
 		if (repo == null)
 			return null;
-		final IResource[] resources = getSelectedResources(event);
 
-		CompareTargetSelectionDialog dlg = new CompareTargetSelectionDialog(
-				getShell(event), repo, resources.length == 1 ? resources[0]
-						.getFullPath().toString() : null);
-		if (dlg.open() == Window.OK) {
+		CommitSelectionDialog dlg = new CommitSelectionDialog(getShell(event),
+				repo);
+		if (dlg.open() != Window.OK)
+			return null;
 
-			if (resources.length == 1 && resources[0] instanceof IFile) {
-				final IFile baseFile = (IFile) resources[0];
+		if (resources.length == 1 && resources[0] instanceof IFile) {
+			final IFile baseFile = (IFile) resources[0];
 
-				final ITypedElement base = new FileRevisionTypedElement(
-						new LocalFileRevision(baseFile));
+			final ITypedElement base = new FileRevisionTypedElement(
+					new LocalFileRevision(baseFile));
 
-				final ITypedElement next;
-				try {
-					RepositoryMapping mapping = RepositoryMapping
-							.getMapping(resources[0]);
-					next = getElementForRef(mapping.getRepository(), mapping
-							.getRepoRelativePath(baseFile), dlg.getRefName());
-				} catch (IOException e) {
-					Activator.handleError(
-							UIText.CompareWithIndexAction_errorOnAddToIndex, e,
-							true);
-					return null;
-				}
+			final ITypedElement next;
+			try {
+				RepositoryMapping mapping = RepositoryMapping
+						.getMapping(resources[0]);
+				next = getElementForCommit(mapping.getRepository(), mapping
+						.getRepoRelativePath(baseFile), dlg.getCommitId());
+			} catch (IOException e) {
+				Activator.handleError(
+						UIText.CompareWithIndexAction_errorOnAddToIndex, e,
+						true);
+				return null;
+			}
 
-				final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-						base, next, null);
-				in.getCompareConfiguration().setRightLabel(dlg.getRefName());
-				CompareUI.openCompareEditor(in);
-			} else {
-				CompareTreeView view;
-				try {
-					view = (CompareTreeView) PlatformUI.getWorkbench()
-							.getActiveWorkbenchWindow().getActivePage()
-							.showView(CompareTreeView.ID);
-					view.setInput(resources, dlg.getRefName());
-				} catch (PartInitException e) {
-					Activator.handleError(e.getMessage(), e, true);
-				}
+			final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
+					base, next, null);
+			in.getCompareConfiguration()
+					.setRightLabel(dlg.getCommitId().name());
+			CompareUI.openCompareEditor(in);
+		} else {
+			CompareTreeView view;
+			try {
+				view = (CompareTreeView) PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow().getActivePage().showView(
+								CompareTreeView.ID);
+				view.setInput(resources, dlg.getCommitId().name());
+			} catch (PartInitException e) {
+				Activator.handleError(e.getMessage(), e, true);
 			}
 		}
 		return null;
 	}
 
-	private ITypedElement getElementForRef(final Repository repository,
-			final String gitPath, final String refName) throws IOException {
-		ObjectId commitId = repository.resolve(refName + "^{commit}"); //$NON-NLS-1$
+	private ITypedElement getElementForCommit(final Repository repository,
+			final String gitPath, final ObjectId commitId) throws IOException {
 		RevWalk rw = new RevWalk(repository);
 		RevCommit commit = rw.parseCommit(commitId);
 		rw.release();
