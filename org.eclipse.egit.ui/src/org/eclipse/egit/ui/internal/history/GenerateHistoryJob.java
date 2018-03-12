@@ -46,8 +46,6 @@ class GenerateHistoryJob extends Job {
 
 	private int lastUpdateCnt;
 
-	private boolean lastIncomplete = false;
-
 	private boolean trace;
 
 	private final RevWalk walk;
@@ -135,10 +133,7 @@ class GenerateHistoryJob extends Job {
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation());
 		try {
-			boolean updateIncompleteState = incomplete != lastIncomplete;
-			boolean updateCount = !incomplete && loadedCommits.size() != lastUpdateCnt;
-			// Nothing to update
-			if (!updateIncompleteState && !updateCount)
+			if (!incomplete && loadedCommits.size() == lastUpdateCnt)
 				return;
 
 			final SWTCommit[] asArray = new SWTCommit[loadedCommits.size()];
@@ -146,7 +141,6 @@ class GenerateHistoryJob extends Job {
 			page.showCommitList(this, loadedCommits, asArray, commitToShow, incomplete, highlightFlag);
 			commitToShow = null;
 			lastUpdateCnt = loadedCommits.size();
-			lastIncomplete = incomplete;
 		} finally {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
