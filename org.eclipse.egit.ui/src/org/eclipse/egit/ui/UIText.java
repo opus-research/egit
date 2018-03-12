@@ -418,6 +418,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_ShowSubMenuLabel;
 
 	/** */
+	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
+
+	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
 
 	/** */
@@ -452,6 +455,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_SynchronizeView;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -1741,6 +1747,15 @@ public class UIText extends NLS {
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
+	public static String CompareWithPreviousActionHandler_MessageRevisionNotFound;
+
+	/** */
+	public static String CompareWithPreviousActionHandler_TaskGeneratingInput;
+
+	/** */
+	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
+
+	/** */
 	public static String ConfirmationPage_cantConnectToAnyTitle;
 
 	/** */
@@ -2488,6 +2503,15 @@ public class UIText extends NLS {
 	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
 
 	/** */
+	public static String DiffEditorPage_TaskGeneratingDiff;
+
+	/** */
+	public static String DiffEditorPage_TaskUpdatingViewer;
+
+	/** */
+	public static String DiffEditorPage_Title;
+
+	/** */
 	public static String DiscardChangesAction_confirmActionTitle;
 
 	/** */
@@ -2897,6 +2921,33 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_repository;
 
 	/** */
+	public static String CommitEditor_TitleHeader;
+
+	/** */
+	public static String CommitEditorInput_Name;
+
+	/** */
+	public static String CommitEditorInput_ToolTip;
+
+	/** */
+	public static String CommitEditorPage_LabelAuthor;
+
+	/** */
+	public static String CommitEditorPage_LabelCommitter;
+
+	/** */
+	public static String CommitEditorPage_LabelParent;
+
+	/** */
+	public static String CommitEditorPage_SectionFiles;
+
+	/** */
+	public static String CommitEditorPage_SectionMessage;
+
+	/** */
+	public static String CommitEditorPage_Title;
+
+	/** */
 	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
 
 	/** */
@@ -2928,18 +2979,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitSynchronizeWizard_synchronize;
-
-	/** */
-	public static String GitSynchronizeWizard_SourceBranch;
-
-	/** */
-	public static String GitSynchronizeWizard_DestinationBranch;
-
-	/** */
-	public static String GitSynchronizeWizard_IncludeLocal;
-
-	/** */
-	public static String GitSynchronizeWizard_IncludeLocalToolTip;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_title;
@@ -3432,6 +3471,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
+
+	/** */
+	public static String CommitSearchQuery_Label;
+
+	/** */
+	public static String CommitSearchQuery_TaskSearchCommits;
+
+	/** */
+	public static String CommitSearchResult_LabelPlural;
+
+	/** */
+	public static String CommitSearchResult_LabelSingle;
 
 	/** */
 	public static String CommitSelectionDialog_BuildingCommitListMessage;
