@@ -570,9 +570,9 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		if (dstRef != null)
 			bot.comboBox(3).setSelection(dstRef);
 
-		bot.button(IDialogConstants.OK_LABEL).click();
-
 		Job.getJobManager().join(ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, null);
+
+		bot.button(IDialogConstants.OK_LABEL).click();
 	}
 
 	private SWTBot setPresentationModel(String model) throws Exception {
