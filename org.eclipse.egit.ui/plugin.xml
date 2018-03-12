@@ -195,12 +195,6 @@
                label="Merge Tool"
                menubarPath="team.main/group4">
          </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.CompareWithCommitAction"
-               id="org.eclipse.egit.ui.internal.actions.CompareWithCommitAction"
-               label="Commit..."
-               menubarPath="compareWithMenu/gitCompareWithGroup">
-         </action>
 	  </objectContribution>
    	  <objectContribution
          adaptable="true"
@@ -508,17 +502,6 @@
               name="repositoryGroup">
         </separator>
 	    </menu>
-  <action
-        class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamConfigAction"
-        definitionId="org.eclipse.egit.ui.team.Pull"
-        icon="icons/obj16/pull.gif"
-        id="org.eclipse.egit.ui.actionpull"
-        label="%PullIntoCurrentBranchMenuLabel"
-        menubarPath="org.eclipse.egit.ui.gitmenu/repo"
-        style="push"
-        toolbarPath="org.eclipse.egit.ui"
-        tooltip="%PullIntoCurrentBranch.tooltip">
-  </action>
 		<action
         class="org.eclipse.egit.ui.internal.actions.FetchAction"
         definitionId="org.eclipse.egit.ui.team.Fetch"
@@ -1620,7 +1603,7 @@
                   checkEnabled="false">
                <and>
                   <count
-                        value="1">
+                        value="+">
                   </count>
                   <iterate>
                      <instanceof

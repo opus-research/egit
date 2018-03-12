@@ -32,15 +32,16 @@ class GitContainerMapping extends GitObjectMapping {
 
 	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace().getRoot();
 
+	private final GitModelObject[] children;
+
 	public GitContainerMapping(GitModelObjectContainer gitCommit) {
 		super(gitCommit);
+		children = gitCommit.getChildren();
 	}
 
 	@Override
 	public ResourceTraversal[] getTraversals(ResourceMappingContext context,
 			IProgressMonitor monitor) throws CoreException {
-		GitModelObject[] children = ((GitModelObjectContainer) getModelObject())
-				.getChildren();
 		List<ResourceTraversal> result = new ArrayList<ResourceTraversal>();
 
 		for (GitModelObject child : children) {
@@ -48,7 +49,10 @@ class GitContainerMapping extends GitObjectMapping {
 			IPath location = child.getLocation();
 
 			if (child.isContainer()) {
-				IContainer container = ROOT.getContainerForLocation(location);
+				IContainer container = ROOT.getProject(child.getName());
+				if (container == null)
+					container = ROOT.getFolder(location.makeRelativeTo(ROOT
+							.getLocation()));
 
 				if (container == null)
 					continue;
