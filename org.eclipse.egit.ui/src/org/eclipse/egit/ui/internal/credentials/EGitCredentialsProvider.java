@@ -140,8 +140,6 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 	public void reset(URIish uri) {
 		try {
 			Activator.getDefault().getSecureStore().clearCredentials(uri);
-			user = null;
-			password = null;
 		} catch (IOException e) {
 			Activator.logError(MessageFormat.format(
 					UIText.EGitCredentialsProvider_FailedToClearCredentials,

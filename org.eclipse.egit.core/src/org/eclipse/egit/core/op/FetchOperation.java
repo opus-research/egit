@@ -94,13 +94,6 @@ public class FetchOperation {
 	}
 
 	/**
-	 * @return the operation's credentials provider
-	 */
-	public CredentialsProvider getCredentialsProvider() {
-		return credentialsProvider;
-	}
-
-	/**
 	 * @param tagOpt
 	 */
 	public void setTagOpt(TagOpt tagOpt) {
