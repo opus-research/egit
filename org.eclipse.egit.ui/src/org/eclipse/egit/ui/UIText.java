@@ -154,19 +154,7 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_BuildingListMessage;
 
 	/** */
-	public static String ShowVersionsHandler_ErrorOpeningFileTitle;
-
-	/** */
 	public static String GenerateHistoryJob_errorComputingHistory;
-
-	/** */
-	public static String EGitStatusPart_ShowErrorLogButton;
-
-	/** */
-	public static String EgitErrorEditor_Title;
-
-	/** */
-	public static String EgitErrorEditor_Tooltip;
 
 	/** */
 	public static String EgitUiUtils_CouldNotOpenEditorMessage;
@@ -527,9 +515,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CheckoutHandler_SelectBranchTitle;
-
-	/** */
-	public static String CompareVersionsHandler_ErrorOpeningCompareEditorTitle;
 
 	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
