@@ -370,15 +370,6 @@
                id="org.eclipse.egit.ui.keyword.git">
          </keywordReference>
       </page>
-      <page
-            category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.DialogsPreferencePage"
-            id="org.eclipse.egit.ui.internal.preferences.DialogsPreferencePage"
-            name="%DialogsPreferencePage.name">
-         <keywordReference
-               id="org.eclipse.egit.ui.keyword.git">
-         </keywordReference>
-      </page>
    </extension>
 
    <extension point="org.eclipse.ui.propertyPages">
@@ -833,16 +824,11 @@
                class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamActionHandler">
          </class>
          <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <adapt
-                        type="org.eclipse.core.resources.IProject">
-                  </adapt>
-               </iterate>
-            </and>
+            <iterate>
+               <adapt
+                     type="org.eclipse.core.resources.IProject">
+               </adapt>
+            </iterate>
          </activeWhen>
       </handler>
       <handler
@@ -1171,15 +1157,6 @@
                </instanceof></possibleDropTargets>
          </dropAssistant>
       </navigatorContent>
-      <actionProvider
-            class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewActionProvider"
-            id="RepositoriesViewActionProvider">
-         <enablement>
-            <instanceof
-                  value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
-            </instanceof>
-         </enablement>
-      </actionProvider>
    </extension>
    <extension
          point="org.eclipse.ui.navigator.viewer">
@@ -1197,14 +1174,6 @@
             </contentExtension>
          </includes>
       </viewerContentBinding>
-      <viewerActionBinding
-            viewerId="org.eclipse.egit.ui.RepositoriesView">
-         <includes>
-            <actionExtension
-                  pattern="RepositoriesViewActionProvider">
-            </actionExtension>
-         </includes>
-      </viewerActionBinding>
    </extension>
    <extension
          point="org.eclipse.ui.menus">
@@ -2398,6 +2367,34 @@
                </visibleWhen>
             </menu>
             <separator
+                  name="org.eclipse.egit.ui.branchSeparator">
+            </separator>
+            <menu
+                  label="%SwitchToMenu.label">
+               <dynamic
+                     class="org.eclipse.egit.ui.internal.actions.SwitchToMenu"
+                     id="org.eclipse.egit.ui.switchToMenu">
+               </dynamic>
+               <visibleWhen
+                     checkEnabled="false">
+                  <and>
+                     <count
+                           value="1">
+                     </count>
+                     <iterate>
+                        <and>
+                           <adapt
+                                 type="org.eclipse.core.resources.IProject">
+                              <test
+                                    property="GitResource.isShared">
+                              </test>
+                           </adapt>
+                        </and>
+                     </iterate>
+                  </and>
+               </visibleWhen>
+            </menu>
+            <separator
                   name="applyPatchGroup"
                   visible="false">
             </separator>
@@ -3045,6 +3042,18 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+M3+M">
       </key>
+      <key
+            commandId="org.eclipse.egit.ui.RepositoriesViewPaste"
+            contextId="org.eclipse.egit.ui.RepositoriesView"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+V">
+      </key>
+      <key
+            commandId="org.eclipse.egit.ui.RepositoriesViewCopyPath"
+            contextId="org.eclipse.egit.ui.RepositoriesView"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+C">
+      </key>
    </extension>
    <extension
          name="%HistoryViewCommands.extension.name"
@@ -3173,5 +3182,13 @@
                visible="false">
          </view>
       </perspectiveExtension>
+   </extension>
+   <extension
+         point="org.eclipse.ui.contexts">
+      <context
+            id="org.eclipse.egit.ui.RepositoriesView"
+            name="%RepositoriesViewContext.name"
+            parentId="org.eclipse.ui.contexts.window">
+      </context>
    </extension>
 </plugin>

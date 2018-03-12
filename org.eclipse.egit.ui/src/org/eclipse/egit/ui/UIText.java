@@ -127,30 +127,6 @@ public class UIText extends NLS {
 	public static String SecureStoreUtils_writingCredentialsFailed;
 
 	/** */
-	public static String SelectRemoteNamePage_ConfigureFetch_button;
-
-	/** */
-	public static String SelectRemoteNamePage_ConfigurePush_button;
-
-	/** */
-	public static String SelectRemoteNamePage_MustConfigureSomething_message;
-
-	/** */
-	public static String SelectRemoteNamePage_NameInUseMessage;
-
-	/** */
-	public static String SelectRemoteNamePage_NameMustNotBeEmptyMessage;
-
-	/** */
-	public static String SelectRemoteNamePage_RemoteNameLabel;
-
-	/** */
-	public static String SelectRemoteNamePage_RemoteNameMessage;
-
-	/** */
-	public static String SelectRemoteNamePage_RemoteNameTitle;
-
-	/** */
 	public static String SelectResetTypePage_PageMessage;
 
 	/** */
@@ -430,7 +406,16 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_DefaultRepoFolderTooltip;
 
 	/** */
+	public static String GitPreferenceRoot_HideConfirmationGroup;
+
+	/** */
+	public static String GitPreferenceRoot_HideRebaseConfirmationField;
+
+	/** */
 	public static String GitPreferenceRoot_HistoryGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_InitialConfiguration;
 
 	/** */
 	public static String GitPreferenceRoot_MergeGroupHeader;
@@ -455,6 +440,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_ShowInitialConfigDialogCheckbox;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -524,6 +512,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseResultDialog_FastForward;
+
+	/** */
+	public static String RebaseResultDialog_Failed;
 
 	/** */
 	public static String RebaseResultDialog_NextSteps;
@@ -1666,60 +1657,6 @@ public class UIText extends NLS {
 	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
 
 	/** */
-	public static String ConfigureRemoteWizard_WizardTitle_Change;
-
-	/** */
-	public static String ConfigureRemoteWizard_WizardTitle_New;
-
-	/** */
-	public static String ConfigureUriPage_Add_button;
-
-	/** */
-	public static String ConfigureUriPage_Change_button;
-
-	/** */
-	public static String ConfigureUriPage_ConfigureFetch_pagetitle;
-
-	/** */
-	public static String ConfigureUriPage_ConfigurePush_pagetitle;
-
-	/** */
-	public static String ConfigureUriPage_DuplicateUriMessage;
-
-	/** */
-	public static String ConfigureUriPage_DuplicateUriTitle;
-
-	/** */
-	public static String ConfigureUriPage_FetchPageMessage;
-
-	/** */
-	public static String ConfigureUriPage_FetchUri_label;
-
-	/** */
-	public static String ConfigureUriPage_MissingUri_message;
-
-	/** */
-	public static String ConfigureUriPage_MissingUris_message;
-
-	/** */
-	public static String ConfigureUriPage_ParsingProblem_message;
-
-	/** */
-	public static String ConfigureUriPage_PushPageMessage;
-
-	/** */
-	public static String ConfigureUriPage_PushUriLabel;
-
-	/** */
-	public static String ConfigureUriPage_PushUriTooltip;
-
-	/** */
-	public static String ConfigureUriPage_Remove_button;
-
-	/** */
-	public static String ConfigureUriPage_UriTooltip;
-
-	/** */
 	public static String SpellCheckingMessageArea_copy;
 
 	/** */
@@ -2527,30 +2464,6 @@ public class UIText extends NLS {
 	public static String RepositoriesViewLabelProvider_TagsNodeText;
 
 	/** */
-	public static String DialogsPreferencePage_DetachedHeadCombo;
-
-	/** */
-	public static String DialogsPreferencePage_DontShowDialog;
-
-	/** */
-	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
-
-	/** */
-	public static String DialogsPreferencePage_HomeDirWarning;
-
-	/** */
-	public static String DialogsPreferencePage_InitialGroupHeader;
-
-	/** */
-	public static String DialogsPreferencePage_RebaseCheckbox;
-
-	/** */
-	public static String DialogsPreferencePage_ShowDialog;
-
-	/** */
-	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
-
-	/** */
 	public static String DiscardChangesAction_confirmActionTitle;
 
 	/** */
@@ -3032,7 +2945,25 @@ public class UIText extends NLS {
 	public static String LoginService_storingCredentialsFailed;
 
 	/** */
-	public static String NewRemoteWizard_CheckingUriTaskName;
+	public static String NewRemoteDialog_ConfigurationMessage;
+
+	/** */
+	public static String NewRemoteDialog_DialogTitle;
+
+	/** */
+	public static String NewRemoteDialog_FetchRadio;
+
+	/** */
+	public static String NewRemoteDialog_NameLabel;
+
+	/** */
+	public static String NewRemoteDialog_PushRadio;
+
+	/** */
+	public static String NewRemoteDialog_RemoteAlreadyExistsMessage;
+
+	/** */
+	public static String NewRemoteDialog_WindowTitle;
 
 	/** */
 	public static String NewRepositoryWizard_WizardTitle;
@@ -3362,6 +3293,12 @@ public class UIText extends NLS {
 	public static String SkipRebaseCommand_JobName;
 
 	/** */
+	public static String SwitchToMenu_NewBranchMenuLabel;
+
+	/** */
+	public static String SwitchToMenu_OtherMenuLabel;
+
+	/** */
 	public static String SynchronizeWithAction_localRepoName;
 
 	/** */
@@ -3423,8 +3360,11 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_ExpandAll;
-	/** */
 
+	/** */
+	public static String DecoratableResourceHelper_noHead;
+
+	/** */
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
