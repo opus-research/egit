@@ -311,7 +311,8 @@ public class CommitOperation implements IEGitOperation {
 		PersonIdent authorIdent;
 		if (repo.getRepositoryState().equals(
 				RepositoryState.CHERRY_PICKING_RESOLVED)) {
-			try (RevWalk rw = new RevWalk(repo)) {
+			RevWalk rw = new RevWalk(repo);
+			try {
 				ObjectId cherryPickHead = repo.readCherryPickHead();
 				authorIdent = rw.parseCommit(cherryPickHead)
 						.getAuthorIdent();
@@ -320,6 +321,8 @@ public class CommitOperation implements IEGitOperation {
 						.error(CoreText.CommitOperation_ParseCherryPickCommitFailed,
 								e);
 				throw new IllegalStateException(e);
+			} finally {
+				rw.release();
 			}
 		} else {
 			authorIdent = new PersonIdent(enteredAuthor, commitDate, timeZone);

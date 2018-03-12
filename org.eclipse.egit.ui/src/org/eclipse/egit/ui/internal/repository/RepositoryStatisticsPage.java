@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2012, 2015 SAP AG and others.
+ *  Copyright (c) 2012 SAP AG.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -14,7 +14,6 @@ import java.text.NumberFormat;
 import java.util.Properties;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.api.GarbageCollectCommand;
 import org.eclipse.jgit.api.Git;
@@ -50,7 +49,6 @@ public class RepositoryStatisticsPage extends PropertyPage {
 				.getLocale());
 	}
 
-	@Override
 	protected Control createContents(Composite parent) {
 		Table table = new Table(parent, SWT.MULTI | SWT.BORDER
 				| SWT.FULL_SELECTION);
@@ -62,7 +60,8 @@ public class RepositoryStatisticsPage extends PropertyPage {
 			column.setText(titles[i]);
 		}
 
-		Repository repo = CommonUtils.getAdapter(getElement(), Repository.class);
+		Repository repo = (Repository) getElement()
+				.getAdapter(Repository.class);
 		if (repo == null)
 			return table;
 		Git git = new Git(repo);

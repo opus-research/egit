@@ -31,7 +31,6 @@ public class ExpandAllModelAction extends SynchronizeModelAction {
 			this.configuration = configuration;
 		}
 
-		@Override
 		public void run() {
 			Viewer viewer = configuration.getPage().getViewer();
 			if (viewer == null || viewer.getControl().isDisposed()
@@ -61,7 +60,6 @@ public class ExpandAllModelAction extends SynchronizeModelAction {
 			IDiffElement[] elements) {
 		return new SynchronizeModelOperation(configuration, elements) {
 
-			@Override
 			public void run(IProgressMonitor monitor)
 					throws InvocationTargetException, InterruptedException {
 				configuration.getSite().getShell().getDisplay()

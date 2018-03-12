@@ -54,22 +54,18 @@ public class BlameRevision extends Revision {
 
 	private Map<RevCommit, Diff> diffToParentCommit = new HashMap<RevCommit, Diff>();
 
-	@Override
 	public Object getHoverInfo() {
 		return this;
 	}
 
-	@Override
 	public RGB getColor() {
 		return AuthorColors.getDefault().getCommitterRGB(getAuthor());
 	}
 
-	@Override
 	public String getId() {
 		return commit.abbreviate(7).name();
 	}
 
-	@Override
 	public Date getDate() {
 		PersonIdent person = commit.getAuthorIdent();
 		if( person == null)
@@ -149,7 +145,6 @@ public class BlameRevision extends Revision {
 		return this.repository;
 	}
 
-	@Override
 	public String getAuthor() {
 		return commit.getAuthorIdent().getName();
 	}
@@ -205,7 +200,8 @@ public class BlameRevision extends Revision {
 	}
 
 	private Diff calculateDiffToParent(RevCommit parentCommit) {
-		try (ObjectReader reader = repository.newObjectReader()) {
+		ObjectReader reader = repository.newObjectReader();
+		try {
 			DiffEntry diffEntry = CompareCoreUtils.getChangeDiffEntry(
 					repository, sourcePath, commit, parentCommit, reader);
 			if (diffEntry == null)
@@ -226,6 +222,8 @@ public class BlameRevision extends Revision {
 			return new Diff(diffEntry.getOldPath(), oldText, newText, editList);
 		} catch (IOException e) {
 			return null;
+		} finally {
+			reader.release();
 		}
 	}
 

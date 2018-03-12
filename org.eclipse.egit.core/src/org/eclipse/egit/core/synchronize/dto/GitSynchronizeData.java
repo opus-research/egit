@@ -165,9 +165,12 @@ public class GitSynchronizeData {
 	 * @throws IOException
 	 */
 	public void updateRevs() throws IOException {
-		try (ObjectWalk ow = new ObjectWalk(repo)) {
+		ObjectWalk ow = new ObjectWalk(repo);
+		try {
 			srcRevCommit = getCommit(srcRev, ow);
 			dstRevCommit = getCommit(dstRev, ow);
+		} finally {
+			ow.release();
 		}
 
 		if (this.dstRevCommit != null && this.srcRevCommit != null)
@@ -185,10 +188,28 @@ public class GitSynchronizeData {
 	}
 
 	/**
+	 * @return {@code null}
+	 * @deprecated
+	 */
+	@Deprecated
+	public String getSrcRemoteName() {
+		return null;
+	}
+
+	/**
 	 * @return ref specification of destination merge branch
 	 */
 	public String getDstMerge() {
 		return dstMerge;
+	}
+
+	/**
+	 * @return {@code null}
+	 * @deprecated
+	 */
+	@Deprecated
+	public String getSrcMerge() {
+		return null;
 	}
 
 	/**

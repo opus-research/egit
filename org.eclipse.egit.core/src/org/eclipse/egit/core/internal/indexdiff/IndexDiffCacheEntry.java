@@ -218,7 +218,9 @@ public class IndexDiffCacheEntry {
 			}
 
 			Set<String> paths = new TreeSet<String>();
-			try (TreeWalk walk = new TreeWalk(repository)) {
+			TreeWalk walk = new TreeWalk(repository);
+
+			try {
 				walk.addTree(new DirCacheIterator(oldIndex));
 				walk.addTree(new DirCacheIterator(currentIndex));
 				walk.setFilter(new InterIndexDiffFilter());
@@ -229,6 +231,8 @@ public class IndexDiffCacheEntry {
 					else
 						paths.add(walk.getPathString());
 				}
+			} finally {
+				walk.release();
 			}
 
 			if (!paths.isEmpty())

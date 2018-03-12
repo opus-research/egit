@@ -5,7 +5,6 @@
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2011, Stefan Lay <stefan.lay@sap.com>
  * Copyright (C) 2014, Marc-Andre Laperle <marc-andre.laperle@ericsson.com>
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +24,6 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.history.FormatJob.FormatResult;
@@ -123,7 +121,6 @@ class CommitMessageViewer extends SourceViewer {
 
 		// set the cursor when hovering over a link
 		t.addListener(SWT.MouseMove, new Listener() {
-			@Override
 			public void handleEvent(final Event e) {
 				StyleRange styleRange = getStyleRange(e.x, e.y);
 				if (styleRange != null && styleRange.underline)
@@ -154,7 +151,6 @@ class CommitMessageViewer extends SourceViewer {
 
 		// react on changes in the fill and wrap preferences
 		listener = new IPropertyChangeListener() {
-			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				if (event.getProperty().equals(
 						UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL)) {
@@ -199,7 +195,6 @@ class CommitMessageViewer extends SourceViewer {
 		};
 		// register and unregister the global actions upon focus events
 		getControl().addFocusListener(new FocusListener() {
-			@Override
 			public void focusLost(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.SELECT_ALL.getId(), null);
@@ -208,7 +203,6 @@ class CommitMessageViewer extends SourceViewer {
 				site.getActionBars().updateActionBars();
 			}
 
-			@Override
 			public void focusGained(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.SELECT_ALL.getId(), selectAll);
@@ -259,7 +253,6 @@ class CommitMessageViewer extends SourceViewer {
 	void addDoneListenerToFormatJob() {
 		formatJob.addJobChangeListener(new JobChangeAdapter() {
 
-			@Override
 			public void done(IJobChangeEvent event) {
 				if (!event.getResult().isOK())
 					return;
@@ -268,7 +261,6 @@ class CommitMessageViewer extends SourceViewer {
 					return;
 				final FormatJob job = (FormatJob) event.getJob();
 				text.getDisplay().asyncExec(new Runnable() {
-					@Override
 					public void run() {
 						applyFormatJobResultInUI(job.getFormatResult());
 					}
@@ -320,7 +312,6 @@ class CommitMessageViewer extends SourceViewer {
 			refsChangedListener = db.getListenerList().addRefsChangedListener(
 					new RefsChangedListener() {
 
-						@Override
 						public void onRefsChanged(RefsChangedEvent event) {
 							allRefs = getBranches(db);
 						}
@@ -329,7 +320,6 @@ class CommitMessageViewer extends SourceViewer {
 		format();
 	}
 
-	@Override
 	public Object getInput() {
 		return commit;
 	}
@@ -367,7 +357,8 @@ class CommitMessageViewer extends SourceViewer {
 	}
 
 	private void scheduleFormatJob() {
-		IWorkbenchSiteProgressService siteService = CommonUtils.getAdapter(partSite, IWorkbenchSiteProgressService.class);
+		IWorkbenchSiteProgressService siteService = (IWorkbenchSiteProgressService) partSite
+				.getAdapter(IWorkbenchSiteProgressService.class);
 		if (siteService == null)
 			return;
 		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(
@@ -402,7 +393,6 @@ class CommitMessageViewer extends SourceViewer {
 	static final class ObjectLink extends StyleRange {
 		RevCommit targetCommit;
 
-		@Override
 		public boolean similarTo(final StyleRange style) {
 			if (!(style instanceof ObjectLink))
 				return false;

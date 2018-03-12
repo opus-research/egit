@@ -115,10 +115,11 @@ class GitSyncCache {
 	private static void loadDataFromGit(GitSynchronizeData gsd,
 			TreeFilter filter, GitSyncObjectCache repoCache) {
 		Repository repo = gsd.getRepository();
+		TreeWalk tw = new TreeWalk(repo);
+		if (filter != null)
+			tw.setFilter(filter);
 
-		try (TreeWalk tw = new TreeWalk(repo)) {
-			if (filter != null)
-				tw.setFilter(filter);
+		try {
 			// setup local tree
 			FileTreeIterator fti = null;
 			if (gsd.shouldIncludeLocal()) {
@@ -153,6 +154,7 @@ class GitSyncCache {
 				fti.setDirCacheIterator(tw, 3);
 			}
 			List<ThreeWayDiffEntry> diffEntrys = ThreeWayDiffEntry.scan(tw);
+			tw.release();
 
 			for (ThreeWayDiffEntry diffEntry : diffEntrys)
 				repoCache.addMember(diffEntry);

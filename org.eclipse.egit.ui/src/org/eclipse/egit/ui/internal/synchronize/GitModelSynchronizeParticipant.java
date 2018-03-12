@@ -144,7 +144,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		setSecondaryId(Long.toString(System.currentTimeMillis()));
 	}
 
-	@Override
 	protected void initializeConfiguration(
 			final ISynchronizePageConfiguration configuration) {
 		configuration.setProperty(ISynchronizePageConfiguration.P_VIEWER_ID,
@@ -175,7 +174,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 		configuration.addPropertyChangeListener(new IPropertyChangeListener() {
 
-			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				String property = event.getProperty();
 				if (property.equals(

@@ -33,7 +33,6 @@ import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
@@ -59,6 +58,8 @@ import org.eclipse.ui.PlatformUI;
  * Utility class that launches model synchronization action
  */
 public class GitModelSynchronize {
+
+	private static final String GIT_PROVIDER_ID = "org.eclipse.egit.core.GitProvider"; //$NON-NLS-1$
 
 	/**
 	 * This can be used to open the synchronize view for the given set of
@@ -227,11 +228,10 @@ public class GitModelSynchronize {
 		IProject[] projects = element.getProjects();
 		for (IProject project: projects) {
 			RepositoryProvider provider = RepositoryProvider
-					.getProvider(project, GitProvider.ID);
+					.getProvider(project);
 
-			if (provider != null) {
+			if (provider != null && provider.getID().equals(GIT_PROVIDER_ID))
 				return true;
-			}
 		}
 		return false;
 	}

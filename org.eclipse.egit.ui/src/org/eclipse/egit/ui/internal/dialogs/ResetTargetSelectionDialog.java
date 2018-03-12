@@ -118,17 +118,14 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		g.setLayout(new GridLayout(1, false));
 
 		anySha1.addFocusListener(new FocusListener() {
-			@Override
 			public void focusLost(FocusEvent e) {
 				// Do nothing
 			}
-			@Override
 			public void focusGained(FocusEvent e) {
 				branchTree.setSelection(null);
 			}
 		});
 		anySha1.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				String text = anySha1.getText();
 				if (text.length() == 0) {
@@ -183,7 +180,6 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		});
 		branchTree.addSelectionChangedListener(new ISelectionChangedListener() {
 
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				if (!event.getSelection().isEmpty()) {
 					String refName = refNameFromDialog();
@@ -210,7 +206,6 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		Button button = new Button(parent, SWT.RADIO);
 		button.setText(text);
 		button.addListener(SWT.Selection, new Listener() {
-			@Override
 			public void handleEvent(Event event) {
 				if (((Button) event.widget).getSelection())
 					resetType = type;

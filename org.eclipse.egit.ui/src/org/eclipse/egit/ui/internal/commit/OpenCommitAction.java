@@ -37,7 +37,6 @@ public class OpenCommitAction extends ActionDelegate implements
 			CommitEditor.openQuiet((RepositoryCommit) result);
 	}
 
-	@Override
 	public void init(IWorkbenchWindow window) {
 		shell = window.getShell();
 	}

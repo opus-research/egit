@@ -160,13 +160,11 @@ public class PushBranchPage extends WizardPage {
 		return forceUpdateSelected;
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		try {
 			this.remoteConfigs = RemoteConfig.getAllRemoteConfigs(repository.getConfig());
 			Collections.sort(remoteConfigs, new Comparator<RemoteConfig>() {
 
-				@Override
 				public int compare(RemoteConfig first, RemoteConfig second) {
 					return String.CASE_INSENSITIVE_ORDER.compare(
 							first.getName(), second.getName());
@@ -263,7 +261,6 @@ public class PushBranchPage extends WizardPage {
 		setRemoteConfigs();
 		remoteSelectionCombo
 				.addRemoteSelectionListener(new IRemoteSelectionListener() {
-					@Override
 					public void remoteSelected(RemoteConfig rc) {
 						remoteConfig = rc;
 						setRefAssist(rc);
@@ -293,7 +290,6 @@ public class PushBranchPage extends WizardPage {
 		UIUtils.addRefContentProposalToText(remoteBranchNameText,
 				this.repository, new IRefListProvider() {
 
-					@Override
 					public List<Ref> getRefList() {
 						if (PushBranchPage.this.assist != null) {
 							return PushBranchPage.this.assist
@@ -311,7 +307,6 @@ public class PushBranchPage extends WizardPage {
 							.indent(SWT.DEFAULT, 20).create());
 			upstreamConfigComponent
 					.addUpstreamConfigSelectionListener(new UpstreamConfigSelectionListener() {
-						@Override
 						public void upstreamConfigSelected(
 								UpstreamConfig newUpstreamConfig) {
 							upstreamConfig = newUpstreamConfig;
@@ -327,7 +322,6 @@ public class PushBranchPage extends WizardPage {
 		forceUpdateButton.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).span(3, 1).create());
 		forceUpdateButton.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				forceUpdateSelected = forceUpdateButton.getSelection();
 			}
@@ -361,7 +355,6 @@ public class PushBranchPage extends WizardPage {
 
 		// Add listener now to avoid setText above to already trigger it.
 		remoteBranchNameText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}

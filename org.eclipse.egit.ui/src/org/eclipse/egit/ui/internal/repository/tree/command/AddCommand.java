@@ -45,7 +45,6 @@ import org.eclipse.team.core.RepositoryProvider;
  */
 public class AddCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		RepositorySearchWizard wizard = new RepositorySearchWizard(
 				util.getConfiguredRepositories());
