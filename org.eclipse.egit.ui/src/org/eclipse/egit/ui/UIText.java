@@ -1576,9 +1576,6 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_iconsShowAssumeValid;
 
 	/** */
-	public static String DeleteBranchCommand_DeleteMultiBranchQuestion;
-
-	/** */
 	public static String IgnoreAction_jobName;
 
 	/** */
