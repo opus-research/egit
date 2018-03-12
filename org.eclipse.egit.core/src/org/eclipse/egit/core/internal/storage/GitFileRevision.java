@@ -26,10 +26,10 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public abstract class GitFileRevision extends FileRevision {
 	/** Content identifier for the working copy. */
-	public static final String WORKSPACE = "Workspace";  //$NON-NLS-1$
+	public static final String WORKSPACE = "Workspace";
 
 	/** Content identifier for the content staged in the index. */
-	public static final String INDEX = "Index";  //$NON-NLS-1$
+	public static final String INDEX = "Index";
 
 	/**
 	 * Obtain a file revision for a specific blob of an existing commit.

@@ -150,7 +150,7 @@ public class CloneOperation {
 
 	private void doInit(final IProgressMonitor monitor)
 			throws URISyntaxException, IOException {
-		monitor.setTaskName(CoreText.CloneOperation_initializingRepository);
+		monitor.setTaskName("Initializing local repository");
 
 		local = new Repository(gitdir);
 		local.create();
@@ -165,8 +165,7 @@ public class CloneOperation {
 		final String dst = Constants.R_REMOTES + remoteConfig.getName();
 		RefSpec wcrs = new RefSpec();
 		wcrs = wcrs.setForceUpdate(true);
-		wcrs = wcrs.setSourceDestination(Constants.R_HEADS
-				+ "*", dst + "/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		wcrs = wcrs.setSourceDestination(Constants.R_HEADS + "*", dst + "/*");
 
 		if (allSelected) {
 			remoteConfig.addFetchRefSpec(wcrs);
@@ -177,8 +176,7 @@ public class CloneOperation {
 		}
 
 		// we're setting up for a clone with a checkout
-		local.getConfig().setBoolean(
-				"core", null, "bare", false); //$NON-NLS-1$ //$NON-NLS-2$
+		local.getConfig().setBoolean("core", null, "bare", false);
 
 		remoteConfig.update(local.getConfig());
 
@@ -188,9 +186,9 @@ public class CloneOperation {
 
 		// setup the default remote branch for branchName
 		local.getConfig().setString(RepositoryConfig.BRANCH_SECTION,
-				branchName, "remote", remoteName); //$NON-NLS-1$
+				branchName, "remote", remoteName);
 		local.getConfig().setString(RepositoryConfig.BRANCH_SECTION,
-				branchName, "merge", branch); //$NON-NLS-1$
+				branchName, "merge", branch);
 
 		local.getConfig().save();
 	}
@@ -222,10 +220,10 @@ public class CloneOperation {
 		u.setNewObjectId(mapCommit.getCommitId());
 		u.forceUpdate();
 
-		monitor.setTaskName(CoreText.CloneOperation_checkingOutFiles);
+		monitor.setTaskName("Checking out files");
 		co = new WorkDirCheckout(local, local.getWorkDir(), index, tree);
 		co.checkout();
-		monitor.setTaskName(CoreText.CloneOperation_writingIndex);
+		monitor.setTaskName("Writing index");
 		index.write();
 	}
 

@@ -124,9 +124,6 @@ public class UIText extends NLS {
 	public static String GitCloneWizard_errorCannotCreate;
 
 	/** */
-	public static String GitDecoratorPreferencePage_bindingRepositoryNameFlag;
-
-	/** */
 	public static String GitHistoryPage_CompareVersions;
 
 	/** */
