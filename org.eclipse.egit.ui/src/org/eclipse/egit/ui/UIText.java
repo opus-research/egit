@@ -2376,8 +2376,6 @@ public class UIText extends NLS {
 	/** */
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
 
-	public static String DeleteBranchCommand_DeletingBranchesProgress;
-
 	/** */
 	public static String DeleteBranchDialog_DialogMessage;
 
