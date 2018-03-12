@@ -14,8 +14,7 @@ package org.eclipse.egit.ui.internal.history.command;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RevertCommand;
 import org.eclipse.jgit.lib.Repository;
@@ -35,15 +34,11 @@ public class RevertHandler extends AbstractHistoryCommanndHandler {
 		try {
 			revert = git.revert().include(commit.getId());
 			newHead = revert.call();
-			if (newHead != null && revert.getRevertedRefs().isEmpty())
-				MessageDialog.openWarning(getPart(event).getSite().getShell(),
-						UIText.RevertHandler_NoRevertTitle,
-						UIText.RevertHandler_AlreadyRevertedMessae);
 		} catch (Exception e) {
-			throw new ExecutionException(UIText.RevertOperation_InternalError, e);
+			throw new ExecutionException(CoreText.RevertOperation_InternalError, e);
 		}
 		if (newHead == null)
-			throw new ExecutionException(UIText.RevertOperation_Failed);
+			throw new ExecutionException(CoreText.RevertOperation_Failed);
 		return null;
 	}
 }
