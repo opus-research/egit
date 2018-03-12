@@ -115,7 +115,7 @@ public class StashDropCommand extends
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.STASH.equals(family))
+				if (family.equals(JobFamilies.STASH))
 					return true;
 				return super.belongsTo(family);
 			}
