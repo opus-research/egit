@@ -16,7 +16,6 @@ import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 
 import org.eclipse.compare.CompareConfiguration;
 import org.eclipse.compare.ITypedElement;
@@ -25,6 +24,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -37,8 +37,6 @@ import org.eclipse.team.ui.mapping.SaveableComparison;
  */
 public abstract class GitModelObjectContainer extends GitModelObject implements
 		ISynchronizationCompareInput {
-
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm"); //$NON-NLS-1$
 
 	private int kind = -1;
 
@@ -119,16 +117,8 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 
 	@Override
 	public String getName() {
-		if (name == null) {
-			StringBuilder sb = new StringBuilder();
-			sb.append("["); //$NON-NLS-1$
-			sb.append(baseCommit.getAuthorIdent().getName());
-			sb.append("] ("); //$NON-NLS-1$
-			sb.append(DATE_FORMAT.format(baseCommit.getAuthorIdent().getWhen()));
-			sb.append(") "); //$NON-NLS-1$
-			sb.append(baseCommit.getShortMessage());
-			name = sb.toString();
-		}
+		if (name == null)
+			name = baseCommit.getShortMessage();
 
 		return name;
 	}
@@ -139,9 +129,7 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	}
 
 	@Override
-	public IPath getLocation() {
-		return getParent().getLocation();
-	}
+	public abstract IPath getLocation();
 
 	public ITypedElement getAncestor() {
 		return null;
@@ -214,7 +202,7 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	 */
 	protected GitModelObject getModelObject(TreeWalk tw, RevCommit ancestorCommit,
 			int ancestorNth, int baseNth, int actualNth) throws IOException {
-		String objName = tw.getNameString();
+		IPath path = new Path(getLocation() + "/" +tw.getPathString()); //$NON-NLS-1$
 
 		ObjectId objBaseId;
 		if (baseNth > -1)
@@ -232,10 +220,10 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 
 		if (objectType == Constants.OBJ_BLOB)
 			return new GitModelBlob(this, getBaseCommit(), ancestorCommit,
-					objAncestorId, objBaseId, objRemoteId, objName);
+					objAncestorId, objBaseId, objRemoteId, path);
 		else if (objectType == Constants.OBJ_TREE)
 			return new GitModelTree(this, getBaseCommit(), ancestorCommit,
-					objAncestorId, objBaseId, objRemoteId, objName);
+					objAncestorId, objBaseId, objRemoteId, path);
 
 		return null;
 	}
