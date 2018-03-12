@@ -8,19 +8,19 @@
 
    <extension point="org.eclipse.ui.importWizards">
       <category name="%Git_clone_category"
-        id="org.eclipse.egit.ui.internal.clone.gitclonecategory"/>
+	    id="org.eclipse.egit.ui.internal.clone.gitclonecategory"/>
       <wizard name="%Git_clone_wizard"
-        icon="icons/obj16/import_obj.gif"
-        class="org.eclipse.egit.ui.internal.clone.GitImportWizard"
-        id="org.eclipse.egit.ui.internal.clone.GitCloneWizard"
-        category="org.eclipse.egit.ui.internal.clone.gitclonecategory">
-        <description>%Git_clone_description</description>
+	    icon="icons/obj16/import_obj.gif"
+	    class="org.eclipse.egit.ui.internal.clone.GitImportWizard"
+	    id="org.eclipse.egit.ui.internal.clone.GitCloneWizard"
+	    category="org.eclipse.egit.ui.internal.clone.gitclonecategory">
+	    <description>%Git_clone_description</description>
       </wizard>
    </extension>
 
    <extension point="org.eclipse.team.ui.configurationWizards">
       <wizard name="%SharingWizard_name"
-        icon="icons/etool16/newconnect_wiz.gif"
+	    icon="icons/etool16/newconnect_wiz.gif"
             class="org.eclipse.egit.ui.internal.sharing.SharingWizard"
             id="org.eclipse.egit.ui.internal.sharing.SharingWizard">
       </wizard>
@@ -61,7 +61,7 @@
                menubarPath="team.main/group5"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.MergeAction"
-               definitionId="org.eclipse.egit.ui.RepositoriesViewMerge"
+               definitionId="org.eclipse.egit.ui.team.Merge"
                icon="$nl$/icons/obj16/merge.gif"
                id="org.eclipse.egit.ui.internal.actions.MergeAction"
                label="%MergeAction_label"
@@ -166,11 +166,6 @@
                label="%DiscardChangesAction_label"
                menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.CheckoutResourcesFromHEADAction"
-               id="org.eclipse.egit.ui.internal.actions.CheckoutResourcesFromHEADAction"
-               label="%CheckoutResourcesFromHEAD_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
-         <action
                class="org.eclipse.egit.ui.internal.actions.ApplyPatchAction"
                definitionId="org.eclipse.egit.ui.team.ApplyPatch"
                enablesFor="*"
@@ -209,8 +204,8 @@
                label="%CompareWithCommitAction.label"
                menubarPath="compareWithMenu/gitCompareWithGroup">
          </action>
-      </objectContribution>
-         <objectContribution
+	  </objectContribution>
+   	  <objectContribution
          adaptable="true"
          id="org.eclipse.egit.ui.fileContributions"
          objectClass="org.eclipse.core.resources.IFile">
@@ -233,7 +228,7 @@
             </adapter>
          </factory>
          <factory
-           adaptableType="org.eclipse.core.resources.IResource"
+	       adaptableType="org.eclipse.core.resources.IResource"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
                   type="org.eclipse.team.ui.history.IHistoryPageSource">
@@ -254,43 +249,43 @@
             </adapter>
          </factory>
          <factory
-           adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelRoot"
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelRoot"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
                   type="org.eclipse.ui.model.IWorkbenchAdapter"/>
          </factory>
          <factory
-           adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository"
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
                   type="org.eclipse.ui.model.IWorkbenchAdapter"/>
          </factory>
          <factory
-           adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit"
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
                   type="org.eclipse.ui.model.IWorkbenchAdapter"/>
          </factory>
          <factory
-           adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelCache"
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelCache"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
                   type="org.eclipse.ui.model.IWorkbenchAdapter"/>
          </factory>
          <factory
-           adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelWorkingTree"
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelWorkingTree"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
                   type="org.eclipse.ui.model.IWorkbenchAdapter"/>
          </factory>
          <factory
-           adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelTree"
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelTree"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
                   type="org.eclipse.ui.model.IWorkbenchAdapter"/>
          </factory>
          <factory
-           adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob"
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
                   type="org.eclipse.ui.model.IWorkbenchAdapter"/>
@@ -342,20 +337,20 @@
             id="org.eclipse.egit.ui.GitPreferences" />
 
       <page name="%GitPreferences_WindowCachePreferencePage_name"
-        category="org.eclipse.egit.ui.GitPreferences"
+	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.WindowCachePreferencePage"
-        id="org.eclipse.egit.ui.internal.preferences.WindowCachePreferencePage" >
-        <keywordReference
-          id="org.eclipse.egit.ui.keyword.git">
-        </keywordReference>
+	    id="org.eclipse.egit.ui.internal.preferences.WindowCachePreferencePage" >
+	    <keywordReference
+		  id="org.eclipse.egit.ui.keyword.git">
+	    </keywordReference>
       </page>
-      <page name="%GitPreferences_DecoratorPreferencePage_name"
-        category="org.eclipse.egit.ui.GitPreferences"
+	  <page name="%GitPreferences_DecoratorPreferencePage_name"
+	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.GitDecoratorPreferencePage"
-        id="org.eclipse.egit.ui.internal.preferences.GitDecoratorPreferencePage" >
-        <keywordReference
-          id="org.eclipse.egit.ui.keyword.git">
-        </keywordReference>
+	    id="org.eclipse.egit.ui.internal.preferences.GitDecoratorPreferencePage" >
+	    <keywordReference
+		  id="org.eclipse.egit.ui.keyword.git">
+	    </keywordReference>
       </page>
       <page
          category="org.eclipse.egit.ui.GitPreferences"
@@ -382,26 +377,26 @@
             name="%Git"
             class="org.eclipse.egit.ui.internal.preferences.GitProjectPropertyPage"
             id="org.eclipse.egit.ui.preferences.GitProjectPropertyPage">
-        <enabledWhen>
-        <adapt type="org.eclipse.core.resources.IProject">
-            <test
-                property="org.eclipse.core.resources.projectPersistentProperty"
-                args="org.eclipse.team.core.repository, org.eclipse.egit.core.GitProvider">
-            </test>
-        </adapt>
-        </enabledWhen>
+	    <enabledWhen>
+		<adapt type="org.eclipse.core.resources.IProject">
+			<test
+				property="org.eclipse.core.resources.projectPersistentProperty"
+				args="org.eclipse.team.core.repository, org.eclipse.egit.core.GitProvider">
+			</test>
+		</adapt>
+	    </enabledWhen>
       </page>
    </extension>
 
    <extension point="org.eclipse.ui.keywords">
-      <keyword
-            id="org.eclipse.egit.ui.keyword.git"
-            label="%GitKeyword_label">
-      </keyword>
-      <keyword
-            id="org.eclipse.egit.ui.keyword.refresh"
-            label="%GitKeyword_Refresh_label">
-      </keyword>
+	  <keyword
+			id="org.eclipse.egit.ui.keyword.git"
+			label="%GitKeyword_label">
+	  </keyword>
+	  <keyword
+			id="org.eclipse.egit.ui.keyword.refresh"
+			label="%GitKeyword_Refresh_label">
+	  </keyword>
    </extension>
 
    <extension point="org.eclipse.ui.decorators">
@@ -453,7 +448,7 @@
             %Theme_CommitMessageFont_description
          </description>
       </fontDefinition>
-    <colorDefinition
+	<colorDefinition
         id="org.eclipse.egit.ui.UncommittedChangeForegroundColor"
         categoryId="org.eclipse.egit.ui.GitTheme"
         label="%Theme_UncommittedChangeForegroundColor_label"
@@ -500,14 +495,14 @@
       </referenceprovider>
    </extension>
    <extension
-     point="org.eclipse.ui.actionSets">
+	 point="org.eclipse.ui.actionSets">
       <actionSet
-        description="%GitActions_description"
-        id="org.eclipse.egit.ui.gitaction"
-        label="%GitActions_label"
-        visible="false"
-        >
-        <menu
+	    description="%GitActions_description"
+	    id="org.eclipse.egit.ui.gitaction"
+	    label="%GitActions_label"
+	    visible="false"
+	    >
+	    <menu
            id="org.eclipse.egit.ui.gitmenu"
            label="%GitMenu_label"
            path="additions"
@@ -515,7 +510,7 @@
         <separator
               name="repositoryGroup">
         </separator>
-        </menu>
+	    </menu>
   <action
         class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamConfigAction"
         definitionId="org.eclipse.egit.ui.team.Pull"
@@ -527,7 +522,7 @@
         toolbarPath="org.eclipse.egit.ui"
         tooltip="%PullIntoCurrentBranch.tooltip">
   </action>
-        <action
+		<action
         class="org.eclipse.egit.ui.internal.actions.SimpleFetchAction"
         definitionId="org.eclipse.egit.ui.team.SimpleFetch"
         icon="icons/obj16/fetch.gif"
@@ -537,8 +532,8 @@
         style="push"
         toolbarPath="org.eclipse.egit.ui"
         tooltip="%FetchAction_tooltip">
-        </action>
-        <action
+		</action>
+		<action
         class="org.eclipse.egit.ui.internal.actions.SimplePushAction"
         definitionId="org.eclipse.egit.ui.team.SimplePush"
         icon="icons/obj16/push.gif"
@@ -548,8 +543,8 @@
         style="push"
         toolbarPath="org.eclipse.egit.ui"
         tooltip="%PushAction_tooltip">
-        </action>
-        <action
+		</action>
+		<action
         class="org.eclipse.egit.ui.internal.actions.ResetAction"
         definitionId="org.eclipse.egit.ui.team.Reset"
         icon="icons/obj16/reset.gif"
@@ -559,7 +554,7 @@
         style="push"
         toolbarPath="Normal/additions"
         tooltip="%ResetAction_tooltip">
-        </action>
+		</action>
   <action
         class="org.eclipse.egit.ui.internal.actions.BranchAction"
         definitionId="org.eclipse.egit.ui.team.Branch"
@@ -620,6 +615,455 @@
             id="org.eclipse.egit.ui.command.configureTrace"
             name="%ConfigureTraceCommand.name">
       </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.commands.shared.FetchChangeFromGerritCommand"
+            id="org.eclipse.egit.ui.FetchGerritChange"
+            name="%FetchFromGerritCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.Commit"
+            name="%CommitCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.SimpleFetch"
+            name="%FetchUpstreamCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.SimplePush"
+            name="%PushUpstreamCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.Pull"
+            name="%TeamPullCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.Fetch"
+            name="%FetchCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.Push"
+            name="%PushCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.Merge"
+            name="%MergeCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.Synchronize"
+            name="%SynchronizeCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.ShowHistory"
+            name="%ShowInHistoryCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.Reset"
+            name="%ResetCommand.name">
+      </command>
+   </extension>
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            commandId="org.eclipse.egit.ui.team.Commit">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.CommitCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Commit">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.CommitActionHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="+">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IResource">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.SimpleFetch">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.FetchConfiguredRemoteCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <and>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.SimpleFetch">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.SimpleFetchActionHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IResource">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.SimplePush">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.PushConfiguredRemoteCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <and>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.SimplePush">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.SimplePushActionHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IResource">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Pull">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.PullCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Pull">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamActionHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IProject">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Fetch">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.FetchCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Fetch">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.FetchActionHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IProject">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Push">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.PushCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Push">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.PushActionHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IProject">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Merge">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Merge">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.MergeActionHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IProject">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Synchronize">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.SynchronizeCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Synchronize">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.SynchronizeWithActionHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IProject">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.ShowHistory">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.ShowInHistoryCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.ShowHistory">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.ShowHistoryActionHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IResource">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Reset">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.ResetCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.Reset">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.ResetActionHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IProject">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
    </extension>
    <extension
          point="org.eclipse.ui.views">
@@ -877,7 +1321,7 @@
                visible="true">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
+               commandId="org.eclipse.egit.ui.team.Merge"
                icon="icons/obj16/merge.gif"
                label="%RepoViewMergeSimple.label"
                style="push">
@@ -942,7 +1386,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewSynchronize"
+               commandId="org.eclipse.egit.ui.team.Synchronize"
                icon="icons/obj16/remotespec.gif"
                label="%RepoViewSynchronize.label"
                style="push">
@@ -973,7 +1417,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewSynchronizeWithEachOther"
+               commandId="org.eclipse.egit.ui.team.Synchronize"
                icon="icons/obj16/remotespec.gif"
                label="%RepoViewSynchronizeEachOther.label"
                style="push">
@@ -1025,7 +1469,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewPushConfigured"
+               commandId="org.eclipse.egit.ui.team.SimplePush"
                icon="icons/obj16/push.gif"
                label="%RepoViewPushSimpleLabel"
                style="push">
@@ -1046,7 +1490,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewFetchConfigured"
+               commandId="org.eclipse.egit.ui.team.SimpleFetch"
                icon="icons/obj16/fetch.gif"
                label="%RepoViewFetchSimple.label"
                style="push">
@@ -1273,7 +1717,28 @@
                name="##Repo-1">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewPushConfigured"
+               commandId="org.eclipse.egit.ui.team.Commit"
+               icon="icons/obj16/commit.gif"
+               label="%RepoViewCommit.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.team.SimplePush"
                icon="icons/obj16/push.gif"
                label="%PushToUpstreamCommand.label"
                style="push">
@@ -1294,7 +1759,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewFetchConfigured"
+               commandId="org.eclipse.egit.ui.team.SimpleFetch"
                icon="icons/obj16/fetch.gif"
                label="%FetchFromUpstreamCommand.label"
                style="push">
@@ -1315,7 +1780,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewPush"
+               commandId="org.eclipse.egit.ui.team.Push"
                icon="icons/obj16/push.gif"
                label="%RepoViewPush.label"
                style="push">
@@ -1336,7 +1801,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewFetch"
+               commandId="org.eclipse.egit.ui.team.Fetch"
                icon="icons/obj16/fetch.gif"
                label="%RepoViewFetch.label"
                style="push">
@@ -1357,7 +1822,25 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewPull"
+               commandId="org.eclipse.egit.ui.FetchGerritChange"
+               label="%FetchFromGerritCommand.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.team.Pull"
                icon="icons/obj16/pull.gif"
                label="%RepoViewPullMenu.label"
                style="push">
@@ -1385,7 +1868,7 @@
                visible="true">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewMerge"
+               commandId="org.eclipse.egit.ui.team.Merge"
                icon="icons/obj16/merge.gif"
                label="%RepoViewMerge.label"
                style="push">
@@ -1419,7 +1902,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRebaseWithDialog"
+               commandId="org.eclipse.egit.ui.RepositoriesViewRebase"
                icon="icons/obj16/rebase.gif"
                label="%RebaseCommand.label2"
                style="push">
@@ -1516,7 +1999,7 @@
             </command>
          </menu>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewReset"
+               commandId="org.eclipse.egit.ui.team.Reset"
                icon="icons/obj16/reset.gif"
                label="%RepoViewReset.label"
                style="push">
@@ -1549,7 +2032,7 @@
                visible="true">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
+               commandId="org.eclipse.egit.ui.team.ShowHistory"
                icon="icons/obj16/history.gif"
                label="%ShowInHistoryCommand.label"
                style="push">
@@ -1834,6 +2317,119 @@
                style="toggle">
          </command>
       </menuContribution>
+      <menuContribution
+            locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+         <menu
+               id="team.main"
+               label="%TeamMenu.label">
+            <separator
+                  name="group1"
+                  visible="true">
+            </separator>
+            <separator
+                  name="org.eclipse.egit.ui.remoteSeparator"
+                  visible="true">
+            </separator>
+            <menu
+                  label="%RemoteSubMenu.label">
+               <command
+                     commandId="org.eclipse.egit.ui.team.Fetch"
+                     label="%FetchAction_label"
+                     style="push">
+               </command>
+               <command
+                     commandId="org.eclipse.egit.ui.FetchGerritChange"
+                     label="%FetchFromGerritCommand.label"
+                     style="push">
+               </command>
+               <command
+                     commandId="org.eclipse.egit.ui.team.Push"
+                     label="%PushAction_label"
+                     style="push">
+               </command>
+               <separator
+                     name="org.eclipse.egit.ui.remote.group1"
+                     visible="true">
+               </separator>
+               <command
+                     commandId="org.eclipse.egit.ui.ConfigureUpstreamFetch"
+                     label="%ConfigureFetchFromUpstreamCommand.label"
+                     style="push">
+               </command>
+               <command
+                     commandId="org.eclipse.egit.ui.ConfigureUpstreamPush"
+                     label="%ConfigurePushToUpstreamCommand.label"
+                     style="push">
+               </command>
+               <visibleWhen
+                     checkEnabled="false">
+                  <and>
+                     <count
+                           value="1">
+                     </count>
+                     <iterate>
+                        <and>
+                           <adapt
+                                 type="org.eclipse.core.resources.IProject">
+                              <test
+                                    property="GitResource.isShared">
+                              </test>
+                           </adapt>
+                        </and>
+                     </iterate>
+                  </and>
+               </visibleWhen>
+            </menu>
+            <separator
+                  name="applyPatchGroup"
+                  visible="false">
+            </separator>
+            <separator
+                  name="group2"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group3"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group4"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group5"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group6"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group7"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group8"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group9"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group10"
+                  visible="true">
+            </separator>
+            <separator
+                  name="targetGroup"
+                  visible="true">
+            </separator>
+            <separator
+                  name="projectGroup"
+                  visible="true">
+            </separator>
+         </menu>
+      </menuContribution>
    </extension>
    <extension
          name="%RepositoryCommandsLabel"
@@ -1864,12 +2460,6 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.FetchCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewFetch"
-            name="%FetchCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand"
             id="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
             name="%RenameBranchCommand">
@@ -1885,12 +2475,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.OpenPropertiesCommand"
             id="org.eclipse.egit.ui.RepositoriesViewOpenProperties"
             name="%OpenPropertiesCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.PushCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewPush"
-            name="%PushCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -1942,12 +2526,6 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.PushConfiguredRemoteCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewPushConfigured"
-            name="%SimplePushCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ChangeCredentialsCommand"
             id="org.eclipse.egit.ui.RepositoriesViewChangeCredentials"
             name="%ChangeCredentialsCommand">
@@ -1957,12 +2535,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ClearCredentialsCommand"
             id="org.eclipse.egit.ui.RepositoriesViewClearCredentials"
             name="%ClearCredentialsCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.FetchConfiguredRemoteCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewFetchConfigured"
-            name="%SimpleFetchCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -1996,38 +2568,9 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.SynchronizeCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewSynchronize"
-            name="%SynchronizeCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.SynchronizeCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewSynchronizeWithEachOther"
-            name="%SynchronizeCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CreateTagCommand"
             id="org.eclipse.egit.ui.RepositoriesViewCreateTag"
             name="%CreateTagCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
-            name="%MergeCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            id="org.eclipse.egit.ui.RepositoriesViewMerge"
-            name="%MergeWithDialogCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ResetCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewReset"
-            name="%ResetCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -2059,27 +2602,9 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ShowInHistoryCommand"
-            id="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
-            name="%ShowInHistoryCommand.name2">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.PullCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewPull"
-            name="%RepoViewPullCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RebaseCurrentRefCommand"
             id="org.eclipse.egit.ui.RepositoriesViewRebase"
             name="%RebaseCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RebaseCurrentRefCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewRebaseWithDialog"
-            name="%RebaseWithDialogCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -2107,10 +2632,6 @@
             icon="icons/etool16/newlocation_wiz.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewFetch"
-            icon="icons/obj16/fetch.gif">
-      </image>
-      <image
             commandId="org.eclipse.egit.ui.RepositoriesViewClone"
             icon="icons/obj16/cloneGit.gif">
       </image>
@@ -2119,28 +2640,12 @@
             icon="icons/obj16/refresh.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewPush"
-            icon="icons/obj16/push.gif">
-      </image>
-      <image
             commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
             icon="icons/elcl16/synced.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
             icon="icons/obj16/version_rep.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewMerge"
-            icon="icons/obj16/merge.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
-            icon="icons/obj16/merge.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewReset"
-            icon="icons/obj16/reset.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.ShowRepositoriesView"
@@ -2175,16 +2680,8 @@
             icon="icons/obj16/checkout.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewSynchronize"
-            icon="$nl$/icons/obj16/remotespec.gif">
-      </image>
-      <image
             commandId="org.eclipse.egit.ui.RepositoriesViewImportProjects"
             icon="icons/obj16/import_prj.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewFetchConfigured"
-            icon="icons/obj16/fetch.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewDeleteBranch"
@@ -2201,10 +2698,6 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
             icon="icons/obj16/delete_obj.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewPushConfigured"
-            icon="icons/obj16/push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewOpenProperties"
@@ -2225,14 +2718,6 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewRemove"
             icon="icons/obj16/clear.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
-            icon="icons/obj16/history.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewPull"
-            icon="icons/obj16/pull.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewAbortRebase"
@@ -2270,6 +2755,62 @@
             commandId="org.eclipse.egit.ui.team.Push"
             icon="icons/obj16/push.gif">
       </image>
+      <image
+            commandId="org.eclipse.egit.ui.FetchGerritChange"
+            icon="icons/obj16/gerrit_obj.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.AddToIndex"
+            icon="icons/obj16/add.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.Branch"
+            icon="icons/obj16/branch_obj.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.Commit"
+            icon="icons/obj16/commit.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.SimpleFetch"
+            icon="icons/obj16/fetch.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.SimplePush"
+            icon="icons/obj16/push.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.Ignore"
+            icon="icons/obj16/ignore.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.Merge"
+            icon="icons/obj16/merge.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.MergeTool"
+            icon="icons/obj16/mergetool.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.Pull"
+            icon="icons/obj16/pull.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewRebase"
+            icon="icons/obj16/rebase.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.Reset"
+            icon="icons/obj16/reset.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.Synchronize"
+            icon="icons/obj16/remotespec.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.Tag"
+            icon="icons/obj16/tags.gif">
+      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -2279,6 +2820,13 @@
             namespace="GitRepository"
             properties="isBare,isSafe,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase"
             type="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
+      </propertyTester>
+      <propertyTester
+            class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
+            id="org.eclipse.egit.ui.ResourceTester"
+            namespace="GitResource"
+            properties="isShared"
+            type="org.eclipse.core.resources.IResource">
       </propertyTester>
    </extension>
    <extension
@@ -2322,13 +2870,6 @@
    <extension
          point="org.eclipse.team.ui.synchronizeParticipants">
       <participant
-            class="org.eclipse.egit.ui.internal.synchronize.GitSubscriberParticipant"
-            id="org.eclipse.egit.ui.synchronizeParticipant"
-            icon="icons/obj16/gitrepository.gif"
-            name="%Synchronize_Name"
-            persistent="false">
-      </participant>
-      <participant
             class="org.eclipse.egit.ui.internal.synchronize.GitModelSynchronizeParticipant"
             id="org.eclipse.egit.ui.modelCompareParticipant"
             name="%Synchronize_Name"
@@ -2351,7 +2892,7 @@
            </or>
          </enablement>
          <commonSorter
-               class="org.eclipse.egit.ui.internal.synchronize.mapping.GitCommitChangeSetSorter"/>
+               class="org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetSorter"/>
        </navigatorContent>
    </extension>
    <extension
@@ -2360,6 +2901,23 @@
             contentExtensionId="org.eclipse.egit.ui.changeSetContent"
             icon="$nl$/icons/obj16/changelog_obj.gif"
             modelProviderId="org.eclipse.egit.ui.changeSetModel"/>
+   </extension>
+   <extension point="org.eclipse.ui.navigator.viewer">
+       <viewer viewerId="org.eclipse.egit.ui.compareSynchronization">
+           <popupMenu
+                allowsPlatformContributions="false"
+                id="org.eclipse.egit.ui.compareSynchronizationMenu">
+             <insertionPoint name="gitActions" separator="true"/>
+             <insertionPoint name="file"/>
+             <insertionPoint name="file-bottom"/>
+             <insertionPoint name="edit" separator="true"/>
+             <insertionPoint name="synchronize"/>
+             <insertionPoint name="navigate" separator="true"/>
+             <insertionPoint name="modelTeam" separator="true"/>
+             <insertionPoint name="sort" separator="true"/>
+			 <insertionPoint name="additions" separator="true"/>
+          </popupMenu>
+       </viewer>
    </extension>
    <extension
          name="%TeamMenuCommandsLabel"
@@ -2375,12 +2933,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.actions.BranchActionHandler"
             id="org.eclipse.egit.ui.team.Branch"
             name="%BranchCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.CommitActionHandler"
-            id="org.eclipse.egit.ui.team.Commit"
-            name="%CommitCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -2405,12 +2957,6 @@
             id="org.eclipse.egit.ui.team.Discard"
             name="%ReplaceWithIndexCommand.name">
       </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.FetchActionHandler"
-            id="org.eclipse.egit.ui.team.Fetch"
-            name="%FetchCommand.name">
-      </command>
             <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.IgnoreActionHandler"
@@ -2419,39 +2965,9 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.MergeActionHandler"
-            id="org.eclipse.egit.ui.team.Merge"
-            name="%MergeCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.PushActionHandler"
-            id="org.eclipse.egit.ui.team.Push"
-            name="%PushCommand.name">
-      </command>
-            <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ResetActionHandler"
-            id="org.eclipse.egit.ui.team.Reset"
-            name="%ResetCommand.name2">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.SynchronizeWithActionHandler"
-            id="org.eclipse.egit.ui.team.SyncWith"
-            name="%SynchronizeCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.TagActionHandler"
             id="org.eclipse.egit.ui.team.Tag"
             name="%TagCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ShowHistoryActionHandler"
-            id="org.eclipse.egit.ui.team.ShowHistory"
-            name="%ShowInHistoryCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -2467,27 +2983,9 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.PullFromUpstreamActionHandler"
-            id="org.eclipse.egit.ui.team.Pull"
-            name="%TeamPullCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.MergeToolActionHandler"
             id="org.eclipse.egit.ui.team.MergeTool"
             name="%MergeToolCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.SimplePushActionHandler"
-            id="org.eclipse.egit.ui.team.SimplePush"
-            name="%PushUpstreamCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.SimpleFetchActionHandler"
-            id="org.eclipse.egit.ui.team.SimpleFetch"
-            name="%FetchUpstreamCommand.name">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.actions.ConfigureFetchActionHandler"
@@ -2501,24 +2999,14 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.SimplePushActionHandler"
-            id="org.eclipse.egit.ui.team.SimplePush"
-            name="%PushUpstreamCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.SimpleFetchActionHandler"
-            id="org.eclipse.egit.ui.team.SimpleFetch"
-            name="%FetchUpstreamCommand.name">
-      </command>
-      <command
             defaultHandler="org.eclipse.egit.ui.internal.actions.ConfigureFetchActionHandler"
-            id="org.eclipse.egit.ui.ConfigureUpstreamFetch"
+            id="org.eclipse.egit.ui.team.ConfigureFetch"
             name="%ConfigureUpstreamFetchCommand.name">
       </command>
       <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.ConfigurePushActionHandler"
-            id="org.eclipse.egit.ui.ConfigureUpstreamPush"
+            id="org.eclipse.egit.ui.team.ConfigurePush"
             name="%ConfigureUpstreamPushCommand.name">
       </command>
    </extension>
@@ -2536,7 +3024,7 @@
             sequence="M1+M3+I">
       </key>
       <key
-            commandId="org.eclipse.egit.ui.RepositoriesViewMerge"
+            commandId="org.eclipse.egit.ui.team.Merge"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+M3+M">
       </key>
@@ -2654,157 +3142,5 @@
             id="org.eclipse.egit.ui.wizardCategory"
             name="%Git">
       </category>
-   </extension>
-   <extension
-         point="org.eclipse.ui.handlers">
-      <handler
-            class="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand"
-            commandId="org.eclipse.egit.ui.RepositoriesViewMerge">
-         <activeWhen>
-            <iterate
-                  ifEmpty="false">
-               <or>
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                  </instanceof>
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                  </instanceof>
-               </or>
-            </iterate></activeWhen>
-      </handler>
-      <handler
-            class="org.eclipse.egit.ui.internal.actions.MergeAction"
-            commandId="org.eclipse.egit.ui.RepositoriesViewMerge">
-         <activeWhen>
-            <iterate
-                  ifEmpty="false">
-               <instanceof
-                     value="org.eclipse.core.resources.IProject">
-               </instanceof>
-            </iterate>
-         </activeWhen>
-      </handler>
-   </extension>
-   <extension
-         point="org.eclipse.ui.menus">
-      <menuContribution
-            locationURI="popup:org.eclipse.ui.popup.any?after=additions">
-         <menu
-               id="team.main"
-               label="%TeamMenu.label">
-            <separator
-                  name="group1"
-                  visible="true">
-            </separator>
-            <separator
-                  name="org.eclipse.egit.ui.remoteSeparator"
-                  visible="true">
-            </separator>
-            <menu
-                  label="%RemoteSubMenu.label">
-               <command
-                     commandId="org.eclipse.egit.ui.team.Fetch"
-                     label="%FetchAction_label"
-                     style="push">
-               </command>
-               <command
-                     commandId="org.eclipse.egit.ui.team.Push"
-                     label="%PushAction_label"
-                     style="push">
-               </command>
-               <separator
-                     name="org.eclipse.egit.ui.remote.group1"
-                     visible="true">
-               </separator>
-               <command
-                     commandId="org.eclipse.egit.ui.ConfigureUpstreamFetch"
-                     label="%ConfigureFetchFromUpstreamCommand.label"
-                     style="push">
-               </command>
-               <command
-                     commandId="org.eclipse.egit.ui.ConfigureUpstreamPush"
-                     label="%ConfigurePushToUpstreamCommand.label"
-                     style="push">
-               </command>
-               <visibleWhen
-                     checkEnabled="false">
-                  <and>
-                     <count
-                           value="1">
-                     </count>
-                     <iterate>
-                        <adapt
-                              type="org.eclipse.core.resources.IProject">
-                        </adapt>
-                     </iterate>
-                  </and>
-               </visibleWhen>
-            </menu>
-            <separator
-                  name="applyPatchGroup"
-                  visible="false">
-            </separator>
-            <separator
-                  name="group2"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group3"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group4"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group5"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group6"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group7"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group8"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group9"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group10"
-                  visible="true">
-            </separator>
-            <separator
-                  name="targetGroup"
-                  visible="true">
-            </separator>
-            <separator
-                  name="projectGroup"
-                  visible="true">
-            </separator>
-            <visibleWhen
-                  checkEnabled="false">
-               <with
-                     variable="activeMenuSelection">
-                  <count
-                        value="+">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <adapt type="org.eclipse.core.resources.IResource">
-                     </adapt>
-                  </iterate>
-               </with>
-            </visibleWhen>
-         </menu>
-      </menuContribution>
    </extension>
 </plugin>

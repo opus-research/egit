@@ -38,7 +38,10 @@ import org.eclipse.team.ui.mapping.SaveableComparison;
 public abstract class GitModelObjectContainer extends GitModelObject implements
 		ISynchronizationCompareInput {
 
-	private int kind = -1;
+	/**
+	 * Describe what kind of change is connected with this object
+	 */
+	protected int kind = -1;
 
 	private String name;
 
@@ -65,12 +68,17 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 			int direction) throws IOException {
 		super(parent);
 		kind = direction;
-		baseCommit = commit;
+		if (commit != null) {
+			baseCommit = commit;
 
-		RevCommit[] parents = baseCommit.getParents();
-		if (parents != null && parents.length > 0)
-			remoteCommit = baseCommit.getParent(0);
-		else {
+			RevCommit[] parents = baseCommit.getParents();
+			if (parents != null && parents.length > 0)
+				remoteCommit = baseCommit.getParent(0);
+			else {
+				remoteCommit = null;
+			}
+		} else {
+			baseCommit = null;
 			remoteCommit = null;
 		}
 	}
@@ -195,14 +203,20 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	 * @param tw instance of {@link TreeWalk} that should be used
 	 * @param ancestorCommit TODO
 	 * @param ancestorNth
+	 * @param remoteNth
 	 * @param baseNth
-	 * @param actualNth
 	 * @return {@link GitModelObject} instance of given parameters
 	 * @throws IOException
 	 */
 	protected GitModelObject getModelObject(TreeWalk tw, RevCommit ancestorCommit,
-			int ancestorNth, int baseNth, int actualNth) throws IOException {
+			int ancestorNth, int remoteNth, int baseNth) throws IOException {
 		IPath path = new Path(getLocation() + "/" +tw.getPathString()); //$NON-NLS-1$
+
+		ObjectId objRemoteId;
+		if (remoteNth > -1)
+			objRemoteId = tw.getObjectId(remoteNth);
+		else
+			objRemoteId = ObjectId.zeroId();
 
 		ObjectId objBaseId;
 		if (baseNth > -1)
@@ -210,13 +224,20 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 		else
 			objBaseId = ObjectId.zeroId();
 
-		ObjectId objRemoteId = tw.getObjectId(actualNth);
 		ObjectId objAncestorId;
 		if (ancestorNth > -1)
 			objAncestorId = tw.getObjectId(ancestorNth);
 		else
 			objAncestorId = ObjectId.zeroId();
-		int objectType = tw.getFileMode(actualNth).getObjectType();
+
+		int objectType = Constants.OBJ_BAD;
+
+		if (baseNth > -1)
+			objectType = tw.getFileMode(baseNth).getObjectType();
+		if (objectType == Constants.OBJ_BAD)
+			objectType = tw.getFileMode(remoteNth).getObjectType();
+		if (objectType == Constants.OBJ_BAD && ancestorNth > -1)
+			objectType = tw.getFileMode(ancestorNth).getObjectType();
 
 		if (objectType == Constants.OBJ_BLOB)
 			return new GitModelBlob(this, getBaseCommit(), ancestorCommit,

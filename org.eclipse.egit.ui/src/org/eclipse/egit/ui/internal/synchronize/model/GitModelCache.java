@@ -23,7 +23,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -36,11 +35,6 @@ import org.eclipse.jgit.treewalk.TreeWalk;
  * Git cache representation in EGit Change Set
  */
 public class GitModelCache extends GitModelObjectContainer {
-
-	/**
-	 * NTH of {@link DirCacheIterator}
-	 */
-	protected int dirCacheIteratorNth;
 
 	private final Path location;
 
@@ -122,6 +116,31 @@ public class GitModelCache extends GitModelObjectContainer {
 		return UIText.GitModelIndex_index;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this)
+			return true;
+
+		if (obj instanceof GitModelCache
+				&& !(obj instanceof GitModelWorkingTree)) {
+			GitModelCache left = (GitModelCache) obj;
+			return left.baseCommit.equals(baseCommit)
+					&& left.getParent().equals(getParent());
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return baseCommit.hashCode() ^ getParent().hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return "ModelCache"; //$NON-NLS-1$
+	}
+
 	protected GitModelObject[] getChildrenImpl() {
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
@@ -146,8 +165,7 @@ public class GitModelCache extends GitModelObjectContainer {
 	 * Creates and configures {@link TreeWalk} instance for
 	 * {@link GitModelCache#getChildrenImpl()} method. It is IMPORTANT to add
 	 * tree that will be used as a base as first, remote tree should be added as
-	 * second; {@link GitModelCache#dirCacheIteratorNth} should be set with
-	 * value of NTH that corresponds with {@link DirCacheIterator}.
+	 * second;
 	 *
 	 * @return configured instance of TreeW
 	 * @throws IOException
@@ -161,21 +179,11 @@ public class GitModelCache extends GitModelObjectContainer {
 		ObjectId headId = repo.getRef(Constants.HEAD).getObjectId();
 		tw.addTree(new RevWalk(repo).parseTree(headId));
 		tw.addTree(new DirCacheIterator(index));
-		dirCacheIteratorNth = 1;
 
 		return tw;
 	}
 
 	private GitModelObject extractFromCache(TreeWalk tw) throws IOException {
-		DirCacheIterator cacheIterator = tw.getTree(dirCacheIteratorNth,
-				DirCacheIterator.class);
-		if (cacheIterator == null)
-			return null;
-
-		DirCacheEntry cacheEntry = cacheIterator.getDirCacheEntry();
-		if (cacheEntry == null)
-			return null;
-
 		if (shouldIncludeEntry(tw)) {
 			String path = tw.getPathString();
 			ObjectId repoId = tw.getObjectId(BASE_NTH);

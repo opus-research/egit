@@ -10,22 +10,30 @@ package org.eclipse.egit.ui.internal.decorators;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.WeakHashMap;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.ContainerTreeIterator.ResourceEntry;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
+import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 
 /**
@@ -33,7 +41,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
  *
  * @see IDecoratableResource
  */
-class DecoratableResourceHelper {
+public class DecoratableResourceHelper {
 
 	static final int T_HEAD = 0;
 
@@ -41,8 +49,21 @@ class DecoratableResourceHelper {
 
 	static final int T_WORKSPACE = 2;
 
-	static IDecoratableResource[] createDecoratableResources(
+	private static final Map<Repository, DirCache> repoToDirCache = new WeakHashMap<Repository, DirCache>();
+
+	/**
+	 * Creates a list of decoratable resources for the given list of resources
+	 *
+	 * @param resources
+	 *            the list of resources to be decorated
+	 * @return the list of decoratable resources
+	 * @throws IOException
+	 */
+	public static IDecoratableResource[] createDecoratableResources(
 			final IResource[] resources) throws IOException {
+		if (resources == null)
+			return null;
+
 		// Use first (available) resource to get repository mapping
 		int i = 0;
 		while (resources[i] == null) {
@@ -99,14 +120,50 @@ class DecoratableResourceHelper {
 				i = resourcePaths.indexOf(treeWalk.getPathString());
 				if (i != -1) {
 					try {
-						decoratableResources[i] = decorateResource(
-								new DecoratableResource(resources[i]), treeWalk);
+						if (decoratableResources[i] == null)
+							decoratableResources[i] = decorateResource(
+									new DecoratableResource(resources[i]),
+									treeWalk);
 					} catch (IOException e) {
 						// Ignore - decoratableResources[i] is null
 					}
 				}
 			}
 		return decoratableResources;
+	}
+
+	/**
+	 * Creates a temporary decoratable resource for the given project
+	 *
+	 * This temporary decoratable resource only contains the name of the
+	 * repository and the current branch.
+	 *
+	 * @param project
+	 *            the project to be decorated
+	 * @return the decoratable resource
+	 * @throws IOException
+	 */
+	static IDecoratableResource createTemporaryDecoratableResource(
+			final IProject project) throws IOException {
+		final DecoratableResource decoratableResource = new DecoratableResource(
+				project);
+		final Repository repository = RepositoryMapping.getMapping(project)
+				.getRepository();
+		decoratableResource.repositoryName = getRepositoryName(repository);
+		decoratableResource.branch = getShortBranch(repository);
+		decoratableResource.tracked = true;
+		return decoratableResource;
+	}
+
+	static DirCache getDirCache(Repository repository) throws IOException {
+		synchronized(repoToDirCache) {
+			DirCache dirCache = repoToDirCache.get(repository);
+			if (dirCache != null && !dirCache.isOutdated())
+				return dirCache;
+			dirCache = repository.readDirCache();
+			repoToDirCache.put(repository, dirCache);
+			return dirCache;
+		}
 	}
 
 	private static TreeWalk createThreeWayTreeWalk(
@@ -133,7 +190,7 @@ class DecoratableResourceHelper {
 			treeWalk.addTree(new EmptyTreeIterator());
 
 		// Index
-		treeWalk.addTree(new DirCacheIterator(repository.readDirCache()));
+		treeWalk.addTree(new DirCacheIterator(getDirCache(repository)));
 
 		// Working directory
 		treeWalk.addTree(IteratorService.createInitialIterator(repository));
@@ -144,15 +201,20 @@ class DecoratableResourceHelper {
 	static DecoratableResource decorateResource(
 			final DecoratableResource decoratableResource,
 			final TreeWalk treeWalk) throws IOException {
-		final ContainerTreeIterator workspaceIterator = treeWalk.getTree(
-				T_WORKSPACE, ContainerTreeIterator.class);
-		final ResourceEntry resourceEntry = workspaceIterator != null ? workspaceIterator
-				.getResourceEntry() : null;
+		final WorkingTreeIterator workingTreeIterator = treeWalk.getTree(
+				T_WORKSPACE, WorkingTreeIterator.class);
+		if (workingTreeIterator == null)
+			return null;
+		if (!(workingTreeIterator instanceof ContainerTreeIterator))
+			return null;
+		final ContainerTreeIterator workspaceIterator = (ContainerTreeIterator) workingTreeIterator;
+		final ResourceEntry resourceEntry = workspaceIterator
+				.getResourceEntry();
 
 		if (resourceEntry == null)
 			return null;
 
-		if (workspaceIterator != null && workspaceIterator.isEntryIgnored()) {
+		if (workspaceIterator.isEntryIgnored()) {
 			decoratableResource.ignored = true;
 			return decoratableResource;
 		}
@@ -193,10 +255,37 @@ class DecoratableResourceHelper {
 			decoratableResource.dirty = false;
 			decoratableResource.assumeValid = true;
 		} else {
-			if (workspaceIterator != null
-					&& workspaceIterator.isModified(indexEntry, true))
+			if (workspaceIterator.isModified(indexEntry, true))
 				decoratableResource.dirty = true;
 		}
 		return decoratableResource;
+	}
+
+	static String getRepositoryName(Repository repository) {
+		String repoName = Activator.getDefault().getRepositoryUtil()
+				.getRepositoryName(repository);
+		RepositoryState state = repository.getRepositoryState();
+		if (state != RepositoryState.SAFE)
+			return repoName + '|' + state.getDescription();
+		else
+			return repoName;
+	}
+
+	static String getShortBranch(Repository repository) throws IOException {
+		Ref head = repository.getRef(Constants.HEAD);
+		if (head != null && !head.isSymbolic()) {
+			String refString = Activator
+					.getDefault()
+					.getRepositoryUtil()
+					.mapCommitToRef(repository, repository.getFullBranch(),
+							false);
+			if (refString != null) {
+				return repository.getFullBranch().substring(0, 7)
+						+ "... (" + refString + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+			} else
+				return repository.getFullBranch().substring(0, 7) + "..."; //$NON-NLS-1$
+		}
+
+		return repository.getBranch();
 	}
 }

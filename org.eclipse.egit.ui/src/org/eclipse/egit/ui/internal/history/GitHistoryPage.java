@@ -46,6 +46,7 @@ import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
+import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -81,16 +82,24 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MenuDetectListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.team.ui.history.HistoryPage;
+import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
+import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
@@ -178,11 +187,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				// still create the event
 				historyPage.firePropertyChange(historyPage, P_DESCRIPTION,
 						oldDescription, historyPage.getDescription());
-				Activator
-						.getDefault()
-						.getPreferenceStore()
-						.setValue(PREF_SHOWALLFILTER,
-								historyPage.showAllFilter.toString());
+				Activator.getDefault().getPreferenceStore().setValue(
+						PREF_SHOWALLFILTER,
+						historyPage.showAllFilter.toString());
 			}
 
 			@Override
@@ -445,6 +452,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	/** Toolbar to find commits in the history view. */
 	private FindToolbar findToolbar;
 
+	/** A label showing a warning icon */
+	private Composite warningComposite;
+
+	/** A text field to display a warning */
+	private Text warningText;
+
 	/** Our context menu manager for the entire page. */
 	private final MenuManager popupMgr = new MenuManager(null, POPUP_ID);
 
@@ -456,6 +469,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	/** Last HEAD */
 	private AnyObjectId currentHeadId;
+
+	/** Repository of the last input*/
+	private Repository currentRepo;
 
 	/**
 	 * Highlight flag that can be applied to commits to make them stand out.
@@ -533,13 +549,34 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					GitTraceLocation.HISTORYVIEW.getLocation());
 
 		historyControl = createMainPanel(parent);
+
+		warningComposite = new Composite(historyControl, SWT.NONE);
+		warningComposite.setLayout(new GridLayout(3, false));
+		Label warningLabel = new Label(warningComposite, SWT.NONE);
+		warningLabel.setImage(PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_WARN_TSK));
+		warningText = new Text(warningComposite, SWT.READ_ONLY);
+		warningText.setToolTipText(UIText.GitHistoryPage_IncompleteListTooltip);
+
+		Link preferencesLink = new Link(warningComposite, SWT.NONE);
+		preferencesLink.setText(UIText.CommitDialog_ConfigureLink);
+		preferencesLink.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				String preferencePageId = "org.eclipse.egit.ui.GitPreferences"; //$NON-NLS-1$
+				PreferenceDialog dialog = PreferencesUtil
+						.createPreferenceDialogOn(getSite().getShell(), preferencePageId,
+								new String[] { preferencePageId }, null);
+				dialog.open();
+			}
+		});
+
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(historyControl);
 		graphDetailSplit = new SashForm(historyControl, SWT.VERTICAL);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				graphDetailSplit);
 		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr);
 		revInfoSplit = new SashForm(graphDetailSplit, SWT.HORIZONTAL);
-		commentViewer = new CommitMessageViewer(revInfoSplit, getSite());
+		commentViewer = new CommitMessageViewer(revInfoSplit, getSite(), getPartSite());
 		fileViewer = new CommitFileDiffViewer(revInfoSplit, getSite());
 		findToolbar = new FindToolbar(historyControl);
 
@@ -822,6 +859,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	@Override
 	public boolean setInput(Object object) {
 		try {
+			// hide the warning text initially
+			setWarningText(null);
 			trace = GitTraceLocation.HISTORYVIEW.isActive();
 			if (trace)
 				GitTraceLocation.getTrace().traceEntry(
@@ -898,6 +937,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
 				return false;
 			}
+			Repository db = input.getRepository();
+			if (resolveHead(db, true) == null) {
+				this.name = ""; //$NON-NLS-1$
+				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
+				return false;
+			}
 
 			final IResource[] inResources = input.getItems();
 			final File[] inFiles = input.getFileList();
@@ -918,7 +963,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			actions.showAllResourceVersionsAction.setEnabled(filtersActive);
 
 			try {
-				initAndStartRevWalk(true);
+				initAndStartRevWalk(false);
 			} catch (IllegalStateException e) {
 				Activator.handleError(e.getMessage(), e, true);
 				return false;
@@ -1041,6 +1086,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					GitTraceLocation.HISTORYVIEW.getLocation(), message);
 		getHistoryPageSite().getShell().getDisplay().asyncExec(new Runnable() {
 			public void run() {
+				if (topControl.isDisposed())
+					return;
 				StackLayout layout = (StackLayout) topControl.getLayout();
 				if (message != null) {
 					errorText.setText(message);
@@ -1097,7 +1144,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	void showCommitList(final Job j, final SWTCommitList list,
-			final SWTCommit[] asArray) {
+			final SWTCommit[] asArray, final boolean incomplete) {
 		if (trace)
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation(),
@@ -1115,6 +1162,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 								"Setting input to table"); //$NON-NLS-1$
 					findToolbar.setInput(highlightFlag, graph.getTableView()
 							.getTable(), asArray);
+					if (incomplete)
+						setWarningText(UIText.GitHistoryPage_ListIncompleteWarningMessage);
+					else
+						setWarningText(null);
 					setErrorMessage(null);
 				}
 			}
@@ -1122,6 +1173,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		if (trace)
 			GitTraceLocation.getTrace().traceExit(
 					GitTraceLocation.HISTORYVIEW.getLocation());
+	}
+
+	private void setWarningText(String warning) {
+		GridData gd = (GridData) warningComposite.getLayoutData();
+		gd.exclude = warning == null;
+		warningComposite.setVisible(!gd.exclude);
+		if (warning != null)
+			warningText.setText(warning);
+		else
+			warningText.setText(""); //$NON-NLS-1$
+		warningComposite.getParent().layout(true);
 	}
 
 	void initAndStartRevWalk(boolean forceNewWalk) throws IllegalStateException {
@@ -1132,28 +1194,36 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 			cancelRefreshJob();
 			Repository db = input.getRepository();
-			AnyObjectId headId = resolveHead(db);
+			AnyObjectId headId = resolveHead(db, false);
 
 			List<String> paths = buildFilterPaths(input.getItems(), input
 					.getFileList(), db);
 
-			if (forceNewWalk || pathChange(pathFilters, paths)
-					|| currentWalk == null || !headId.equals(currentHeadId)) {
+			boolean pathChange = pathChange(pathFilters, paths);
+			boolean headChange = !headId.equals(currentHeadId);
+			boolean repoChange = false;
+			if (!db.equals(currentRepo))
+			{
+				repoChange = true;
+				currentRepo = db;
+			}
+			if (forceNewWalk || pathChange
+					|| currentWalk == null || headChange || repoChange) {
 				// TODO Do not dispose SWTWalk just because HEAD changed
 				// In theory we should be able to update the graph and
 				// not dispose of the SWTWalk, even if HEAD was reset to
 				// HEAD^1 and the old HEAD commit should not be visible.
 				//
 				createNewWalk(db, headId);
-			} else {
-				currentWalk.reset();
-			}
-			setWalkStartPoints(db, headId);
+				setWalkStartPoints(db, headId);
 
-			final TreeWalk fileWalker = setupFileViewer(db, paths);
-			setupCommentViewer(db, fileWalker);
+				setupFileViewer(db, paths);
+				setupCommentViewer(db);
 
-			scheduleNewGenerateHistoryJob();
+				scheduleNewGenerateHistoryJob();
+			} else
+				// needed for context menu and double click
+				graph.setHistoryPageInput(input);
 		} finally {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
@@ -1162,7 +1232,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		}
 	}
 
-	private AnyObjectId resolveHead(Repository db) {
+	private AnyObjectId resolveHead(Repository db, boolean acceptNull) {
 		AnyObjectId headId;
 		try {
 			headId = db.resolve(Constants.HEAD);
@@ -1170,9 +1240,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorParsingHead, Activator
 							.getDefault().getRepositoryUtil()
-							.getRepositoryName(db)));
+							.getRepositoryName(db)), e);
 		}
-		if (headId == null)
+		if (headId == null && !acceptNull)
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorParsingHead, Activator
 							.getDefault().getRepositoryUtil()
@@ -1281,14 +1351,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				currentWalk.markStart(currentWalk.parseCommit(headId));
 		} catch (IOException e) {
 			throw new IllegalStateException(NLS.bind(
-					UIText.GitHistoryPage_errorReadingHeadCommit, headId,
-					db.getDirectory().getAbsolutePath()), e);
+					UIText.GitHistoryPage_errorReadingHeadCommit, headId, db
+							.getDirectory().getAbsolutePath()), e);
 		}
 	}
 
-	private void setupCommentViewer(Repository db, final TreeWalk fileWalker) {
-		commentViewer.setTreeWalk(fileWalker);
-		commentViewer.setDb(db);
+	private void setupCommentViewer(Repository db) {
+		commentViewer.setRepository(db);
 		commentViewer.refresh();
 	}
 
@@ -1318,7 +1387,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	private void scheduleNewGenerateHistoryJob() {
-		final SWTCommitList list = new SWTCommitList(graph.getControl().getDisplay());
+		final SWTCommitList list = new SWTCommitList(graph.getControl()
+				.getDisplay());
 		list.source(currentWalk);
 		final GenerateHistoryJob rj = new GenerateHistoryJob(this, list);
 		rj.addJobChangeListener(new JobChangeAdapter() {
@@ -1343,8 +1413,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		schedule(rj);
 	}
 
+	private IWorkbenchPartSite getPartSite() {
+		final IWorkbenchPart part = getHistoryPageSite().getPart();
+		IWorkbenchPartSite site = null;
+		if (part != null)
+			site = part.getSite();
+		return site;
+	}
+
 	private void schedule(final Job j) {
-		final IWorkbenchPartSite site = getWorkbenchSite();
+		IWorkbenchPartSite site = getPartSite();
 		if (site != null) {
 			final IWorkbenchSiteProgressService p;
 			p = (IWorkbenchSiteProgressService) site
@@ -1355,11 +1433,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			}
 		}
 		j.schedule();
-	}
-
-	private IWorkbenchPartSite getWorkbenchSite() {
-		final IWorkbenchPart part = getHistoryPageSite().getPart();
-		return part != null ? part.getSite() : null;
 	}
 
 	/**
