@@ -80,6 +80,11 @@ public class HistoryTest extends GitTestCase {
 		operation.execute(null);
 	}
 
+	@Override
+	public void tearDown() throws Exception {
+		super.tearDown();
+	}
+
 	private File createFile(String name, String content) throws IOException {
 		File f = new File(workDir, name);
 		FileWriter fileWriter = new FileWriter(f);

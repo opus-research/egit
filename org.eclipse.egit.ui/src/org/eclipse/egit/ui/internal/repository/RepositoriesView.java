@@ -119,11 +119,11 @@ public class RepositoriesView extends CommonNavigator {
 
 	private final RepositoryCache repositoryCache;
 
-	private long lastInputChange = 0L;
+	private long lastInputChange = 0l;
 
-	private long lastRepositoryChange = 0L;
+	private long lastRepositoryChange = 0l;
 
-	private long lastInputUpdate = -1L;
+	private long lastInputUpdate = -1l;
 
 	private boolean reactOnSelection = false;
 
@@ -376,7 +376,7 @@ public class RepositoriesView extends CommonNavigator {
 	 */
 	public Job refresh() {
 		// TODO make this void and change the tests accordingly
-		lastInputUpdate = -1L;
+		lastInputUpdate = -1l;
 		return scheduleRefresh(0);
 	}
 
