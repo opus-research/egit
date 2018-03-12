@@ -278,12 +278,6 @@ public class IndexDiffCacheEntry {
 					}
 					notifyListeners();
 					return Status.OK_STATUS;
-				} catch (IOException e) {
-					if (GitTraceLocation.INDEXDIFFCACHE.isActive())
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
-								"Calculating IndexDiff failed", e); //$NON-NLS-1$
-					return Status.OK_STATUS;
 				} finally {
 					lock.unlock();
 				}
@@ -301,17 +295,21 @@ public class IndexDiffCacheEntry {
 
 	private IndexDiffData calcIndexDiffData(IProgressMonitor monitor,
 			String jobName, Collection<String> filesToUpdate,
-			Collection<IResource> resourcesToUpdate) throws IOException {
+			Collection<IResource> resourcesToUpdate) {
 		EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(
 				monitor);
-
-		WorkingTreeIterator iterator = IteratorService
-				.createInitialIterator(repository);
-		IndexDiff diffForChangedResources = new IndexDiff(repository,
-				Constants.HEAD, iterator);
-		diffForChangedResources.setFilter(PathFilterGroup
-				.createFromStrings(filesToUpdate));
-		diffForChangedResources.diff(jgitMonitor, 0, 0, jobName);
+		final IndexDiff diffForChangedResources;
+		try {
+			WorkingTreeIterator iterator = IteratorService
+					.createInitialIterator(repository);
+			diffForChangedResources = new IndexDiff(repository, Constants.HEAD,
+					iterator);
+			diffForChangedResources.setFilter(PathFilterGroup
+					.createFromStrings(filesToUpdate));
+			diffForChangedResources.diff(jgitMonitor, 0, 0, jobName);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 		return new IndexDiffData(indexDiffData, filesToUpdate,
 				resourcesToUpdate, diffForChangedResources);
 	}
