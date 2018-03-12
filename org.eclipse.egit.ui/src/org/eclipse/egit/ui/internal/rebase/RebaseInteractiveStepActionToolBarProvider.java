@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.rebase;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan;
@@ -159,7 +158,12 @@ public class RebaseInteractiveStepActionToolBarProvider {
 				for (PlanElement planElement : selectedRebaseTodoLines) {
 					if (planElement.getElementType() != ElementType.TODO)
 						return;
-					view.getCurrentPlan().moveTodoEntryUp(planElement);
+
+					if (!RebaseInteractivePreferences.isOrderReversed())
+						view.getCurrentPlan().moveTodoEntryUp(planElement);
+					else
+						view.getCurrentPlan().moveTodoEntryDown(planElement);
+
 					mapActionItemsToSelection(view.planTreeViewer
 							.getSelection());
 				}
@@ -178,7 +182,12 @@ public class RebaseInteractiveStepActionToolBarProvider {
 				for (PlanElement planElement : selectedRebaseTodoLines) {
 					if (planElement.getElementType() != ElementType.TODO)
 						return;
-					view.getCurrentPlan().moveTodoEntryDown(planElement);
+
+					if (!RebaseInteractivePreferences.isOrderReversed())
+						view.getCurrentPlan().moveTodoEntryDown(planElement);
+					else
+						view.getCurrentPlan().moveTodoEntryUp(planElement);
+
 					mapActionItemsToSelection(view.planTreeViewer
 							.getSelection());
 				}
@@ -246,8 +255,13 @@ public class RebaseInteractiveStepActionToolBarProvider {
 
 	void mapActionItemsToSelection(ISelection selection) {
 		setMoveItemsEnabled(false);
-		if (selection == null || selection.isEmpty())
+		if (selection == null || selection.isEmpty()) {
+			if (theToolbar.isEnabled())
+				theToolbar.setEnabled(false);
+
+			unselectAllActionItemsExecpt(null);
 			return;
+		}
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection structured = (IStructuredSelection) selection;
 
@@ -257,24 +271,31 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			PlanElement firstSelectedEntry = (PlanElement) obj;
 			PlanElement lastSelectedEntry = firstSelectedEntry;
 
+			ElementAction type = firstSelectedEntry.getPlanElementAction();
+
+			boolean singleTypeSelected = true;
+
+			if (!theToolbar.isEnabled()
+					&& !view.getCurrentPlan().hasRebaseBeenStartedYet())
+				theToolbar.setEnabled(true);
+
 			if (structured.size() > 1) {
 				// multi selection
-				ElementAction type = firstSelectedEntry.getPlanElementAction();
-				for (Iterator iterator = structured.iterator(); iterator
-						.hasNext();) {
-					Object selectedObj = iterator.next();
+				for (Object selectedObj : structured.toList()) {
 					if (!(selectedObj instanceof PlanElement))
 						continue;
-					PlanElement entry = lastSelectedEntry = (PlanElement) selectedObj;
+					PlanElement entry = (PlanElement) selectedObj;
+					lastSelectedEntry = entry;
 					if (type != entry.getPlanElementAction()) {
-						unselectAllActionItemsExecpt(null);
+						singleTypeSelected = false;
 					}
 				}
-			} else {
-				// single selection
-				unselectAllActionItemsExecpt(getItemFor(firstSelectedEntry
-						.getPlanElementAction()));
 			}
+
+			if (singleTypeSelected)
+				unselectAllActionItemsExecpt(getItemFor(type));
+			else
+				unselectAllActionItemsExecpt(null);
 
 			enableMoveButtons(firstSelectedEntry, lastSelectedEntry);
 
@@ -289,9 +310,16 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			if (!planElement.isComment())
 				stepList.add(planElement);
 		}
-		itemMoveUp.setEnabled(stepList.indexOf(firstSelectedEntry) > 0);
-		itemMoveDown.setEnabled(stepList.indexOf(lastSelectedEntry) < stepList
-				.size() - 1);
+
+		int firstEntryIndex = stepList.indexOf(firstSelectedEntry);
+		int lastEntryIndex = stepList.indexOf(lastSelectedEntry);
+		if (!RebaseInteractivePreferences.isOrderReversed()) {
+			itemMoveUp.setEnabled(firstEntryIndex > 0);
+			itemMoveDown.setEnabled(lastEntryIndex < stepList.size() - 1);
+		} else {
+			itemMoveUp.setEnabled(firstEntryIndex < stepList.size() - 1);
+			itemMoveDown.setEnabled(lastEntryIndex > 0);
+		}
 	}
 
 	private ToolItem getItemFor(ElementAction type) {
