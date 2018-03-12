@@ -93,7 +93,7 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
 			Object selection = getSelection(ctx);
 			if (selection instanceof ISelection) {
-				Repository repo = getRepository((ISelection) selection,	getActiveEditorInput(ctx));
+				Repository repo = extractRepository((ISelection) selection,	getActiveEditorInput(ctx));
 				if (repo != null) {
 					boolean enabled = isEnabledForState(repo,
 							repo.getRepositoryState());
