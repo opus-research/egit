@@ -97,7 +97,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 
 	/**
 	 * Determine if the input can be shown in this viewer.
-	 * 
+	 *
 	 * @param object
 	 *            an object that is hopefully of type ResourceList or IResource,
 	 *            but may be anything (including null).
@@ -729,9 +729,6 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 			fileWalker.setFilter(TreeFilter.ANY_DIFF);
 		}
 		fileViewer.setTreeWalk(fileWalker);
-		fileViewer.addSelectionChangedListener(commentViewer);
-		commentViewer.setTreeWalk(fileWalker);
-		commentViewer.setDb(db);
 		findToolbar.clear();
 		graph.setInput(highlightFlag, null, null);
 

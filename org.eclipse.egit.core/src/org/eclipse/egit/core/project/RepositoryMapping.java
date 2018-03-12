@@ -83,8 +83,13 @@ public class RepositoryMapping {
 		containerPath = container.getProjectRelativePath().toPortableString();
 
 		if (cLoc.isPrefixOf(gLoc)) {
-			gitdirPath = gLoc.removeFirstSegments(
-					gLoc.matchingFirstSegments(cLoc)).toPortableString();
+			int matchingSegments = gLoc.matchingFirstSegments(cLoc);
+			IPath remainder = gLoc.removeFirstSegments(matchingSegments);
+			String device = remainder.getDevice();
+			if (device == null)
+				gitdirPath = remainder.toPortableString();
+			else
+				gitdirPath = remainder.toPortableString().substring(device.length());
 		} else if (gLocParent.isPrefixOf(cLoc)) {
 			cnt = cLoc.segmentCount() - cLoc.matchingFirstSegments(gLocParent);
 			p = "";
@@ -98,7 +103,10 @@ public class RepositoryMapping {
 		}
 	}
 
-	IPath getContainerPath() {
+	/**
+	 * @return the container path corresponding to git repository
+	 */
+	public IPath getContainerPath() {
 		return Path.fromPortableString(containerPath);
 	}
 
@@ -152,7 +160,7 @@ public class RepositoryMapping {
 
 	/**
 	 * Notify registered {@link RepositoryChangeListener}s of a change.
-	 * 
+	 *
 	 * @see GitProjectData#addRepositoryChangeListener(RepositoryChangeListener)
 	 */
 	public void fireRepositoryChanged() {
@@ -198,15 +206,15 @@ public class RepositoryMapping {
 	}
 
 	/**
+	 * This method should only be called for resources that are actually in this
+	 * repository, so we can safely assume that their path prefix matches
+	 * {@link #getWorkDir()}. Testing that here is rather expensive so we don't
+	 * bother.
+	 *
 	 * @param rsrc
 	 * @return the path relative to the Git repository, including base name.
 	 */
 	public String getRepoRelativePath(final IResource rsrc) {
-		// We should only be called for resources that are actually
-		// in this repository, so we can safely assume that their
-		// path prefix matches workdirPrefix. Testing that here is
-		// rather expensive so we don't bother.
-		//
 		final int pfxLen = workdirPrefix.length();
 		final String p = rsrc.getLocation().toString();
 		final int pLen = p.length();

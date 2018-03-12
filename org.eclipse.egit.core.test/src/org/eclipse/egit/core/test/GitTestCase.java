@@ -13,6 +13,11 @@ import java.io.IOException;
 
 import junit.framework.TestCase;
 
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.jgit.junit.MockSystemReader;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.util.SystemReader;
+
 public abstract class GitTestCase extends TestCase {
 
 	protected TestProject project;
@@ -21,7 +26,11 @@ public abstract class GitTestCase extends TestCase {
 
 	protected void setUp() throws Exception {
 		super.setUp();
-		project = new TestProject();
+		((MockSystemReader) SystemReader.getInstance()).setProperty(
+				Constants.GIT_CEILING_DIRECTORIES_KEY, ResourcesPlugin
+						.getWorkspace().getRoot().getLocation().toFile()
+						.getAbsoluteFile().toString());
+		project = new TestProject(true);
 		gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), ".git");
 		rmrf(gitDir);

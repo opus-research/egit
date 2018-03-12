@@ -16,8 +16,6 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.test.GitTestCase;
@@ -47,7 +45,7 @@ public class T0003_AdaptableFileTreeIteratorTest extends GitTestCase {
 		fileWriter.close();
 
 		final ConnectProviderOperation operation = new ConnectProviderOperation(
-				project.getProject());
+				project.getProject(), new File("../.git"));
 		operation.run(null);
 	}
 
