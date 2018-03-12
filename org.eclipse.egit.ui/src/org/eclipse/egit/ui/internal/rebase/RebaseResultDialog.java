@@ -149,8 +149,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_Aborted;
 		case STOPPED:
 			return UIText.RebaseResultDialog_Stopped;
-		case EDIT:
-			return UIText.RebaseResultDialog_Edit;
 		case FAILED:
 			return UIText.RebaseResultDialog_Failed;
 		case UP_TO_DATE:

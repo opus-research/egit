@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
+import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
+import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
+import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.RebaseTodoFile;
 import org.eclipse.jgit.lib.RebaseTodoLine;
@@ -35,7 +35,7 @@ import org.eclipse.jgit.lib.RepositoryState;
  * Representation of the {@link RebaseTodoFile} for Rebase-Todo and
  * Rebase-Done-File of a {@link Repository}.
  */
-public class RebaseInteractivePlan implements RefsChangedListener {
+public class RebaseInteractivePlan implements IndexDiffChangedListener {
 
 	/**
 	 * Classes that implement this interface provide methods that deal with
@@ -98,8 +98,6 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 
 	private final Repository repository;
 
-	private ListenerHandle myRefsChangedHandle;
-
 	private static final Map<File, RebaseInteractivePlan> planRegistry = new HashMap<File, RebaseInteractivePlan>();
 
 	private boolean reversed = false;
@@ -133,12 +131,30 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 		this.repository = repo;
 		setReversed(reversed);
 		reparsePlan();
-		setupRepositoryRefChangedListener();
+		registerIndexDiffChangeListener();
+
 	}
 
-	private void setupRepositoryRefChangedListener() {
-		myRefsChangedHandle = Repository.getGlobalListenerList()
-				.addRefsChangedListener(this);
+	private void registerIndexDiffChangeListener() {
+		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator
+				.getDefault().getIndexDiffCache()
+				.getIndexDiffCacheEntry(this.repository);
+
+		entry.addIndexDiffChangedListener(this);
+	}
+
+	private void unregisterIndexDiffChangeListener() {
+		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator
+				.getDefault().getIndexDiffCache()
+				.getIndexDiffCacheEntry(this.repository);
+
+		entry.removeIndexDiffChangedListener(this);
+	}
+
+	public void indexDiffChanged(Repository repo, IndexDiffData indexDiffData) {
+		if (RebaseInteractivePlan.this.repository == repo
+				&& isRebasingInteractive())
+			reparsePlan();
 	}
 
 	/**
@@ -165,10 +181,10 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 	 * will create a new {@link RebaseInteractivePlan} instance.
 	 */
 	public void dispose() {
-		myRefsChangedHandle.remove();
 		planRegistry.remove(this.repository.getDirectory());
 		planList.clear();
 		planChangeListeners.clear();
+		unregisterIndexDiffChangeListener();
 	}
 
 	/**
@@ -179,13 +195,6 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 		if (reversed)
 			return reversedPlanList;
 		return planList;
-	}
-
-	public void onRefsChanged(RefsChangedEvent event) {
-		Repository repo = event.getRepository();
-		if (this.repository == repo)
-			reparsePlan();
-		return;
 	}
 
 	/**
@@ -532,7 +541,7 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 			if (oldType == planElementAction)
 				return;
 			switch (planElementAction) {
-			case DELETE:
+			case SKIP:
 				line.setAction(Action.COMMENT);
 				break;
 			case EDIT:
@@ -560,8 +569,8 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 		 * @return the {@link ElementAction} for this {@link PlanElement}
 		 */
 		public ElementAction getPlanElementAction() {
-			if (isDelete())
-				return ElementAction.DELETE;
+			if (isSkip())
+				return ElementAction.SKIP;
 			if (isComment())
 				return null;
 			switch (line.getAction()) {
@@ -594,7 +603,7 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 		 * @return true if this element is marked for deletion, i.e. a valid
 		 *         action line has been commented out, otherwise false
 		 */
-		public boolean isDelete() {
+		public boolean isSkip() {
 			return (Action.COMMENT.equals(line.getAction()) && null != line
 					.getCommit());
 		}
@@ -629,7 +638,7 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 
 	/**
 	 * Wraps {@link Action} and additionally provides
-	 * {@link ElementAction#DELETE}
+	 * {@link ElementAction#SKIP}
 	 */
 	public enum ElementAction {
 		/**
@@ -637,7 +646,7 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 		 * lost on the new branch. Internally this is mapped to
 		 * {@link Action#COMMENT}, to comment out a {@link RebaseTodoLine}
 		 */
-		DELETE,
+		SKIP,
 		/**
 		 * Equivalent to {@link Action#EDIT};
 		 */
