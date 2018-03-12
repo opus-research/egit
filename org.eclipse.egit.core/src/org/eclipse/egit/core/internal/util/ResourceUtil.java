@@ -327,8 +327,8 @@ public class ResourceUtil {
 	}
 
 	/**
-	 * Sets the session property {@link #PROVIDER_ID} to the given
-	 * {@code providerId}, or removes the property if the id is {@code null}.
+	 * Renames the session property {@link #PROVIDER_ID} to indicate that the
+	 * project is not known to be unshared.
 	 *
 	 * @param project
 	 *            to mark
