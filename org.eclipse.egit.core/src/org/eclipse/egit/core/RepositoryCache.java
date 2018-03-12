@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -59,20 +60,20 @@ public class RepositoryCache {
 	 * @return all Repository instances contained in the cache
 	 */
 	public synchronized Repository[] getAllRepositories() {
-		prune(repositoryCache);
-		List<Repository> repositories = new ArrayList<Repository>();
-		for (Reference<Repository> reference : repositoryCache.values()) {
-			repositories.add(reference.get());
+		List<Repository> result = new ArrayList<Repository>();
+		Collection<Reference<Repository>> values = repositoryCache.values();
+		for(Reference<Repository> ref:values) {
+			Repository repo = ref.get();
+			if(repo!=null)
+				result.add(repo);
 		}
-		return repositories.toArray(new Repository[repositories.size()]);
+		return result.toArray(new Repository[result.size()]);
 	}
 
-	private static <K, V> void prune(Map<K, Reference<Repository>> map) {
-		for (final Iterator<Map.Entry<K, Reference<Repository>>> i = map.entrySet()
+	private static <K, V> void prune(Map<K, Reference<V>> map) {
+		for (final Iterator<Map.Entry<K, Reference<V>>> i = map.entrySet()
 				.iterator(); i.hasNext();) {
-			Repository repository = i.next().getValue().get();
-			if (repository == null
-					|| !repository.getDirectory().exists())
+			if (i.next().getValue().get() == null)
 				i.remove();
 		}
 	}
