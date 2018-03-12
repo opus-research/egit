@@ -20,10 +20,7 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 public interface IEGitOperation {
 	/**
 	 * Executes the operation
-	 *
 	 * @param monitor
-	 *            a progress monitor, or <code>null</code> if progress reporting
-	 *            and cancellation are not desired
 	 * @throws CoreException
 	 */
 	void execute(IProgressMonitor monitor) throws CoreException;
