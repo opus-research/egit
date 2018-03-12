@@ -29,8 +29,7 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public CheckoutDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
-				| SHOW_TAGS | SHOW_REFERENCES | EXPAND_LOCAL_BRANCHES_NODE);
+		super(parentShell, repo, null);
 		try {
 			currentBranch = repo.getFullBranch();
 		} catch (IOException e) {

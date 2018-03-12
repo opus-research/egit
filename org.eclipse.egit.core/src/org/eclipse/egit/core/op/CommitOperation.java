@@ -90,12 +90,7 @@ public class CommitOperation implements IEGitOperation {
 	public CommitOperation(IFile[] filesToCommit, Collection<IFile> notIndexed,
 			Collection<IFile> notTracked, String author, String committer,
 			String message) {
-		if (filesToCommit != null) {
-			// save them in our own copy
-			this.filesToCommit = new IFile[filesToCommit.length];
-			System.arraycopy(filesToCommit, 0, this.filesToCommit, 0,
-					filesToCommit.length);
-		}
+		this.filesToCommit = filesToCommit;
 		this.notIndexed = notIndexed;
 		this.notTracked = notTracked;
 		this.author = author;
@@ -252,12 +247,7 @@ public class CommitOperation implements IEGitOperation {
 	 * @param repos
 	 */
 	public void setRepos(Repository[] repos) {
-		if (repos != null) {
-			// save them in our own copy
-			this.repos = new Repository[repos.length];
-			System.arraycopy(repos, 0, this.repos, 0, repos.length);
-		} else
-			this.repos = null;
+		this.repos = repos;
 	}
 
 	/**

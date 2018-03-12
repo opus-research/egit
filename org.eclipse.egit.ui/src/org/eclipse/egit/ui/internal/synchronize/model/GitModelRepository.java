@@ -42,7 +42,7 @@ public class GitModelRepository extends GitModelObject {
 
 	private final RevCommit dstRev;
 
-	private final Set<IProject> projects;
+	private final IProject[] projects;
 
 	private final boolean includeLocal;
 
@@ -61,7 +61,8 @@ public class GitModelRepository extends GitModelObject {
 		super(null);
 		repo = data.getRepository();
 		includeLocal = data.shouldIncludeLocal();
-		projects = data.getProjects();
+		Set<IProject> projectSet = data.getProjects();
+		projects = projectSet.toArray(new IProject[projectSet.size()]);
 
 		srcRev = data.getSrcRevCommit();
 		dstRev = data.getDstRevCommit();
@@ -82,7 +83,7 @@ public class GitModelRepository extends GitModelObject {
 
 	@Override
 	public IProject[] getProjects() {
-		return projects.toArray(new IProject[projects.size()]);
+		return projects;
 	}
 
 	/**

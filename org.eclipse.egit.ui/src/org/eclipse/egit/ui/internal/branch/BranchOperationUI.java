@@ -79,7 +79,7 @@ public class BranchOperationUI {
 	}
 
 	/**
-	 * Create an operation for checking out a local branch
+	 * Create an operation for creating a local branch
 	 *
 	 * @param repository
 	 * @return the {@link BranchOperationUI}
@@ -209,7 +209,6 @@ public class BranchOperationUI {
 
 		bop = new BranchOperation(repository, target);
 		bop.execute(monitor);
-
 		BranchResultDialog.show(bop.getResult(), repository, target);
 	}
 
