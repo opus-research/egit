@@ -47,17 +47,17 @@ class CommitFileRevision extends GitFileRevision {
 	private ObjectId blobId;
 
 	CommitFileRevision(final Repository repo, final RevCommit rc,
-			final String path) {
-		this(repo, rc, path, null);
+			final String fileName) {
+		this(repo, rc, fileName, null);
 	}
 
 	CommitFileRevision(final Repository repo, final RevCommit rc,
-			final String path, final ObjectId blob) {
-		super(path);
+			final String fileName, final ObjectId blob) {
+		super(fileName);
 		db = repo;
 		commit = rc;
 		author = rc.getAuthorIdent();
-		this.path = path;
+		path = fileName;
 		blobId = blob;
 	}
 
