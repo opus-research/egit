@@ -25,8 +25,8 @@ public class CreateBranchDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public CreateBranchDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo);
-		setRootsToShow(true, true, true, true);
+		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
+				| SHOW_TAGS | SHOW_REFERENCES);
 	}
 
 	@Override
@@ -47,6 +47,5 @@ public class CreateBranchDialog extends AbstractBranchSelectionDialog {
 	@Override
 	protected void refNameSelected(String refName) {
 		getButton(Window.OK).setEnabled(refName != null);
-
 	}
 }
