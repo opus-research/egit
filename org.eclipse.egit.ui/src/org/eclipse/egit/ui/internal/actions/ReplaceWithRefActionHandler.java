@@ -7,14 +7,14 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Benjamin Muskalla (Tasktop Technologies Inc.) - support for model scoping
+ *    Benjamin Muskalla (Tasktop Technologies)
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.egit.core.op.DiscardChangesOperation;
 import org.eclipse.egit.ui.internal.dialogs.ReplaceTargetSelectionDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Repository;
@@ -26,7 +26,7 @@ import org.eclipse.swt.widgets.Shell;
 public class ReplaceWithRefActionHandler extends DiscardChangesActionHandler {
 
 	@Override
-	protected String gatherRevision(ExecutionEvent event)
+	protected DiscardChangesOperation createOperation(ExecutionEvent event)
 			throws ExecutionException {
 		final IResource[] resources = getSelectedResources(event);
 		Shell shell = getShell(event);
@@ -35,10 +35,8 @@ public class ReplaceWithRefActionHandler extends DiscardChangesActionHandler {
 				.toString() : null;
 		ReplaceTargetSelectionDialog dlg = new ReplaceTargetSelectionDialog(
 				shell, repository, pathString);
-		if (dlg.open() == Window.OK)
-			return dlg.getRefName();
-		else
-			throw new OperationCanceledException();
+		return dlg.open() == Window.OK ? new DiscardChangesOperation(resources,
+				dlg.getRefName()) : null;
 	}
 
 }
