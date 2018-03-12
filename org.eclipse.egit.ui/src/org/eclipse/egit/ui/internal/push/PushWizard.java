@@ -168,8 +168,8 @@ public class PushWizard extends Wizard {
 			resultToCompare = confirmPage.getConfirmedResult();
 		else
 			resultToCompare = null;
-		final Job job = new PushJob(localDb, operation, resultToCompare,
-				getDestinationString(repoPage.getSelection()));
+		final Job job = new PushJob(operation, resultToCompare,
+				getDestinationString());
 
 		job.setUser(true);
 		job.schedule();
@@ -183,7 +183,7 @@ public class PushWizard extends Wizard {
 		final IWizardPage currentPage = getContainer().getCurrentPage();
 		if (currentPage == repoPage || currentPage == null)
 			return UIText.PushWizard_windowTitleDefault;
-		final String destination = getDestinationString(repoPage.getSelection());
+		final String destination = getDestinationString();
 		return NLS.bind(UIText.PushWizard_windowTitleWithDestination,
 				destination);
 	}
@@ -262,7 +262,8 @@ public class PushWizard extends Wizard {
 		}
 	}
 
-	static String getDestinationString(RepositorySelection repoSelection) {
+	private String getDestinationString() {
+		final RepositorySelection repoSelection = repoPage.getSelection();
 		final String destination;
 		if (repoSelection.isConfigSelected())
 			destination = repoSelection.getConfigName();
@@ -271,16 +272,14 @@ public class PushWizard extends Wizard {
 		return destination;
 	}
 
-	static class PushJob extends Job {
+	private class PushJob extends Job {
 		private final PushOperation operation;
 
 		private final PushOperationResult resultToCompare;
 
 		private final String destinationString;
 
-		private Repository localDb;
-
-		public PushJob(final Repository localDb, final PushOperation operation,
+		public PushJob(final PushOperation operation,
 				final PushOperationResult resultToCompare,
 				final String destinationString) {
 			super(NLS.bind(UIText.PushWizard_jobName, getURIsString(operation
@@ -288,7 +287,6 @@ public class PushWizard extends Wizard {
 			this.operation = operation;
 			this.resultToCompare = resultToCompare;
 			this.destinationString = destinationString;
-			this.localDb = localDb;
 		}
 
 		@Override
