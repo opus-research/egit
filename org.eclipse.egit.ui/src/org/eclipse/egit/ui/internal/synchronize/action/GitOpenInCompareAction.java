@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.action;
 
-import static org.eclipse.egit.core.Helpers.isNonWorksapce;
 import static org.eclipse.ui.PlatformUI.getWorkbench;
 
 import java.io.IOException;
@@ -81,7 +80,7 @@ public class GitOpenInCompareAction extends Action {
 		ITypedElement right;
 		if (obj instanceof GitModelWorkingFile) {
 			IFile file = (IFile) obj.getResource();
-			if (isNonWorksapce(file))
+			if (file.getLocation() == null)
 				left = new LocalNonWorkspaceTypedElement(file.getFullPath().toString());
 			else
 				left= SaveableCompareEditorInput.createFileElement(file);
