@@ -358,11 +358,6 @@
          <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
          <adapter type="org.eclipse.core.resources.IResource"/>
       </factory>
-      <factory
-            adaptableType="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode"
-            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
-         <adapter type="org.eclipse.ui.model.IWorkbenchAdapter"/>
-      </factory>
    </extension>
 
    <extension point="org.eclipse.ui.preferencePages">
@@ -809,11 +804,6 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            id="org.eclipse.egit.ui.team.OpenCommit"
-            name="%OpenCommit.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.Reset"
             name="%ResetCommand.name">
       </command>
@@ -1101,132 +1091,6 @@
          </activeWhen>
       </handler>
       <handler
-            commandId="org.eclipse.ui.edit.delete">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteCommand">
-         </class>
-         <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                  </instanceof>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.ui.edit.delete">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteBranchCommand">
-         </class>
-         <activeWhen>
-               <and>
-                  <count
-                        value="+">
-                  </count>
-                  <iterate>
-                     <and>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                           </instanceof>
-                           <test
-                                 property="GitRepository.isLocalBranch">
-                           </test>
-                        </or>
-                        <not>
-                           <test
-                                 property="GitRepository.isRefCheckedOut">
-                           </test>
-                        </not>
-                     </and>
-                  </iterate>
-               </and>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.ui.edit.delete">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand">
-         </class>
-         <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate
-                     ifEmpty="false"
-                     operator="and">
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                  </instanceof>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.ui.edit.delete">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteFetchCommand">
-         </class>
-         <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate
-                     ifEmpty="false"
-                     operator="and">
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
-                  </instanceof>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.ui.edit.delete">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.DeletePushCommand">
-         </class>
-         <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate
-                     ifEmpty="false"
-                     operator="and">
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
-                  </instanceof>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.ui.edit.delete">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteTagCommand">
-         </class>
-         <activeWhen>
-            <and>
-              <count
-                     value="+">
-              </count>
-              <iterate>
-                 <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                  </instanceof>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-      <handler
             commandId="org.eclipse.egit.ui.team.Merge">
          <class
                class="org.eclipse.egit.ui.internal.actions.MergeActionHandler">
@@ -1397,26 +1261,6 @@
             </and>
          </activeWhen>
       </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand">
-         </class>
-         <activeWhen>
-             <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-         </activeWhen>
-      </handler>
    </extension>
    <extension
          point="org.eclipse.ui.views">
@@ -1559,15 +1403,6 @@
    <extension
          point="org.eclipse.ui.menus">
       <menuContribution
-            locationURI="popup:org.eclipse.egit.ui.internal.reflogview.popup">
-         <command
-               commandId="org.eclipse.egit.ui.internal.reflog.CheckoutCommand"
-               icon="icons/obj16/checkout.gif"
-               label="%RefLogViewCheckout.label"
-               style="push">
-         </command>
-      </menuContribution>
-      <menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView">
          <separator
                name="##Branch-1"
@@ -1659,7 +1494,8 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.ui.edit.delete"
+               commandId="org.eclipse.egit.ui.RepositoriesViewDeleteBranch"
+               icon="icons/obj16/delete_obj.gif"
                label="%RepoViewDeleteBranch.label"
                style="push">
             <visibleWhen
@@ -1722,24 +1558,6 @@
                            </test>
                         </not>
                      </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.ui.edit.delete"
-               label="%DeleteTagCommand.name"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="+">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2041,7 +1859,8 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.ui.edit.delete"
+               commandId="org.eclipse.egit.ui.RepositoriesViewDeleteFetch"
+               icon="icons/obj16/delete_obj.gif"
                label="%RepoViewDeleteFetch.label"
                style="push">
             <visibleWhen
@@ -2061,7 +1880,8 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.ui.edit.delete"
+               commandId="org.eclipse.egit.ui.RepositoriesViewDeletePush"
+               icon="icons/obj16/delete_obj.gif"
                label="%RepoViewDeletePush.label"
                style="push">
             <visibleWhen
@@ -2081,7 +1901,8 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.ui.edit.delete"
+               commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
+               icon="icons/obj16/delete_obj.gif"
                label="%RepoViewRemoveRemote.label"
                style="push">
             <visibleWhen
@@ -2104,8 +1925,7 @@
                name="##Repo-0">
          </separator>
          <menu
-                   label="%SwitchToMenu.label"
-                   icon="icons/obj16/branches_obj.gif">
+                   label="%SwitchToMenu.label">
                <dynamic
                      class="org.eclipse.egit.ui.internal.actions.SwitchToMenu"
                      id="org.eclipse.egit.ui.switchToMenu">
@@ -2465,9 +2285,6 @@
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
                            </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                           </instanceof>
                         </or>
                      </and>
                   </iterate>
@@ -2559,36 +2376,6 @@
                   </and>
                </visibleWhen>
             </command>
-            <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewOpenProperties"
-               icon="icons/obj16/properties.gif"
-               label="%RepoViewOpenProperties.label"
-               style="push">
-               <visibleWhen
-                     checkEnabled="false">
-                  <and>
-                     <count
-                           value="1">
-                     </count>
-                     <iterate>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
-                           </instanceof>
-                        </or>
-                     </iterate>
-                  </and>
-               </visibleWhen>
-           </command>
          </menu>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewImportProjects"
@@ -2625,7 +2412,9 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.ui.file.properties"
+               commandId="org.eclipse.egit.ui.RepositoriesViewOpenProperties"
+               icon="icons/obj16/properties.gif"
+               label="%RepoViewOpenProperties.label"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -2634,9 +2423,20 @@
                         value="1">
                   </count>
                   <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                     </instanceof>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
+                        </instanceof>
+                     </or>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2664,7 +2464,8 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.ui.edit.delete"
+               commandId="org.eclipse.egit.ui.RepositoriesViewDelete"
+               icon="icons/obj16/delete_obj.gif"
                label="%RepoViewDeleteRepository.label"
                style="push">
             <visibleWhen
@@ -2912,8 +2713,7 @@
                   name="org.eclipse.egit.ui.branchSeparator">
             </separator>
             <menu
-                  label="%SwitchToMenu.label"
-                  icon="icons/obj16/branches_obj.gif">
+                  label="%SwitchToMenu.label">
                <dynamic
                      class="org.eclipse.egit.ui.internal.actions.SwitchToMenu"
                      id="org.eclipse.egit.ui.switchToMenu">
@@ -3230,6 +3030,12 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.DeleteBranchCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewDeleteBranch"
+            name="%DeleteBranchCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand"
             id="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
             name="%RenameBranchCommand">
@@ -3290,6 +3096,7 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand"
             id="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
             name="%DeleteRemoteCommand">
       </command>
@@ -3304,6 +3111,18 @@
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ClearCredentialsCommand"
             id="org.eclipse.egit.ui.RepositoriesViewClearCredentials"
             name="%ClearCredentialsCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.DeletePushCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewDeletePush"
+            name="%RemovePushCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.DeleteFetchCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewDeleteFetch"
+            name="%RemoveFetchCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -3469,12 +3288,24 @@
             icon="icons/obj16/checkout.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.internal.reflog.CheckoutCommand"
-            icon="icons/obj16/checkout.gif">
-      </image>
-      <image
             commandId="org.eclipse.egit.ui.RepositoriesViewImportProjects"
             icon="icons/obj16/import_prj.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewDeleteBranch"
+            icon="icons/obj16/delete_obj.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewDeleteFetch"
+            icon="icons/obj16/delete_obj.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewDeletePush"
+            icon="icons/obj16/delete_obj.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
+            icon="icons/obj16/delete_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewOpenProperties"
@@ -3483,6 +3314,10 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewCreateRepository"
             icon="icons/etool16/createRepository.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewDelete"
+            icon="icons/obj16/delete_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
@@ -3595,6 +3430,10 @@
       <image
             commandId="org.eclipse.egit.ui.team.NoAssumeUnchanged"
             icon="icons/obj16/no-assume-unchanged.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.DeleteBranch"
+            icon="icons/obj16/delete_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.RenameBranch"
@@ -3963,11 +3802,6 @@
             name="%CheckoutCommand.name">
       </command>
       <command
-            defaultHandler="org.eclipse.egit.ui.internal.reflog.command.CheckoutHandler"
-            id="org.eclipse.egit.ui.internal.reflog.CheckoutCommand"
-            name="%CheckoutCommand.name">
-      </command>
-      <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.OpenInTextEditorHandler"
             id="org.eclipse.egit.ui.history.OpenInTextEditorCommand"
             name="%OpenInTextEditorCommand.name">
@@ -4094,7 +3928,6 @@
             visible="false">
         <action
                class="org.eclipse.egit.ui.internal.commit.OpenCommitAction"
-               definitionId="org.eclipse.egit.ui.team.OpenCommit"
                icon="icons/obj16/open-commit.gif"
                id="org.eclipse.egit.ui.commit.OpenCommitAction"
                label="%OpenCommitAction.label"

@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 
@@ -68,7 +67,7 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 	protected IResourceVariant fetchVariant(IResource resource, int depth,
 			IProgressMonitor monitor) throws TeamException {
 		SubMonitor subMonitor = SubMonitor.convert(monitor);
-		if (resource == null || isNonWorkspace(resource)) {
+		if (resource == null || resource.getLocation() == null) {
 			subMonitor.done();
 			return null;
 		}

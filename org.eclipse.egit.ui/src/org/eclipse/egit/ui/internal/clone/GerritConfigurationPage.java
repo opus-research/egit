@@ -265,9 +265,7 @@ public class GerritConfigurationPage extends WizardPage {
 			newPushURI = prependGerritHttpPathPrefix(newPushURI);
 		}
 		uriText.setText(newPushURI.toString());
-		final String uriScheme = newPushURI.getScheme();
-		if (uriScheme != null)
-			scheme.select(scheme.indexOf(uriScheme));
+		scheme.select(scheme.indexOf(newPushURI.getScheme()));
 		branch.setText(Constants.MASTER);
 	}
 
