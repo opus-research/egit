@@ -15,6 +15,8 @@ import static org.eclipse.egit.ui.UIText.CommitDialog_SelectAll;
 import static org.eclipse.egit.ui.UIText.GitModelWorkingTree_workingTree;
 import static org.eclipse.egit.ui.test.ContextMenuHelper.clickContextMenu;
 import static org.eclipse.egit.ui.test.TestUtil.waitUntilTreeHasNodeContainsText;
+import static org.eclipse.jface.dialogs.MessageDialogWithToggle.NEVER;
+import static org.eclipse.team.internal.ui.IPreferenceIds.SYNCHRONIZING_COMPLETE_PERSPECTIVE;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -38,6 +40,7 @@ import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
@@ -45,10 +48,10 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.team.internal.ui.TeamUIPlugin;
 import org.eclipse.team.ui.synchronize.ISynchronizeManager;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -74,16 +77,8 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	@BeforeClass public static void setupEnvironment() throws Exception {
 		// disable perspective synchronize selection
-		new Eclipse().openPreferencePage(null);
-		bot.tree().getTreeItem("Team").expand().select();
-		SWTBotRadio syncPerspectiveCheck = bot.radio("Never");
-		if (!syncPerspectiveCheck.isSelected())
-			syncPerspectiveCheck.click();
-		bot.comboBox(0).setSelection("None");
-
-		bot.comboBox().setSelection("None");
-
-		bot.button(IDialogConstants.OK_LABEL).click();
+		TeamUIPlugin.getPlugin().getPreferenceStore().setValue(
+				SYNCHRONIZING_COMPLETE_PERSPECTIVE, NEVER);
 
 		repositoryFile = createProjectAndCommitToRepository();
 		createChildRepository(repositoryFile);
@@ -93,7 +88,7 @@ public abstract class AbstractSynchronizeViewTest extends
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
 
-		createTag(PROJ1, INITIAL_TAG);
+		createTag(INITIAL_TAG);
 	}
 
 	@AfterClass public static void restoreEnvironmentSetup() throws Exception {
@@ -126,17 +121,10 @@ public abstract class AbstractSynchronizeViewTest extends
 		rop.execute(new NullProgressMonitor());
 	}
 
-	protected static void createTag(String projectName, String tagName)
+	public static void createTag(String tagName)
 			throws Exception {
-		showDialog(projectName, "Team", "Tag...");
-
-		bot.shell("Create new tag").bot().activeShell();
-		bot.text(0).setFocus();
-		bot.text(0).setText(tagName);
-		bot.styledText(0).setFocus();
-		bot.styledText(0).setText(tagName);
-		bot.button(IDialogConstants.OK_LABEL).click();
-		TestUtil.joinJobs(JobFamilies.TAG);
+		new Git(lookupRepository(repositoryFile)).tag().setName(tagName)
+				.setMessage(tagName).call();
 	}
 
 	protected void makeChangesAndCommit(String projectName) throws Exception {
