@@ -5218,7 +5218,7 @@
             class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
             id="org.eclipse.egit.ui.ResourceTester"
             namespace="GitResource"
-            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,canAbortRebase,canContinueRebase,hasGerritConfiguration"
+            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,canAbortRebase,canContinueRebase,hasGerritConfiguration,isStaged,isIgnored,hasUnstagedChanges"
             type="org.eclipse.core.resources.IResource">
       </propertyTester>
       <propertyTester
@@ -5226,13 +5226,6 @@
             id="org.eclipse.egit.ui.SelectionTester"
             namespace="GitSelection"
             properties="projectsSingleRepository,projectsWithRepositories,resourcesSingleRepository,fileOrFolderInRepository,resourcesAllInRepository"
-            type="java.util.Collection">
-      </propertyTester>
-      <propertyTester
-            class="org.eclipse.egit.ui.internal.resources.ResourceStatePropertyTester"
-            id="org.eclipse.egit.ui.ResourceStateTester"
-            namespace="org.eclipse.egit.ui.resources.ResourceState"
-            properties="hasStagedChanges,hasUnstagedChanges,hasNotIgnoredResources"
             type="java.util.Collection">
       </propertyTester>
    </extension>

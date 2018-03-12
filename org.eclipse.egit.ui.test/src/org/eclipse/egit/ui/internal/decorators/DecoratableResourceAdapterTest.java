@@ -433,12 +433,12 @@ class TestDecoratableResource extends DecoratableResource {
 	}
 
 	public TestDecoratableResource added() {
-		setStagingState(StagingState.ADDED);
+		setStaged(Staged.ADDED);
 		return this;
 	}
 
 	public IDecoratableResource modified() {
-		setStagingState(StagingState.MODIFIED);
+		setStaged(Staged.MODIFIED);
 		return this;
 	}
 
@@ -460,7 +460,7 @@ class TestDecoratableResource extends DecoratableResource {
 			return false;
 		if (!(decoratableResource.hasConflicts() == hasConflicts()))
 			return false;
-		if (!decoratableResource.getStagingState().equals(getStagingState()))
+		if (!decoratableResource.staged().equals(staged()))
 			return false;
 
 		return true;
@@ -474,6 +474,6 @@ class TestDecoratableResource extends DecoratableResource {
 
 	@Override
 	public String toString() {
-		return "TestDecoratableResourceAdapter[" + getName() + (isTracked() ? ", tracked" : "") + (isIgnored() ? ", ignored" : "") + (isDirty() ? ", dirty" : "") + (hasConflicts() ? ",conflicts" : "") + ", staged=" + getStagingState() + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$//$NON-NLS-7$//$NON-NLS-8$//$NON-NLS-9$//$NON-NLS-10$//$NON-NLS-11$
+		return "TestDecoratableResourceAdapter[" + getName() + (isTracked() ? ", tracked" : "") + (isIgnored() ? ", ignored" : "") + (isDirty() ? ", dirty" : "") + (hasConflicts() ? ",conflicts" : "") + ", staged=" + staged() + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$//$NON-NLS-7$//$NON-NLS-8$//$NON-NLS-9$//$NON-NLS-10$//$NON-NLS-11$
 	}
 }
