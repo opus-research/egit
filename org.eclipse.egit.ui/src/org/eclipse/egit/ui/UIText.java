@@ -1135,12 +1135,6 @@ public class UIText extends NLS {
 	public static String RefContentProposal_unknownObject;
 
 	/** */
-	public static String RefSelectionDialog_Messsage;
-
-	/** */
-	public static String RefSelectionDialog_Title;
-
-	/** */
 	public static String RefSpecDialog_AutoSuggestCheckbox;
 
 	/** */
