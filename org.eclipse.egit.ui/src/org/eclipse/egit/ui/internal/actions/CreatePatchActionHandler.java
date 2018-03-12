@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011-2012, Tomasz Zarna <Tomasz.Zarna@pl.ibm.com>
+ * Copyright (C) 2011, Tomasz Zarna <Tomasz.Zarna@pl.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,13 +8,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.util.Arrays;
-
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.ui.internal.patch.PatchOperationUI;
-import org.eclipse.jgit.lib.Repository;
 
 /**
  * The "Create Patch" action.
@@ -22,13 +18,7 @@ import org.eclipse.jgit.lib.Repository;
 public class CreatePatchActionHandler extends RepositoryActionHandler {
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final Repository repository = getRepository(true, event);
-		// assert all resources map to the same repository
-		if (repository == null)
-			return null;
-		IResource[] resources = getSelectedResources();
-		PatchOperationUI.createPatch(getPart(event), getRepository(),
-				Arrays.asList(resources)).start();
+		PatchOperationUI.createPatch(getPart(event), getRepository()).start();
 		return null;
 	}
 
