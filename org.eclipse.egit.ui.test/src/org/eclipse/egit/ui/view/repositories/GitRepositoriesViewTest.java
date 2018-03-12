@@ -47,6 +47,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.IWorkingSetManager;
 import org.eclipse.ui.PlatformUI;
@@ -120,6 +121,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		fileiItem.doubleClick();
 		assertTrue(bot.activeEditor().getTitle().equals(FILE1));
 		bot.activeEditor().close();
+		TestUtil.processUIEvents();
+
 		// open a branch (checkout)
 		checkoutWithDoubleClick(tree, "master");
 		String contentMaster = getTestFileContent();
@@ -137,6 +140,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_CheckoutConfirmationTitle);
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
+		TestUtil.processUIEvents();
+		TestUtil.waitForJobs(50, 5000);
 		refreshAndWait();
 	}
 
@@ -212,7 +217,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		ContextMenuHelper.clickContextMenuSync(tree,
 				myUtil.getPluginLocalizedValue("ShowIn"),
 				"Properties");
-		SWTBotView propertieView = bot.viewById("org.eclipse.ui.views.PropertySheet");
+		SWTBotView propertieView = bot.viewById(IPageLayout.ID_PROP_SHEET);
 		assertTrue(propertieView.isActive());
 	}
 
@@ -414,19 +419,19 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		myRepoViewUtil.getRootItem(tree, repositoryFile).select();
 		// the selection should be root
-		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
+		assertTrue(tree.selection().get(0, 0).contains(REPO1));
 
 		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 
 		// the selection should be still be root
-		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
+		assertTrue(tree.selection().get(0, 0).contains(REPO1));
 
 		// activate the link with selection
 		toggleLinkWithSelection();
 
 		// the selection should be still be root
-		assertTrue(tree.selection().get(0, 0).startsWith(REPO1));
+		assertTrue(tree.selection().get(0, 0).contains(REPO1));
 
 		// select again the project
 		projectExplorerTree = TestUtil.getExplorerTree();
