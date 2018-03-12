@@ -10,8 +10,9 @@ package org.eclipse.egit.core.test;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -57,7 +58,7 @@ public abstract class GitTestCase {
 		SystemReader.setInstance(mockSystemReader);
 		mockSystemReader.setProperty(Constants.GIT_CEILING_DIRECTORIES_KEY,
 				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
-						.getAbsoluteFile().toString());
+						.getParentFile().getAbsoluteFile().toString());
 		project = new TestProject(true);
 		gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), Constants.DOT_GIT);
@@ -71,11 +72,13 @@ public abstract class GitTestCase {
 		Activator.getDefault().getRepositoryCache().clear();
 		if (gitDir.exists())
 			FileUtils.delete(gitDir, FileUtils.RECURSIVE | FileUtils.RETRY);
+		SystemReader.setInstance(null);
 	}
 
 	protected ObjectId createFile(Repository repository, IProject actProject, String name, String content) throws IOException {
 		File file = new File(actProject.getProject().getLocation().toFile(), name);
-		FileWriter fileWriter = new FileWriter(file);
+		Writer fileWriter = new OutputStreamWriter(new FileOutputStream(
+				file), "UTF-8");
 		fileWriter.write(content);
 		fileWriter.close();
 		byte[] fileContents = IO.readFully(file);

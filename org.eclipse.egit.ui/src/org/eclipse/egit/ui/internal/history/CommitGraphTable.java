@@ -17,8 +17,9 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,6 +37,7 @@ import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
@@ -70,6 +72,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FileUtils;
+import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -596,10 +599,19 @@ class CommitGraphTable {
 		}
 
 		private String getHoverText(Ref r) {
+			StringBuilder sb = new StringBuilder();
 			String name = r.getName();
-			if (r.isSymbolic())
-				name += ": " + r.getLeaf().getName(); //$NON-NLS-1$
-			return name;
+			sb.append(name);
+			if (r.isSymbolic()) {
+				sb.append(": "); //$NON-NLS-1$
+				sb.append(r.getLeaf().getName());
+			}
+			String description = GitLabelProvider.getRefDescription(r);
+			if (description != null) {
+				sb.append("\n"); //$NON-NLS-1$
+				sb.append(description);
+			}
+			return sb.toString();
 		}
 	}
 
@@ -691,7 +703,8 @@ class CommitGraphTable {
 
 		private void writeToFile(final String fileName, String content)
 				throws IOException {
-			Writer output = new BufferedWriter(new FileWriter(fileName));
+			Writer output = new BufferedWriter(new OutputStreamWriter(
+					new FileOutputStream(fileName), RawParseUtils.UTF8_CHARSET));
 			try {
 				output.write(content);
 			} finally {
@@ -765,14 +778,16 @@ class CommitGraphTable {
 
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (hasMultipleRefNodes()) {
-					popupMgr.add(getCommandContributionItem(
-							HistoryViewCommands.CHECKOUT,
-							UIText.GitHistoryPage_CheckoutMenuLabel2));
-				} else {
-					popupMgr.add(getCommandContributionItem(
-							HistoryViewCommands.CHECKOUT,
-							UIText.GitHistoryPage_CheckoutMenuLabel));
+				if (!input.getRepository().isBare()) {
+					if (hasMultipleRefNodes()) {
+						popupMgr.add(getCommandContributionItem(
+								HistoryViewCommands.CHECKOUT,
+								UIText.GitHistoryPage_CheckoutMenuLabel2));
+					} else {
+						popupMgr.add(getCommandContributionItem(
+								HistoryViewCommands.CHECKOUT,
+								UIText.GitHistoryPage_CheckoutMenuLabel));
+					}
 				}
 
 				popupMgr.add(getCommandContributionItem(
@@ -807,6 +822,9 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.REBASECURRENT,
 						UIText.GitHistoryPage_rebaseMenuItem));
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.REBASE_INTERACTIVE_CURRENT,
+						UIText.GitHistoryPage_rebaseInteractiveMenuItem));
 				popupMgr.add(new Separator());
 
 				MenuManager resetManager = new MenuManager(

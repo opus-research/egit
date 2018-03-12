@@ -1,12 +1,11 @@
 /*******************************************************************************
- * Copyright (c) 2004, 2008 IBM Corporation and others.
+ * Copyright (c) 2004, 2013 IBM Corporation and others.
  * Copyright (C) 2007, Martin Oberhuber (martin.oberhuber@windriver.com)
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2009, Mykola Nikishov <mn@mn.com.ua>
  * Copyright (C) 2010, Wim Jongman <wim.jongman@remainsoftware.com>
  * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2013, Lars Vogel <Lars.Vogel@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +22,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -35,8 +35,6 @@ public class ProjectRecord {
 
 	private IProjectDescription description;
 
-	private boolean hasConflicts;
-
 	/**
 	 * Create a record for a project based on the info in the file.
 	 *
@@ -46,9 +44,19 @@ public class ProjectRecord {
 		projectSystemFile = file;
 		IPath path = new Path(projectSystemFile.getPath());
 		try {
-			description = ResourcesPlugin.getWorkspace()
-					.loadProjectDescription(path);
-			projectName = description.getName();
+			// If the file is in the default location, use the directory
+			// name as the project name. Otherwise we will get an error like
+			// "foo overlaps the location of another project foo" when importing
+			// in case the directory name and the name in .project do not match.
+			if (isDefaultLocation(path)) {
+				projectName = path.segment(path.segmentCount() - 2);
+				description = ResourcesPlugin.getWorkspace()
+						.newProjectDescription(projectName);
+			} else {
+				description = ResourcesPlugin.getWorkspace()
+						.loadProjectDescription(path);
+				projectName = description.getName();
+			}
 		} catch (CoreException e) {
 			description = null;
 			projectName = path.lastSegment();
@@ -96,22 +104,26 @@ public class ProjectRecord {
 		return projectSystemFile;
 	}
 
-	/**
-	 * @return Returns the hasConflicts.
-	 */
-	public boolean hasConflicts() {
-		return hasConflicts;
-	}
-
-	/**
-	 * @param hasConflicts
-	 */
-	public void setHasConflicts(boolean hasConflicts) {
-		this.hasConflicts = hasConflicts;
-	}
-
 	@Override
 	public String toString() {
 		return projectName;
 	}
+
+	/**
+	 * Returns whether the given project description file path is in the default
+	 * location for a project
+	 *
+	 * @param path
+	 *            The path to examine
+	 * @return Whether the given path is the default location for a project
+	 */
+	private boolean isDefaultLocation(IPath path) {
+		// The project description file must at least be within the project,
+		// which is within the workspace location
+		if (path.segmentCount() < 2)
+			return false;
+		return path.removeLastSegments(2).toFile()
+				.equals(Platform.getLocation().toFile());
+	}
+
 }

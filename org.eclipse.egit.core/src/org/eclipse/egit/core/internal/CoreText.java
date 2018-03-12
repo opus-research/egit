@@ -58,16 +58,7 @@ public class CoreText extends NLS {
 	public static String CommitFileRevision_pathNotIn;
 
 	/** */
-	public static String CommitOperation_errorCommittingChanges;
-
-	/** */
-	public static String CommitOperation_errorPreparingTrees;
-
-	/** */
-	public static String CommitOperation_errorWritingTrees;
-
-	/** */
-	public static String CommitOperation_failedToUpdate;
+	public static String CommitOperation_ParseCherryPickCommitFailed;
 
 	/** */
 	public static String CommitOperation_PerformingCommit;
@@ -178,7 +169,13 @@ public class CoreText extends NLS {
 	public static String GitProjectData_saveFailed;
 
 	/** */
+	public static String RebaseInteractivePlan_WriteRebaseTodoFailed;
+
+	/** */
 	public static String RepositoryFinder_finding;
+
+	/** */
+	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
 
 	/** */
 	public static String RepositoryUtil_noHead;
@@ -190,34 +187,7 @@ public class CoreText extends NLS {
 	public static String RenameBranchOperation_TaskName;
 
 	/** */
-	public static String ResetOperation_cantUpdate;
-
-	/** */
-	public static String ResetOperation_lookingUpCommit;
-
-	/** */
-	public static String ResetOperation_lookingUpRef;
-
-	/** */
-	public static String ResetOperation_mappingTreeForCommit;
-
-	/** */
 	public static String ResetOperation_performingReset;
-
-	/** */
-	public static String ResetOperation_readingIndex;
-
-	/** */
-	public static String ResetOperation_resetMergeFailed;
-
-	/** */
-	public static String ResetOperation_resetCherryPickFailed;
-
-	/** */
-	public static String ResetOperation_updatingFailed;
-
-	/** */
-	public static String MergeOperation_CheckoutConflict;
 
 	/** */
 	public static String MergeOperation_InternalError;
@@ -247,19 +217,10 @@ public class CoreText extends NLS {
 	public static String Error_CanonicalFile;
 
 	/** */
-	public static String CloneOperation_checkingOutFiles;
-
-	/** */
 	public static String CloneOperation_failed_cleanup;
 
 	/** */
-	public static String CloneOperation_initializingRepository;
-
-	/** */
 	public static String CloneOperation_title;
-
-	/** */
-	public static String CloneOperation_writingIndex;
 
 	/** */
 	public static String CreateLocalBranchOperation_CreatingBranchMessage;
@@ -293,9 +254,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String IndexFileRevision_errorLookingUpPath;
-
-	/** */
-	public static String IndexFileRevision_indexEntryNotFound;
 
 	/** */
 	public static String ListRemoteOperation_title;
@@ -340,9 +298,6 @@ public class CoreText extends NLS {
 	public static String RemoveFromIndexOperation_removingFilesFromIndex;
 
 	/** */
-	public static String RemoveFromIndexOperation_failed;
-
-	/** */
 	public static String RevertCommitOperation_reverting;
 
 	/** */
@@ -359,15 +314,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String TagOperation_objectIdNotFound;
-
-	/** */
-	public static String GitResourceVariantTree_couldNotFindResourceVariant;
-
-	/** */
-	public static String GitResourceVariantTree_couldNotFetchMembers;
-
-	/** */
-	public static String GitFolderResourceVariant_fetchingMembers;
 
 	/** */
 	public static String GitResourceVariantTree_fetchingVariant;
@@ -422,6 +368,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitProjectData_repositoryChangedTaskName;
+
+	/** */
+	public static String GitProjectData_UnmappingGoneResourceFailed;
 
 	/** */
 	public static String GitResourceVariantTreeSubscriber_fetchTaskName;

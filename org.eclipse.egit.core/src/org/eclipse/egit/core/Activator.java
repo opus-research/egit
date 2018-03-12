@@ -1,9 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
- * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2011, 2013 Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
- *
+ * Copyright (C) 2008, 2013 Shawn O. Pearce <spearce@spearce.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -33,6 +29,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Plugin;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.DefaultScope;
@@ -160,10 +157,25 @@ public class Activator extends Plugin implements DebugOptionsListener {
 					IResource resource = event.getResource();
 					if (resource instanceof IProject) {
 						IProject project = (IProject) resource;
-						if (RepositoryProvider.getProvider(project) instanceof GitProvider) {
-							IResource dotGit = project.findMember(Constants.DOT_GIT);
-							if (dotGit != null && dotGit.getType() == IResource.FOLDER)
-								GitProjectData.reconfigureWindowCache();
+						if (project.isAccessible()) {
+							if (RepositoryProvider.getProvider(project) instanceof GitProvider) {
+								IResource dotGit = project
+										.findMember(Constants.DOT_GIT);
+								if (dotGit != null
+										&& dotGit.getType() == IResource.FOLDER)
+									GitProjectData.reconfigureWindowCache();
+							}
+						} else {
+							// bug 419706: project is closed - use java.io API
+							IPath locationPath = project.getLocation();
+							if (locationPath != null) {
+								File locationDir = locationPath.toFile();
+								File dotGit = new File(locationDir,
+										Constants.DOT_GIT);
+								if (dotGit.exists() && dotGit.isDirectory()) {
+									GitProjectData.reconfigureWindowCache();
+								}
+							}
 						}
 					}
 				}
@@ -263,48 +275,9 @@ public class Activator extends Plugin implements DebugOptionsListener {
 				final Map<IProject, File> projects = new HashMap<IProject, File>();
 
 				event.getDelta().accept(new IResourceDeltaVisitor() {
-
 					public boolean visit(IResourceDelta delta)
 							throws CoreException {
-						if (!doAutoShare())
-							return false;
-						if (delta.getKind() == IResourceDelta.CHANGED
-								&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
-							return true;
-						final IResource resource = delta.getResource();
-						if (!resource.exists() || !resource.isAccessible() ||
-								resource.isLinked(IResource.CHECK_ANCESTORS))
-							return false;
-						if (resource.getType() != IResource.PROJECT)
-							return true;
-						if (RepositoryMapping.getMapping(resource) != null)
-							return false;
-						final IProject project = (IProject) resource;
-						RepositoryProvider provider = RepositoryProvider
-								.getProvider(project);
-						// respect if project is already shared with another
-						// team provider
-						if (provider != null)
-							return false;
-						RepositoryFinder f = new RepositoryFinder(project);
-						Collection<RepositoryMapping> mappings = f.find(new NullProgressMonitor());
-						try {
-							if (mappings.size() == 1) {
-								// connect
-								RepositoryMapping m = mappings.iterator()
-										.next();
-								final File repositoryDir = m
-										.getGitDirAbsolutePath().toFile();
-
-								projects.put(project, repositoryDir);
-
-								Activator.getDefault().getRepositoryUtil()
-										.addConfiguredRepository(repositoryDir);
-							}
-						} catch (IllegalArgumentException e) {
-							logError(CoreText.Activator_AutoSharingFailed, e);
-						}
-						return false;
+						return visitConnect(delta, projects);
 					}
 				});
 
@@ -320,6 +293,64 @@ public class Activator extends Plugin implements DebugOptionsListener {
 				Activator.logError(e.getMessage(), e);
 				return;
 			}
+		}
+
+		private boolean visitConnect(IResourceDelta delta,
+				final Map<IProject, File> projects) throws CoreException {
+			if (!doAutoShare())
+				return false;
+			if (delta.getKind() == IResourceDelta.CHANGED
+					&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
+				return true;
+			final IResource resource = delta.getResource();
+			if (!resource.exists() || !resource.isAccessible() ||
+					resource.isLinked(IResource.CHECK_ANCESTORS))
+				return false;
+			if (resource.getType() != IResource.PROJECT)
+				return true;
+			if (RepositoryMapping.getMapping(resource) != null)
+				return false;
+			final IProject project = (IProject) resource;
+			RepositoryProvider provider = RepositoryProvider
+					.getProvider(project);
+			// respect if project is already shared with another
+			// team provider
+			if (provider != null)
+				return false;
+			RepositoryFinder f = new RepositoryFinder(project);
+			Collection<RepositoryMapping> mappings = f.find(new NullProgressMonitor());
+			if (mappings.size() != 1)
+				return false;
+
+			RepositoryMapping m = mappings.iterator().next();
+			IPath gitDirPath = m.getGitDirAbsolutePath();
+			if (gitDirPath.segmentCount() == 0)
+				return false;
+
+			IPath workingDir = gitDirPath.removeLastSegments(1);
+			// Don't connect "/" or "C:\"
+			if (workingDir.isRoot())
+				return false;
+
+			File userHome = FS.DETECTED.userHome();
+			if (userHome != null) {
+				Path userHomePath = new Path(userHome.getAbsolutePath());
+				// Don't connect "/home" or "/home/username"
+				if (workingDir.isPrefixOf(userHomePath))
+					return false;
+			}
+
+			// connect
+			final File repositoryDir = gitDirPath.toFile();
+			projects.put(project, repositoryDir);
+
+			try {
+				Activator.getDefault().getRepositoryUtil()
+						.addConfiguredRepository(repositoryDir);
+			} catch (IllegalArgumentException e) {
+				logError(CoreText.Activator_AutoSharingFailed, e);
+			}
+			return false;
 		}
 	}
 

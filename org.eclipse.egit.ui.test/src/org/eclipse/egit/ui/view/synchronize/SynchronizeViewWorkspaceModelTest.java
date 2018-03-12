@@ -25,7 +25,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -33,6 +34,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.ui.common.CompareEditorTester;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.swt.finder.SWTBot;
@@ -123,8 +125,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, INITIAL_TAG, true);
 
 		// then
-		SWTBot compare = getCompareEditorForFileInWorkspaceModel(FILE1)
-				.bot();
+		CompareEditorTester compare = getCompareEditorForFileInWorkspaceModel(FILE1);
 		assertNotNull(compare);
 	}
 
@@ -181,24 +182,22 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 
 		// compare HEAD against tag
 		launchSynchronization(HEAD, INITIAL_TAG, false);
-		SWTBotEditor compEditor = getCompareEditorForFileInWorkspaceModel(
+		CompareEditorTester outgoingCompare = getCompareEditorForFileInWorkspaceModel(
 				FILE1);
-		SWTBot outgoingCompare = compEditor.bot();
 		// save left value from compare editor
-		String outgoingLeft = outgoingCompare.styledText(0).getText();
+		String outgoingLeft = outgoingCompare.getLeftEditor().getText();
 		// save right value from compare editor
-		String outgoingRight = outgoingCompare.styledText(1).getText();
-		compEditor.close();
+		String outgoingRight = outgoingCompare.getRightEditor().getText();
+		outgoingCompare.close();
 
 		// when
 		// compare tag against HEAD
 		launchSynchronization(INITIAL_TAG, HEAD, false);
 
 		// then
-		SWTBot incomingComp = getCompareEditorForFileInWorkspaceModel(
-				FILE1).bot();
-		String incomingLeft = incomingComp.styledText(0).getText();
-		String incomingRight = incomingComp.styledText(1).getText();
+		CompareEditorTester incomingComp = getCompareEditorForFileInWorkspaceModel(FILE1);
+		String incomingLeft = incomingComp.getLeftEditor().getText();
+		String incomingRight = incomingComp.getRightEditor().getText();
 		// right side from compare editor should be equal with left
 		assertThat(outgoingLeft, equalTo(incomingRight));
 		// left side from compare editor should be equal with right
@@ -293,7 +292,8 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		String name = "non-workspace.txt";
 		File root = new File(getTestDirectory(), REPO1);
 		File nonWorkspace = new File(root, name);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(nonWorkspace), "UTF-8"));
 		writer.append("file content");
 		writer.close();
 
@@ -315,7 +315,8 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		String name = "non-workspace.txt";
 		File root = new File(getTestDirectory(), REPO1);
 		File nonWorkspace = new File(root, name);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(nonWorkspace), "UTF-8"));
 		writer.append(content);
 		writer.close();
 
@@ -338,14 +339,12 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		assertNotSame(left, right);
 	}
 
-	protected SWTBotEditor getCompareEditorForFileInWorkspaceModel(
+	protected CompareEditorTester getCompareEditorForFileInWorkspaceModel(
 			String fileName) {
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
 
 		SWTBotTreeItem projNode = waitForNodeWithText(syncViewTree, PROJ1);
-		SWTBotEditor editor = getCompareEditor(projNode, fileName);
-
-		return editor;
+		return getCompareEditor(projNode, fileName);
 	}
 
 }

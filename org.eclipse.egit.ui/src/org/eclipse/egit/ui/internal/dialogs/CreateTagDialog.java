@@ -1,9 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
- *
+ * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -49,6 +45,7 @@ import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
+import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -69,6 +66,7 @@ import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -91,9 +89,14 @@ public class CreateTagDialog extends TitleAreaDialog {
 	private static final int MAX_COMMIT_COUNT = 1000;
 
 	/**
-	 * Button id for a "Clear" button (value 22).
+	 * Button id for a "Clear" button.
 	 */
-	public static final int CLEAR_ID = 22;
+	private static final int CLEAR_ID = 22;
+
+	/**
+	 * Button id for "Create Tag and Start Push..." button
+	 */
+	private static final int CREATE_AND_START_PUSH_ID = 23;
 
 	private String tagName;
 
@@ -101,9 +104,12 @@ public class CreateTagDialog extends TitleAreaDialog {
 
 	private ObjectId tagCommit;
 
+	private boolean shouldStartPushWizard = false;
+
 	private boolean overwriteTag;
 
-	private RevTag tag;
+	/** Tag object in case an existing annotated tag was entered */
+	private RevTag existingTag;
 
 	private Repository repo;
 
@@ -234,19 +240,17 @@ public class CreateTagDialog extends TitleAreaDialog {
 	}
 
 	/**
-	 * Data from <code>tag</code> argument will be set in this dialog box.
-	 *
-	 * @param tag
+	 * @return true if the user wants to start the push wizard after creating
+	 *         the tag, false otherwise
 	 */
-	public void setTag(RevTag tag) {
-		this.tag = tag;
+	public boolean shouldStartPushWizard() {
+		return shouldStartPushWizard;
 	}
 
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
 		newShell.setText(UIText.CreateTagDialog_NewTag);
-		newShell.setMinimumSize(600, 400);
 	}
 
 	private String getTitle() {
@@ -276,7 +280,15 @@ public class CreateTagDialog extends TitleAreaDialog {
 		margin.setLayoutData(GridDataFactory.fillDefaults().grab(true, false)
 				.create());
 
+		Button createTagAndStartPushButton = createButton(parent,
+				CREATE_AND_START_PUSH_ID, UIText.CreateTagDialog_CreateTagAndStartPushButton, false);
+		createTagAndStartPushButton
+				.setToolTipText(UIText.CreateTagDialog_CreateTagAndStartPushToolTip);
+		setButtonLayoutData(createTagAndStartPushButton);
+
 		super.createButtonsForButtonBar(parent);
+
+		getButton(OK).setText(UIText.CreateTagDialog_CreateTagButton);
 
 		validateInput();
 	}
@@ -342,9 +354,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 		createExistingTagsSection(mainForm);
 
 		mainForm.setWeights(new int[] { 70, 30 });
-		if (tag != null) {
-			setTagImpl();
-		}
 
 		applyDialogFont(parent);
 		return composite;
@@ -352,28 +361,26 @@ public class CreateTagDialog extends TitleAreaDialog {
 
 	@Override
 	protected void buttonPressed(int buttonId) {
-		switch (buttonId) {
-		case CLEAR_ID:
+		if (buttonId == CLEAR_ID) {
 			tagNameText.setText(""); //$NON-NLS-1$
 			tagMessageText.setText(""); //$NON-NLS-1$
 			if (commitCombo != null) {
 				commitCombo.clearSelection();
-				commitCombo.setEnabled(true);
 			}
-			tagNameText.setEnabled(true);
-			tagMessageText.setEnabled(true);
+			tagMessageText.getTextWidget().setEditable(true);
 			overwriteButton.setEnabled(false);
 			overwriteButton.setSelection(false);
-			break;
-		case IDialogConstants.OK_ID:
+		} else if (buttonId == IDialogConstants.OK_ID
+				|| buttonId == CREATE_AND_START_PUSH_ID) {
+			shouldStartPushWizard = (buttonId == CREATE_AND_START_PUSH_ID);
 			// read and store data from widgets
 			tagName = tagNameText.getText();
 			if (commitCombo != null)
 				tagCommit = commitCombo.getValue();
 			tagMessage = tagMessageText.getCommitMessage();
 			overwriteTag = overwriteButton.getSelection();
-			//$FALL-THROUGH$ continue propagating OK button action
-		default:
+			okPressed();
+		} else {
 			super.buttonPressed(buttonId);
 		}
 	}
@@ -398,16 +405,22 @@ public class CreateTagDialog extends TitleAreaDialog {
 		label.setLayoutData(data);
 		label.setFont(left.getFont());
 
-		tagNameText = new Text(left, SWT.SINGLE | SWT.BORDER);
+		tagNameText = new Text(left, SWT.SINGLE | SWT.BORDER | SWT.SEARCH
+				| SWT.ICON_CANCEL);
 		tagNameText.setLayoutData(new GridData(GridData.GRAB_HORIZONTAL
 				| GridData.HORIZONTAL_ALIGN_FILL));
 		tagNameText.addModifyListener(new ModifyListener() {
 
 			public void modifyText(ModifyEvent e) {
-				String textValue = Pattern.quote(tagNameText.getText());
-				tagNamePattern = Pattern.compile(textValue,
+				String tagNameValue = tagNameText.getText();
+				tagNamePattern = Pattern.compile(Pattern.quote(tagNameValue),
 						Pattern.CASE_INSENSITIVE);
 				tagViewer.refresh();
+				// Only parse/set tag once (otherwise it would be set twice when
+				// selecting from the existing tags)
+				if (existingTag == null
+						|| !tagNameValue.equals(existingTag.getTagName()))
+					setExistingTagFromText(tagNameValue);
 				validateInput();
 			}
 		});
@@ -417,24 +430,20 @@ public class CreateTagDialog extends TitleAreaDialog {
 
 		new Label(left, SWT.WRAP).setText(UIText.CreateTagDialog_tagMessage);
 
-		tagMessageText = new SpellcheckableMessageArea(left, tagMessage);
-		tagMessageText.setLayoutData(GridDataFactory.fillDefaults()
-				.minSize(50, 50).grab(true, true).create());
 
-		// key listener taken from CommitDialog.createDialogArea() allow to
-		// commit with ctrl-enter
+		tagMessageText = new SpellcheckableMessageArea(left, tagMessage);
+		Point size = tagMessageText.getTextWidget().getSize();
+		tagMessageText.setLayoutData(GridDataFactory.fillDefaults().hint(size)
+				.grab(true, true).create());
+
+		// allow to tag with ctrl-enter
 		tagMessageText.addKeyListener(new KeyAdapter() {
-			public void keyPressed(KeyEvent arg0) {
-				if (arg0.keyCode == SWT.CR
-						&& (arg0.stateMask & SWT.CONTROL) > 0) {
+			public void keyPressed(KeyEvent e) {
+				if (UIUtils.isSubmitKeyEvent(e)) {
 					Control button = getButton(IDialogConstants.OK_ID);
 					// fire OK action only when button is enabled
 					if (button != null && button.isEnabled())
 						buttonPressed(IDialogConstants.OK_ID);
-				} else if (arg0.keyCode == SWT.TAB
-						&& (arg0.stateMask & SWT.SHIFT) == 0) {
-					arg0.doit = false;
-					tagMessageText.traverse(SWT.TRAVERSE_TAB_NEXT);
 				}
 			}
 		});
@@ -453,11 +462,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 		overwriteButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				boolean state = overwriteButton.getSelection();
-				tagNameText.setEnabled(state);
-				if (commitCombo != null)
-					commitCombo.setEnabled(state);
-				tagMessageText.setEnabled(state);
 				validateInput();
 			}
 		});
@@ -517,10 +521,11 @@ public class CreateTagDialog extends TitleAreaDialog {
 						commitCombo.add(revCommit);
 
 					// Set combo selection if a tag is selected
-					if (tag != null)
-						commitCombo.setSelectedElement(tag.getObject());
+					if (existingTag != null)
+						commitCombo.setSelectedElement(existingTag.getObject());
 				}
 				composite.layout(true);
+				composite.getShell().pack();
 			}
 		});
 	}
@@ -528,7 +533,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 	private void createExistingTagsSection(Composite parent) {
 		Composite right = new Composite(parent, SWT.NORMAL);
 		right.setLayout(GridLayoutFactory.swtDefaults().create());
-		right.setLayoutData(GridLayoutFactory.fillDefaults().create());
+		right.setLayoutData(GridDataFactory.fillDefaults().create());
 
 		new Label(right, SWT.WRAP).setText(UIText.CreateTagDialog_existingTags);
 
@@ -581,7 +586,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 	}
 
 	private void validateInput() {
-		// don't validate if dialog is disposed
+		// don't do anything if dialog is disposed
 		if (getShell() == null) {
 			return;
 		}
@@ -599,64 +604,86 @@ public class CreateTagDialog extends TitleAreaDialog {
 			boolean shouldOverwriteTag = (overwriteButton.getSelection() && Repository
 					.isValidRefName(Constants.R_TAGS + tagNameText.getText()));
 
-			button.setEnabled(containsTagNameAndMessage || shouldOverwriteTag);
+			boolean enabled = containsTagNameAndMessage || shouldOverwriteTag;
+			button.setEnabled(enabled);
+
+			Button createTagAndStartPush = getButton(CREATE_AND_START_PUSH_ID);
+			if (createTagAndStartPush != null)
+				createTagAndStartPush.setEnabled(enabled);
 		}
+
+		boolean existingTagSelected = existingTag != null;
+		if (existingTagSelected && !overwriteButton.getSelection())
+			tagMessageText.getTextWidget().setEditable(false);
+		else
+			tagMessageText.getTextWidget().setEditable(true);
+
+		overwriteButton.setEnabled(existingTagSelected);
+		if (!existingTagSelected)
+			overwriteButton.setSelection(false);
 	}
 
 	private void fillTagDialog(ISelection actSelection) {
 		IStructuredSelection selection = (IStructuredSelection) actSelection;
 		Object firstSelected = selection.getFirstElement();
+		setExistingTag(firstSelected);
+	}
 
-		if (firstSelected instanceof RevTag)
-			tag = (RevTag) firstSelected;
+	private void setExistingTagFromText(String tagName) {
+		RevWalk revWalk = null;
+		try {
+			ObjectId tagObjectId = repo.resolve(Constants.R_TAGS + tagName);
+			if (tagObjectId != null) {
+				revWalk = new RevWalk(repo);
+				RevObject tagObject = revWalk.parseAny(tagObjectId);
+				setExistingTag(tagObject);
+				return;
+			}
+		} catch (IOException e) {
+			// See below
+		} catch (RevisionSyntaxException e) {
+			// See below
+		} finally {
+			if (revWalk != null)
+				revWalk.release();
+		}
+		setNoExistingTag();
+	}
+
+	private void setNoExistingTag() {
+		existingTag = null;
+	}
+
+	private void setExistingTag(Object tagObject) {
+		if (tagObject instanceof RevTag)
+			existingTag = (RevTag) tagObject;
 		else {
+			setNoExistingTag();
 			setErrorMessage(UIText.CreateTagDialog_LightweightTagMessage);
 			return;
 		}
 
-		if (!overwriteButton.isEnabled()) {
-			String tagMessageValue = tag.getFullMessage();
-			// don't enable OK button if we are dealing with un-annotated
-			// tag because JGit doesn't support them
-			if (tagMessageValue != null && tagMessageValue.trim().length() != 0)
-				overwriteButton.setEnabled(true);
-
-			tagNameText.setEnabled(false);
-			if (commitCombo != null)
-				commitCombo.setEnabled(false);
-			tagMessageText.setEnabled(false);
-		}
-
-		setTagImpl();
-	}
-
-	private void setTagImpl() {
-		tagNameText.setText(tag.getTagName());
+		if (!tagNameText.getText().equals(existingTag.getTagName()))
+			tagNameText.setText(existingTag.getTagName());
 		if (commitCombo != null)
-			commitCombo.setSelectedElement(tag.getObject());
+			commitCombo.setSelectedElement(existingTag.getObject());
 
 		// handle un-annotated tags
-		String message = tag.getFullMessage();
+		String message = existingTag.getFullMessage();
 		tagMessageText.setText(null != message ? message : ""); //$NON-NLS-1$
 	}
 
 	private void getRevCommits(Collection<RevCommit> commits) {
-		RevWalk revWalk = new RevWalk(repo);
-		revWalk.sort(RevSort.COMMIT_TIME_DESC, true);
-		revWalk.sort(RevSort.BOUNDARY, true);
-
+		final RevWalk revWalk = new RevWalk(repo);
 		try {
+			revWalk.sort(RevSort.COMMIT_TIME_DESC, true);
+			revWalk.sort(RevSort.BOUNDARY, true);
 			AnyObjectId headId = repo.resolve(Constants.HEAD);
 			if (headId != null)
 				revWalk.markStart(revWalk.parseCommit(headId));
-		} catch (IOException e) {
-			Activator.logError(UIText.TagAction_errorWhileGettingRevCommits, e);
-			setErrorMessage(UIText.TagAction_errorWhileGettingRevCommits);
-		}
-		// do the walk to get the commits
-		RevCommit commit;
-		long count = 0;
-		try {
+			// do the walk to get the commits
+			long count = 0;
+			RevCommit commit;
 			while ((commit = revWalk.next()) != null
 					&& count < MAX_COMMIT_COUNT) {
 				commits.add(commit);
@@ -665,6 +692,8 @@ public class CreateTagDialog extends TitleAreaDialog {
 		} catch (IOException e) {
 			Activator.logError(UIText.TagAction_errorWhileGettingRevCommits, e);
 			setErrorMessage(UIText.TagAction_errorWhileGettingRevCommits);
+		} finally {
+			revWalk.release();
 		}
 	}
 
