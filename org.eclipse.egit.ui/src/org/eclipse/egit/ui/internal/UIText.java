@@ -693,12 +693,6 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_Failed;
 
 	/** */
-	public static String RebaseResultDialog_JobNameAbortRebase;
-
-	/** */
-	public static String RebaseResultDialog_JobNameSkipCommit;
-
-	/** */
 	public static String RebaseResultDialog_NextSteps;
 
 	/** */
@@ -4469,18 +4463,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_ColumnLayout;
-
-	/** */
-	public static String StagingView_RebaseAbort;
-
-	/** */
-	public static String StagingView_RebaseContinue;
-
-	/** */
-	public static String StagingView_RebaseLabel;
-
-	/** */
-	public static String StagingView_RebaseSkip;
 
 	/** */
 	public static String StagingView_Refresh;
