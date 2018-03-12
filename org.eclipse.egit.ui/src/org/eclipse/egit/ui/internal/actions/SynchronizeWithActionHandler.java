@@ -8,12 +8,18 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
+import static org.eclipse.jgit.lib.Constants.R_HEADS;
+import static org.eclipse.jgit.lib.Constants.R_REFS;
+import static org.eclipse.jgit.lib.Constants.R_REMOTES;
+import static org.eclipse.jgit.lib.Constants.R_TAGS;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -36,6 +42,13 @@ import org.eclipse.jgit.transport.RemoteConfig;
  * An action that launch synchronization with selected repository
  */
 public class SynchronizeWithActionHandler extends RepositoryActionHandler {
+
+	private static final Pattern PATTERN = Pattern
+			.compile("^("  //$NON-NLS-1$
+					+ R_HEADS + ")|("  //$NON-NLS-1$
+					+ R_REMOTES + ")|("  //$NON-NLS-1$
+					+ R_TAGS + ")|("  //$NON-NLS-1$
+					+ R_REFS + ")"); //$NON-NLS-1$
 
 	@Override
 	public boolean isEnabled() {
@@ -79,6 +92,7 @@ public class SynchronizeWithActionHandler extends RepositoryActionHandler {
 		List<SyncRepoEntity> syncRepoEntitys = new ArrayList<SyncRepoEntity>();
 
 		syncRepoEntitys.add(getLocalSyncRepo(repo));
+		syncRepoEntitys.add(getTagsSyncRepo(repo));
 		for (RemoteConfig rc : remoteConfigs)
 			syncRepoEntitys.add(getRemoteSyncRepo(refDatabase, rc));
 
@@ -94,27 +108,49 @@ public class SynchronizeWithActionHandler extends RepositoryActionHandler {
 		Set<String> allRefs = repo.getAllRefs().keySet();
 		SyncRepoEntity local = new SyncRepoEntity(
 				UIText.SynchronizeWithAction_localRepoName);
-		for (String ref : allRefs) {
-			if (!ref.startsWith(Constants.R_REMOTES)) {
-				String name = ref.substring(ref.lastIndexOf('/') + 1);
-				local.addRef(new SyncRefEntity(name, ref));
+		for (String ref : allRefs)
+			if (!ref.startsWith(Constants.R_REMOTES)
+					&& !ref.startsWith(Constants.R_TAGS)) {
+				local.addRef(createSyncRepoEntity(ref));
 			}
-		}
+
 		return local;
 	}
 
 	private SyncRepoEntity getRemoteSyncRepo(RefDatabase refDatabase,
 			RemoteConfig rc) throws IOException {
-		SyncRepoEntity syncRepoEnt = new SyncRepoEntity(rc.getName());
-		Collection<Ref> remoteRefs = getRemoteRef(refDatabase, rc.getName());
+		String name = rc.getName();
+		SyncRepoEntity syncRepoEnt = new SyncRepoEntity(name);
+		Collection<Ref> remoteRefs = getRemoteRef(refDatabase, name);
 
-		for (Ref ref : remoteRefs) {
-			String refName = ref.getName();
-			String refHumanName = refName
-					.substring(refName.lastIndexOf('/') + 1);
-			syncRepoEnt.addRef(new SyncRefEntity(refHumanName, refName));
-		}
+		for (Ref ref : remoteRefs)
+			syncRepoEnt.addRef(createSyncRepoEntity(name, ref.getName()));
+
 		return syncRepoEnt;
+	}
+
+	private SyncRepoEntity getTagsSyncRepo(Repository repo) {
+		Set<String> allRefs = repo.getAllRefs().keySet();
+		SyncRepoEntity local = new SyncRepoEntity(
+				UIText.SynchronizeWithAction_tagsName);
+		for (String ref : allRefs)
+			if (ref.startsWith(Constants.R_TAGS))
+				local.addRef(createSyncRepoEntity(ref));
+
+		return local;
+	}
+
+	private SyncRefEntity createSyncRepoEntity(String ref) {
+		return createSyncRepoEntity("", ref); //$NON-NLS-1$
+	}
+
+	private SyncRefEntity createSyncRepoEntity(String repoName, String ref) {
+		String name = PATTERN.matcher(ref).replaceFirst(""); //$NON-NLS-1$
+
+		if (name.startsWith(repoName + "/")) //$NON-NLS-1$
+			name = name.substring(repoName.length() + 1);
+
+		return new SyncRefEntity(name, ref);
 	}
 
 	private Collection<Ref> getRemoteRef(RefDatabase refDb, String remoteName)

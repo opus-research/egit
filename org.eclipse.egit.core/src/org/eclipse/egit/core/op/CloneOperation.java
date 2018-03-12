@@ -26,6 +26,7 @@ import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.jgit.dircache.DirCacheCheckout;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
@@ -174,7 +175,7 @@ public class CloneOperation {
 		local = new FileRepository(gitdir);
 		local.create();
 
-		if (ref.getName().startsWith(Constants.R_HEADS)) {
+		if (ref != null && ref.getName().startsWith(Constants.R_HEADS)) {
 			final RefUpdate head = local.updateRef(Constants.HEAD);
 			head.disableRefLog();
 			head.link(ref.getName());
@@ -193,25 +194,25 @@ public class CloneOperation {
 		if (allSelected) {
 			remoteConfig.addFetchRefSpec(wcrs);
 		} else {
-			for (final Ref ref : selectedBranches)
-				if (wcrs.matchSource(ref))
-					remoteConfig.addFetchRefSpec(wcrs.expandFromSource(ref));
+			for (final Ref selectedRef : selectedBranches)
+				if (wcrs.matchSource(selectedRef))
+					remoteConfig.addFetchRefSpec(wcrs.expandFromSource(selectedRef));
 		}
 
 		// we're setting up for a clone with a checkout
 		config.setBoolean(
-				"core", null, "bare", false); //$NON-NLS-1$ //$NON-NLS-2$
+				ConfigConstants.CONFIG_CORE_SECTION, null, ConfigConstants.CONFIG_KEY_BARE, false);
 
 		remoteConfig.update(config);
 
 		// branch is like 'Constants.R_HEADS + branchName', we need only
 		// the 'branchName' part
-		if (ref.getName().startsWith(Constants.R_HEADS)) {
+		if (ref != null && ref.getName().startsWith(Constants.R_HEADS)) {
 			String branchName = ref.getName().substring(Constants.R_HEADS.length());
 
 			// setup the default remote branch for branchName
-			config.setString("branch", branchName, "remote", remoteName); //$NON-NLS-1$ //$NON-NLS-2$
-			config.setString("branch", branchName, "merge", ref.getName()); //$NON-NLS-1$ //$NON-NLS-2$
+			config.setString(ConfigConstants.CONFIG_BRANCH_SECTION, branchName, ConfigConstants.CONFIG_KEY_REMOTE, remoteName);
+			config.setString(ConfigConstants.CONFIG_BRANCH_SECTION, branchName, ConfigConstants.CONFIG_KEY_MERGE, ref.getName());
 		}
 		config.save();
 	}
@@ -232,6 +233,8 @@ public class CloneOperation {
 	}
 
 	private void doCheckout(final IProgressMonitor monitor) throws IOException {
+		if (ref == null)
+			return;
 		final Ref head = fetchResult.getAdvertisedRef(ref.getName());
 		if (head == null || head.getObjectId() == null)
 			return;
@@ -258,7 +261,7 @@ public class CloneOperation {
 		boolean result = dirCacheCheckout.checkout();
 		if (!result)
 			// this should never happen when writing in an empty folder
-			throw new IOException("Internal error occured on checking out files"); //$NON-NLS-1$
+			throw new IOException("Internal error occurred on checking out files"); //$NON-NLS-1$
 		monitor.setTaskName(CoreText.CloneOperation_writingIndex);
 	}
 }

@@ -22,18 +22,21 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IContainer;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.internal.util.ExceptionCollector;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryChangeListener;
@@ -43,6 +46,7 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
+import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -56,7 +60,6 @@ import org.eclipse.jgit.events.IndexChangedListener;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
-import org.eclipse.jgit.events.RepositoryEvent;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.TextProcessor;
@@ -89,6 +92,18 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * decorator
 	 */
 	public static final String DECORATOR_ID = "org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator"; //$NON-NLS-1$
+
+	private static final QualifiedName REFRESH_KEY = new QualifiedName(
+			Activator.getPluginId(), "refresh"); //$NON-NLS-1$
+
+	private static final QualifiedName REFRESHED_KEY = new QualifiedName(
+			Activator.getPluginId(), "refreshed"); //$NON-NLS-1$
+
+	private static final QualifiedName DECORATABLE_RESOURCE_KEY = new QualifiedName(
+			Activator.getPluginId(), "decoratableResource"); //$NON-NLS-1$
+
+	private static final QualifiedName NOT_DECORATABLE_KEY = new QualifiedName(
+			Activator.getPluginId(), "notDecoratable"); //$NON-NLS-1$
 
 	/**
 	 * Bit-mask describing interesting changes for IResourceChangeListener
@@ -190,12 +205,14 @@ public class GitLightweightDecorator extends LabelProvider implements
 		if (resource == null)
 			return;
 
+		// Step 1: Perform cheap tests
+
 		// Don't decorate if the workbench is not running
 		if (!PlatformUI.isWorkbenchRunning())
 			return;
 
 		// Don't decorate if UI plugin is not running
-		Activator activator = Activator.getDefault();
+		final Activator activator = Activator.getDefault();
 		if (activator == null)
 			return;
 
@@ -206,28 +223,152 @@ public class GitLightweightDecorator extends LabelProvider implements
 		// Don't decorate non-existing resources
 		if (!resource.exists() && !resource.isPhantom())
 			return;
-		// Don't decorate ignored resources (e.g. bin folder content)
-		if (Team.isIgnoredHint(resource))
-			return;
+
 		// Make sure we're dealing with a project under Git revision control
 		final RepositoryMapping mapping = RepositoryMapping
 				.getMapping(resource);
 		if (mapping == null)
 			return;
 
+		IDecoratableResource decoratableResource = null;
+		final DecorationHelper helper = new DecorationHelper(
+				activator.getPreferenceStore());
+
+		// Step 2: Read session properties
+
+		try {
+			final Boolean notDecoratable = (Boolean) resource
+					.getSessionProperty(NOT_DECORATABLE_KEY);
+			if (notDecoratable != null && notDecoratable.equals(Boolean.TRUE))
+				// Step 2a: Return - resource is not decoratable
+				return;
+
+			decoratableResource = (IDecoratableResource) resource
+					.getSessionProperty(DECORATABLE_RESOURCE_KEY);
+			if (decoratableResource != null) {
+				final Long refreshed = (Long) resource
+						.getSessionProperty(REFRESHED_KEY);
+				if (refreshed != null) {
+					final Long refresh = (Long) resource.getWorkspace()
+							.getRoot().getSessionProperty(REFRESH_KEY);
+					if (refresh == null
+							|| refresh.longValue() <= refreshed.longValue()) {
+						// Condition: Stored decoratable resource exists and is
+						// up-to-date
+						//
+						// Step 2b: Apply stored decoratable resource and return
+						helper.decorate(decoration, decoratableResource);
+						return;
+					}
+				}
+			}
+		} catch (CoreException e) {
+			handleException(resource, e);
+			return;
+		}
+
+		// Condition: Stored decoratable resource either not exists or is
+		// out-dated
+		//
+		// Step 3: Perform more expensive tests
+
+		// Don't decorate ignored resources (e.g. bin folder content)
+		if (Team.isIgnoredHint(resource))
+			return;
+
 		// Cannot decorate linked resources
 		if (mapping.getRepoRelativePath(resource) == null)
 			return;
 
-		try {
-			DecorationHelper helper = new DecorationHelper(activator
-					.getPreferenceStore());
-			helper.decorate(decoration,
-					new DecoratableResourceAdapter(resource));
-		} catch (IOException e) {
-			handleException(resource, new CoreException(new Status(
-					IStatus.ERROR, Activator.getPluginId(), e.getMessage(), e)));
+		// Step 4: For project nodes only: create temporary decoratable resource
+		if (resource.getType() == IResource.PROJECT) {
+			try {
+				decoratableResource = DecoratableResourceHelper
+						.createTemporaryDecoratableResource(resource
+								.getProject());
+			} catch (IOException e) {
+				handleException(
+						resource,
+						new CoreException(Activator.createErrorStatus(
+								UIText.Decorator_exceptionMessage, e)));
+				return;
+			}
 		}
+
+		// Step 5: Apply out-dated or temporary decoratable resource and
+		// continue
+		if (decoratableResource != null) {
+			helper.decorate(decoration, decoratableResource);
+		}
+
+		// Step 6: Add decoration request to the queue
+		GitDecoratorJob.getJobForRepository(
+				mapping.getGitDirAbsolutePath().toString())
+				.addDecorationRequest(element);
+	}
+
+	/**
+	 * Process decoration requests for the given list of elements
+	 *
+	 * @param elements
+	 *            the list of elements to be decorated
+	 * @throws IOException
+	 */
+	static void processDecoration(final Object[] elements) throws IOException {
+		final GitLightweightDecorator decorator = (GitLightweightDecorator) Activator
+				.getDefault().getWorkbench().getDecoratorManager()
+				.getBaseLabelProvider(DECORATOR_ID);
+		if (decorator != null)
+			decorator.prepareDecoration(elements);
+		else
+			throw new RuntimeException(
+					"Could not retrieve GitLightweightDecorator"); //$NON-NLS-1$
+	}
+
+	private void prepareDecoration(final Object[] elements) throws IOException {
+		if (elements == null)
+			return;
+
+		final IResource[] resources = new IResource[elements.length];
+		for (int i = 0; i < elements.length; i++) {
+			if (elements[i] != null)
+				resources[i] = getResource(elements[i]);
+		}
+
+		// Calculate resource decorations
+		IDecoratableResource[] decoratableResources = DecoratableResourceHelper
+				.createDecoratableResources(resources);
+
+		// Store decoration result in session property for each resource
+		for (int i = 0; i < decoratableResources.length; i++) {
+			try {
+				if (decoratableResources[i] != null) {
+					// Store decoratable resource in session
+					resources[i].setSessionProperty(DECORATABLE_RESOURCE_KEY,
+							decoratableResources[i]);
+					// Set (new) 'refreshed' timestamp
+					resources[i].setSessionProperty(REFRESHED_KEY,
+							Long.valueOf(System.currentTimeMillis()));
+				} else {
+					if (resources[i] != null) {
+						// Set 'notDecoratable' session property
+						resources[i].setSessionProperty(NOT_DECORATABLE_KEY,
+								Boolean.TRUE);
+						if (GitTraceLocation.DECORATION.isActive())
+							GitTraceLocation
+									.getTrace()
+									.trace(GitTraceLocation.DECORATION
+											.getLocation(),
+											"Could not decorate resource: " + resources[i].getFullPath()); //$NON-NLS-1$
+					}
+				}
+			} catch (CoreException e) {
+				handleException(resources[i], e);
+			}
+		}
+
+		// Immediately fire label provider changed event
+		fireLabelEvent();
 	}
 
 	/**
@@ -552,12 +693,12 @@ public class GitLightweightDecorator extends LabelProvider implements
 		if (prop.equals(TeamUI.GLOBAL_IGNORES_CHANGED)
 				|| prop.equals(TeamUI.GLOBAL_FILE_TYPES_CHANGED)
 				|| prop.equals(Activator.DECORATORS_CHANGED)) {
-			postLabelEvent(new LabelProviderChangedEvent(this));
+			postLabelEvent();
 		} else if (prop.equals(UIPreferences.THEME_UncommittedChangeBackgroundColor)
 				|| prop.equals(UIPreferences.THEME_UncommittedChangeFont)
 				|| prop.equals(UIPreferences.THEME_UncommittedChangeForegroundColor)) {
 			ensureFontAndColorsCreated(fonts, colors);
-			postLabelEvent(new LabelProviderChangedEvent(this)); // TODO do I really need this?
+			postLabelEvent(); // TODO do I really need this?
 		}
 	}
 
@@ -572,6 +713,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @see org.eclipse.core.resources.IResourceChangeListener#resourceChanged(org.eclipse.core.resources.IResourceChangeEvent)
 	 */
 	public void resourceChanged(IResourceChangeEvent event) {
+		final long currentTime = System.currentTimeMillis();
 		final Set<IResource> resourcesToUpdate = new HashSet<IResource>();
 
 		try { // Compute the changed resources by looking at the delta
@@ -606,6 +748,15 @@ public class GitLightweightDecorator extends LabelProvider implements
 						if (!resource.isAccessible())
 							return false;
 					}
+
+					// Ignore resources that haven't been changed within the
+					// last 10 seconds
+					if (currentTime - resource.getLocalTimeStamp() > 10000)
+						return false;
+
+					// Don't include ignored resources
+					if (Team.isIgnoredHint(resource))
+						return false;
 
 					// All seems good, schedule the resource for update
 					if (Constants.GITIGNORE_FILENAME.equals(resource.getName())) {
@@ -650,38 +801,15 @@ public class GitLightweightDecorator extends LabelProvider implements
 			}
 		}
 
-		postLabelEvent(new LabelProviderChangedEvent(this, resourcesToUpdate
-				.toArray()));
-	}
-
-	/**
-	 * Callback for RepositoryListener events
-	 *
-	 * We resolve the repository mapping for the changed repository and forward
-	 * that to repositoryChanged(RepositoryMapping).
-	 *
-	 * @param e
-	 *            The original change event
-	 */
-	private void repositoryChanged(RepositoryEvent e) {
-		final Set<RepositoryMapping> ms = new HashSet<RepositoryMapping>();
-		for (final IProject p : ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects()) {
-			final RepositoryMapping mapping = RepositoryMapping.getMapping(p);
-			if (mapping != null && mapping.getRepository() == e.getRepository())
-				ms.add(mapping);
-		}
-		for (final RepositoryMapping m : ms) {
-			repositoryChanged(m);
-		}
+		postLabelEvent(resourcesToUpdate.toArray());
 	}
 
 	public void onIndexChanged(IndexChangedEvent e) {
-		repositoryChanged(e);
+		postLabelEvent();
 	}
 
 	public void onRefsChanged(RefsChangedEvent e) {
-		repositoryChanged(e);
+		postLabelEvent();
 	}
 
 	/**
@@ -693,7 +821,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 	public void repositoryChanged(RepositoryMapping mapping) {
 		// Until we find a way to refresh visible labels within a project
 		// we have to use this blanket refresh that includes all projects.
-		postLabelEvent(new LabelProviderChangedEvent(this));
+		postLabelEvent();
 	}
 
 	// -------- Helper methods --------
@@ -722,12 +850,73 @@ public class GitLightweightDecorator extends LabelProvider implements
 	}
 
 	/**
-	 * Post the label event to the UI thread
+	 * Post a label event to the LabelEventJob
 	 *
-	 * @param event
-	 *            The event to post
+	 * Posts a generic label event. No specific elements are provided; all
+	 * decorations shall be invalidated. Same as
+	 * <code>postLabelEvent(null, true)</code>.
 	 */
-	private void postLabelEvent(final LabelProviderChangedEvent event) {
+	private void postLabelEvent() {
+		postLabelEvent(null, true);
+	}
+
+	/**
+	 * Post a label event to the LabelEventJob
+	 *
+	 * Posts a label event for specific elements. Does not invalidate other
+	 * decorations. Same as <code>postLabelEvent(elements, false)</code>.
+	 *
+	 * @param elements
+	 *            The elements to update
+	 */
+	private void postLabelEvent(final Object[] elements) {
+		postLabelEvent(elements, false);
+	}
+
+	private void postLabelEvent(final Object[] elements,
+			final boolean invalidateAllDecorations) {
+		final IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		boolean updateRoot = false;
+
+		if (elements != null) {
+			// Update specific elements
+			for (Object element : elements) {
+				final IResource resource = getResource(element);
+				if (resource != null) {
+					if (resource.equals(root)) {
+						updateRoot = true;
+						break;
+					} else {
+						try {
+							// Remove 'refreshed' property
+							resource.setSessionProperty(REFRESHED_KEY, null);
+						} catch (CoreException e) {
+							// Ignore
+						}
+					}
+				}
+			}
+		}
+
+		if (invalidateAllDecorations || updateRoot) {
+			// Invalidate all decorations
+			try {
+				// Set (new) 'refresh' timestamp
+				root.setSessionProperty(REFRESH_KEY,
+						Long.valueOf(System.currentTimeMillis()));
+			} catch (CoreException e) {
+				handleException(root, e);
+			}
+		}
+
+		// Post label event to LabelEventJob
+		LabelEventJob.getInstance().postLabelEvent(this);
+	}
+
+	void fireLabelEvent() {
+		final LabelProviderChangedEvent event = new LabelProviderChangedEvent(
+				this);
+		// Re-trigger decoration process (in UI thread)
 		Display.getDefault().asyncExec(new Runnable() {
 			public void run() {
 				fireLabelProviderChanged(event);
@@ -747,5 +936,57 @@ public class GitLightweightDecorator extends LabelProvider implements
 	private static void handleException(IResource resource, CoreException e) {
 		if (resource == null || resource.isAccessible())
 			exceptions.handleException(e);
+	}
+}
+
+/**
+ * Job reducing label events to prevent unnecessary (i.e. redundant) event
+ * processing
+ */
+class LabelEventJob extends Job {
+
+	/**
+	 * Constant defining the waiting time (in milliseconds) until an event is
+	 * fired
+	 */
+	private static final long DELAY = 100L;
+
+	private static LabelEventJob instance = new LabelEventJob("LabelEventJob"); //$NON-NLS-1$
+
+	/**
+	 * Get the LabelEventJob singleton
+	 *
+	 * @return the LabelEventJob singleton
+	 */
+	static LabelEventJob getInstance() {
+		return instance;
+	}
+
+	private LabelEventJob(final String name) {
+		super(name);
+	}
+
+	private GitLightweightDecorator glwDecorator = null;
+
+	/**
+	 * Post a label event
+	 *
+	 * @param decorator
+	 *            The GitLightweightDecorator that is used to fire a
+	 *            LabelProviderChangedEvent
+	 */
+	void postLabelEvent(final GitLightweightDecorator decorator) {
+		if (this.glwDecorator == null)
+			this.glwDecorator = decorator;
+		if (getState() == SLEEPING || getState() == WAITING)
+			cancel();
+		schedule(DELAY);
+	}
+
+	@Override
+	protected IStatus run(IProgressMonitor monitor) {
+		if (glwDecorator != null)
+			glwDecorator.fireLabelEvent();
+		return Status.OK_STATUS;
 	}
 }

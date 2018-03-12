@@ -12,6 +12,8 @@ package org.eclipse.egit.ui;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
+import org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetLabelProvider;
+import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jgit.util.FS;
 
@@ -65,11 +67,23 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.FINDTOOLBAR_IGNORE_CASE, true);
 		store.setDefault(UIPreferences.FINDTOOLBAR_FIND_IN, 2);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE, true);
+		store.setDefault(UIPreferences.COMMIT_DIALOG_CREATE_CHANGE_ID, false);
+		store.setDefault(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY, false);
 
 		store.setDefault(UIPreferences.REFESH_ON_INDEX_CHANGE, true);
 		store.setDefault(UIPreferences.REFESH_ONLY_WHEN_ACTIVE, true);
 		store.setDefault(UIPreferences.DEFAULT_REPO_DIR, FS.DETECTED.userHome().getPath());
 		store.setDefault(UIPreferences.REBASE_HIDE_CONFIRM, false);
+		store.setDefault(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, true);
+		store.setDefault(UIPreferences.SHOW_HOME_DIR_WARNING, MessageDialogWithToggle.PROMPT);
+		store.setDefault(UIPreferences.SHOW_DETACHED_HEAD_WARNING, MessageDialogWithToggle.PROMPT);
+
+		store.setDefault(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT,
+				GitChangeSetLabelProvider.DEFAULT_CHANGESET_FORMAT);
+		store.setDefault(UIPreferences.DATE_FORMAT,
+				GitChangeSetLabelProvider.DEFAULT_DATE_FORMAT);
+		store.setDefault(UIPreferences.HISTORY_MAX_NUM_COMMITS, 10000);
+		store.setDefault(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, false);
 	}
 
 }

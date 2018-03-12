@@ -192,6 +192,20 @@ public class GitProjectData {
 			d.deletePropertyFilesAndUncache();
 	}
 
+	/**
+	 * Add the Eclipse project to our association of projects/repositories
+	 *
+	 * @param p
+	 *            Eclipse project
+	 * @param d
+	 *            {@link GitProjectData} associated with this project
+	 */
+	public static void add(final IProject p, final GitProjectData d) {
+		trace("add(" + p.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		cache(p, d);
+	}
+
 	static void trace(final String m) {
 		// TODO is this the right location?
 		if (GitTraceLocation.CORE.isActive())
@@ -254,7 +268,7 @@ public class GitProjectData {
 	}
 
 	/**
-	 * TODO: is this right?
+	 * Set repository mappings
 	 *
 	 * @param newMappings
 	 */
@@ -431,7 +445,7 @@ public class GitProjectData {
 		r = getProject().findMember(m.getContainerPath());
 		if (r instanceof IContainer) {
 			c = (IContainer) r;
-		} else {
+		} else if (r != null) {
 			c = (IContainer) r.getAdapter(IContainer.class);
 		}
 

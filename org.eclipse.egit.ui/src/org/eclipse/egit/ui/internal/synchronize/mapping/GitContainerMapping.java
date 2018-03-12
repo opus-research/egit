@@ -30,17 +30,17 @@ import org.eclipse.egit.ui.internal.synchronize.model.GitModelObjectContainer;
 
 class GitContainerMapping extends GitObjectMapping {
 
-	private final GitModelObject[] children;
+	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace().getRoot();
 
 	public GitContainerMapping(GitModelObjectContainer gitCommit) {
 		super(gitCommit);
-		children = gitCommit.getChildren();
 	}
 
 	@Override
 	public ResourceTraversal[] getTraversals(ResourceMappingContext context,
 			IProgressMonitor monitor) throws CoreException {
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		GitModelObject[] children = ((GitModelObjectContainer) getModelObject())
+				.getChildren();
 		List<ResourceTraversal> result = new ArrayList<ResourceTraversal>();
 
 		for (GitModelObject child : children) {
@@ -48,7 +48,8 @@ class GitContainerMapping extends GitObjectMapping {
 			IPath location = child.getLocation();
 
 			if (child.isContainer()) {
-				IContainer container = root.getContainerForLocation(location);
+				IContainer container = ROOT.getContainerForLocation(location);
+
 				if (container == null)
 					continue;
 
@@ -56,7 +57,7 @@ class GitContainerMapping extends GitObjectMapping {
 						new IResource[] { container }, DEPTH_INFINITE,
 						ALLOW_MISSING_LOCAL);
 			} else {
-				IFile file = root.getFileForLocation(location);
+				IFile file = ROOT.getFileForLocation(location);
 				if (file == null)
 					continue;
 

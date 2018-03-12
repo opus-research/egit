@@ -15,8 +15,10 @@ import java.util.List;
 
 import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.synchronize.GitSubscriberMergeContext;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
@@ -24,6 +26,7 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
+import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -78,6 +81,8 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 				ModelSynchronizeParticipant.P_VISIBLE_MODEL_PROVIDER,
 				GitChangeSetModelProvider.ID);
 		super.initializeConfiguration(configuration);
+
+		configuration.addActionContribution(new GitActionContributor());
 	}
 
 	@Override
@@ -109,6 +114,21 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		}
 
 		return providers.toArray(new ModelProvider[providers.size()]);
+	}
+
+	@Override
+	public boolean hasCompareInputFor(Object object) {
+		if (object instanceof GitModelBlob || object instanceof IFile)
+			return true;
+		// in Java Workspace model Java source files are passed as type
+		// CompilationUnit which can be adapted to IResource
+		if (object instanceof IAdaptable) {
+			IResource res = (IResource) ((IAdaptable) object)
+					.getAdapter(IResource.class);
+			if (res != null && res.getType() == IResource.FILE)
+				return true;
+		}
+		return false;
 	}
 
 	@Override

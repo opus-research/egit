@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,6 +91,8 @@ public class ConfigurationEditorComponent {
 	private final Composite parent;
 
 	private final boolean useDialogFont;
+
+	private Composite contents;
 
 	private Text valueText;
 
@@ -190,6 +193,7 @@ public class ConfigurationEditorComponent {
 					}
 				}
 			});
+			openEditor.setEnabled(((FileBasedConfig) editableConfig).getFile()!= null);
 		}
 		tv = new TreeViewer(main, SWT.SINGLE | SWT.FULL_SELECTION | SWT.BORDER);
 		Tree tree = tv.getTree();
@@ -399,7 +403,39 @@ public class ConfigurationEditorComponent {
 		});
 
 		initControlsFromConfig();
-		return main;
+		contents = main;
+		return contents;
+	}
+
+	/**
+	 * @return the composite containing all the controls
+	 */
+	public Composite getContents() {
+		return contents;
+	}
+
+	private boolean isWriteable(final File f) {
+		if (f.exists())
+			if (f.isFile())
+				if (f.canWrite())
+					return true;
+				else
+					return false;
+			else
+				return false;
+		// no file, can we create one
+		for (File d = f.getParentFile(); d != null; d = d.getParentFile()) {
+			if (d.isDirectory())
+				if (d.canWrite())
+					return true;
+				else
+					return false;
+			else
+				if (d.exists())
+					return false;
+				// else continue
+		}
+		return false;
 	}
 
 	private void initControlsFromConfig() {
@@ -407,8 +443,17 @@ public class ConfigurationEditorComponent {
 			editableConfig.load();
 			tv.setInput(editableConfig);
 			if (editableConfig instanceof FileBasedConfig) {
-				location.setText(((FileBasedConfig) editableConfig).getFile()
-						.getPath());
+				FileBasedConfig fileConfig = (FileBasedConfig) editableConfig;
+				File configFile = fileConfig.getFile();
+				if (configFile != null) {
+					if (isWriteable(configFile))
+						location.setText(configFile.getPath());
+					else
+						location.setText(NLS.bind(UIText.ConfigurationEditorComponent_ReadOnlyLocationFormat,
+								configFile.getPath()));
+				} else {
+					location.setText(UIText.ConfigurationEditorComponent_NoConfigLocationKnown);
+				}
 			}
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);

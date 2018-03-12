@@ -62,6 +62,17 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	@Override
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
+
+		Group initialGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		initialGroup.setText(UIText.GitPreferenceRoot_InitialConfiguration);
+		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
+				.applyTo(initialGroup);
+		addField(new BooleanFieldEditor(
+				UIPreferences.SHOW_INITIAL_CONFIG_DIALOG,
+				UIText.GitPreferenceRoot_ShowInitialConfigDialogCheckbox,
+				initialGroup));
+		updateMargins(initialGroup);
+
 		Group cloningGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		cloningGroup.setText(UIText.GitPreferenceRoot_CloningRepoGroupHeader);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
@@ -100,6 +111,11 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		addField(new BooleanFieldEditor(
 				UIPreferences.RESOURCEHISTORY_SHOW_REV_DETAIL,
 				UIText.ResourceHistory_toggleRevDetail, historyGroup));
+		addField(new IntegerFieldEditor(UIPreferences.HISTORY_MAX_NUM_COMMITS,
+				UIText.ResourceHistory_MaxNumCommitsInList, historyGroup));
+		addField(new BooleanFieldEditor(
+				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
+				UIText.ResourceHistory_ShowTagSequence, historyGroup));
 		updateMargins(historyGroup);
 
 		Group remoteConnectionsGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
