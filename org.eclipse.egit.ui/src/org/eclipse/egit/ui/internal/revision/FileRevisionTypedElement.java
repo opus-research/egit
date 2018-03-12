@@ -46,12 +46,10 @@ public class FileRevisionTypedElement extends StorageTypedElement {
 		this.fileRevision = fileRevision;
 	}
 
-	@Override
 	public String getName() {
 		return fileRevision.getName();
 	}
 
-	@Override
 	protected IStorage fetchContents(IProgressMonitor monitor)
 			throws CoreException {
 		return fileRevision.getStorage(monitor);
@@ -91,7 +89,6 @@ public class FileRevisionTypedElement extends StorageTypedElement {
 		return getName();
 	}
 
-	@Override
 	public IEditorInput getDocumentKey(Object element) {
 		if (element == this && getBufferedStorage() != null) {
 			return new FileRevisionEditorInput(fileRevision,
@@ -100,12 +97,10 @@ public class FileRevisionTypedElement extends StorageTypedElement {
 		return null;
 	}
 
-	@Override
 	public int hashCode() {
 		return fileRevision.hashCode();
 	}
 
-	@Override
 	public boolean equals(Object obj) {
 		if (obj == this)
 			return true;

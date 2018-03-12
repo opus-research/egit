@@ -19,6 +19,7 @@ import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -77,7 +78,11 @@ public class TestRepository {
 		tmpRepository.close();
 		// use repository instance from RepositoryCache!
 		repository = Activator.getDefault().getRepositoryCache().lookupRepository(gitDir);
-		workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		try {
+			workdirPrefix = repository.getWorkTree().getCanonicalPath();
+		} catch (IOException err) {
+			workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/")) //$NON-NLS-1$
 			workdirPrefix += "/"; //$NON-NLS-1$
@@ -91,7 +96,11 @@ public class TestRepository {
 	 */
 	public TestRepository(Repository repository) throws IOException {
 		this.repository = repository;
-		workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		try {
+			workdirPrefix = repository.getWorkTree().getCanonicalPath();
+		} catch (IOException err) {
+			workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/")) //$NON-NLS-1$
 			workdirPrefix += "/"; //$NON-NLS-1$
@@ -428,10 +437,16 @@ public class TestRepository {
 	 */
 	public boolean inHead(String path) throws IOException {
 		ObjectId headId = repository.resolve(Constants.HEAD);
-		try (RevWalk rw = new RevWalk(repository);
-				TreeWalk tw = TreeWalk.forPath(repository, path,
-						rw.parseTree(headId))) {
+		RevWalk rw = new RevWalk(repository);
+		TreeWalk tw = null;
+		try {
+			tw = TreeWalk.forPath(repository, path, rw.parseTree(headId));
 			return tw != null;
+		} finally {
+			rw.release();
+			rw.dispose();
+			if (tw != null)
+				tw.release();
 		}
 	}
 
@@ -478,11 +493,8 @@ public class TestRepository {
 	public IFile getIFile(IProject project, File file) throws CoreException {
 		String relativePath = getRepoRelativePath(file.getAbsolutePath());
 
-		// In case the project is not at the root of the repository
-		// we need to remove the whole path before the project name.
-		int index = relativePath.indexOf(project.getName());
-		relativePath = relativePath.substring(index
-				+ project.getName().length());
+		String quotedProjectName = Pattern.quote(project.getName());
+		relativePath = relativePath.replaceFirst(quotedProjectName, "");
 
 		IFile iFile = project.getFile(relativePath);
 		iFile.refreshLocal(0, null);

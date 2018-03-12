@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, 2015 Laurent Goubet <laurent.goubet@obeo.fr>
+ * Copyright (C) 2012, 2013 Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *
  * All rights reserved. This program and the accompanying materials
@@ -12,8 +12,6 @@
 package org.eclipse.egit.core.internal.util;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -27,7 +25,6 @@ import java.util.Set;
 import org.eclipse.core.filesystem.URIUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -47,7 +44,6 @@ import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.team.core.RepositoryProvider;
 
 /**
@@ -68,11 +64,12 @@ public class ResourceUtil {
 	 * @return the resources, or null
 	 */
 	public static IResource getResourceForLocation(IPath location) {
-		IFile file = getFileForLocation(location);
-		if (file != null) {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		URI uri = URIUtil.toURI(location);
+		IFile file = getFileForLocationURI(root, uri);
+		if (file != null)
 			return file;
-		}
-		return getContainerForLocation(location);
+		return getContainerForLocationURI(root, uri);
 	}
 
 	/**
@@ -87,33 +84,8 @@ public class ResourceUtil {
 	 */
 	public static IFile getFileForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IFile file = root.getFileForLocation(location);
-		if (file == null) {
-			return null;
-		}
-		if (isValid(file)) {
-			return file;
-		}
 		URI uri = URIUtil.toURI(location);
 		return getFileForLocationURI(root, uri);
-	}
-
-	/**
-	 * sort out closed, linked or not shared resources
-	 *
-	 * @param resource
-	 * @return true if the resource is shared with git, not a link and
-	 *         accessible in Eclipse
-	 */
-	private static boolean isValid(IResource resource) {
-		return resource.isAccessible()
-				&& !resource.isLinked(IResource.CHECK_ANCESTORS)
-				&& isSharedWithGit(resource);
-	}
-
-	private static boolean isSharedWithGit(IResource resource) {
-		return RepositoryProvider.getProvider(resource.getProject(),
-				GitProvider.ID) != null;
 	}
 
 	/**
@@ -128,13 +100,6 @@ public class ResourceUtil {
 	 */
 	public static IContainer getContainerForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IContainer dir = root.getContainerForLocation(location);
-		if (dir == null) {
-			return null;
-		}
-		if (isValid(dir)) {
-			return dir;
-		}
 		URI uri = URIUtil.toURI(location);
 		return getContainerForLocationURI(root, uri);
 	}
@@ -174,75 +139,6 @@ public class ResourceUtil {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
 		return root.getContainerForLocation(path);
-	}
-
-	/**
-	 * Checks if the path relative to the given repository refers to a symbolic
-	 * link
-	 *
-	 * @param repository
-	 *            the repository of the file
-	 * @param repoRelativePath
-	 *            the repository-relative path of the file to search for
-	 * @return {@code true} if the path in the given repository refers to a
-	 *         symbolic link
-	 */
-	public static boolean isSymbolicLink(Repository repository,
-			String repoRelativePath) {
-		try {
-			File f = new Path(repository.getWorkTree().getAbsolutePath())
-					.append((repoRelativePath)).toFile();
-			return FS.DETECTED.isSymLink(f);
-		} catch (IOException e) {
-			return false;
-		}
-	}
-
-	/**
-	 * Returns a resource handle for this path in the workspace. Note that
-	 * neither the resource nor the result need exist in the workspace : this
-	 * may return inexistent or otherwise non-accessible IResources.
-	 *
-	 * @param repository
-	 *            The repository within which is tracked this file.
-	 * @param repoRelativePath
-	 *            Repository-relative path of the file we need an handle for.
-	 * @param isFolder
-	 *            <code>true</code> if the file being sought is a folder.
-	 * @return The resource handle for the given path in the workspace.
-	 */
-	public static IResource getResourceHandleForLocation(Repository repository,
-			String repoRelativePath, boolean isFolder) {
-		final String workDir = repository.getWorkTree().getAbsolutePath();
-		final IPath path = new Path(workDir + '/' + repoRelativePath);
-		final File file = path.toFile();
-		if (file.exists()) {
-			if (isFolder) {
-				return getContainerForLocation(path);
-			}
-			return getFileForLocation(path);
-		}
-
-		// This is a file that no longer exists locally, yet we still need to
-		// determine an IResource for it.
-		// Try and find a Project in the workspace which path is a prefix of the
-		// file we seek and which is mapped to the current repository.
-		final IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		for (IProject project : root.getProjects()) {
-			if (RepositoryProvider.getProvider(project, GitProvider.ID) != null) {
-				final IPath projectLocation = project.getLocation();
-				if (projectLocation != null && projectLocation.isPrefixOf(path)) {
-					final IPath projectRelativePath = path
-							.makeRelativeTo(projectLocation);
-					if (isFolder) {
-						return project.getFolder(projectRelativePath);
-					} else {
-						return project.getFile(projectRelativePath);
-					}
-				}
-			}
-		}
-		return null;
 	}
 
 	/**
@@ -338,12 +234,12 @@ public class ResourceUtil {
 		int shortestPathSegmentCount = Integer.MAX_VALUE;
 		T shortestPath = null;
 		for (T resource : resources) {
-			if (!resource.exists()) {
+			if (!resource.exists())
 				continue;
-			}
-			if (!isSharedWithGit(resource)) {
+			RepositoryProvider provider = RepositoryProvider.getProvider(
+					resource.getProject(), GitProvider.ID);
+			if (provider == null)
 				continue;
-			}
 			IPath fullPath = resource.getFullPath();
 			int segmentCount = fullPath.segmentCount();
 			if (segmentCount < shortestPathSegmentCount) {

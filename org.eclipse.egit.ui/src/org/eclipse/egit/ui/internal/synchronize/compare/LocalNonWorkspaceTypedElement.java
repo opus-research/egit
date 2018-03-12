@@ -162,7 +162,6 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 	/* (non-Javadoc)
 	 * @see org.eclipse.core.runtime.IAdaptable#getAdapter(java.lang.Class)
 	 */
-	@Override
 	public Object getAdapter(Class adapter) {
 		if (adapter == ISharedDocumentAdapter.class) {
 			if (isSharedDocumentsEnable())
@@ -173,7 +172,6 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 		return Platform.getAdapterManager().getAdapter(this, adapter);
 	}
 
-	@Override
 	public void setSharedDocumentListener(
 			EditableSharedDocumentAdapter.ISharedDocumentAdapterListener sharedDocumentListener) {
 		this.sharedDocumentListener = sharedDocumentListener;
@@ -208,29 +206,24 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 	private synchronized ISharedDocumentAdapter getSharedDocumentAdapter() {
 		if (sharedDocumentAdapter == null)
 			sharedDocumentAdapter = new EditableSharedDocumentAdapter(new EditableSharedDocumentAdapter.ISharedDocumentAdapterListener() {
-				@Override
 				public void handleDocumentConnected() {
 					if (sharedDocumentListener != null)
 						sharedDocumentListener.handleDocumentConnected();
 				}
-				@Override
 				public void handleDocumentFlushed() {
 					fireContentChanged();
 					if (sharedDocumentListener != null)
 						sharedDocumentListener.handleDocumentFlushed();
 				}
-				@Override
 				public void handleDocumentDeleted() {
 					LocalNonWorkspaceTypedElement.this.update();
 					if (sharedDocumentListener != null)
 						sharedDocumentListener.handleDocumentDeleted();
 				}
-				@Override
 				public void handleDocumentSaved() {
 					if (sharedDocumentListener != null)
 						sharedDocumentListener.handleDocumentSaved();
 				}
-				@Override
 				public void handleDocumentDisconnected() {
 					if (sharedDocumentListener != null)
 						sharedDocumentListener.handleDocumentDisconnected();

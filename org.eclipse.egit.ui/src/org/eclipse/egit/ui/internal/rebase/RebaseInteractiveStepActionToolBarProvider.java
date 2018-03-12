@@ -85,7 +85,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		createToolBarItems();
 		this.theToolbar.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				dispose();
 			}
@@ -123,7 +122,7 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		rebaseActionItems[2] = itemEdit;
 
 		itemSquash = new ToolItem(theToolbar, SWT.RADIO);
-		itemSquash.setImage(getImage(UIIcons.SQUASH_UP));
+		itemSquash.setImage(getImage(UIIcons.SQUASH));
 		itemSquash.addSelectionListener(new ActionSelectionListener(
 				RebaseInteractivePlan.ElementAction.SQUASH));
 		itemSquash
@@ -131,7 +130,7 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		rebaseActionItems[3] = itemSquash;
 
 		itemFixup = new ToolItem(theToolbar, SWT.RADIO);
-		itemFixup.setImage(getImage(UIIcons.FIXUP_UP));
+		itemFixup.setImage(getImage(UIIcons.FIXUP));
 		itemFixup.addSelectionListener(new ActionSelectionListener(
 				RebaseInteractivePlan.ElementAction.FIXUP));
 		itemFixup
@@ -203,7 +202,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			this.type = action;
 		}
 
-		@Override
 		public void widgetSelected(SelectionEvent e) {
 			List<RebaseInteractivePlan.PlanElement> selected = getSelectedRebaseTodoLines();
 			if (selected == null || selected.isEmpty())
@@ -227,7 +225,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			mapActionItemsToSelection(view.planTreeViewer.getSelection());
 		}
 
-		@Override
 		public void widgetDefaultSelected(SelectionEvent e) {
 			widgetSelected(e);
 		}

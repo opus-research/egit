@@ -81,6 +81,7 @@
 		</p>
 		<p>If the <code>HOME</code> variable is not defined the home directory will be calculated by concatenating <code>HOMEDRIVE</code> and <code>HOMEPATH</code>.</p>
 		<p>If both <code>HOME</code> and <code>HOMEDRIVE</code> are not defined <code>HOMESHARE</code> will be used.</p>
+		<p><small><font color="red">If <code>HOMEPATH</code> is not defined, what happens?</font></small></p>
 		<p>EGit shows a warning if <code>HOME</code> is not defined explicitly. Keep in mind that if you set the HOME environment variable while Eclipse is running, you will still see following warning. You will have to restart Eclipse for it to recognize the HOME value.</p>
 		<p>
 			<img border="0" src="images/Egit_no_home.png"/>
@@ -139,8 +140,8 @@
 		<h3 id="Track_Changes">Track Changes</h3>
 		<ul>
 			<li>Click 
-				<b>Team &gt; Add to Index</b> on the project node. (This menu item is named 
-				<b>Add</b> on older versions of Egit.)
+				<b>Team &gt; Add</b> on the project node. (This menu item may read 
+				<b>Add to Index</b> on recent versions of Egit.)
 			</li>
 			<li>The 
 				<i>+</i> decorators show that now the project's files have been added to version control.
@@ -224,13 +225,11 @@
 		<p>
 			<img border="0" src="images/Egit-0.11-getstarted-compare.png"/>
 		</p>
-		<p>
-			<br/>
-
-			<b>Congratulations, you just have mastered your first project using Git&nbsp;!</b>
-
-			<br/>
-			<br/>
+		<p>&lt;br 
+			/&gt;
+			<b>Congratulations, you just have mastered your first project using Git&nbsp;!</b>&lt;br 
+			/&gt;&lt;br 
+			/&gt;
 		</p>
 		<h2 id="GitHub_Tutorial">GitHub Tutorial</h2>
 		<h3 id="Create_Local_Repository">Create Local Repository</h3>
@@ -283,9 +282,6 @@
 				<a href="https://github.com/account" target="egit_external">GitHub account settings</a>.
 			</li>
 		</ul>
-		<p>Further information about advanced SSH configuration (such as using Putty or another SSH agent with EGit) is available in the 
-			<a href="http://wiki.eclipse.org/EGit/FAQ#SSH_config" title="EGit/FAQ#SSH_config" target="egit_external">EGit FAQ (section SSH)</a>.
-		</p>
 		<h3 id="Push_Upstream">Push Upstream</h3>
 		<ul>
 			<li>Click 
@@ -344,9 +340,8 @@
 		<p>
 			<img border="0" src="images/Egit-0.10-github-pushed-repo.png"/>
 		</p>
-		<p>
-			<br/>
-		</p>
+		<p>&lt;br 
+			/&gt;</p>
 		<h2 id="EclipseCon_2012_Git_Tutorial">EclipseCon 2012 Git Tutorial</h2>
 		<p>Find all exercises and the slides 
 			<a href="https://docs.google.com/open?id=0B4F_gjXVrHZVRXkydE0xVFBRRkc1WUpEcXdwQ2I1dw" target="egit_external">here</a>.

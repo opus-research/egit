@@ -23,7 +23,6 @@ import org.eclipse.jface.dialogs.Dialog;
  */
 public class ConfigureFetchCommand extends
 		RepositoriesViewCommandHandler<RemoteNode> {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		RepositoryTreeNode selectedNode = getFirstOrNull(getSelectedNodes(event));
 

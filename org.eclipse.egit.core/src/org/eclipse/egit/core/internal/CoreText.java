@@ -5,7 +5,6 @@
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  * Copyright (C) 2013, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2015, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -78,9 +77,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String ConnectProviderOperation_ConnectingProject;
-
-	/** */
-	public static String ContainerTreeIterator_DeletedFile;
 
 	/** */
 	public static String DeleteBranchOperation_TaskName;
@@ -179,9 +175,6 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
-	public static String RepositoryMapping_ExceptionSubmoduleWalk;
-
-	/** */
 	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
 
 	/** */
@@ -222,9 +215,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String MoveDeleteHook_unmergedFileInFolderError;
-
-	/** */
-	public static String MoveDeleteHook_cannotAutoStageDeletion;
 
 	/** */
 	public static String Error_CanonicalFile;
@@ -386,13 +376,7 @@ public class CoreText extends NLS {
 	public static String GitProjectData_repositoryChangedTaskName;
 
 	/** */
-	public static String GitProjectData_UnmapJobName;
-
-	/** */
 	public static String GitProjectData_UnmappingGoneResourceFailed;
-
-	/** */
-	public static String GitResourceVariantTreeSubscriber_name;
 
 	/** */
 	public static String GitResourceVariantTreeSubscriber_fetchTaskName;
@@ -411,18 +395,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String SquashCommitsOperation_squashing;
-
-	/** */
-	public static String RecursiveModelMerger_AdaptError;
-
-	/** */
-	public static String RecursiveModelMerger_RefreshError;
-
-	/** */
-	public static String RecursiveModelMerger_ScopeInitializationError;
-
-	/** */
-	public static String RecursiveModelMerger_ScopeInitializationInterrupted;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);

@@ -29,7 +29,6 @@ import org.eclipse.ui.ide.IDE;
  */
 public class OpenInEditorCommand extends
 		RepositoriesViewCommandHandler<FileNode> {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		FileNode node = getSelectedNodes(event).get(0);
 		IPath path = new Path(node.getObject().getAbsolutePath());
