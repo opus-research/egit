@@ -401,10 +401,19 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_ResetSoftMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_revertMenuItem;
+
+	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
 	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
+
+	/** */
+	public static String GitHistoryPage_FilterSubMenuLabel;
+
+	/** */
+	public static String GitHistoryPage_ShowSubMenuLabel;
 
 	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
@@ -579,6 +588,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoryPropertySource_RepositoryConfigurationCategory;
+
+	/** */
+	public static String RepositoryPropertySource_SystemConfigurationMenu;
 
 	/** */
 	public static String RepositoryPropertySource_SelectModeTooltip;
@@ -1457,6 +1469,9 @@ public class UIText extends NLS {
 	public static String ConfigurationEditorComponent_NewValueButton;
 
 	/** */
+	public static String ConfigurationEditorComponent_NoConfigLocationKnown;
+
+	/** */
 	public static String ConfigurationEditorComponent_NoEntrySelectedMessage;
 
 	/** */
@@ -1467,6 +1482,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_OpenEditorTooltip;
+
+	/** */
+	public static String ConfigurationEditorComponent_ReadOnlyLocationFormat;
 
 	/** */
 	public static String ConfigurationEditorComponent_RemoveAllButton;
@@ -1494,6 +1512,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_WrongNumberOfTokensMessage;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_systemSettingTabTitle;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_userSettingTabTitle;
 
 	/** */
 	public static String ConfigureRemoteWizard_WizardTitle_Change;
@@ -1772,16 +1796,10 @@ public class UIText extends NLS {
 	public static String FetchAction_wrongURIMessage;
 
 	/** */
-	public static String FetchConfiguredRemoteAction_FetchJobName;
-
-	/** */
 	public static String FetchConfiguredRemoteAction_NoSpecsDefinedMessage;
 
 	/** */
 	public static String FetchConfiguredRemoteAction_NoUrisDefinedMessage;
-
-	/** */
-	public static String FetchConfiguredRemoteAction_TransportErrorDuringFetchMessage;
 
 	/** */
 	public static String FetchResultDialog_labelEmptyResult;
@@ -1871,6 +1889,9 @@ public class UIText extends NLS {
 	public static String FileRevisionEditorInput_NameAndRevisionTitle;
 
 	/** */
+	public static String FileTreeContentProvider_NonWorkspaceResourcesNode;
+
+	/** */
 	public static String FindToolbar_changeto_id;
 
 	/** */
@@ -1908,6 +1929,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchAction_repositoryState;
+
+	/** */
+	public static String BranchResultDialog_CheckoutConflictsMessage;
+
+	/** */
+	public static String BranchResultDialog_CheckoutConflictsTitle;
 
 	/** */
 	public static String BranchSelectionDialog_TitleCheckout;
@@ -2623,6 +2650,27 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NewRepositoryWizard_WizardTitle;
+
+	/** */
+	public static String NonDeletedFilesDialog_NonDeletedFilesMessage;
+
+	/** */
+	public static String NonDeletedFilesDialog_NonDeletedFilesTitle;
+
+	/** */
+	public static String NonDeletedFilesDialog_RetryDeleteButton;
+
+	/** */
+	public static String NonDeletedFilesTree_FileSystemPathsButton;
+
+	/** */
+	public static String NonDeletedFilesTree_RepoRelativePathsButton;
+
+	/** */
+	public static String NonDeletedFilesTree_RepositoryLabel;
+
+	/** */
+	public static String NonDeletedFilesTree_ResourcePathsButton;
 
 	/** */
 	public static String RemoteConnectionPreferencePage_TimeoutLabel;

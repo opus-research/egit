@@ -206,7 +206,13 @@ public class CoreText extends NLS {
 	public static String CherryPickOperation_InternalError;
 
 	/** */
+	public static String RevertOperation_InternalError;
+
+	/** */
 	public static String CherryPickOperation_Failed;
+
+	/** */
+	public static String RevertOperation_Failed;
 
 	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;
@@ -249,9 +255,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String ProjectUtil_refreshing;
-
-	/** */
-	public static String PushConfiguredRemoteAction_PushJobName;
 
 	/** */
 	public static String PushOperation_resultCancelled;
