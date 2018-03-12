@@ -129,8 +129,6 @@ class GitSyncObjectCache {
 			start = separatorIdx;
 			separatorIdx = childPath.indexOf("/", separatorIdx + 1); //$NON-NLS-1$
 			parent = childObject.members;
-			if (parent == null)
-				return null;
 		}
 
 		if (parent == null)
@@ -189,6 +187,8 @@ class GitSyncObjectCache {
 		} else if (members != null)
 			for (GitSyncObjectCache obj : members.values())
 				obj.diffEntry.changeType = ChangeType.IN_SYNC;
+		else // we should be on leaf entry, just update the change type value
+			diffEntry.changeType = value.diffEntry.changeType;
 	}
 
 }
