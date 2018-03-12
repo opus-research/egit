@@ -18,6 +18,7 @@ import java.io.File;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
@@ -112,7 +113,9 @@ public class GitRepositoriesViewTagHandlingTest extends
 				repositoryFile).expand();
 		SWTBotTreeItem[] items = tagsItem.getItems();
 		assertEquals("Wrong number of tags", initialCount + 1, items.length);
-		tagsItem.getNode("Delete1").select().contextMenu("Delete Tag").click();
+		tagsItem.select("Delete1");
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("DeleteTagCommand.name"));
 		bot.shell(UIText.DeleteTagCommand_titleConfirm).bot()
 				.button(IDialogConstants.OK_LABEL).click();
 		TestUtil.joinJobs(JobFamilies.TAG);
@@ -124,6 +127,10 @@ public class GitRepositoriesViewTagHandlingTest extends
 
 	@Test
 	public void testDeleteTags() throws Exception {
+		//TODO Remove once bug355200 has been fixed
+		if (Platform.OS_MACOSX.equals(Platform.getOS()))
+			return;
+
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		int initialCount = myRepoViewUtil.getTagsItem(tree, repositoryFile)
 				.expand().rowCount();
@@ -136,7 +143,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 		SWTBotTreeItem[] items = tagsItem.getItems();
 		assertEquals("Wrong number of tags", initialCount + 2, items.length);
 		tagsItem.select("Delete2", "Delete3");
-		ContextMenuHelper.clickContextMenu(tree, "Delete Tag");
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("DeleteTagCommand.name"));
 		bot.shell(UIText.DeleteTagCommand_titleConfirm).bot()
 				.button(IDialogConstants.OK_LABEL).click();
 		TestUtil.joinJobs(JobFamilies.TAG);
