@@ -190,8 +190,7 @@ public class GitRepositoriesViewTagHandlingTest extends
 		createDialog.bot()
 				.styledTextWithLabel(UIText.CreateTagDialog_tagMessage)
 				.setText(message);
-		createDialog.bot().button(UIText.CreateTagDialog_CreateTagButton)
-				.click();
+		createDialog.bot().button(IDialogConstants.OK_LABEL).click();
 		TestUtil.joinJobs(JobFamilies.TAG);
 	}
 

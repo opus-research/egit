@@ -1029,6 +1029,9 @@ public class UIText extends NLS {
 	public static String CleanRepositoryPage_title;
 
 	/** */
+	public static String CleanWizard_title;
+
+	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
@@ -2517,21 +2520,6 @@ public class UIText extends NLS {
 	public static String PushResultTable_statusOkNewTag;
 
 	/** */
-	public static String PushTagsPage_PageMessage;
-
-	/** */
-	public static String PushTagsPage_PageName;
-
-	/** */
-	public static String PushTagsPage_PageTitle;
-
-	/** */
-	public static String PushTagsPage_RemoteLabel;
-
-	/** */
-	public static String PushTagsWizard_WindowTitle;
-
-	/** */
 	public static String PushToGerritPage_BranchLabel;
 
 	/** */
@@ -3793,15 +3781,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateTagDialog_clearButtonTooltip;
-
-	/** */
-	public static String CreateTagDialog_CreateTagAndStartPushButton;
-
-	/** */
-	public static String CreateTagDialog_CreateTagAndStartPushToolTip;
-
-	/** */
-	public static String CreateTagDialog_CreateTagButton;
 
 	/** */
 	public static String CreateTagDialog_CreateTagOnCommitTitle;
