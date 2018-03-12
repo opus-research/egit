@@ -24,7 +24,6 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -79,8 +78,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 				ModelSynchronizeParticipant.P_VISIBLE_MODEL_PROVIDER,
 				GitChangeSetModelProvider.ID);
 		super.initializeConfiguration(configuration);
-
-		configuration.addActionContribution(new GitActionContributor());
 	}
 
 	@Override
@@ -112,11 +109,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		}
 
 		return providers.toArray(new ModelProvider[providers.size()]);
-	}
-
-	@Override
-	public boolean hasCompareInputFor(Object object) {
-		return object instanceof GitModelBlob;
 	}
 
 	@Override

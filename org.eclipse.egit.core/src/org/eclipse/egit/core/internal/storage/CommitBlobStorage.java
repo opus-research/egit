@@ -5,10 +5,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Jens Baumgart (SAP AG) - initial implementation
- *    Dariusz Luksza - expose public constructor
  *******************************************************************************/
 package org.eclipse.egit.core.internal.storage;
 
@@ -30,18 +26,7 @@ public class CommitBlobStorage extends BlobStorage {
 
 	private final RevCommit commit;
 
-	/**
-	 *
-	 * @param repository
-	 *            from with blob version should be taken
-	 * @param fileName
-	 *            name of blob file
-	 * @param blob
-	 *            blob id
-	 * @param commit
-	 *            from with blob version should be taken
-	 */
-	public CommitBlobStorage(final Repository repository, final String fileName,
+	CommitBlobStorage(final Repository repository, final String fileName,
 			final ObjectId blob, RevCommit commit) {
 		super(repository, fileName, blob);
 		this.commit = commit;

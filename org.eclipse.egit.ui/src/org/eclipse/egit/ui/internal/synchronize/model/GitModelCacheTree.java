@@ -26,7 +26,7 @@ public class GitModelCacheTree extends GitModelTree {
 
 	private final FileModelFactory factory;
 
-	private final Map<String, GitModelObject> cacheTreeMap;
+	private final Map<IPath, GitModelObject> cacheTreeMap;
 
 	/**
 	 * @param parent
@@ -47,57 +47,33 @@ public class GitModelCacheTree extends GitModelTree {
 			FileModelFactory factory) throws IOException {
 		super(parent, commit, null, repoId, repoId, cacheId, location);
 		this.factory = factory;
-		cacheTreeMap = new HashMap<String, GitModelObject>();
+		cacheTreeMap = new HashMap<IPath, GitModelObject>();
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-
-		if (obj instanceof GitModelCacheTree) {
-			GitModelCacheTree objTree = (GitModelCacheTree) obj;
-
-			return objTree.getLocation().equals(getLocation())
-					&& objTree.getBaseId().equals(getBaseId());
-		}
-
-		return false;
+		return super.equals(obj);
 	}
 
 	@Override
 	public int hashCode() {
-		return getBaseId().hashCode() ^ getLocation().hashCode();
+		return super.hashCode();
 	}
 
-	@Override
-	public String toString() {
-		return "GitModelTree[" + getLocation() + "]"; //$NON-NLS-1$ //$NON-NLS-2$
-	}
-
-	void addChild(ObjectId repoId, ObjectId cacheId, String path)
+	void addChild(ObjectId repoId, ObjectId cacheId, IPath path)
 			throws IOException {
-		String pathKey;
-		int firstSlash = path.indexOf("/"); //$NON-NLS-1$
-		if (firstSlash > -1)
-			pathKey = path.substring(0, firstSlash);
-		else
-			pathKey = path;
-
-		IPath fullPath = getLocation().append(pathKey);
-		if (path.contains("/")) { //$NON-NLS-1$
+		if (path.getFileExtension() == null) {
 			GitModelCacheTree cacheEntry = (GitModelCacheTree) cacheTreeMap
-					.get(pathKey);
+					.get(path);
 			if (cacheEntry == null) {
 				cacheEntry = new GitModelCacheTree(this, baseCommit, repoId,
-						cacheId, fullPath, factory);
-				cacheTreeMap.put(pathKey, cacheEntry);
+						cacheId, path, factory);
+				cacheTreeMap.put(path, cacheEntry);
 			}
-			cacheEntry.addChild(repoId, cacheId,
-					path.substring(firstSlash + 1));
+			cacheEntry.addChild(repoId, cacheId, path);
 		} else
-			cacheTreeMap.put(pathKey, factory.createFileModel(this,
-					baseCommit, repoId, cacheId, fullPath));
+			cacheTreeMap.put(path, factory.createFileModel(this,
+					baseCommit, repoId, cacheId, path));
 	}
 
 	@Override

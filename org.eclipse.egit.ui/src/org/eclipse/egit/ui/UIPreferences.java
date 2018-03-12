@@ -12,7 +12,6 @@
 package org.eclipse.egit.ui;
 
 
-
 /**
  * Preferences used by the EGit UI plug-in.
  * <p>
@@ -92,10 +91,6 @@ public class UIPreferences {
 	/** */
 	public final static String DECORATOR_SHOW_DIRTY_ICON = "decorator_show_dirty_icon"; //$NON-NLS-1$
 	/** */
-	public final static String SYNC_VIEW_CHANGESET_LABEL_FORMAT = "sync_view_changeset_pattern"; //$NON-NLS-1$
-	/** */
-	public final static String DATE_FORMAT = "date_format"; //$NON-NLS-1$
-	/** */
 	public static final String REFESH_ON_INDEX_CHANGE = "refesh_on_index_change"; //$NON-NLS-1$
 	/** */
 	public static final String REFESH_ONLY_WHEN_ACTIVE = "refesh_only_when_active"; //$NON-NLS-1$
@@ -110,7 +105,9 @@ public class UIPreferences {
 	/** */
 	public static final String SHOW_INITIAL_CONFIG_DIALOG = "show_initial_config_dialog"; //$NON-NLS-1$
 	/** */
-	public static final String SHOW_HOME_DIR_WARNING = "show_home_drive_warning"; //$NON-NLS-1$
+	public static final String TREE_COMPARE_ADDED_ONLY = "CompareTreeView_ShowAddedOnly"; //$NON-NLS-1$
+	/** */
+	public static final String TREE_COMPARE_DELETED_ONLY = "CompareTreeView_ShowDeletedOnly"; //$NON-NLS-1$
 	/** */
 	public static final String TREE_COMPARE_SHOW_EQUALS = "CompareTreeView_ShowEquals"; //$NON-NLS-1$
 
