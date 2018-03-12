@@ -159,6 +159,7 @@ public class ConfigurationEditorComponent {
 		try {
 			editableConfig.clear();
 			editableConfig.load();
+			tv.refresh();
 		} catch (ConfigInvalidException e) {
 			throw new IOException(e.getMessage());
 		}
