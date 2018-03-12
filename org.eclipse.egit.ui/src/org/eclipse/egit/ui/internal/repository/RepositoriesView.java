@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Dariusz Luksza <dariusz@luksza.org> - add synchronization feature
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -573,5 +572,4 @@ public class RepositoriesView extends CommonNavigator {
 	// }
 	//
 	// });
-
 }
