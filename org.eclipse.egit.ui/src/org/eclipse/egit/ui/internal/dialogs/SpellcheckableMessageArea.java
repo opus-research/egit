@@ -51,6 +51,7 @@ import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.WhitespaceCharacterPainter;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistant;
+import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
 import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
@@ -311,6 +312,10 @@ public class SpellcheckableMessageArea extends Composite {
 				EditorsUI
 				.getPreferenceStore()) {
 
+			public int getHyperlinkStateMask(ISourceViewer targetViewer) {
+				return SWT.NONE;
+			}
+
 			protected Map getHyperlinkDetectorTargets(ISourceViewer targetViewer) {
 				return getHyperlinkTargets();
 			}
@@ -323,11 +328,15 @@ public class SpellcheckableMessageArea extends Composite {
 
 					@Override
 					public void hideHyperlinks() {
-						super.hideHyperlinks();
-						sourceViewer.getTextWidget().setStyleRange(null);
+						// We want links to always show.
 					}
 
 				};
+			}
+
+			public IHyperlinkDetector[] getHyperlinkDetectors(
+					ISourceViewer targetViewer) {
+				return getRegisteredHyperlinkDetectors(sourceViewer);
 			}
 
 			@Override
