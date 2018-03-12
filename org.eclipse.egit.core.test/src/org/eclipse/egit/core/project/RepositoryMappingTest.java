@@ -137,7 +137,7 @@ public class RepositoryMappingTest extends GitTestCase {
 		// component.
 		String gitAbsolute = projectPath.uptoSegment(0)
 				.append(projectPath.segment(0) + "fake").append(".git")
-				.toPortableString();
+				.toOSString();
 		String parents = "";
 		while (projectPath.segmentCount() > 2) {
 			String pathString = projectPath.toOSString();
@@ -151,16 +151,16 @@ public class RepositoryMappingTest extends GitTestCase {
 		}
 	}
 
-	private void assertRepoMappingPath(IProject testProject, String pathOS,
-			String testDirPortable, String parentsPortable) {
-		String testDirOS = testDirPortable.replace('/', File.separatorChar);
+	private void assertRepoMappingPath(IProject testProject, String path,
+			String testDir, String parents) {
+		String testDirOS = testDir.replace('/', File.separatorChar);
 		File testFile = new File(testDirOS);
 		if (!testFile.isAbsolute()) {
-			testFile = new File(new File(pathOS), testDirOS);
+			testFile = new File(new File(path), testDirOS);
 		}
 		RepositoryMapping mapping = RepositoryMapping.create(testProject,
 				testFile);
-		assertEquals(parentsPortable + testDirPortable,
+		assertEquals(parents + testDir,
 				mapping.getGitDirPath().toPortableString());
 	}
 
