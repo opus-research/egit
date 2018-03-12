@@ -138,7 +138,6 @@
                menubarPath="team.main/group8"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
-               definitionId="org.eclipse.egit.ui.team.AddToIndex"
                icon="$nl$/icons/obj16/add.gif"
                id="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
                label="%AddToIndexAction_label"
@@ -542,17 +541,6 @@
         style="push"
         toolbarPath="Normal/additions"
         tooltip="%CommitAction_tooltip">
-  </action>
-  <action
-        class="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
-        definitionId="org.eclipse.egit.ui.team.AddToIndex"
-        icon="icons/obj16/add.gif"
-        id="org.eclipse.egit.ui.actionadd"
-        label="%AddToIndexAction_label"
-        menubarPath="org.eclipse.egit.ui.gitmenu/repositoryGroup"
-        style="push"
-        toolbarPath="Normal/additions"
-        tooltip="%AddToIndexAction_tooltip">
   </action>
       </actionSet>
    </extension>
@@ -1307,6 +1295,31 @@
                </and>
             </visibleWhen>
          </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewChangeCredentials"
+               label="%RepoViewChangeCredentialsLabel"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
          <separator
                name="FirstSeparator"
                visible="true">
@@ -1684,6 +1697,12 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ChangeCredentialsCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewChangeCredentials"
+            name="%ChangeCredentialsCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.FetchConfiguredRemoteCommand"
             id="org.eclipse.egit.ui.RepositoriesViewFetchConfigured"
             name="%SimpleFetchCommand">
@@ -2044,12 +2063,6 @@
    <extension
          name="%TeamMenuCommandsLabel"
          point="org.eclipse.ui.commands">
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.AddToIndexActionHandler"
-            id="org.eclipse.egit.ui.team.AddToIndex"
-            name="%AddToIndexCommand.name">
-      </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.BranchActionHandler"
