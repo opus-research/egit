@@ -9,20 +9,26 @@
 package org.eclipse.egit.ui.internal.synchronize.compare;
 
 import static org.eclipse.egit.ui.internal.CompareUtils.getFileCachedRevisionTypedElement;
-import static org.eclipse.egit.ui.internal.CompareUtils.getFileRevisionTypedElement;
 
 import org.eclipse.compare.ITypedElement;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.ui.internal.LocalResourceTypedElement;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
 
 /**
  * Specific implementation of {@link ISynchronizationCompareInput} for showing
- * cached files
+ * locally changed files
  */
-public class GitCacheCompareInput extends GitCompareInput {
+public class GitLocalCompareInput extends GitCompareInput {
+
+	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace().getRoot();
 
 	/**
-	 * Creates {@link GitCacheCompareInput}
+	 * Creates {@link GitLocalCompareInput}
 	 *
 	 * @param repo
 	 *            repository that is connected with this object
@@ -35,7 +41,7 @@ public class GitCacheCompareInput extends GitCompareInput {
 	 * @param gitPath
 	 *            repository relative path of object
 	 */
-	public GitCacheCompareInput(Repository repo,
+	public GitLocalCompareInput(Repository repo,
 			ComparisonDataSource ancestorDataSource,
 			ComparisonDataSource baseDataSource,
 			ComparisonDataSource remoteDataSource, String gitPath) {
@@ -44,11 +50,18 @@ public class GitCacheCompareInput extends GitCompareInput {
 	}
 
 	public ITypedElement getLeft() {
-		return getFileCachedRevisionTypedElement(gitPath, repo);
+		String absoluteFilePath = repo.getWorkTree().getAbsolutePath()
+				+ "/" + gitPath; //$NON-NLS-1$
+		IFile file = ROOT.getFileForLocation(new Path(absoluteFilePath));
+
+		if (file == null)
+			return new LocalNonWorkspaceTypedElement(absoluteFilePath);
+
+		return new LocalResourceTypedElement(file);
 	}
 
 	public ITypedElement getRight() {
-		return getFileRevisionTypedElement(gitPath, baseCommit, repo);
+		return getFileCachedRevisionTypedElement(gitPath, repo);
 	}
 
 	@Override
