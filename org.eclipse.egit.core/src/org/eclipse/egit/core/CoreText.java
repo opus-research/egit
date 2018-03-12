@@ -231,9 +231,6 @@ public class CoreText extends NLS {
 	public static String ProjectUtil_refreshing;
 
 	/** */
-	public static String ProjectUtil_taskCheckingDirectory;
-
-	/** */
 	public static String PullOperation_DetachedHeadMessage;
 
 	/** */
