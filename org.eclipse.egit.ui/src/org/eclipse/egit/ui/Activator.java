@@ -29,8 +29,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.lib.IndexChangedEvent;
@@ -39,12 +39,14 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jsch.core.IJSchService;
+import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.themes.ITheme;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * This is a plugin singleton mostly controlling logging.
@@ -82,44 +84,34 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	/**
-	 * Returns the standard display to be used. The method first checks, if the
-	 * thread calling this method has an associated display. If so, this display
-	 * is returned. Otherwise the method returns the default display.
+	 * Handle an error. The error is logged. If <code>show</code> is
+	 * <code>true</code> the error is shown to the user.
 	 *
-	 * @return the display to use
+	 * @param message 		a localized message
+	 * @param throwable
+	 * @param show
 	 */
-	public static Display getStandardDisplay() {
-		Display display = Display.getCurrent();
-		if (display == null) {
-			display = Display.getDefault();
-		}
-		return display;
+	public static void handleError(String message, Throwable throwable,
+			boolean show) {
+		IStatus status = new Status(IStatus.ERROR, getPluginId(), message,
+				throwable);
+		int style = StatusManager.LOG;
+		if (show)
+			style |= StatusManager.SHOW;
+		StatusManager.getManager().handle(status, style);
 	}
 
 	/**
-	 * Instantiate an error exception.
+	 * Shows an error. The error is NOT logged.
 	 *
 	 * @param message
-	 *            description of the error
-	 * @param thr
-	 *            cause of the error or null
-	 * @return an initialized {@link CoreException}
+	 *            a localized message
+	 * @param throwable
 	 */
-	public static CoreException error(final String message, final Throwable thr) {
-		return new CoreException(new Status(IStatus.ERROR, getPluginId(), 0,
-				message, thr));
-	}
-
-	/**
-	 * Log an error via the Eclipse logging routines.
-	 *
-	 * @param message
-	 * @param thr
-	 *            cause of error
-	 */
-	public static void logError(final String message, final Throwable thr) {
-		getDefault().getLog().log(
-				new Status(IStatus.ERROR, getPluginId(), 0, message, thr));
+	public static void showError(String message, Throwable throwable) {
+		IStatus status = new Status(IStatus.ERROR, getPluginId(), message,
+				throwable);
+		StatusManager.getManager().handle(status, StatusManager.SHOW);
 	}
 
 	/**
@@ -167,6 +159,16 @@ public class Activator extends AbstractUIPlugin {
 
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
+
+		if (isDebugging()) {
+			ServiceTracker debugTracker = new ServiceTracker(context,
+					DebugOptions.class.getName(), null);
+			debugTracker.open();
+
+			DebugOptions opts = (DebugOptions) debugTracker.getService();
+			GitTraceLocation.initializeFromOptions(opts, true);
+		}
+
 		setupSSH(context);
 		setupProxy(context);
 		setupRepoChangeScanner();
@@ -214,7 +216,7 @@ public class Activator extends AbstractUIPlugin {
 	static class RIRefresh extends Job implements RepositoryListener {
 
 		RIRefresh() {
-			super("Git index refresh Job");
+			super(UIText.Activator_refreshJobName);
 		}
 
 		private Set<IProject> projectsToScan = new LinkedHashSet<IProject>();
@@ -222,7 +224,7 @@ public class Activator extends AbstractUIPlugin {
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
 			IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
-			monitor.beginTask("Refreshing git managed projects", projects.length);
+			monitor.beginTask(UIText.Activator_refreshingProjects, projects.length);
 
 			while (projectsToScan.size() > 0) {
 				IProject p;
@@ -238,7 +240,7 @@ public class Activator extends AbstractUIPlugin {
 					getJobManager().beginRule(rule, monitor);
 					p.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
 				} catch (CoreException e) {
-					logError("Failed to refresh projects from index changes", e);
+					handleError(UIText.Activator_refreshFailed, e, false);
 					return new Status(IStatus.ERROR, getPluginId(), e.getMessage());
 				} finally {
 					getJobManager().endRule(rule);
@@ -277,7 +279,7 @@ public class Activator extends AbstractUIPlugin {
 
 	static class RCS extends Job {
 		RCS() {
-			super("Repository Change Scanner");
+			super(UIText.Activator_repoScanJobName);
 		}
 
 		// FIXME, need to be more intelligent about this to avoid too much work
@@ -297,7 +299,7 @@ public class Activator extends AbstractUIPlugin {
 				// repositories. We discard that as being ugly and stupid for
 				// the moment.
 				IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
-				monitor.beginTask("Scanning Git repositories for changes", projects.length);
+				monitor.beginTask(UIText.Activator_scanningRepositories, projects.length);
 				Set<Repository> scanned = new HashSet<Repository>();
 				for (IProject p : projects) {
 					RepositoryMapping mapping = RepositoryMapping.getMapping(p);
@@ -341,7 +343,7 @@ public class Activator extends AbstractUIPlugin {
 						IStatus.ERROR,
 						getPluginId(),
 						0,
-						"An error occurred while scanning for changes. Scanning aborted",
+						UIText.Activator_scanError,
 						e);
 			}
 			return Status.OK_STATUS;
@@ -402,4 +404,33 @@ public class Activator extends AbstractUIPlugin {
 		super.stop(context);
 		plugin = null;
 	}
+
+	/**
+	 * @param message
+	 * @param e
+	 */
+	public static void logError(String message, Throwable e) {
+		handleError(message, e, false);
+	}
+
+	/**
+	 * @param message
+	 * @param e
+	 */
+	public static void error(String message, Throwable e) {
+		handleError(message, e, false);
+	}
+
+	/**
+	 * Creates an error status
+	 *
+	 * @param message
+	 *            a localized message
+	 * @param throwable
+	 * @return a new Status object
+	 */
+	public static IStatus createErrorStatus(String message, Throwable throwable) {
+		return new Status(IStatus.ERROR, getPluginId(), message, throwable);
+	}
+
 }

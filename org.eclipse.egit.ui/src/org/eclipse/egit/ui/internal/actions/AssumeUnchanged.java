@@ -11,9 +11,10 @@ package org.eclipse.egit.ui.internal.actions;
 
 import java.util.List;
 
-import org.eclipse.core.resources.IWorkspaceRunnable;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.op.AssumeUnchangedOperation;
-import org.eclipse.jface.action.IAction;
+import org.eclipse.egit.core.op.IEGitOperation;
+import org.eclipse.egit.ui.UIText;
 
 /**
  * This operation sets the assume-valid bit in the index for the
@@ -21,9 +22,13 @@ import org.eclipse.jface.action.IAction;
  *
  * @see AssumeUnchangedOperation
  */
-public class AssumeUnchanged extends AbstractOperationAction {
-	protected IWorkspaceRunnable createOperation(final IAction act,
-			final List sel) {
+public class AssumeUnchanged extends AbstractResourceOperationAction {
+	protected IEGitOperation createOperation(final List<IResource> sel) {
 		return sel.isEmpty() ? null : new AssumeUnchangedOperation(sel);
+	}
+
+	@Override
+	protected String getJobName() {
+		return UIText.AssumeUnchanged_assumeUnchanged;
 	}
 }

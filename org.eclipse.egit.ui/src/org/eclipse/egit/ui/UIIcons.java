@@ -40,6 +40,8 @@ public class UIIcons {
 
 	/** Find icon */
 	public static final ImageDescriptor ELCL16_FIND;
+	/** Compare / View icon */
+	public static final ImageDescriptor ELCL16_COMPARE_VIEW;
 	/** Next arrow icon */
 	public static final ImageDescriptor ELCL16_NEXT;
 	/** Previous arrow icon */
@@ -92,6 +94,12 @@ public class UIIcons {
 	/** Import button */
 	public static ImageDescriptor IMPORT;
 
+	/** Export button */
+	public static ImageDescriptor EXPORT;
+
+	/** Collapse all button */
+	public static ImageDescriptor COLLAPSEALL;
+
 	/** Repository tree node */
 	public static ImageDescriptor REPOSITORY;
 
@@ -107,6 +115,18 @@ public class UIIcons {
 	/** Checked-out decorator for branch */
 	public static ImageDescriptor OVR_CHECKEDOUT;
 
+	/** Tags icon */
+	public static ImageDescriptor TAGS;
+
+	/** Tag icon */
+	public static ImageDescriptor TAG;
+
+	/** Branch icon */
+	public static ImageDescriptor BRANCH;
+
+	/** Clone Icon */
+	public static ImageDescriptor CLONEGIT;
+
 	private static final URL base;
 
 	static {
@@ -118,6 +138,7 @@ public class UIIcons {
 		OVR_CONFLICT = map("ovr/conflict.gif"); //$NON-NLS-1$
 		OVR_ASSUMEVALID = map("ovr/assume_valid.gif"); //$NON-NLS-1$
 		ELCL16_FIND = map("elcl16/find.gif"); //$NON-NLS-1$
+		ELCL16_COMPARE_VIEW = map("elcl16/compare_view.gif"); //$NON-NLS-1$
 		ELCL16_NEXT = map("elcl16/next.gif"); //$NON-NLS-1$
 		ELCL16_PREVIOUS = map("elcl16/previous.gif"); //$NON-NLS-1$
 		WIZBAN_IMPORT_REPO = map("wizban/import_wiz.png"); //$NON-NLS-1$
@@ -140,11 +161,17 @@ public class UIIcons {
 		FILTERPROJECT = map("elcl16/filterproject.gif"); //$NON-NLS-1$
 		FILTERFOLDER = map("elcl16/filterfolder.gif"); //$NON-NLS-1$
 		IMPORT = map("etool16/import_wiz.gif"); //$NON-NLS-1$
+		EXPORT = map("etool16/export_wiz.gif"); //$NON-NLS-1$
 		REPOSITORY = map("obj16/repository_rep.gif"); //$NON-NLS-1$
 		NEW_REPOSITORY = map("etool16/newlocation_wiz.gif"); //$NON-NLS-1$
 		REMOTE_REPOSITORY = map("obj16/remote_entry_tbl.gif"); //$NON-NLS-1$
 		BRANCHES = map("obj16/branches_rep.gif"); //$NON-NLS-1$
 		OVR_CHECKEDOUT = map("ovr/checkedout_ov.gif"); //$NON-NLS-1$
+		TAGS = map("obj16/versions_rep.gif"); //$NON-NLS-1$
+		TAG = map("obj16/version_rep.gif"); //$NON-NLS-1$
+		BRANCH = map("obj16/branch.gif"); //$NON-NLS-1$
+		COLLAPSEALL = map("elcl16/collapseall.gif"); //$NON-NLS-1$
+		CLONEGIT = map("obj16/cloneGit.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {
@@ -152,7 +179,7 @@ public class UIIcons {
 			try {
 				return ImageDescriptor.createFromURL(new URL(base, icon));
 			} catch (MalformedURLException mux) {
-				Activator.logError("Can't load plugin image.", mux);
+				Activator.logError(UIText.UIIcons_errorLoadingPluginImage, mux);
 			}
 		}
 		return ImageDescriptor.getMissingImageDescriptor();
@@ -163,7 +190,7 @@ public class UIIcons {
 			return new URL(Activator.getDefault().getBundle().getEntry("/"), //$NON-NLS-1$
 					"icons/"); //$NON-NLS-1$
 		} catch (MalformedURLException mux) {
-			Activator.logError("Can't determine icon base.", mux);
+			Activator.logError(UIText.UIIcons_errorDeterminingIconBase, mux);
 			return null;
 		}
 	}
