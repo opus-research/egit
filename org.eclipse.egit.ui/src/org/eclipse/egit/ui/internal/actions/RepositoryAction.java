@@ -95,8 +95,8 @@ public abstract class RepositoryAction extends TeamAction {
 	 */
 	protected Repository getRepository(boolean warn) {
 		RepositoryMapping mapping = null;
-		for (IResource resource : getSelectedResources()) {
-			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(resource.getProject());
+		for (IProject project : getSelectedProjects()) {
+			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(project);
 			if (mapping == null)
 				mapping = repositoryMapping;
 			if (repositoryMapping == null)
