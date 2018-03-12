@@ -3764,6 +3764,9 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
+	public static String CommitHelper_couldNotFindMergeMsg;
+
+	/** */
 	public static String CommitResultLabelProvider_SectionAuthor;
 
 	/** */
@@ -3993,6 +3996,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
+
+	/** */
+	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
