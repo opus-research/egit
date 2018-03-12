@@ -29,7 +29,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -120,9 +119,7 @@ public class RepositoryUtil {
 		IEclipsePreferences p = InstanceScope.INSTANCE
 				.getNode(Activator.getPluginId());
 		if (dir == null) {
-			dir = Platform.getPreferencesService().getString(
-					Activator.getPluginId(), key,
-					getDefaultDefaultRepositoryDir(), null);
+			dir = p.get(key, getDefaultDefaultRepositoryDir());
 		} else {
 			p.put(key, dir);
 		}
