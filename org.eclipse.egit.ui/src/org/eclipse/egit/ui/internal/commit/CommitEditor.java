@@ -56,15 +56,13 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.menus.IMenuService;
-import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.UIJob;
 
 /**
  * Editor class to view a commit in a form editor.
  */
 public class CommitEditor extends SharedHeaderFormEditor implements
-		RefsChangedListener, IShowInSource {
+		RefsChangedListener {
 
 	/**
 	 * ID - editor id
@@ -333,12 +331,5 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 			};
 			job.schedule();
 		}
-	}
-
-	public ShowInContext getShowInContext() {
-		if (commitPage != null && commitPage.isActive())
-			return commitPage.getShowInContext();
-		else
-			return null;
 	}
 }
