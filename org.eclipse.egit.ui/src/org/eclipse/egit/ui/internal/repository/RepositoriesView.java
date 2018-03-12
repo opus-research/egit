@@ -96,7 +96,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
-import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -754,10 +753,10 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 				.getSelection();
 		for (Object element : selection.toList())
 			if (element instanceof RepositoryNode)
-				return new String[] { IHistoryView.VIEW_ID, ReflogView.VIEW_ID };
+				return new String[] { ReflogView.VIEW_ID };
 
-		// Make sure History view is always listed, regardless of perspective
-		return new String[] { IHistoryView.VIEW_ID };
+		// No additional views
+		return new String[] {};
 	}
 
 	private static List<Object> getShowInElements(IStructuredSelection selection) {
