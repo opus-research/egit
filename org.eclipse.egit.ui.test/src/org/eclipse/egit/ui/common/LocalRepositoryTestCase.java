@@ -169,15 +169,12 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	@After
 	public void resetWorkspace() throws Exception {
-		TestUtil.processUIEvents();
 		// close all editors/dialogs
 		new Eclipse().reset();
-		TestUtil.processUIEvents();
 		// cleanup
 		for (IProject project : ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects()) {
+				.getProjects())
 			project.delete(false, false, null);
-		}
 		shutDownRepositories();
 		TestUtil.waitForJobs(50, 5000);
 	}
@@ -285,10 +282,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				.getPath()));
 		secondProject.create(desc, null);
 		secondProject.open(null);
-		TestUtil.waitForJobs(50, 5000);
-
-		assertTrue("Project is not accessible: " + secondProject,
-				secondProject.isAccessible());
 
 		IFolder secondfolder = secondProject.getFolder(FOLDER);
 		secondfolder.create(false, true, null);
@@ -339,7 +332,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		RepositoryProvider provider = RepositoryProvider.getProvider(project,
 				GitProvider.ID);
 		if (provider == null) {
-			TestUtil.waitForJobs(5000, 10000);
+			TestUtil.waitForJobs(500, 10000);
 			provider = RepositoryProvider.getProvider(project, GitProvider.ID);
 		}
 		assertTrue("Project is not accessible: " + project,
