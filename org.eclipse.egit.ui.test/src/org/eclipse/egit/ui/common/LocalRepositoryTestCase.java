@@ -31,7 +31,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryCache;
-import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
@@ -83,7 +82,7 @@ import org.junit.BeforeClass;
  * <p>
  * A typical code sequence for setting up these two repositories could look
  * like:
- *
+ * 
  * <pre>
  *  private File localRepo;
  *  private File remoteRepo;
@@ -125,7 +124,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	public static File getTestDirectory() {
 		return testDirectory;
 	}
-
+	
 	@BeforeClass
 	public static void beforeClassBase() throws Exception {
 		deleteAllProjects();
@@ -381,8 +380,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				return name.equals(".project");
 			}
 		};
-		for (File file : myRepository.getWorkTree().listFiles())
-			if (file.isDirectory())
+		for (File file : myRepository.getWorkTree().listFiles()) {
+			if (file.isDirectory()) {
 				if (file.list(projectFilter).length > 0) {
 					IProjectDescription desc = ResourcesPlugin.getWorkspace()
 							.newProjectDescription(file.getName());
@@ -395,6 +394,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 					new ConnectProviderOperation(prj, myRepository
 							.getDirectory()).execute(null);
 				}
+			}
+		}
 	}
 
 	@SuppressWarnings("boxing")
@@ -459,39 +460,15 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	 * @throws Exception
 	 */
 	protected static IFile touch(final String newContent) throws Exception {
-		return touch(PROJ1, "folder/test.txt", newContent);
-	}
-
-	/**
-	 * Modify the specified file with the given content.
-	 *
-	 * @param projectName
-	 *            project name
-	 * @param filePath
-	 *            file path under the given project
-	 * @param newContent
-	 *            new file content
-	 * @return the modified file
-	 * @throws Exception
-	 */
-	protected static IFile touch(String projectName, String filePath,
-			String newContent) throws Exception {
 		IProject prj = ResourcesPlugin.getWorkspace().getRoot()
-				.getProject(projectName);
+				.getProject(PROJ1);
 		if (!prj.isAccessible())
 			throw new IllegalStateException("No project to touch");
-		IFile file = prj.getFile(new Path(filePath));
+		IFile file = prj.getFile(new Path("folder/test.txt"));
 		file.setContents(
 				new ByteArrayInputStream(newContent.getBytes(prj
 						.getDefaultCharset())), 0, null);
 		return file;
-	}
-
-	protected static void stage(IFile file) throws Exception {
-		ArrayList<IFile> unstaged = new ArrayList<IFile>();
-		unstaged.addAll(Arrays.asList(new IFile[] { file }));
-		AddToIndexOperation op = new AddToIndexOperation(unstaged);
-		op.execute(null);
 	}
 
 	protected static void addAndCommit(IFile file, String commitMessage)
@@ -525,8 +502,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (file.exists()) {
 			byte[] bytes = IO.readFully(file.getLocation().toFile());
 			return new String(bytes, file.getCharset());
-		} else
+		} else {
 			return "";
+		}
 	}
 
 	/**
@@ -537,7 +515,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	 */
 	protected SWTBotTreeItem getProjectItem(SWTBotTree projectExplorerTree,
 			String project) {
-		return new TestUtil().getProjectItems(projectExplorerTree, project)[0];
+		return new TestUtil().getProjectItem(projectExplorerTree, project);
 	}
 
 	protected void pressAltAndChar(SWTBotShell shell, char charToPress) {

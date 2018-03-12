@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -31,6 +31,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.ISources;
 
 /**
  * Implements "Rebase" to the currently checked out {@link Ref}
@@ -52,8 +53,6 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 			ref = null;
 
 		final Repository repository = getRepository(event);
-		if (repository == null)
-			return null;
 
 		BasicConfigurationDialog.show(repository);
 
@@ -89,9 +88,10 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 	public void setEnabled(Object evaluationContext) {
 		if (evaluationContext instanceof IEvaluationContext) {
 			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
-			Object selection = getSelection(ctx);
+			Object selection = ctx
+					.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
 			if (selection instanceof ISelection) {
-				Repository repo = getRepository((ISelection) selection, getActiveEditorInput(ctx));
+				Repository repo = getRepository((ISelection) selection);
 				if (repo != null) {
 					boolean isSafe = repo.getRepositoryState() == RepositoryState.SAFE;
 					setBaseEnabled(isSafe && hasHead(repo));
@@ -105,8 +105,7 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 
 	private boolean hasHead(Repository repo) {
 		try {
-			Ref headRef = repo.getRef(Constants.HEAD);
-			return headRef != null && headRef.getObjectId() != null;
+			return repo.getRef(Constants.HEAD).getObjectId() != null;
 		} catch (IOException e) {
 			return false;
 		}

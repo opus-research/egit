@@ -11,20 +11,13 @@ package org.eclipse.egit.ui.internal.history;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jgit.revplot.PlotCommitList;
 import org.eclipse.jgit.revplot.PlotLane;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 
-class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements DisposeListener {
+class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> {
 
 	private static final RGB[] COMMIT_RGB = new RGB[] { new RGB(133, 166, 214),
 			new RGB(221, 205, 93), new RGB(199, 134, 57),
@@ -43,34 +36,17 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 
 	private final LinkedList<Color> availableColors;
 
-	private final Control control;
-
-	SWTCommitList(final Control control, final ResourceManager resources) {
-		this.control = control;
+	SWTCommitList(final Display d) {
 		allColors = new ArrayList<Color>(COMMIT_RGB.length);
 		for (RGB rgb : COMMIT_RGB)
-			allColors.add(resources.createColor(rgb));
+			allColors.add(new Color(d, rgb));
 		availableColors = new LinkedList<Color>();
 		repackColors();
-		control.addDisposeListener(this);
 	}
 
 	public void dispose() {
-		Job clearJob = new Job("Clearing commit list") { //$NON-NLS-1$
-
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				synchronized (SWTCommitList.this) {
-					clear();
-				}
-				return Status.OK_STATUS;
-			}
-		};
-		clearJob.setSystem(true);
-		clearJob.schedule();
-
-		if (!control.isDisposed())
-			control.removeDisposeListener(this);
+		for (Color color : allColors)
+			color.dispose();
 	}
 
 	private void repackColors() {
@@ -79,9 +55,11 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 
 	@Override
 	protected SWTLane createLane() {
+		final SWTLane lane = new SWTLane();
 		if (availableColors.isEmpty())
 			repackColors();
-		return new SWTLane(availableColors.removeFirst());
+		lane.color = availableColors.removeFirst();
+		return lane;
 	}
 
 	@Override
@@ -89,19 +67,8 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 		availableColors.add(lane.color);
 	}
 
-	public void widgetDisposed(DisposeEvent e) {
-		dispose();
-	}
-
 	static class SWTLane extends PlotLane {
-		private static final long serialVersionUID = 1L;
-
-		final Color color;
-
-		public SWTLane(final Color color) {
-			this.color = color;
-		}
-
+		Color color;
 		@Override
 		public boolean equals(Object o) {
 			return super.equals(o) && color.equals(((SWTLane)o).color);

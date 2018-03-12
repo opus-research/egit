@@ -37,7 +37,7 @@ public class GitRepositoriesViewRepoDeletionTest extends
 
 	private static final String DELETE_REPOSITORY_CONTEXT_MENU_LABEL = "RepoViewDeleteRepository.label";
 
-	private File repositoryFile;
+	private static File repositoryFile;
 
 	@Before
 	public void before() throws Exception {

@@ -39,6 +39,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ResetOperation;
+import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.Activator;
@@ -50,7 +51,6 @@ import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
@@ -66,7 +66,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
 import org.eclipse.team.ui.synchronize.ISynchronizeManager;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -87,12 +86,6 @@ public abstract class AbstractSynchronizeViewTest extends
 	@Before public void setupViews() {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
-	}
-
-	@After
-	public void closeSynchronizeView() {
-		SWTBotView syncView = bot.viewByTitle("Synchronize");
-		syncView.close();
 	}
 
 	@BeforeClass public static void setupEnvironment() throws Exception {
@@ -139,13 +132,7 @@ public abstract class AbstractSynchronizeViewTest extends
 	}
 
 	protected void resetRepositoryToCreateInitialTag() throws Exception {
-		Thread.sleep(2000);
 		ResetOperation rop = new ResetOperation(
-				lookupRepository(repositoryFile), Constants.R_TAGS +
-						INITIAL_TAG, ResetType.HARD);
-		rop.execute(new NullProgressMonitor());
-		Thread.sleep(2000);
-		rop = new ResetOperation(
 				lookupRepository(repositoryFile), Constants.R_TAGS +
 						INITIAL_TAG, ResetType.HARD);
 		rop.execute(new NullProgressMonitor());
@@ -209,7 +196,7 @@ public abstract class AbstractSynchronizeViewTest extends
 	protected SWTBot setPresentationModel(String modelName,
 			String toolbarDropDownTooltip) throws Exception {
 		SWTBotView syncView = bot.viewByTitle("Synchronize");
-		for (SWTBotToolbarButton button : syncView.getToolbarButtons())
+		for (SWTBotToolbarButton button : syncView.getToolbarButtons()) {
 			if (button.getToolTipText().equals(toolbarDropDownTooltip)) {
 				SWTBotToolbarDropDownButton dropDown = (SWTBotToolbarDropDownButton) button;
 				dropDown.menuItem(modelName).click();
@@ -217,6 +204,7 @@ public abstract class AbstractSynchronizeViewTest extends
 				dropDown.pressShortcut(KeyStroke.getInstance("ESC"));
 
 			}
+		}
 
 		return syncView.bot();
 	}
@@ -381,11 +369,12 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	private static SWTBotTreeItem selectProject(String projectName,
 			SWTBotTree tree) {
-		for (SWTBotTreeItem item : tree.getAllItems())
+		for (SWTBotTreeItem item : tree.getAllItems()) {
 			if (item.getText().contains(projectName)) {
 				item.select();
 				return item;
 			}
+		}
 
 		throw new RuntimeException("Poject with name " + projectName +
 				" was not found in given tree");
