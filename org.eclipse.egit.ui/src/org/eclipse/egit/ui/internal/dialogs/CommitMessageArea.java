@@ -76,7 +76,7 @@ import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
 /**
  * Text field with support for spellchecking.
  */
-public class SpellcheckableMessageArea extends Composite {
+public class CommitMessageArea extends Composite {
 
 	private static class TextViewerAction extends Action implements IUpdate {
 
@@ -132,7 +132,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @param parent
 	 * @param initialText
 	 */
-	public SpellcheckableMessageArea(Composite parent, String initialText) {
+	public CommitMessageArea(Composite parent, String initialText) {
 		super(parent, SWT.BORDER);
 		setLayout(new FillLayout());
 
@@ -206,19 +206,19 @@ public class SpellcheckableMessageArea extends Composite {
 
 	private void configureContextMenu() {
 		final TextViewerAction cutAction = new TextViewerAction(sourceViewer, ITextOperationTarget.CUT);
-		cutAction.setText(UIText.SpellCheckingMessageArea_cut);
+		cutAction.setText(UIText.CommitMessageArea_cut);
 		cutAction.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_CUT);
 
 		final TextViewerAction copyAction = new TextViewerAction(sourceViewer, ITextOperationTarget.COPY);
-		copyAction.setText(UIText.SpellCheckingMessageArea_copy);
+		copyAction.setText(UIText.CommitMessageArea_copy);
 		copyAction.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_COPY);
 
 		final TextViewerAction pasteAction = new TextViewerAction(sourceViewer, ITextOperationTarget.PASTE);
-		pasteAction.setText(UIText.SpellCheckingMessageArea_paste);
+		pasteAction.setText(UIText.CommitMessageArea_paste);
 		pasteAction.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_PASTE);
 
 		final TextViewerAction selectAllAction = new TextViewerAction(sourceViewer, ITextOperationTarget.SELECT_ALL);
-		selectAllAction.setText(UIText.SpellCheckingMessageArea_selectAll);
+		selectAllAction.setText(UIText.CommitMessageArea_selectAll);
 		selectAllAction.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_SELECT_ALL);
 
 		MenuManager contextMenu = new MenuManager();
@@ -283,10 +283,10 @@ public class SpellcheckableMessageArea extends Composite {
 
         sourceViewer.addSelectionChangedListener(new ISelectionChangedListener() {
 
-					public void selectionChanged(SelectionChangedEvent event) {
-						cutAction.update();
-						copyAction.update();
-					}
+        	public void selectionChanged(SelectionChangedEvent event) {
+        		cutAction.update();
+        		copyAction.update();
+        	}
 
         });
 	}
