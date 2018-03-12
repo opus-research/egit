@@ -11,9 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.IOException;
-
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -40,13 +37,7 @@ class GraphLabelProvider extends BaseLabelProvider implements
 	}
 
 	public String getColumnText(final Object element, final int columnIndex) {
-		final SWTCommit c = (SWTCommit) element;
-		try {
-			c.parseBody();
-		} catch (IOException e) {
-			Activator.error("Error parsing body", e); //$NON-NLS-1$
-			return ""; //$NON-NLS-1$
-		}
+		final RevCommit c = (RevCommit) element;
 		if (columnIndex == 0)
 			return c.getId().abbreviate(7).name();
 		if (columnIndex == 1)

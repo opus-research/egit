@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +22,7 @@ import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revplot.AbstractPlotRenderer;
+import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Color;
@@ -123,14 +123,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 			textHeight = g.stringExtent("/").y; //$NON-NLS-1$
 
 		final TableItem ti = (TableItem) event.item;
-		SWTCommit commit = (SWTCommit) ti.getData();
-		try {
-			commit.parseBody();
-		} catch (IOException e) {
-			Activator.error("Error parsing body", e); //$NON-NLS-1$
-			return;
-		}
-		paintCommit(commit , event.height);
+		paintCommit((PlotCommit<SWTLane>) ti.getData(), event.height);
 	}
 
 	protected void drawLine(final Color color, final int x1, final int y1,
