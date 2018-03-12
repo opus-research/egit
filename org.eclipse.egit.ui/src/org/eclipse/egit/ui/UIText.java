@@ -1091,12 +1091,6 @@ public class UIText extends NLS {
 	/** */
 	public static String IgnoreAction_error;
 
-	/** */
-	public static String Track_error;
-
-	/** */
-	public static String Track_see_log;
-
 	static {
 		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$
 	}
