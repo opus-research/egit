@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -38,9 +39,23 @@ public class ResourceUtil {
 	public static IResource getResourceForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IFile file = root.getFileForLocation(location);
-		if (file != null)
+		if (file != null && file.exists())
 			return file;
-		return root.getContainerForLocation(location);
+		IContainer container = root.getContainerForLocation(location);
+		if (container != null && container.exists())
+			return container;
+		return null;
+	}
+
+	/**
+	 * Return the corresponding file if it exists.
+	 *
+	 * @param location
+	 * @return the file, or null
+	 */
+	public static IFile getFileForLocation(IPath location) {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		return root.getFileForLocation(location);
 	}
 
 	/**
