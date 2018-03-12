@@ -13,13 +13,13 @@ package org.eclipse.egit.core.test;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
@@ -46,7 +46,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.FileUtils;
 
@@ -324,16 +323,16 @@ public class TestRepository {
 
 
 	/**
-	 * Adds the given file to the index
+	 * Adds the given resource to the index
 	 *
-	 * @param file
+	 * @param resource
 	 * @throws CoreException
 	 * @throws IOException
 	 * @throws GitAPIException
 	 * @throws NoFilepatternException
 	 */
-	public void addToIndex(IFile file) throws CoreException, IOException, NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(file.getLocation().toOSString());
+	public void addToIndex(IResource resource) throws CoreException, IOException, NoFilepatternException, GitAPIException {
+		String repoPath = getRepoRelativePath(resource.getLocation().toOSString());
 		new Git(repository).add().addFilepattern(repoPath).call();
 	}
 
@@ -471,8 +470,10 @@ public class TestRepository {
 	}
 
 	public void dispose() {
-		repository.close();
-		repository = null;
+		if (repository != null) {
+			repository.close();
+			repository = null;
+		}
 	}
 
 	/**
@@ -499,10 +500,6 @@ public class TestRepository {
 		DisconnectProviderOperation disconnect = new DisconnectProviderOperation(
 				projects);
 		disconnect.execute(null);
-	}
-
-	public URIish getUri() throws URISyntaxException {
-		return new URIish("file:///" + repository.getDirectory().toString());
 	}
 
 	private DirCacheEntry getDirCacheEntry(String path) throws IOException {
