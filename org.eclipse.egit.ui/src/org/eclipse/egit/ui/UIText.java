@@ -538,6 +538,9 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_FastForward;
 
 	/** */
+	public static String RebaseResultDialog_Failed;
+
+	/** */
 	public static String RebaseResultDialog_NextSteps;
 
 	/** */
@@ -1676,6 +1679,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
+
+	/** */
+	public static String ConfigureRemoteWizard_WizardTitle_Change;
 
 	/** */
 	public static String ConfigureRemoteWizard_WizardTitle_New;
@@ -3345,6 +3351,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SkipRebaseCommand_JobName;
+
+	/** */
+	public static String SwitchToMenu_NewBranchMenuLabel;
+
+	/** */
+	public static String SwitchToMenu_OtherMenuLabel;
 
 	/** */
 	public static String SynchronizeWithAction_localRepoName;
