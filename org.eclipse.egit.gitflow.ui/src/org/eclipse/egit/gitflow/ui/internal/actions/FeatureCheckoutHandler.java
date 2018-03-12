@@ -8,8 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.gitflow.ui.internal.actions;
 
-import static org.eclipse.egit.gitflow.ui.Activator.error;
-import static org.eclipse.egit.gitflow.ui.internal.JobFamilies.GITFLOW_FAMILY;
 import static org.eclipse.jgit.lib.Constants.R_HEADS;
 
 import java.text.MessageFormat;
@@ -75,11 +73,7 @@ public class FeatureCheckoutHandler extends AbstractHandler {
 					UIText.FeatureCheckoutHandler_checkingOutFeature,
 					JobFamilies.GITFLOW_FAMILY);
 			IJobManager jobMan = Job.getJobManager();
-			try {
-				jobMan.join(GITFLOW_FAMILY, null);
-			} catch (OperationCanceledException | InterruptedException e) {
-				return error(e.getMessage(), e);
-			}
+			jobMan.join(JobFamilies.GITFLOW_FAMILY, null);
 
 			CheckoutResult result = checkoutOperation.getResult();
 			if (!CheckoutResult.Status.OK.equals(result.getStatus())) {
@@ -93,7 +87,8 @@ public class FeatureCheckoutHandler extends AbstractHandler {
 							JobFamilies.GITFLOW_FAMILY);
 				}
 			}
-		} catch (GitAPIException e) {
+		} catch (GitAPIException | OperationCanceledException
+				| InterruptedException e) {
 			throw new RuntimeException(e);
 		}
 
