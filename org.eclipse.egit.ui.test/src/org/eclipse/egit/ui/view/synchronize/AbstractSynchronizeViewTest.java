@@ -76,7 +76,7 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	protected static final String EMPTY_REPOSITORY = "EmptyRepository";
 
-	static File repositoryFile;
+	protected static File repositoryFile;
 
 	@Before public void setupViews() {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
