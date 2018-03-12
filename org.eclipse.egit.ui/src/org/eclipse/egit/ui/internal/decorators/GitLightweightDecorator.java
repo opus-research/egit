@@ -14,9 +14,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Andre Bossert <anb0s@anbos.de> - Extended support for nested repositories in project.
  *******************************************************************************/
 
 package org.eclipse.egit.ui.internal.decorators;
@@ -452,9 +449,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 				break;
 			case IResource.FOLDER:
 			case DecoratableResourceMapping.RESOURCE_MAPPING:
-				if (resource.isRepositoryContainer()) {
-					// Use the submodule formatting if it's a submodule or
-					// nested repository root
+				// Use the submodule formatting if it's a submodule root
+				if (resource.getBranch() != null) {
 					format = store.getString(
 							UIPreferences.DECORATOR_SUBMODULETEXT_DECORATION);
 				} else {
