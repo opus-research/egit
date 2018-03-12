@@ -181,12 +181,6 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_NoCommits;
 
 	/** */
-	public static String GenerateHistoryJob_taskFoundMultipleCommits;
-
-	/** */
-	public static String GenerateHistoryJob_taskFoundSingleCommit;
-
-	/** */
 	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
 
 	/** */
@@ -686,9 +680,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseResultDialog_NextStepsDoNothing;
-
-	/** */
-	public static String RebaseResultDialog_NothingToCommit;
 
 	/** */
 	public static String RebaseResultDialog_notInWorkspace;
@@ -4247,6 +4238,9 @@ public class UIText extends NLS {
 	public static String StagingView_ColumnLayout;
 
 	/** */
+	public static String StagingView_IndexDiffReload;
+
+	/** */
 	public static String StagingView_Refresh;
 
 	/** */
@@ -4263,9 +4257,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_StageItemMenuLabel;
-
-	/** */
-	public static String StagingViewContentProvider_SubmoduleError;
 
 	/** */
 	public static String StashApplyCommand_applyFailed;
