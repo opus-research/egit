@@ -37,6 +37,9 @@ public class UIText extends NLS {
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
+	public static String AbstractHistoryCommanndHandler_NoUniqueRepository;
+
+	/** */
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
@@ -3385,6 +3388,9 @@ public class UIText extends NLS {
 	public static String MergeResultDialog_id;
 
 	/** */
+	public static String MergeResultDialog_failed;
+
+	/** */
 	public static String MergeResultDialog_mergeInput;
 
 	/** */
@@ -3392,6 +3398,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeResultDialog_newHead;
+
+	/** */
+	public static String MergeResultDialog_nMore;
 
 	/** */
 	public static String MergeResultDialog_result;

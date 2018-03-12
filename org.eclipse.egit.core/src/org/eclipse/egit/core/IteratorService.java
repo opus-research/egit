@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,11 +31,18 @@ public class IteratorService {
 	 * @param repository
 	 * @return <li>a {@link ContainerTreeIterator} if the work tree folder of
 	 *         the given repository resides in a project shared with Git <li>an
-	 *         {@link AdaptableFileTreeIterator} otherwise
+	 *         {@link AdaptableFileTreeIterator} otherwise <li>{@code null} if the
+	 *         workspace is closed.
 	 */
 	public static WorkingTreeIterator createInitialIterator(
 			Repository repository) {
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IWorkspaceRoot root;
+		try {
+			root = ResourcesPlugin.getWorkspace().getRoot();
+		} catch (IllegalStateException e) {
+			// workspace is closed
+			return null;
+		}
 		IContainer container = findContainer(root, repository.getWorkTree());
 		if (container != null)
 			return new ContainerTreeIterator(repository, container);
@@ -44,8 +51,7 @@ public class IteratorService {
 
 	/**
 	 * The method searches a container resource related to the given file. The
-	 * container must reside in a project that is shared with Git. Linked folders
-	 * are ignored.
+	 * container must reside in a project that is shared with Git
 	 *
 	 * @param root
 	 *            the workspace root
@@ -60,7 +66,7 @@ public class IteratorService {
 		final IContainer[] containers = root.findContainersForLocationURI(file
 				.toURI());
 		for (IContainer container : containers)
-			if (container.isAccessible() && !container.isLinked() && isProjectSharedWithGit(container))
+			if (container.isAccessible() && isProjectSharedWithGit(container))
 				return container;
 		return null;
 	}

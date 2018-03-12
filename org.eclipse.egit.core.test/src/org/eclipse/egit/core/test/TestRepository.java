@@ -2,7 +2,6 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,11 +18,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.regex.Pattern;
 
-import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
@@ -248,31 +245,6 @@ public class TestRepository {
 				.toString());
 		new Git(repository).add().addFilepattern(repoPath).call();
 	}
-
-	/**
-	 * Adds all project files to version control
-	 *
-	 * @param project
-	 * @throws CoreException
-	 */
-	public void trackAllFiles(IProject project) throws CoreException {
-		project.accept(new IResourceVisitor() {
-
-			public boolean visit(IResource resource) throws CoreException {
-				if (resource instanceof IFile) {
-					try {
-						track(EFS.getStore(resource.getLocationURI())
-										.toLocalFile(0, null));
-					} catch (Exception e) {
-						throw new CoreException(Activator.error(e.getMessage(),
-								e));
-					}
-				}
-				return true;
-			}
-		});
-	}
-
 	/**
 	 * Removes file from version control
 	 *
@@ -447,18 +419,18 @@ public class TestRepository {
 		}
 	}
 
-	public boolean inIndex(String path) throws IOException {
-		return getDirCacheEntry(path) != null;
+	public boolean inIndex(String absolutePath) throws IOException {
+		return getDirCacheEntry(absolutePath) != null;
 	}
 
-	public boolean removedFromIndex(String path) throws IOException {
-		DirCacheEntry dc = getDirCacheEntry(path);
+	public boolean removedFromIndex(String absolutePath) throws IOException {
+		DirCacheEntry dc = getDirCacheEntry(absolutePath);
 		if (dc == null)
 			return true;
 
 		Ref ref = repository.getRef(Constants.HEAD);
 		RevCommit c = new RevWalk(repository).parseCommit(ref.getObjectId());
-		TreeWalk tw = TreeWalk.forPath(repository, path, c.getTree());
+		TreeWalk tw = TreeWalk.forPath(repository, getRepoRelativePath(absolutePath), c.getTree());
 
 		return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
 	}
