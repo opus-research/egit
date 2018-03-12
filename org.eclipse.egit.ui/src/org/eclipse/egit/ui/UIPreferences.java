@@ -112,8 +112,6 @@ public class UIPreferences {
 	/** */
 	public final static String SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL = "sync_view_show_changeset_model"; //$NON-NLS-1$
 	/** */
-	public final static String SYNC_VIEW_LAST_SELECTED_MODEL = "sync_view_last_selected_model"; //$NON-NLS-1$
-	/** */
 	public static final String SYNC_VIEW_FETCH_BEFORE_LAUNCH = "sync_view_fetch_before_launch"; //$NON-NLS-1$
 	/** */
 	public final static String DATE_FORMAT = "date_format"; //$NON-NLS-1$
@@ -142,15 +140,11 @@ public class UIPreferences {
 	/** */
 	public static final String HISTORY_SHOW_TAG_SEQUENCE = "HistoryView_ShowTagSequence"; //$NON-NLS-1$
 	/** */
-	public static final String STAGING_VIEW_SHOW_NEW_COMMITS = "StagingView_ShowNewCommits"; //$NON-NLS-1$
-	/** */
-	public static final String STAGING_VIEW_COLUMN_LAYOUT = "StagingView_ColumnLayout"; //$NON-NLS-1$
+	public static final String STAGING_SHOW_NEW_COMMITS = "StagingView_ShowNewCommits"; //$NON-NLS-1$
 	/** */
 	public static final String STAGING_VIEW_SYNC_SELECTION = "StagingView_SyncWithSelection"; //$NON-NLS-1$
 	/** */
 	public static final String PAGE_COMMIT_PREFERENCES = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
-	/** */
-	public static final String BLAME_IGNORE_WHITESPACE = "Blame_IgnoreWhitespace"; //$NON-NLS-1$
 
 
 	/**

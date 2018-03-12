@@ -48,7 +48,6 @@ import org.junit.runner.RunWith;
 public class GitRepositoriesViewRepoHandlingTest extends
 		GitRepositoriesViewTestBase {
 
-	private static final String REMOVE_REPOSITORY_CONTEXT_MENU_LABEL = "RepoViewRemove.label";
 	private static File repositoryFile;
 
 	@BeforeClass
@@ -132,7 +131,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		tree.getAllItems()[0].select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
+				.getPluginLocalizedValue("RemoveRepositoryCommand"));
 		refreshAndWait();
 		assertEmpty();
 	}
@@ -151,7 +150,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		tree.getAllItems()[0].select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
+				.getPluginLocalizedValue("RemoveRepositoryCommand"));
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_ConfirmProjectDeletion_WindowTitle);
 		shell.activate();
@@ -176,7 +175,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		tree.getAllItems()[0].select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
+				.getPluginLocalizedValue("RemoveRepositoryCommand"));
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_ConfirmProjectDeletion_WindowTitle);
 		shell.activate();
@@ -200,7 +199,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		tree.getAllItems()[0].select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
+				.getPluginLocalizedValue("RemoveRepositoryCommand"));
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_ConfirmProjectDeletion_WindowTitle);
 		shell.activate();

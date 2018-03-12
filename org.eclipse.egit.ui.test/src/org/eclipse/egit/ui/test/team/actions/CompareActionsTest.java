@@ -106,7 +106,6 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 				dialogTitle);
 		// use the default (the last commit) -> no changes
 		assertEquals(3, dialog.bot().table().rowCount());
-		dialog.bot().table().select(0);
 		dialog.bot().button(IDialogConstants.OK_LABEL).click();
 		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
 				.getAllItems().length);
