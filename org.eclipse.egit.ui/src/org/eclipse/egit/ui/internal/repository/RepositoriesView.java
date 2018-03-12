@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Dariusz Luksza <dariusz@luksza.org> - add synchronization feature
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -58,8 +57,6 @@ import org.eclipse.egit.ui.internal.push.PushWizard;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
-import org.eclipse.egit.ui.internal.synchronize.GitSynchronize;
-import org.eclipse.egit.ui.internal.synchronize.dto.GitSynchronizeData;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
@@ -90,6 +87,7 @@ import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -142,7 +140,7 @@ import org.osgi.service.prefs.BackingStoreException;
  * This periodically refreshes itself in order to react on Repository changes.
  */
 public class RepositoriesView extends ViewPart implements ISelectionProvider,
-		IShowInTarget, RepositoryListener {
+		IShowInTarget {
 
 	/** The view ID */
 	public static final String VIEW_ID = "org.eclipse.egit.ui.RepositoriesView"; //$NON-NLS-1$
@@ -162,7 +160,11 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	private static final String PREFS_SYNCED = "GitRepositoriesView.SyncWithSelection"; //$NON-NLS-1$
 
+	private final Set<Repository> repositories = new HashSet<Repository>();
+
 	private final List<ISelectionChangedListener> selectionListeners = new ArrayList<ISelectionChangedListener>();
+
+	private RepositoryListener repositoryListener;
 
 	private ISelection currentSelection = new StructuredSelection();
 
@@ -346,6 +348,8 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			}
 		});
 
+		createRepositoryChangedListener();
+
 		addContextMenu();
 
 		addActionsToToolbar();
@@ -517,8 +521,6 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			if (!ref.isSymbolic()) {
 
 				if (!isBare) {
-					addSynchtonizeItem(men, node, ref);
-
 					MenuItem checkout = new MenuItem(men, SWT.PUSH);
 					checkout.setText(UIText.RepositoriesView_CheckOut_MenuItem);
 
@@ -1499,7 +1501,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 						return;
 					}
 
-					if (!RepositoryCache.FileKey.isGitRepository(file)) {
+					if (!RepositoryCache.FileKey.isGitRepository(file, FS.DETECTED)) {
 						errorMessage = NLS
 								.bind(
 										UIText.RepositoriesView_ClipboardContentNoGitRepoMessage,
@@ -1545,6 +1547,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			this.scheduledJob.cancel();
 			this.scheduledJob = null;
 		}
+		// remove RepositoryChangedListener
+		unregisterRepositoryListener();
+		repositories.clear();
 		super.dispose();
 	}
 
@@ -1582,19 +1587,20 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 				final boolean updateInput = needsNewInput;
 				final List<RepositoryTreeNode<Repository>> newInput;
 				if (updateInput) {
+					unregisterRepositoryListener();
 					try {
 						newInput = getRepositoriesFromDirs(monitor);
 					} catch (InterruptedException e) {
 						return new Status(IStatus.ERROR, Activator
 								.getPluginId(), e.getMessage(), e);
 					}
-					for (RepositoryTreeNode<Repository> node : newInput) {
+					repositories.clear();
+					for (RepositoryTreeNode<Repository> node: newInput) {
 						Repository repo = node.getRepository();
+						repositories.add(repo);
 						// add listener if not already added
-						repo
-								.removeRepositoryChangedListener(RepositoriesView.this);
-						repo
-								.addRepositoryChangedListener(RepositoriesView.this);
+						repo.removeRepositoryChangedListener(repositoryListener);
+						repo.addRepositoryChangedListener(repositoryListener);
 					}
 				} else {
 					newInput = null;
@@ -1643,6 +1649,24 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 		scheduledJob = job;
 
 	}
+
+	private void createRepositoryChangedListener() {
+		repositoryListener = new RepositoryListener() {
+			public void refsChanged(RefsChangedEvent e) {
+				scheduleRefresh();
+			}
+
+			public void indexChanged(IndexChangedEvent e) {
+				scheduleRefresh();
+			}
+		};
+	}
+
+	private void unregisterRepositoryListener() {
+		for (Repository repo:repositories)
+			repo.removeRepositoryChangedListener(repositoryListener);
+	}
+
 
 	/**
 	 * Adds a directory to the list if it is not already there
@@ -1887,7 +1911,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 					projectsToDelete.add(prj);
 				}
 			}
-			repo.removeRepositoryChangedListener(this);
+			repo.removeRepositoryChangedListener(repositoryListener);
 		}
 
 		if (!projectsToDelete.isEmpty()) {
@@ -1922,39 +1946,4 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			Activator.logError(e1.getMessage(), e1);
 		}
 	}
-
-	public void indexChanged(IndexChangedEvent e) {
-		scheduleRefresh();
-	}
-
-	public void refsChanged(RefsChangedEvent e) {
-		scheduleRefresh();
-	}
-
-	private void addSynchtonizeItem(Menu men, final RepositoryTreeNode node,
-			final Ref ref) {
-		final Repository repo = node.getRepository();
-		String projectName = repo.getDirectory().getParentFile().getName();
-		final IProject project = ResourcesPlugin.getWorkspace().getRoot()
-				.getProject(projectName);
-
-		MenuItem sync = new MenuItem(men, SWT.PUSH);
-		sync.setText(UIText.RepositoriesView_Synchronize_MenuItem);
-
-		boolean projectExist = project.exists();
-		sync.setEnabled(projectExist);
-
-		if (projectExist) {
-			sync.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					GitSynchronizeData gsd = new GitSynchronizeData(repo,
-							Constants.HEAD, ref.getName(), project, false);
-
-					new GitSynchronize(gsd);
-				}
-			});
-		}
-	}
-
 }
