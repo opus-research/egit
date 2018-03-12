@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -44,7 +44,6 @@ import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.events.IndexChangedListener;
-import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
@@ -52,8 +51,8 @@ import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
-import org.eclipse.jgit.treewalk.filter.InterIndexDiffFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -79,8 +78,6 @@ public class IndexDiffCacheEntry {
 
 	private Set<IndexDiffChangedListener> listeners = new HashSet<IndexDiffChangedListener>();
 
-	private final ListenerHandle indexChangedListenerHandle;
-	private final ListenerHandle refsChangedListenerHandle;
 	private IResourceChangeListener resourceChangeListener;
 
 	/**
@@ -88,13 +85,13 @@ public class IndexDiffCacheEntry {
 	 */
 	public IndexDiffCacheEntry(Repository repository) {
 		this.repository = repository;
-		indexChangedListenerHandle = repository.getListenerList().addIndexChangedListener(
+		repository.getListenerList().addIndexChangedListener(
 				new IndexChangedListener() {
 					public void onIndexChanged(IndexChangedEvent event) {
 						refreshIndexDelta();
 					}
 				});
-		refsChangedListenerHandle = repository.getListenerList().addRefsChangedListener(
+		repository.getListenerList().addRefsChangedListener(
 				new RefsChangedListener() {
 					public void onRefsChanged(RefsChangedEvent event) {
 						scheduleReloadJob("RefsChanged"); //$NON-NLS-1$
@@ -213,7 +210,7 @@ public class IndexDiffCacheEntry {
 			try {
 				walk.addTree(new DirCacheIterator(oldIndex));
 				walk.addTree(new DirCacheIterator(currentIndex));
-				walk.setFilter(new InterIndexDiffFilter());
+				walk.setFilter(TreeFilter.ANY_DIFF);
 
 				while (walk.next()) {
 					if (walk.isSubtree())
@@ -486,16 +483,6 @@ public class IndexDiffCacheEntry {
 		};
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				resourceChangeListener, IResourceChangeEvent.POST_CHANGE);
-	}
-
-	/**
-	 * Dispose cache entry by removing listeners.
-	 */
-	public void dispose() {
-		indexChangedListenerHandle.remove();
-		refsChangedListenerHandle.remove();
-		if (resourceChangeListener != null)
-			ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
 	}
 
 }

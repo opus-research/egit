@@ -539,9 +539,7 @@ public class CommitMessageComponent {
 		if (amending)
 			getHeadCommitInfo();
 
-		String calculatedCommitMessage = calculateCommitMessage(filesToCommit);
-		boolean calculatedMessageHasChangeId = findOffsetOfChangeIdLine(calculatedCommitMessage) > 0;
-		commitText.setText(calculatedCommitMessage);
+		commitText.setText(calculateCommitMessage(filesToCommit));
 		authorText.setText(getSafeString(author));
 		committerText.setText(getSafeString(committer));
 		if (amending) {
@@ -552,8 +550,7 @@ public class CommitMessageComponent {
 				originalChangeId = null;
 			}
 			refreshSignedOffBy();
-			if (!calculatedMessageHasChangeId)
-				refreshChangeIdText();
+			refreshChangeIdText();
 		}
 		updateSignedOffButton();
 		updateChangeIdButton();

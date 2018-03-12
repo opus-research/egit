@@ -151,13 +151,9 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			sCache = srcm.getRepository().lockDirCache();
 			final String sPath = srcm.getRepoRelativePath(srcf);
 			final DirCacheEntry sEnt = sCache.getEntry(sPath);
-			if (sEnt == null)
-				return FINISH_FOR_ME;
-
-			if (!sEnt.isMerged()) {
-				tree.failed(new Status(IStatus.WARNING, Activator.getPluginId(),
-						CoreText.MoveDeleteHook_unmergedFileError));
-				return I_AM_DONE;
+			if (sEnt == null) {
+				sCache.unlock();
+				return false;
 			}
 
 			final DirCacheEditor sEdit = sCache.editor();
@@ -183,7 +179,7 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			if (sCache != null)
 				sCache.unlock();
 		}
-		return I_AM_DONE;
+		return true;
 	}
 
 	public boolean moveFolder(final IResourceTree tree, final IFolder srcf,
@@ -214,10 +210,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 				case UNTRACKED:
 					// we are not responsible for moving untracked files
 					return FINISH_FOR_ME;
-				case UNMERGED:
-					tree.failed(new Status(IStatus.WARNING, Activator.getPluginId(),
-							CoreText.MoveDeleteHook_unmergedFileInFolderError));
-					return I_AM_DONE;
 				}
 			}
 			tree.standardMoveFolder(srcf, dstf, updateFlags, monitor);
@@ -340,10 +332,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			case UNTRACKED:
 				// we are not responsible for moving untracked files
 				return FINISH_FOR_ME;
-			case UNMERGED:
-				tree.failed(new Status(IStatus.WARNING, Activator.getPluginId(),
-						CoreText.MoveDeleteHook_unmergedFileInFolderError));
-				return I_AM_DONE;
 			}
 
 			tree.standardMoveProject(source, description, updateFlags,
@@ -391,7 +379,7 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return true; // We're done with the move
 	}
 
-	enum MoveResult { SUCCESS, FAILED, UNTRACKED, UNMERGED }
+	enum MoveResult{SUCCESS, FAILED, UNTRACKED}
 
 	private MoveResult moveIndexContent(String dPath,
 			final RepositoryMapping srcm, final String sPath) throws IOException {
@@ -409,8 +397,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			final int sPathLen = sPath.length() == 0 ? sPath.length() : sPath
 					.length() + 1;
 			for (final DirCacheEntry se : sEnt) {
-				if (!se.isMerged())
-					return MoveResult.UNMERGED;
 				final String p = se.getPathString().substring(sPathLen);
 				sEdit.add(new DirCacheEditor.PathEdit(dPath + p) {
 					@Override
