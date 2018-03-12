@@ -39,7 +39,7 @@ class WorkspaceFileRevision extends GitFileRevision implements IFileRevision {
 	}
 
 	public String getAuthor() {
-		return "";  //$NON-NLS-1$
+		return "";
 	}
 
 	public long getTimestamp() {
@@ -47,7 +47,7 @@ class WorkspaceFileRevision extends GitFileRevision implements IFileRevision {
 	}
 
 	public String getComment() {
-		return "";  //$NON-NLS-1$
+		return "";
 	}
 
 	public String getContentIdentifier() {
