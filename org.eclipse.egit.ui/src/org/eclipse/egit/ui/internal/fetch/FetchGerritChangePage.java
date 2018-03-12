@@ -35,13 +35,11 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
@@ -132,9 +130,6 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Button runInBackgroud;
 
-	private IInputValidator branchValidator;
-	private IInputValidator tagValidator;
-
 	/**
 	 * @param repository
 	 * @param refName initial value for the ref field
@@ -150,11 +145,6 @@ public class FetchGerritChangePage extends WizardPage {
 		setMessage(UIText.FetchGerritChangePage_PageMessage);
 		settings = getDialogSettings();
 		lastUriKey = repository + LAST_URI_POSTFIX;
-
-		branchValidator = ValidationUtils.getRefNameInputValidator(repository,
-				Constants.R_HEADS, true);
-		tagValidator = ValidationUtils.getRefNameInputValidator(repository,
-				Constants.R_TAGS, true);
 	}
 
 	protected IDialogSettings getDialogSettings() {
@@ -425,10 +415,26 @@ public class FetchGerritChangePage extends WizardPage {
 				return;
 			}
 
-			if (createBranchSelected)
-				setErrorMessage(branchValidator.isValid(branchText.getText()));
-			else if (createTagSelected)
-				setErrorMessage(tagValidator.isValid(tagText.getText()));
+			boolean emptyRefName = (createBranchSelected && branchText
+					.getText().length() == 0)
+					|| (createTagSelected && tagText.getText().length() == 0);
+			if (emptyRefName) {
+				setErrorMessage(UIText.FetchGerritChangePage_ProvideRefNameMessage);
+				return;
+			}
+
+			boolean existingRefName = (createBranchSelected && repository
+					.getRef(branchText.getText()) != null)
+					|| (createTagSelected && repository.getRef(tagText
+							.getText()) != null);
+			if (existingRefName) {
+				setErrorMessage(NLS.bind(
+						UIText.FetchGerritChangePage_ExistingRefMessage,
+						branchText.getText()));
+				return;
+			}
+		} catch (IOException e1) {
+			// ignore here
 		} finally {
 			setPageComplete(getErrorMessage() == null);
 		}
