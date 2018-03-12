@@ -8,7 +8,6 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Dariusz Luksza <dariusz@luksza.org>
- *    Steffen Pingel (Tasktop Technologies) - fixes for bug 352253
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -92,7 +91,7 @@ class CreateBranchPage extends WizardPage {
 		if (sourceName.startsWith(Constants.R_TAGS))
 			return sourceName.substring(Constants.R_TAGS.length());
 
-		return ""; //$NON-NLS-1$
+		return null;
 	}
 
 	private final Repository myRepository;
@@ -197,22 +196,6 @@ class CreateBranchPage extends WizardPage {
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false).applyTo(
 				this.branchCombo);
 
-		Label nameLabel = new Label(main, SWT.NONE);
-		nameLabel.setText(UIText.CreateBranchPage_BranchNameLabel);
-
-		// we visualize the prefix here
-		Text prefix = new Text(main, SWT.NONE);
-		prefix.setText(Constants.R_HEADS);
-		prefix.setEnabled(false);
-
-		nameText = new Text(main, SWT.BORDER);
-		// give focus to the nameText if label is activated using the mnemonic
-		nameLabel.addTraverseListener(new TraverseListener() {
-			public void keyTraversed(TraverseEvent e) {
-				nameText.setFocus();
-			}
-		});
-
 		if (this.myBaseCommit != null) {
 			this.branchCombo.add(myBaseCommit.name());
 			this.branchCombo.setText(myBaseCommit.name());
@@ -226,18 +209,10 @@ class CreateBranchPage extends WizardPage {
 				}
 				map = myRepository.getRefDatabase()
 						.getRefs(Constants.R_REMOTES);
-				String firstRemote = null;
 				for (Entry<String, Ref> entry : map.entrySet()) {
 					if (entry.getValue().getLeaf().getObjectId()
-							.equals(myBaseCommit)) {
+							.equals(myBaseCommit))
 						this.branchCombo.add(entry.getValue().getName());
-						if (firstRemote == null)
-							firstRemote = entry.getValue().getName();
-					}
-				}
-				if (firstRemote != null) {
-					this.branchCombo.setText(firstRemote);
-					suggestBranchName(firstRemote);
 				}
 			} catch (IOException e) {
 				// bad luck, we can't extend the drop down; let's log an error
@@ -279,6 +254,21 @@ class CreateBranchPage extends WizardPage {
 			}
 		});
 
+		Label nameLabel = new Label(main, SWT.NONE);
+		nameLabel.setText(UIText.CreateBranchPage_BranchNameLabel);
+
+		// we visualize the prefix here
+		Text prefix = new Text(main, SWT.NONE);
+		prefix.setText(Constants.R_HEADS);
+		prefix.setEnabled(false);
+
+		nameText = new Text(main, SWT.BORDER);
+		// give focus to the nameText if label is activated using the mnemonic
+		nameLabel.addTraverseListener(new TraverseListener() {
+			public void keyTraversed(TraverseEvent e) {
+				nameText.setFocus();
+			}
+		});
 		nameText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				nameIsSuggestion = false;
@@ -379,28 +369,20 @@ class CreateBranchPage extends WizardPage {
 	}
 
 	private void checkPage() {
+		setErrorMessage(null);
 		try {
-			boolean layoutChanged = false;
-
 			GridData gd = (GridData) warningComposite.getLayoutData();
-			if (gd.exclude != !branchCombo.getText().startsWith(Constants.R_HEADS)) {
-				gd.exclude = !branchCombo.getText().startsWith(Constants.R_HEADS);
-				warningComposite.setVisible(!gd.exclude);
-				layoutChanged = true;
-			}
+			gd.exclude = !branchCombo.getText().startsWith(Constants.R_HEADS);
+			warningComposite.setVisible(!gd.exclude);
 
 			warningComposite.getParent().getParent().layout(true);
 
 			boolean showRebase = !branchCombo.getText().startsWith(Constants.R_TAGS) && !ObjectId.isId(branchCombo.getText());
 			gd = (GridData) upstreamConfigGroup.getLayoutData();
-			if (gd.exclude == showRebase) {
-				gd.exclude = !showRebase;
-				upstreamConfigGroup.setVisible(!gd.exclude);
-				layoutChanged = true;
-			}
+			gd.exclude = !showRebase;
+			upstreamConfigGroup.setVisible(!gd.exclude);
 
-			if (layoutChanged)
-				upstreamConfigGroup.getParent().layout(true);
+			upstreamConfigGroup.getParent().layout(true);
 
 			if (!gd.exclude)
 				buttonConfigMerge.setSelection(false);
@@ -431,8 +413,6 @@ class CreateBranchPage extends WizardPage {
 				setErrorMessage(message);
 				return;
 			}
-
-			setErrorMessage(null);
 		} finally {
 			setPageComplete(getErrorMessage() == null);
 		}

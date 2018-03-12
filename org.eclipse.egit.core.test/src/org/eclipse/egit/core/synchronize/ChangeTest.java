@@ -9,7 +9,6 @@
 package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.egit.core.synchronize.GitCommitsModelCache.ZERO_ID;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -83,7 +82,7 @@ public class ChangeTest {
 
 		// then
 		assertTrue(result);
-		assertEquals(c1.hashCode(), c2.hashCode());
+		assertTrue(c1.hashCode() == c2.hashCode());
 	}
 
 	@Test
@@ -131,7 +130,7 @@ public class ChangeTest {
 
 		// then
 		assertTrue(result);
-		assertEquals(c1.hashCode(), c2.hashCode());
+		assertTrue(c1.hashCode() == c2.hashCode());
 	}
 
 }
