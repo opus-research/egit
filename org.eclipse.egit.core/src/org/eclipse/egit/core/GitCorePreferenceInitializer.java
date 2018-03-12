@@ -18,7 +18,6 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 public class GitCorePreferenceInitializer extends AbstractPreferenceInitializer {
 	private static final int MB = 1024 * 1024;
 
-	@Override
 	public void initializeDefaultPreferences() {
 		final IEclipsePreferences p  = DefaultScope.INSTANCE.getNode(Activator.getPluginId());
 

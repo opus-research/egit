@@ -72,7 +72,6 @@ public class GitProjectData {
 	private static final IResourceChangeListener rcl = new RCL();
 
 	private static class RCL implements IResourceChangeListener {
-		@Override
 		@SuppressWarnings("synthetic-access")
 		public void resourceChanged(final IResourceChangeEvent event) {
 			switch (event.getType()) {

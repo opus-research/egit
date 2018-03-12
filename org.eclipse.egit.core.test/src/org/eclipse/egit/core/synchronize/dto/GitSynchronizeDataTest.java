@@ -29,7 +29,6 @@ public class GitSynchronizeDataTest extends GitTestCase {
 
 	private Repository repo;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();

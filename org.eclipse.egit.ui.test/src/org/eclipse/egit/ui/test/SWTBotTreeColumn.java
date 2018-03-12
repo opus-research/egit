@@ -29,7 +29,6 @@ public class SWTBotTreeColumn extends AbstractSWTBot<TreeColumn> {
 	public static SWTBotTreeColumn getColumn(final Tree tree, final int index) {
 		TreeColumn treeColumn = UIThreadRunnable.syncExec(tree.getDisplay(),
 				new WidgetResult<TreeColumn>() {
-					@Override
 					public TreeColumn run() {
 						return tree.getColumn(index);
 					}
@@ -40,7 +39,6 @@ public class SWTBotTreeColumn extends AbstractSWTBot<TreeColumn> {
 	public SWTBotTreeColumn(final TreeColumn w) throws WidgetNotFoundException {
 		super(w);
 		parent = UIThreadRunnable.syncExec(new WidgetResult<Tree>() {
-			@Override
 			public Tree run() {
 				return w.getParent();
 			}

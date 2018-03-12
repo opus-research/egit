@@ -64,11 +64,9 @@ public class GitResourceDeltaTestHelper {
 
 	public void setUp() {
 		resourceChangeListener = new IResourceChangeListener() {
-			@Override
 			public void resourceChanged(final IResourceChangeEvent event) {
 				try {
 					event.getDelta().accept(new IResourceDeltaVisitor() {
-						@Override
 						public boolean visit(IResourceDelta delta)
 								throws CoreException {
 							final IResource resource = delta.getResource();

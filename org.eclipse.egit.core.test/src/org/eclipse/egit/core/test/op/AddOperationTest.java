@@ -33,7 +33,6 @@ public class AddOperationTest extends GitTestCase {
 
 	TestRepository testRepository;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -43,7 +42,6 @@ public class AddOperationTest extends GitTestCase {
 		testRepository.connect(project.getProject());
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();

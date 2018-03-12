@@ -55,11 +55,9 @@ public class DeletePathsOperation implements IEGitOperation {
 		schedulingRule = calculateSchedulingRule();
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor = (m != null) ? m : new NullProgressMonitor();
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				deletePaths(actMonitor);
 			}
@@ -68,7 +66,6 @@ public class DeletePathsOperation implements IEGitOperation {
 				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return schedulingRule;
 	}
