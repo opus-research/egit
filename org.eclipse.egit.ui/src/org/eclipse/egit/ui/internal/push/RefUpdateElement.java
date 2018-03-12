@@ -212,7 +212,6 @@ class RefUpdateElement extends WorkbenchAdapter {
 
 	/**
 	 * Get styled text
-	 *
 	 * @param object
 	 *
 	 * @return styled string
@@ -274,12 +273,9 @@ class RefUpdateElement extends WorkbenchAdapter {
 					StyledString.DECORATIONS_STYLER);
 			break;
 		case REJECTED_NODELETE:
+		case REJECTED_NONFASTFORWARD:
 		case REJECTED_REMOTE_CHANGED:
 			styled.append(UIText.PushResultTable_statusRejected,
-					StyledString.DECORATIONS_STYLER);
-			break;
-		case REJECTED_NONFASTFORWARD:
-			styled.append(UIText.RefUpdateElement_statusRejectedNonFastForward,
 					StyledString.DECORATIONS_STYLER);
 			break;
 		case REJECTED_OTHER_REASON:
