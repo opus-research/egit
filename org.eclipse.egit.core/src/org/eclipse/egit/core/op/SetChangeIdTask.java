@@ -32,7 +32,6 @@ public class SetChangeIdTask implements PostCloneTask {
 		this.createchangeid = createchangeid;
 	}
 
-	@Override
 	public void execute(Repository repository, IProgressMonitor monitor)
 			throws CoreException {
 		try {

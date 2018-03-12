@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.test;
 
 import static org.eclipse.swtbot.eclipse.finder.waits.Conditions.waitForView;
-import static org.eclipse.swtbot.swt.finder.waits.Conditions.widgetIsEnabled;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -57,7 +56,6 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
-import org.eclipse.swtbot.swt.finder.waits.DefaultCondition;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
@@ -196,12 +194,6 @@ public class TestUtil {
 		TestUtil.processUIEvents();
 	}
 
-	@SuppressWarnings("restriction")
-	public static void waitForDecorations() throws InterruptedException {
-		TestUtil.joinJobs(
-				org.eclipse.ui.internal.decorators.DecoratorManager.FAMILY_DECORATE);
-	}
-
 	/**
 	 * Utility for waiting until the execution of jobs of any family has
 	 * finished or timeout is reached. If no jobs are running, the method waits
@@ -266,7 +258,6 @@ public class TestUtil {
 		} else {
 			// synchronously refresh UI
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				@Override
 				public void run() {
 					processUIEvents();
 				}
@@ -310,7 +301,6 @@ public class TestUtil {
 			throws TimeoutException {
 		bot.waitUntil(new ICondition() {
 
-			@Override
 			public boolean test() throws Exception {
 				for (SWTBotTreeItem item : tree.getAllItems())
 					if (item.getText().contains(text))
@@ -318,12 +308,10 @@ public class TestUtil {
 				return false;
 			}
 
-			@Override
 			public void init(SWTBot bot2) {
 				// empty
 			}
 
-			@Override
 			public String getFailureMessage() {
 				return null;
 			}
@@ -343,7 +331,6 @@ public class TestUtil {
 			throws TimeoutException {
 		bot.waitUntil(new ICondition() {
 
-			@Override
 			public boolean test() throws Exception {
 				for (SWTBotTreeItem item : treeItem.getItems())
 					if (item.getText().contains(text))
@@ -351,12 +338,10 @@ public class TestUtil {
 				return false;
 			}
 
-			@Override
 			public void init(SWTBot bot2) {
 				// empty
 			}
 
-			@Override
 			public String getFailureMessage() {
 				return null;
 			}
@@ -377,17 +362,14 @@ public class TestUtil {
 			throws TimeoutException {
 		bot.waitUntil(new ICondition() {
 
-			@Override
 			public boolean test() throws Exception {
 				return tree.selection().get(0, 0).equals(text);
 			}
 
-			@Override
 			public void init(SWTBot bot2) {
 				// empty
 			}
 
-			@Override
 			public String getFailureMessage() {
 				return null;
 			}
@@ -406,19 +388,16 @@ public class TestUtil {
 			final String text, long timeout) throws TimeoutException {
 		bot.waitUntil(new ICondition() {
 
-			@Override
 			public boolean test() throws Exception {
 				if (table.indexOf(text)<0)
 					return false;
 				return true;
 			}
 
-			@Override
 			public void init(SWTBot bot2) {
 				// empty
 			}
 
-			@Override
 			public String getFailureMessage() {
 				return null;
 			}
@@ -429,17 +408,14 @@ public class TestUtil {
 			final SWTBotEditor editor, long timeout) {
 		bot.waitUntil(new ICondition() {
 
-			@Override
 			public boolean test() throws Exception {
 				return editor.isActive();
 			}
 
-			@Override
 			public void init(SWTBot bot2) {
 				// empty
 			}
 
-			@Override
 			public String getFailureMessage() {
 				return null;
 			}
@@ -570,106 +546,6 @@ public class TestUtil {
 	}
 
 	/**
-	 * Expand a node and wait until it is expanded. Use only if the node is
-	 * expected to have children.
-	 *
-	 * @param treeItem
-	 *            to expand
-	 * @return the {@code treeItem}
-	 */
-	public static SWTBotTreeItem expandAndWait(final SWTBotTreeItem treeItem) {
-		final String text = treeItem.getText();
-		treeItem.expand();
-		new SWTBot().waitUntil(new DefaultCondition() {
-
-			@Override
-			public boolean test() {
-				if (treeItem.widget.isDisposed()) {
-					return true; // Stop waiting and report failure below.
-				}
-				SWTBotTreeItem[] children = treeItem.getItems();
-				return children != null && children.length > 0;
-			}
-
-			@Override
-			public String getFailureMessage() {
-				return "No children found for " + text;
-			}
-		});
-		if (treeItem.widget.isDisposed()) {
-			fail("Widget disposed while waiting for expansion of node " + text);
-		}
-		return treeItem;
-	}
-
-	/**
-	 * Expand a node and wait until it is expanded and has a child node with the
-	 * given name. Use only if the node is expected to have children.
-	 *
-	 * @param treeItem
-	 *            to expand
-	 * @param childName
-	 *            to wait for
-	 * @return the child node
-	 */
-	public static SWTBotTreeItem expandAndWaitFor(final SWTBotTreeItem treeItem,
-			final String childName) {
-		final String text = treeItem.getText();
-		final SWTBotTreeItem[] result = { null };
-		treeItem.expand();
-		new SWTBot().waitUntil(new DefaultCondition() {
-
-			@Override
-			public boolean test() {
-				if (treeItem.widget.isDisposed()) {
-					return true; // Stop waiting and report failure below.
-				}
-				try {
-					result[0] = treeItem.getNode(childName);
-					return true;
-				} catch (WidgetNotFoundException e) {
-					return false;
-				}
-			}
-
-			@Override
-			public String getFailureMessage() {
-				return "Child " + childName + " not found under " + text;
-			}
-		});
-		if (treeItem.widget.isDisposed()) {
-			fail("Widget disposed while waiting for child node " + text + '.'
-					+ childName);
-		}
-		return result[0];
-	}
-
-	/**
-	 * Navigates in the given tree to the node denoted by the labels in the
-	 * path, using {@link #getNode(SWTBotTreeItem[], String)} to find children.
-	 *
-	 * @param tree
-	 *            to navigate
-	 * @param path
-	 *            sequence of strings denoting the node to navigate to
-	 * @return the node found
-	 * @throws WidgetNotFoundException
-	 *             if a node along the path cannot be found, or there are
-	 *             multiple candidates
-	 */
-	public static SWTBotTreeItem navigateTo(SWTBotTree tree, String... path) {
-		assertNotNull(path);
-
-		new SWTBot().waitUntil(widgetIsEnabled(tree));
-		SWTBotTreeItem item = getNode(tree.getAllItems(), path[0]);
-		for (int i = 1; item != null && i < path.length; i++) {
-			item = expandAndWait(item);
-			item = getChildNode(item, path[i]);
-		}
-		return item;
-	}
-
-	/**
 	 * @param node
 	 * @param childNodeText
 	 * @return child node containing childNodeText
@@ -744,14 +620,12 @@ public class TestUtil {
 
 	public static void waitUntilViewWithGivenIdShows(final String viewId) {
 		waitForView(new BaseMatcher<IViewReference>() {
-			@Override
 			public boolean matches(Object item) {
 				if (item instanceof IViewReference)
 					return viewId.equals(((IViewReference) item).getId());
 				return false;
 			}
 
-			@Override
 			public void describeTo(Description description) {
 				description.appendText("Wait for view with ID=" + viewId);
 			}
@@ -760,7 +634,6 @@ public class TestUtil {
 
 	public static void waitUntilViewWithGivenTitleShows(final String viewTitle) {
 		waitForView(new BaseMatcher<IViewReference>() {
-			@Override
 			public boolean matches(Object item) {
 				if (item instanceof IViewReference)
 					return viewTitle.equals(((IViewReference) item).getTitle());
@@ -768,7 +641,6 @@ public class TestUtil {
 				return false;
 			}
 
-			@Override
 			public void describeTo(Description description) {
 				description.appendText("Wait for view with title " + viewTitle);
 			}
@@ -785,7 +657,6 @@ public class TestUtil {
 				return title != null && title.startsWith(titlePrefix);
 			}
 
-			@Override
 			public void describeTo(Description description) {
 				description.appendText("Shell with title starting with '"
 						+ titlePrefix + "'");
@@ -798,7 +669,6 @@ public class TestUtil {
 
 	public static SWTBotView showView(final String viewId) {
 		Display.getDefault().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow();
@@ -822,7 +692,6 @@ public class TestUtil {
 
 	public static void hideView(final String viewId) {
 		Display.getDefault().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				IWorkbenchWindow[] windows = PlatformUI.getWorkbench()
 						.getWorkbenchWindows();

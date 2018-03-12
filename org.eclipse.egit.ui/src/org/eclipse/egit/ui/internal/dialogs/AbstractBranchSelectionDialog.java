@@ -7,7 +7,6 @@
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Markus Keller <markus_keller@ch.ibm.com>
- * Copyright (C) 2016, Obeo <laurent.delaigue@obeo.fr>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -275,8 +274,8 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		branchTree.setContentProvider(new RepositoriesViewContentProvider());
 		ColumnViewerToolTipSupport.enableFor(branchTree);
 
-		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300)
-				.minSize(SWT.DEFAULT, 200).applyTo(tree);
+		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300).applyTo(
+				tree);
 		branchTree.addSelectionChangedListener(new ISelectionChangedListener() {
 
 			@Override
@@ -333,7 +332,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		// be enabled.
 		setOkButtonEnabled(false);
 
-		List<RepositoryTreeNode> roots = new ArrayList<>();
+		List<RepositoryTreeNode> roots = new ArrayList<RepositoryTreeNode>();
 		if ((settings & SHOW_LOCAL_BRANCHES) != 0)
 			roots.add(localBranches);
 		if ((settings & SHOW_REMOTE_BRANCHES) != 0)
@@ -369,9 +368,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	/**
 	 * Enables the OK button. No-op in case Dialog#createButtonsForButtonBar has
 	 * been overridden and the button has not been created.
-	 *
+	 * 
 	 * @param enabled
-	 *
+	 * 
 	 * @see org.eclipse.jface.dialogs.Dialog#createButtonsForButtonBar(Composite)
 	 */
 	protected void setOkButtonEnabled(boolean enabled) {
@@ -382,7 +381,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	/**
 	 * Returns <code>true</code> if the OK button has been created and is
 	 * enabled.
-	 *
+	 * 
 	 * @return the OK button's enabled state or <code>false</code> if the button
 	 *         has not been created.
 	 */
@@ -406,17 +405,17 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		RepositoryTreeNode node;
 		try {
 			if (refName.startsWith(Constants.R_HEADS)) {
-				Ref ref = repo.exactRef(refName);
+				Ref ref = repo.getRef(refName);
 				if (ref == null)
 					return false;
 				node = new RefNode(localBranches, repo, ref);
 			} else if (refName.startsWith(Constants.R_REMOTES)) {
-				Ref ref = repo.exactRef(refName);
+				Ref ref = repo.getRef(refName);
 				if (ref == null)
 					return false;
 				node = new RefNode(remoteBranches, repo, ref);
 			} else if (Constants.HEAD.equals(refName)) {
-				Ref ref = repo.exactRef(refName);
+				Ref ref = repo.getRef(refName);
 				if (ref == null)
 					return false;
 				node = new AdditionalRefNode(references, repo, ref);
@@ -425,13 +424,13 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 						.mapCommitToRef(repo, refName, false);
 				if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_REMOTES)) {
-					Ref ref = repo.exactRef(mappedRef);
+					Ref ref = repo.getRef(mappedRef);
 					if (ref == null)
 						return false;
 					node = new RefNode(remoteBranches, repo, ref);
 				} else if (mappedRef != null
 						&& mappedRef.startsWith(Constants.R_TAGS)) {
-					Ref ref = repo.exactRef(mappedRef);
+					Ref ref = repo.getRef(mappedRef);
 					if (ref == null)
 						return false;
 					node = new TagNode(tags, repo, ref);

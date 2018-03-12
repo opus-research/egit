@@ -8,7 +8,6 @@
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
  *    Laurent Delaigue (Obeo) - use of preferred merge strategy
- *    Stephan Hackstedt <stephan.hackstedt@googlemail.com> - bug 477695
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -20,7 +19,8 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
@@ -77,44 +77,45 @@ public class RevertCommitOperation implements IEGitOperation {
 		return reverted;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor = m != null ? m : new NullProgressMonitor();
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
-				SubMonitor progress = SubMonitor.convert(pm, 2);
-				progress.subTask(MessageFormat.format(
+				pm.beginTask("", 2); //$NON-NLS-1$
+
+				pm.subTask(MessageFormat.format(
 						CoreText.RevertCommitOperation_reverting,
 						Integer.valueOf(commits.size())));
-				try (Git git = new Git(repo)) {
-					RevertCommand command = git.revert();
-					MergeStrategy strategy = Activator.getDefault()
-							.getPreferredMergeStrategy();
-					if (strategy != null) {
-						command.setStrategy(strategy);
-					}
-					for (RevCommit commit : commits) {
-						command.include(commit);
-					}
+				RevertCommand command = new Git(repo).revert();
+				MergeStrategy strategy = Activator.getDefault()
+						.getPreferredMergeStrategy();
+				if (strategy != null) {
+					command.setStrategy(strategy);
+				}
+				for (RevCommit commit : commits)
+					command.include(commit);
+				try {
 					newHead = command.call();
 					reverted = command.getRevertedRefs();
 					result = command.getFailingResult();
-					progress.worked(1);
-					ProjectUtil.refreshValidProjects(
-							ProjectUtil.getValidOpenProjects(repo),
-							progress.newChild(1));
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				}
+				pm.worked(1);
+
+				ProjectUtil.refreshValidProjects(
+						ProjectUtil.getValidOpenProjects(repo),
+						new SubProgressMonitor(pm, 1));
+
+				pm.done();
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, m);
+				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repo);
 	}

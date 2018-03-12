@@ -118,7 +118,6 @@ public class ConfigureGerritAfterCloneTask implements PostCloneTask {
 		this.credentialsProvider = credentialsProvider;
 	}
 
-	@Override
 	public void execute(Repository repository, IProgressMonitor monitor)
 			throws CoreException {
 		try {
@@ -162,8 +161,8 @@ public class ConfigureGerritAfterCloneTask implements PostCloneTask {
 			if (HTTPS.equals(s) && (u.getPort() == 443 || u.getPort() == -1)
 					&& path != null && path.startsWith(GERRIT_CONTEXT_ROOT)) {
 				return true;
-			} else if (SSH.equals(s)
-					&& u.getPort() == GERRIT_SSHD_DEFAULT_PORT) {
+			} else
+				if (SSH.equals(s) && u.getPort() == GERRIT_SSHD_DEFAULT_PORT) {
 				return true;
 			}
 		}
@@ -172,45 +171,52 @@ public class ConfigureGerritAfterCloneTask implements PostCloneTask {
 			String baseURL = u.setPath("/").toString(); //$NON-NLS-1$
 			baseURL = baseURL.substring(0, baseURL.length() - 1);
 			String tmpPath = ""; //$NON-NLS-1$
-			int slash = 1;
-			while (true) {
-				HttpURLConnection httpConnection = null;
-				try {
-					httpConnection = (HttpURLConnection) new URL(baseURL
-							+ tmpPath + GERRIT_CONFIG_SERVER_VERSION_API)
-									.openConnection();
-					NetUtil.setSslVerification(repo, httpConnection);
-					httpConnection.setRequestMethod("GET"); //$NON-NLS-1$
-					httpConnection.setReadTimeout(1000 * timeout);
-					int responseCode = httpConnection.getResponseCode();
-					switch (responseCode) {
-					case HttpURLConnection.HTTP_OK:
-						try (InputStream in = httpConnection.getInputStream()) {
+			HttpURLConnection httpConnection = null;
+			try {
+				int slash = 1;
+				while (true) {
+					InputStream in = null;
+					try {
+						httpConnection = (HttpURLConnection) new URL(baseURL
+								+ tmpPath + GERRIT_CONFIG_SERVER_VERSION_API)
+								.openConnection();
+						NetUtil.setSslVerification(repo, httpConnection);
+						httpConnection.setRequestMethod("GET"); //$NON-NLS-1$
+						httpConnection.setReadTimeout(1000 * timeout);
+						int responseCode = httpConnection.getResponseCode();
+						switch (responseCode) {
+						case HttpURLConnection.HTTP_OK:
+							in = httpConnection.getInputStream();
 							String response = readFully(in, "UTF-8"); //$NON-NLS-1$
-							return response
-									.startsWith(GERRIT_XSSI_MAGIC_STRING);
-						}
-					case HttpURLConnection.HTTP_NOT_FOUND:
-						if (slash > path.length()) {
+							if (response.startsWith(GERRIT_XSSI_MAGIC_STRING)) {
+								return true;
+							} else {
+								return false;
+							}
+						case HttpURLConnection.HTTP_NOT_FOUND:
+							if (slash > path.length()) {
+								return false;
+							}
+							slash = path.indexOf('/', slash);
+							if (slash == -1) {
+								// try the entire path
+								slash = path.length();
+							}
+							tmpPath = path.substring(0, slash);
+							slash++;
+							break;
+						default:
 							return false;
 						}
-						slash = path.indexOf('/', slash);
-						if (slash == -1) {
-							// try the entire path
-							slash = path.length();
+					} finally {
+						if (in != null) {
+							in.close();
 						}
-						tmpPath = path.substring(0, slash);
-						slash++;
-						break;
-					default:
-						return false;
 					}
-				} catch (IOException e) {
-					return false;
-				} finally {
-					if (httpConnection != null) {
-						httpConnection.disconnect();
-					}
+				}
+			} finally {
+				if (httpConnection != null) {
+					httpConnection.disconnect();
 				}
 			}
 		} else if (SSH.equals(s)) {

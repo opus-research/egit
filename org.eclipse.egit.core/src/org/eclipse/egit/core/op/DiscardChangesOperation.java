@@ -2,7 +2,6 @@
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2010, Roland Grunberg <rgrunber@redhat.com>
  * Copyright (C) 2012, 2014 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +25,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
@@ -130,26 +130,27 @@ public class DiscardChangesOperation implements IEGitOperation {
 	 *
 	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
 	 */
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return schedulingRule;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				discardChanges(actMonitor);
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, m);
+				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
 	private void discardChanges(IProgressMonitor monitor) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor,
-				CoreText.DiscardChangesOperation_discardingChanges,
+		monitor.beginTask(CoreText.DiscardChangesOperation_discardingChanges,
 				pathsByRepository.size() * 2);
 		boolean errorOccurred = false;
 
@@ -165,17 +166,18 @@ public class DiscardChangesOperation implements IEGitOperation {
 				Activator.logError(
 						CoreText.DiscardChangesOperation_discardFailed, e);
 			}
-			progress.worked(1);
+			monitor.worked(1);
 
 			try {
 				ProjectUtil.refreshRepositoryResources(repository, paths,
-						progress.newChild(1));
+						new SubProgressMonitor(monitor, 1));
 			} catch (CoreException e) {
 				errorOccurred = true;
 				Activator.logError(
 						CoreText.DiscardChangesOperation_refreshFailed, e);
 			}
 		}
+		monitor.done();
 
 		if (errorOccurred) {
 			IStatus status = Activator.error(
@@ -187,23 +189,18 @@ public class DiscardChangesOperation implements IEGitOperation {
 	private void discardChanges(Repository repository, Collection<String> paths)
 			throws GitAPIException {
 		ResourceUtil.saveLocalHistory(repository);
-		try (Git git = new Git(repository)) {
-			CheckoutCommand checkoutCommand = git.checkout();
-			if (revision != null) {
-				checkoutCommand.setStartPoint(revision);
-			}
-			if (stage != null) {
-				checkoutCommand.setStage(stage.checkoutStage);
-			}
-			if (paths.isEmpty() || paths.contains("")) { //$NON-NLS-1$
-				checkoutCommand.setAllPaths(true);
-			} else {
-				for (String path : paths) {
-					checkoutCommand.addPath(path);
-				}
-			}
-			checkoutCommand.call();
+		CheckoutCommand checkoutCommand = new Git(repository).checkout();
+		if (revision != null)
+			checkoutCommand.setStartPoint(revision);
+		if (stage != null)
+			checkoutCommand.setStage(stage.checkoutStage);
+		if (paths.isEmpty() || paths.contains("")) //$NON-NLS-1$
+			checkoutCommand.setAllPaths(true);
+		else {
+			for (String path : paths)
+				checkoutCommand.addPath(path);
 		}
+		checkoutCommand.call();
 	}
 
 }

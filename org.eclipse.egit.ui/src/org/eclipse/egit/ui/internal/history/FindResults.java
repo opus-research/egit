@@ -23,12 +23,12 @@ import org.eclipse.jgit.revwalk.RevObject;
  * table that contain a match to a given pattern.
  *
  * @see FindToolbar
- * @see FindToolbarJob
+ * @see FindToolbarThread
  */
 public class FindResults {
-	private Map<Integer, Integer> matchesMap = new LinkedHashMap<>();
+	private Map<Integer, Integer> matchesMap = new LinkedHashMap<Integer, Integer>();
 
-	private List<RevObject> revObjList = new ArrayList<>();
+	private List<RevObject> revObjList = new ArrayList<RevObject>();
 
 	Integer[] keysArray;
 
@@ -36,28 +36,14 @@ public class FindResults {
 
 	private RevFlag highlight;
 
-	private boolean overflow;
-
-	private final IFindListener listener;
-
-	/**
-	 * Creates a new results object notifying the given listener upon changes.
-	 *
-	 * @param listener
-	 *            to notify
-	 */
-	public FindResults(IFindListener listener) {
-		this.listener = listener;
-	}
-
 	/**
 	 * Returns if the index in the history table matches the find pattern.
 	 *
 	 * @param index
 	 *            history table item index.
-	 * @return boolean <code>true</code> if the history table <code>index</code>
-	 *         contains a match to the find pattern, <code>false</code>
-	 *         otherwise
+	 * @return boolean <code>true</code> if the history table
+	 *         <code>index</code> contains a match to the find pattern,
+	 *         <code>false</code> otherwise
 	 */
 	public synchronized boolean isFoundAt(int index) {
 		return matchesMap.containsKey(Integer.valueOf(index));
@@ -179,7 +165,6 @@ public class FindResults {
 		revObjList.clear();
 		keysArray = null;
 		matchesCount = 0;
-		listener.cleared();
 	}
 
 	/**
@@ -197,7 +182,6 @@ public class FindResults {
 		revObjList.add(revObj);
 		revObj.add(highlight);
 		keysArray = null;
-		listener.itemAdded(matchIx, revObj);
 	}
 
 	private Integer[] getkeysArray() {
@@ -214,13 +198,5 @@ public class FindResults {
 			clear();
 		}
 		this.highlight = hFlag;
-	}
-
-	synchronized void setOverflow() {
-		overflow = true;
-	}
-
-	synchronized boolean isOverflow() {
-		return overflow;
 	}
 }

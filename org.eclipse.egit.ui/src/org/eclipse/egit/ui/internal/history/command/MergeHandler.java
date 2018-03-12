@@ -13,7 +13,6 @@
 
 package org.eclipse.egit.ui.internal.history.command;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -32,13 +31,13 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.MergeActionHandler;
 import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
+import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
@@ -69,36 +68,25 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 		if (!MergeActionHandler.checkMergeIsPossible(repository, getShell(event)))
 			return null;
 
-		List<Ref> nodes;
-		try {
-			nodes = getBranchesOfCommit(getSelection(event), repository, true);
-		} catch (IOException e) {
-			throw new ExecutionException(
-					UIText.AbstractHistoryCommitHandler_cantGetBranches,
-					e);
-		}
-
-		MergeStrategy mergeStrategy = org.eclipse.egit.core.Activator.getDefault().getPreferredMergeStrategy();
+		List<RefNode> nodes = getRefNodes(commitId, repository,
+				Constants.R_REFS);
 		String refName;
-		if (nodes.isEmpty()) {
+		if (nodes.isEmpty())
 			refName = commitId.getName();
-		} else if (nodes.size() == 1) {
-			refName = nodes.get(0).getName();
-		} else {
-			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<>(
+		else if (nodes.size() == 1)
+			refName = nodes.get(0).getObject().getName();
+		else {
+			BranchSelectionDialog<RefNode> dlg = new BranchSelectionDialog<RefNode>(
 					HandlerUtil.getActiveShellChecked(event), nodes,
 					UIText.MergeHandler_SelectBranchTitle,
-					UIText.MergeHandler_SelectBranchMessage, SWT.SINGLE, true);
-			if (dlg.open() == Window.OK) {
-				refName = dlg.getSelectedNode().getName();
-				mergeStrategy = dlg.getSelectedStrategy();
-			} else {
+					UIText.MergeHandler_SelectBranchMessage, SWT.SINGLE);
+			if (dlg.open() == Window.OK)
+				refName = dlg.getSelectedNode().getObject().getName();
+			else
 				return null;
-			}
 		}
 		String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
 		final MergeOperation op = new MergeOperation(repository, refName);
-		op.setMergeStrategy(mergeStrategy);
 		Job job = new WorkspaceJob(jobname) {
 
 			@Override

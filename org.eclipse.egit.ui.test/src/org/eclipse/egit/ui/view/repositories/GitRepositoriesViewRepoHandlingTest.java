@@ -73,7 +73,6 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		waitInUI();
 		Display.getDefault().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				Clipboard clp = new Clipboard(Display.getCurrent());
 				clp.clearContents();
@@ -105,7 +104,6 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				UIText.RepositoriesView_messsageEmpty);
 		Display.getDefault().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				Clipboard clip = null;
 				try {
@@ -244,9 +242,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.getText().startsWith(nodeText));
 
 		view.show();
-		SWTBotTreeItem item = TestUtil.expandAndWait(projectItem);
-		item = TestUtil.expandAndWait(item.getNode(FOLDER));
-		item.getNode(FILE1).select();
+		projectItem.expand().getNode(FOLDER).expand().getNode(FILE1).select();
 
 		ContextMenuHelper.clickContextMenuSync(explorerTree, "Show In",
 				viewName);

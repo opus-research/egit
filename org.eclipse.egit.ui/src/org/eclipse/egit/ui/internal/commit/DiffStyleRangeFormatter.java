@@ -160,7 +160,7 @@ public class DiffStyleRangeFormatter extends DiffFormatter {
 
 	private DocumentOutputStream stream;
 
-	private List<DiffStyleRange> ranges = new ArrayList<>();
+	private List<DiffStyleRange> ranges = new ArrayList<DiffStyleRange>();
 
 	private final int maxLines;
 

@@ -103,7 +103,7 @@ public class ProblemLabelDecorator extends BaseLabelProvider implements
 
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
-		Set<IResource> resources = new HashSet<>();
+		Set<IResource> resources = new HashSet<IResource>();
 
 		IMarkerDelta[] markerDeltas = event.findMarkerDeltas(IMarker.PROBLEM,
 				true);
@@ -129,7 +129,7 @@ public class ProblemLabelDecorator extends BaseLabelProvider implements
 	}
 
 	private List<Object> getAffectedElements(Set<IResource> resources) {
-		List<Object> result = new ArrayList<>();
+		List<Object> result = new ArrayList<Object>();
 		if (viewer.getContentProvider() instanceof IStructuredContentProvider) {
 			IStructuredContentProvider contentProvider = (IStructuredContentProvider) viewer.getContentProvider();
 			Object[] elements = contentProvider.getElements(null);

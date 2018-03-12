@@ -58,7 +58,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		data = d;
 	}
 
-	@Override
 	public boolean deleteFile(final IResourceTree tree, final IFile file,
 			final int updateFlags, final IProgressMonitor monitor) {
 		// Linked resources are not files, hence not tracked by git
@@ -141,7 +140,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return true;
 	}
 
-	@Override
 	public boolean deleteFolder(final IResourceTree tree, final IFolder folder,
 			final int updateFlags, final IProgressMonitor monitor) {
 		// Deleting a GIT repository which is in use is a pretty bad idea. To
@@ -154,7 +152,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		}
 	}
 
-	@Override
 	public boolean deleteProject(final IResourceTree tree,
 			final IProject project, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -163,7 +160,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return FINISH_FOR_ME;
 	}
 
-	@Override
 	public boolean moveFile(final IResourceTree tree, final IFile srcf,
 			final IFile dstf, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -216,7 +212,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return I_AM_DONE;
 	}
 
-	@Override
 	public boolean moveFolder(final IResourceTree tree, final IFolder srcf,
 			final IFolder dstf, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -291,7 +286,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return false;
 	}
 
-	@Override
 	public boolean moveProject(final IResourceTree tree, final IProject source,
 			final IProjectDescription description, final int updateFlags,
 			final IProgressMonitor monitor) {

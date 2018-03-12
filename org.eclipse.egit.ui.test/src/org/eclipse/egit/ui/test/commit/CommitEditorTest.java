@@ -69,7 +69,6 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		final AtomicReference<IEditorPart> editorRef = new AtomicReference<IEditorPart>();
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				RepositoryCommit repoCommit = new RepositoryCommit(repository,
 						commit);
@@ -101,7 +100,6 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		final AtomicReference<IEditorPart> editorRef = new AtomicReference<IEditorPart>();
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				RepositoryCommit repoCommit = new RepositoryCommit(repository,
 						commit);

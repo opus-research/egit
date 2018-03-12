@@ -49,7 +49,6 @@ public class RenameBranchOperation implements IEGitOperation {
 		this.newName = newName;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -58,14 +57,13 @@ public class RenameBranchOperation implements IEGitOperation {
 			monitor = m;
 
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				String taskName = NLS.bind(
 						CoreText.RenameBranchOperation_TaskName, branch
 								.getName(), newName);
 				actMonitor.beginTask(taskName, 1);
-				try (Git git = new Git(repository)) {
-					git.branchRename().setOldName(
+				try {
+					new Git(repository).branchRename().setOldName(
 							branch.getName()).setNewName(newName).call();
 				} catch (JGitInternalException e) {
 					throw new CoreException(Activator.error(e.getMessage(), e));
@@ -81,7 +79,6 @@ public class RenameBranchOperation implements IEGitOperation {
 				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repository);
 	}

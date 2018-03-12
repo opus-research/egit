@@ -8,7 +8,6 @@
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
  * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
- * Copyright (C) 2016, Obeo <laurent.delaigue@obeo.fr>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -68,8 +67,6 @@ public class UIPreferences {
 	/** */
 	public final static String COMMIT_DIALOG_HARD_WRAP_MESSAGE = "commit_dialog_hard_wrap_message"; //$NON-NLS-1$
 	/** */
-	public final static String ALWAYS_USE_STAGING_VIEW = "always_use_staging_view"; //$NON-NLS-1$
-	/** */
 	public final static String COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE = "commit_dialog_warn_about_message_second_line"; //$NON-NLS-1$
 	/** */
 	public final static String COMMIT_DIALOG_SIGNED_OFF_BY = "commit_dialog_signed_off_by"; //$NON-NLS-1$
@@ -128,8 +125,6 @@ public class UIPreferences {
 	/** */
 	public final static String DECORATOR_PROJECTTEXT_DECORATION = "decorator_projecttext_decoration"; //$NON-NLS-1$
 	/** */
-	public final static String DECORATOR_SUBMODULETEXT_DECORATION = "decorator_submoduletext_decoration"; //$NON-NLS-1$
-	/** */
 	public final static String DECORATOR_SHOW_TRACKED_ICON = "decorator_show_tracked_icon"; //$NON-NLS-1$
 	/** */
 	public final static String DECORATOR_SHOW_UNTRACKED_ICON = "decorator_show_untracked_icon"; //$NON-NLS-1$
@@ -138,7 +133,7 @@ public class UIPreferences {
 	/** */
 	public final static String DECORATOR_SHOW_CONFLICTS_ICON = "decorator_show_conflicts_icon"; //$NON-NLS-1$
 	/** */
-	public final static String DECORATOR_SHOW_ASSUME_UNCHANGED_ICON = "decorator_show_assume_valid_icon"; //$NON-NLS-1$
+	public final static String DECORATOR_SHOW_ASSUME_VALID_ICON = "decorator_show_assume_valid_icon"; //$NON-NLS-1$
 	/** */
 	public final static String DECORATOR_SHOW_DIRTY_ICON = "decorator_show_dirty_icon"; //$NON-NLS-1$
 	/** */
@@ -152,13 +147,7 @@ public class UIPreferences {
 	/** */
 	public final static String DATE_FORMAT = "date_format"; //$NON-NLS-1$
 	/** */
-	public final static String DATE_FORMAT_CHOICE = "date_format_choice"; //$NON-NLS-1$
-	/** */
-	public static final String DATE_FORMAT_CUSTOM = "CUSTOM"; //$NON-NLS-1$
-	/** */
 	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";  //$NON-NLS-1$
-	/** */
-	public static final String DEFAULT_DATE_FORMAT_CHOICE = DATE_FORMAT_CUSTOM;
 	/** */
 	public static final String DEFAULT_CHANGESET_FORMAT = "[{author}] ({date}) {short_message}"; //$NON-NLS-1$
 	/** */
@@ -218,14 +207,6 @@ public class UIPreferences {
 	public static final String STAGING_VIEW_FILENAME_MODE = "StagingView_FileNameMode"; //$NON-NLS-1$
 	/** */
 	public static final String STAGING_VIEW_PRESENTATION = "StagingView_Presentation"; //$NON-NLS-1$
-
-	/** max number of files in the view to allow for the list mode */
-	public static final String STAGING_VIEW_MAX_LIMIT_LIST_MODE = "StagingView_MaxLimitListMode"; //$NON-NLS-1$
-
-	/**
-	 * List presentation mode was automatically switched to faster mode
-	 */
-	public static final String STAGING_VIEW_PRESENTATION_CHANGED = "StagingView_Presentation_Changed"; //$NON-NLS-1$
 	/** */
 	public static final String PAGE_COMMIT_PREFERENCES = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
 	/** */
@@ -240,20 +221,6 @@ public class UIPreferences {
 	public final static String REBASE_INTERACTIVE_ORDER_REVERSE = "rebase_interactive_order_reverse"; //$NON-NLS-1$
 	/** */
 	public static final String REBASE_INTERACTIVE_SYNC_SELECTION = "RebaseInteractive_SyncWithSelection"; //$NON-NLS-1$
-	/** */
-	public static final String PREFERRED_MERGE_STRATEGY_HIDE_DIALOG = "PreferredMergeStrategy_HideDialog"; //$NON-NLS-1$
-
-	/** */
-	public static final String WARN_BEFORE_COMMITTING = "checkBeforeCommitting"; //$NON-NLS-1$
-
-	/** */
-	public static final String WARN_BEFORE_COMMITTING_LEVEL = "warnBeforeCommitting"; //$NON-NLS-1$
-
-	/** */
-	public static final String BLOCK_COMMIT = "blockCommit"; //$NON-NLS-1$
-
-	/** */
-	public static final String BLOCK_COMMIT_LEVEL = "blockCommitCombo"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array
@@ -262,29 +229,14 @@ public class UIPreferences {
 	 *            the String value
 	 * @param cnt
 	 *            number of entries in the returned array
-	 * @return the preference values for the array, or null if the string cannot
-	 *         be parsed or doesn't have {@code cnt} elements, or any value is
-	 *         <= 0.
+	 * @return the preference values for the array.
 	 */
 	public static int[] stringToIntArray(final String value, final int cnt) {
-		if (value == null) {
-			return null;
-		}
-		final String[] values = value.split(","); //$NON-NLS-1$
-		if (values.length != cnt) {
-			return null;
-		}
 		final int[] r = new int[cnt];
-		for (int i = 0; i < values.length; i++) {
-			try {
-				int val = Integer.parseInt(values[i].trim());
-				if (val <= 0) {
-					return null;
-				}
-				r[i] = val;
-			} catch (NumberFormatException e) {
-				return null;
-			}
+		if (value != null) {
+			final String[] e = value.split(","); //$NON-NLS-1$
+			for (int i = 0; i < Math.min(e.length, r.length); i++)
+				r[i] = Integer.parseInt(e[i].trim());
 		}
 		return r;
 	}

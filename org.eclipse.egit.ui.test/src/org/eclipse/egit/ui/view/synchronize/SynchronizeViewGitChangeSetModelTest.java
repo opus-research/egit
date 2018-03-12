@@ -40,7 +40,6 @@ import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.lib.Repository;
@@ -311,7 +310,6 @@ public class SynchronizeViewGitChangeSetModelTest extends
 
 		// when
 		Display.getDefault().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				CommonUtils.runCommand("org.eclipse.compare.copyLeftToRight",
 						null);
@@ -339,7 +337,6 @@ public class SynchronizeViewGitChangeSetModelTest extends
 
 		// when
 		Display.getDefault().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				CommonUtils.runCommand("org.eclipse.compare.copyRightToLeft",
 						null);
@@ -375,12 +372,11 @@ public class SynchronizeViewGitChangeSetModelTest extends
 
 		// then
 		SWTBotTreeItem workingTree = getExpandedWorkingTreeItem();
-		assertTrue(workingTree.getText()
-				.endsWith(GitModelWorkingTree_workingTree));
+		assertEquals(GitModelWorkingTree_workingTree, workingTree.getText());
 		// WidgetNotFoundException will be thrown when node named 'new.txt' not
 		// exists
-		assertNotNull(TestUtil.getNode(workingTree.getItems(), PROJ1)
-				.getNode(newFileName));
+		assertNotNull(workingTree.getNode(PROJ1).expand());
+		assertNotNull(workingTree.getNode(PROJ1).getNode(newFileName));
 	}
 
 	@Test

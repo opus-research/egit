@@ -78,13 +78,6 @@ public class DecoratableResourceAdapterTest extends LocalRepositoryTestCase {
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 	}
 
-	private void assertHasUnstagedChanges(boolean expected,
-			IDecoratableResource... decoratableResources) {
-		for (IDecoratableResource d : decoratableResources) {
-			assertTrue(d.hasUnstagedChanges() == expected);
-		}
-	}
-
 	@Test
 	public void testDecorationEmptyProject() throws Exception {
 		IDecoratableResource[] expectedDRs = new IDecoratableResource[] { new TestDecoratableResource(
@@ -279,7 +272,6 @@ public class DecoratableResourceAdapterTest extends LocalRepositoryTestCase {
 				new DecoratableResourceAdapter(indexDiffData, file) };
 
 		assertArrayEquals(expectedDRs, actualDRs);
-		assertHasUnstagedChanges(false, actualDRs);
 	}
 
 	@Test
@@ -307,7 +299,6 @@ public class DecoratableResourceAdapterTest extends LocalRepositoryTestCase {
 				new DecoratableResourceAdapter(indexDiffData, file) };
 
 		assertArrayEquals(expectedDRs, actualDRs);
-		assertHasUnstagedChanges(true, actualDRs);
 	}
 
 	@Test
@@ -355,7 +346,6 @@ public class DecoratableResourceAdapterTest extends LocalRepositoryTestCase {
 				new DecoratableResourceAdapter(indexDiffData, file) };
 
 		assertArrayEquals(expectedDRs, actualDRs);
-		assertHasUnstagedChanges(true, actualDRs);
 	}
 
 	@Test
@@ -380,7 +370,6 @@ public class DecoratableResourceAdapterTest extends LocalRepositoryTestCase {
 				indexDiffData, project);
 
 		assertEquals(expectedDR, actualDR);
-		assertHasUnstagedChanges(true, actualDR);
 	}
 
 	@Test
@@ -424,36 +413,35 @@ class TestDecoratableResource extends DecoratableResource {
 	}
 
 	public TestDecoratableResource tracked() {
-		setTracked(true);
+		this.tracked = true;
 		return this;
 	}
 
 	public TestDecoratableResource ignored() {
-		setIgnored(true);
+		this.ignored = true;
 		return this;
 	}
 
 	public TestDecoratableResource dirty() {
-		setDirty(true);
+		this.dirty = true;
 		return this;
 	}
 
 	public TestDecoratableResource conflicts() {
-		setConflicts(true);
+		this.conflicts = true;
 		return this;
 	}
 
 	public TestDecoratableResource added() {
-		setStagingState(StagingState.ADDED);
+		this.staged = Staged.ADDED;
 		return this;
 	}
 
 	public IDecoratableResource modified() {
-		setStagingState(StagingState.MODIFIED);
+		this.staged = Staged.MODIFIED;
 		return this;
 	}
 
-	@Override
 	public boolean equals(Object obj) {
 		if (!(obj instanceof IDecoratableResource))
 			return false;
@@ -471,13 +459,12 @@ class TestDecoratableResource extends DecoratableResource {
 			return false;
 		if (!(decoratableResource.hasConflicts() == hasConflicts()))
 			return false;
-		if (!decoratableResource.getStagingState().equals(getStagingState()))
+		if (!decoratableResource.staged().equals(staged()))
 			return false;
 
 		return true;
 	}
 
-	@Override
 	public int hashCode() {
 		// this appeases FindBugs
 		return super.hashCode();
@@ -485,6 +472,6 @@ class TestDecoratableResource extends DecoratableResource {
 
 	@Override
 	public String toString() {
-		return "TestDecoratableResourceAdapter[" + getName() + (isTracked() ? ", tracked" : "") + (isIgnored() ? ", ignored" : "") + (isDirty() ? ", dirty" : "") + (hasConflicts() ? ",conflicts" : "") + ", staged=" + getStagingState() + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$//$NON-NLS-7$//$NON-NLS-8$//$NON-NLS-9$//$NON-NLS-10$//$NON-NLS-11$
+		return "TestDecoratableResourceAdapter[" + getName() + (isTracked() ? ", tracked" : "") + (isIgnored() ? ", ignored" : "") + (isDirty() ? ", dirty" : "") + (hasConflicts() ? ",conflicts" : "") + ", staged=" + staged() + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$//$NON-NLS-7$//$NON-NLS-8$//$NON-NLS-9$//$NON-NLS-10$//$NON-NLS-11$
 	}
 }

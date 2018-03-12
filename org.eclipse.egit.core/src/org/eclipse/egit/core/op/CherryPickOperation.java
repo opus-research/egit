@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011, 2016 GitHub Inc and others.
+ *  Copyright (c) 2011, 2015 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -8,7 +8,6 @@
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
  *    Laurent Delaigue (Obeo) - use of preferred merge strategy
- *    Stephan Hackstedt - Bug 477695
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -19,8 +18,10 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
@@ -36,7 +37,7 @@ import org.eclipse.team.core.TeamException;
 /**
  * Cherry pick operation
  */
-public class CherryPickOperation extends AbstractMergingOperation {
+public class CherryPickOperation implements IEGitOperation {
 
 	private final Repository repo;
 
@@ -62,41 +63,42 @@ public class CherryPickOperation extends AbstractMergingOperation {
 		return result;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor = m != null ? m : new NullProgressMonitor();
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
-				SubMonitor progress = SubMonitor.convert(pm, 2);
+				pm.beginTask("", 2); //$NON-NLS-1$
 
-				progress.subTask(MessageFormat.format(
+				pm.subTask(MessageFormat.format(
 						CoreText.CherryPickOperation_cherryPicking,
 						commit.name()));
-				try (Git git = new Git(repo)) {
-					CherryPickCommand command = git.cherryPick()
-							.include(commit.getId());
-					MergeStrategy strategy = getApplicableMergeStrategy();
-					if (strategy != null) {
-						command.setStrategy(strategy);
-					}
+				CherryPickCommand command = new Git(repo).cherryPick().include(
+						commit.getId());
+				MergeStrategy strategy = Activator.getDefault()
+						.getPreferredMergeStrategy();
+				if (strategy != null) {
+					command.setStrategy(strategy);
+				}
+				try {
 					result = command.call();
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				}
-				progress.worked(1);
+				pm.worked(1);
 
 				ProjectUtil.refreshValidProjects(
 						ProjectUtil.getValidOpenProjects(repo),
-						progress.newChild(1));
+						new SubProgressMonitor(pm, 1));
+
+				pm.done();
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, m);
+				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repo);
 	}
