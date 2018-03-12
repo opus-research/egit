@@ -358,6 +358,11 @@
          <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
          <adapter type="org.eclipse.core.resources.IResource"/>
       </factory>
+      <factory
+            adaptableType="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode"
+            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+         <adapter type="org.eclipse.ui.model.IWorkbenchAdapter"/>
+      </factory>
    </extension>
 
    <extension point="org.eclipse.ui.preferencePages">
@@ -2320,6 +2325,9 @@
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
                            </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                           </instanceof>
                         </or>
                      </and>
                   </iterate>
@@ -3315,15 +3323,7 @@
             commandId="org.eclipse.egit.ui.commit.CreateBranch"
             icon="icons/obj16/new_branch_obj.gif">
       </image>
-      <image
-            commandId="org.eclipse.egit.ui.history.CherryPick"
-            icon="icons/obj16/cherry-pick.png">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.commit.CherryPick"
-            icon="icons/obj16/cherry-pick.png">
-      </image>
-      <image
+       <image
             commandId="org.eclipse.egit.ui.commit.Checkout"
             icon="icons/obj16/checkout.gif">
       </image>
@@ -3884,11 +3884,6 @@
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CherryPickHandler"
             id="org.eclipse.egit.ui.history.CherryPick"
-            name="%CherryPickCommand.name">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.commit.command.CherryPickHandler"
-            id="org.eclipse.egit.ui.commit.CherryPick"
             name="%CherryPickCommand.name">
       </command>
       <command
