@@ -675,6 +675,9 @@ public class UIText extends NLS {
 	public static String RebaseCurrentRefCommand_RebasingCurrentJobName;
 
 	/** */
+	public static String RebaseCurrentRefCommand_ErrorGettingCurrentBranchMessage;
+
+	/** */
 	public static String RebaseResultDialog_Aborted;
 
 	/** */
@@ -1006,6 +1009,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareTreeView_WorkspaceVersionText;
+
+	/** */
+	public static String CompareTreeView_ShowIn_label;
 
 	/** */
 	public static String CompareUtils_errorGettingEncoding;
@@ -1857,6 +1863,9 @@ public class UIText extends NLS {
 	public static String CommitDialog_Commit;
 
 	/** */
+	public static String CommitDialog_CommitAndPush;
+
+	/** */
 	public static String CommitDialog_CommitChanges;
 
 	/** */
@@ -2146,6 +2155,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitMessageViewer_parent;
+
+	/** */
+	public static String CompareWithHeadActionHandler_NoHeadTitle;
+
+	/** */
+	public static String CompareWithHeadActionHandler_NoHeadMessage;
 
 	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
@@ -2890,6 +2905,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_labelDecorationsLink;
+
+	/** */
+	public static String DecoratorPreferencesPage_colorsAndFontsLink;
 
 	/** */
 	public static String DecoratorPreferencesPage_iconsShowTracked;
@@ -4399,6 +4417,12 @@ public class UIText extends NLS {
 	public static String CommitUI_commitFailed;
 
 	/** */
+	public static String CommitUI_pushFailedTitle;
+
+	/** */
+	public static String CommitUI_pushFailedMessage;
+
+	/** */
 	public static String EgitUiEditorUtils_openFailed;
 
 	/** */
@@ -4643,6 +4667,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GarbageCollectCommand_failed;
+
+	/** */
+	public static String GitModelSynchronizeParticipant_initialScopeName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

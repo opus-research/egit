@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,9 +18,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
@@ -28,10 +27,7 @@ import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.osgi.util.NLS;
@@ -48,29 +44,21 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 		// assert all resources map to the same repository
 		if (repository == null)
 			return null;
-		final IPath[] locations = getSelectedLocations(event);
-		final IPath baseLocation = locations[0];
-		final String gitPath = RepositoryMapping.getMapping(baseLocation)
-				.getRepoRelativePath(baseLocation);
+		final IResource[] resources = getSelectedResources(event);
+		final IFile baseFile = (IFile) resources[0];
+		final String gitPath = RepositoryMapping.getMapping(baseFile)
+				.getRepoRelativePath(baseFile);
 		ITypedElement base;
-
-		ITypedElement next;
 		try {
-			IFile file = ResourceUtil.getFileForLocation(baseLocation);
-			if (file != null)
-				base = CompareUtils.getHeadTypedElement(file);
-			else
-				base = CompareUtils.getHeadTypedElement(baseLocation, null);
-			Ref head = repository.getRef(Constants.HEAD);
-			RevWalk rw = new RevWalk(repository);
-			RevCommit commit = rw.parseCommit(head.getObjectId());
-
-			next = CompareUtils.getFileRevisionTypedElement(gitPath,
-					commit, repository);
+			base = CompareUtils.getIndexTypedElement(baseFile);
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
 			return null;
 		}
+
+		ITypedElement next = CompareUtils.getHeadTypedElement(repository, gitPath);
+		if (next == null)
+			return null;
 
 		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 				base, next, null);
@@ -87,28 +75,34 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 		if (selection.size() != 1)
 			return false;
 
+		IResource resource = (IResource) getAdapter(selection.getFirstElement(), IResource.class);
+		// action is only working on files. Avoid calculation
+		// of unnecessary expensive IndexDiff on a folder
+		if (resource == null || !(resource instanceof IFile))
+			return false;
+
 		Repository repository = getRepository();
 		if (repository == null)
 			return false;
 
-		IResource resource = AdapterUtils.adapt(selection.getFirstElement(), IResource.class);
-		if (resource != null) {
-			// action is only working on files. Avoid calculation
-			// of unnecessary expensive IndexDiff on a folder
-			if (resource instanceof IFile)
-				return isStaged(repository, resource.getLocation());
-		} else {
-			IPath location = AdapterUtils.adapt(selection.getFirstElement(), IPath.class);
-			if (location != null && location.toFile().isFile())
-				return isStaged(repository, location);
-		}
+		return isStaged(repository, resource);
+	}
 
-		return false;
+	private Object getAdapter(Object adaptable, Class c) {
+		if (c.isInstance(adaptable))
+			return adaptable;
+		if (adaptable instanceof IAdaptable) {
+			IAdaptable a = (IAdaptable) adaptable;
+			Object adapter = a.getAdapter(c);
+			if (c.isInstance(adapter))
+				return adapter;
+		}
+		return null;
 	}
 
 	private boolean isStaged(Repository repository,
-			IPath location) {
-		String resRelPath = RepositoryMapping.getMapping(location).getRepoRelativePath(location);
+			IResource resource) {
+		String resRelPath = RepositoryMapping.getMapping(resource).getRepoRelativePath(resource);
 
 		// This action at the moment only works for files anyway
 		if (resRelPath == null || resRelPath.length() == 0) {
@@ -126,7 +120,7 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 					|| indexDiff.getRemoved().contains(resRelPath);
 		} catch (IOException e) {
 			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-					location.toString()), e);
+					resource.getFullPath().toString()), e);
 			return false;
 		}
 	}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, SAP AG
+ * Copyright (c) 2010-2012 SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,6 +10,7 @@
  *    Dariusz Luksza - add getFileCachedRevisionTypedElement(String, Repository)
  *    Stefan Lay (SAP AG) - initial implementation
  *    Yann Simon <yann.simon.fr@gmail.com> - implementation of getHeadTypedElement
+ *    Robin Stocker <robin@nibor.org>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
@@ -30,7 +31,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -44,6 +44,7 @@ import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
 import org.eclipse.egit.ui.internal.actions.CompareWithCommitActionHandler;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
 import org.eclipse.jface.action.Action;
@@ -55,6 +56,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -325,13 +327,12 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkspace(Repository repository,
 			IFile file) {
-		RevCommit headCommit = getHeadCommit(repository);
-		if (headCommit == null)
-			return;
 		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
 				file);
-		ITypedElement base = CompareUtils.getFileRevisionTypedElement(path,
-				headCommit, repository);
+		ITypedElement base = getHeadTypedElement(repository, path);
+		if (base == null)
+			return;
+
 		IFileRevision nextFile = new WorkspaceFileRevision(file);
 		String encoding = null;
 		try {
@@ -355,11 +356,9 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkingTree(Repository repository,
 			String path) {
-		RevCommit headCommit = getHeadCommit(repository);
-		if (headCommit == null)
+		ITypedElement base = getHeadTypedElement(repository, path);
+		if (base == null)
 			return;
-		ITypedElement base = CompareUtils.getFileRevisionTypedElement(path,
-				headCommit, repository);
 		IFileRevision nextFile;
 		nextFile = new WorkingTreeFileRevision(new File(
 				repository.getWorkTree(), path));
@@ -370,47 +369,45 @@ public class CompareUtils {
 		CompareUI.openCompareDialog(input);
 	}
 
-	private static RevCommit getHeadCommit(Repository repository) {
-		RevCommit headCommit;
+	/**
+	 * Get a typed element for the file as contained in HEAD. Returns an empty
+	 * typed element if there is not yet a head (initial import case).
+	 * <p>
+	 * If there is an error getting the HEAD commit, it is handled and null
+	 * returned.
+	 *
+	 * @param repository
+	 * @param repoRelativePath
+	 * @return typed element, or null if there was an error getting the HEAD
+	 *         commit
+	 */
+	public static ITypedElement getHeadTypedElement(Repository repository, String repoRelativePath) {
 		try {
-			ObjectId objectId = repository.resolve(Constants.HEAD);
-			if (objectId == null) {
-				Activator.handleError(
-						UIText.CompareUtils_errorGettingHeadCommit, null, true);
-				return null;
-			}
-			headCommit = new RevWalk(repository).parseCommit(objectId);
+			Ref head = repository.getRef(Constants.HEAD);
+			if (head == null || head.getObjectId() == null)
+				// Initial import, not yet a HEAD commit
+				return new EmptyTypedElement(""); //$NON-NLS-1$
+			RevCommit headCommit = new RevWalk(repository).parseCommit(head.getObjectId());
+			return CompareUtils.getFileRevisionTypedElement(repoRelativePath, headCommit, repository);
 		} catch (IOException e) {
 			Activator.handleError(UIText.CompareUtils_errorGettingHeadCommit,
 					e, true);
 			return null;
 		}
-		return headCommit;
 	}
 
 	/**
-	 * Extracted from {@link CompareWithCommitActionHandler}
+	 * Get a typed element for the file in the index.
+	 *
 	 * @param baseFile
 	 * @return typed element
 	 * @throws IOException
 	 */
-	public static ITypedElement getHeadTypedElement(final IFile baseFile)
+	public static ITypedElement getIndexTypedElement(final IFile baseFile)
 			throws IOException {
-		String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
-		return getHeadTypedElement(baseFile.getLocation(), encoding);
-	}
-
-	/**
-	 * @param location
-	 * @param encoding
-	 * @return typed element
-	 * @throws IOException
-	 */
-	public static ITypedElement getHeadTypedElement(IPath location,
-			String encoding) throws IOException {
-		final RepositoryMapping mapping = RepositoryMapping.getMapping(location);
+		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
 		final Repository repository = mapping.getRepository();
-		final String gitPath = mapping.getRepoRelativePath(location);
+		final String gitPath = mapping.getRepoRelativePath(baseFile);
 
 		DirCache dc = repository.lockDirCache();
 		final DirCacheEntry entry;
@@ -421,6 +418,7 @@ public class CompareUtils {
 		}
 
 		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
+		String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
 		final EditableRevision next = new EditableRevision(nextFile, encoding);
 
 		IContentChangeListener listener = new IContentChangeListener() {
