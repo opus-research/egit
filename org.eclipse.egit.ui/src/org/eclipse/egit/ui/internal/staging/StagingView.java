@@ -31,7 +31,9 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -176,6 +178,7 @@ import org.eclipse.ui.operations.UndoRedoActionGroup;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
+import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /**
  * A GitX style staging view with embedded commit dialog.
@@ -437,6 +440,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private LocalResourceManager resources = new LocalResourceManager(
 			JFaceResources.getResources());
 
+	private boolean disposed;
+
 	private Image getImage(ImageDescriptor descriptor) {
 		return (Image) this.resources.get(descriptor);
 	}
@@ -449,7 +454,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if (userEnteredCommmitMessage())
+				if (!commitMessageComponent.isAmending()
+						&& userEnteredCommitMessage())
 					saveCommitMessageComponentState();
 				else
 					deleteCommitMessageComponentState();
@@ -494,10 +500,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.applyTo(unstagedViewer.getControl());
 		unstagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		unstagedViewer.getTree().setLinesVisible(true);
 		unstagedViewer.setLabelProvider(createLabelProvider(unstagedViewer));
-		unstagedViewer.setContentProvider(new StagingViewContentProvider(this,
-				true));
+		unstagedViewer.setContentProvider(createStagingContentProvider(true));
 		unstagedViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
 				| DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer(),
@@ -669,7 +673,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 			@Override
 			protected IHandlerService getHandlerService() {
-				return (IHandlerService) getSite().getService(IHandlerService.class);
+				return CommonUtils.getService(getSite(), IHandlerService.class);
 			}
 		};
 		commitMessageText.setData(FormToolkit.KEY_DRAW_BORDER,
@@ -759,10 +763,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.applyTo(stagedViewer.getControl());
 		stagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		stagedViewer.getTree().setLinesVisible(true);
 		stagedViewer.setLabelProvider(createLabelProvider(stagedViewer));
-		stagedViewer.setContentProvider(new StagingViewContentProvider(this,
-				false));
+		stagedViewer.setContentProvider(createStagingContentProvider(false));
 		stagedViewer.addDragSupport(
 				DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer(),
@@ -875,8 +877,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		// react on selection changes
 		IWorkbenchPartSite site = getSite();
-		ISelectionService srv = (ISelectionService) site
-				.getService(ISelectionService.class);
+		ISelectionService srv = CommonUtils.getService(site, ISelectionService.class);
 		srv.addPostSelectionListener(selectionChangedListener);
 
 		// Use current selection to populate staging view
@@ -1080,7 +1081,24 @@ public class StagingView extends ViewPart implements IShowInSource {
 			return SWT.VERTICAL;
 	}
 
+	private void enableAllWidgets(boolean enabled) {
+		if (isDisposed())
+			return;
+		enableCommitWidgets(enabled);
+		enableStagingWidgets(enabled);
+	}
+
+	private void enableStagingWidgets(boolean enabled) {
+		if (isDisposed())
+			return;
+		unstagedViewer.getControl().setEnabled(enabled);
+		stagedViewer.getControl().setEnabled(enabled);
+	}
+
 	private void enableCommitWidgets(boolean enabled) {
+		if (isDisposed())
+			return;
+
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		enableAuthorText(enabled);
@@ -1207,6 +1225,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 				final boolean enable = isChecked();
 				getLabelProvider(stagedViewer).setFileNameMode(enable);
 				getLabelProvider(unstagedViewer).setFileNameMode(enable);
+				getContentProvider(stagedViewer).setFileNameMode(enable);
+				getContentProvider(unstagedViewer).setFileNameMode(enable);
 				refreshViewersPreservingExpandedElements();
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
@@ -1328,7 +1348,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private TreeViewer createTree(Composite composite) {
 		Tree tree = toolkit.createTree(composite, SWT.FULL_SELECTION
 				| SWT.MULTI);
-		tree.setLinesVisible(true);
 		TreeViewer treeViewer = new TreeViewer(tree);
 		return treeViewer;
 	}
@@ -1341,6 +1360,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		ProblemLabelDecorator decorator = new ProblemLabelDecorator(treeViewer);
 		return new TreeDecoratingLabelProvider(baseProvider, decorator);
+	}
+
+	private StagingViewContentProvider createStagingContentProvider(
+			boolean unstaged) {
+		StagingViewContentProvider provider = new StagingViewContentProvider(
+				this, unstaged);
+		provider.setFileNameMode(getPreferenceStore().getBoolean(
+				UIPreferences.STAGING_VIEW_FILENAME_MODE));
+		return provider;
 	}
 
 	private IPreferenceStore getPreferenceStore() {
@@ -1801,7 +1829,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 				showResource((IResource) firstElement);
 			else if (firstElement instanceof RepositoryTreeNode) {
 				RepositoryTreeNode repoNode = (RepositoryTreeNode) firstElement;
-				reload(repoNode.getRepository());
+				if (currentRepository != repoNode.getRepository())
+					reload(repoNode.getRepository());
 			} else if (firstElement instanceof IAdaptable) {
 				IResource adapted = (IResource) ((IAdaptable) firstElement).getAdapter(IResource.class);
 				if (adapted != null)
@@ -2036,7 +2065,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 			amendPreviousCommitAction.setChecked(isAmending);
 			amendPreviousCommitAction.run();
 		}
+	}
 
+	/**
+	 * @param message
+	 *            commit message to set for current repository
+	 */
+	public void setCommitMessage(String message) {
+		commitMessageText.setText(message);
 	}
 
 	/**
@@ -2068,7 +2104,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 					return;
 
 				final IndexDiffData indexDiff = doReload(repository);
-				boolean indexDiffAvailable = (indexDiff != null);
+				boolean indexDiffAvailable;
+				boolean noConflicts;
+				if (indexDiff == null) {
+					indexDiffAvailable = false;
+					noConflicts = true;
+				} else {
+					indexDiffAvailable = true;
+					noConflicts = indexDiff.getConflicting().isEmpty();
+				}
 
 				if (repositoryChanged) {
 					// Reset paths, they're from the old repository
@@ -2101,9 +2145,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 				updateRebaseButtonVisibility(repository.getRepositoryState()
 						.isRebasing());
 
+
 				boolean commitEnabled = indexDiffAvailable
 						&& repository.getRepositoryState().canCommit()
-						&& indexDiff.getConflicting().isEmpty();
+						&& noConflicts;
 				commitButton.setEnabled(commitEnabled);
 
 				boolean commitAndPushEnabled = commitEnabled
@@ -2112,13 +2157,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 				boolean rebaseContinueEnabled = indexDiffAvailable
 						&& repository.getRepositoryState().isRebasing()
-						&& indexDiff.getConflicting().isEmpty();
+						&& noConflicts;
 				rebaseContinueButton.setEnabled(rebaseContinueEnabled);
 
 				form.setText(StagingView.getRepositoryName(repository));
 				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
-				enableCommitWidgets(indexDiffAvailable
-						&& indexDiff.getConflicting().isEmpty());
+				enableCommitWidgets(indexDiffAvailable && noConflicts);
 				updateSectionText();
 			}
 		});
@@ -2188,7 +2232,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
 		if (repositoryChanged)
-			if (userEnteredCommmitMessage())
+			if (commitMessageComponent.isAmending()
+					|| userEnteredCommitMessage())
 				saveCommitMessageComponentState();
 			else
 				deleteCommitMessageComponentState();
@@ -2206,14 +2251,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadInitialState(helper);
 			else
 				loadExistingState(helper, oldState);
-		} else // repository did not change
-			if (userEnteredCommmitMessage()) {
+		} else { // repository did not change
+			if (!commitMessageComponent.isAmending()
+					&& userEnteredCommitMessage()) {
 				if (!commitMessageComponent.getHeadCommit().equals(
 						helper.getPreviousCommit()))
 					addHeadChangedWarning(commitMessageComponent
 							.getCommitMessage());
 			} else
 				loadInitialState(helper);
+		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
 		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
@@ -2275,7 +2322,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		commitMessageComponent.enableListeners(true);
 	}
 
-	private boolean userEnteredCommmitMessage() {
+	private boolean userEnteredCommitMessage() {
 		if (commitMessageComponent.getRepository() == null)
 			return false;
 		String message = commitMessageComponent.getCommitMessage().replace(
@@ -2379,7 +2426,27 @@ public class StagingView extends ViewPart implements IShowInSource {
 		Job commitJob = new CommitJob(currentRepository, commitOperation)
 			.setOpenCommitEditor(openNewCommitsAction.isChecked())
 			.setPushUpstream(pushUpstream);
-		commitJob.schedule();
+
+		// don't allow to do anything as long as commit is in progress
+		enableAllWidgets(false);
+		commitJob.addJobChangeListener(new JobChangeAdapter() {
+			@Override
+			public void done(IJobChangeEvent event) {
+				PlatformUI.getWorkbench().getDisplay()
+						.asyncExec(new Runnable() {
+							public void run() {
+								enableAllWidgets(true);
+							}
+						});
+			}
+		});
+
+		IWorkbenchSiteProgressService service = CommonUtils.getService(getSite(), IWorkbenchSiteProgressService.class);
+		if (service != null)
+			service.schedule(commitJob, 0, true);
+		else
+			commitJob.schedule();
+
 		CommitMessageHistory.saveCommitHistory(commitMessage);
 		clearCommitMessageToggles();
 		commitMessageText.setText(EMPTY_STRING);
@@ -2404,8 +2471,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	public void dispose() {
 		super.dispose();
 
-		ISelectionService srv = (ISelectionService) getSite().getService(
-				ISelectionService.class);
+		ISelectionService srv = CommonUtils.getService(getSite(), ISelectionService.class);
 		srv.removePostSelectionListener(selectionChangedListener);
 
 		if(cacheEntry != null)
@@ -2419,6 +2485,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.removePreferenceChangeListener(prefListener);
 		if (refsChangedListener != null)
 			refsChangedListener.remove();
+		disposed = true;
+	}
+
+	private boolean isDisposed() {
+		return disposed;
 	}
 
 	private void syncExec(Runnable runnable) {

@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui.internal;
+package org.eclipse.egit.ui.internal.revision;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -70,6 +70,13 @@ public class ResourceEditableRevision extends EditableRevision {
 		} catch (InterruptedException e) {
 			// ignore here
 		}
+	}
+
+	/**
+	 * @return the resource of this revision
+	 */
+	public IFile getFile() {
+		return file;
 	}
 
 	@Override

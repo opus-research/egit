@@ -37,6 +37,7 @@ import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ResetMenu;
@@ -281,10 +282,8 @@ class CommitGraphTable {
 				if (input == null || !input.isSingleFile())
 					return;
 
-				ICommandService srv = (ICommandService) site
-						.getService(ICommandService.class);
-				IHandlerService hsrv = (IHandlerService) site
-						.getService(IHandlerService.class);
+				ICommandService srv = CommonUtils.getService(site, ICommandService.class);
+				IHandlerService hsrv = CommonUtils.getService(site, IHandlerService.class);
 				Command cmd = srv.getCommand(HistoryViewCommands.SHOWVERSIONS);
 				Parameterization[] parms;
 				if (Activator.getDefault().getPreferenceStore().getBoolean(
@@ -825,16 +824,13 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_TAG,
 						UIText.GitHistoryPage_CreateTagMenuLabel));
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.DELETE_TAG,
+						UIText.CommitGraphTable_DeleteTagAction));
 				popupMgr.add(new Separator());
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_PATCH,
 						UIText.GitHistoryPage_CreatePatchMenuLabel));
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.CHERRYPICK,
-						UIText.GitHistoryPage_cherryPickMenuItem));
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.REVERT,
-						UIText.GitHistoryPage_revertMenuItem));
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.MERGE,
 						UIText.GitHistoryPage_mergeMenuItem));
@@ -858,6 +854,15 @@ class CommitGraphTable {
 									HistoryViewCommands.COMPARE_VERSIONS_IN_TREE,
 									UIText.CommitGraphTable_CompareWithEachOtherInTreeMenuLabel));
 			}
+
+			popupMgr.add(new Separator());
+
+			popupMgr.add(getCommandContributionItem(
+					HistoryViewCommands.CHERRYPICK,
+					UIText.GitHistoryPage_cherryPickMenuItem));
+			popupMgr.add(getCommandContributionItem(HistoryViewCommands.REVERT,
+					UIText.GitHistoryPage_revertMenuItem));
+
 			popupMgr.add(new Separator());
 
 			MenuManager quickDiffManager = new MenuManager(

@@ -8,7 +8,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui.internal;
+package org.eclipse.egit.ui.internal.revision;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
@@ -35,6 +35,10 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.storage.IndexFileRevision;
 import org.eclipse.egit.core.internal.storage.OpenWorkspaceVersionEnabled;
+import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -66,6 +70,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
  * The input provider for the compare editor when working on resources
  * under Git control.
  */
+@SuppressWarnings("restriction")
 public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInput {
 
 	private ITypedElement left;
@@ -645,8 +650,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			ISaveablesLifecycleListener listener = (ISaveablesLifecycleListener) Utils
 					.getAdapter(part, ISaveablesLifecycleListener.class);
 			if (listener == null)
-				listener = (ISaveablesLifecycleListener) part.getSite()
-						.getService(ISaveablesLifecycleListener.class);
+				listener = CommonUtils.getService(part.getSite(), ISaveablesLifecycleListener.class);
 			return listener;
 		}
 

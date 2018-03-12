@@ -250,7 +250,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		String compareWithHeadMenuLabel = util
 				.getPluginLocalizedValue("CompareWithHeadAction_label");
 		clickCompareWithAndWaitForSync(compareWithHeadMenuLabel);
-
+		closeFirstEmptySynchronizeDialog();
 		assertSynchronizeNoChange();
 
 		// change test file -> should have one change
@@ -331,11 +331,15 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 	private void assertSynchronizeNoChange() {
 		// 0 => title, 1 => ?, 2 => "no result" Label
 		SWTBotLabel syncViewLabel = bot.viewByTitle("Synchronize").bot()
-				.label(2);
+				.label(0);
 
 		String noResultLabel = syncViewLabel.getText();
-		assertTrue(noResultLabel.contains("No changes in 'Git (" + PROJ1
-				+ ")'."));
+		String expected = "No changes in 'Git (" + PROJ1 + ")'.";
+		if (!noResultLabel.contains(expected)) {
+			syncViewLabel = bot.viewByTitle("Synchronize").bot().label(2);
+			noResultLabel = syncViewLabel.getText();
+			assertTrue(noResultLabel.contains(expected));
+		}
 	}
 
 	private void assertSynchronizeFile1Changed() {
