@@ -169,7 +169,13 @@ public class CoreText extends NLS {
 	public static String GitProjectData_saveFailed;
 
 	/** */
+	public static String RebaseInteractivePlan_WriteRebaseTodoFailed;
+
+	/** */
 	public static String RepositoryFinder_finding;
+
+	/** */
+	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
 
 	/** */
 	public static String RepositoryUtil_noHead;
@@ -295,6 +301,12 @@ public class CoreText extends NLS {
 	public static String RevertCommitOperation_reverting;
 
 	/** */
+	public static String RewordCommitOperation_rewording;
+
+	/** */
+	public static String EditCommitOperation_editing;
+
+	/** */
 	public static String BranchOperation_closingMissingProject;
 
 	/** */
@@ -380,6 +392,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitURI_InvalidURI;
+
+	/** */
+	public static String SquashCommitsOperation_squashing;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);

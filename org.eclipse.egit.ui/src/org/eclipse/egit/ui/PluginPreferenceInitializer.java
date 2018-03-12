@@ -85,8 +85,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.SHOW_HOME_DIR_WARNING, true);
 		store.setDefault(UIPreferences.SHOW_GIT_PREFIX_WARNING, true);
 		store.setDefault(UIPreferences.SHOW_DETACHED_HEAD_WARNING, true);
-		store.setDefault(UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
-				true);
+		store.setDefault(UIPreferences.SHOW_CHECKOUT_CONFIRMATION, true);
 
 
 		store.setDefault(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT,
@@ -106,9 +105,10 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE, false);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HISTORY_SIZE, 10);
 		store.setDefault(UIPreferences.CHECKOUT_PROJECT_RESTORE, true);
-		store.setDefault(UIPreferences.HISTORY_MAX_TAG_LENGTH, 15);
-		store.setDefault(UIPreferences.HISTORY_MAX_BRANCH_LENGTH, 15);
+		store.setDefault(UIPreferences.HISTORY_MAX_TAG_LENGTH, 18);
+		store.setDefault(UIPreferences.HISTORY_MAX_BRANCH_LENGTH, 18);
 		store.setDefault(UIPreferences.CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG, true);
+		store.setDefault(UIPreferences.MERGE_MODE, "2"); //$NON-NLS-1$
 	}
 
 }

@@ -9,6 +9,7 @@
 
 package org.eclipse.egit.core;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +27,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
@@ -57,12 +57,16 @@ import org.eclipse.jgit.util.FS;
  */
 public class ContainerTreeIterator extends WorkingTreeIterator {
 
-	private static String computePrefix(final IContainer base) {
-		final RepositoryMapping rm = RepositoryMapping.getMapping(base);
-		if (rm == null)
+	private static String computePrefix(final Repository repository,
+			final IContainer base) {
+		File workTree = repository.getWorkTree();
+		IPath location = base.getLocation();
+		if (location == null)
 			throw new IllegalArgumentException(
-					"Not in a Git project: " + base);  //$NON-NLS-1$
-		return rm.getRepoRelativePath(base);
+					"Location of container not found: " + base); //$NON-NLS-1$
+		Path workTreePath = new Path(workTree.getAbsolutePath());
+		IPath relativePath = location.makeRelativeTo(workTreePath);
+		return relativePath.toString();
 	}
 
 	private final IContainer node;
@@ -82,7 +86,8 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 	 *            the part of the workspace the iterator will walk over.
 	 */
 	public ContainerTreeIterator(final Repository repository, final IContainer base) {
-		super(computePrefix(base), repository.getConfig().get(WorkingTreeOptions.KEY));
+		super(computePrefix(repository, base), repository.getConfig().get(
+				WorkingTreeOptions.KEY));
 		node = base;
 		init(entries(false));
 		initRootIterator(repository);
@@ -284,28 +289,39 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			rsrc = f;
 			this.hasInheritedResourceFilters = hasInheritedResourceFilters;
 
-			switch (f.getType()) {
-			case IResource.FILE:
+			FileMode mode = null;
+			try {
 				File file = asFile();
-				if (FS.DETECTED.supportsExecute() && file != null
-						&& FS.DETECTED.canExecute(file))
-					mode = FileMode.EXECUTABLE_FILE;
-				else
-					mode = FileMode.REGULAR_FILE;
-				break;
-			case IResource.PROJECT:
-			case IResource.FOLDER: {
-				final IContainer c = (IContainer) f;
-				if (c.findMember(Constants.DOT_GIT) != null)
-					mode = FileMode.GITLINK;
-				else
-					mode = FileMode.TREE;
-				break;
-			}
-			default:
+				if (FS.DETECTED.supportsSymlinks() && file != null
+						&& FS.DETECTED.isSymLink(file))
+					mode = FileMode.SYMLINK;
+				else {
+					switch (f.getType()) {
+					case IResource.FILE:
+						if (FS.DETECTED.supportsExecute()
+									&& FS.DETECTED.canExecute(file))
+								mode = FileMode.EXECUTABLE_FILE;
+							else
+								mode = FileMode.REGULAR_FILE;
+						break;
+					case IResource.PROJECT:
+					case IResource.FOLDER: {
+						final IContainer c = (IContainer) f;
+						if (c.findMember(Constants.DOT_GIT) != null)
+							mode = FileMode.GITLINK;
+						else
+							mode = FileMode.TREE;
+						break;
+					}
+					default:
+						mode = FileMode.MISSING;
+						break;
+					}
+				}
+			} catch (IOException e) {
 				mode = FileMode.MISSING;
-				break;
 			}
+			this.mode = mode;
 		}
 
 		@Override
@@ -324,12 +340,16 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		@Override
 		public long getLength() {
 			if (length < 0)
-				if (rsrc instanceof IFile) {
-					File file = asFile();
-					if (file != null)
-						length = file.length();
-					else
+				if (rsrc instanceof IFile || mode == FileMode.SYMLINK) {
+					try {
+						File file = asFile();
+						if (file != null)
+							length = FS.DETECTED.length(asFile());
+						else
+							length = 0;
+					} catch (IOException e) {
 						length = 0;
+					}
 				} else
 					length = 0;
 			return length;
@@ -337,19 +357,31 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 		@Override
 		public long getLastModified() {
+			if (mode == FileMode.SYMLINK) {
+				try {
+					return FS.DETECTED.lastModified(asFile());
+				} catch (IOException e) {
+					return 0;
+				}
+			}
 			return rsrc.getLocalTimeStamp();
 		}
 
 		@Override
 		public InputStream openInputStream() throws IOException {
-			if (rsrc.getType() == IResource.FILE)
-				try {
-					return ((IFile) rsrc).getContents(true);
-				} catch (CoreException err) {
-					final IOException ioe = new IOException(err.getMessage());
-					ioe.initCause(err);
-					throw ioe;
-				}
+			if (mode == FileMode.SYMLINK) {
+				return new ByteArrayInputStream(FS.DETECTED.readSymLink(
+						asFile()).getBytes(Constants.CHARACTER_ENCODING));
+			} else {
+				if (rsrc.getType() == IResource.FILE)
+					try {
+						return ((IFile) rsrc).getContents(true);
+					} catch (CoreException err) {
+						final IOException ioe = new IOException(err.getMessage());
+						ioe.initCause(err);
+						throw ioe;
+					}
+			}
 			throw new IOException("Not a regular file: " + rsrc);  //$NON-NLS-1$
 		}
 

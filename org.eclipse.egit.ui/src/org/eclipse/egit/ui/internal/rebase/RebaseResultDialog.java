@@ -109,6 +109,7 @@ public class RebaseResultDialog extends MessageDialog {
 	public static void show(final RebaseResult result,
 			final Repository repository) {
 		boolean shouldShow = result.getStatus() == Status.STOPPED
+				|| result.getStatus() == Status.STASH_APPLY_CONFLICTS
 				|| Activator.getDefault().getPreferenceStore().getBoolean(
 						UIPreferences.SHOW_REBASE_CONFIRM);
 
@@ -149,6 +150,8 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_Aborted;
 		case STOPPED:
 			return UIText.RebaseResultDialog_Stopped;
+		case EDIT:
+			return UIText.RebaseResultDialog_Edit;
 		case FAILED:
 			return UIText.RebaseResultDialog_Failed;
 		case UP_TO_DATE:
@@ -157,6 +160,13 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_FastForward;
 		case NOTHING_TO_COMMIT:
 			return UIText.RebaseResultDialog_NothingToCommit;
+		case INTERACTIVE_PREPARED:
+			return UIText.RebaseResultDialog_InteractivePrepared;
+		case UNCOMMITTED_CHANGES:
+			return UIText.RebaseResultDialog_UncommittedChanges;
+		case STASH_APPLY_CONFLICTS:
+			return UIText.RebaseResultDialog_SuccessfullyFinished + ".\n" + //$NON-NLS-1$
+					UIText.RebaseResultDialog_stashApplyConflicts;
 		default:
 			throw new IllegalStateException(status.name());
 		}
@@ -184,6 +194,11 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_StatusFastForward;
 		case NOTHING_TO_COMMIT:
 			return UIText.RebaseResultDialog_StatusNothingToCommit;
+		case UNCOMMITTED_CHANGES:
+			return UIText.RebaseResultDialog_UncommittedChanges;
+		case STASH_APPLY_CONFLICTS:
+			return UIText.RebaseResultDialog_SuccessfullyFinished + ".\n" + //$NON-NLS-1$
+					UIText.RebaseResultDialog_stashApplyConflicts;
 		}
 		return status.toString();
 	}
@@ -242,13 +257,13 @@ public class RebaseResultDialog extends MessageDialog {
 				false));
 		Text resultText = new Text(composite, SWT.READ_ONLY);
 		resultText.setText(getStatusText(result.getStatus()));
+		if (!result.getStatus().isSuccessful())
+			resultText.setForeground(composite.getParent().getDisplay()
+					.getSystemColor(SWT.COLOR_RED));
 		resultText.setSelection(resultText.getCaretPosition());
 		resultText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		if (result.getStatus() == Status.FAILED) {
-			resultText.setForeground(composite.getParent().getDisplay()
-					.getSystemColor(
-					SWT.COLOR_RED));
 
+		if (result.getStatus() == Status.FAILED) {
 			StringBuilder paths = new StringBuilder();
 			Label pathsLabel = new Label(composite, SWT.NONE);
 			pathsLabel.setText(UIText.MergeResultDialog_failed);
@@ -278,9 +293,6 @@ public class RebaseResultDialog extends MessageDialog {
 			}
 			pathsText.setText(paths.toString());
 		} else if (result.getStatus() == Status.CONFLICTS) {
-			resultText.setForeground(composite.getParent().getDisplay()
-					.getSystemColor(SWT.COLOR_RED));
-
 			StringBuilder paths = new StringBuilder();
 			Label pathsLabel = new Label(composite, SWT.NONE);
 			pathsLabel.setText(UIText.MergeResultDialog_conflicts);
@@ -529,14 +541,12 @@ public class RebaseResultDialog extends MessageDialog {
 			if (startMergeButton.getSelection()) {
 				super.buttonPressed(buttonId);
 				// open the merge tool
-				List<IProject> validProjects = new ArrayList<IProject>();
 				IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 						.getProjects();
 				for (IProject project : projects) {
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(project);
 					if (mapping != null && mapping.getRepository().equals(repo)) {
-						validProjects.add(project);
 						try {
 							// make sure to refresh before opening the merge
 							// tool
@@ -548,20 +558,14 @@ public class RebaseResultDialog extends MessageDialog {
 						}
 					}
 				}
-				List<IResource> resourceList = new ArrayList<IResource>();
+				List<IPath> locationList = new ArrayList<IPath>();
 				IPath repoWorkdirPath = new Path(repo.getWorkTree().getPath());
 				for (String repoPath : conflictPaths) {
-					IPath filePath = repoWorkdirPath.append(repoPath);
-					for (IProject project : validProjects)
-						if (project.getLocation().isPrefixOf(filePath)) {
-							IResource res = project.getFile(filePath
-									.removeFirstSegments(project.getLocation()
-											.segmentCount()));
-							resourceList.add(res);
-						}
+					IPath location = repoWorkdirPath.append(repoPath);
+					locationList.add(location);
 				}
-				IResource[] resources = new IResource[resourceList.size()];
-				resourceList.toArray(resources);
+				IPath[] locations = locationList.toArray(new IPath[locationList
+						.size()]);
 				int mergeMode = Activator.getDefault().getPreferenceStore()
 						.getInt(UIPreferences.MERGE_MODE);
 				CompareEditorInput input;
@@ -570,10 +574,11 @@ public class RebaseResultDialog extends MessageDialog {
 					if (dlg.open() != Window.OK)
 						return;
 					input = new GitMergeEditorInput(dlg.useWorkspace(),
-							resources);
+							locations);
 				} else {
 					boolean useWorkspace = mergeMode == 1;
-					input = new GitMergeEditorInput(useWorkspace, resources);
+					input = new GitMergeEditorInput(useWorkspace,
+							locations);
 				}
 				CompareUI.openCompareEditor(input);
 				return;

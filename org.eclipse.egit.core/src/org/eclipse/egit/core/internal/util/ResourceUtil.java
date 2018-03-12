@@ -35,8 +35,11 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.GitProvider;
+import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.team.core.RepositoryProvider;
 
 /**
  * Resource utilities
@@ -45,9 +48,11 @@ import org.eclipse.jgit.lib.Repository;
 public class ResourceUtil {
 
 	/**
-	 * Return the corresponding resource if it exists.
+	 * Return the corresponding resource if it exists and has the Git repository
+	 * provider.
 	 * <p>
-	 * The returned file will be relative to the most nested non-closed project.
+	 * The returned file will be relative to the most nested non-closed
+	 * Git-managed project.
 	 *
 	 * @param location
 	 *            the path to check
@@ -63,9 +68,11 @@ public class ResourceUtil {
 	}
 
 	/**
-	 * Return the corresponding file if it exists.
+	 * Return the corresponding file if it exists and has the Git repository
+	 * provider.
 	 * <p>
-	 * The returned file will be relative to the most nested non-closed project.
+	 * The returned file will be relative to the most nested non-closed
+	 * Git-managed project.
 	 *
 	 * @param location
 	 * @return the file, or null
@@ -77,9 +84,11 @@ public class ResourceUtil {
 	}
 
 	/**
-	 * Return the corresponding container if it exists.
+	 * Return the corresponding container if it exists and has the Git
+	 * repository provider.
 	 * <p>
-	 * The returned container will be relative to the most nested non-closed project.
+	 * The returned container will be relative to the most nested non-closed
+	 * Git-managed project.
 	 *
 	 * @param location
 	 * @return the container, or null
@@ -91,9 +100,11 @@ public class ResourceUtil {
 	}
 
 	/**
-	 * Get the {@link IFile} corresponding to the arguments if it exists.
+	 * Get the {@link IFile} corresponding to the arguments if it exists and has
+	 * the Git repository provider.
 	 * <p>
-	 * The returned file will be relative to the most nested non-closed project.
+	 * The returned file will be relative to the most nested non-closed
+	 * Git-managed project.
 	 *
 	 * @param repository
 	 *            the repository of the file
@@ -105,6 +116,24 @@ public class ResourceUtil {
 			String repoRelativePath) {
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
 		return getFileForLocation(path);
+	}
+
+	/**
+	 * Get the {@link IContainer} corresponding to the arguments, using
+	 * {@link IWorkspaceRoot#getContainerForLocation(org.eclipse.core.runtime.IPath)}
+	 * .
+	 *
+	 * @param repository
+	 *            the repository
+	 * @param repoRelativePath
+	 *            the repository-relative path of the container to search for
+	 * @return the IContainer corresponding to this path, or null
+	 */
+	public static IContainer getContainerForLocation(Repository repository,
+			String repoRelativePath) {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
+		return root.getContainerForLocation(path);
 	}
 
 	/**
@@ -128,7 +157,7 @@ public class ResourceUtil {
 			if (repositoryMapping == null)
 				continue;
 			String path = repositoryMapping.getRepoRelativePath(resource);
-			addPathToMap(repositoryMapping, path, result);
+			addPathToMap(repositoryMapping.getRepository(), path, result);
 		}
 		return result;
 	}
@@ -158,13 +187,17 @@ public class ResourceUtil {
 	 */
 	public static Map<Repository, Collection<String>> splitPathsByRepository(
 			Collection<IPath> paths) {
+		RepositoryCache repositoryCache = Activator.getDefault()
+				.getRepositoryCache();
 		Map<Repository, Collection<String>> result = new HashMap<Repository, Collection<String>>();
 		for (IPath path : paths) {
-			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(path);
-			if (repositoryMapping == null)
-				continue;
-			String p = repositoryMapping.getRepoRelativePath(path);
-			addPathToMap(repositoryMapping, p, result);
+			Repository repository = repositoryCache.getRepository(path);
+			if (repository != null) {
+				IPath repoPath = new Path(repository.getWorkTree()
+						.getAbsolutePath());
+				IPath repoRelativePath = path.makeRelativeTo(repoPath);
+				addPathToMap(repository, repoRelativePath.toString(), result);
+			}
 		}
 		return result;
 	}
@@ -182,21 +215,25 @@ public class ResourceUtil {
 
 	private static IFile getFileForLocationURI(IWorkspaceRoot root, URI uri) {
 		IFile[] files = root.findFilesForLocationURI(uri);
-		return getExistingResourceWithShortestPath(files);
+		return getExistingMappedResourceWithShortestPath(files);
 	}
 
 	private static IContainer getContainerForLocationURI(IWorkspaceRoot root,
 			URI uri) {
 		IContainer[] containers = root.findContainersForLocationURI(uri);
-		return getExistingResourceWithShortestPath(containers);
+		return getExistingMappedResourceWithShortestPath(containers);
 	}
 
-	private static <T extends IResource> T getExistingResourceWithShortestPath(
+	private static <T extends IResource> T getExistingMappedResourceWithShortestPath(
 			T[] resources) {
 		int shortestPathSegmentCount = Integer.MAX_VALUE;
 		T shortestPath = null;
 		for (T resource : resources) {
 			if (!resource.exists())
+				continue;
+			RepositoryProvider provider = RepositoryProvider.getProvider(
+					resource.getProject(), GitProvider.ID);
+			if (provider == null)
 				continue;
 			IPath fullPath = resource.getFullPath();
 			int segmentCount = fullPath.segmentCount();
@@ -208,10 +245,9 @@ public class ResourceUtil {
 		return shortestPath;
 	}
 
-	private static void addPathToMap(RepositoryMapping repositoryMapping,
+	private static void addPathToMap(Repository repository,
 			String path, Map<Repository, Collection<String>> result) {
 		if (path != null) {
-			Repository repository = repositoryMapping.getRepository();
 			Collection<String> resourcesList = result.get(repository);
 			if (resourcesList == null) {
 				resourcesList = new ArrayList<String>();
