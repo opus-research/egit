@@ -1495,9 +1495,6 @@ public class UIText extends NLS {
 	public static String PushResultTable_refNonExisting;
 
 	/** */
-	public static String PushResultTable_repository;
-
-	/** */
 	public static String PushResultTable_statusDetailDeleted;
 
 	/** */
@@ -2445,6 +2442,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_RefAlreadyExistsMessage;
+
+	/** */
+	public static String ValidationUtils_PleaseEnterNameMessage;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
