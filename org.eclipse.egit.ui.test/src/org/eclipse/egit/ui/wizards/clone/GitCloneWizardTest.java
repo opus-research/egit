@@ -177,8 +177,9 @@ public class GitCloneWizardTest {
 	@SuppressWarnings("boxing")
 	@Test
 	public void canCloneARemoteRepo() throws Exception {
-		File destRepo = new File(ResourcesPlugin.getWorkspace()
-				.getRoot().getLocation().toFile(), "egit");
+		File destRepo = new File(new File(ResourcesPlugin.getWorkspace()
+				.getRoot().getLocation().toFile().getParent(),
+				"junit-workspace"), "egit");
 
 		RepoPropertiesPage propertiesPage = importWizard.openWizard();
 
@@ -193,6 +194,7 @@ public class GitCloneWizardTest {
 		workingCopy.assertDirectory(destRepo.toString());
 		workingCopy.assertBranch("master");
 		workingCopy.assertRemoteName("origin");
+		workingCopy.doNotImportProjectsAfterClone();
 		workingCopy.waitForCreate();
 
 		// Some random sampling to see we got something. We do not test
@@ -252,6 +254,7 @@ public class GitCloneWizardTest {
 		workingCopy.setDirectory(destRepo.toString());
 		workingCopy.assertBranch("historical/pre-eclipse");
 		workingCopy.setRemoteName("src");
+		workingCopy.doNotImportProjectsAfterClone();
 		workingCopy.waitForCreate();
 
 		// Some random sampling to see we got something. We do not test
