@@ -15,7 +15,6 @@ import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -56,11 +55,10 @@ public class RevertHandler extends CommitCommandHandler {
 			final RevertCommitOperation op = new RevertCommitOperation(repo,
 					commit);
 
-			Job job = new WorkspaceJob(MessageFormat.format(
+			Job job = new Job(MessageFormat.format(
 					UIText.RevertHandler_JobName, commit.name())) {
-
 				@Override
-				public IStatus runInWorkspace(IProgressMonitor monitor) {
+				protected IStatus run(IProgressMonitor monitor) {
 					try {
 						op.execute(monitor);
 						RevCommit newHead = op.getNewHead();
