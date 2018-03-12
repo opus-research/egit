@@ -363,8 +363,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 				for (File file : files)
 					records.add(new ProjectRecord(file));
 				try {
-					ProjectUtils.createProjects(records, repository, sets,
-							monitor);
+					ProjectUtils.createProjects(records, sets, monitor);
 				} catch (InvocationTargetException e) {
 					Activator.logError(e.getLocalizedMessage(), e);
 				} catch (InterruptedException e) {
@@ -415,7 +414,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.CLONE))
+				if (JobFamilies.CLONE.equals(family))
 					return true;
 				return super.belongsTo(family);
 			}

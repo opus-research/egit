@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2014 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -31,10 +31,8 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.CheckoutEntry;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
@@ -47,7 +45,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
@@ -496,10 +493,14 @@ public class RepositoryUtil {
 		if (mapping == null)
 			return true; // Linked resources may not be mapped
 		Repository repository = mapping.getRepository();
+		WorkingTreeIterator treeIterator = IteratorService
+				.createInitialIterator(repository);
+		if (treeIterator == null)
+			return true;
 		String repoRelativePath = mapping.getRepoRelativePath(path);
 		TreeWalk walk = new TreeWalk(repository);
 		try {
-			walk.addTree(new FileTreeIterator(repository));
+			walk.addTree(treeIterator);
 			walk.setFilter(PathFilter.create(repoRelativePath));
 			while (walk.next()) {
 				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
@@ -514,34 +515,6 @@ public class RepositoryUtil {
 			walk.release();
 		}
 		return false;
-	}
-
-	/**
-	 * Get the fast-forward setting for current branch on the given repository.
-	 *
-	 * @param repository
-	 *            the repository to check
-	 * @return the fast-forward mode for the current branch
-	 * @since 3.0
-	 */
-	public FastForwardMode getFastForwardMode(Repository repository) {
-		FastForwardMode ffmode = FastForwardMode.valueOf(repository.getConfig()
-				.getEnum(ConfigConstants.CONFIG_KEY_MERGE, null,
-						ConfigConstants.CONFIG_KEY_FF,
-						FastForwardMode.Merge.TRUE));
-		ffmode = repository.getConfig().getEnum(
-				ConfigConstants.CONFIG_BRANCH_SECTION,
-				getCurrentBranch(repository),
-				ConfigConstants.CONFIG_KEY_MERGEOPTIONS, ffmode);
-		return ffmode;
-	}
-
-	private String getCurrentBranch(Repository repository) {
-		try {
-			return repository.getBranch();
-		} catch (IOException e) {
-			return null;
-		}
 	}
 
 	/**

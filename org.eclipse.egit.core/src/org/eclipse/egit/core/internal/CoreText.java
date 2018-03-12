@@ -232,9 +232,6 @@ public class CoreText extends NLS {
 	public static String CreatePatchOperation_cannotCreatePatchForMergeCommit;
 
 	/** */
-	public static String CreatePatchOperation_cannotCreatePatchForFirstCommit;
-
-	/** */
 	public static String CreatePatchOperation_couldNotFindProject;
 
 	/** */
@@ -302,6 +299,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String RewordCommitOperation_rewording;
+
+	/** */
+	public static String EditCommitOperation_editing;
 
 	/** */
 	public static String BranchOperation_closingMissingProject;

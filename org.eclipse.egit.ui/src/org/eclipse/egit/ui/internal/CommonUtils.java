@@ -3,6 +3,7 @@
  * Copyright (C) 2011, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2013, Michael Keppler <michael.keppler@gmx.de>
+ * Copyright (C) 2014, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +28,7 @@ import org.eclipse.ui.ISources;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.services.IServiceLocator;
 
 /**
  * Class containing all common utils
@@ -40,7 +42,7 @@ public class CommonUtils {
 	/**
 	 * Instance of comparator that sorts strings in ascending alphabetical and
 	 * numerous order (also known as natural order), case insensitive.
-	 * 
+	 *
 	 * The comparator is guaranteed to return a non-zero value if
 	 * string1.equals(String2) returns false
 	 */
@@ -101,12 +103,8 @@ public class CommonUtils {
 	 * {@link IResource#getName()}.
 	 */
 	public static final Comparator<IResource> RESOURCE_NAME_COMPARATOR = new Comparator<IResource>() {
-		@SuppressWarnings("unchecked")
-		private final Comparator<String> stringComparator = Policy
-				.getComparator();
-
 		public int compare(IResource r1, IResource r2) {
-			return stringComparator.compare(r1.getName(), r2.getName());
+			return Policy.getComparator().compare(r1.getName(), r2.getName());
 		}
 	};
 
@@ -122,14 +120,14 @@ public class CommonUtils {
 	 */
 	public static boolean runCommand(String commandId,
 			IStructuredSelection selection) {
-		ICommandService commandService = (ICommandService) PlatformUI
-				.getWorkbench().getService(ICommandService.class);
+		ICommandService commandService = CommonUtils.getService(PlatformUI
+				.getWorkbench(), ICommandService.class);
 		Command cmd = commandService.getCommand(commandId);
 		if (!cmd.isDefined())
 			return false;
 
-		IHandlerService handlerService = (IHandlerService) PlatformUI
-				.getWorkbench().getService(IHandlerService.class);
+		IHandlerService handlerService = CommonUtils.getService(PlatformUI
+				.getWorkbench(), IHandlerService.class);
 		EvaluationContext c = null;
 		if (selection != null) {
 			c = new EvaluationContext(
@@ -150,6 +148,25 @@ public class CommonUtils {
 			// Ignored
 		}
 		return false;
+	}
+
+	/**
+	 * Retrieves the service corresponding to the given API.
+	 * <p>
+	 * Workaround for "Unnecessary cast" errors, see bug 441615. Can be removed
+	 * when EGit depends on Eclipse 4.5 or higher.
+	 *
+	 * @param locator
+	 *            the service locator, must not be null
+	 * @param api
+	 *            the interface the service implements, must not be null
+	 * @return the service, or null if no such service could be found
+	 * @see IServiceLocator#getService(Class)
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T getService(IServiceLocator locator, Class<T> api) {
+		Object service = locator.getService(api);
+		return (T) service;
 	}
 
 	private static LinkedList<String> splitIntoDigitAndNonDigitParts(

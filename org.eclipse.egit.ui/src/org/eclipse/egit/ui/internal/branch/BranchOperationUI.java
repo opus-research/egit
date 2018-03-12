@@ -12,9 +12,13 @@ package org.eclipse.egit.ui.internal.branch;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
@@ -24,7 +28,16 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.debug.core.model.ISourceLocator;
+import org.eclipse.debug.core.sourcelookup.ISourceContainer;
+import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
+import org.eclipse.debug.core.sourcelookup.containers.ProjectSourceContainer;
 import org.eclipse.egit.core.RepositoryUtil;
+import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.IEGitOperation.PostExecuteTask;
 import org.eclipse.egit.core.op.IEGitOperation.PreExecuteTask;
@@ -50,6 +63,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.PlatformUI;
@@ -211,6 +225,9 @@ public class BranchOperationUI {
 			return;
 		}
 
+		if (shouldCancelBecauseOfRunningLaunches())
+			return;
+
 		askForTargetIfNecessary();
 		if (target == null)
 			return;
@@ -277,7 +294,7 @@ public class BranchOperationUI {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.CHECKOUT))
+				if (JobFamilies.CHECKOUT.equals(family))
 					return true;
 				return super.belongsTo(family);
 			}
@@ -317,6 +334,9 @@ public class BranchOperationUI {
 			return;
 		}
 
+		if (shouldCancelBecauseOfRunningLaunches())
+			return;
+
 		askForTargetIfNecessary();
 		if (target == null)
 			return;
@@ -354,6 +374,16 @@ public class BranchOperationUI {
 	}
 
 	private String getTargetWithDialog() {
+		final String[] dialogResult = new String[1];
+		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+			public void run() {
+				dialogResult[0] = getTargetWithDialogInUI();
+			}
+		});
+		return dialogResult[0];
+	}
+
+	private String getTargetWithDialogInUI() {
 		AbstractBranchSelectionDialog dialog;
 		switch (mode) {
 		case MODE_CHECKOUT:
@@ -387,6 +417,16 @@ public class BranchOperationUI {
 	}
 
 	private String getTargetWithCheckoutRemoteTrackingDialog() {
+		final String[] dialogResult = new String[1];
+		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+			public void run() {
+				dialogResult[0] = getTargetWithCheckoutRemoteTrackingDialogInUI();
+			}
+		});
+		return dialogResult[0];
+	}
+
+	private String getTargetWithCheckoutRemoteTrackingDialogInUI() {
 		String[] buttons = new String[] {
 				UIText.BranchOperationUI_CheckoutRemoteTrackingAsLocal,
 				UIText.BranchOperationUI_CheckoutRemoteTrackingCommit,
@@ -487,6 +527,92 @@ public class BranchOperationUI {
 				}
 			}
 		});
+	}
+
+	private boolean shouldCancelBecauseOfRunningLaunches() {
+		if (mode == MODE_CHECKOUT)
+			return false;
+		final IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+		if (!store
+				.getBoolean(UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING))
+			return false;
+
+		final ILaunchConfiguration launchConfiguration = getRunningLaunchConfiguration();
+		if (launchConfiguration != null) {
+			final boolean[] dialogResult = new boolean[1];
+			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+				public void run() {
+					dialogResult[0] = showContinueDialogInUI(store,
+							launchConfiguration);
+				}
+			});
+			return dialogResult[0];
+		}
+		return false;
+	}
+
+	private boolean showContinueDialogInUI(final IPreferenceStore store,
+			final ILaunchConfiguration launchConfiguration) {
+		String[] buttons = new String[] { UIText.BranchOperationUI_Continue,
+				IDialogConstants.CANCEL_LABEL };
+		String message = NLS.bind(
+				UIText.BranchOperationUI_RunningLaunchMessage,
+				launchConfiguration.getName());
+		MessageDialogWithToggle continueDialog = new MessageDialogWithToggle(
+				getShell(), UIText.BranchOperationUI_RunningLaunchTitle, null,
+				message, MessageDialog.NONE, buttons, 0,
+				UIText.BranchOperationUI_RunningLaunchDontShowAgain, false);
+		int result = continueDialog.open();
+		// cancel
+		if (result == IDialogConstants.CANCEL_ID || result == SWT.DEFAULT)
+			return true;
+		boolean dontWarnAgain = continueDialog.getToggleState();
+		if (dontWarnAgain)
+			store.setValue(
+					UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
+					false);
+		return false;
+	}
+
+	private ILaunchConfiguration getRunningLaunchConfiguration() {
+		Set<IProject> projects = new HashSet<IProject>(
+				Arrays.asList(ProjectUtil.getProjects(repository)));
+
+		ILaunchManager launchManager = DebugPlugin.getDefault()
+				.getLaunchManager();
+		ILaunch[] launches = launchManager.getLaunches();
+		for (ILaunch launch : launches) {
+			if (launch.isTerminated())
+				continue;
+			ISourceLocator locator = launch.getSourceLocator();
+			if (locator instanceof ISourceLookupDirector) {
+				ISourceLookupDirector director = (ISourceLookupDirector) locator;
+				ISourceContainer[] containers = director.getSourceContainers();
+				if (isAnyProjectInSourceContainers(containers, projects))
+					return launch.getLaunchConfiguration();
+			}
+		}
+		return null;
+	}
+
+	private boolean isAnyProjectInSourceContainers(
+			ISourceContainer[] containers, Set<IProject> projects) {
+		for (ISourceContainer container : containers) {
+			if (container instanceof ProjectSourceContainer) {
+				ProjectSourceContainer projectContainer = (ProjectSourceContainer) container;
+				if (projects.contains(projectContainer.getProject()))
+					return true;
+			}
+			try {
+				boolean found = isAnyProjectInSourceContainers(
+						container.getSourceContainers(), projects);
+				if (found)
+					return true;
+			} catch (CoreException e) {
+				// Ignore the child source containers, continue search
+			}
+		}
+		return false;
 	}
 
 }
