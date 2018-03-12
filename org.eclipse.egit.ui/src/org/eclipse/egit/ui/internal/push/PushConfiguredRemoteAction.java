@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.PushOperation;
 import org.eclipse.egit.core.op.PushOperationResult;
+import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
@@ -31,6 +32,8 @@ import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
+import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
@@ -70,6 +73,7 @@ public class PushConfiguredRemoteAction {
 	 */
 	public void run(final Shell shell, boolean dryRun) {
 		RemoteConfig config;
+		PushOperationSpecification spec;
 		Exception pushException = null;
 		final PushOperation op;
 		try {
@@ -90,9 +94,23 @@ public class PushConfiguredRemoteAction {
 						UIText.PushConfiguredRemoteAction_NoSpecDefined,
 						remoteName));
 			}
+			final Collection<RemoteRefUpdate> updates = Transport
+					.findRemoteRefUpdatesFor(repository, pushSpecs, null);
+			if (updates.isEmpty()) {
+				throw new IOException(
+						NLS.bind(
+								UIText.PushConfiguredRemoteAction_NoUpdatesFoundMessage,
+								remoteName));
+			}
+
+			spec = new PushOperationSpecification();
+			for (final URIish uri : pushURIs)
+				spec.addURIRefUpdates(uri,
+						ConfirmationPage.copyUpdates(updates));
 			int timeout = Activator.getDefault().getPreferenceStore().getInt(
 					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-			op = new PushOperation(repository, config, dryRun, timeout);
+			op = new PushOperation(repository, spec, dryRun, config, timeout);
+
 		} catch (URISyntaxException e) {
 			pushException = e;
 			return;

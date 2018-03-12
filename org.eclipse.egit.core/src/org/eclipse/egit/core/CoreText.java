@@ -210,9 +210,6 @@ public class CoreText extends NLS {
 	public static String ProjectUtil_refreshing;
 
 	/** */
-	public static String PushOperation_InternalExceptionOccuredMessage;
-
-	/** */
 	public static String PushOperation_resultCancelled;
 
 	/** */
