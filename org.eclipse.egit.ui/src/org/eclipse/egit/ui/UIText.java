@@ -256,6 +256,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_AllOfResourceTooltip;
 
 	/** */
+	public static String GitHistoryPage_cherryPickMenuItem;
+
+	/** */
 	public static String GitHistoryPage_compareMode;
 
 	/** */
@@ -1084,13 +1087,7 @@ public class UIText extends NLS {
 	public static String PullResultDialog_FetchResultGroupHeader;
 
 	/** */
-	public static String PullResultDialog_MergeAlreadyUpToDateMessage;
-
-	/** */
 	public static String PullResultDialog_MergeResultGroupHeader;
-
-	/** */
-	public static String PullResultDialog_NothingToFetchFromLocal;
 
 	/** */
 	public static String PushAction_wrongURIDescription;
@@ -1685,6 +1682,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FileRevisionEditorInput_NameAndRevisionTitle;
+
+	/** */
+	public static String FindToolbar_changeto_id;
+
+	/** */
+	public static String FindToolbar_idMenuItem;
 
 	/** */
 	public static String FindToolbar_NextTooltip;
@@ -2301,6 +2304,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_SelectOneCommitMessage;
+
+	/** */
+	public static String CommitGraphTable_CommitId;
 
 	/** */
 	public static String GitSynchronizeWizard_synchronize;

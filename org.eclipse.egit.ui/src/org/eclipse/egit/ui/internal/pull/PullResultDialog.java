@@ -15,18 +15,13 @@ import org.eclipse.egit.ui.internal.fetch.FetchResultDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.PullResult;
-import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.FetchResult;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 /**
@@ -63,23 +58,12 @@ public class PullResultDialog extends Dialog {
 		fetchResultGroup.setLayout(new GridLayout(1, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				fetchResultGroup);
-		FetchResult fRes = result.getFetchResult();
-		if (fRes != null && !fRes.getTrackingRefUpdates().isEmpty()) {
+		if (result.getFetchResult() != null) {
 			FetchResultDialog dlg = new FetchResultDialog(getParentShell(),
-					repo, fRes, result.getFetchedFrom());
+					repo, result.getFetchResult(), result.getFetchedFrom());
 			Control fresult = dlg.createDialogArea(fetchResultGroup);
 			GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT,
 					130).applyTo(fresult);
-		} else {
-			Label noResult = new Label(fetchResultGroup, SWT.NONE);
-			if (result.getFetchedFrom().equals(".")) //$NON-NLS-1$
-				noResult
-						.setText(UIText.PullResultDialog_NothingToFetchFromLocal);
-			else
-				noResult.setText(NLS.bind(
-						UIText.FetchResultDialog_labelEmptyResult, result
-								.getFetchedFrom()));
-
 		}
 		Group mergeResultGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		mergeResultGroup
@@ -87,16 +71,10 @@ public class PullResultDialog extends Dialog {
 		mergeResultGroup.setLayout(new GridLayout(1, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				mergeResultGroup);
-		MergeResult mRes = result.getMergeResult();
-		if (mRes != null
-				&& mRes.getMergeStatus() != MergeStatus.ALREADY_UP_TO_DATE) {
+		if (result.getMergeResult() != null) {
 			MergeResultDialog dlg = new MergeResultDialog(getParentShell(),
 					repo, result.getMergeResult());
 			dlg.createDialogArea(mergeResultGroup);
-		} else {
-			Label noResult = new Label(mergeResultGroup, SWT.NONE);
-			noResult
-					.setText(UIText.PullResultDialog_MergeAlreadyUpToDateMessage);
 		}
 		return main;
 	}
