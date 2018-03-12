@@ -142,6 +142,12 @@ public class UIText extends NLS {
 	public static String SelectRemoteNamePage_SelectRemoteNameMessage;
 
 	/** */
+	public static String SelectResetTypePage_PageMessage;
+
+	/** */
+	public static String SelectResetTypePage_PageTitle;
+
+	/** */
 	public static String SetQuickdiffBaselineAction_setQuickdiffBaseline;
 
 	/** */
@@ -377,9 +383,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoryAction_multiRepoSelectionTitle;
-
-	/** */
-	public static String RepositoryActionHandler_CouldNotGetSelection_message;
 
 	/** */
 	public static String RepositorySearchDialog_browse;
@@ -829,6 +832,12 @@ public class UIText extends NLS {
 	public static String ResetAction_reset;
 
 	/** */
+	public static String ResetCommand_ResetFailureMessage;
+
+	/** */
+	public static String ResetCommand_WizardTitle;
+
+	/** */
 	public static String ResetQuickdiffBaselineAction_resetQuickdiffBaseline;
 
 	/** */
@@ -860,6 +869,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ResetTargetSelectionDialog_SelectBranchForResetMessage;
+
+	/** */
+	public static String ResetTargetSelectionDialog_WindowTitle;
 
 	/** */
 	public static String ResourceHistory_toggleCommentWrap;
