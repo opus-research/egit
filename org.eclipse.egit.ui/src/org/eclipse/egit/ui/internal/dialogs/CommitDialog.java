@@ -19,19 +19,25 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Assert;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
+import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -81,7 +87,6 @@ import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
 import org.eclipse.team.core.history.IFileHistoryProvider;
 import org.eclipse.team.core.history.IFileRevision;
-import org.eclipse.team.internal.ui.history.FileRevisionTypedElement;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
@@ -505,42 +510,20 @@ public class CommitDialog extends Dialog {
 					return;
 				}
 				try {
-					ArrayList<GitIndex> changedIndexes = new ArrayList<GitIndex>();
+					List<IResource> filesToAdd = new ArrayList<IResource>();
 					for (Iterator<?> it = sel.iterator(); it.hasNext();) {
 						CommitItem commitItem = (CommitItem) it.next();
-
-						IProject project = commitItem.file.getProject();
-						RepositoryMapping map = RepositoryMapping.getMapping(project);
-
-						Repository repo = map.getRepository();
-						GitIndex index = null;
-						index = repo.getIndex();
-						String repoRelativePath = map.getRepoRelativePath(commitItem.file);
-						Entry entry = index.getEntry(repoRelativePath);
-						if (entry != null && entry.isModified(map.getWorkDir())) {
-							entry.update(new File(map.getWorkDir(), entry.getName()));
-							if (!changedIndexes.contains(index))
-								changedIndexes.add(index);
-							commitItem.status = UIText.CommitDialog_StatusModified;
-						} else if (entry == null) {
-							final Tree headTree = repo.mapTree(Constants.HEAD);
-							TreeEntry  headEntry = (headTree == null ? null : headTree.findBlobMember(repoRelativePath));
-							if (headEntry == null){
-								entry = index.add(map.getWorkDir(), new File(map.getWorkDir(), repoRelativePath));
-								if (!changedIndexes.contains(index))
-									changedIndexes.add(index);
-								commitItem.status = UIText.CommitDialog_StatusAdded;
-							}
-						}
+						filesToAdd.add(commitItem.file);
 					}
-					if (!changedIndexes.isEmpty()) {
-						for (GitIndex idx : changedIndexes) {
-							idx.write();
-						}
-						filesViewer.refresh(true);
+					AddToIndexOperation op = new AddToIndexOperation(filesToAdd);
+					op.execute(new NullProgressMonitor());
+					for (Iterator<?> it = sel.iterator(); it.hasNext();) {
+						CommitItem commitItem = (CommitItem) it.next();
+						commitItem.status = getFileStatus(commitItem.file);
 					}
-				} catch (IOException e) {
-
+					filesViewer.refresh(true);
+				} catch (CoreException e) {
+					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
 					return;
 				}
 			}
@@ -570,7 +553,7 @@ public class CommitDialog extends Dialog {
 				if (indexEntry == null) {
 					prefix = UIText.CommitDialog_StatusUntracked;
 				}
-				else if (indexEntry.isModified(repositoryMapping.getWorkDir()))
+				else if (indexEntry.isModified(repositoryMapping.getWorkTree()))
 					prefix = UIText.CommitDialog_StatusAddedIndexDiff;
 			} else if (indexEntry == null) {
 				prefix = UIText.CommitDialog_StatusRemoved;
@@ -578,12 +561,12 @@ public class CommitDialog extends Dialog {
 					&& !headEntry.getId().equals(indexEntry.getObjectId())) {
 				prefix = UIText.CommitDialog_StatusModified;
 
-				if (indexEntry.isModified(repositoryMapping.getWorkDir()))
+				if (indexEntry.isModified(repositoryMapping.getWorkTree()))
 					prefix = UIText.CommitDialog_StatusModifiedIndexDiff;
-			} else if (!new File(repositoryMapping.getWorkDir(), indexEntry
+			} else if (!new File(repositoryMapping.getWorkTree(), indexEntry
 					.getName()).isFile()) {
 				prefix = UIText.CommitDialog_StatusRemovedNotStaged;
-			} else if (indexEntry.isModified(repositoryMapping.getWorkDir())) {
+			} else if (indexEntry.isModified(repositoryMapping.getWorkTree())) {
 				prefix = UIText.CommitDialog_StatusModifiedNotStaged;
 			}
 

@@ -51,6 +51,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
@@ -162,7 +163,8 @@ public class RepositorySelectionPage extends WizardPage {
 				UIText.RepositorySelectionPage_tip_file, false, false, false) {
 			@Override
 			public boolean handles(URIish uri) {
-				if (getDefaultScheme().equals(uri.getScheme()))
+				if (getDefaultScheme().equals(uri.getScheme())
+						|| uri.getScheme() == null)
 					return true;
 				if (uri.getHost() != null || uri.getPort() > 0
 						|| uri.getUser() != null || uri.getPass() != null
@@ -320,7 +322,7 @@ public class RepositorySelectionPage extends WizardPage {
 					}
 				}
 			} catch (URISyntaxException e) {
-				preset = null;
+				// ignore, preset is null
 			}
 			clippy.dispose();
 		}
@@ -880,8 +882,10 @@ public class RepositorySelectionPage extends WizardPage {
 			else
 				portText.setText(""); //$NON-NLS-1$
 
-			if (u.getScheme() != null)
+			if (u.getScheme() != null) {
 				scheme.select(scheme.indexOf(u.getScheme()));
+				scheme.notifyListeners(SWT.Selection, new Event());
+			}
 
 			updateAuthGroup();
 			uri = u;
@@ -894,7 +898,7 @@ public class RepositorySelectionPage extends WizardPage {
 			userText.setText(""); //$NON-NLS-1$
 			passText.setText(""); //$NON-NLS-1$
 			portText.setText(""); //$NON-NLS-1$
-			scheme.select(-1);
+			scheme.select(0);
 		} finally {
 			eventDepth--;
 		}

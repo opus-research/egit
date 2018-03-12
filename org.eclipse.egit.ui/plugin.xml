@@ -37,7 +37,7 @@
                icon="$nl$/icons/obj16/disconnect_co.gif"
                id="org.eclipse.egit.ui.internal.actions.Disconnect"
                label="%DisconnectAction_label"
-               menubarPath="team.main/group10"
+               menubarPath="team.main/group11"
                tooltip="%DisconnectAction_tooltip">
          </action>
          <action
@@ -99,13 +99,6 @@
                value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
          </filter>
          <action
-               class="org.eclipse.egit.ui.internal.actions.Track"
-               icon="$nl$/icons/obj16/track.gif"
-               id="org.eclipse.egit.ui.internal.actions.Track"
-               label="%TrackAction_label"
-               menubarPath="team.main/group9"
-               tooltip="%TrackAction_tooltip"/>
-         <action
                class="org.eclipse.egit.ui.internal.actions.Untrack"
                icon="$nl$/icons/obj16/untrack.gif"
                id="org.eclipse.egit.ui.internal.actions.Untrack"
@@ -119,13 +112,6 @@
                label="%AssumeUnchangedAction_label"
                menubarPath="team.main/group9"
                tooltip="%AssumeUnchangedAction_tooltip"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.Update"
-               icon="$nl$/icons/obj16/refresh.gif"
-               id="org.eclipse.egit.ui.internal.actions.Update"
-               label="%UpdateAction_label"
-               menubarPath="team.main/group4"
-               tooltip="%UpdateAction_tooltip"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.CommitAction"
                icon="$nl$/icons/obj16/commit.gif"
@@ -166,12 +152,30 @@
                menubarPath="replaceWithMenu/gitReplaceWithGroup"
                tooltip="%DiscardChangesAction_tooltip"/>
          <action
-               class="org.eclipse.team.internal.ui.actions.ApplyPatchAction"
+               class="org.eclipse.egit.ui.internal.actions.ApplyPatchAction"
+               definitionId="org.eclipse.egit.ui.team.ApplyPatch"
                enablesFor="*"
                id="org.eclipse.egit.ui.internal.actions.applyPatch"
                label="%ApplyPatchAction_label"
                menubarPath="team.main/group6"
                overrideActionId="org.eclipse.team.ui.applyPatch">
+         </action>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.ShowHistoryAction"
+               definitionId="org.eclipse.egit.ui.team.ShowHistory"
+               icon="icons/obj16/history.gif"
+               id="org.eclipse.egit.ui.internal.actions.ShowHistoryActionHandler"
+               label="%ShowResourceInHistoryAction_label"
+               menubarPath="team.main/group10"
+               tooltip="%ShowResourceInHistoryAction_tooltip">
+         </action>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.ShowRepositoriesViewAction"
+               definitionId="org.eclipse.egit.ui.team.ShowRepositoriesView"
+               icon="icons/eview16/repo_rep.gif"
+               id="org.eclipse.egit.ui.internal.actions.ShowRepositoriesViewAction"
+               label="%ShowRepositoryAction_label"
+               menubarPath="team.main/group10">
          </action>
 	  </objectContribution>
 	  <objectContribution
@@ -493,20 +497,10 @@
 		       toolbarPath="Normal/additions"
 		       tooltip="%ResetAction_tooltip">
 		</action>
-		<action
-		       class="org.eclipse.egit.ui.internal.actions.Track"
-		       disabledIcon="icons/toolbar/trackd.png"
-		       icon="icons/toolbar/tracke.png"
-		       id="org.eclipse.egit.ui.trackaction"
-		       label="%TrackAction_label"
-		       style="push"
-		       menubarPath="org.eclipse.egit.ui.gitmenu/repositoryGroup"
-		       toolbarPath="Normal/additions"
-		       tooltip="%TrackAction_tooltip">
-		</action>
       </actionSet>
    </extension>
    <extension
+         name="The shared commands"
          point="org.eclipse.ui.commands">
       <command
             defaultHandler="org.eclipse.egit.ui.internal.commands.ShareSingleProjectCommand"
@@ -519,6 +513,10 @@
                optional="false"
                values="org.eclipse.egit.ui.internal.commands.ProjectNameParameterValues">
          </commandParameter>
+      </command>
+      <command
+            id="org.eclipse.egit.ui.CheckoutCommand"
+            name="%CheckoutCommand">
       </command>
    </extension>
    <extension
@@ -586,7 +584,7 @@
                      value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
                </instanceof>
                <instanceof
-                     value="org.eclipse.core.internal.resources.WorkspaceRoot">
+                     value="org.eclipse.core.resources.IWorkspaceRoot">
                </instanceof>
             </or>
          </triggerPoints>
@@ -707,7 +705,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewCheckout"
+               commandId="org.eclipse.egit.ui.CheckoutCommand"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -852,6 +850,9 @@
                         </instanceof>
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
                         </instanceof>
                      </or>
                   </iterate>
@@ -1011,6 +1012,28 @@
                               </test>
                            </not>
                         </and>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewReset"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+                        </instanceof>
                      </or>
                   </iterate>
                </and>
@@ -1217,202 +1240,152 @@
       </menuContribution>
    </extension>
    <extension
+         name="The commands for the repositories view"
          point="org.eclipse.ui.commands">
       <command
             id="org.eclipse.egit.ui.RepositoriesViewAddRepository"
-            name="%AddRepositoryCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.AddCommand">
-         </defaultHandler>
+            name="%AddRepositoryCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.AddCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewClone"
-            name="%CloneRepositoryCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.CloneCommand">
-         </defaultHandler>
+            name="%CloneRepositoryCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CloneCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewCheckout"
-            name="%CheckoutCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.CheckoutCommand">
-         </defaultHandler>
+            name="%CheckoutCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CheckoutCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewCopyPath"
-            name="%CopyPathCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.CopyPathCommand">
-         </defaultHandler>
+            name="%CopyPathCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CopyPathCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewDeleteBranch"
-            name="%DeleteBranchCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteBranchCommand">
-         </defaultHandler>
+            name="%DeleteBranchCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.DeleteBranchCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewFetch"
-            name="%FetchCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.FetchCommand">
-         </defaultHandler>
+            name="%FetchCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.FetchCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewPaste"
-            name="%PastePathCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.PasteCommand">
-         </defaultHandler>
+            name="%PastePathCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.PasteCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewOpenProperties"
-            name="%OpenPropertiesCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.OpenPropertiesCommand">
-         </defaultHandler>
+            name="%OpenPropertiesCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.OpenPropertiesCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewPush"
-            name="%PushCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.PushCommand">
-         </defaultHandler>
+            name="%PushCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.PushCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewRefresh"
-            name="%RefreshCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.RefreshCommand">
-         </defaultHandler>
+            name="%RefreshCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RefreshCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewRemove"
-            name="%RemoveRepositoryCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.RemoveCommand">
-         </defaultHandler>
+            name="%RemoveRepositoryCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RemoveCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewImportProjects"
-            name="%ImportProjectsCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.ImportProjectsCommand">
-         </defaultHandler>
+            name="%ImportProjectsCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ImportProjectsCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewCreateBranch"
-            name="%CreateBranchCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.CreateBranchCommand">
-         </defaultHandler>
+            name="%CreateBranchCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CreateBranchCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewNewRemote"
-            name="%NewRemoteCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.ConfigureRemoteCommand">
-         </defaultHandler>
+            name="%NewRemoteCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ConfigureRemoteCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewConfigureFetch"
-            name="%ConfigureFetchCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.ConfigureFetchCommand">
-         </defaultHandler>
+            name="%ConfigureFetchCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ConfigureFetchCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewConfigurePush"
-            name="%ConfigurePushCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.ConfigurePushCommand">
-         </defaultHandler>
+            name="%ConfigurePushCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ConfigurePushCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
-            name="%RemoveRemoteCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand">
-         </defaultHandler>
+            name="%RemoveRemoteCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewPushConfigured"
-            name="%SimplePushCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.PushConfiguredRemoteCommand">
-         </defaultHandler>
+            name="%SimplePushCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.PushConfiguredRemoteCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewFetchConfigured"
-            name="%SimpleFetchCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.FetchConfiguredRemoteCommand">
-         </defaultHandler>
+            name="%SimpleFetchCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.FetchConfiguredRemoteCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewDeletePush"
-            name="%RemovePushCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.DeletePushCommand">
-         </defaultHandler>
+            name="%RemovePushCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.DeletePushCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewDeleteFetch"
-            name="%RemoveFetchCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteFetchCommand">
-         </defaultHandler>
+            name="%RemoveFetchCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.DeleteFetchCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewOpenInTextEditor"
-            name="%OpenInEditorCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.OpenInTextEditorCommand">
-         </defaultHandler>
+            name="%OpenInEditorCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.OpenInTextEditorCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewOpen"
-            name="%OpenCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.OpenCommand">
-         </defaultHandler>
+            name="%OpenCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.OpenCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
-            name="%LinkWithSelectionCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.LinkWithSelectionCommand">
-         </defaultHandler>
+            name="%LinkWithSelectionCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.LinkWithSelectionCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewSynchronize"
-            name="%SynchronizeCommand">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.SynchronizeCommand">
-         </defaultHandler>
+            name="%SynchronizeCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.SynchronizeCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewCreateTag"
-            name="Create Tag...">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.CreateTagCommand">
-         </defaultHandler>
+            name="%CreateTagCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CreateTagCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
-            name="Merge">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand">
-         </defaultHandler>
+            name="%MergeCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewMerge"
-            name="Merge...">
-         <defaultHandler
-               class="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand">
-         </defaultHandler>
+            name="%MergeWithDialogCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand">
+      </command>
+      <command
+            id="org.eclipse.egit.ui.RepositoriesViewReset"
+            name="%ResetCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ResetCommand">
       </command>
    </extension>
    <extension
@@ -1453,6 +1426,18 @@
             commandId="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
             icon="icons/obj16/merge.gif">
       </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewReset"
+            icon="icons/obj16/reset.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.ShowRepositoriesView"
+            icon="icons/eview16/repo_rep.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.ShowHistory"
+            icon="icons/obj16/history.gif">
+      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -1484,7 +1469,7 @@
          point="org.eclipse.team.ui.synchronizeWizards">
       <wizard
             class="org.eclipse.egit.ui.internal.synchronize.GitSynchronizeWizard"
-            description="description"
+            description="%gitsyncwizard.description"
             icon="icons/obj16/gitrepository.gif"
             id="org.eclipse.egit.ui.wizard1"
             name="%Synchronize_Name">
@@ -1499,5 +1484,127 @@
             name="%Synchronize_Name"
             persistent="false">
       </participant>
+   </extension>
+   <extension
+         name="%TeamMenuCommandsLabel"
+         point="org.eclipse.ui.commands">
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.BranchActionHandler"
+            id="org.eclipse.egit.ui.team.Branch"
+            name="%BranchAction_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.CommitActionHandler"
+            id="org.eclipse.egit.ui.team.Commit"
+            name="%CommitAction_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.CompareWithHeadActionHandler"
+            id="org.eclipse.egit.ui.team.CompareWithHead"
+            name="%CompareWithHeadAction_label">
+      </command>
+            <command
+                  id="org.eclipse.egit.ui.team.CompareWithRevision"
+                  name="%CompareWithRevisionAction_label">
+            </command>
+            <command
+                  defaultHandler="org.eclipse.egit.ui.internal.actions.CompareWithIndexActionHandler"
+                  id="org.eclipse.egit.ui.team.CompareWithIndex"
+                  name="%CompareWithIndexAction_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.DiscardChangesActionHandler"
+            id="org.eclipse.egit.ui.team.Discard"
+            name="%DiscardChangesAction_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.FetchActionHandler"
+            id="org.eclipse.egit.ui.team.Fetch"
+            name="%FetchAction_label">
+      </command>
+            <command
+                  defaultHandler="org.eclipse.egit.ui.internal.actions.IgnoreActionHandler"
+                  id="org.eclipse.egit.ui.team.Ignore"
+                  name="%IgnoreAction_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.MergeActionHandler"
+            id="org.eclipse.egit.ui.team.Merge"
+            name="%MergeAction_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.PushActionHandler"
+            id="org.eclipse.egit.ui.team.Push"
+            name="%PushAction_label">
+      </command>
+            <command
+                  defaultHandler="org.eclipse.egit.ui.internal.actions.ResetActionHandler"
+                  id="org.eclipse.egit.ui.team.Reset"
+                  name="%ResetAction_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.SynchronizeWithActionHandler"
+            id="org.eclipse.egit.ui.team.SyncWith"
+            name="%SynchronizeWith_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.TagActionHandler"
+            id="org.eclipse.egit.ui.team.Tag"
+            name="%TagAction_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.ShowHistoryActionHandler"
+            id="org.eclipse.egit.ui.team.ShowHistory"
+                  name="%ShowResourceInHistoryAction_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.ShowRepositoriesViewActionHandler"
+            id="org.eclipse.egit.ui.team.ShowRepositoriesView"
+            name="%ShowRepositoryAction_label">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.actions.ApplyPatchActionHandler"
+            id="org.eclipse.egit.ui.team.ApplyPatch"
+            name="%ApplyPatchAction_label">
+      </command>
+   </extension>
+   <extension
+         name="The handlers for shared commands"
+         point="org.eclipse.ui.handlers">
+      <handler
+            commandId="org.eclipse.egit.ui.CheckoutCommand">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.CheckoutCommand">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <instanceof
+                        value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
+                  </instanceof>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.CheckoutCommand">
+         <class
+               class="org.eclipse.egit.ui.internal.history.command.CheckoutHandler"></class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <instanceof
+                        value="org.eclipse.egit.ui.internal.history.SWTCommit">
+                  </instanceof>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
    </extension>
 </plugin>

@@ -14,9 +14,8 @@ import java.io.IOException;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.util.FS;
@@ -76,11 +75,11 @@ public class AdaptableFileTreeIterator extends FileTreeIterator {
 	}
 
 	@Override
-	public AbstractTreeIterator createSubtreeIterator(Repository repo)
+	public AbstractTreeIterator createSubtreeIterator(ObjectReader repo)
 			throws IncorrectObjectTypeException, IOException {
 		final File currentFile = ((FileEntry) current()).getFile();
-		final IContainer[] containers = root.findContainersForLocation(new Path(
-				currentFile.getAbsolutePath()));
+		final IContainer[] containers = root
+				.findContainersForLocationURI(currentFile.toURI());
 		if (containers.length > 0)
 			return new ContainerTreeIterator(this, containers[0]);
 		else

@@ -383,6 +383,11 @@ public class CreateTagDialog extends Dialog {
 					arg0.doit = false;
 					tagMessageText.traverse(SWT.TRAVERSE_TAB_NEXT);
 				}
+			}
+		});
+
+		tagMessageText.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
 				validateInput();
 			}
 		});
@@ -472,10 +477,10 @@ public class CreateTagDialog extends Dialog {
 			@Override
 			public boolean select(Viewer viewer, Object parentElement,
 					Object element) {
-				Tag tag = (Tag) element;
+				Tag actTag = (Tag) element;
 
 				if (tagNamePattern != null)
-					return tagNamePattern.matcher(tag.getTag()).find();
+					return tagNamePattern.matcher(actTag.getTag()).find();
 				else
 					return true;
 			}
