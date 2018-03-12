@@ -94,14 +94,8 @@ class CloneDestinationPage extends WizardPage {
 
 	@Override
 	public void setVisible(final boolean visible) {
-		if (visible) {
-			if (branchPage.isSourceRepoEmpty()) {
-				initialBranch.setEnabled(false);
-				showImportWizard.setSelection(false);
-				showImportWizard.setEnabled(false);
-			}
+		if (visible)
 			revalidate();
-		}
 		super.setVisible(visible);
 		if (visible)
 			directoryText.setFocus();
@@ -264,8 +258,7 @@ class CloneDestinationPage extends WizardPage {
 			setPageComplete(false);
 			return;
 		}
-		if (!branchPage.isSourceRepoEmpty()
-				&& initialBranch.getSelectionIndex() < 0) {
+		if (initialBranch.getSelectionIndex() < 0) {
 			setErrorMessage(NLS.bind(UIText.CloneDestinationPage_fieldRequired,
 					UIText.CloneDestinationPage_promptInitialBranch));
 			setPageComplete(false);
