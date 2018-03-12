@@ -48,6 +48,7 @@ import org.eclipse.swt.widgets.Group;
  * (automatic/manual/no share)
  */
 public class GitSelectWizardPage extends WizardPage {
+
 	/** */
 	public static final int EXISTING_PROJECTS_WIZARD = 0;
 
@@ -60,21 +61,36 @@ public class GitSelectWizardPage extends WizardPage {
 	// TODO check if we need/can support Import... wizard
 	// see also remarks in GitCreateProjectViaWizardWizard
 
+	/** */
+	public static final int ACTION_DIALOG_SHARE = 0;
+
+	/** */
+	public static final int ACTION_AUTO_SHARE = 1;
+
+	/** */
+	public static final int ACTION_NO_SHARE = 2;
+
 	private final String PREF_WIZ = getName() + "WizardSel"; //$NON-NLS-1$
 
-	private Button importExisting;
+	private final String PREF_ACT = getName() + "ActionSel"; //$NON-NLS-1$
 
-	private Button newProjectWizard;
+	Button importExisting;
 
-	private Button generalWizard;
+	Button newProjectWizard;
+
+	Button generalWizard;
+
+	Button actionAutoShare;
+
+	Button actionDialogShare;
+
+	Button actionNothing;
 
 	private TreeViewer tv;
 
 	private final Repository initialRepository;
 
 	private final String initialPath;
-
-	private int wizardSelection = EXISTING_PROJECTS_WIZARD;
 
 	/**
 	 * Default constructor
@@ -133,17 +149,10 @@ public class GitSelectWizardPage extends WizardPage {
 		main.setLayout(new GridLayout(1, false));
 
 		SelectionListener sl = new SelectionAdapter() {
+
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				tv.getTree().setEnabled(!newProjectWizard.getSelection());
-				if (importExisting.getSelection())
-					wizardSelection = EXISTING_PROJECTS_WIZARD;
-				else if (newProjectWizard.getSelection())
-					wizardSelection = NEW_WIZARD;
-				else if (generalWizard.getSelection())
-					wizardSelection = GENERAL_WIZARD;
-				else
-					wizardSelection = EXISTING_PROJECTS_WIZARD;
 				checkPage();
 			}
 		};
@@ -166,13 +175,34 @@ public class GitSelectWizardPage extends WizardPage {
 		generalWizard.setText(UIText.GitSelectWizardPage_ImportAsGeneralButton);
 		generalWizard.addSelectionListener(sl);
 
+		Group afterImportAction = new Group(main, SWT.SHADOW_ETCHED_IN);
+		GridDataFactory.fillDefaults().grab(true, false).applyTo(
+				afterImportAction);
+		afterImportAction
+				.setText(UIText.GitSelectWizardPage_SharingProjectsHeader);
+		afterImportAction.setLayout(new GridLayout(1, false));
+
+		actionAutoShare = new Button(afterImportAction, SWT.RADIO);
+		actionAutoShare.setText(UIText.GitSelectWizardPage_AutoShareButton);
+		actionAutoShare.addSelectionListener(sl);
+
+		actionDialogShare = new Button(afterImportAction, SWT.RADIO);
+		actionDialogShare
+				.setText(UIText.GitSelectWizardPage_InteractiveShareButton);
+		actionDialogShare.addSelectionListener(sl);
+
+		actionNothing = new Button(afterImportAction, SWT.RADIO);
+		actionNothing.setText(UIText.GitSelectWizardPage_NoShareButton);
+		actionNothing.addSelectionListener(sl);
+
 		IDialogSettings settings = Activator.getDefault().getDialogSettings();
+		int previousWiz;
 		try {
-			wizardSelection = settings.getInt(PREF_WIZ);
+			previousWiz = settings.getInt(PREF_WIZ);
 		} catch (NumberFormatException e) {
-			wizardSelection = EXISTING_PROJECTS_WIZARD;
+			previousWiz = EXISTING_PROJECTS_WIZARD;
 		}
-		switch (wizardSelection) {
+		switch (previousWiz) {
 		case EXISTING_PROJECTS_WIZARD:
 			importExisting.setSelection(true);
 			break;
@@ -183,6 +213,24 @@ public class GitSelectWizardPage extends WizardPage {
 			newProjectWizard.setSelection(true);
 			break;
 
+		}
+
+		int previousAct;
+		try {
+			previousAct = settings.getInt(PREF_ACT);
+		} catch (NumberFormatException e) {
+			previousAct = ACTION_AUTO_SHARE;
+		}
+		switch (previousAct) {
+		case ACTION_AUTO_SHARE:
+			actionAutoShare.setSelection(true);
+			break;
+		case ACTION_DIALOG_SHARE:
+			actionDialogShare.setSelection(true);
+			break;
+		case ACTION_NO_SHARE:
+			actionNothing.setSelection(true);
+			break;
 		}
 
 		tv = new TreeViewer(main, SWT.SINGLE | SWT.H_SCROLL | SWT.V_SCROLL
@@ -243,7 +291,26 @@ public class GitSelectWizardPage extends WizardPage {
 	 * @return the wizard selection
 	 */
 	public int getWizardSelection() {
-		return wizardSelection;
+		if (importExisting.getSelection())
+			return EXISTING_PROJECTS_WIZARD;
+		if (newProjectWizard.getSelection())
+			return NEW_WIZARD;
+		if (generalWizard.getSelection())
+			return GENERAL_WIZARD;
+		return -1;
+	}
+
+	/**
+	 * @return the action selection
+	 */
+	public int getActionSelection() {
+		if (actionAutoShare.getSelection())
+			return ACTION_AUTO_SHARE;
+		if (actionDialogShare.getSelection())
+			return ACTION_DIALOG_SHARE;
+		if (actionNothing.getSelection())
+			return ACTION_NO_SHARE;
+		return -1;
 	}
 
 	/**
@@ -255,6 +322,7 @@ public class GitSelectWizardPage extends WizardPage {
 		IDialogSettings settings = Activator.getDefault().getDialogSettings();
 
 		settings.put(PREF_WIZ, getWizardSelection());
+		settings.put(PREF_ACT, getActionSelection());
 
 		setErrorMessage(null);
 
