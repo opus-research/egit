@@ -1303,15 +1303,6 @@ public class UIText extends NLS {
 	public static String ConfigureUriPage_ConfigurePush_pagetitle;
 
 	/** */
-	public static String ConfigureUriPage_DuplicateUriMessage;
-
-	/** */
-	public static String ConfigureUriPage_DuplicateUriTitle;
-
-	/** */
-	public static String ConfigureUriPage_FetchPageMessage;
-
-	/** */
 	public static String ConfigureUriPage_FetchUri_label;
 
 	/** */
@@ -1324,19 +1315,7 @@ public class UIText extends NLS {
 	public static String ConfigureUriPage_ParsingProblem_message;
 
 	/** */
-	public static String ConfigureUriPage_PushPageMessage;
-
-	/** */
-	public static String ConfigureUriPage_PushUriLabel;
-
-	/** */
-	public static String ConfigureUriPage_PushUriTooltip;
-
-	/** */
 	public static String ConfigureUriPage_Remove_button;
-
-	/** */
-	public static String ConfigureUriPage_UriTooltip;
 
 	/** */
 	public static String CommitMessageArea_copy;
@@ -2314,6 +2293,12 @@ public class UIText extends NLS {
 	public static String CreateTagDialog_CreateTagOnCommitTitle;
 
 	/** */
+	public static String CreateTagDialog_Message;
+
+	/** */
+	public static String CreateTagDialog_NewTag;
+
+	/** */
 	public static String CommitCombo_showSuggestedCommits;
 
 	/**
@@ -2387,9 +2372,6 @@ public class UIText extends NLS {
 	public static String LocalFileRevision_currentVersionTag;
 
 	/** */
-	public static String NewRemoteWizard_CheckingUriTaskName;
-
-	/** */
 	public static String NewRepositoryWizard_WizardTitle;
 
 	/** */
@@ -2426,10 +2408,10 @@ public class UIText extends NLS {
 	public static String SelectSynchronizeResourceDialog_includeUncommitedChnages;
 
 	/** */
-	public static String SelectUriWiazrd_Title;
+	public static String SynchronizeWithAction_localRepoName;
 
 	/** */
-	public static String SynchronizeWithAction_localRepoName;
+	public static String ValidationUtils_InvalidTagName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

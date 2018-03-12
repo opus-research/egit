@@ -23,7 +23,9 @@ import org.eclipse.jgit.transport.RemoteConfig;
  * Repositories View.
  */
 public class PropertyTester extends org.eclipse.core.expressions.PropertyTester {
-
+	/**
+	 * TODO javadoc missing
+	 */
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
 
@@ -31,9 +33,10 @@ public class PropertyTester extends org.eclipse.core.expressions.PropertyTester 
 			return false;
 		RepositoryTreeNode node = (RepositoryTreeNode) receiver;
 
-		if (property.equals("isBare")) //$NON-NLS-1$
-			return node.getRepository().isBare();
-
+		if (property.equals("isBare")) { //$NON-NLS-1$
+			Repository rep = node.getRepository();
+			return rep.getConfig().getBoolean("core", "bare", false); //$NON-NLS-1$//$NON-NLS-2$
+		}
 		if (property.equals("isRefCheckedOut")) { //$NON-NLS-1$
 			if (!(node.getObject() instanceof Ref))
 				return false;
@@ -60,10 +63,13 @@ public class PropertyTester extends org.eclipse.core.expressions.PropertyTester 
 					rconfig = new RemoteConfig(
 							node.getRepository().getConfig(), configName);
 				} catch (URISyntaxException e2) {
-					return false;
+					// TODO Exception handling
+					rconfig = null;
 				}
-                // we need to have a fetch ref spec and a fetch URI
-				return !rconfig.getFetchRefSpecs().isEmpty() && !rconfig.getURIs().isEmpty();
+
+				boolean fetchExists = rconfig != null
+						&& !rconfig.getURIs().isEmpty();
+				return fetchExists;
 			}
 		}
 		if (property.equals("pushExists")) { //$NON-NLS-1$
@@ -75,10 +81,12 @@ public class PropertyTester extends org.eclipse.core.expressions.PropertyTester 
 					rconfig = new RemoteConfig(
 							node.getRepository().getConfig(), configName);
 				} catch (URISyntaxException e2) {
-					return false;
+					// TODO Exception handling
+					rconfig = null;
 				}
-                // we need to have at least a push ref spec and any URI
-				return !rconfig.getPushRefSpecs().isEmpty() && (!rconfig.getPushURIs().isEmpty() || !rconfig.getURIs().isEmpty());
+				boolean pushExists = rconfig != null
+						&& !rconfig.getPushURIs().isEmpty();
+				return pushExists;
 			}
 		}
 		if (property.equals("canMerge")) { //$NON-NLS-1$
