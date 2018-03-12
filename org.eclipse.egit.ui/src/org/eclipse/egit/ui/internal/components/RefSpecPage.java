@@ -13,12 +13,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -64,6 +66,8 @@ public class RefSpecPage extends BaseWizardPage {
 	private Button tagsNoTagsButton;
 
 	private String transportError;
+
+	private String configName;
 
 	/**
 	 * Create specifications selection page for provided context.
@@ -158,6 +162,15 @@ public class RefSpecPage extends BaseWizardPage {
 	}
 
 	/**
+	 * Special mode: the configuration is determined by the wizard
+	 *
+	 * @param configName
+	 */
+	public void setConfigName(String configName) {
+		this.configName = configName;
+	}
+
+	/**
 	 * @return ref specifications as selected by user. Returned collection is a
 	 *         copy, so it may be modified by caller.
 	 */
@@ -229,7 +242,12 @@ public class RefSpecPage extends BaseWizardPage {
 			final URIish uri;
 			uri = newRepoSelection.getURI();
 			listRemotesOp = new ListRemoteOperation(local, uri);
-			getContainer().run(true, true, listRemotesOp);
+			getContainer().run(true, true, new IRunnableWithProgress() {
+				public void run(IProgressMonitor monitor)
+						throws InvocationTargetException, InterruptedException {
+					listRemotesOp.run(monitor);
+				}
+			});
 		} catch (InvocationTargetException e) {
 			final Throwable cause = e.getCause();
 			transportError(cause.getMessage());
@@ -245,18 +263,25 @@ public class RefSpecPage extends BaseWizardPage {
 		}
 
 		this.validatedRepoSelection = newRepoSelection;
-		final String remoteName = validatedRepoSelection.getConfigName();
-		specsPanel.setAssistanceData(local, listRemotesOp.getRemoteRefs(),
-				remoteName);
+		final String actRemoteName;
+		if (configName == null)
+			actRemoteName = validatedRepoSelection.getConfigName();
+		else
+			actRemoteName = configName;
 
-		tagsAutoFollowButton.setSelection(false);
-		tagsFetchTagsButton.setSelection(false);
-		tagsNoTagsButton.setSelection(false);
+		specsPanel.setAssistanceData(local, listRemotesOp.getRemoteRefs(),
+				actRemoteName);
+
+		if (!pushPage) {
+			tagsAutoFollowButton.setSelection(false);
+			tagsFetchTagsButton.setSelection(false);
+			tagsNoTagsButton.setSelection(false);
+		}
 
 		if (newRepoSelection.isConfigSelected()) {
 			saveButton.setVisible(true);
 			saveButton.setText(NLS.bind(UIText.RefSpecPage_saveSpecifications,
-					remoteName));
+					actRemoteName));
 			saveButton.getParent().layout();
 			final TagOpt tagOpt = newRepoSelection.getConfig().getTagOpt();
 			switch (tagOpt) {
@@ -270,7 +295,7 @@ public class RefSpecPage extends BaseWizardPage {
 				tagsNoTagsButton.setSelection(true);
 				break;
 			}
-		} else
+		} else if (!pushPage)
 			tagsAutoFollowButton.setSelection(true);
 
 		checkPage();

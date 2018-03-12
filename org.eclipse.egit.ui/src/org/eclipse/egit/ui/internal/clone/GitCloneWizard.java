@@ -24,15 +24,19 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
+import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IImportWizard;
+import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Import Git Repository Wizard. A front end to a git clone operation.
@@ -137,6 +141,15 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 			return false;
 		}
 
+		final RepositoriesView view;
+		IViewPart vp = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+				.getActivePage().findView(RepositoriesView.VIEW_ID);
+		if (vp != null) {
+			view = (RepositoriesView) vp;
+		} else {
+			view = null;
+		}
+
 		final CloneOperation op = new CloneOperation(uri, allSelected,
 				selectedBranches, workdir, branch, remoteName);
 		importProject.setGitDir(op.getGitDir());
@@ -148,6 +161,10 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 					try {
 						op.run(monitor);
 						cloneSource.saveUriInPrefs(uri.toString());
+						RepositoriesView.addDir(op.getGitDir());
+						if (view != null)
+							view.scheduleRefresh();
+
 						return Status.OK_STATUS;
 					} catch (InterruptedException e) {
 						return Status.CANCEL_STATUS;
@@ -166,8 +183,17 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 			try {
 				// Perform clone in ModalContext thread with progress
 				// reporting on the wizard.
-				getContainer().run(true, true, op);
+				getContainer().run(true, true, new IRunnableWithProgress() {
+					public void run(IProgressMonitor monitor)
+							throws InvocationTargetException,
+							InterruptedException {
+						op.run(monitor);
+					}
+				});
 				cloneSource.saveUriInPrefs(uri.toString());
+				RepositoriesView.addDir(op.getGitDir());
+				if (view != null)
+					view.scheduleRefresh();
 				return true;
 			} catch (InterruptedException e) {
 				MessageDialog.openInformation(getShell(),
