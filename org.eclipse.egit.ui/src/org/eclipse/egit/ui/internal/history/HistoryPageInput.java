@@ -10,8 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.File;
-
 import org.eclipse.core.resources.IResource;
 import org.eclipse.jgit.lib.Repository;
 
@@ -21,43 +19,17 @@ import org.eclipse.jgit.lib.Repository;
 public class HistoryPageInput {
 	private final IResource[] list;
 
-	private final File[] files;
-
 	private final Repository repo;
 
 	/**
 	 * @param repository
 	 *            the {@link Repository}
-	 * @param resourceItems
-	 *            the resources
+	 * @param items
+	 *            the items to contain in this list.
 	 */
-	public HistoryPageInput(final Repository repository,
-			final IResource[] resourceItems) {
+	public HistoryPageInput(final Repository repository, final IResource[] items) {
 		this.repo = repository;
-		list = resourceItems;
-		files = null;
-	}
-
-	/**
-	 * @param repository
-	 *            the {@link Repository}
-	 * @param fileItems
-	 *            the files
-	 */
-	public HistoryPageInput(final Repository repository, final File[] fileItems) {
-		this.repo = repository;
-		list = null;
-		files = fileItems;
-	}
-
-	/**
-	 * @param repository
-	 *            the {@link Repository}
-	 */
-	public HistoryPageInput(final Repository repository) {
-		this.repo = repository;
-		list = null;
-		files = null;
+		list = items;
 	}
 
 	/**
@@ -68,16 +40,9 @@ public class HistoryPageInput {
 	}
 
 	/**
-	 * @return the list provided to our constructor
+	 * @return the list provided to our constructor.
 	 */
 	public IResource[] getItems() {
 		return list;
-	}
-
-	/**
-	 * @return the list provided to our constructor
-	 */
-	public File[] getFileList() {
-		return files;
 	}
 }
