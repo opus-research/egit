@@ -1018,6 +1018,9 @@ public class UIText extends NLS {
 	public static String CompareTreeView_WorkspaceVersionText;
 
 	/** */
+	public static String CompareTreeView_ShowIn_label;
+
+	/** */
 	public static String CompareUtils_errorGettingEncoding;
 
 	/** */
@@ -3388,9 +3391,6 @@ public class UIText extends NLS {
 	public static String MergeResultDialog_id;
 
 	/** */
-	public static String MergeResultDialog_failed;
-
-	/** */
 	public static String MergeResultDialog_mergeInput;
 
 	/** */
@@ -3398,9 +3398,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeResultDialog_newHead;
-
-	/** */
-	public static String MergeResultDialog_nMore;
 
 	/** */
 	public static String MergeResultDialog_result;
@@ -3494,9 +3491,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIUtils_StartTypingForPreviousValuesMessage;
-
-	/** */
-	public static String UIUtils_ShowInMenuLabel;
 
 	/** */
 	public static String UnmergedBranchDialog_Message;
@@ -3716,6 +3710,9 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenInEditorMenuLabel;
 
 	/** */
+	public static String CommitFileDiffViewer_ShowInMenuLabel;
+
+	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
 
 	/** */
@@ -3816,9 +3813,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LocalFileRevision_currentVersionTag;
-
-	/** */
-	public static String LocalNonWorkspaceTypedElement_errorWritingContents;
 
 	/** */
 	public static String LoginDialog_changeCredentials;
