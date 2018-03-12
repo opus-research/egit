@@ -846,15 +846,12 @@ public class RebaseInteractiveView extends ViewPart implements
 			return;
 		asyncExec(new Runnable() {
 			public void run() {
-				Tree t = planTreeViewer.getTree();
-				if (t.isDisposed())
-					return;
-				t.setRedraw(false);
+				planTreeViewer.getTree().setRedraw(false);
 				try {
 					planTreeViewer.setInput(currentPlan);
 					refreshUI();
 				} finally {
-					t.setRedraw(true);
+					planTreeViewer.getTree().setRedraw(true);
 				}
 			}
 		});

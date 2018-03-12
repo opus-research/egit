@@ -3856,17 +3856,6 @@
                   </test>
                </visibleWhen>
             </dynamic>
-            <command
-                  commandId="org.eclipse.egit.ui.team.Pull"
-                  label="%PullIntoCurrentBranchMenuLabel"
-                  style="push">
-               <visibleWhen
-                     checkEnabled="false">
-                  <test
-                        property="GitSelection.projectsWithRepositories">
-                  </test>
-               </visibleWhen>
-            </command>
             <separator
                   name="org.eclipse.egit.ui.remoteSeparator"
                   visible="true">
@@ -4142,6 +4131,17 @@
                   name="group2"
                   visible="true">
             </separator>
+            <command
+                  commandId="org.eclipse.egit.ui.team.Pull"
+                  label="%PullIntoCurrentBranchMenuLabel"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="false">
+                  <test
+                        property="GitSelection.projectsWithRepositories">
+                  </test>
+               </visibleWhen>
+            </command>
             <separator
                   name="group3"
                   visible="true">
@@ -4629,11 +4629,11 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.Squash"
-            icon="icons/obj16/squash-down.png">
+            icon="icons/obj16/squash.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.commit.Squash"
-            icon="icons/obj16/squash-down.png">
+            icon="icons/obj16/squash.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.Reword"
