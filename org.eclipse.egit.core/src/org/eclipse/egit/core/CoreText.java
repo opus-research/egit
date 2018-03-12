@@ -90,6 +90,9 @@ public class CoreText extends NLS {
 	public static String BlobStorage_errorReadingBlob;
 
 	/** */
+	public static String BranchOperation_CheckoutOnlyBranchOrTag;
+
+	/** */
 	public static String UntrackOperation_adding;
 
 	/** */
