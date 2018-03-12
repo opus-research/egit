@@ -594,9 +594,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FollowRenames;
 
 	/** */
-	public static String GitHistoryPage_FormatDiffJobName;
-
-	/** */
 	public static String GitHistoryPage_FilterSubMenuLabel;
 
 	/** */
@@ -2043,12 +2040,6 @@ public class UIText extends NLS {
 	public static String PushBranchPage_UpstreamConfigOverwriteWarning;
 
 	/** */
-	public static String PushBranchPage_advancedWizardLink;
-
-	/** */
-	public static String PushBranchPage_advancedWizardLinkTooltip;
-
-	/** */
 	public static String PushBranchWizard_WindowTitle;
 
 	/** */
@@ -2398,6 +2389,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitMessageViewer_MoreBranches;
+
+	/** */
+	public static String CommitMessageViewer_BuildDiffListTaskName;
+
+	/** */
+	public static String CommitMessageViewer_BuildDiffTaskName;
+
+	/** */
+	public static String CommitMessageViewer_CanNotRenderDiffMessage;
 
 	/** */
 	public static String CommitMessageViewer_tags;

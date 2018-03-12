@@ -255,13 +255,8 @@ public class RebaseInteractiveStepActionToolBarProvider {
 
 	void mapActionItemsToSelection(ISelection selection) {
 		setMoveItemsEnabled(false);
-		if (selection == null || selection.isEmpty()) {
-			if (theToolbar.isEnabled())
-				theToolbar.setEnabled(false);
-
-			unselectAllActionItemsExecpt(null);
+		if (selection == null || selection.isEmpty())
 			return;
-		}
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection structured = (IStructuredSelection) selection;
 
@@ -274,11 +269,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			ElementAction type = firstSelectedEntry.getPlanElementAction();
 
 			boolean singleTypeSelected = true;
-
-			if (!theToolbar.isEnabled()
-					&& !view.getCurrentPlan().hasRebaseBeenStartedYet())
-				theToolbar.setEnabled(true);
-
 			if (structured.size() > 1) {
 				// multi selection
 				for (Object selectedObj : structured.toList()) {
