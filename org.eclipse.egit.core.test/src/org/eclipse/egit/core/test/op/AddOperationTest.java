@@ -163,7 +163,6 @@ public class AddOperationTest extends GitTestCase {
 				 testRepository.lastModifiedInIndex(file1.getLocation().toPortableString()) / 10);
 	}
 
-	@SuppressWarnings("deprecation") // replacement only available in 3.6
 	@Test
 	public void testAddFilesInFolderWithDerivedFile() throws Exception {
 		IFile file1 = testUtils.addFileToProject(project.getProject(),
@@ -181,7 +180,6 @@ public class AddOperationTest extends GitTestCase {
 				.toPortableString()));
 	}
 
-	@SuppressWarnings("deprecation") // replacement only available in 3.6
 	@Test
 	public void testAddWholeProject() throws Exception {
 		IFile file1 = testUtils.addFileToProject(project.getProject(),
