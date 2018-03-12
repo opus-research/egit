@@ -21,19 +21,26 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
+import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.ISelectionService;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.menus.IWorkbenchContribution;
 import org.eclipse.ui.services.IServiceLocator;
 
@@ -49,8 +56,6 @@ public class SwitchToMenu extends ContributionItem implements
 
 	private final Image branchImage;
 
-	private final Image newBranchImage;
-
 	private final Image checkedOutImage;
 
 	/**
@@ -65,7 +70,6 @@ public class SwitchToMenu extends ContributionItem implements
 	public SwitchToMenu(String id) {
 		super(id);
 		branchImage = UIIcons.BRANCH.createImage();
-		newBranchImage = UIIcons.CREATE_BRANCH.createImage();
 		// create the "checked out" image
 		checkedOutImage = SWTUtils.getDecoratedImage(branchImage,
 				UIIcons.OVR_CHECKEDOUT);
@@ -93,11 +97,30 @@ public class SwitchToMenu extends ContributionItem implements
 
 		MenuItem newBranch = new MenuItem(menu, SWT.PUSH);
 		newBranch.setText(UIText.SwitchToMenu_NewBranchMenuLabel);
-		newBranch.setImage(newBranchImage);
 		newBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				BranchOperationUI.create(repository).start();
+				RevCommit commit = null;
+				Ref currentBranch = null;
+				try {
+					String branch = repository.getFullBranch();
+					if (ObjectId.isId(branch)) {
+						commit = new RevWalk(repository).parseCommit(ObjectId
+								.fromString(branch));
+					} else {
+						currentBranch = repository.getRef(branch);
+					}
+				} catch (IOException e1) {
+					// ignore here
+				}
+				CreateBranchWizard wiz;
+				if (currentBranch != null)
+					wiz = new CreateBranchWizard(repository, currentBranch);
+				else
+					wiz = new CreateBranchWizard(repository, commit);
+				Shell shell = PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow().getShell();
+				new WizardDialog(shell, wiz).open();
 			}
 		});
 		new MenuItem(menu, SWT.SEPARATOR);
@@ -128,8 +151,8 @@ public class SwitchToMenu extends ContributionItem implements
 				item.addSelectionListener(new SelectionAdapter() {
 					@Override
 					public void widgetSelected(SelectionEvent e) {
-						BranchOperationUI.checkout(repository,
-								entry.getValue().getName()).start();
+						new BranchOperationUI(repository, entry.getValue()
+								.getName()).start();
 					}
 				});
 			}
@@ -140,7 +163,7 @@ public class SwitchToMenu extends ContributionItem implements
 			others.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					BranchOperationUI.checkout(repository).start();
+					new BranchOperationUI(repository).start();
 				}
 			});
 		} catch (IOException e) {
