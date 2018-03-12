@@ -26,7 +26,6 @@ import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.jface.dialogs.ErrorDialog;
@@ -37,7 +36,6 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.Display;
 
 /**
  * Import Git Repository Wizard. A front end to a git clone operation.
@@ -57,7 +55,9 @@ public class GitCloneWizard extends Wizard {
 
 	private String alreadyClonedInto;
 
-	private IWizardContainer parentContainer;
+	private boolean callerRunsCloneOperation;
+
+	private CloneOperation cloneOperation;
 
 	/**
 	 * The default constructor
@@ -90,12 +90,13 @@ public class GitCloneWizard extends Wizard {
 	}
 
 	/**
-	 * Sets the parent {@link IWizardContainer} to run the clone job.
-	 *
-	 * @param parentContainer
+	 * @param newValue
+	 *            if true the clone wizard just creates a clone operation. The
+	 *            caller has to run this operation using runCloneOperation. If
+	 *            false the clone operation is performed using a job.
 	 */
-	public void setParentContainer(IWizardContainer parentContainer) {
-		this.parentContainer = parentContainer;
+	public void setCallerRunsCloneOperation(boolean newValue) {
+		callerRunsCloneOperation = newValue;
 	}
 
 	@Override
@@ -178,43 +179,37 @@ public class GitCloneWizard extends Wizard {
 			return false;
 		}
 
-		int timeout = Activator.getDefault().getPreferenceStore().getInt(
-				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		final CloneOperation op = new CloneOperation(uri, allSelected,
-				selectedBranches, workdir, branch, remoteName, timeout);
+				selectedBranches, workdir, branch, remoteName);
 		alreadyClonedInto = workdir.getPath();
 
 		cloneSource.saveUriInPrefs();
-		if (parentContainer == null) {
+		if (!callerRunsCloneOperation)
 			runAsJob(uri, op);
-		} else {
-			runInParentContainer(op);
-		}
+		else
+			cloneOperation = op;
 		return true;
 	}
 
-	private void runInParentContainer(final CloneOperation op) {
-		Runnable runInParentContainer = new Runnable() {
-			public void run() {
-				try {
-					parentContainer.run(true, true,
-							new IRunnableWithProgress() {
-								public void run(IProgressMonitor monitor)
-										throws InvocationTargetException,
-										InterruptedException {
-									executeCloneOperation(op, monitor);
-								}
-							});
-				} catch (InvocationTargetException e) {
-					Activator.handleError(UIText.GitCloneWizard_failed,
-							e.getCause(), true);
-				} catch (InterruptedException e) {
-					// nothing to do
-				}
+	/**
+	 * @param container
+	 */
+	public void runCloneOperation(IWizardContainer container) {
+		try {
+				container.run(true, true,
+						new IRunnableWithProgress() {
+							public void run(IProgressMonitor monitor)
+									throws InvocationTargetException,
+									InterruptedException {
+								executeCloneOperation(cloneOperation, monitor);
+							}
+						});
+			} catch (InvocationTargetException e) {
+				Activator.handleError(UIText.GitCloneWizard_failed,
+						e.getCause(), true);
+			} catch (InterruptedException e) {
+				// nothing to do
 			}
-		};
-		// we need to run this async in order to cleanly close the inner wizard
-		Display.getCurrent().asyncExec(runInParentContainer);
 	}
 
 	private void runAsJob(final URIish uri, final CloneOperation op) {

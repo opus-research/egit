@@ -112,11 +112,11 @@ public class GitSelectRepositoryPage extends WizardPage {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 				GitCloneWizard cloneWizard = new GitCloneWizard();
-				cloneWizard.setParentContainer(getContainer());
-				WizardDialog dlg = new WizardDialog(getShell(),
-						cloneWizard);
-
-				dlg.open();
+				cloneWizard.setCallerRunsCloneOperation(true);
+				WizardDialog dlg = new WizardDialog(getShell(), cloneWizard);
+				if (dlg.open() == Window.OK)
+					cloneWizard.runCloneOperation(getContainer());
+				checkPage();
 			}
 
 		});
@@ -139,10 +139,7 @@ public class GitSelectRepositoryPage extends WizardPage {
 					Set<String> dirs = dlg.getDirectories();
 					for (String dir : dirs)
 						util.addConfiguredRepository(new File(dir));
-
-					tv.setInput(util.getConfiguredRepositories());
 					checkPage();
-
 				}
 			}
 
