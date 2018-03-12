@@ -25,6 +25,7 @@ import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -33,10 +34,9 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.RepositoryUtil;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -121,10 +121,8 @@ public class IgnoreOperation implements IEGitOperation {
 	private void addIgnore(IProgressMonitor monitor, IPath path)
 			throws UnsupportedEncodingException, CoreException, IOException {
 		IPath parent = path.removeLastSegments(1);
-		IResource resource = ResourceUtil.getResourceForLocation(path);
-		IContainer container = null;
-		if (resource != null)
-			container = resource.getParent();
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IContainer container = root.getContainerForLocation(parent);
 
 		String entry = "/" + path.lastSegment() + "\n"; //$NON-NLS-1$  //$NON-NLS-2$
 

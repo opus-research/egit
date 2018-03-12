@@ -16,11 +16,12 @@ import java.util.Set;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.jgit.lib.Repository;
@@ -30,9 +31,6 @@ import org.eclipse.jgit.lib.Repository;
  * A staged/unstaged entry in the table
  */
 public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
-	private String name;
-	private StagingFolderEntry parent;
-
 	/**
 	 * State of the node
 	 */
@@ -46,12 +44,8 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		/** removed from index, but in tree */
 		REMOVED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.UNSTAGE)),
 
-		/** in index (unchanged), but not filesystem */
-		MISSING(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
-
-		/** in index (changed from tree to index), but not filesystem */
-		MISSING_AND_CHANGED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX,
-				Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
+		/** in index, but not filesystem */
+		MISSING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** modified on disk relative to the index */
 		MODIFIED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
@@ -128,17 +122,10 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	/**
-	 * @return the repo-relative path for this file
+	 * @return the full path for this node
 	 */
 	public String getPath() {
 		return path;
-	}
-
-	/**
-	 * @return the repo-relative path of the parent
-	 */
-	public IPath getParentPath() {
-		return new Path(path).removeLastSegments(1);
 	}
 
 	/**
@@ -160,12 +147,12 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	/**
-	 * @return the file corresponding to the entry, if it exists in the
-	 *         workspace, null otherwise.
+	 * @return the file corresponding to the entry
 	 */
 	public IFile getFile() {
 		IPath absolutePath = getLocation();
-		IFile resource = ResourceUtil.getFileForLocation(absolutePath);
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IFile resource = root.getFileForLocation(absolutePath);
 		return resource;
 	}
 
@@ -175,21 +162,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	public IPath getLocation() {
 		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
 		return absolutePath;
-	}
-
-	/**
-	 * @return parent StagingFolderEntry
-	 */
-	public StagingFolderEntry getParent() {
-		return parent;
-	}
-
-	/**
-	 * @param parent
-	 *            StagingFolderEntry
-	 */
-	public void setParent(StagingFolderEntry parent) {
-		this.parent = parent;
 	}
 
 	public int getProblemSeverity() {
@@ -217,11 +189,8 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	public String getName() {
-		if (name == null) {
-			IPath parsed = Path.fromOSString(getPath());
-			name = parsed.lastSegment();
-		}
-		return name;
+		// Not used in StagingViewLabelProvider
+		return null;
 	}
 
 	public String getRepositoryName() {
@@ -257,7 +226,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		case REMOVED:
 			return Staged.REMOVED;
 		case MISSING:
-		case MISSING_AND_CHANGED:
 			return Staged.REMOVED;
 		default:
 			return Staged.NOT_STAGED;

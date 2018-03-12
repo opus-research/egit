@@ -78,19 +78,18 @@ public class GitMoveDeleteHookTest {
 				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
 						.getAbsoluteFile().toString());
 		workspaceSupplement = testUtils.createTempDir("wssupplement");
-		testDirs.add(testUtils.getBaseTempDir());
 		workspace = ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile().getAbsoluteFile();
 	}
 
 	@After
 	public void tearDown() throws IOException, CoreException {
-		ResourcesPlugin.getWorkspace().getRoot().delete(IResource.FORCE, null);
 		if (testRepository != null)
 			testRepository.dispose();
 		repository = null;
 		for (File d : testDirs)
 			if (d.exists())
 				FileUtils.delete(d, FileUtils.RECURSIVE | FileUtils.RETRY);
+		ResourcesPlugin.getWorkspace().getRoot().delete(IResource.FORCE, null);
 	}
 
 	private TestProject initRepoInsideProjectInsideWorkspace() throws IOException,
@@ -600,7 +599,6 @@ public class GitMoveDeleteHookTest {
 		if (gdRelativeSrcParent.startsWith(gitDir))
 			gdRelativeSrcParent = gdRelativeSrcParent
 					.substring(gitDir.length());
-		testDirs.add(new File(dstParent));
 		String gdRelativeDstParent = dstParent + dstProjecName + "/";
 		if (gdRelativeDstParent.startsWith(gitDir))
 			gdRelativeDstParent = gdRelativeDstParent

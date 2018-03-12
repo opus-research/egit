@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -46,7 +46,7 @@ import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.junit.MockSystemReader;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -78,6 +78,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
 						.getAbsoluteFile().toString());
 
+		if (bot.activeView().getTitle().equals("Welcome"))
+			bot.viewByTitle("Welcome").close();
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
 
@@ -172,8 +174,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 
 		String repopath = workspace.getRoot().getProject(projectName0)
 				.getLocation().append(Constants.DOT_GIT).toOSString();
-		existingOrNewPage.assertContents(true, projectName0, projectPath,
-				".git", "");
+		existingOrNewPage
+				.assertContents(true, projectName0, projectPath, repopath, "");
 		existingOrNewPage.assertEnabling(false, false, true);
 
 		assertTrue((new File(repopath)).exists());
@@ -191,15 +193,15 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 	@Test
 	public void shareProjectWithAlreadyCreatedRepos() throws IOException,
 			InterruptedException, JGitInternalException, GitAPIException {
-		Repository repo1 = FileRepositoryBuilder.create(new File(
+		FileRepository repo1 = new FileRepository(new File(
 				createProject(projectName1), "../.git"));
 		repo1.create();
 		repo1.close();
-		Repository repo2 = FileRepositoryBuilder.create(new File(
+		FileRepository repo2 = new FileRepository(new File(
 				createProject(projectName2), ".git"));
 		repo2.create();
 		repo2.close();
-		Repository repo3 = FileRepositoryBuilder.create(new File(
+		FileRepository repo3 = new FileRepository(new File(
 				createProject(projectName3), ".git"));
 		repo3.create();
 		Git git = new Git(repo3);

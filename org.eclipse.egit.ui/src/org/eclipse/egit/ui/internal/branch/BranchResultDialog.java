@@ -152,8 +152,8 @@ public class BranchResultDialog extends MessageDialog {
 			shouldCheckout = true;
 			break;
 		case IDialogConstants.SKIP_ID:
-			StashCreateUI stashCreateUI = new StashCreateUI(repository);
-			shouldCheckout = stashCreateUI.createStash(getShell());
+			StashCreateUI stashCreateUI = new StashCreateUI(getShell(), repository);
+			shouldCheckout = stashCreateUI.createStash();
 			break;
 		case IDialogConstants.CANCEL_ID:
 			super.buttonPressed(buttonId);

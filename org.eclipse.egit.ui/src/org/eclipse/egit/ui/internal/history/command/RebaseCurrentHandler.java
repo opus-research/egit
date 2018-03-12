@@ -23,9 +23,8 @@ import org.eclipse.jgit.lib.BranchConfig;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectIdRef;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Ref.Storage;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.lib.Ref.Storage;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.osgi.util.NLS;
 
@@ -33,14 +32,6 @@ import org.eclipse.osgi.util.NLS;
  * Executes the Rebase
  */
 public class RebaseCurrentHandler extends AbstractHistoryCommandHandler {
-
-	@Override
-	public boolean isEnabled() {
-		final Repository repository = getRepository(getPage());
-		if (repository == null)
-			return false;
-		return repository.getRepositoryState().equals(RepositoryState.SAFE);
-	}
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 
@@ -53,8 +44,7 @@ public class RebaseCurrentHandler extends AbstractHistoryCommandHandler {
 		Ref ref = getRef(commit, repository, currentBranch);
 
 		String jobname = NLS.bind(
-				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
-				currentBranch, ref.getName());
+				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName, currentBranch);
 		RebaseHelper.runRebaseJob(repository, jobname, ref);
 		return null;
 	}

@@ -17,10 +17,8 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -33,13 +31,11 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Plugin;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
@@ -260,86 +256,57 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 		public void resourceChanged(IResourceChangeEvent event) {
 			try {
-
-				final Map<IProject, File> projects = new HashMap<IProject, File>();
-
 				event.getDelta().accept(new IResourceDeltaVisitor() {
+
 					public boolean visit(IResourceDelta delta)
 							throws CoreException {
-						return visitConnect(delta, projects);
+						if (!doAutoShare())
+							return false;
+						if (delta.getKind() == IResourceDelta.CHANGED
+								&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
+							return true;
+						final IResource resource = delta.getResource();
+						if (!resource.exists() || !resource.isAccessible() ||
+								resource.isLinked(IResource.CHECK_ANCESTORS))
+							return false;
+						if (resource.getType() != IResource.PROJECT)
+							return true;
+						if (RepositoryMapping.getMapping(resource) != null)
+							return false;
+						final IProject project = (IProject) resource;
+						RepositoryProvider provider = RepositoryProvider
+								.getProvider(project);
+						// respect if project is already shared with another
+						// team provider
+						if (provider != null)
+							return false;
+						RepositoryFinder f = new RepositoryFinder(project);
+						Collection<RepositoryMapping> mappings = f.find(new NullProgressMonitor());
+						try {
+							if (mappings.size() == 1) {
+								// connect
+								RepositoryMapping m = mappings.iterator()
+										.next();
+								final File repositoryDir = m
+										.getGitDirAbsolutePath().toFile();
+								final ConnectProviderOperation op = new ConnectProviderOperation(
+										project, repositoryDir);
+								JobUtil.scheduleUserJob(op,
+										CoreText.Activator_AutoShareJobName,
+										JobFamilies.AUTO_SHARE);
+								Activator.getDefault().getRepositoryUtil()
+										.addConfiguredRepository(repositoryDir);
+							}
+						} catch (IllegalArgumentException e) {
+							logError(CoreText.Activator_AutoSharingFailed, e);
+						}
+						return false;
 					}
 				});
-
-				if (projects.size() > 0) {
-					ConnectProviderOperation op = new ConnectProviderOperation(
-							projects);
-					JobUtil.scheduleUserJob(op,
-							CoreText.Activator_AutoShareJobName,
-							JobFamilies.AUTO_SHARE);
-				}
-
 			} catch (CoreException e) {
 				Activator.logError(e.getMessage(), e);
 				return;
 			}
-		}
-
-		private boolean visitConnect(IResourceDelta delta,
-				final Map<IProject, File> projects) throws CoreException {
-			if (!doAutoShare())
-				return false;
-			if (delta.getKind() == IResourceDelta.CHANGED
-					&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
-				return true;
-			final IResource resource = delta.getResource();
-			if (!resource.exists() || !resource.isAccessible() ||
-					resource.isLinked(IResource.CHECK_ANCESTORS))
-				return false;
-			if (resource.getType() != IResource.PROJECT)
-				return true;
-			if (RepositoryMapping.getMapping(resource) != null)
-				return false;
-			final IProject project = (IProject) resource;
-			RepositoryProvider provider = RepositoryProvider
-					.getProvider(project);
-			// respect if project is already shared with another
-			// team provider
-			if (provider != null)
-				return false;
-			RepositoryFinder f = new RepositoryFinder(project);
-			Collection<RepositoryMapping> mappings = f.find(new NullProgressMonitor());
-			if (mappings.size() != 1)
-				return false;
-
-			RepositoryMapping m = mappings.iterator().next();
-			IPath gitDirPath = m.getGitDirAbsolutePath();
-			if (gitDirPath.segmentCount() == 0)
-				return false;
-
-			IPath workingDir = gitDirPath.removeLastSegments(1);
-			// Don't connect "/" or "C:\"
-			if (workingDir.isRoot())
-				return false;
-
-			File userHome = FS.DETECTED.userHome();
-			if (userHome != null) {
-				Path userHomePath = new Path(userHome.getAbsolutePath());
-				// Don't connect "/home" or "/home/username"
-				if (workingDir.isPrefixOf(userHomePath))
-					return false;
-			}
-
-			// connect
-			final File repositoryDir = gitDirPath.toFile();
-			projects.put(project, repositoryDir);
-
-			try {
-				Activator.getDefault().getRepositoryUtil()
-						.addConfiguredRepository(repositoryDir);
-			} catch (IllegalArgumentException e) {
-				logError(CoreText.Activator_AutoSharingFailed, e);
-			}
-			return false;
 		}
 	}
 
@@ -385,11 +352,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 							return false;
 
 						final IResource r = delta.getResource();
-						// don't consider resources contained in a project not
-						// shared with Git team provider
-						if ((r.getProject() != null)
-								&& (RepositoryMapping.getMapping(r) == null))
-							return false;
 						if (r.isTeamPrivateMember())
 							return false;
 

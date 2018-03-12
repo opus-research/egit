@@ -35,7 +35,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -320,16 +320,8 @@ public class ProjectUtil {
 		// Sorting makes us look into nested projects first
 		Arrays.sort(allProjects, new Comparator<IProject>() {
 			public int compare(IProject o1, IProject o2) {
-				IPath l1 = o1.getLocation();
-				IPath l2 = o2.getLocation();
-				if (l1 != null && l2 != null)
-					return -l1.toFile().compareTo(l2.toFile());
-				else if (l1 != null)
-					return -1;
-				else if (l2 != null)
-					return 1;
-				else
-					return 0;
+				return -o1.getLocation().toFile()
+						.compareTo(o2.getLocation().toFile());
 			}
 
 		});
@@ -338,16 +330,13 @@ public class ProjectUtil {
 
 	private static boolean checkContainerMatch(IContainer container,
 			String absFile) {
-		IPath location = container.getLocation();
-		if (location != null) {
-			String absPrj = location.toFile().getAbsolutePath();
-			if (absPrj.equals(absFile))
+		String absPrj = container.getLocation().toFile().getAbsolutePath();
+		if (absPrj.equals(absFile))
+			return true;
+		if (absPrj.length() < absFile.length()) {
+			char sepChar = absFile.charAt(absPrj.length());
+			if (sepChar == File.separatorChar && absFile.startsWith(absPrj))
 				return true;
-			if (absPrj.length() < absFile.length()) {
-				char sepChar = absFile.charAt(absPrj.length());
-				if (sepChar == File.separatorChar && absFile.startsWith(absPrj))
-					return true;
-			}
 		}
 		return false;
 	}

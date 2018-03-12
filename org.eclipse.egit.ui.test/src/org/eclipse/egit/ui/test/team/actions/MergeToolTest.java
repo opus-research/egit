@@ -8,19 +8,16 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test.team.actions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 import java.io.File;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.op.MergeOperation;
-import org.eclipse.egit.ui.common.CompareEditorTester;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
@@ -29,8 +26,11 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.junit.TestRepository;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
+import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.After;
@@ -47,8 +47,8 @@ public class MergeToolTest extends LocalRepositoryTestCase {
 	@Before
 	public void setUp() throws Exception {
 		File repositoryFile = createProjectAndCommitToRepository();
-		Repository repository = lookupRepository(repositoryFile);
-		testRepository = new TestRepository<Repository>(repository);
+		FileRepository repository = lookupRepository(repositoryFile);
+		testRepository = new TestRepository<FileRepository>(repository);
 	}
 
 	@After
@@ -72,8 +72,6 @@ public class MergeToolTest extends LocalRepositoryTestCase {
 		assertThat(mergeResult.getConflicts().keySet(),
 				hasItem(path.toString()));
 
-		IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();
-		cache.getIndexDiffCacheEntry(testRepository.getRepository());
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 
 		SWTBotTree packageExplorer = bot
@@ -93,10 +91,11 @@ public class MergeToolTest extends LocalRepositoryTestCase {
 		shell.bot().radio(UIText.MergeModeDialog_MergeMode_2_Label).click();
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
 
-		CompareEditorTester compareEditor = CompareEditorTester
-				.forTitleContaining("Merging");
+		SWTBotEditor editor = bot.editorById("org.eclipse.compare.CompareEditor");
+		SWTBotStyledText styledText = editor.bot().styledText(0);
+		bot.waitUntil(Conditions.widgetIsEnabled(styledText));
 
-		String text = compareEditor.getLeftEditor().getText();
+		String text = styledText.getText();
 		assertThat(text, is("master"));
 	}
 }

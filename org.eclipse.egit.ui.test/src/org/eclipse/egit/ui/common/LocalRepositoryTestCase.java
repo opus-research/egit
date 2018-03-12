@@ -38,7 +38,6 @@ import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
-import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
@@ -50,9 +49,9 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.IO;
 import org.eclipse.swt.SWT;
@@ -125,8 +124,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected static final String FOLDER = "folder";
 
-	protected static TestUtils testUtils = new TestUtils();
-
 	public static File getTestDirectory() {
 		return testDirectory;
 	}
@@ -134,8 +131,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	@BeforeClass
 	public static void beforeClassBase() throws Exception {
 		deleteAllProjects();
-		// create standalone temporary directory
-		testDirectory = testUtils.createTempDir("LocalRepositoriesTests");
+		// create our temporary directory in the user space
+		File userHome = FS.DETECTED.userHome();
+		testDirectory = new File(userHome, "LocalRepositoriesTests");
 		if (testDirectory.exists())
 			FileUtils.delete(testDirectory, FileUtils.RECURSIVE
 					| FileUtils.RETRY);
@@ -206,8 +204,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		File gitDir = new File(new File(testDirectory, repoName),
 				Constants.DOT_GIT);
-		Repository myRepository = new RepositoryBuilder().setGitDir(gitDir)
-				.build();
+		Repository myRepository = new FileRepository(gitDir);
 		myRepository.create();
 
 		// we need to commit into master first
@@ -280,9 +277,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected static File createRemoteRepository(File repositoryDir)
 			throws Exception {
-		Repository myRepository = lookupRepository(repositoryDir);
+		FileRepository myRepository = lookupRepository(repositoryDir);
 		File gitDir = new File(testDirectory, REPO2);
-		Repository myRemoteRepository = FileRepositoryBuilder.create(gitDir);
+		Repository myRemoteRepository = new FileRepository(gitDir);
 		myRemoteRepository.create();
 		// double-check that this is bare
 		assertTrue(myRemoteRepository.isBare());
@@ -415,9 +412,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				existence);
 	}
 
-	protected static Repository lookupRepository(File directory)
+	protected static FileRepository lookupRepository(File directory)
 			throws Exception {
-		return org.eclipse.egit.core.Activator.getDefault()
+		return (FileRepository) org.eclipse.egit.core.Activator.getDefault()
 				.getRepositoryCache().lookupRepository(directory);
 	}
 
@@ -572,7 +569,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	}
 
 	protected static Collection<Ref> getRemoteRefs(URIish uri) throws Exception {
-		final Repository db = FileRepositoryBuilder.create(new File("/tmp")); //$NON-NLS-1$
+		final Repository db = new FileRepository(new File("/tmp")); //$NON-NLS-1$
 		int timeout = 20;
 		ListRemoteOperation listRemoteOp = new ListRemoteOperation(db, uri,
 				timeout);
