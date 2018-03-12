@@ -298,7 +298,7 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_errorParsingHead;
 
 	/** */
-	public static String GitHistoryPage_errorReadingHeadCommit;
+	public static String GitHistoryPage_errorSettingStartPoints;
 
 	/** */
 	public static String GitHistoryPage_FileNotInCommit;
@@ -406,16 +406,7 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_DefaultRepoFolderTooltip;
 
 	/** */
-	public static String GitPreferenceRoot_HideConfirmationGroup;
-
-	/** */
-	public static String GitPreferenceRoot_HideRebaseConfirmationField;
-
-	/** */
 	public static String GitPreferenceRoot_HistoryGroupHeader;
-
-	/** */
-	public static String GitPreferenceRoot_InitialConfiguration;
 
 	/** */
 	public static String GitPreferenceRoot_MergeGroupHeader;
@@ -440,9 +431,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
-
-	/** */
-	public static String GitPreferenceRoot_ShowInitialConfigDialogCheckbox;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -2456,6 +2444,27 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesViewLabelProvider_TagsNodeText;
+
+	/** */
+	public static String DialogsPreferencePage_DetachedHeadCombo;
+
+	/** */
+	public static String DialogsPreferencePage_DontShowDialog;
+
+	/** */
+	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
+
+	/** */
+	public static String DialogsPreferencePage_HomeDirWarning;
+
+	/** */
+	public static String DialogsPreferencePage_RebaseCheckbox;
+
+	/** */
+	public static String DialogsPreferencePage_ShowDialog;
+
+	/** */
+	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
 
 	/** */
 	public static String DiscardChangesAction_confirmActionTitle;

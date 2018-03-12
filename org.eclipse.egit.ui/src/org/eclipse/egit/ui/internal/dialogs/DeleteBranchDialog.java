@@ -90,8 +90,7 @@ public class DeleteBranchDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public DeleteBranchDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo);
-		setRootsToShow(true, true, false, false);
+		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES);
 		try {
 			currentBranch = repo.getFullBranch();
 		} catch (IOException e) {

@@ -218,6 +218,7 @@ public class BranchOperationUI {
 
 		BranchOperation bop = new BranchOperation(repository, target);
 		bop.execute(monitor);
+
 		BranchResultDialog.show(bop.getResult(), repository, target);
 	}
 
