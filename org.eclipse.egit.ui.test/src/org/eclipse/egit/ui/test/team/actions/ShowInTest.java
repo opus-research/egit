@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.test.team.actions;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
@@ -74,7 +73,7 @@ public class ShowInTest extends LocalRepositoryTestCase {
 		String menuString = util
 				.getPluginLocalizedValue("ShowResourceInHistoryAction_label");
 		// Team->show in history must be disabled on a multiple selection
-		assertTrue(ContextMenuHelper.isContextMenuItemEnabled(projectExplorerTree, "Team",
+		assertFalse(ContextMenuHelper.isContextMenuItemEnabled(projectExplorerTree, "Team",
 					menuString));
 	}
 
