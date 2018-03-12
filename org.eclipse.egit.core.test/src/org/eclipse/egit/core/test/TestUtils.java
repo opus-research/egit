@@ -65,7 +65,7 @@ public class TestUtils {
 	 *         directory; may or may not exist
 	 * @throws IOException
 	 */
-	public File getTempDir(String name) throws IOException {
+	public File createTempDir(String name) throws IOException {
 		File userHome = FS.DETECTED.userHome();
 		File rootDir = new File(userHome, "EGitCoreTestTempDir");
 		File result = new File(rootDir, name);
@@ -135,6 +135,22 @@ public class TestUtils {
 		IFile file = project.getFile(filePath);
 		file.create(new ByteArrayInputStream(content.getBytes(project
 				.getDefaultCharset())), true, null);
+		return file;
+	}
+
+	/**
+	 * Change the content of a file
+	 *
+	 * @param project
+	 * @param file
+	 * @param newContent
+	 * @return the file
+	 * @throws Exception
+	 */
+	public IFile changeContentOfFile(IProject project, IFile file, String newContent)
+			throws Exception {
+		file.setContents(new ByteArrayInputStream(newContent.getBytes(project
+				.getDefaultCharset())), 0, null);
 		return file;
 	}
 

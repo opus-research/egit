@@ -13,26 +13,28 @@ package org.eclipse.egit.core.synchronize;
 
 import java.io.IOException;
 
-import org.eclipse.core.resources.IResource;
+import org.eclipse.egit.core.RevUtils;
+import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Tree;
-import org.eclipse.team.core.variants.ResourceVariantByteStore;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.team.core.TeamException;
+import org.eclipse.team.core.variants.SessionResourceVariantByteStore;
 
 class GitBaseResourceVariantTree extends GitResourceVariantTree {
 
-	GitBaseResourceVariantTree(GitSynchronizeDataSet data, ResourceVariantByteStore store) {
-		super(data, store);
+	GitBaseResourceVariantTree(GitSynchronizeDataSet gsds) {
+		super(new SessionResourceVariantByteStore(), gsds);
 	}
 
 	@Override
-	Tree getRevTree(IResource resource) throws IOException {
-		return getSyncData().getData(resource.getProject()).mapSrcTree();
-	}
-
-	@Override
-	ObjectId getRevObjId(IResource resource) throws IOException {
-		return getSyncData().getData(resource.getProject()).getSrcObjectId();
+	protected RevCommit getRevCommit(GitSynchronizeData gsd)
+			throws TeamException {
+		try {
+			return RevUtils.getCommonAncestor(gsd.getRepository(), gsd
+					.getSrcRevCommit(), gsd.getDstRevCommit());
+		} catch (IOException e) {
+			throw new TeamException(e.getMessage(), e);
+		}
 	}
 
 }
