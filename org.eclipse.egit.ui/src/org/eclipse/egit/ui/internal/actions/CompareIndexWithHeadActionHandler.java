@@ -11,7 +11,6 @@ package org.eclipse.egit.ui.internal.actions;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -33,6 +32,8 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
  * Compares the index content of a file with the version of the file in
@@ -65,7 +66,10 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 
 		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 				base, next, null);
-		CompareUI.openCompareEditor(in);
+
+		IWorkbenchPage workBenchPage = HandlerUtil.getActiveWorkbenchWindowChecked(event).getActivePage();
+		CompareUtils.openInCompare(workBenchPage, in);
+
 		return null;
 	}
 
