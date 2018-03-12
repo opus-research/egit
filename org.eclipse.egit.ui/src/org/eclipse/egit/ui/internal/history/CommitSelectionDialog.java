@@ -257,7 +257,7 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		if (filterResources == null)
 			return TreeFilter.ALL;
 
-		List<TreeFilter> filters = new ArrayList<>();
+		List<TreeFilter> filters = new ArrayList<TreeFilter>();
 		for (IResource resource : filterResources) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
 			if (mapping != null) {

@@ -212,7 +212,7 @@ public class PushWizard extends Wizard {
 				// obtain the push ref specs from the configuration
 				// use our own list here, as the config returns a non-modifiable
 				// list
-				final Collection<RefSpec> pushSpecs = new ArrayList<>();
+				final Collection<RefSpec> pushSpecs = new ArrayList<RefSpec>();
 				pushSpecs.addAll(config.getPushRefSpecs());
 				final Collection<RemoteRefUpdate> updates = Transport
 						.findRemoteRefUpdatesFor(localDb, pushSpecs,

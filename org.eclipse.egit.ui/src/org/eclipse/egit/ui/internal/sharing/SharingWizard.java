@@ -78,7 +78,7 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 				final Map<IProject, File> projectsToMove = existingPage
 						.getProjects(true);
 				final Repository selectedRepository = existingPage
-						.getSelectedRepsoitory();
+						.getSelectedRepository();
 				getContainer().run(true, false, new IRunnableWithProgress() {
 					@Override
 					public void run(IProgressMonitor monitor)
@@ -139,7 +139,7 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 									.syncExec(new Runnable() {
 										@Override
 										public void run() {
-											Set<File> filesToAdd = new HashSet<>();
+											Set<File> filesToAdd = new HashSet<File>();
 											// collect all files first
 											for (Entry<IProject, File> entry : existingPage
 													.getProjects(true)

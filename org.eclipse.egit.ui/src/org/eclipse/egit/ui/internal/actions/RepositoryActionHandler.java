@@ -89,7 +89,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	private IProject[] getProjectsForSelectedResources(
 			IStructuredSelection selection) {
-		Set<IProject> ret = new LinkedHashSet<>();
+		Set<IProject> ret = new LinkedHashSet<IProject>();
 		for (IResource resource : getSelectedAdaptables(selection,
 				IResource.class)) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
@@ -105,7 +105,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 
 	private Set<IProject> extractProjectsFromMappings(
 			IStructuredSelection selection) {
-		Set<IProject> ret = new LinkedHashSet<>();
+		Set<IProject> ret = new LinkedHashSet<IProject>();
 		for (ResourceMapping mapping : getSelectedAdaptables(selection,
 				ResourceMapping.class)) {
 			IProject[] mappedProjects = mapping.getProjects();
@@ -113,7 +113,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				// Some mappings (WorkingSetResourceMapping) return the projects
 				// in unpredictable order. Sort them like the navigator to
 				// correspond to the order the user usually sees.
-				List<IProject> projects = new ArrayList<>(
+				List<IProject> projects = new ArrayList<IProject>(
 						Arrays.asList(mappedProjects));
 				Collections
 						.sort(projects, CommonUtils.RESOURCE_NAME_COMPARATOR);
@@ -160,7 +160,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * @return the repositories that projects map to if all projects are mapped
 	 */
 	protected Repository[] getRepositoriesFor(final IProject[] projects) {
-		Set<Repository> ret = new LinkedHashSet<>();
+		Set<Repository> ret = new LinkedHashSet<Repository>();
 		for (IProject project : projects) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
 					.getMapping(project);
@@ -246,7 +246,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		}
 		IStructuredSelection selection = getSelection(event);
 		if (!selection.isEmpty()) {
-			Set<Repository> repos = new LinkedHashSet<>();
+			Set<Repository> repos = new LinkedHashSet<Repository>();
 			for (Object o : selection.toArray()) {
 				Repository repo = AdapterUtils.adapt(o, Repository.class);
 				if (repo != null) {
@@ -270,7 +270,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			return getRepositoriesFor(selectedProjects);
 		IStructuredSelection selection = getSelection();
 		if (!selection.isEmpty()) {
-			Set<Repository> repos = new LinkedHashSet<>();
+			Set<Repository> repos = new LinkedHashSet<Repository>();
 			for (Object o : selection.toArray()) {
 				Repository repo = AdapterUtils.adapt(o, Repository.class);
 				if (repo != null) {
@@ -455,7 +455,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	}
 
 	protected List<PreviousCommit> findPreviousCommits() throws IOException {
-		List<PreviousCommit> result = new ArrayList<>();
+		List<PreviousCommit> result = new ArrayList<PreviousCommit>();
 		Repository repository = getRepository();
 		IResource resource = getSelectedResources()[0];
 		if (resource == null) {
