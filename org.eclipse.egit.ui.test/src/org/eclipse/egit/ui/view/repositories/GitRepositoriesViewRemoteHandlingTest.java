@@ -51,8 +51,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 				repositoryFile);
 		File repoRoot = new File(testDirectory, "RepositoryRoot");
 		repoRoot.mkdir();
-		Activator.getDefault().getPreferenceStore().setValue(
-				UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
+		Activator.getDefault().getPreferenceStore().setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 	}
 
 	/**
