@@ -10,12 +10,14 @@
 package org.eclipse.egit.core.op;
 
 import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.jgit.api.Git;
@@ -43,7 +45,7 @@ public class PushOperation {
 
 	private final boolean dryRun;
 
-	private final RemoteConfig rc;
+	private final String remoteName;
 
 	private final int timeout;
 
@@ -71,7 +73,7 @@ public class PushOperation {
 		this.localDb = localDb;
 		this.specification = specification;
 		this.dryRun = dryRun;
-		this.rc = null;
+		this.remoteName = null;
 		this.timeout = timeout;
 	}
 
@@ -79,16 +81,16 @@ public class PushOperation {
 	 * Creates a push operation for a remote configuration.
 	 *
 	 * @param localDb
-	 * @param rc
+	 * @param remoteName
 	 * @param dryRun
 	 * @param timeout
 	 */
-	public PushOperation(final Repository localDb, final RemoteConfig rc,
+	public PushOperation(final Repository localDb, final String remoteName,
 			final boolean dryRun, int timeout) {
 		this.localDb = localDb;
 		this.specification = null;
 		this.dryRun = dryRun;
-		this.rc = rc;
+		this.remoteName = remoteName;
 		this.timeout = timeout;
 	}
 
@@ -199,13 +201,12 @@ public class PushOperation {
 					} catch (JGitInternalException e) {
 						String errorMessage = e.getCause() != null ? e
 								.getCause().getMessage() : e.getMessage();
-						String userMessage = NLS
-								.bind(
+						String userMessage = NLS.bind(
 										CoreText.PushOperation_InternalExceptionOccurredMessage,
 										errorMessage);
-						operationResult.addOperationResult(uri, userMessage);
+						handleException(uri, e, userMessage);
 					} catch (InvalidRemoteException e) {
-						operationResult.addOperationResult(uri, e.getMessage());
+						handleException(uri, e, e.getMessage());
 					}
 
 					monitor.worked(WORK_UNITS_PER_TRANSPORT);
@@ -221,7 +222,7 @@ public class PushOperation {
 					monitor);
 			try {
 				Iterable<PushResult> results = git.push().setRemote(
-						rc.getName()).setDryRun(dryRun).setTimeout(timeout)
+						remoteName).setDryRun(dryRun).setTimeout(timeout)
 						.setProgressMonitor(gitMonitor).setCredentialsProvider(
 								credentialsProvider).call();
 				for (PushResult result : results) {
@@ -233,15 +234,41 @@ public class PushOperation {
 				String userMessage = NLS.bind(
 						CoreText.PushOperation_InternalExceptionOccurredMessage,
 						errorMessage);
-				URIish uri = rc.getPushURIs().isEmpty() ? rc.getURIs().get(0)
-						: rc.getPushURIs().get(0);
-				operationResult.addOperationResult(uri, userMessage);
+				URIish uri = getPushURIForErrorHandling();
+				handleException(uri, e, userMessage);
 			} catch (InvalidRemoteException e) {
-				URIish uri = rc.getPushURIs().isEmpty() ? rc.getURIs().get(0)
-						: rc.getPushURIs().get(0);
-				operationResult.addOperationResult(uri, e.getMessage());
+				URIish uri = getPushURIForErrorHandling();
+				handleException(uri, e, e.getMessage());
 			}
 		}
 		monitor.done();
+	}
+
+	private void handleException(final URIish uri, Exception e,
+			String userMessage) {
+		String uriString;
+		if (uri != null) {
+			operationResult.addOperationResult(uri, userMessage);
+			uriString = uri.toString();
+		} else
+			uriString = "retrieving URI failed"; //$NON-NLS-1$
+
+		String userMessageForUri = NLS.bind(
+				CoreText.PushOperation_ExceptionOccurredDuringPushOnUriMessage,
+				uriString, userMessage);
+		Activator.logError(userMessageForUri, e);
+	}
+
+	private URIish getPushURIForErrorHandling() {
+		RemoteConfig rc = null;
+		try {
+			rc = new RemoteConfig(localDb.getConfig(), remoteName);
+			return rc.getPushURIs().isEmpty() ? rc.getURIs().get(0) : rc
+					.getPushURIs().get(0);
+		} catch (URISyntaxException e) {
+			// should not happen
+			Activator.logError("Reading RemoteConfig failed", e); //$NON-NLS-1$
+			return null;
+		}
 	}
 }

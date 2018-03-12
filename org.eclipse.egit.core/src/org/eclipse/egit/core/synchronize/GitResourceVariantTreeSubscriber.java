@@ -23,7 +23,6 @@ import java.util.Set;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
@@ -68,8 +67,7 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public boolean isSupervised(IResource res) throws TeamException {
 		return IResource.FILE == res.getType()
-				&& gsds.contains(res.getProject()) && !isIgnoredHint(res)
-				&& shouldBeIncluded(res);
+				&& gsds.contains(res.getProject()) && !isIgnoredHint(res);
 	}
 
 	@Override
@@ -178,20 +176,6 @@ public class GitResourceVariantTreeSubscriber extends
 			tw.next();
 			tw.enterSubtree();
 		}
-	}
-
-	private boolean shouldBeIncluded(IResource res) {
-		Set<IContainer> includedPaths = gsds.getData(res.getProject())
-				.getIncludedPaths();
-		if (includedPaths == null)
-			return true;
-
-		IPath path = res.getLocation();
-		for (IContainer container : includedPaths)
-			if (container.getLocation().isPrefixOf(path))
-				return true;
-
-		return false;
 	}
 
 }
