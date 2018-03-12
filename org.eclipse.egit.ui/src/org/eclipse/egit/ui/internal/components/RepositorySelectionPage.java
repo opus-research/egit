@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
@@ -42,7 +41,6 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.layout.GridData;
@@ -86,8 +84,6 @@ public class RepositorySelectionPage extends WizardPage {
 
 	private Text passText;
 
-	private Button storeCheckbox;
-
 	private Combo scheme;
 
 	private Text portText;
@@ -111,12 +107,6 @@ public class RepositorySelectionPage extends WizardPage {
 	private Button uriButton;
 
 	private IPreviousValueProposalHandler uriProposalHandler;
-
-	private String user;
-
-	private String password;
-
-	private boolean storeInSecureStore = true;
 
 	/**
 	 * Transport protocol abstraction
@@ -549,33 +539,12 @@ public class RepositorySelectionPage extends WizardPage {
 		userText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setUser(nullString(userText.getText())));
-				user = userText.getText();
 			}
 		});
 
 		newLabel(g, UIText.RepositorySelectionPage_promptPassword + ":"); //$NON-NLS-1$
 		passText = new Text(g, SWT.BORDER | SWT.PASSWORD);
 		passText.setLayoutData(createFieldGridData());
-		passText.addModifyListener(new ModifyListener() {
-			public void modifyText(final ModifyEvent e) {
-				setURI(uri.setPass(null));
-				password = passText.getText();
-			}
-		});
-
-		newLabel(g, UIText.RepositorySelectionPage_storeInSecureStore);
-		storeCheckbox = new Button(g, SWT.CHECK);
-		storeCheckbox.setSelection(storeInSecureStore);
-		storeCheckbox.addSelectionListener(new SelectionListener() {
-			public void widgetSelected(SelectionEvent e) {
-				storeInSecureStore = storeCheckbox.getSelection();
-			}
-
-			public void widgetDefaultSelected(SelectionEvent e) {
-				storeInSecureStore = storeCheckbox.getSelection();
-			}
-		});
-
 		return g;
 	}
 
@@ -885,23 +854,6 @@ public class RepositorySelectionPage extends WizardPage {
 	 */
 	public void saveUriInPrefs() {
 		uriProposalHandler.updateProposals();
-	}
-
-	/**
-	 * @return credentials
-	 */
-	public UserPasswordCredentials getCredentials() {
-		if ((user == null || user.length() == 0)
-				&& (password == null || password.length() == 0))
-			return null;
-		return new UserPasswordCredentials(user, password);
-	}
-
-	/**
-	 * @return true if credentials should be stored
-	 */
-	public boolean getStoreInSecureStore() {
-		return this.storeInSecureStore;
 	}
 
 	private void setEnabledRecursively(final Control control,

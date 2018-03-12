@@ -21,7 +21,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.op.PushOperation;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
-import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -35,7 +34,6 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -68,8 +66,6 @@ class ConfirmationPage extends WizardPage {
 
 	private Button showOnlyIfChanged;
 
-	private UserPasswordCredentials credentials;
-
 	public ConfirmationPage(final Repository local) {
 		super(ConfirmationPage.class.getName());
 		this.local = local;
@@ -101,10 +97,6 @@ class ConfirmationPage extends WizardPage {
 	public void setSelection(RepositorySelection repositorySelection, List<RefSpec> specSelection){
 		checkPreviousPagesSelections(repositorySelection, specSelection);
 		revalidate(repositorySelection, specSelection);
-	}
-
-	public void setCredentials(UserPasswordCredentials credentials) {
-		this.credentials = credentials;
 	}
 
 	boolean isConfirmed() {
@@ -179,9 +171,6 @@ class ConfirmationPage extends WizardPage {
 					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 			operation = new PushOperation(local, spec, true,
 					displayedRepoSelection.getConfig(), timeout);
-			if (credentials != null)
-				operation.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
-						credentials.getUser(), credentials.getPassword()));
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
