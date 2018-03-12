@@ -76,7 +76,7 @@ abstract class AbstractReflogCommandHandler extends AbstractHandler {
 		} catch (IOException e) {
 			throw new ExecutionException(e.getMessage(), e);
 		} finally {
-			w.dispose();
+			w.release();
 		}
 		return commit;
 	}
