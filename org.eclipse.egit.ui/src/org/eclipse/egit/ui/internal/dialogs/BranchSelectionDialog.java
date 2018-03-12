@@ -20,12 +20,8 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
-import org.eclipse.egit.ui.internal.repository.tree.LocalBranchesNode;
-import org.eclipse.egit.ui.internal.repository.tree.RefNode;
-import org.eclipse.egit.ui.internal.repository.tree.RemoteBranchesNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
-import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
+import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode;
+import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
@@ -45,8 +41,8 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefRename;
 import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RefUpdate.Result;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -92,9 +88,12 @@ public class BranchSelectionDialog extends TitleAreaDialog {
 	public BranchSelectionDialog(Shell parentShell, Repository repo) {
 		super(parentShell);
 		this.repo = repo;
-		localBranches = new LocalBranchesNode(null, this.repo);
-		remoteBranches = new RemoteBranchesNode(null, this.repo);
-		tags = new TagsNode(null, this.repo);
+		localBranches = new RepositoryTreeNode<Repository>(null,
+				RepositoryTreeNodeType.LOCALBRANCHES, this.repo, this.repo);
+		remoteBranches = new RepositoryTreeNode<Repository>(null,
+				RepositoryTreeNodeType.REMOTEBRANCHES, this.repo, this.repo);
+		tags = new RepositoryTreeNode<Repository>(null,
+				RepositoryTreeNodeType.TAGS, this.repo, this.repo);
 	}
 
 	@Override
@@ -105,7 +104,7 @@ public class BranchSelectionDialog extends TitleAreaDialog {
 		// TODO deprecated constructor for now
 		FilteredTree tree = new FilteredTree(parent, SWT.SINGLE | SWT.BORDER, new PatternFilter());
 		branchTree = tree.getViewer();
-		branchTree.setLabelProvider(new RepositoriesViewLabelProvider());
+		new RepositoriesViewLabelProvider(branchTree);
 		branchTree.setContentProvider(new RepositoriesViewContentProvider());
 
 		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300).applyTo(
@@ -220,7 +219,8 @@ public class BranchSelectionDialog extends TitleAreaDialog {
 			return false;
 		}
 
-		RefNode actNode = new RefNode(parentNode, repo, actRef);
+		RepositoryTreeNode<Ref> actNode = new RepositoryTreeNode<Ref>(
+				parentNode, RepositoryTreeNodeType.REF, repo, actRef);
 		branchTree.setSelection(new StructuredSelection(actNode), true);
 		return true;
 	}
