@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +22,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -36,6 +36,11 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jgit.events.ListenerHandle;
+import org.eclipse.jgit.events.RefsChangedEvent;
+import org.eclipse.jgit.events.RefsChangedListener;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -103,6 +108,10 @@ class CommitMessageViewer extends TextViewer implements
 
 	private final IWorkbenchPartSite partSite;
 
+	private List<Ref> allRefs;
+
+	private ListenerHandle refsChangedListener;
+
 	CommitMessageViewer(final Composite parent, final IPageSite site, IWorkbenchPartSite partSite) {
 		super(parent, SWT.H_SCROLL | SWT.V_SCROLL | SWT.READ_ONLY);
 		this.partSite = partSite;
@@ -126,9 +135,8 @@ class CommitMessageViewer extends TextViewer implements
 			@Override
 			public void mouseDown(final MouseEvent e) {
 				// only process the hyper link if it was a primary mouse click
-				if (e.button != 1) {
+				if (e.button != 1)
 					return;
-				}
 
 				final StyleRange r = getStyleRange(e.x, e.y);
 				if (r instanceof ObjectLink) {
@@ -236,6 +244,9 @@ class CommitMessageViewer extends TextViewer implements
 		}
 		Activator.getDefault().getPreferenceStore()
 				.removePropertyChangeListener(listener);
+		if (refsChangedListener != null)
+			refsChangedListener.remove();
+		refsChangedListener = null;
 		super.handleDispose();
 	}
 
@@ -255,6 +266,15 @@ class CommitMessageViewer extends TextViewer implements
 			return;
 		currentDiffs.clear();
 		commit = (PlotCommit<?>) input;
+		allRefs = getBranches();
+		if (refsChangedListener != null)
+			refsChangedListener.remove();
+		refsChangedListener = db.getListenerList().addRefsChangedListener(new RefsChangedListener() {
+
+			public void onRefsChanged(RefsChangedEvent event) {
+				allRefs = getBranches();
+			}
+		});
 		format();
 	}
 
@@ -266,6 +286,17 @@ class CommitMessageViewer extends TextViewer implements
 		this.db = repository;
 	}
 
+	private List<Ref> getBranches()  {
+		List<Ref> ref = new ArrayList<Ref>();
+		try {
+			ref.addAll(db.getRefDatabase().getRefs(Constants.R_HEADS).values());
+			ref.addAll(db.getRefDatabase().getRefs(Constants.R_REMOTES).values());
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+		}
+		return ref;
+	}
+
 	private Repository getRepository() {
 		if (db == null)
 			throw new IllegalStateException("Repository has not been set"); //$NON-NLS-1$
@@ -274,13 +305,11 @@ class CommitMessageViewer extends TextViewer implements
 
 	private void format() {
 		if (commit == null) {
-			setDocument(new Document(
-					UIText.CommitMessageViewer_SelectOneCommitMessage));
+			setDocument(new Document("")); //$NON-NLS-1$
 			return;
 		}
-		if (formatJob != null && formatJob.getState() != Job.NONE) {
+		if (formatJob != null && formatJob.getState() != Job.NONE)
 			formatJob.cancel();
-		}
 		scheduleFormatJob();
 	}
 
@@ -292,7 +321,8 @@ class CommitMessageViewer extends TextViewer implements
 		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(getRepository(),
 				commit, fill, currentDiffs, SYS_LINKCOLOR, SYS_DARKGRAY,
 				SYS_HUNKHEADER_COLOR, SYS_LINES_ADDED_COLOR,
-				SYS_LINES_REMOVED_COLOR);
+				SYS_LINES_REMOVED_COLOR,
+				allRefs);
 		formatJob = new FormatJob(formatRequest);
 		addDoneListenerToFormatJob();
 		siteService.schedule(formatJob, 0 /* now */, true /*

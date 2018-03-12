@@ -24,9 +24,12 @@ public class GitCorePreferences {
 	public static final String core_deltaBaseCacheLimit =
 		"core_deltaBaseCacheLimit";  //$NON-NLS-1$
 	/** */
+	public static final String core_streamFileThreshold =
+		"core_streamFileThreshold"; //$NON-NLS-1$
+	/** */
 	public static final String core_autoShareProjects =
 		"core_autoShareProjects";  //$NON-NLS-1$
 	/** */
-	public static String core_gitPrefix =
+	public static final String core_gitPrefix =
 		"core_gitPrefix"; //$NON-NLS-1$
 }

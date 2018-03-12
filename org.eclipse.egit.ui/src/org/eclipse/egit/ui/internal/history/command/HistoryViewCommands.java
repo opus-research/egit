@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2010, 2012 Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -41,11 +41,17 @@ public class HistoryViewCommands {
 	/** "Delete Branch" */
 	public static final String DELETE_BRANCH = "org.eclipse.egit.ui.history.DeleteBranch"; //$NON-NLS-1$
 
+	/** "Rename Branch" */
+	public static final String RENAME_BRANCH = "org.eclipse.egit.ui.history.RenameBranch"; //$NON-NLS-1$
+
 	/** "Create Patch" */
 	public static final String CREATE_PATCH = "org.eclipse.egit.ui.history.CreatePatch"; //$NON-NLS-1$
 
 	/** "Create Tag" */
 	public static final String CREATE_TAG = "org.eclipse.egit.ui.history.CreateTag"; //$NON-NLS-1$
+
+	/** "Push Commit" */
+	public static final String PUSH_COMMIT = "org.eclipse.egit.ui.history.PushCommit"; //$NON-NLS-1$
 
 	/** "Open" */
 	public static final String OPEN = "org.eclipse.egit.ui.history.ShowVersions"; //$NON-NLS-1$

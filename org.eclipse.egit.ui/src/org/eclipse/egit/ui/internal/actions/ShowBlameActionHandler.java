@@ -53,9 +53,4 @@ public class ShowBlameActionHandler extends RepositoryActionHandler {
 				JobFamilies.BLAME);
 		return null;
 	}
-
-	@Override
-	public boolean isEnabled() {
-		return !selectionContainsLinkedResources();
-	}
 }

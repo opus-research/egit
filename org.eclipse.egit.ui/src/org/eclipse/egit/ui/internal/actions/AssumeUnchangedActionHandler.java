@@ -37,9 +37,4 @@ public class AssumeUnchangedActionHandler extends RepositoryActionHandler {
 				JobFamilies.ASSUME_NOASSUME_UNCHANGED);
 		return null;
 	}
-
-	@Override
-	public boolean isEnabled() {
-		return !selectionContainsLinkedResources();
-	}
 }
