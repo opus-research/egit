@@ -91,7 +91,6 @@ public class GitMoveDeleteHookTest {
 		for (File d : testDirs)
 			if (d.exists())
 				FileUtils.delete(d, FileUtils.RECURSIVE | FileUtils.RETRY);
-		SystemReader.setInstance(null);
 	}
 
 	private TestProject initRepoInsideProjectInsideWorkspace() throws IOException,

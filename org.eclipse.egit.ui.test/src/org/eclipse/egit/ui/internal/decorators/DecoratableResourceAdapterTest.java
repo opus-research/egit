@@ -35,6 +35,7 @@ import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.FileUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -75,6 +76,14 @@ public class DecoratableResourceAdapterTest extends LocalRepositoryTestCase {
 		if (refreshCache)
 			indexDiffCacheEntry.refresh();
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		deleteAllProjects();
+		shutDownRepositories();
+		FileUtils.delete(gitDir.getParentFile(), FileUtils.RECURSIVE
+				| FileUtils.RETRY);
 	}
 
 	@Test

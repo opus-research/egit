@@ -33,6 +33,7 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -84,9 +85,11 @@ public class CreatePatchActionTest extends LocalRepositoryTestCase {
 			+ "+Hello, world\n" //
 			+ "\\ No newline at end of file";
 
+	private File gitDir;
+
 	@Before
 	public void setup() throws Exception {
-		createProjectAndCommitToRepository();
+		gitDir = createProjectAndCommitToRepository();
 
 		IFile[] commitables = getAllFiles();
 		CommitOperation cop = new CommitOperation(commitables,
@@ -113,6 +116,14 @@ public class CreatePatchActionTest extends LocalRepositoryTestCase {
 		return new IFile[] { firstProject.getFile(".project"), textFile,
 				textFile2, secondProject.getFile(".project"), secondtextFile,
 				secondtextFile2 };
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		deleteAllProjects();
+		shutDownRepositories();
+		FileUtils.delete(gitDir.getParentFile(), FileUtils.RECURSIVE
+				| FileUtils.RETRY);
 	}
 
 	@Test
@@ -177,6 +188,7 @@ public class CreatePatchActionTest extends LocalRepositoryTestCase {
 	public void testWorkspace() throws Exception {
 		touchAndSubmit("oldContent", null);
 		touch("newContent");
+		waitInUI();
 
 		CreatePatchWizard createPatchWizard = openCreatePatchWizard();
 		LocationPage locationPage = createPatchWizard.getLocationPage();
@@ -207,6 +219,7 @@ public class CreatePatchActionTest extends LocalRepositoryTestCase {
 		newFile.create(
 				new ByteArrayInputStream("Hello, world".getBytes(secondProject
 						.getDefaultCharset())), false, null);
+		waitInUI();
 
 		CreatePatchWizard createPatchWizard = openCreatePatchWizard();
 		LocationPage locationPage = createPatchWizard.getLocationPage();
