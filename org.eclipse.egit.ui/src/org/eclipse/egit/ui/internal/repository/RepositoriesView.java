@@ -856,7 +856,10 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 					new FileStoreEditorInput(store),
 					EditorsUI.DEFAULT_TEXT_EDITOR_ID);
 		} catch (PartInitException e) {
-			Activator.handleError(UIText.RepositoriesView_Error_WindowTitle, e, true);
+			MessageDialog.openError(getSite().getShell(),
+					UIText.RepositoriesView_Error_WindowTitle, e.getMessage());
+			Activator.getDefault().getLog().log(
+					Activator.error("Failed to open editor on external file", e)); //$NON-NLS-1$
 		}
 	}
 
