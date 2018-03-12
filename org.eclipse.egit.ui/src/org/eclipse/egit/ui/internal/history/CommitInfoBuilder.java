@@ -171,8 +171,7 @@ public class CommitInfoBuilder {
 		}
 
 		for (int i = 0; i < commit.getParentCount(); i++) {
-			final SWTCommit p = (SWTCommit)commit.getParent(i);
-			p.parseBody();
+			final RevCommit p = commit.getParent(i);
 			d.append(UIText.CommitMessageViewer_parent);
 			d.append(": "); //$NON-NLS-1$
 			addLink(d, styles, p);
@@ -183,8 +182,7 @@ public class CommitInfoBuilder {
 		}
 
 		for (int i = 0; i < commit.getChildCount(); i++) {
-			final SWTCommit p = (SWTCommit)commit.getChild(i);
-			p.parseBody();
+			final RevCommit p = commit.getChild(i);
 			d.append(UIText.CommitMessageViewer_child);
 			d.append(": "); //$NON-NLS-1$
 			addLink(d, styles, p);
@@ -309,14 +307,8 @@ public class CommitInfoBuilder {
 		addLink(d, to.getId().name(), styles, to);
 	}
 
-	/**
-	 * @param commit
-	 * @param allRefs
-	 * @param db
+	/*
 	 * @return List of heads from those current commit is reachable
-	 * @throws MissingObjectException
-	 * @throws IncorrectObjectTypeException
-	 * @throws IOException
 	 */
 	private static List<Ref> getBranches(RevCommit commit,
 			Collection<Ref> allRefs, Repository db)

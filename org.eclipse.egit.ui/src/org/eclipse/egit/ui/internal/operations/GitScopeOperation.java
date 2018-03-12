@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.operations;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +25,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.errors.NoWorkTreeException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.mapping.ISynchronizationScopeManager;
 import org.eclipse.team.ui.synchronize.ModelOperation;
@@ -67,9 +69,14 @@ public class GitScopeOperation extends ModelOperation {
 	protected boolean promptForInputChange(String requestPreviewMessage,
 			IProgressMonitor monitor) {
 		List<IResource> relevantResources = getRelevantResources();
+		boolean showPrompt = false;
+
 		for (IResource resource : relevantResources)
-			if (hasChanged(resource))
+			showPrompt |= hasChanged(resource);
+
+		if(showPrompt)
 				return super.promptForInputChange(requestPreviewMessage, monitor);
+
 		return false;
 	}
 
@@ -81,12 +88,15 @@ public class GitScopeOperation extends ModelOperation {
 			Status repoStatus = new Git(repository).status().call();
 			String path = resource.getFullPath().removeFirstSegments(1)
 					.toOSString();
-			hasChanged = repoStatus.getAdded().contains(path)
-					|| repoStatus.getChanged().contains(path)
-					|| repoStatus.getModified().contains(path)
-					|| repoStatus.getRemoved().contains(path)
-					|| repoStatus.getUntracked().contains(path);
-		} catch (Exception e) {
+			hasChanged |= repoStatus.getAdded().contains(path);
+			hasChanged |= repoStatus.getChanged().contains(path);
+			hasChanged |= repoStatus.getModified().contains(path);
+			hasChanged |= repoStatus.getRemoved().contains(path);
+			hasChanged |= repoStatus.getUntracked().contains(path);
+		} catch (NoWorkTreeException e) {
+			Activator.logError(UIText.GitScopeOperation_couldNotDetermineState,
+					e);
+		} catch (IOException e) {
 			Activator.logError(UIText.GitScopeOperation_couldNotDetermineState,
 					e);
 		}

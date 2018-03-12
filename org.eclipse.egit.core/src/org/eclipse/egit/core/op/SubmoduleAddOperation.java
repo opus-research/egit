@@ -19,7 +19,7 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.SubmoduleAddCommand;
-import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.TeamException;
 
@@ -59,7 +59,7 @@ public class SubmoduleAddOperation implements IEGitOperation {
 				try {
 					if (add.call() != null)
 						repo.notifyIndexChanged();
-				} catch (GitAPIException e) {
+				} catch (JGitInternalException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				}
