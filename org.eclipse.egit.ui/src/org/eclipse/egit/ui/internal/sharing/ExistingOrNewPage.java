@@ -33,6 +33,8 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -178,7 +180,7 @@ class ExistingOrNewPage extends WizardPage {
 				try {
 					Repository repository = new FileRepository(gitDir);
 					repository.create();
-					for (IProject project : getProjects().keySet()) {
+					for (IProject project : getProjects(false).keySet()) {
 						// If we don't refresh the project directories right
 						// now we won't later know that a .git directory
 						// exists within it and we won't mark the .git
@@ -238,6 +240,7 @@ class ExistingOrNewPage extends WizardPage {
 
 		tree.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
+				tree.select((TreeItem)e.item);
 				updateCreateOptions();
 			}
 		});
@@ -246,9 +249,9 @@ class ExistingOrNewPage extends WizardPage {
 		setControl(g);
 	}
 
-	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem2, boolean isAlternative) {
+	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem, boolean isAlternative) {
 		if (m.getGitDir() == null)
-			treeItem2.setText(2, UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
+			treeItem.setText(2, UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
 		else {
 			IPath container = m.getContainerPath();
 			if (!container.isEmpty())
@@ -261,9 +264,9 @@ class ExistingOrNewPage extends WizardPage {
 					path = Path.fromPortableString("."); //$NON-NLS-1$
 				else
 					path = withoutLastSegment;
-				treeItem2.setText(0, path.toString());
+				treeItem.setText(0, path.toString());
 			}
-			treeItem2.setText(2, relativePath.toString());
+			treeItem.setText(2, relativePath.toOSString());
 			try {
 				IProject project = m.getContainer().getProject();
 				FileRepository repo = new FileRepository(m.getGitDirAbsolutePath().toFile());
@@ -281,7 +284,7 @@ class ExistingOrNewPage extends WizardPage {
 						TreeWalk projectInRepo = TreeWalk.forPath(repo, repoRelativePath, headTree);
 						if (projectInRepo != null) {
 							// the .project file is tracked by this repo
-							treeItem2.setChecked(true);
+							treeItem.setChecked(true);
 						}
 						revWalk.dispose();
 					}
@@ -340,13 +343,25 @@ class ExistingOrNewPage extends WizardPage {
 	}
 
 	/**
-	 * @return map between project and repository root directory (converted to an
-	 *         absolute path) for all projects selected by user
+	 * @param checked
+	 *            pass true to get the checked elements, false to get the
+	 *            selected elements
+	 * @return map between project and repository root directory (converted to
+	 *         an absolute path) for all projects selected by user
 	 */
-	public Map<IProject, File> getProjects() {
-		final Object[] checkedElements = viewer.getCheckedElements();
-		Map<IProject, File> ret = new HashMap<IProject, File>(checkedElements.length);
-		for (Object ti : viewer.getCheckedElements()) {
+	public Map<IProject, File> getProjects(boolean checked) {
+		final Object[] elements;
+		if (checked)
+			elements = viewer.getCheckedElements();
+		else {
+			ISelection selection = viewer.getSelection();
+			if (selection instanceof IStructuredSelection)
+				elements = ((IStructuredSelection) selection).toArray();
+			else
+				elements = new Object[0];
+		}
+		Map<IProject, File> ret = new HashMap<IProject, File>(elements.length);
+		for (Object ti : elements) {
 			final IProject project = ((ProjectAndRepo)ti).getProject();
 			String path = ((ProjectAndRepo)ti).getRepo();
 			final IPath selectedRepo = Path.fromOSString(path);

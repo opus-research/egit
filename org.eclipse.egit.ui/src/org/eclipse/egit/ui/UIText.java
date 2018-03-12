@@ -29,6 +29,9 @@ public class UIText extends NLS {
 	public static String AbortRebaseCommand_JobName;
 
 	/** */
+	public static String AbstractHistoryCommanndHandler_CouldNotGetRepositoryMessage;
+
+	/** */
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
@@ -692,10 +695,22 @@ public class UIText extends NLS {
 	public static String CompareTreeView_EqualFilesTooltip;
 
 	/** */
+	public static String CompareTreeView_IndexVersionText;
+
+	/** */
 	public static String CompareTreeView_ItemNotFoundInVersionMessage;
 
 	/** */
+	public static String CompareTreeView_MultipleResourcesHeaderText;
+
+	/** */
+	public static String CompareTreeView_NoDifferencesFoundMessage;
+
+	/** */
 	public static String CompareTreeView_NoInputText;
+
+	/** */
+	public static String CompareTreeView_RepositoryRootName;
 
 	/** */
 	public static String CompareTreeView_WorkspaceVersionText;
@@ -1485,6 +1500,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_ConfigureLink;
+
+	/** */
+	public static String ConfigurationChecker_checkHomeDirectory;
+
+	/** */
+	public static String ConfigurationChecker_checkConfiguration;
+
+	/** */
+	public static String ConfigurationChecker_doNotShowAgain;
+
+	/** */
+	public static String ConfigurationChecker_homeNotSet;
 
 	/** */
 	public static String ConfigurationEditorComponent_AddButton;
@@ -2824,6 +2851,24 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
+
+	/** */
+	public static String CommitSelectionDialog_BuildingCommitListMessage;
+
+	/** */
+	public static String CommitSelectionDialog_DialogMessage;
+
+	/** */
+	public static String CommitSelectionDialog_DialogTitle;
+
+	/** */
+	public static String CommitSelectionDialog_FoundCommitsMessage;
+
+	/** */
+	public static String CommitSelectionDialog_IncompleteListMessage;
+
+	/** */
+	public static String CommitSelectionDialog_WindowTitle;
 
 	/** */
 	public static String EgitUiEditorUtils_openFailed;
