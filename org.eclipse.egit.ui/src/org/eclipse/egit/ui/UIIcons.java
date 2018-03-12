@@ -97,9 +97,6 @@ public class UIIcons {
 	/** Export button */
 	public static ImageDescriptor EXPORT;
 
-	/** Collapse all button */
-	public static ImageDescriptor COLLAPSEALL;
-
 	/** Repository tree node */
 	public static ImageDescriptor REPOSITORY;
 
@@ -167,7 +164,6 @@ public class UIIcons {
 		TAGS = map("obj16/versions_rep.gif"); //$NON-NLS-1$
 		TAG = map("obj16/version_rep.gif"); //$NON-NLS-1$
 		BRANCH = map("obj16/branch.gif"); //$NON-NLS-1$
-		COLLAPSEALL = map("elcl16/collapseall.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

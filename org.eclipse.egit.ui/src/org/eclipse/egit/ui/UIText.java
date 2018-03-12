@@ -250,9 +250,6 @@ public class UIText extends NLS {
 	public static String GitProjectPropertyPage_ValueUnbornBranch;
 
 	/** */
-	public static String GitProjectsImportPage_NoProjectsMessage;
-
-	/** */
 	public static String RepositoryPropertySource_ConfigureKeysAction;
 
 	/** */
@@ -1576,16 +1573,7 @@ public class UIText extends NLS {
 	public static String RepositoriesView_CheckOut_MenuItem;
 
 	/** */
-	public static String RepositoriesView_ClipboardContentNoGitRepoMessage;
-
-	/** */
-	public static String RepositoriesView_ClipboardContentNotDirectoryMessage;
-
-	/** */
 	public static String RepositoriesView_Clone_Tooltip;
-
-	/** */
-	public static String RepositoriesView_CollapseAllMenu;
 
 	/** */
 	public static String RepositoriesView_ConfigureFetchMenu;
@@ -1663,22 +1651,10 @@ public class UIText extends NLS {
 	public static String RepositoriesView_NewRemoteMenu;
 
 	/** */
-	public static String RepositoriesView_NothingToPasteMessage;
-
-	/** */
 	public static String RepositoriesView_OpenInTextEditor_menu;
 
 	/** */
 	public static String RepositoriesView_OpenPropertiesMenu;
-
-	/** */
-	public static String RepositoriesView_PasteFailureTitle;
-
-	/** */
-	public static String RepositoriesView_PasteMenu;
-
-	/** */
-	public static String RepositoriesView_PasteRepoAlreadyThere;
 
 	/** */
 	public static String RepositoriesView_Refresh_Button;
@@ -1769,42 +1745,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitImportProjectsWizard_ImportExistingProjects0;
-
-	/** */
-	public static String GitImportWithDirectoriesPage_PageMessage;
-
-	/** */
-	public static String GitImportWithDirectoriesPage_PageTitle;
-
-	/** */
-	public static String GitImportWithDirectoriesPage_SelectFolderMessage;
-
-	/** */
-	public static String GitImportWizard_WizardTitle;
-
-	/** */
-	public static String GitSelectRepositoryPage_AddButton;
-
-	/** */
-	public static String GitSelectRepositoryPage_AddTooltip;
-
-	/** */
-	public static String GitSelectRepositoryPage_CloneButton;
-
-	/** */
-	public static String GitSelectRepositoryPage_CloneTooltip;
-
-	/** */
-	public static String GitSelectRepositoryPage_NoRepoFoundMessage;
-
-	/** */
-	public static String GitSelectRepositoryPage_PageMessage;
-
-	/** */
-	public static String GitSelectRepositoryPage_PageTitle;
-
-	/** */
-	public static String GitSelectRepositoryPage_PleaseSelectMessage;
 
 	/** */
 	public static String GitSelectWizardPage_AutoShareButton;
