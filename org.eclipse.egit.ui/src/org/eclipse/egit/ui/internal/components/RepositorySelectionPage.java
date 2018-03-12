@@ -173,9 +173,8 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			try {
 				if(text != null) {
 					text = text.trim();
-					if(Transport.canHandleProtocol(new URIish(text))) {
+					if(Transport.canHandleProtocol(new URIish(text)))
 						preset = text;
-					}
 				}
 			} catch (URISyntaxException e) {
 				preset = null;
