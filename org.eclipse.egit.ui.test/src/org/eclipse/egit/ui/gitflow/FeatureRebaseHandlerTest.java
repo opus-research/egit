@@ -14,6 +14,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.op.FeatureCheckoutOperation;
+import org.eclipse.egit.gitflow.op.FeatureStartOperation;
 import org.eclipse.egit.gitflow.op.InitOperation;
 import org.eclipse.egit.gitflow.ui.Activator;
 import org.eclipse.egit.gitflow.ui.internal.JobFamilies;
@@ -103,7 +104,12 @@ public class FeatureRebaseHandlerTest extends AbstractGitflowHandlerTest {
 		new InitOperation(repository).execute(null);
 	}
 
-	protected void checkoutFeature(String featureName) throws CoreException {
+	private void createFeature(String featureName) throws CoreException {
+		new FeatureStartOperation(new GitFlowRepository(repository),
+				featureName).execute(null);
+	}
+
+	private void checkoutFeature(String featureName) throws CoreException {
 		new FeatureCheckoutOperation(new GitFlowRepository(repository), featureName).execute(null);
 	}
 
