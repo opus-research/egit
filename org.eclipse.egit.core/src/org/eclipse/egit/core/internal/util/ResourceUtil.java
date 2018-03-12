@@ -36,7 +36,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
-import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.RepositoryProvider;
@@ -139,7 +138,7 @@ public class ResourceUtil {
 			if (repositoryMapping == null)
 				continue;
 			String path = repositoryMapping.getRepoRelativePath(resource);
-			addPathToMap(repositoryMapping.getRepository(), path, result);
+			addPathToMap(repositoryMapping, path, result);
 		}
 		return result;
 	}
@@ -169,17 +168,13 @@ public class ResourceUtil {
 	 */
 	public static Map<Repository, Collection<String>> splitPathsByRepository(
 			Collection<IPath> paths) {
-		RepositoryCache repositoryCache = Activator.getDefault()
-				.getRepositoryCache();
 		Map<Repository, Collection<String>> result = new HashMap<Repository, Collection<String>>();
 		for (IPath path : paths) {
-			Repository repository = repositoryCache.getRepository(path);
-			if (repository != null) {
-				IPath repoPath = new Path(repository.getWorkTree()
-						.getAbsolutePath());
-				IPath repoRelativePath = path.makeRelativeTo(repoPath);
-				addPathToMap(repository, repoRelativePath.toString(), result);
-			}
+			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(path);
+			if (repositoryMapping == null)
+				continue;
+			String p = repositoryMapping.getRepoRelativePath(path);
+			addPathToMap(repositoryMapping, p, result);
 		}
 		return result;
 	}
@@ -227,9 +222,10 @@ public class ResourceUtil {
 		return shortestPath;
 	}
 
-	private static void addPathToMap(Repository repository,
+	private static void addPathToMap(RepositoryMapping repositoryMapping,
 			String path, Map<Repository, Collection<String>> result) {
 		if (path != null) {
+			Repository repository = repositoryMapping.getRepository();
 			Collection<String> resourcesList = result.get(repository);
 			if (resourcesList == null) {
 				resourcesList = new ArrayList<String>();
