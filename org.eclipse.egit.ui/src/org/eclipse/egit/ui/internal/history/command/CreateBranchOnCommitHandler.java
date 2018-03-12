@@ -29,7 +29,7 @@ public class CreateBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 
 		WizardDialog dlg = new WizardDialog(
 				HandlerUtil.getActiveShellChecked(event),
-				new CreateBranchWizard(repo, commit.name()));
+				new CreateBranchWizard(repo, commit));
 		dlg.setHelpAvailable(false);
 		dlg.open();
 		return null;

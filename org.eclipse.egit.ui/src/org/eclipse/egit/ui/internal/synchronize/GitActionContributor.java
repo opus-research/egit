@@ -9,28 +9,20 @@
 package org.eclipse.egit.ui.internal.synchronize;
 
 import static org.eclipse.egit.ui.UIIcons.EXPAND_ALL;
-import static org.eclipse.egit.ui.UIIcons.PULL;
-import static org.eclipse.egit.ui.UIIcons.PUSH;
 import static org.eclipse.egit.ui.UIText.GitActionContributor_ExpandAll;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.ADD_TO_INDEX;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.COMMIT_ACTION;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.IGNORE_ACTION;
-import static org.eclipse.egit.ui.internal.actions.ActionCommands.MERGE_TOOL_ACTION;
 import static org.eclipse.egit.ui.internal.actions.ActionCommands.PUSH_ACTION;
 import static org.eclipse.egit.ui.internal.synchronize.model.SupportedContextActionsHelper.canPush;
 import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.NAVIGATE_GROUP;
 import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.P_TOOLBAR_MENU;
-import static org.eclipse.team.ui.synchronize.ISynchronizePageConfiguration.SYNCHRONIZE_GROUP;
 import static org.eclipse.ui.ISources.ACTIVE_MENU_SELECTION_NAME;
 import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 
 import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.synchronize.action.ExpandAllModelAction;
 import org.eclipse.egit.ui.internal.synchronize.action.OpenWorkingFileAction;
-import org.eclipse.egit.ui.internal.synchronize.action.PullAction;
-import org.eclipse.egit.ui.internal.synchronize.action.PushAction;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.SupportedContextActionsHelper;
 import org.eclipse.jface.action.IContributionItem;
@@ -57,26 +49,29 @@ class GitActionContributor extends SynchronizePageActionGroup {
 	public void fillContextMenu(IMenuManager menu) {
 		IStructuredSelection selection = (IStructuredSelection) getContext()
 				.getSelection();
-		Object element = selection.getFirstElement();
+		if (selection.size() == 1) {
+			Object element = selection.getFirstElement();
 
-		if (element instanceof IResource) {
-			// add standard git action for 'workspace' models
-			menu.appendToGroup(GIT_ACTIONS, createItem(COMMIT_ACTION));
-			menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
-			menu.appendToGroup(GIT_ACTIONS, createItem(IGNORE_ACTION));
-			menu.appendToGroup(GIT_ACTIONS, createItem(MERGE_TOOL_ACTION));
-		} else if (element instanceof GitModelObject && selection.size() == 1)
-			createMenuForGitModelObject(menu, (GitModelObject) element);
+			if (element instanceof GitModelObject)
+				createMenuForGitModelObject(menu, (GitModelObject) element);
+			else {
+				// add standard git action for 'workspace' models
+				menu.appendToGroup(GIT_ACTIONS, createItem(COMMIT_ACTION));
+				menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
+				menu.appendToGroup(GIT_ACTIONS, createItem(IGNORE_ACTION));
+			}
 
-		IContributionItem fileGroup = findGroup(menu,
+			IContributionItem fileGroup = findGroup(menu,
 				ISynchronizePageConfiguration.FILE_GROUP);
 
-		if (fileGroup != null) {
-			ModelSynchronizeParticipant msp = ((ModelSynchronizeParticipant) getConfiguration()
-					.getParticipant());
+			if (fileGroup != null) {
+			    ModelSynchronizeParticipant msp =
+		    		((ModelSynchronizeParticipant) getConfiguration()
+			    			.getParticipant());
 
-			if (msp.hasCompareInputFor(element))
-				menu.appendToGroup(fileGroup.getId(), openWorkingFileAction);
+			    if (msp.hasCompareInputFor(element))
+			    	menu.appendToGroup(fileGroup.getId(), openWorkingFileAction);
+			}
 		}
 	}
 
@@ -84,9 +79,6 @@ class GitActionContributor extends SynchronizePageActionGroup {
 			GitModelObject object) {
 		if (SupportedContextActionsHelper.canCommit(object))
 			menu.appendToGroup(GIT_ACTIONS, createItem(COMMIT_ACTION));
-
-		if (SupportedContextActionsHelper.canUseMergeTool(object))
-			menu.appendToGroup(GIT_ACTIONS, createItem(MERGE_TOOL_ACTION));
 
 		if (SupportedContextActionsHelper.canStage(object)) {
 			menu.appendToGroup(GIT_ACTIONS, createItem(ADD_TO_INDEX));
@@ -120,16 +112,6 @@ class GitActionContributor extends SynchronizePageActionGroup {
 				GitActionContributor_ExpandAll, configuration);
 		expandAllAction.setImageDescriptor(EXPAND_ALL);
 		appendToGroup(P_TOOLBAR_MENU, NAVIGATE_GROUP, expandAllAction);
-
-		PullAction pullAction = new PullAction(
-				UIText.GitActionContributor_Pull, configuration);
-		pullAction.setImageDescriptor(PULL);
-		appendToGroup(P_TOOLBAR_MENU, SYNCHRONIZE_GROUP, pullAction);
-
-		PushAction pushAction = new PushAction(
-				UIText.GitActionContributor_Push, configuration);
-		pushAction.setImageDescriptor(PUSH);
-		appendToGroup(P_TOOLBAR_MENU, SYNCHRONIZE_GROUP, pushAction);
 
 		ISynchronizePageSite site = configuration.getSite();
 		IWorkbenchSite ws = site.getWorkbenchSite();

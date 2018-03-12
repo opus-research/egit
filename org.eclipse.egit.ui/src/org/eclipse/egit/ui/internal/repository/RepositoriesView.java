@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2011 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -70,12 +71,10 @@ import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.contexts.IContextService;
 import org.eclipse.ui.handlers.IHandlerService;
-import org.eclipse.ui.handlers.RegistryToggleState;
 import org.eclipse.ui.navigator.CommonNavigator;
 import org.eclipse.ui.navigator.CommonViewer;
 import org.eclipse.ui.part.IPage;
@@ -195,21 +194,6 @@ public class RepositoriesView extends CommonNavigator {
 		};
 	}
 
-	@SuppressWarnings("boxing")
-	@Override
-	public void createPartControl(Composite aParent) {
-		super.createPartControl(aParent);
-
-		IWorkbenchWindow w = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
-		ICommandService csrv = (ICommandService) w
-				.getService(ICommandService.class);
-		Command command = csrv
-				.getCommand("org.eclipse.egit.ui.RepositoriesLinkWithSelection"); //$NON-NLS-1$
-		reactOnSelection = (Boolean) command.getState(
-				RegistryToggleState.STATE_ID).getValue();
-	}
-
 	@Override
 	public Object getAdapter(Class adapter) {
 		// integrate with Properties view
@@ -229,6 +213,7 @@ public class RepositoriesView extends CommonNavigator {
 	 * @param reactOnSelection
 	 */
 	public void setReactOnSelection(boolean reactOnSelection) {
+		// TODO persist the state of the button somewhere
 		this.reactOnSelection = reactOnSelection;
 	}
 
@@ -248,9 +233,15 @@ public class RepositoriesView extends CommonNavigator {
 						|| element instanceof TagNode) {
 					IHandlerService srv = (IHandlerService) getViewSite()
 							.getService(IHandlerService.class);
+					ICommandService csrv = (ICommandService) getViewSite()
+							.getService(ICommandService.class);
+					Command openCommand = csrv
+							.getCommand("org.eclipse.egit.ui.RepositoriesViewOpen"); //$NON-NLS-1$
+					ExecutionEvent evt = srv.createExecutionEvent(openCommand,
+							null);
 
 					try {
-						srv.executeCommand("org.eclipse.egit.ui.RepositoriesViewOpen", null); //$NON-NLS-1$
+						openCommand.executeWithChecks(evt);
 					} catch (Exception e) {
 						Activator.handleError(e.getMessage(), e, false);
 					}
@@ -401,20 +392,6 @@ public class RepositoriesView extends CommonNavigator {
 	}
 
 	/**
-	 * Reveals and shows the given repository in the view.
-	 *
-	 * @param repositoryToShow
-	 */
-	public void showRepository(Repository repositoryToShow) {
-		ITreeContentProvider cp = (ITreeContentProvider) getCommonViewer()
-				.getContentProvider();
-		for (Object repo : cp.getElements(getCommonViewer().getInput())) {
-			RepositoryTreeNode node = (RepositoryTreeNode) repo;
-			if (repositoryToShow.getDirectory().equals(node.getRepository().getDirectory()))
-				selectReveal(new StructuredSelection(node));
-		}
-	}
-	/**
 	 * Refresh Repositories View
 	 */
 	public void refresh() {
@@ -463,8 +440,6 @@ public class RepositoriesView extends CommonNavigator {
 
 				Display.getDefault().asyncExec(new Runnable() {
 					public void run() {
-						if (tv.getTree().isDisposed())
-							return;
 						long start = 0;
 						boolean traceActive = GitTraceLocation.REPOSITORIESVIEW
 								.isActive();
@@ -486,7 +461,7 @@ public class RepositoriesView extends CommonNavigator {
 							tv.setInput(ResourcesPlugin.getWorkspace()
 									.getRoot());
 						} else
-							tv.refresh(false);
+							tv.refresh();
 						tv.setExpandedElements(expanded);
 
 						Object selected = sel.getFirstElement();

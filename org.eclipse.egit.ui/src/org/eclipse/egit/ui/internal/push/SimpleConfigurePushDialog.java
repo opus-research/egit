@@ -662,7 +662,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 											.getPreferenceStore()
 											.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 									PushOperationUI op = new PushOperationUI(
-											repository, config.getName(), timeout, false);
+											repository, config, timeout, false);
 									op.start();
 								}
 							});

@@ -125,8 +125,7 @@ public class CloneOperation {
 					5000);
 			CloneCommand cloneRepository = Git.cloneRepository();
 			cloneRepository.setCredentialsProvider(credentialsProvider);
-			if (refName != null)
-				cloneRepository.setBranch(refName);
+			cloneRepository.setBranch(refName);
 			cloneRepository.setDirectory(workdir);
 			cloneRepository.setProgressMonitor(gitMonitor);
 			cloneRepository.setRemote(remoteName);
@@ -141,11 +140,9 @@ public class CloneOperation {
 			}
 			Git git = cloneRepository.call();
 			repository = git.getRepository();
-			synchronized (this) {
-				if (postCloneTasks != null)
-					for (PostCloneTask task : postCloneTasks)
-						task.execute(git.getRepository(), monitor);
-			}
+			if (postCloneTasks != null)
+				for (PostCloneTask task : postCloneTasks)
+					task.execute(git.getRepository(), monitor);
 		} catch (final Exception e) {
 			try {
 				if (repository != null)
