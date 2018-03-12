@@ -455,8 +455,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if (commitMessageComponent.isAmending()
-						|| userEnteredCommitMessage())
+				if (!commitMessageComponent.isAmending()
+						&& userEnteredCommitMessage())
 					saveCommitMessageComponentState();
 				else
 					deleteCommitMessageComponentState();
@@ -1439,12 +1439,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 			runCommand(ActionCommands.COMPARE_INDEX_WITH_HEAD_ACTION, selection);
 			break;
 
+		case CONFLICTING:
+			runCommand(ActionCommands.COMPARE_WITH_HEAD_ACTION, selection);
+			break;
+
 		case MISSING:
 		case MISSING_AND_CHANGED:
 		case MODIFIED:
 		case MODIFIED_AND_CHANGED:
 		case MODIFIED_AND_ADDED:
-		case CONFLICTING:
 		case UNTRACKED:
 		default:
 			// compare with index
@@ -2255,15 +2258,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 			else
 				loadExistingState(helper, oldState);
 		} else { // repository did not change
-			if (!commitMessageComponent.getHeadCommit().equals(
-					helper.getPreviousCommit())) {
-				if (!commitMessageComponent.isAmending()
-						&& userEnteredCommitMessage())
+			if (!commitMessageComponent.isAmending()
+					&& userEnteredCommitMessage()) {
+				if (!commitMessageComponent.getHeadCommit().equals(
+						helper.getPreviousCommit()))
 					addHeadChangedWarning(commitMessageComponent
 							.getCommitMessage());
-				else
-					loadInitialState(helper);
-			}
+			} else
+				loadInitialState(helper);
 		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
