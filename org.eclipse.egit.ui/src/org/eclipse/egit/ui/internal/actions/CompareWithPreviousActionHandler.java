@@ -48,7 +48,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 
-	private static class CompareWithPreviousOperation implements IEGitOperation {
+	private class CompareWithPreviousOperation implements IEGitOperation {
 
 		private ExecutionEvent event;
 

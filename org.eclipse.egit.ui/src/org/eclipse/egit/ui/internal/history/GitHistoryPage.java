@@ -206,8 +206,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 		List<IWorkbenchAction> actionsToDispose;
 
-		BooleanPrefAction showRelativeDateAction;
-
 		BooleanPrefAction wrapCommentAction;
 
 		BooleanPrefAction fillCommentAction;
@@ -251,7 +249,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			createShowAllBranchesAction();
 			createShowCommentAction();
 			createShowFilesAction();
-			createShowRelativeDateAction();
 			createWrapCommentAction();
 			createFillCommentAction();
 
@@ -380,18 +377,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				}
 			};
 			actionsToDispose.add(showFilesAction);
-		}
-
-		private void createShowRelativeDateAction() {
-			showRelativeDateAction = new BooleanPrefAction(
-					UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE,
-					UIText.ResourceHistory_toggleRelativeDate) {
-				void apply(boolean date) {
-					// nothing, just set the Preference
-				}
-			};
-			showRelativeDateAction.apply(showRelativeDateAction.isChecked());
-			actionsToDispose.add(showRelativeDateAction);
 		}
 
 		private void createWrapCommentAction() {
@@ -598,24 +583,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				graphDetailSplit);
 		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr);
-
-		// react on changes in the date preferences
-		IPropertyChangeListener listener = new IPropertyChangeListener() {
-			public void propertyChange(PropertyChangeEvent event) {
-				if (event.getProperty().equals(
-						UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE)) {
-					if (graph.setRelativeDate(((Boolean) event.getNewValue())
-							.booleanValue()))
-						graph.getTableView().refresh();
-					return;
-				}
-			}
-		};
-		graph.setRelativeDate(Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE));
-		Activator.getDefault().getPreferenceStore()
-				.addPropertyChangeListener(listener);
-
 		revInfoSplit = new SashForm(graphDetailSplit, SWT.HORIZONTAL);
 		commentViewer = new CommitMessageViewer(revInfoSplit, getSite(), getPartSite());
 		fileViewer = new CommitFileDiffViewer(revInfoSplit, getSite());
@@ -806,9 +773,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		viewMenuMgr.add(new Separator());
 		viewMenuMgr.add(actions.wrapCommentAction);
 		viewMenuMgr.add(actions.fillCommentAction);
-
-		viewMenuMgr.add(new Separator());
-		viewMenuMgr.add(actions.showRelativeDateAction);
 	}
 
 	public void dispose() {
@@ -1323,8 +1287,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	private void setWarningText(String warning) {
-		if (warningComposite == null || warningComposite.isDisposed())
-			return;
 		GridData gd = (GridData) warningComposite.getLayoutData();
 		gd.exclude = warning == null;
 		warningComposite.setVisible(!gd.exclude);
@@ -1505,14 +1467,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		if (currentWalk != null)
 			currentWalk.release();
 		currentWalk = new SWTWalk(db);
-		try {
-			currentWalk.addAdditionalRefs(db.getRefDatabase().getAdditionalRefs());
-		} catch (IOException e) {
-			throw new IllegalStateException(NLS.bind(
-					UIText.GitHistoryPage_errorReadingAdditionalRefs, Activator
-							.getDefault().getRepositoryUtil()
-							.getRepositoryName(db)), e);
-		}
 		currentWalk.sort(RevSort.COMMIT_TIME_DESC, true);
 		currentWalk.sort(RevSort.BOUNDARY, true);
 		highlightFlag = currentWalk.newFlag("highlight"); //$NON-NLS-1$
@@ -1525,9 +1479,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				markStartAllRefs(Constants.R_HEADS);
 				markStartAllRefs(Constants.R_REMOTES);
 				markStartAllRefs(Constants.R_TAGS);
-				markStartAdditionalRefs();
-			}
-			currentWalk.markStart(currentWalk.parseCommit(headId));
+			} else
+				currentWalk.markStart(currentWalk.parseCommit(headId));
 		} catch (IOException e) {
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorSettingStartPoints, Activator
@@ -1632,22 +1585,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			Ref ref = refEntry.getValue();
 			if (ref.isSymbolic())
 				continue;
-			markStartRef(ref);
+			Object refTarget = currentWalk.parseAny(ref.getObjectId());
+			if (refTarget instanceof RevCommit)
+				currentWalk.markStart((RevCommit) refTarget);
 		}
-	}
-
-	private void markStartAdditionalRefs() throws IOException {
-		List<Ref> additionalRefs = input.getRepository().getRefDatabase()
-				.getAdditionalRefs();
-		for (Ref ref : additionalRefs)
-			markStartRef(ref);
-	}
-
-	private void markStartRef(Ref ref) throws MissingObjectException,
-			IOException, IncorrectObjectTypeException {
-		Object refTarget = currentWalk.parseAny(ref.getLeaf().getObjectId());
-		if (refTarget instanceof RevCommit)
-			currentWalk.markStart((RevCommit) refTarget);
 	}
 
 	private void cancelRefreshJob() {

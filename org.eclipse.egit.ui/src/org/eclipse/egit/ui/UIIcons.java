@@ -164,36 +164,6 @@ public class UIIcons {
 	/** Expand all icon */
 	public final static ImageDescriptor EXPAND_ALL;
 
-	/** Checkout icon */
-	public final static ImageDescriptor CHECKOUT;
-
-	/** Signed Off By icon */
-	public final static ImageDescriptor SIGNED_OFF;
-
-	/** Check all icon */
-	public final static ImageDescriptor CHECK_ALL;
-
-	/** Uncheck all icon */
-	public final static ImageDescriptor UNCHECK_ALL;
-
-	/** Amend commit icon */
-	public final static ImageDescriptor AMEND_COMMIT;
-
-	/** Untracked file icon */
-	public final static ImageDescriptor UNTRACKED_FILE;
-
-	/** Commit note icon */
-	public final static ImageDescriptor NOTE;
-
-	/** Show Annotation icon */
-	public final static ImageDescriptor ANNOTATE;
-
-	/** Commit icon */
-	public final static ImageDescriptor COMMIT;
-
-	/** Rebase icon */
-	public final static ImageDescriptor REBASE;
-
 	/** base URL */
 	public final static URL base;
 
@@ -253,16 +223,6 @@ public class UIIcons {
 		CHANGESET = map("obj16/changelog_obj.gif"); //$NON-NLS-1$
 		GERRIT = map("obj16/gerrit_obj.gif"); //$NON-NLS-1$
 		EXPAND_ALL = map("wizban/expandall.gif"); //$NON-NLS-1$
-		CHECKOUT = map("obj16/checkout.gif"); //$NON-NLS-1$
-		SIGNED_OFF = map("obj16/signed-off.png"); //$NON-NLS-1$
-		CHECK_ALL = map("obj16/check_all.gif"); //$NON-NLS-1$
-		UNCHECK_ALL = map("obj16/uncheck_all.gif"); //$NON-NLS-1$
-		AMEND_COMMIT = map("obj16/commit_amend.gif"); //$NON-NLS-1$
-		UNTRACKED_FILE = map("obj16/untracked_file.gif"); //$NON-NLS-1$
-		NOTE = map("obj16/note.png"); //$NON-NLS-1$
-		ANNOTATE = map("etool16/annotate.gif"); //$NON-NLS-1$
-		COMMIT = map("obj16/commit.gif"); //$NON-NLS-1$
-		REBASE = map("obj16/rebase.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

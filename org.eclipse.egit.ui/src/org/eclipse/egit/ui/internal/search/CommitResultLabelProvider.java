@@ -13,33 +13,40 @@ package org.eclipse.egit.ui.internal.search;
 import java.text.DateFormat;
 import java.text.MessageFormat;
 
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.search.ui.text.AbstractTextSearchViewPage;
-import org.eclipse.ui.model.WorkbenchLabelProvider;
+import org.eclipse.swt.graphics.Image;
 
 /**
  * Commit search results label provider class.
  */
-public class CommitResultLabelProvider extends WorkbenchLabelProvider implements
+public class CommitResultLabelProvider extends LabelProvider implements
 		IStyledLabelProvider {
 
 	private DateFormat dateFormat = DateFormat.getDateTimeInstance(
 			DateFormat.MEDIUM, DateFormat.SHORT);
 
-	private int layout;
+	private Image commitImage = UIIcons.CHANGESET.createImage();
 
 	/**
-	 * Create commit result label provider
-	 *
-	 * @param layout
+	 * @see org.eclipse.jface.viewers.BaseLabelProvider#dispose()
 	 */
-	public CommitResultLabelProvider(int layout) {
-		this.layout = layout;
+	public void dispose() {
+		this.commitImage.dispose();
+		super.dispose();
+	}
+
+	/**
+	 * @see org.eclipse.jface.viewers.LabelProvider#getImage(java.lang.Object)
+	 */
+	public Image getImage(Object element) {
+		return this.commitImage;
 	}
 
 	/**
@@ -62,20 +69,10 @@ public class CommitResultLabelProvider extends WorkbenchLabelProvider implements
 						author.getName(), dateFormat.format(author.getWhen())),
 						StyledString.QUALIFIER_STYLER);
 
-			if (layout == AbstractTextSearchViewPage.FLAG_LAYOUT_FLAT)
-				styled.append(MessageFormat.format(
-						UIText.CommitResultLabelProvider_SectionRepository,
-						commit.getRepositoryName()),
-						StyledString.DECORATIONS_STYLER);
-		} else if (element instanceof RepositoryMatch) {
-			RepositoryMatch repository = (RepositoryMatch) element;
-			styled.append(repository.getLabel(repository));
-			styled.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-			styled.append(repository.getRepository().getDirectory()
-					.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
-			styled.append(MessageFormat.format(" ({0})", //$NON-NLS-1$
-					Integer.valueOf(repository.getMatchCount())),
-					StyledString.COUNTER_STYLER);
+			styled.append(MessageFormat.format(
+					UIText.CommitResultLabelProvider_SectionRepository,
+					commit.getRepositoryName()),
+					StyledString.DECORATIONS_STYLER);
 		}
 		return styled;
 	}
