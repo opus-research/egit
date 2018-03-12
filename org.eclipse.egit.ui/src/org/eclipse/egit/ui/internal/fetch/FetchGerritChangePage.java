@@ -17,7 +17,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -30,7 +29,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.op.CherryPickOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.op.TagOperation;
@@ -123,8 +121,6 @@ public class FetchGerritChangePage extends WizardPage {
 	private Button checkout;
 
 	private Button dontCheckout;
-
-	private Button cherryPick;
 
 	private Label tagTextlabel;
 
@@ -316,17 +312,6 @@ public class FetchGerritChangePage extends WizardPage {
 		GridDataFactory.fillDefaults().span(3, 1).applyTo(checkout);
 		dontCheckout.setText(UIText.FetchGerritChangePage_UpdateRadio);
 		dontCheckout.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				checkPage();
-			}
-		});
-
-		// radio: cherry-pick
-		cherryPick = new Button(checkoutGroup, SWT.RADIO);
-		GridDataFactory.fillDefaults().span(3, 1).applyTo(cherryPick);
-		cherryPick.setText(UIText.FetchGerritChangePage_CherryPickRadio);
-		cherryPick.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				checkPage();
@@ -550,11 +535,12 @@ public class FetchGerritChangePage extends WizardPage {
 		final RefSpec spec = new RefSpec().setSource(refText.getText())
 				.setDestination(Constants.FETCH_HEAD);
 		final String uri = uriCombo.getText();
-
-		final EnumSet<ActionAfterFetch> actionAfterFetch = ActionAfterFetch
-				.fromSelection(checkout, createTag, createBranch,
-						branchCheckoutButton, dontCheckout, cherryPick,
-						activateAdditionalRefs);
+		final boolean doCheckout = checkout.getSelection();
+		final boolean doCreateTag = createTag.getSelection();
+		final boolean doCreateBranch = createBranch.getSelection();
+		final boolean doCheckoutNewBranch = branchCheckoutButton.getSelection();
+		final boolean doActivateAdditionalRefs = (checkout.getSelection() || dontCheckout
+				.getSelection()) && activateAdditionalRefs.getSelection();
 		final String textForTag = tagText.getText();
 		final String textForBranch = branchText.getText();
 
@@ -566,7 +552,9 @@ public class FetchGerritChangePage extends WizardPage {
 
 				@Override
 				public IStatus runInWorkspace(IProgressMonitor monitor) {
-					internalDoFetch(spec, uri, actionAfterFetch,
+					internalDoFetch(spec, uri, doCheckout, doCreateTag,
+							doCreateBranch, doCheckoutNewBranch,
+							doActivateAdditionalRefs,
 							textForTag, textForBranch, monitor);
 					return org.eclipse.core.runtime.Status.OK_STATUS;
 				}
@@ -589,8 +577,10 @@ public class FetchGerritChangePage extends WizardPage {
 								throws InvocationTargetException,
 								InterruptedException {
 							try {
-									internalDoFetch(spec, uri,
-											actionAfterFetch, textForTag,
+								internalDoFetch(spec, uri, doCheckout,
+											doCreateTag, doCreateBranch,
+											doCheckoutNewBranch,
+										doActivateAdditionalRefs, textForTag,
 										textForBranch, monitor);
 							} catch (RuntimeException e) {
 								throw e;
@@ -612,14 +602,16 @@ public class FetchGerritChangePage extends WizardPage {
 		}
 	}
 
-	private void internalDoFetch(RefSpec spec, String uri,
-			EnumSet<ActionAfterFetch> actions, String textForTag,
+	private void internalDoFetch(RefSpec spec, String uri, boolean doCheckout,
+			boolean doCreateTag, boolean doCreateBranch,
+			boolean doCheckoutNewBranch,
+			boolean doActivateAdditionalRefs, String textForTag,
 			String textForBranch, IProgressMonitor monitor) {
 
 		int totalWork = 1;
-		if (actions.contains(ActionAfterFetch.CheckoutFetchHead)
-				|| actions.contains(ActionAfterFetch.CreateTag)
-				|| actions.contains(ActionAfterFetch.CreateBranch))
+		if (doCheckout)
+			totalWork++;
+		if (doCreateTag || doCreateBranch)
 			totalWork++;
 		monitor.beginTask(
 				UIText.FetchGerritChangePage_GetChangeTaskName,
@@ -629,22 +621,16 @@ public class FetchGerritChangePage extends WizardPage {
 			RevCommit commit = fetchChange(uri, spec,
 					monitor);
 
-			if (actions.contains(ActionAfterFetch.CreateTag))
+			if (doCreateTag)
 				createTag(spec, textForTag, commit, monitor);
 
-			if (actions.contains(ActionAfterFetch.CreateBranch))
-				createBranch(textForBranch,
-						actions.contains(ActionAfterFetch.CheckoutNewBranch),
-						commit, monitor);
+			if (doCreateBranch)
+				createBranch(textForBranch, doCheckoutNewBranch, commit, monitor);
 
-			if (actions.contains(ActionAfterFetch.CheckoutFetchHead)
-					|| actions.contains(ActionAfterFetch.CreateTag))
+			if (doCheckout || doCreateTag)
 				checkout(commit, monitor);
 
-			if (actions.contains(ActionAfterFetch.CherryPick))
-				cherryPick(commit, monitor);
-
-			if (actions.contains(ActionAfterFetch.ActivateAdditionalRefs))
+			if (doActivateAdditionalRefs)
 				activateAdditionalRefs();
 
 			storeLastUsedUri(uri);
@@ -727,17 +713,6 @@ public class FetchGerritChangePage extends WizardPage {
 			throws CoreException {
 		monitor.setTaskName(UIText.FetchGerritChangePage_CheckingOutTaskName);
 		BranchOperationUI.checkout(repository, commit.name()).run(monitor);
-
-		monitor.worked(1);
-	}
-
-	private void cherryPick(RevCommit commit, IProgressMonitor monitor)
-			throws CoreException {
-		monitor.setTaskName(UIText.FetchGerritChangePage_CherryPickingTaskName);
-		List<RevCommit> commits = new ArrayList<RevCommit>();
-		commits.add(commit);
-		CherryPickOperation op = new CherryPickOperation(repository, commits);
-		op.execute(monitor);
 
 		monitor.worked(1);
 	}
@@ -916,37 +891,6 @@ public class FetchGerritChangePage extends WizardPage {
 		@Override
 		public String toString() {
 			return getContent();
-		}
-	}
-
-	private static enum ActionAfterFetch {
-		CreateBranch, CheckoutNewBranch, CreateTag, CheckoutFetchHead, UpdateFetchHead, CherryPick, ActivateAdditionalRefs;
-
-		static EnumSet<ActionAfterFetch> fromSelection(Button checkout,
-				Button createTag, Button createBranch,
-				Button branchCheckoutButton, Button dontCheckout,
-				Button cherryPick,
-				Button activateAdditionalRefs) {
-			EnumSet<ActionAfterFetch> result = EnumSet.noneOf(ActionAfterFetch.class);
-			if (checkout.getSelection()) {
-				result.add(CheckoutFetchHead);
-			} else if (createTag.getSelection()) {
-				result.add(CreateTag);
-			} else if (createBranch.getSelection()) {
-				result.add(CreateBranch);
-			} else if (dontCheckout.getSelection()) {
-				result.add(UpdateFetchHead);
-			} else if (cherryPick.getSelection()) {
-				result.add(CherryPick);
-			}
-			if (branchCheckoutButton.getSelection()) {
-				result.add(CheckoutNewBranch);
-			}
-			if ((checkout.getSelection() || dontCheckout.getSelection())
-					&& activateAdditionalRefs.getSelection()) {
-				result.add(ActivateAdditionalRefs);
-			}
-			return result;
 		}
 	}
 }
