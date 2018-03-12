@@ -2507,15 +2507,13 @@
             name="%FetchUpstreamCommand.name">
       </command>
       <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.ConfigureFetchActionHandler"
-            id="org.eclipse.egit.ui.team.ConfigureFetch"
+            id="org.eclipse.egit.ui.ConfigureUpstreamFetch"
             name="%ConfigureUpstreamFetchCommand.name">
       </command>
       <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.ConfigurePushActionHandler"
-            id="org.eclipse.egit.ui.team.ConfigurePush"
+            id="org.eclipse.egit.ui.ConfigureUpstreamPush"
             name="%ConfigureUpstreamPushCommand.name">
       </command>
    </extension>
