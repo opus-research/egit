@@ -28,12 +28,11 @@ import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IImportWizard;
 import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.transport.URIish;
 
 /**
  * Import Git Repository Wizard. A front end to a git clone operation.
@@ -59,9 +58,9 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 			public void setVisible(boolean visible) {
 				if (visible) {
 					if (cloneDestination.alreadyClonedInto == null) {
-						performClone(false);
-						cloneDestination.alreadyClonedInto = cloneDestination
-								.getDestinationFile().getAbsolutePath();
+						if (performClone(false))
+							cloneDestination.alreadyClonedInto = cloneDestination
+									.getDestinationFile().getAbsolutePath();
 					}
 					setProjectsList(cloneDestination.alreadyClonedInto);
 				}
@@ -148,6 +147,7 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 				protected IStatus run(final IProgressMonitor monitor) {
 					try {
 						op.run(monitor);
+						cloneSource.saveUriInPrefs(uri.toString());
 						return Status.OK_STATUS;
 					} catch (InterruptedException e) {
 						return Status.CANCEL_STATUS;
@@ -157,19 +157,27 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 								.getPluginId(), 0, thr.getMessage(), thr);
 					}
 				}
+
 			};
 			job.setUser(true);
 			job.schedule();
 			return true;
 		} else {
 			try {
-				PlatformUI.getWorkbench().getProgressService().run(false, true,
-						op);
+				// Perform clone in ModalContext thread with progress
+				// reporting on the wizard.
+				getContainer().run(true, true, op);
+				cloneSource.saveUriInPrefs(uri.toString());
 				return true;
+			} catch (InterruptedException e) {
+				MessageDialog.openInformation(getShell(),
+						UIText.GitCloneWizard_CloneFailedHeading,
+						UIText.GitCloneWizard_CloneCanceledMessage);
+				return false;
 			} catch (Exception e) {
-				Activator.logError("Failed to clone", e);
-				MessageDialog.openError(getShell(), "Failed clone", e
-						.toString());
+				Activator.logError(UIText.GitCloneWizard_CloneFailedHeading, e);
+				MessageDialog.openError(getShell(),
+						UIText.GitCloneWizard_CloneFailedHeading, e.toString());
 				return false;
 			}
 		}

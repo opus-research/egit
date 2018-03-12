@@ -17,6 +17,16 @@ import org.eclipse.osgi.util.NLS;
  * duplicating strings.
  */
 public class UIText extends NLS {
+
+	/** */
+	public static String WizardProjectsImportPage_filterText;
+
+	/** */
+	public static String AddToIndexAction_addingFilesFailed;
+
+	/** */
+	public static String AddToIndexAction_indexesWithUnmergedEntries;
+
 	/** */
 	public static String WizardProjectsImportPage_ImportProjectsTitle;
 
@@ -96,6 +106,12 @@ public class UIText extends NLS {
 	public static String ExistingOrNewPage_SymbolicValueEmptyMapping;
 
 	/** */
+	public static String GitCloneWizard_CloneFailedHeading;
+
+	/** */
+	public static String GitCloneWizard_CloneCanceledMessage;
+
+	/** */
 	public static String GitCloneWizard_title;
 
 	/** */
@@ -106,6 +122,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCloneWizard_errorCannotCreate;
+
+	/** */
+	public static String GitHistoryPage_CompareVersions;
+
+	/** */
+	public static String GitHistoryPage_CompareWithWorking;
+
+	/** */
+	public static String GitHistoryPage_FileNotInCommit;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -127,6 +152,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitProjectPropertyPage_ValueUnbornBranch;
+
+	/** */
+	public static String RepositorySelectionPage_BrowseLocalFile;
 
 	/** */
 	public static String RepositorySelectionPage_sourceSelectionTitle;
@@ -184,6 +212,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySelectionPage_configuredRemoteChoice;
+
+	/** */
+	public static String RepositorySelectionPage_ShowPreviousURIs_HoverText;
 
 	/** */
 	public static String RepositorySelectionPage_uriChoice;
@@ -1096,24 +1127,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String Track_see_log;
-
-	/** */
-	public static String DiscardChangesAction_confirmActionTitle;
-
-	/** */
-	public static String DiscardChangesAction_confirmActionMessage;
-
-	/** */
-	public static String DiscardChangesAction_checkoutErrorTitle;
-
-	/** */
-	public static String DiscardChangesAction_checkoutErrorMessage;
-
-	/** */
-	public static String DiscardChangesAction_refreshErrorTitle;
-
-	/** */
-	public static String DiscardChangesAction_refreshErrorMessage;
 
 	static {
 		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$
