@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,10 +19,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.NotEnabledException;
 import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.variables.IStringVariableManager;
-import org.eclipse.core.variables.VariablesPlugin;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -40,18 +37,12 @@ import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.IRegion;
-import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.jface.text.Region;
-import org.eclipse.jface.text.hyperlink.IHyperlink;
-import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.KeyEvent;
@@ -64,7 +55,6 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Resource;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
@@ -180,19 +170,6 @@ public class UIUtils {
 	public static Font getItalicFont(final String id) {
 		return PlatformUI.getWorkbench().getThemeManager().getCurrentTheme()
 				.getFontRegistry().getItalic(id);
-	}
-
-	/**
-	 * @param parent
-	 * @param style
-	 * @return a text field which is read-only but can be selected
-	 */
-	public static Text createSelectableLabel(Composite parent, int style) {
-		// See https://bugs.eclipse.org/bugs/show_bug.cgi?id=71765
-		Text text = new Text(parent, style | SWT.READ_ONLY);
-		text.setBackground(text.getDisplay().getSystemColor(
-				SWT.COLOR_WIDGET_BACKGROUND));
-		return text;
 	}
 
 	/**
@@ -599,23 +576,6 @@ public class UIUtils {
 	}
 
 	/**
-	 * @return The default repository directory as configured in the
-	 *         preferences, with variables substituted. An empty string if there
-	 *         was an error during substitution.
-	 */
-	public static String getDefaultRepositoryDir() {
-		String dir = Activator.getDefault().getPreferenceStore()
-				.getString(UIPreferences.DEFAULT_REPO_DIR);
-		IStringVariableManager manager = VariablesPlugin.getDefault()
-				.getStringVariableManager();
-		try {
-			return manager.performStringSubstitution(dir);
-		} catch (CoreException e) {
-			return ""; //$NON-NLS-1$
-		}
-	}
-
-	/**
 	 * Is viewer in a usable state?
 	 *
 	 * @param viewer
@@ -702,44 +662,6 @@ public class UIUtils {
 		MenuManager showInSubMenu = new MenuManager(getShowInMenuLabel());
 		showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN.create(workbenchWindow));
 		return showInSubMenu;
-	}
-
-	/**
-	 * Use hyperlink detectors to find a text viewer's hyperlinks and return the
-	 * style ranges to render them.
-	 *
-	 * @param textViewer
-	 * @param hyperlinkDetectors
-	 * @return the style ranges to render the detected hyperlinks
-	 */
-	public static StyleRange[] getHyperlinkDetectorStyleRanges(
-			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
-		List<StyleRange> styleRangeList = new ArrayList<StyleRange>();
-		if (hyperlinkDetectors != null && hyperlinkDetectors.length > 0) {
-			for (int i = 0; i < textViewer.getTextWidget().getText().length(); i++) {
-				IRegion region = new Region(i, 0);
-				for (IHyperlinkDetector hyperLinkDetector : hyperlinkDetectors) {
-					IHyperlink[] hyperlinks = hyperLinkDetector
-							.detectHyperlinks(textViewer, region, true);
-					if (hyperlinks != null) {
-						for (IHyperlink hyperlink : hyperlinks) {
-							StyleRange hyperlinkStyleRange = new StyleRange(
-									hyperlink.getHyperlinkRegion().getOffset(),
-									hyperlink.getHyperlinkRegion().getLength(),
-									Display.getDefault().getSystemColor(
-											SWT.COLOR_BLUE), Display
-											.getDefault().getSystemColor(
-													SWT.COLOR_WHITE));
-							hyperlinkStyleRange.underline = true;
-							styleRangeList.add(hyperlinkStyleRange);
-						}
-					}
-				}
-			}
-		}
-		StyleRange[] styleRangeArray = new StyleRange[styleRangeList.size()];
-		styleRangeList.toArray(styleRangeArray);
-		return styleRangeArray;
 	}
 
 	private static String getShowInMenuLabel() {

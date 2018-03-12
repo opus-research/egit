@@ -59,6 +59,8 @@ class GerritConfigurationPage extends WizardPage {
 
 	private final static int GERRIT_DEFAULT_SSH_PORT = 29418;
 
+	private static final String GERRIT_HTTP_PATH_PREFIX = "/p"; //$NON-NLS-1$
+
 	private String helpContext = null;
 
 	private Text branch;
@@ -165,6 +167,7 @@ class GerritConfigurationPage extends WizardPage {
 		}
 		scheme.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(final SelectionEvent e) {
+				URIish oldPushURI = pushURI;
 				final int idx = scheme.getSelectionIndex();
 				pushURI = pushURI.setScheme(scheme.getItem(idx));
 
@@ -172,6 +175,11 @@ class GerritConfigurationPage extends WizardPage {
 					pushURI = pushURI.setPort(GERRIT_DEFAULT_SSH_PORT);
 				else
 					pushURI = pushURI.setPort(-1);
+
+				if (isHttpProtocol(pushURI))
+					pushURI = prependGerritHttpPathPrefix(pushURI);
+				else if (isHttpProtocol(oldPushURI))
+					pushURI = removeGerritHttpPathPrefix(pushURI);
 
 				uriText.setText(pushURI.toString());
 				scheme.setToolTipText(Protocol.values()[idx].getTooltip());
@@ -188,7 +196,7 @@ class GerritConfigurationPage extends WizardPage {
 				.setText(UIText.GerritConfigurationPage_labelDestinationBranch);
 		// we visualize the prefix here
 		Text prefix = new Text(pushConfigurationGroup, SWT.READ_ONLY);
-		prefix.setText(GerritUtil.REFS_FOR);
+		prefix.setText("refs/for/"); //$NON-NLS-1$
 		prefix.setEnabled(false);
 
 		branch = SWTUtils.createText(pushConfigurationGroup);
@@ -270,12 +278,40 @@ class GerritConfigurationPage extends WizardPage {
 		} else if (Protocol.GIT.handles(uri)) {
 			newPushURI = newPushURI.setScheme(Protocol.SSH.getDefaultScheme());
 			newPushURI = newPushURI.setPort(GERRIT_DEFAULT_SSH_PORT);
+		} else if (isHttpProtocol(uri)) {
+			newPushURI = prependGerritHttpPathPrefix(newPushURI);
 		}
 		uriText.setText(newPushURI.toString());
 		final String uriScheme = newPushURI.getScheme();
 		if (uriScheme != null)
 			scheme.select(scheme.indexOf(uriScheme));
 		branch.setText(targetBranch != null ? targetBranch : Constants.MASTER);
+	}
+
+	private boolean isHttpProtocol(URIish uri) {
+		return Protocol.HTTP.handles(uri) || Protocol.HTTPS.handles(uri);
+	}
+
+	/**
+	 * @param u
+	 * @return URI with path prefixed for Gerrit smart HTTP support
+	 */
+	private URIish prependGerritHttpPathPrefix(URIish u) {
+		String path = u.getPath();
+		if (!path.startsWith(GERRIT_HTTP_PATH_PREFIX))
+			return u.setPath(GERRIT_HTTP_PATH_PREFIX + path);
+		return u;
+	}
+
+	/**
+	 * @param u
+	 * @return URI without Gerrit smart HTTP path prefix
+	 */
+	private URIish removeGerritHttpPathPrefix(URIish u) {
+		String path = u.getPath();
+		if (path.startsWith(GERRIT_HTTP_PATH_PREFIX))
+			return u.setPath(path.substring(4));
+		return u;
 	}
 
 	private void checkPage() {
