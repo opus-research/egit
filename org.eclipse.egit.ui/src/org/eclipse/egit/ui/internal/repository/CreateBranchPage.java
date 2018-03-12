@@ -15,10 +15,10 @@ import java.util.Map.Entry;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
-import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -200,7 +200,6 @@ class CreateBranchPage extends WizardPage {
 			// as name for the local branch
 			nameText.setText(myBaseRef
 					.substring(myBaseRef.lastIndexOf('/') + 1));
-			nameText.selectAll();
 			checkPage();
 		} else {
 			// in any case, we will have to enter the name
@@ -267,8 +266,8 @@ class CreateBranchPage extends WizardPage {
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
 					IProgressMonitor.UNKNOWN);
-			new BranchOperationUI(myRepository, Constants.R_HEADS + newRefName)
-					.run(monitor);
+			new BranchOperation(myRepository, Constants.R_HEADS + newRefName)
+					.execute(monitor);
 		}
 	}
 }
