@@ -8,7 +8,6 @@
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2014 IBM Corporation (Daniel Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -44,8 +43,6 @@ import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
 import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.text.DocumentEvent;
-import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -523,16 +520,13 @@ public class CommitMessageComponent {
 		});
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
 				committerText, COMMITTER_VALUES_PREF);
-		commitText.getDocument().addDocumentListener(new IDocumentListener() {
-			public void documentChanged(DocumentEvent event) {
+		commitText.getTextWidget().addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
 				if (!listenersEnabled || !commitText.isEnabled())
 					return;
 				updateSignedOffButton();
 				updateChangeIdButton();
 				listener.statusUpdated();
-			}
-			public void documentAboutToBeChanged(DocumentEvent event) {
-				// nothing to do
 			}
 		});
 	}

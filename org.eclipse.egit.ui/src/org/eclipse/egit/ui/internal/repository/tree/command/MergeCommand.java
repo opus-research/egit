@@ -17,7 +17,6 @@ import java.io.IOException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -28,7 +27,6 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.actions.MergeActionHandler;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.MergeTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
@@ -37,7 +35,10 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -54,7 +55,7 @@ public class MergeCommand extends
 
 		BasicConfigurationDialog.show(repository);
 
-		if (!MergeActionHandler.checkMergeIsPossible(repository, getShell(event)))
+		if (!canMerge(repository))
 			return null;
 
 		String targetRef;
@@ -94,10 +95,9 @@ public class MergeCommand extends
 		}
 
 		String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
-		Job job = new WorkspaceJob(jobname) {
-
+		Job job = new Job(jobname) {
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					op.execute(monitor);
 				} catch (final CoreException e) {
@@ -148,4 +148,24 @@ public class MergeCommand extends
 		return selectedRepositoryHasHead();
 	}
 
+	private boolean canMerge(final Repository repository) {
+		String message = null;
+		Exception ex = null;
+		try {
+			Ref head = repository.getRef(Constants.HEAD);
+			if (head == null || !head.isSymbolic())
+				message = UIText.MergeAction_HeadIsNoBranch;
+			else if (!repository.getRepositoryState().equals(
+					RepositoryState.SAFE))
+				message = NLS.bind(UIText.MergeAction_WrongRepositoryState,
+						repository.getRepositoryState());
+		} catch (IOException e) {
+			message = e.getMessage();
+			ex = e;
+		}
+
+		if (message != null)
+			Activator.handleError(UIText.MergeAction_CannotMerge, ex, true);
+		return (message == null);
+	}
 }

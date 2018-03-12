@@ -24,7 +24,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -36,7 +35,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
@@ -80,7 +78,8 @@ public class RemoveCommand extends
 	protected void removeRepository(final ExecutionEvent event,
 			final boolean delete) {
 		IWorkbenchSite activeSite = HandlerUtil.getActiveSite(event);
-		IWorkbenchSiteProgressService service = CommonUtils.getService(activeSite, IWorkbenchSiteProgressService.class);
+		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) activeSite
+				.getService(IWorkbenchSiteProgressService.class);
 
 		// get selected nodes
 		final List<RepositoryNode> selectedNodes;
@@ -144,12 +143,13 @@ public class RemoveCommand extends
 		final boolean deleteWorkDir = deleteWorkingDir;
 		final boolean removeProj = removeProjects;
 
-		Job job = new WorkspaceJob(UIText.RemoveCommand_RemoveRepositoriesJob) {
+		Job job = new Job(UIText.RemoveCommand_RemoveRepositoriesJob) {
 
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 
-				monitor.setTaskName(UIText.RepositoriesView_DeleteRepoDeterminProjectsMessage);
+				monitor
+						.setTaskName(UIText.RepositoriesView_DeleteRepoDeterminProjectsMessage);
 
 				if (removeProj) {
 					// confirmed deletion

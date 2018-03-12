@@ -17,7 +17,6 @@ import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -87,8 +86,10 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	 */
 	protected ExecutionEvent createExecutionEvent() {
 		IServiceLocator locator = getServiceLocator();
-		ICommandService srv = CommonUtils.getService(locator, ICommandService.class);
-		IHandlerService hsrv = CommonUtils.getService(locator, IHandlerService.class);
+		ICommandService srv = (ICommandService) locator
+				.getService(ICommandService.class);
+		IHandlerService hsrv = (IHandlerService) locator
+				.getService(IHandlerService.class);
 		Command command = srv.getCommand(commandId);
 
 		ExecutionEvent event = hsrv.createExecutionEvent(command, null);
@@ -98,10 +99,7 @@ public abstract class RepositoryAction extends AbstractHandler implements
 		return event;
 	}
 
-	/**
-	 * @return the service locator to use in the action
-	 */
-	protected IServiceLocator getServiceLocator() {
+	private IServiceLocator getServiceLocator() {
 		if (serviceLocator == null)
 			serviceLocator = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		return serviceLocator;
@@ -128,7 +126,8 @@ public abstract class RepositoryAction extends AbstractHandler implements
 		if (!shouldRunAction())
 			return null;
 
-		ICommandService srv = CommonUtils.getService(getServiceLocator(), ICommandService.class);
+		ICommandService srv = (ICommandService) getServiceLocator()
+				.getService(ICommandService.class);
 		Command command = srv.getCommand(commandId);
 		try {
 			return command.executeWithChecks(event);

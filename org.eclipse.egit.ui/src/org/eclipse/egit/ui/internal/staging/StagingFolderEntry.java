@@ -24,11 +24,8 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 	private final IPath repoLocation;
 	private final IPath repoRelativePath;
 	private final IPath nodePath;
-	private final IContainer container;
 
 	private StagingFolderEntry parent;
-	private Object[] children;
-
 
 	/**
 	 * @param repoLocation
@@ -40,7 +37,6 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 		this.repoLocation = repoLocation;
 		this.repoRelativePath = repoRelativePath;
 		this.nodePath = nodePath;
-		this.container = ResourceUtil.getContainerForLocation(getLocation());
 	}
 
 	/**
@@ -48,10 +44,11 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 	 *         workspace, null otherwise.
 	 */
 	public IContainer getContainer() {
-		return container;
+		return ResourceUtil.getContainerForLocation(getLocation());
 	}
 
 	public int getProblemSeverity() {
+		IContainer container = getContainer();
 		if (container == null)
 			return SEVERITY_NONE;
 
@@ -86,6 +83,13 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 	}
 
 	/**
+	 * @return the repo-relative path of the parent folder entry
+	 */
+	public IPath getParentPath() {
+		return repoRelativePath.removeLastSegments(nodePath.segmentCount());
+	}
+
+	/**
 	 * @return the path of the node, relative to its parent
 	 */
 	public IPath getNodePath() {
@@ -104,20 +108,6 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 	 */
 	public void setParent(StagingFolderEntry parent) {
 		this.parent = parent;
-	}
-
-	/**
-	 * @return child nodes (files or folders)
-	 */
-	public Object[] getChildren() {
-		return children;
-	}
-
-	/**
-	 * @param children
-	 */
-	public void setChildren(Object[] children) {
-		this.children = children;
 	}
 
 	@Override

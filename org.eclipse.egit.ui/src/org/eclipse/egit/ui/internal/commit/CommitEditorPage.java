@@ -57,7 +57,6 @@ import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
@@ -141,7 +140,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		return (Image) this.resources.get(descriptor);
 	}
 
-	Section createSection(Composite parent, FormToolkit toolkit,
+	private Section createSection(Composite parent, FormToolkit toolkit,
 			int span) {
 		Section section = toolkit.createSection(parent,
 				ExpandableComposite.TITLE_BAR | ExpandableComposite.TWISTIE
@@ -151,7 +150,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		return section;
 	}
 
-	Composite createSectionClient(Section parent, FormToolkit toolkit) {
+	private Composite createSectionClient(Section parent, FormToolkit toolkit) {
 		Composite client = toolkit.createComposite(parent);
 		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
 				.applyTo(client);
@@ -215,7 +214,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		return userArea;
 	}
 
-	void updateSectionClient(Section section, Composite client,
+	private void updateSectionClient(Section section, Composite client,
 			FormToolkit toolkit) {
 		hookExpansionGrabbing(section);
 		toolkit.paintBordersFor(client);
@@ -244,47 +243,39 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 			createUserArea(userArea, toolkit, committer, false);
 
 		int count = commit.getParentCount();
-		if (count > 0)
-			createParentsArea(top, toolkit, commit);
+		if (count > 0) {
+			Composite parents = toolkit.createComposite(top);
+			GridLayoutFactory.fillDefaults().spacing(2, 2).numColumns(2)
+					.applyTo(parents);
+			GridDataFactory.fillDefaults().grab(false, false).applyTo(parents);
+
+			for (int i = 0; i < count; i++) {
+				final RevCommit parentCommit = commit.getParent(i);
+				toolkit.createLabel(parents,
+						UIText.CommitEditorPage_LabelParent).setForeground(
+						toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
+				final Hyperlink link = toolkit
+						.createHyperlink(parents,
+								parentCommit.abbreviate(PARENT_LENGTH).name(),
+								SWT.NONE);
+				link.addHyperlinkListener(new HyperlinkAdapter() {
+
+					public void linkActivated(HyperlinkEvent e) {
+						try {
+							CommitEditor.open(new RepositoryCommit(getCommit()
+									.getRepository(), parentCommit));
+							if ((e.getStateMask() & SWT.MOD1) != 0)
+								getEditor().close(false);
+						} catch (PartInitException e1) {
+							Activator.logError(
+									"Error opening commit editor", e1);//$NON-NLS-1$
+						}
+					}
+				});
+			}
+		}
 
 		createTagsArea(userArea, toolkit, 2);
-	}
-
-	private void createParentsArea(Composite parent, FormToolkit toolkit,
-			RevCommit commit) {
-		Composite parents = toolkit.createComposite(parent);
-		GridLayoutFactory.fillDefaults().spacing(2, 2).numColumns(2)
-				.applyTo(parents);
-		GridDataFactory.fillDefaults().grab(false, false).applyTo(parents);
-
-		for (int i = 0; i < commit.getParentCount(); i++) {
-			final RevCommit parentCommit = commit.getParent(i);
-			toolkit.createLabel(parents, getParentCommitLabel(i))
-					.setForeground(
-							toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
-			final Hyperlink link = toolkit
-					.createHyperlink(parents,
-							parentCommit.abbreviate(PARENT_LENGTH).name(),
-							SWT.NONE);
-			link.addHyperlinkListener(new HyperlinkAdapter() {
-				public void linkActivated(HyperlinkEvent e) {
-					try {
-						CommitEditor.open(new RepositoryCommit(getCommit()
-								.getRepository(), parentCommit));
-						if ((e.getStateMask() & SWT.MOD1) != 0)
-							getEditor().close(false);
-					} catch (PartInitException e1) {
-						Activator.logError(
-								"Error opening commit editor", e1);//$NON-NLS-1$
-					}
-				}
-			});
-		}
-	}
-
-	@SuppressWarnings("unused")
-	String getParentCommitLabel(int i) {
-		return UIText.CommitEditorPage_LabelParent;
 	}
 
 	private List<Ref> getTags() {
@@ -301,8 +292,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		return tags;
 	}
 
-	void createTagsArea(Composite parent, FormToolkit toolkit,
-			int span) {
+	private void createTagsArea(Composite parent, FormToolkit toolkit, int span) {
 		Composite tagArea = toolkit.createComposite(parent);
 		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false)
 				.applyTo(tagArea);
@@ -316,29 +306,16 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		GridLayoutFactory.fillDefaults().spacing(1, 1).applyTo(tagLabelArea);
 	}
 
-	void fillDiffs(FileDiff[] diffs) {
+	private void fillDiffs(FileDiff[] diffs) {
 		diffViewer.setInput(diffs);
-		diffSection.setText(getDiffSectionTitle(Integer.valueOf(diffs.length)));
-		setSectionExpanded(diffSection, diffs.length != 0);
+		diffSection.setText(MessageFormat.format(
+				UIText.CommitEditorPage_SectionFiles,
+				Integer.valueOf(diffs.length)));
 	}
 
-	static void setSectionExpanded(Section section, boolean expanded) {
-		section.setExpanded(expanded);
-		((GridData) section.getLayoutData()).grabExcessVerticalSpace = expanded;
-	}
-
-	String getDiffSectionTitle(Integer numChanges) {
-		return MessageFormat.format(UIText.CommitEditorPage_SectionFiles,
-				numChanges);
-	}
-
-	void fillTags(FormToolkit toolkit, List<Ref> tags) {
+	private void fillTags(FormToolkit toolkit, List<Ref> tags) {
 		for (Control child : tagLabelArea.getChildren())
 			child.dispose();
-
-		// Hide "Tags" area if no tags to show
-		((GridData) tagLabelArea.getParent().getLayoutData()).exclude = tags
-				.isEmpty();
 
 		GridLayoutFactory.fillDefaults().spacing(1, 1).numColumns(tags.size())
 				.applyTo(tagLabelArea);
@@ -393,16 +370,11 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 			}
 
 		};
-
 		if ((toolkit.getBorderStyle() & SWT.BORDER) == 0)
 			textContent.setData(FormToolkit.KEY_DRAW_BORDER,
 					FormToolkit.TEXT_BORDER);
-
-		Point size = textContent.getTextWidget().computeSize(SWT.DEFAULT,
-				SWT.DEFAULT);
-		int yHint = size.y > 80 ? 80 : SWT.DEFAULT;
-		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, yHint).minSize(1, 20)
-				.grab(true, true).applyTo(textContent);
+		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 80).grab(true, true)
+				.applyTo(textContent);
 
 		updateSectionClient(messageSection, messageArea, toolkit);
 	}
@@ -439,7 +411,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 				Integer.valueOf(result.size())));
 	}
 
-	void createDiffArea(Composite parent, FormToolkit toolkit, int span) {
+	private void createFilesArea(Composite parent, FormToolkit toolkit, int span) {
 		diffSection = createSection(parent, toolkit, span);
 		diffSection.setText(UIText.CommitEditorPage_SectionFilesEmpty);
 		Composite filesArea = createSectionClient(diffSection, toolkit);
@@ -449,7 +421,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 				| toolkit.getBorderStyle());
 		diffViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		GridDataFactory.fillDefaults().grab(true, true)
+		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 80)
 				.applyTo(diffViewer.getControl());
 		diffViewer.setContentProvider(ArrayContentProvider.getInstance());
 		diffViewer.setTreeWalk(getCommit().getRepository(), null);
@@ -457,7 +429,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		updateSectionClient(diffSection, filesArea, toolkit);
 	}
 
-	RepositoryCommit getCommit() {
+	private RepositoryCommit getCommit() {
 		return (RepositoryCommit) getEditor()
 				.getAdapter(RepositoryCommit.class);
 	}
@@ -485,14 +457,10 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 		createHeaderArea(displayArea, toolkit, 2);
 		createMessageArea(displayArea, toolkit, 2);
-		createChangesArea(displayArea, toolkit);
+		createFilesArea(displayArea, toolkit, 1);
+		createBranchesArea(displayArea, toolkit, 1);
 
 		loadSections();
-	}
-
-	void createChangesArea(Composite displayArea, FormToolkit toolkit) {
-		createDiffArea(displayArea, toolkit, 1);
-		createBranchesArea(displayArea, toolkit, 1);
 	}
 
 	private List<Ref> loadTags() {
@@ -529,7 +497,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		}
 	}
 
-	void loadSections() {
+	private void loadSections() {
 		RepositoryCommit commit = getCommit();
 		Job refreshJob = new Job(MessageFormat.format(
 				UIText.CommitEditorPage_JobName, commit.getRevCommit().name())) {
@@ -551,7 +519,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 							fillTags(getManagedForm().getToolkit(), tags);
 							fillDiffs(diffs);
 							fillBranches(branches);
-							form.reflow(true);
 							form.layout(true, true);
 						}
 					});

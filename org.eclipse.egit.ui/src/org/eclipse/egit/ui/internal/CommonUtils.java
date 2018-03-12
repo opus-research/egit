@@ -3,7 +3,6 @@
  * Copyright (C) 2011, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2013, Michael Keppler <michael.keppler@gmx.de>
- * Copyright (C) 2014, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +27,6 @@ import org.eclipse.ui.ISources;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
-import org.eclipse.ui.services.IServiceLocator;
 
 /**
  * Class containing all common utils
@@ -42,14 +40,13 @@ public class CommonUtils {
 	/**
 	 * Instance of comparator that sorts strings in ascending alphabetical and
 	 * numerous order (also known as natural order), case insensitive.
-	 *
-	 * The comparator is guaranteed to return a non-zero value if
-	 * string1.equals(String2) returns false
 	 */
 	public static final Comparator<String> STRING_ASCENDING_COMPARATOR = new Comparator<String>() {
 		public int compare(String o1, String o2) {
-			if (o1.length() == 0 || o2.length() == 0)
-				return o1.length() - o2.length();
+			if (o1.length() == 0)
+				return -1;
+			if (o2.length() == 0)
+				return 1;
 
 			LinkedList<String> o1Parts = splitIntoDigitAndNonDigitParts(o1);
 			LinkedList<String> o2Parts = splitIntoDigitAndNonDigitParts(o2);
@@ -78,13 +75,7 @@ public class CommonUtils {
 					return result;
 			}
 
-			if (o2PartsIterator.hasNext())
-				return -1;
-			else {
-				// strings are equal (in the Object.equals() sense)
-				// or only differ in case and/or leading zeros
-				return o1.compareTo(o2);
-			}
+			return -1;
 		}
 	};
 
@@ -103,8 +94,12 @@ public class CommonUtils {
 	 * {@link IResource#getName()}.
 	 */
 	public static final Comparator<IResource> RESOURCE_NAME_COMPARATOR = new Comparator<IResource>() {
+		@SuppressWarnings("unchecked")
+		private final Comparator<String> stringComparator = Policy
+				.getComparator();
+
 		public int compare(IResource r1, IResource r2) {
-			return Policy.getComparator().compare(r1.getName(), r2.getName());
+			return stringComparator.compare(r1.getName(), r2.getName());
 		}
 	};
 
@@ -120,14 +115,14 @@ public class CommonUtils {
 	 */
 	public static boolean runCommand(String commandId,
 			IStructuredSelection selection) {
-		ICommandService commandService = CommonUtils.getService(PlatformUI
-				.getWorkbench(), ICommandService.class);
+		ICommandService commandService = (ICommandService) PlatformUI
+				.getWorkbench().getService(ICommandService.class);
 		Command cmd = commandService.getCommand(commandId);
 		if (!cmd.isDefined())
 			return false;
 
-		IHandlerService handlerService = CommonUtils.getService(PlatformUI
-				.getWorkbench(), IHandlerService.class);
+		IHandlerService handlerService = (IHandlerService) PlatformUI
+				.getWorkbench().getService(IHandlerService.class);
 		EvaluationContext c = null;
 		if (selection != null) {
 			c = new EvaluationContext(
@@ -148,25 +143,6 @@ public class CommonUtils {
 			// Ignored
 		}
 		return false;
-	}
-
-	/**
-	 * Retrieves the service corresponding to the given API.
-	 * <p>
-	 * Workaround for "Unnecessary cast" errors, see bug 441615. Can be removed
-	 * when EGit depends on Eclipse 4.5 or higher.
-	 *
-	 * @param locator
-	 *            the service locator, must not be null
-	 * @param api
-	 *            the interface the service implements, must not be null
-	 * @return the service, or null if no such service could be found
-	 * @see IServiceLocator#getService(Class)
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> T getService(IServiceLocator locator, Class<T> api) {
-		Object service = locator.getService(api);
-		return (T) service;
 	}
 
 	private static LinkedList<String> splitIntoDigitAndNonDigitParts(

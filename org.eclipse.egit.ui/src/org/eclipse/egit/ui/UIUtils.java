@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.VariablesPlugin;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -37,7 +36,6 @@ import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.ControlDecoration;
 import org.eclipse.jface.fieldassist.FieldDecorationRegistry;
@@ -714,51 +712,9 @@ public class UIUtils {
 	 * @see IWorkbench#saveAllEditors(boolean)
 	 */
 	public static boolean saveAllEditors(Repository repository) {
-		return saveAllEditors(repository, null);
-	}
-
-	/**
-	 * Prompt for saving all dirty editors for resources in the working
-	 * directory of the specified repository.
-	 *
-	 * If at least one file was saved, a dialog is displayed, asking the user if
-	 * she wants to cancel the operation. Cancelling allows the user to do
-	 * something with the newly saved files, before possibly restarting the
-	 * operation.
-	 *
-	 * @param repository
-	 * @param cancelConfirmationQuestion
-	 *            A string asking the user if she wants to cancel the operation.
-	 *            May be null to not open a dialog, but rather always continue.
-	 * @return true, if the user opted to continue, false otherwise
-	 * @see IWorkbench#saveAllEditors(boolean)
-	 */
-	public static boolean saveAllEditors(Repository repository,
-			String cancelConfirmationQuestion) {
 		IWorkbench workbench = PlatformUI.getWorkbench();
 		IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
-		RepositorySaveableFilter filter = new RepositorySaveableFilter(
-				repository);
-		boolean success = workbench.saveAll(window, window, filter, true);
-		if (success && cancelConfirmationQuestion != null && filter.isAnythingSaved()){
-			// allow the user to cancel the operation to first do something with
-			// the newly saved files
-			String[] buttons = new String[] { IDialogConstants.YES_LABEL,
-					IDialogConstants.NO_LABEL };
-			MessageDialog dialog = new MessageDialog(window.getShell(),
-					UIText.CancelAfterSaveDialog_Title, null,
-					cancelConfirmationQuestion,
-					MessageDialog.QUESTION, buttons, 0) {
-				protected int getShellStyle() {
-					return (SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL
-							| SWT.SHEET | getDefaultOrientation());
-				}
-			};
-			int choice = dialog.open();
-			if (choice != 1) // user clicked "yes" or closed dialog -> cancel
-				return false;
-		}
-		return success;
+		return workbench.saveAll(window, window, new RepositorySaveableFilter(repository), true);
 	}
 
 	/**
@@ -886,7 +842,8 @@ public class UIUtils {
 	 */
 	public static void notifySelectionChangedWithCurrentSelection(
 			ISelectionListener selectionListener, IServiceLocator serviceLocator) {
-		IHandlerService handlerService = CommonUtils.getService(serviceLocator, IHandlerService.class);
+		IHandlerService handlerService = (IHandlerService) serviceLocator
+				.getService(IHandlerService.class);
 		IEvaluationContext state = handlerService.getCurrentState();
 		// This seems to be the most reliable way to get the active part, it
 		// also returns a part when it is called while creating a view that is

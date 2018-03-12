@@ -49,23 +49,20 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 	/** All files for the section (staged or unstaged). */
 	private StagingEntry[] content = new StagingEntry[0];
 
-	/** Root nodes for the "Tree" presentation. */
-	private Object[] treeRoots;
+	/** Folders for the "Tree" presentation. */
+	private StagingFolderEntry[] treeFolders;
 
-	/** Root nodes for the "Compact Tree" presentation. */
-	private Object[] compactTreeRoots;
+	/** Folders for the "Compact Tree" presentation. */
+	private StagingFolderEntry[] compactTreeFolders;
 
 	private StagingView stagingView;
 	private boolean unstagedSection;
 
 	private Repository repository;
 
-	private final EntryComparator comparator;
-
 	StagingViewContentProvider(StagingView stagingView, boolean unstagedSection) {
 		this.stagingView = stagingView;
 		this.unstagedSection = unstagedSection;
-		comparator = new EntryComparator();
 	}
 
 	public Object getParent(Object element) {
@@ -90,59 +87,79 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		if (parentElement instanceof StagingEntry)
 			return new Object[0];
 		if (parentElement instanceof StagingFolderEntry) {
-			return ((StagingFolderEntry) parentElement).getChildren();
+			return getFolderChildren((StagingFolderEntry) parentElement);
 		} else {
-			// Return the root nodes
 			if (stagingView.getPresentation() == Presentation.LIST)
 				return content;
-			else
-				return getTreePresentationRoots();
+			else {
+				StagingFolderEntry[] allFolders = getStagingFolderEntries();
+				List<Object> roots = new ArrayList<Object>();
+				for (StagingFolderEntry folder : allFolders)
+					if (folder.getParentPath().segmentCount() == 0)
+						roots.add(folder);
+				for (StagingEntry entry : content)
+					if (!entry.getPath().contains("/")) //$NON-NLS-1$
+						roots.add(entry);
+				return roots.toArray(new Object[roots.size()]);
+			}
 		}
 	}
 
-	Object[] getTreePresentationRoots() {
+	private Object[] getFolderChildren(StagingFolderEntry parent) {
+		IPath parentPath = parent.getPath();
+		List<Object> children = new ArrayList<Object>();
+		for (StagingFolderEntry folder : getStagingFolderEntries()) {
+			if (folder.getParentPath().equals(parentPath)) {
+				folder.setParent(parent);
+				children.add(folder);
+			}
+		}
+		for (StagingEntry file : content) {
+			if (file.getParentPath().equals(parentPath)) {
+				file.setParent(parent);
+				children.add(file);
+			}
+		}
+		return children.toArray(new Object[children.size()]);
+	}
+
+	StagingFolderEntry[] getStagingFolderEntries() {
 		Presentation presentation = stagingView.getPresentation();
 		switch (presentation) {
 		case COMPACT_TREE:
-			return getCompactTreeRoots();
+			return getCompactTreeFolders();
 		case TREE:
-			return getTreeRoots();
+			return getTreeFolders();
 		default:
 			return new StagingFolderEntry[0];
 		}
 	}
 
-	private Object[] getCompactTreeRoots() {
-		if (compactTreeRoots == null)
-			compactTreeRoots = calculateTreePresentationRoots(true);
-		return compactTreeRoots;
+	private StagingFolderEntry[] getCompactTreeFolders() {
+		if (compactTreeFolders == null)
+			compactTreeFolders = calculateTreeFolders(true);
+		return compactTreeFolders;
 	}
 
-	private Object[] getTreeRoots() {
-		if (treeRoots == null)
-			treeRoots = calculateTreePresentationRoots(false);
-		return treeRoots;
+	private StagingFolderEntry[] getTreeFolders() {
+		if (treeFolders == null)
+			treeFolders = calculateTreeFolders(false);
+		return treeFolders;
 	}
 
-	private Object[] calculateTreePresentationRoots(boolean compact) {
+	private StagingFolderEntry[] calculateTreeFolders(boolean compact) {
 		if (content == null || content.length == 0)
-			return new Object[0];
-
-		List<Object> roots = new ArrayList<Object>();
-		Map<IPath, List<Object>> childrenForPath = new HashMap<IPath, List<Object>>();
+			return new StagingFolderEntry[0];
 
 		Set<IPath> folderPaths = new HashSet<IPath>();
 		Map<IPath, String> childSegments = new HashMap<IPath, String>();
 
 		for (StagingEntry file : content) {
 			IPath folderPath = file.getParentPath();
-			if (folderPath.segmentCount() == 0) {
-				// No folders need to be created, this is a root file
-				roots.add(file);
+			if (folderPath.segmentCount() == 0)
+				// No folders need to be created
 				continue;
-			}
 			folderPaths.add(folderPath);
-			addChild(childrenForPath, folderPath, file);
 			for (IPath p = folderPath; p.segmentCount() != 1; p = p
 					.removeLastSegments(1)) {
 				IPath parent = p.removeLastSegments(1);
@@ -176,43 +193,18 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 				StagingFolderEntry folderEntry = new StagingFolderEntry(
 						workingDirectory, folderPath, folderPath);
 				folderEntries.add(folderEntry);
-				roots.add(folderEntry);
 			} else {
 				// Parent is existing node
 				IPath nodePath = folderPath.makeRelativeTo(parent);
 				StagingFolderEntry folderEntry = new StagingFolderEntry(
 						workingDirectory, folderPath, nodePath);
 				folderEntries.add(folderEntry);
-				addChild(childrenForPath, parent, folderEntry);
 			}
 		}
 
-		for (StagingFolderEntry folderEntry : folderEntries) {
-			List<Object> children = childrenForPath.get(folderEntry.getPath());
-			if (children != null) {
-				for (Object child : children) {
-					if (child instanceof StagingEntry)
-						((StagingEntry) child).setParent(folderEntry);
-					else if (child instanceof StagingFolderEntry)
-						((StagingFolderEntry) child).setParent(folderEntry);
-				}
-				Collections.sort(children, comparator);
-				folderEntry.setChildren(children.toArray());
-			}
-		}
-
-		Collections.sort(roots, comparator);
-		return roots.toArray();
-	}
-
-	private static void addChild(Map<IPath, List<Object>> childrenForPath,
-			IPath path, Object child) {
-		List<Object> children = childrenForPath.get(path);
-		if (children == null) {
-			children = new ArrayList<Object>();
-			childrenForPath.put(path, children);
-		}
-		children.add(child);
+		Collections.sort(folderEntries, FolderComparator.INSTANCE);
+		return folderEntries.toArray(new StagingFolderEntry[folderEntries
+				.size()]);
 	}
 
 	int getShownCount() {
@@ -270,14 +262,14 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 
 		if (update.repository == null || update.indexDiff == null) {
 			content = new StagingEntry[0];
-			treeRoots = new Object[0];
-			compactTreeRoots = new Object[0];
+			treeFolders = new StagingFolderEntry[0];
+			compactTreeFolders = new StagingFolderEntry[0];
 			return;
 		}
 
 		if (update.repository != repository) {
-			treeRoots = null;
-			compactTreeRoots = null;
+			treeFolders = null;
+			compactTreeFolders = null;
 		}
 
 		repository = update.repository;
@@ -335,10 +327,9 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		}
 
 		content = nodes.toArray(new StagingEntry[nodes.size()]);
-		Arrays.sort(content, comparator);
 
-		treeRoots = null;
-		compactTreeRoots = null;
+		treeFolders = null;
+		compactTreeFolders = null;
 	}
 
 	public void dispose() {
@@ -355,54 +346,11 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 			return content.length;
 	}
 
-	/**
-	 * Set file name mode to be enabled or disabled, to keep proper sorting
-	 * order. This mode displays the names of the file first followed by the
-	 * path to the folder that the file is in.
-	 *
-	 * @param enable
-	 */
-	void setFileNameMode(boolean enable) {
-		comparator.fileNameMode = enable;
-		if (content != null) {
-			Arrays.sort(content, comparator);
-		}
-	}
-
-	private static class EntryComparator implements Comparator<Object> {
-		boolean fileNameMode;
-
-		public int compare(Object o1, Object o2) {
-			if (o1 instanceof StagingEntry) {
-				if (o2 instanceof StagingEntry) {
-					StagingEntry e1 = (StagingEntry) o1;
-					StagingEntry e2 = (StagingEntry) o2;
-					if (fileNameMode) {
-						int result = e1.getName().compareTo(e2.getName());
-						if (result != 0)
-							return result;
-						else
-							return e1.getParentPath().toString()
-									.compareTo(e2.getParentPath().toString());
-					}
-					return e1.getPath().compareTo(e2.getPath());
-				} else {
-					// Files should come after folders
-					return 1;
-				}
-			} else if (o1 instanceof StagingFolderEntry) {
-				if (o2 instanceof StagingFolderEntry) {
-					StagingFolderEntry f1 = (StagingFolderEntry) o1;
-					StagingFolderEntry f2 = (StagingFolderEntry) o2;
-					return f1.getPath().toString()
-							.compareTo(f2.getPath().toString());
-				} else {
-					// Folders should come before files
-					return -1;
-				}
-			} else {
-				return 0;
-			}
+	private static class FolderComparator implements
+			Comparator<StagingFolderEntry> {
+		public static FolderComparator INSTANCE = new FolderComparator();
+		public int compare(StagingFolderEntry o1, StagingFolderEntry o2) {
+			return o1.getPath().toString().compareTo(o2.getPath().toString());
 		}
 	}
 
