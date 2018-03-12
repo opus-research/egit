@@ -37,7 +37,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
@@ -69,7 +68,6 @@ import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
@@ -158,14 +156,12 @@ import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.operations.UndoRedoActionGroup;
-import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 
 /**
  * A GitX style staging view with embedded commit dialog.
  */
-public class StagingView extends ViewPart implements IShowInSource {
+public class StagingView extends ViewPart {
 
 	/**
 	 * Staging view id
@@ -533,14 +529,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 					public void drop(DropTargetEvent event) {
 						if (event.data instanceof IStructuredSelection) {
 							final IStructuredSelection selection = (IStructuredSelection) event.data;
-							Object firstElement = selection.getFirstElement();
-							if (firstElement instanceof StagingEntry)
+							if (selection.getFirstElement() instanceof StagingEntry)
 								stage(selection);
-							else {
-								IResource resource = AdapterUtils.adapt(firstElement, IResource.class);
-								if (resource != null)
-									stage(selection);
-							}
 						}
 					}
 
@@ -650,31 +640,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 
 		site.setSelectionProvider(unstagedTableViewer);
-	}
-
-	public ShowInContext getShowInContext() {
-		if (stagedTableViewer != null && stagedTableViewer.getTable().isFocusControl())
-			return getShowInContext(stagedTableViewer);
-		else if (unstagedTableViewer != null && unstagedTableViewer.getTable().isFocusControl())
-			return getShowInContext(unstagedTableViewer);
-		else
-			return null;
-	}
-
-	private ShowInContext getShowInContext(TableViewer tableViewer) {
-		IStructuredSelection selection = (IStructuredSelection) tableViewer.getSelection();
-		List<Object> elements = new ArrayList<Object>();
-		for (Object selectedElement : selection.toList()) {
-			if (selectedElement instanceof StagingEntry) {
-				StagingEntry entry = (StagingEntry) selectedElement;
-				IFile file = entry.getFile();
-				if (file != null)
-					elements.add(file);
-				else
-					elements.add(entry.getLocation());
-			}
-		}
-		return new ShowInContext(null, new StructuredSelection(elements));
 	}
 
 	private int getStagingFormOrientation() {
@@ -969,17 +934,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 					menuMgr.add(new DeleteAction(selection));
 				if (addLaunchMergeTool)
 					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION, tableViewer));
-
-				menuMgr.add(new Separator());
-				menuMgr.add(createShowInMenu());
 			}
 		});
 
-	}
-
-	private IContributionItem createShowInMenu() {
-		IWorkbenchWindow workbenchWindow = getSite().getWorkbenchWindow();
-		return UIUtils.createShowInMenu(workbenchWindow);
 	}
 
 	private class ReplaceAction extends Action {
@@ -1219,52 +1176,35 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private void stage(IStructuredSelection selection) {
 		Git git = new Git(currentRepository);
+		AddCommand add = null;
 		RmCommand rm = null;
 		Iterator iterator = selection.iterator();
-		List<String> addPaths = new ArrayList<String>();
 		while (iterator.hasNext()) {
-			Object element = iterator.next();
-			if (element instanceof StagingEntry) {
-				StagingEntry entry = (StagingEntry) element;
-				switch (entry.getState()) {
-				case ADDED:
-				case CHANGED:
-				case REMOVED:
-					// already staged
-					break;
-				case CONFLICTING:
-				case MODIFIED:
-				case PARTIALLY_MODIFIED:
-				case UNTRACKED:
-					addPaths.add(entry.getPath());
-					break;
-				case MISSING:
-					if (rm == null)
-						rm = git.rm();
-					rm.addFilepattern(entry.getPath());
-					break;
-				}
-			} else {
-				IResource resource = AdapterUtils.adapt(element, IResource.class);
-				if (resource != null) {
-					RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-					if (mapping != null && mapping.getRepository() == currentRepository) {
-						String path = mapping.getRepoRelativePath(resource);
-						// If resource corresponds to root of working directory
-						if ("".equals(path)) //$NON-NLS-1$
-							addPaths.add("."); //$NON-NLS-1$
-						else
-							addPaths.add(path);
-					}
-				}
+			StagingEntry entry = (StagingEntry) iterator.next();
+			switch (entry.getState()) {
+			case ADDED:
+			case CHANGED:
+			case REMOVED:
+				// already staged
+				break;
+			case CONFLICTING:
+			case MODIFIED:
+			case PARTIALLY_MODIFIED:
+			case UNTRACKED:
+				if (add == null)
+					add = git.add();
+				add.addFilepattern(entry.getPath());
+				break;
+			case MISSING:
+				if (rm == null)
+					rm = git.rm();
+				rm.addFilepattern(entry.getPath());
+				break;
 			}
 		}
 
-		if (!addPaths.isEmpty())
+		if (add != null)
 			try {
-				AddCommand add = git.add();
-				for (String addPath : addPaths)
-					add.addFilepattern(addPath);
 				add.call();
 			} catch (NoFilepatternException e1) {
 				// cannot happen
