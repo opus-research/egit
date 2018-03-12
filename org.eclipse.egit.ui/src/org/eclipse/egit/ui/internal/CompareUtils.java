@@ -233,8 +233,8 @@ public class CompareUtils {
 	 * @return a truncated revision identifier if it is long
 	 */
 	public static String truncatedRevision(String ci) {
-		if (ObjectId.isId(ci))
-			return ci.substring(0, 7);
+		if (ci.length() > 10)
+			return ci.substring(0, 7) + "..."; //$NON-NLS-1$
 		else
 			return ci;
 	}
