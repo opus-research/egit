@@ -114,6 +114,7 @@ public class CommitUI  {
 		// keep our own copy
 		System.arraycopy(selectedResources, 0, this.selectedResources, 0,
 				selectedResources.length);
+		this.selectedResources = selectedResources;
 	}
 
 	/**
