@@ -19,14 +19,11 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
-import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
@@ -37,9 +34,6 @@ import org.eclipse.swtbot.swt.finder.utils.TableCollection;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.ui.IWorkingSet;
-import org.eclipse.ui.IWorkingSetManager;
-import org.eclipse.ui.PlatformUI;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -148,7 +142,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	public void testExpandWorkDir() throws Exception {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		Repository myRepository = lookupRepository(repositoryFile);
-		List<String> children = Arrays.asList(myRepository.getWorkDir().list());
+		List<String> children = Arrays.asList(myRepository.getWorkTree().list());
 		List<String> treeChildren = getWorkdirItem(tree, repositoryFile)
 				.expand().getNodes();
 		assertTrue(children.containsAll(treeChildren)
@@ -234,23 +228,27 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		wizardNode = selected.get(0, 0);
 		// wizard directory should be .git
 		assertEquals(Constants.DOT_GIT, wizardNode);
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		// next is 1
+		shell.bot().button(1).click();
 		waitInUI();
 		assertTrue(shell.bot().tree().getAllItems().length == 0);
-		shell.bot().button(IDialogConstants.BACK_LABEL).click();
+		// back is 2
+		shell.bot().button(2).click();
 		// go to project with .project
 		shell.bot().tree().getAllItems()[0].getNode(PROJ1).select();
 		// next is 1
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		shell.bot().button(1).click();
 		waitInUI();
 		assertTrue(shell.bot().tree().getAllItems().length == 1);
-		shell.bot().button(UIText.WizardProjectsImportPage_deselectAll).click();
-		assertTrue(!shell.bot().button(IDialogConstants.FINISH_LABEL)
-				.isEnabled());
-		shell.bot().button(UIText.WizardProjectsImportPage_selectAll).click();
-		assertTrue(shell.bot().button(IDialogConstants.FINISH_LABEL)
-				.isEnabled());
-		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
+		// deselect all
+		shell.bot().button(1).click();
+		// finish is 4, should be disabled
+		assertTrue(!shell.bot().button(4).isEnabled());
+		// select all
+		shell.bot().button(0).click();
+		// finish is 4, should be enabled
+		assertTrue(shell.bot().button(4).isEnabled());
+		shell.bot().button(4).click();
 		waitInUI();
 		assertProjectExistence(PROJ1, true);
 	}
@@ -279,72 +277,22 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		String wizardNode = selected.get(0, 0);
 		// wizard directory should be PROJ2
 		assertEquals(PROJ2, wizardNode);
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		// next is 1
+		shell.bot().button(1).click();
 		waitInUI();
 		assertTrue(shell.bot().tree().getAllItems().length == 0);
-		shell.bot().button(IDialogConstants.BACK_LABEL).click();
+		// back is 2
+		shell.bot().button(2).click();
 		// import as general
 		activateItemByKeyboard(shell,
 				UIText.GitSelectWizardPage_ImportAsGeneralButton);
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		// next is 1
+		shell.bot().button(1).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
 				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
-		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
+		shell.bot().button(2).click();
 		waitInUI();
 		assertProjectExistence(PROJ2, true);
-	}
-
-	@Test
-	public void testImportWizardGeneralProjectWithWorkingSet() throws Exception {
-		deleteAllProjects();
-		assertProjectExistence(PROJ1, false);
-		SWTBotTree tree = getOrOpenView().bot().tree();
-		String wizardTitle = NLS.bind(
-				UIText.GitCreateProjectViaWizardWizard_WizardTitle,
-				repositoryFile.getPath());
-		// start wizard from PROJ1
-		getWorkdirItem(tree, repositoryFile).expand().getNode(PROJ1).select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("ImportProjectsCommand"));
-		SWTBotShell shell = bot.shell(wizardTitle);
-		shell = bot.shell(wizardTitle);
-		// try import existing project first
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_ImportExistingButton);
-		// auto share
-		activateItemByKeyboard(shell,
-				UIText.GitSelectWizardPage_AutoShareButton);
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
-		waitInUI();
-		shell.bot().tree().getAllItems()[0].check();
-		// add to working set
-		shell.bot().checkBox().select();
-		// create new working set
-		shell.bot().button("Select...").click();
-		SWTBotShell workingSetDialog = bot.shell("Select Working Sets");
-		workingSetDialog.bot().button("New...").click();
-		SWTBotShell newDialog = bot.shell("New Working Set");
-		newDialog.bot().table().select("Java");
-		newDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
-		String workingSetName = "myWorkingSet";
-		newDialog.bot().text(0).setText(workingSetName);
-		newDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-		workingSetDialog.bot().table().getTableItem(workingSetName).check();
-		workingSetDialog.bot().button(IDialogConstants.OK_LABEL).click();
-		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
-		waitInUI();
-		assertProjectExistence(PROJ1, true);
-		assertProjectInWorkingSet(workingSetName, PROJ1);
-	}
-
-	private void assertProjectInWorkingSet(String workingSetName,
-			String projectName) {
-		IWorkingSetManager workingSetManager = PlatformUI.getWorkbench().getWorkingSetManager();
-		IWorkingSet workingSet = workingSetManager.getWorkingSet(workingSetName);
-		IAdaptable[] elements = workingSet.getElements();
-		assertEquals("Wrong number of projects in working set", 1, elements.length);
-		IProject project = (IProject) elements[0].getAdapter(IProject.class);
-		assertEquals("Wrong project in working set", projectName, project.getName());
 	}
 
 	@Test
@@ -368,13 +316,14 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		// share manual
 		activateItemByKeyboard(shell,
 				UIText.GitSelectWizardPage_InteractiveShareButton);
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		// next is 1
+		shell.bot().button(1).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
 				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		shell.bot().button(1).click();
 		assertEquals(PROJ2, shell.bot().table().getTableItem(0).getText(0));
 		// cancel -> not share
-		shell.bot().button(IDialogConstants.CANCEL_LABEL).click();
+		shell.bot().button(3).click();
 		waitInUI();
 		assertProjectExistence(PROJ2, true);
 		RepositoryMapping mapping = RepositoryMapping
@@ -403,13 +352,14 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		// share manual
 		activateItemByKeyboard(shell,
 				UIText.GitSelectWizardPage_InteractiveShareButton);
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		// next is 1
+		shell.bot().button(1).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
 				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
-		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		shell.bot().button(1).click();
 		assertEquals(PROJ2, shell.bot().table().getTableItem(0).getText(0));
 		// finish -> share
-		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
+		shell.bot().button(2).click();
 		waitInUI();
 		assertProjectExistence(PROJ2, true);
 		RepositoryMapping mapping = RepositoryMapping
@@ -559,3 +509,4 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		}
 	}
 }
+

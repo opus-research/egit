@@ -29,7 +29,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -39,7 +38,6 @@ import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -92,12 +90,7 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 		headId = repository.resolve(Constants.HEAD);
 
 		store = Activator.getDefault().getPreferenceStore();
-		String repoName = Activator.getDefault().getRepositoryUtil().getRepositoryName(repository);
-		RepositoryState state = repository.getRepositoryState();
-		if (state != RepositoryState.SAFE)
-			repositoryName = repoName + '|' + state.getDescription();
-		else
-			repositoryName = repoName;
+		repositoryName = Activator.getDefault().getRepositoryUtil().getRepositoryName(repository);
 
 		branch = getShortBranch();
 
@@ -352,12 +345,12 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			treeWalk.addTree(new EmptyTreeIterator());
 
 		// Index
-		treeWalk.addTree(new DirCacheIterator(DirCache.read(repository)));
+		treeWalk.addTree(new DirCacheIterator(repository.readDirCache()));
 
 		// Working directory
 		IProject project = resource.getProject();
 		IWorkspaceRoot workspaceRoot = resource.getWorkspace().getRoot();
-		File repoRoot = repository.getWorkDir();
+		File repoRoot = repository.getWorkTree();
 
 		if (repoRoot.equals(project.getLocation().toFile()))
 			treeWalk.addTree(new ContainerTreeIterator(project));

@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,8 +31,8 @@ import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryConfig;
+import org.eclipse.jgit.storage.file.FileBasedConfig;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
@@ -63,7 +62,7 @@ public class PushWizard extends Wizard {
 		return sb.toString();
 	}
 
-	private Repository localDb;
+	private FileRepository localDb;
 
 	private final RepositorySelectionPage repoPage;
 
@@ -79,20 +78,13 @@ public class PushWizard extends Wizard {
 	 * @throws URISyntaxException
 	 *             when configuration of this repository contains illegal URIs.
 	 */
-	public PushWizard(final Repository localDb) throws URISyntaxException {
+	public PushWizard(final FileRepository localDb) throws URISyntaxException {
 		this.localDb = localDb;
 		final List<RemoteConfig> remotes = RemoteConfig
 				.getAllRemoteConfigs(localDb.getConfig());
 		repoPage = new RepositorySelectionPage(false, remotes, null);
-		refSpecPage = new RefSpecPage(localDb, true) {
-			@Override
-			public void setVisible(boolean visible) {
-				if (visible)
-					setSelection(repoPage.getSelection());
-				super.setVisible(visible);
-			}
-		};
-		confirmPage = new ConfirmationPage(localDb);
+		refSpecPage = new RefSpecPage(localDb, true);
+		confirmPage = new ConfirmationPage(localDb, repoPage, refSpecPage);
 		// TODO use/create another cool icon
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
@@ -103,6 +95,14 @@ public class PushWizard extends Wizard {
 		addPage(repoPage);
 		addPage(refSpecPage);
 		addPage(confirmPage);
+	}
+
+	@Override
+	public IWizardPage getNextPage(IWizardPage page) {
+		if (page == getPages()[0]){
+			refSpecPage.setSelection(repoPage.getSelection());
+		}
+		return super.getNextPage(page);
 	}
 
 	@Override
@@ -143,7 +143,7 @@ public class PushWizard extends Wizard {
 	private void saveRefSpecs() {
 		final RemoteConfig rc = repoPage.getSelection().getConfig();
 		rc.setPushRefSpecs(refSpecPage.getRefSpecs());
-		final RepositoryConfig config = localDb.getConfig();
+		final FileBasedConfig config = localDb.getConfig();
 		rc.update(config);
 		try {
 			config.save();

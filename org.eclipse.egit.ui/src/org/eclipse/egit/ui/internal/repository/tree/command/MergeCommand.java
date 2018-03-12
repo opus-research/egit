@@ -19,9 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
@@ -30,24 +28,23 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.Display;
 
 /**
  * Implements "Merge"
  */
 public class MergeCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
-	public Object execute(final ExecutionEvent event) throws ExecutionException {
+	public Object execute(ExecutionEvent event) throws ExecutionException {
 
 		RepositoryTreeNode node = getSelectedNodes(event).get(0);
 
-		final Repository repository = node.getRepository();
+		final FileRepository repository = node.getRepository();
 
 		if (!canMerge(repository))
 			return null;
@@ -73,7 +70,7 @@ public class MergeCommand extends
 			refName = targetRef;
 		else {
 			MergeTargetSelectionDialog mergeTargetSelectionDialog = new MergeTargetSelectionDialog(
-					getShell(event), repository);
+					getView(event).getSite().getShell(), repository);
 			if (mergeTargetSelectionDialog.open() == IDialogConstants.OK_ID) {
 				refName = mergeTargetSelectionDialog.getRefName();
 			} else {
@@ -82,60 +79,18 @@ public class MergeCommand extends
 		}
 
 		String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
-		final MergeOperation op = new MergeOperation(repository, refName);
 		Job job = new Job(jobname) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				try {
-					op.execute(monitor);
+					new MergeOperation(repository, refName).execute(monitor);
 				} catch (final CoreException e) {
-					return e.getStatus();
+					Activator.handleError(e.getMessage(), e, true);
 				}
 				return Status.OK_STATUS;
 			}
 		};
 		job.setUser(true);
-		job.addJobChangeListener(new JobChangeAdapter() {
-			@Override
-			public void done(IJobChangeEvent jobEvent) {
-				IStatus result = jobEvent.getJob().getResult();
-				if (result.getSeverity() == IStatus.CANCEL) {
-					Display.getDefault().asyncExec(new Runnable() {
-						public void run() {
-							try {
-								MessageDialog
-										.openInformation(
-												getActiveShell(event),
-												UIText.MergeAction_MergeCanceledTitle,
-												UIText.MergeAction_MergeCanceledMessage);
-							} catch (ExecutionException e) {
-								Activator
-										.handleError(
-												UIText.MergeAction_MergeCanceledMessage,
-												null, true);
-							}
-						}
-					});
-				} else if (!result.isOK()) {
-					Activator.handleError(result.getMessage(), result
-							.getException(), true);
-				} else {
-					Display.getDefault().asyncExec(new Runnable() {
-						public void run() {
-							try {
-								MessageDialog.openInformation(
-										getActiveShell(event),
-										UIText.MergeAction_MergeResultTitle, op
-												.getResult().toString());
-							} catch (ExecutionException e) {
-								Activator.handleError(
-										op.getResult().toString(), null, true);
-							}
-						}
-					});
-				}
-			}
-		});
 		job.schedule();
 
 		return null;
