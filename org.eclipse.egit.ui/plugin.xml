@@ -814,9 +814,6 @@
                     <adapt
                         type="org.eclipse.core.resources.mapping.ResourceMapping">
                     </adapt>
-                    <adapt
-                        type="org.eclipse.ui.IContributorResourceAdapter">
-                    </adapt>
                   </or>
                </iterate>
             </and>
