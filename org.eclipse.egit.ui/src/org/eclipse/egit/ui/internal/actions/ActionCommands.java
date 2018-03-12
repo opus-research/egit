@@ -17,6 +17,9 @@ public class ActionCommands {
 	/** Add to index action command id */
 	public static final String ADD_TO_INDEX = "org.eclipse.egit.ui.team.AddToIndex"; //$NON-NLS-1$
 
+	/** Remove from index action command id */
+	public static final String REMOVE_FROM_INDEX = "org.eclipse.egit.ui.team.RemoveFromIndex"; //$NON-NLS-1$
+
 	/** "Apply patch" action command id */
 	public static final String APPLY_PATCH = "org.eclipse.egit.ui.team.ApplyPatch"; //$NON-NLS-1$
 
@@ -125,4 +128,6 @@ public class ActionCommands {
 	/** "Merge Tool" action command id */
 	public static final String MERGE_TOOL_ACTION = "org.eclipse.egit.ui.team.MergeTool"; //$NON-NLS-1$
 
+	/** "Show Blame Annotations" action command id */
+	public static final String SHOW_BLAME_ACTION = "org.eclipse.egit.ui.team.ShowBlameAnnotations"; //$NON-NLS-1$
 }
