@@ -35,8 +35,13 @@ import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -233,6 +238,7 @@ class ExistingOrNewPage extends WizardPage {
 
 		tree.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
+				tree.select((TreeItem)e.item);
 				updateCreateOptions();
 			}
 		});
@@ -241,17 +247,50 @@ class ExistingOrNewPage extends WizardPage {
 		setControl(g);
 	}
 
-	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem2, boolean isAlternative) {
+	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem, boolean isAlternative) {
 		if (m.getGitDir() == null)
-			treeItem2.setText(2, UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
+			treeItem.setText(2, UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
 		else {
 			IPath container = m.getContainerPath();
 			if (!container.isEmpty())
-				container = container.addTrailingSeparator();
+				container = Path.fromOSString("."); //$NON-NLS-1$
 			IPath relativePath = container.append(m.getGitDir());
-			if (isAlternative)
-				treeItem2.setText(0, relativePath.removeLastSegments(1).addTrailingSeparator().toString());
-			treeItem2.setText(2, relativePath.toString());
+			if (isAlternative) {
+				IPath withoutLastSegment = relativePath.removeLastSegments(1);
+				IPath path;
+				if (withoutLastSegment.isEmpty())
+					path = Path.fromPortableString("."); //$NON-NLS-1$
+				else
+					path = withoutLastSegment;
+				treeItem.setText(0, path.toString());
+			}
+			treeItem.setText(2, relativePath.toOSString());
+			try {
+				IProject project = m.getContainer().getProject();
+				FileRepository repo = new FileRepository(m.getGitDirAbsolutePath().toFile());
+				File workTree = repo.getWorkTree();
+				IPath workTreePath = Path.fromOSString(workTree.getAbsolutePath());
+				if (workTreePath.isPrefixOf(project.getLocation())) {
+					IPath makeRelativeTo = project.getLocation().makeRelativeTo(workTreePath);
+					String repoRelativePath = makeRelativeTo.append("/.project").toPortableString(); //$NON-NLS-1$
+					ObjectId headCommitId = repo.resolve(Constants.HEAD);
+					if (headCommitId != null) {
+						// Not an empty repo
+						RevWalk revWalk = new RevWalk(repo);
+						RevCommit headCommit = revWalk.parseCommit(headCommitId);
+						RevTree headTree = headCommit.getTree();
+						TreeWalk projectInRepo = TreeWalk.forPath(repo, repoRelativePath, headTree);
+						if (projectInRepo != null) {
+							// the .project file is tracked by this repo
+							treeItem.setChecked(true);
+						}
+						revWalk.dispose();
+					}
+				}
+				repo.close();
+			} catch (IOException e1) {
+				Activator.logError("Failed to detect which repository to use", e1); //$NON-NLS-1$
+			}
 		}
 	}
 
