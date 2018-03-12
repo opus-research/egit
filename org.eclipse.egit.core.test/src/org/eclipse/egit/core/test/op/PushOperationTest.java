@@ -15,6 +15,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -91,7 +92,7 @@ public class PushOperationTest extends DualRepositoryTestCase {
 						repository1
 								.track(EFS.getStore(resource.getLocationURI())
 										.toLocalFile(0, null));
-					} catch (Exception e) {
+					} catch (IOException e) {
 						throw new CoreException(Activator.error(e.getMessage(),
 								e));
 					}
@@ -155,8 +156,8 @@ public class PushOperationTest extends DualRepositoryTestCase {
 
 		AddToIndexOperation trop = new AddToIndexOperation(files);
 		trop.execute(null);
-		CommitOperation cop = new CommitOperation(fileArr, files, TestUtils.AUTHOR,
-				TestUtils.COMMITTER, "Added file");
+		CommitOperation cop = new CommitOperation(fileArr, files, files,
+				TestUtils.AUTHOR, TestUtils.COMMITTER, "Added file");
 		cop.execute(null);
 
 		proj.delete(false, false, null);

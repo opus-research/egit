@@ -66,9 +66,6 @@ public class CoreText extends NLS {
 	public static String CommitOperation_couldNotFindRepositoryMapping;
 
 	/** */
-	public static String ConfigureFetchAfterCloneTask_couldNotFetch;
-
-	/** */
 	public static String ConnectProviderOperation_connecting;
 
 	/** */
@@ -76,21 +73,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String DeleteBranchOperation_TaskName;
-
-	/** */
-	public static String DeleteTagOperation_exceptionMessage;
-
-	/** */
-	public static String DiffHeaderFormat_Email;
-
-	/** */
-	public static String DiffHeaderFormat_None;
-
-	/** */
-	public static String DiffHeaderFormat_Oneline;
-
-	/** */
-	public static String DiffHeaderFormat_Workspace;
 
 	/** */
 	public static String DiscardChangesOperation_discardFailed;
@@ -156,9 +138,6 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
-	public static String RepositoryUtil_noHead;
-
-	/** */
 	public static String RemoteRefUpdateCantBeReused;
 
 	/** */
@@ -192,9 +171,6 @@ public class CoreText extends NLS {
 	public static String ResetOperation_updatingFailed;
 
 	/** */
-	public static String MergeOperation_CheckoutConflict;
-
-	/** */
 	public static String MergeOperation_InternalError;
 
 	/** */
@@ -219,9 +195,6 @@ public class CoreText extends NLS {
 	public static String CloneOperation_checkingOutFiles;
 
 	/** */
-	public static String CloneOperation_failed_cleanup;
-
-	/** */
 	public static String CloneOperation_initializingRepository;
 
 	/** */
@@ -234,22 +207,10 @@ public class CoreText extends NLS {
 	public static String CreateLocalBranchOperation_CreatingBranchMessage;
 
 	/** */
+	public static String CreatePatchOperation_commitRequired;
+
+	/** */
 	public static String CreatePatchOperation_repoRequired;
-
-	/** */
-	public static String CreatePatchOperation_cannotCreatePatchForMergeCommit;
-
-	/** */
-	public static String CreatePatchOperation_cannotCreatePatchForFirstCommit;
-
-	/** */
-	public static String CreatePatchOperation_couldNotFindProject;
-
-	/** */
-	public static String CreatePatchOperation_patchFileCouldNotBeWritten;
-
-	/** */
-	public static String IndexDiffCacheEntry_refreshingProjects;
 
 	/** */
 	public static String IndexDiffCacheEntry_reindexing;
@@ -268,9 +229,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String ProjectUtil_refreshing;
-
-	/** */
-	public static String ProjectUtil_taskCheckingDirectory;
 
 	/** */
 	public static String PullOperation_DetachedHeadMessage;
@@ -306,9 +264,6 @@ public class CoreText extends NLS {
 	public static String RevertCommitOperation_reverting;
 
 	/** */
-	public static String BranchOperation_closingMissingProject;
-
-	/** */
 	public static String BranchOperation_performingBranch;
 
 	/** */
@@ -342,7 +297,7 @@ public class CoreText extends NLS {
 	public static String OperationNotYetExecuted;
 
 	/** */
-	public static String ProjectReference_InvalidTokensCount;
+	public static String GitProjectSetCapability_InvalidTokensCount;
 
 	/** */
 	public static String GitProjectSetCapability_CloneToExistingDirectory;
@@ -388,12 +343,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitRemoteFolder_fetchingMembers;
-
-	/** */
-	public static String GitURI_InvalidSCMURL;
-
-	/** */
-	public static String GitURI_InvalidURI;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);

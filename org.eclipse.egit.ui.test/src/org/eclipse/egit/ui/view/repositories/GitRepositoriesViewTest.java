@@ -70,7 +70,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	@BeforeClass
 	public static void beforeClass() throws Exception {
-		setVerboseBranchMode(false);
 		repositoryFile = createProjectAndCommitToRepository();
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				repositoryFile);
@@ -196,9 +195,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		SWTBotTreeItem item = myRepoViewUtil.getRootItem(tree, repositoryFile);
 		item.select();
-		ContextMenuHelper.clickContextMenu(tree,
-				myUtil.getPluginLocalizedValue("ShowIn"),
-				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
+		ContextMenuHelper.clickContextMenu(tree, myUtil
+				.getPluginLocalizedValue("OpenPropertiesCommand"));
 		SWTBotView propertieView = bot.viewById("org.eclipse.ui.views.PropertySheet");
 		assertTrue(propertieView.isActive());
 	}

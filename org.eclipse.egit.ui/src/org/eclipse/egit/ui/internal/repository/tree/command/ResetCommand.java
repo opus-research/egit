@@ -19,6 +19,7 @@ import org.eclipse.core.commands.IHandler;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.ResetOperation;
+import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
@@ -28,7 +29,6 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.osgi.util.NLS;
 
@@ -36,28 +36,19 @@ import org.eclipse.osgi.util.NLS;
  * "Resets" a repository
  */
 public class ResetCommand extends
-		RepositoriesViewCommandHandler<RepositoryTreeNode<?>> implements
+		RepositoriesViewCommandHandler<RepositoryTreeNode<Ref>> implements
 		IHandler {
-
-	/**
-	 * Command id
-	 */
-	public static final String ID = "org.eclipse.egit.ui.team.Reset"; //$NON-NLS-1$
 
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 
-		final RepositoryTreeNode<?> node = getSelectedNodes(event).get(0);
+		final RepositoryTreeNode<Ref> node = getSelectedNodes(event).get(0);
 		final String currentBranch;
 		try {
 			currentBranch = node.getRepository().getFullBranch();
 		} catch (IOException e1) {
 			throw new ExecutionException(e1.getMessage(), e1);
 		}
-		final String targetBranch;
-		if (node.getObject() instanceof Ref)
-			targetBranch = ((Ref) node.getObject()).getName();
-		else
-			targetBranch = currentBranch;
+		final String targetBranch = node.getObject().getName();
 		final String repoName = Activator.getDefault().getRepositoryUtil()
 				.getRepositoryName(node.getRepository());
 
@@ -65,8 +56,8 @@ public class ResetCommand extends
 
 			@Override
 			public void addPages() {
-				addPage(new SelectResetTypePage(repoName, node.getRepository(),
-						currentBranch, targetBranch));
+				addPage(new SelectResetTypePage(repoName, currentBranch,
+						targetBranch));
 				setWindowTitle(UIText.ResetCommand_WizardTitle);
 			}
 
@@ -74,13 +65,15 @@ public class ResetCommand extends
 			public boolean performFinish() {
 				final ResetType resetType = ((SelectResetTypePage) getPages()[0])
 						.getResetType();
-				if (resetType == ResetType.HARD)
+				if (resetType == ResetType.HARD) {
 					if (!MessageDialog
 							.openQuestion(
 									getShell(),
 									UIText.ResetTargetSelectionDialog_ResetQuestion,
-									UIText.ResetTargetSelectionDialog_ResetConfirmQuestion))
+									UIText.ResetTargetSelectionDialog_ResetConfirmQuestion)) {
 						return true;
+					}
+				}
 
 				try {
 					getContainer().run(false, true,
@@ -90,13 +83,13 @@ public class ResetCommand extends
 										InterruptedException {
 
 									String jobname = NLS.bind(
-											UIText.ResetAction_reset,
-											targetBranch);
+											UIText.ResetAction_reset, node
+													.getObject().getName());
 									final ResetOperation operation = new ResetOperation(
-											node.getRepository(), targetBranch,
+											node.getRepository(), node
+													.getObject().getName(),
 											resetType);
-									JobUtil.scheduleUserJob(operation, jobname,
-											JobFamilies.RESET);
+									JobUtil.scheduleUserJob(operation, jobname, JobFamilies.RESET);
 								}
 							});
 				} catch (InvocationTargetException ite) {

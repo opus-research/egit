@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,11 +7,9 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Markus Keller <markus_keller@ch.ibm.com> - Show the repository name in the title of the Pull Result dialog
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.pull;
 
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.fetch.FetchResultDialog;
@@ -59,8 +57,7 @@ public class PullResultDialog extends Dialog {
 	 */
 	public PullResultDialog(Shell shell, Repository repo, PullResult result) {
 		super(shell);
-		setShellStyle(getShellStyle() & ~SWT.APPLICATION_MODAL | SWT.SHELL_TRIM);
-		setBlockOnOpen(false);
+		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repo = repo;
 		this.result = result;
 		hasUpdates = hasFetchResults() || hasMergeResults()
@@ -174,19 +171,11 @@ public class PullResultDialog extends Dialog {
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText(NLS.bind(
-				UIText.PullResultDialog_DialogTitle,
-				Activator.getDefault().getRepositoryUtil()
-						.getRepositoryName(repo)));
+		newShell.setText(UIText.PullResultDialog_DialogTitle);
 	}
 
 	@Override
 	protected IDialogSettings getDialogBoundsSettings() {
-		return UIUtils.getDialogBoundSettings(getClass());
-	}
-
-	@Override
-	protected int getDialogBoundsStrategy() {
-		return hasUpdates ? DIALOG_PERSISTLOCATION | DIALOG_PERSISTSIZE : DIALOG_PERSISTLOCATION;
+		return hasUpdates ? UIUtils.getDialogBoundSettings(getClass()) : null;
 	}
 }

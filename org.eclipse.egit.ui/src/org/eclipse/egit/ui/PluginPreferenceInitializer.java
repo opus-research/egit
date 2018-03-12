@@ -38,18 +38,17 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		int[] w;
 
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE, true);
-		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_NOTES, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_REV_DETAIL, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_REV_COMMENT, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_TOOLTIPS, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES, false);
-		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS, true);
-		store.setDefault(UIPreferences.RESOURCEHISTORY_FOLLOW_RENAMES, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_COMPARE_MODE, false);
 
 		store.setDefault(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS, true);
+		store.setDefault(UIPreferences.DECORATOR_RECURSIVE_LIMIT,
+				Integer.MAX_VALUE);
 		store.setDefault(UIPreferences.DECORATOR_FILETEXT_DECORATION,
 				GitLightweightDecorator.DecorationHelper.FILE_FORMAT_DEFAULT);
 		store.setDefault(UIPreferences.DECORATOR_FOLDERTEXT_DECORATION,
@@ -79,7 +78,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.SHOW_REBASE_CONFIRM, true);
 		store.setDefault(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, true);
 		store.setDefault(UIPreferences.SHOW_HOME_DIR_WARNING, true);
-		store.setDefault(UIPreferences.SHOW_GIT_PREFIX_WARNING, true);
 		store.setDefault(UIPreferences.SHOW_DETACHED_HEAD_WARNING, true);
 
 
@@ -96,11 +94,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.REMOTE_CONNECTION_TIMEOUT, 30 /* seconds */);
 		store.setDefault(UIPreferences.STAGING_VIEW_FILENAME_MODE, true);
 		store.setDefault(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE, false);
-		store.setDefault(UIPreferences.COMMIT_DIALOG_HISTORY_SIZE, 10);
-		store.setDefault(UIPreferences.CHECKOUT_PROJECT_RESTORE, true);
-		store.setDefault(UIPreferences.HISTORY_MAX_TAG_LENGTH, 15);
-		store.setDefault(UIPreferences.HISTORY_MAX_BRANCH_LENGTH, 15);
-		store.setDefault(UIPreferences.CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG, true);
 	}
 
 }

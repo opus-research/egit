@@ -25,9 +25,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.internal.FileChecker;
-import org.eclipse.egit.core.internal.FileChecker.CheckResult;
-import org.eclipse.egit.core.internal.FileChecker.CheckResultEntry;
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -40,7 +37,6 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.text.TextViewer;
 import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
@@ -70,8 +66,6 @@ import org.eclipse.ui.PlatformUI;
  * Display the result of a rebase.
  */
 public class RebaseResultDialog extends MessageDialog {
-	private static final String SPACE = " "; //$NON-NLS-1$
-
 	private static final Image INFO = PlatformUI.getWorkbench()
 			.getSharedImages().getImage(ISharedImages.IMG_OBJS_INFO_TSK);
 
@@ -134,8 +128,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_UpToDate;
 		case FAST_FORWARD:
 			return UIText.RebaseResultDialog_FastForward;
-		case NOTHING_TO_COMMIT:
-			return UIText.RebaseResultDialog_NothingToCommit;
 		default:
 			throw new IllegalStateException(status.name());
 		}
@@ -217,52 +209,19 @@ public class RebaseResultDialog extends MessageDialog {
 				dc.unlock();
 		}
 
-		boolean mergeToolAvailable = true;
-		final CheckResult checkResult;
-		if (!conflictListFailure) {
-			checkResult = FileChecker.checkFiles(repo, conflictPaths);
-			mergeToolAvailable = checkResult.isOk();
-		}
-		else {
-			checkResult = null;
-			mergeToolAvailable = false;
-		}
-
 		if (conflictListFailure) {
 			Label failureLabel = new Label(main, SWT.NONE);
 			failureLabel
 					.setText(UIText.RebaseResultDialog_ConflictListFailureMessage);
 		} else {
-			if (checkResult != null && !checkResult.isOk()) {
-				Label failureLabel = new Label(main, SWT.NONE);
-				failureLabel
-					.setText(getProblemDescription(checkResult));
-			}
 			Label conflictListLabel = new Label(main, SWT.NONE);
 			conflictListLabel
-			.setText(UIText.RebaseResultDialog_DiffDetailsLabel);
+					.setText(UIText.RebaseResultDialog_DiffDetailsLabel);
 			TableViewer conflictList = new TableViewer(main, SWT.BORDER);
 			GridDataFactory.fillDefaults().span(2, 1).grab(true, true).applyTo(
 					conflictList.getTable());
 			conflictList.setContentProvider(ArrayContentProvider.getInstance());
 			conflictList.setInput(conflictPaths);
-			conflictList.setLabelProvider(new LabelProvider() {
-				@Override
-				public String getText(Object element) {
-					String path = (String) element;
-					if (checkResult != null && !checkResult.isOk()) {
-						CheckResultEntry entry = checkResult.getEntry(path);
-						if (entry != null) {
-							if (!entry.inWorkspace)
-								return UIText.RebaseResultDialog_notInWorkspace + SPACE + path;
-							if (!entry.shared)
-								return UIText.RebaseResultDialog_notShared + SPACE + path;
-						}
-					}
-					return super.getText(element);
-				}
-
-			});
 		}
 
 		Group actionGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
@@ -283,7 +242,6 @@ public class RebaseResultDialog extends MessageDialog {
 
 		startMergeButton = new Button(actionGroup, SWT.RADIO);
 		startMergeButton.setText(UIText.RebaseResultDialog_StartMergeRadioText);
-		startMergeButton.setEnabled(mergeToolAvailable);
 		startMergeButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
@@ -348,27 +306,12 @@ public class RebaseResultDialog extends MessageDialog {
 
 		});
 
-		if (mergeToolAvailable)
-			startMergeButton.setSelection(true);
-		else
-			doNothingButton.setSelection(true);
+		startMergeButton.setSelection(true);
 
 		commitGroup.pack();
 		applyDialogFont(main);
 
 		return main;
-	}
-
-	private static String getProblemDescription(CheckResult checkResult) {
-		StringBuffer result = new StringBuffer();
-		if (checkResult.containsNonWorkspaceFiles())
-			result.append(UIText.RebaseResultDialog_notInWorkspaceMessage);
-		if (checkResult.containsNotSharedResources()) {
-			if (result.length() > 0)
-				result.append('\n');
-			result.append(UIText.RebaseResultDialog_notSharedMessage);
-		}
-		return result.toString();
 	}
 
 	@Override

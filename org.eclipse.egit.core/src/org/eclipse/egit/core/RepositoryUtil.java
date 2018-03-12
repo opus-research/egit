@@ -235,27 +235,20 @@ public class RepositoryUtil {
 	 * @param repository
 	 * @return the name
 	 */
-	public String getRepositoryName(final Repository repository) {
-		File gitDir = repository.getDirectory();
-		if (gitDir == null)
-			return ""; //$NON-NLS-1$
-
-		// Use parent file for non-bare repositories
-		if (!repository.isBare()) {
-			gitDir = gitDir.getParentFile();
-			if (gitDir == null)
-				return ""; //$NON-NLS-1$
-		}
-
+	public String getRepositoryName(Repository repository) {
 		synchronized (repositoryNameCache) {
-			final String path = gitDir.getPath().toString();
-			String name = repositoryNameCache.get(path);
-			if (name != null)
+			File gitDir = repository.getDirectory();
+			if (gitDir != null) {
+				String name = repositoryNameCache.get(gitDir.getPath()
+						.toString());
+				if (name != null)
+					return name;
+				name = gitDir.getParentFile().getName();
+				repositoryNameCache.put(gitDir.getPath().toString(), name);
 				return name;
-			name = gitDir.getName();
-			repositoryNameCache.put(path, name);
-			return name;
+			}
 		}
+		return ""; //$NON-NLS-1$
 	}
 
 	/**
@@ -265,35 +258,27 @@ public class RepositoryUtil {
 		return prefs;
 	}
 
-	private Set<String> getRepositories() {
-		String dirs;
-		synchronized (prefs) {
-			dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
-		}
-		if (dirs == null || dirs.length() == 0)
-			return Collections.emptySet();
-		Set<String> configuredStrings = new HashSet<String>();
-		StringTokenizer tok = new StringTokenizer(dirs, File.pathSeparator);
-		while (tok.hasMoreTokens())
-			configuredStrings.add(tok.nextToken());
-		return configuredStrings;
-	}
-
 	/**
 	 *
 	 * @return the list of configured Repository paths; will be sorted
 	 */
 	public List<String> getConfiguredRepositories() {
-		final List<String> repos = new ArrayList<String>(getRepositories());
-		Collections.sort(repos);
-		return repos;
-	}
+		synchronized (prefs) {
+			Set<String> configuredStrings = new HashSet<String>();
 
-	private String getPath(File repositoryDir) {
-		try {
-			return repositoryDir.getCanonicalPath();
-		} catch (IOException e) {
-			return repositoryDir.getAbsolutePath();
+			String dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
+			if (dirs != null && dirs.length() > 0) {
+				StringTokenizer tok = new StringTokenizer(dirs,
+						File.pathSeparator);
+				while (tok.hasMoreTokens()) {
+					String dirName = tok.nextToken();
+					configuredStrings.add(dirName);
+				}
+			}
+			List<String> result = new ArrayList<String>();
+			result.addAll(configuredStrings);
+			Collections.sort(result);
+			return result;
 		}
 	}
 
@@ -312,7 +297,12 @@ public class RepositoryUtil {
 			if (!FileKey.isGitRepository(repositoryDir, FS.DETECTED))
 				throw new IllegalArgumentException();
 
-			String dirString = getPath(repositoryDir);
+			String dirString;
+			try {
+				dirString = repositoryDir.getCanonicalPath();
+			} catch (IOException e) {
+				dirString = repositoryDir.getAbsolutePath();
+			}
 
 			List<String> dirStrings = getConfiguredRepositories();
 			if (dirStrings.contains(dirString)) {
@@ -334,7 +324,12 @@ public class RepositoryUtil {
 	public boolean removeDir(File file) {
 		synchronized (prefs) {
 
-			String dir = getPath(file);
+			String dir;
+			try {
+				dir = file.getCanonicalPath();
+			} catch (IOException e1) {
+				dir = file.getAbsolutePath();
+			}
 
 			Set<String> dirStrings = new HashSet<String>();
 			dirStrings.addAll(getConfiguredRepositories());
@@ -363,49 +358,4 @@ public class RepositoryUtil {
 		}
 	}
 
-	/**
-	 * Does the collection of repository returned by
-	 * {@link #getConfiguredRepositories()} contain the given repository?
-	 *
-	 * @param repository
-	 * @return true if contains repository, false otherwise
-	 */
-	public boolean contains(final Repository repository) {
-		return contains(getPath(repository.getDirectory()));
-	}
-
-	/**
-	 * Does the collection of repository returned by
-	 * {@link #getConfiguredRepositories()} contain the given repository
-	 * directory?
-	 *
-	 * @param repositoryDir
-	 * @return true if contains repository directory, false otherwise
-	 */
-	public boolean contains(final String repositoryDir) {
-		return getRepositories().contains(repositoryDir);
-	}
-
-	/**
-	 * Get short branch text for given repository
-	 *
-	 * @param repository
-	 * @return short branch text
-	 * @throws IOException
-	 */
-	public String getShortBranch(Repository repository) throws IOException {
-		Ref head = repository.getRef(Constants.HEAD);
-		if (head == null || head.getObjectId() == null)
-			return CoreText.RepositoryUtil_noHead;
-
-		if (head.isSymbolic())
-			return repository.getBranch();
-
-		String id = head.getObjectId().name();
-		String ref = mapCommitToRef(repository, id, false);
-		if (ref != null)
-			return Repository.shortenRefName(ref) + ' ' + id.substring(0, 7);
-		else
-			return id.substring(0, 7);
-	}
 }
