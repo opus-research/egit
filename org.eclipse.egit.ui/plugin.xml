@@ -1330,24 +1330,6 @@
          </activeWhen>
       </handler>
       <handler
-            commandId="org.eclipse.egit.ui.team.Synchronize">
-         <class
-               class="org.eclipse.egit.ui.internal.actions.SynchronizeWithActionHandler">
-         </class>
-         <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <adapt
-                        type="org.eclipse.core.resources.IProject">
-                  </adapt>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-      <handler
             commandId="org.eclipse.egit.ui.team.ShowHistory">
          <class
                class="org.eclipse.egit.ui.internal.repository.tree.command.ShowInHistoryCommand">
@@ -1632,6 +1614,34 @@
             commandId="org.eclipse.egit.ui.team.stash.apply">
          <class
                class="org.eclipse.egit.ui.internal.repository.tree.command.StashApplyCommand">
+         </class>
+         <activeWhen>
+             <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode">
+                        </instanceof>
+                        <not>
+                           <test
+                                 property="GitRepository.isBare">
+                           </test>
+                        </not>
+                        <test
+                              property="GitRepository.isSafe">
+                        </test>
+                     </and>
+                  </iterate>
+               </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.ui.edit.delete">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.StashDropCommand">
          </class>
          <activeWhen>
              <and>
@@ -2475,6 +2485,34 @@
          <command
                commandId="org.eclipse.egit.ui.team.stash.apply"
                label="%StashApplyCommand.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode">
+                        </instanceof>
+                        <not>
+                           <test
+                                 property="GitRepository.isBare">
+                           </test>
+                        </not>
+                        <test
+                              property="GitRepository.isSafe">
+                        </test>
+                     </and>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.ui.edit.delete"
+               label="%StashDropCommand.label"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -3865,12 +3903,18 @@
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.stash.create"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.StashCreateCommand"
             name="%StashCreateCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.stash.apply"
             name="%StashApplyCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.stash.drop"
+            name="%StashDropCommand.name">
       </command>
    </extension>
    <extension

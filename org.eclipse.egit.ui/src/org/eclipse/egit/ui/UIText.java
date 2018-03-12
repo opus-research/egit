@@ -523,6 +523,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_ShowAdditionalRefsMenuLabel;
+
+	/** */
 	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
 
 	/** */
@@ -851,9 +854,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
-
-	/** */
-	public static String CheckoutConflictDialog_conflictMessage;
 
 	/** */
 	public static String CheckoutDialog_Message;
@@ -1663,6 +1663,12 @@ public class UIText extends NLS {
 	public static String HistoryPreferencePage_MaxTagLength;
 
 	/** */
+	public static String HistoryPreferencePage_toggleAdditionalRefs;
+
+	/** */
+	public static String HistoryPreferencePage_toggleAllBranches;
+
+	/** */
 	public static String PullOperationUI_ConnectionProblem;
 
 	/** */
@@ -2074,9 +2080,6 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_parent;
 
 	/** */
-	public static String CommitMessageViewer_SelectOneCommitMessage;
-
-	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
@@ -2353,6 +2356,12 @@ public class UIText extends NLS {
 	public static String FetchDestinationPage_TrackingBranchNotFoundMessage;
 
 	/** */
+	public static String FetchGerritChangePage_ActivateAdditionalRefsButton;
+
+	/** */
+	public static String FetchGerritChangePage_ActivateAdditionalRefsTooltip;
+
+	/** */
 	public static String FetchGerritChangePage_AfterFetchGroup;
 
 	/** */
@@ -2576,6 +2585,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchResultDialog_buttonReset;
+
+	/** */
+	public static String BranchResultDialog_buttonStash;
 
 	/** */
 	public static String BranchResultDialog_CheckoutConflictsMessage;
@@ -3503,9 +3515,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_notContainedInCommit;
 
 	/** */
-	public static String CommitFileDiffViewer_SelectOneCommitMessage;
-
-	/** */
 	public static String CommitFileDiffViewer_ShowAnnotationsMenuLabel;
 
 	/** */
@@ -3692,12 +3701,6 @@ public class UIText extends NLS {
 	public static String RemoteConnectionPreferencePage_ZeroValueTooltip;
 
 	/** */
-	public static String RemoteSelectionCombo_sourceName;
-
-	/** */
-	public static String RemoteSelectionCombo_sourceRef;
-
-	/** */
 	public static String RefreshPreferencesPage_RefreshOnlyWhenActive;
 
 	/** */
@@ -3714,12 +3717,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefUpdateElement_UrisDecoration;
-
-	/** */
-	public static String RemoteSelectionCombo_destinationName;
-
-	/** */
-	public static String RemoteSelectionCombo_destinationRef;
 
 	/** */
 	public static String RemoveCommand_ConfirmDeleteBareRepositoryMessage;
@@ -3783,21 +3780,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RevertOperation_InternalError;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_header;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_selectProject;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_srcRef;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_dstRef;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_includeUncommitedChanges;
 
 	/** */
 	public static String SelectUriWiazrd_Title;
@@ -4035,12 +4017,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SwitchToMenu_OtherMenuLabel;
-
-	/** */
-	public static String SynchronizeWithAction_localRepoName;
-
-	/** */
-	public static String SynchronizeWithAction_tagsName;
 
 	/** */
 	public static String ValidationUtils_CanNotResolveRefMessage;
@@ -4301,6 +4277,18 @@ public class UIText extends NLS {
 	public static String StashCreateCommand_titleNoChanges;
 
 	/** */
+	public static String StashDropCommand_confirmMessage;
+
+	/** */
+	public static String StashDropCommand_confirmTitle;
+
+	/** */
+	public static String StashDropCommand_dropFailed;
+
+	/** */
+	public static String StashDropCommand_jobTitle;
+
+	/** */
 	public static String SubmoduleAddCommand_AddError;
 
 	/** */
@@ -4377,6 +4365,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebasePulldownAction_Abort;
+
+	/** */
+	public static String SynchronizeCommand_jobName;
+
+	/** */
+	public static String GitOpenInCompareAction_cannotRetrieveCommitWithId;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
