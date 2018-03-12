@@ -11,7 +11,6 @@ package org.eclipse.egit.core.synchronize;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.variants.CachedResourceVariant;
 
@@ -23,13 +22,10 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 
 	private final ObjectId objectId;
 
-	private final PersonIdent authorIdent;
-
 	GitRemoteResource(RevCommit commitId, ObjectId objectId, String path) {
 		this.path = path;
 		this.objectId = objectId;
 		this.commitId = commitId;
-		this.authorIdent = commitId.getAuthorIdent();
 	}
 
 	public String getName() {
@@ -38,15 +34,7 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 	}
 
 	public String getContentIdentifier() {
-		StringBuilder s = new StringBuilder();
-		s.append(commitId.abbreviate(7).name());
-		s.append("..."); //$NON-NLS-1$
-		if (authorIdent != null) {
-			s.append(" ("); //$NON-NLS-1$
-			s.append(authorIdent.getName());
-			s.append(")"); //$NON-NLS-1$
-		}
-		return s.toString();
+		return commitId.abbreviate(7).name() + "..."; //$NON-NLS-1$
 	}
 
 	public byte[] asBytes() {
