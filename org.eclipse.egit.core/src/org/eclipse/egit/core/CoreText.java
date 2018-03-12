@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -263,9 +262,6 @@ public class CoreText extends NLS {
 	public static String CreatePatchOperation_patchFileCouldNotBeWritten;
 
 	/** */
-	public static String IndexDiffCacheEntry_errorCalculatingIndexDelta;
-
-	/** */
 	public static String IndexDiffCacheEntry_refreshingProjects;
 
 	/** */
@@ -315,9 +311,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String AddToIndexOperation_failed;
-
-	/** */
-	public static String RemoveFromIndexOperation_removingFilesFromIndex;
 
 	/** */
 	public static String RemoveFromIndexOperation_failed;

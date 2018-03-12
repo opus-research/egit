@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Delete empty working directory
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -32,7 +31,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
@@ -166,14 +164,6 @@ public class RemoveCommand extends
 				}
 				return Status.OK_STATUS;
 			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (JobFamilies.REPOSITORY_DELETE.equals(family))
-					return true;
-				else
-					return super.belongsTo(family);
-			}
 		};
 
 		service.schedule(job);
@@ -207,9 +197,8 @@ public class RemoveCommand extends
 			final boolean deleteWorkDir) throws IOException {
 		for (RepositoryNode node : selectedNodes) {
 			Repository repo = node.getRepository();
-			File workTree = deleteWorkDir && !repo.isBare() ? repo.getWorkTree() : null;
-			if (workTree != null) {
-				File[] files = workTree.listFiles();
+			if (!repo.isBare() && deleteWorkDir) {
+				File[] files = repo.getWorkTree().listFiles();
 				if (files != null)
 					for (File file : files) {
 						if (isTracked(file, repo))
@@ -222,20 +211,15 @@ public class RemoveCommand extends
 					FileUtils.RECURSIVE | FileUtils.RETRY
 							| FileUtils.SKIP_MISSING);
 
-			if (workTree != null) {
-				// Delete working directory if a submodule repository and refresh
-				// parent repository
-				if (node.getParent() != null
-						&& node.getParent().getType() == RepositoryTreeNodeType.SUBMODULES) {
-					FileUtils.delete(workTree, FileUtils.RECURSIVE
-							| FileUtils.RETRY | FileUtils.SKIP_MISSING);
-					node.getParent().getRepository().notifyIndexChanged();
-				}
-				// Delete if empty working directory
-				String[] files = workTree.list();
-				boolean isWorkingDirEmpty = files != null && files.length == 0;
-				if (isWorkingDirEmpty)
-					FileUtils.delete(workTree, FileUtils.RETRY | FileUtils.SKIP_MISSING);
+			// Delete working directory if a submodule repository and refresh
+			// parent repository
+			if (deleteWorkDir
+					&& !repo.isBare()
+					&& node.getParent() != null
+					&& node.getParent().getType() == RepositoryTreeNodeType.SUBMODULES) {
+				FileUtils.delete(repo.getWorkTree(), FileUtils.RECURSIVE
+						| FileUtils.RETRY | FileUtils.SKIP_MISSING);
+				node.getParent().getRepository().notifyIndexChanged();
 			}
 		}
 	}
