@@ -890,7 +890,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			break;
 
 		case MISSING:
-		case MISSING_AND_CHANGED:
 		case MODIFIED:
 		case PARTIALLY_MODIFIED:
 		case CONFLICTING:
@@ -1143,12 +1142,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
 			return;
 		final IStructuredSelection iss = (IStructuredSelection) s;
-		for (Iterator<StagingEntry> it = iss.iterator(); it.hasNext();) {
-			String relativePath = it.next().getPath();
-			String path = new Path(currentRepository.getWorkTree()
-					.getAbsolutePath()).append(relativePath)
-					.toOSString();
-			openFileInEditor(path);
+		for (Object element : iss.toList()) {
+			if (element instanceof StagingEntry) {
+				StagingEntry entry = (StagingEntry) element;
+				String relativePath = entry.getPath();
+				String path = new Path(currentRepository.getWorkTree()
+						.getAbsolutePath()).append(relativePath)
+						.toOSString();
+				openFileInEditor(path);
+			}
 		}
 	}
 
@@ -1241,7 +1243,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 					addPaths.add(entry.getPath());
 					break;
 				case MISSING:
-				case MISSING_AND_CHANGED:
 					if (rm == null)
 						rm = git.rm().setCached(true);
 					rm.addFilepattern(entry.getPath());
