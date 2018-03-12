@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,11 +17,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.regex.Pattern;
 
-import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
@@ -245,31 +243,6 @@ public class TestRepository {
 				.toString());
 		new Git(repository).add().addFilepattern(repoPath).call();
 	}
-
-	/**
-	 * Adds all project files to version control
-	 *
-	 * @param project
-	 * @throws CoreException
-	 */
-	public void trackAllFiles(IProject project) throws CoreException {
-		project.accept(new IResourceVisitor() {
-
-			public boolean visit(IResource resource) throws CoreException {
-				if (resource instanceof IFile) {
-					try {
-						track(EFS.getStore(resource.getLocationURI())
-										.toLocalFile(0, null));
-					} catch (Exception e) {
-						throw new CoreException(Activator.error(e.getMessage(),
-								e));
-					}
-				}
-				return true;
-			}
-		});
-	}
-
 	/**
 	 * Removes file from version control
 	 *
@@ -350,16 +323,16 @@ public class TestRepository {
 
 
 	/**
-	 * Adds the given file to the index
+	 * Adds the given resource to the index
 	 *
-	 * @param file
+	 * @param resource
 	 * @throws CoreException
 	 * @throws IOException
 	 * @throws GitAPIException
 	 * @throws NoFilepatternException
 	 */
-	public void addToIndex(IFile file) throws CoreException, IOException, NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(file.getLocation().toOSString());
+	public void addToIndex(IResource resource) throws CoreException, IOException, NoFilepatternException, GitAPIException {
+		String repoPath = getRepoRelativePath(resource.getLocation().toOSString());
 		new Git(repository).add().addFilepattern(repoPath).call();
 	}
 

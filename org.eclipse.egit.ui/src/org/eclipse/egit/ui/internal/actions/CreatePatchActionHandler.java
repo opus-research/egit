@@ -27,13 +27,13 @@ public class CreatePatchActionHandler extends RepositoryActionHandler {
 		if (repository == null)
 			return null;
 		IResource[] resources = getSelectedResources();
-		PatchOperationUI.createPatch(getPart(event), getSelectionRepository(),
+		PatchOperationUI.createPatch(getPart(event), getRepository(),
 				Arrays.asList(resources)).start();
 		return null;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		return selectionMapsToSingleRepository();
+		return getRepository() != null;
 	}
 }

@@ -225,7 +225,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 *
 	 * @return repository for current project, or null
 	 */
-	protected Repository getSelectionRepository() {
+	protected Repository getRepository() {
 		IStructuredSelection selection = getSelection();
 		return getRepository(false, selection, null);
 	}
@@ -491,24 +491,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	}
 
 	/**
-	 * @return true if selection contains one or more linked resources, false otherwise.
-	 */
-	protected boolean selectionContainsLinkedResources() {
-		IResource[] selectedResources = getSelectedResources();
-		for (IResource res: selectedResources)
-			if (res.isLinked(IResource.CHECK_ANCESTORS))
-				return true;
-		return false;
-	}
-
-	/**
-	 * @return true if all selected items map to the same repository, false otherwise.
-	 */
-	protected boolean selectionMapsToSingleRepository() {
-		return getSelectionRepository()!=null;
-	}
-
-	/**
 	 * @param selection
 	 * @return the resources in the selection
 	 */
@@ -687,7 +669,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 
 	protected List<PreviousCommit> findPreviousCommits() throws IOException {
 		List<PreviousCommit> result = new ArrayList<PreviousCommit>();
-		Repository repository = getSelectionRepository();
+		Repository repository = getRepository();
 		IResource resource = getSelectedResources()[0];
 		String path = RepositoryMapping.getMapping(resource.getProject())
 				.getRepoRelativePath(resource);
