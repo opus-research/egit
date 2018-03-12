@@ -28,13 +28,7 @@ public class UIText extends NLS {
 	}
 
 	/**	 */
-	public static String FeatureFinishHandler_Conflicts;
-
-	/**	 */
-	public static String FeatureFinishHandler_conflictsWhileMergingFromTo;
-
-	/**	 */
-	public static String FeatureFinishHandler_featureFinishConflicts;
+	public static String DynamicHistoryMenu_startGitflowReleaseFrom;
 
 	/**	 */
 	public static String FeatureFinishHandler_finishingFeature;
@@ -79,13 +73,7 @@ public class UIText extends NLS {
 	public static String FeatureTrackHandler_trackingFeature;
 
 	/**	 */
-	public static String HotfixFinishHandler_Conflicts;
-
-	/**	 */
 	public static String HotfixFinishHandler_finishingHotfix;
-
-	/**	 */
-	public static String HotfixFinishHandler_hotfixFinishConflicts;
 
 	/**	 */
 	public static String HotfixStartHandler_pleaseProvideANameForTheNewHotfix;
@@ -100,13 +88,7 @@ public class UIText extends NLS {
 	public static String InitHandler_initializing;
 
 	/**	 */
-	public static String ReleaseFinishHandler_Conflicts;
-
-	/**	 */
 	public static String ReleaseFinishHandler_finishingRelease;
-
-	/**	 */
-	public static String ReleaseFinishHandler_releaseFinishConflicts;
 
 	/**	 */
 	public static String ReleaseStartHandler_provideANameForTheNewRelease;
@@ -146,10 +128,4 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FeatureCheckoutHandler_cleanupDialog_text;
-
-	/** */
-	public static String ReleaseFinishOperation_unexpectedConflictsReleaseAborted;
-
-	/** */
-	public static String HotfixFinishOperation_unexpectedConflictsHotfixAborted;
 }
