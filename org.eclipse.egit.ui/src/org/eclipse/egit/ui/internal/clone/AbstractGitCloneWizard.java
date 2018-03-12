@@ -61,7 +61,6 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IWorkingSet;
@@ -246,21 +245,17 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		final CloneOperation op = new CloneOperation(uri, allSelected,
 				selectedBranches, workdir, ref != null ? ref.getName() : null,
 				remoteName, timeout);
-		CredentialsProvider credentialsProvider = null;
-		if (credentials != null) {
-			credentialsProvider = new EGitCredentialsProvider(
-					credentials.getUser(), credentials.getPassword());
-		} else {
-			credentialsProvider = new EGitCredentialsProvider();
-		}
-		op.setCredentialsProvider(credentialsProvider);
+		if (credentials != null)
+			op.setCredentialsProvider(new EGitCredentialsProvider(
+					credentials.getUser(), credentials.getPassword()));
+		else
+			op.setCredentialsProvider(new EGitCredentialsProvider());
 		op.setCloneSubmodules(cloneDestination.isCloneSubmodules());
 
 		configureFetchSpec(op, gitRepositoryInfo, remoteName);
 		configurePush(op, gitRepositoryInfo, remoteName);
 		configureRepositoryConfig(op, gitRepositoryInfo);
-		configureGerrit(op, gitRepositoryInfo, credentialsProvider, remoteName,
-				timeout);
+		configureGerrit(op, gitRepositoryInfo, remoteName, timeout);
 
 		if (cloneDestination.isImportProjects()) {
 			final IWorkingSet[] sets = cloneDestination.getWorkingSets();
@@ -354,12 +349,9 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	}
 
 	private void configureGerrit(CloneOperation op,
-			GitRepositoryInfo gitRepositoryInfo,
-			CredentialsProvider credentialsProvider, String remoteName,
-			int timeout) {
+			GitRepositoryInfo gitRepositoryInfo, String remoteName, int timeout) {
 		ConfigureGerritAfterCloneTask task = new ConfigureGerritAfterCloneTask(
-				gitRepositoryInfo.getCloneUri(), remoteName,
-				credentialsProvider, timeout);
+				gitRepositoryInfo.getCloneUri(), remoteName, timeout);
 		op.addPostCloneTask(task);
 	}
 

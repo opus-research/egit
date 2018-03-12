@@ -29,9 +29,6 @@ public class CoreText extends NLS {
 	private static final String BUNDLE_NAME = "org.eclipse.egit.core.internal.coretext"; //$NON-NLS-1$
 
 	/** */
-	public static String Activator_invalidPreferredMergeStrategy;
-
-	/** */
 	public static String Activator_autoIgnoreDerivedResources;
 
 	/** */
@@ -228,21 +225,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String MergeOperation_ProgressMerge;
-
-	/** */
-	public static String MergeStrategy_MissingName;
-
-	/** */
-	public static String MergeStrategy_DuplicateName;
-
-	/** */
-	public static String MergeStrategy_ReservedName;
-
-	/** */
-	public static String MergeStrategy_LoadError;
-
-	/** */
-	public static String MergeStrategy_UnloadError;
 
 	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;
@@ -444,6 +426,18 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String SquashCommitsOperation_squashing;
+
+	/** */
+	public static String RecursiveModelMerger_AdaptError;
+
+	/** */
+	public static String RecursiveModelMerger_RefreshError;
+
+	/** */
+	public static String RecursiveModelMerger_ScopeInitializationError;
+
+	/** */
+	public static String RecursiveModelMerger_ScopeInitializationInterrupted;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
