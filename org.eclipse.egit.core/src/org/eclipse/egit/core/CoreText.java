@@ -60,9 +60,6 @@ public class CoreText extends NLS {
 	public static String ConnectProviderOperation_ConnectingProject;
 
 	/** */
-	public static String ContainerTreeIterator_exceptionMessage;
-
-	/** */
 	public static String DeleteBranchOperation_TaskName;
 
 	/** */
