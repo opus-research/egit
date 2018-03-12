@@ -26,8 +26,9 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.history.HistoryPageInput;
@@ -81,11 +82,25 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 		if (input instanceof RepositoryTreeNode) {
 			return ((RepositoryTreeNode) input).getRepository();
 		}
-		IResource resource = AdapterUtils.adapt(input, IResource.class);
-		if (resource != null) {
-			Repository repository = ResourceUtil.getRepository(resource);
+		if (input instanceof IResource) {
+			IResource resource = (IResource) input;
+			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+			if (mapping != null) {
+				return mapping.getRepository();
+			}
+			// for closed projects team framework doesn't allow to get mapping
+			// so try again using a path based approach
+			Repository repository = Activator.getDefault().getRepositoryCache()
+					.getRepository(resource);
 			if (repository != null) {
 				return repository;
+			}
+		}
+		IResource resource = AdapterUtils.adapt(input, IResource.class);
+		if (resource != null) {
+			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+			if (mapping != null) {
+				return mapping.getRepository();
 			}
 		}
 
