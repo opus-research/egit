@@ -239,8 +239,6 @@ public class FileDiff extends WorkbenchAdapter {
 		IWorkspaceRoot root = workspace.getRoot();
 		IPath absolutePath = new Path(db.getWorkTree().getAbsolutePath()).append(repoPath);
 		IResource resource = root.getFileForLocation(absolutePath);
-		if (resource == null)
-			return null;
 		return resource.getProjectRelativePath().toString();
 	}
 
