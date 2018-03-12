@@ -35,8 +35,7 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 
 /**
- * Offer different options to cleanup uncommitted changes
- *
+ * Offer options to cleanup uncommitted changes
  */
 public class CleanupUncomittedChangesDialog extends MessageDialog {
 
@@ -115,7 +114,7 @@ public class CleanupUncomittedChangesDialog extends MessageDialog {
 	}
 
 	/**
-	 * @return if the initial operation
+	 * @return if the initial operation should continue when dialog is closed
 	 */
 	public boolean shouldContinue() {
 		return shouldContinue;

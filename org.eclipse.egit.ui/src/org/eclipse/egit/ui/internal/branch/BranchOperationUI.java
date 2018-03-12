@@ -405,7 +405,7 @@ public class BranchOperationUI {
 	 *            the result to show
 	 */
 	public void show(final CheckoutResult result) {
-		if (result.getStatus() == CheckoutResult.Status.CONFLICTS)
+		if (result.getStatus() == CheckoutResult.Status.CONFLICTS) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 				public void run() {
 					Shell shell = PlatformUI.getWorkbench()
@@ -425,7 +425,7 @@ public class BranchOperationUI {
 					}
 				}
 			});
-		else if (result.getStatus() == CheckoutResult.Status.NONDELETED) {
+		} else if (result.getStatus() == CheckoutResult.Status.NONDELETED) {
 			// double-check if the files are still there
 			boolean show = false;
 			List<String> pathList = result.getUndeletedList();
