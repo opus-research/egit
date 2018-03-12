@@ -28,7 +28,6 @@ import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.lib.WorkDirCheckout;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
@@ -116,17 +115,11 @@ public class ResetOperation implements IEGitOperation {
 
 	private void reset(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(NLS.bind(CoreText.ResetOperation_performingReset,
-				type.toString().toLowerCase(), refName), 7);
+				type.toString().toLowerCase(), refName), 6);
 
 		IProject[] validProjects = null;
 		if (type == ResetType.HARD)
 			validProjects = ProjectUtil.getValidProjects(repository);
-		boolean merging = false;
-		if (repository.getRepositoryState().equals(RepositoryState.MERGING)
-				|| repository.getRepositoryState().equals(
-						RepositoryState.MERGING_RESOLVED))
-			merging = true;
-
 		mapObjects();
 		monitor.worked(1);
 
@@ -141,9 +134,6 @@ public class ResetOperation implements IEGitOperation {
 			monitor.worked(1);
 			writeIndex();
 			monitor.worked(1);
-			if (merging)
-				resetMerge();
-			monitor.worked(1);
 			// only refresh if working tree changes
 			ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
 					monitor, 1));
@@ -156,26 +146,14 @@ public class ResetOperation implements IEGitOperation {
 			monitor.worked(1);
 			writeIndex();
 			monitor.worked(3);
-			if (merging)
-				resetMerge();
-			monitor.worked(1);
 			break;
 
 		case SOFT:
 			// only change the ref
-			monitor.worked(5);
+			monitor.worked(4);
 		}
 
 		monitor.done();
-	}
-
-	private void resetMerge() throws CoreException {
-		try {
-			repository.writeMergeHeads(null);
-			repository.writeMergeCommitMsg(null);
-		} catch (IOException e) {
-			throw new TeamException(CoreText.ResetOperation_resetMergeFailed, e);
-		}
 	}
 
 	private void mapObjects() throws TeamException {
