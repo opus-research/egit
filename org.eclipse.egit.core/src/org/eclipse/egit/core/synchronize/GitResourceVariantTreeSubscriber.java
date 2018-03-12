@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -162,7 +161,7 @@ public class GitResourceVariantTreeSubscriber extends
 			if (resource.getType() == IResource.ROOT) {
 				// refresh entire cache
 				GitSyncCache newCache = GitSyncCache.getAllData(gsds, monitor);
-				cache.merge(newCache, null);
+				cache.merge(newCache);
 				super.refresh(resources, depth, monitor);
 				return;
 			}
@@ -170,7 +169,6 @@ public class GitResourceVariantTreeSubscriber extends
 
 		// not refreshing the workspace, locate and collect target resources
 		Map<GitSynchronizeData, Collection<String>> updateRequests = new HashMap<GitSynchronizeData, Collection<String>>();
-		Collection<String> allUpdateRequestPaths = new LinkedHashSet<String>();
 		for (IResource resource : resources) {
 			IProject project = resource.getProject();
 			GitSynchronizeData data = gsds.getData(project.getName());
@@ -191,7 +189,6 @@ public class GitResourceVariantTreeSubscriber extends
 						// unknown, force a refresh of the whole repository
 						path = ""; //$NON-NLS-1$
 					paths.add(path);
-					allUpdateRequestPaths.add(path);
 				}
 			}
 		}
@@ -201,7 +198,7 @@ public class GitResourceVariantTreeSubscriber extends
 			// refresh cache
 			GitSyncCache newCache = GitSyncCache.getAllData(updateRequests,
 					monitor);
-			cache.merge(newCache, allUpdateRequestPaths);
+			cache.merge(newCache);
 		}
 
 		super.refresh(resources, depth, monitor);
