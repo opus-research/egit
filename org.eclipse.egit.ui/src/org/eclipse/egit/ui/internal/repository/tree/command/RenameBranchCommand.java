@@ -10,21 +10,23 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.egit.core.op.RenameBranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.dialogs.InputDialog;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.RefRename;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 
@@ -50,17 +52,21 @@ public class RenameBranchCommand extends
 		Repository db = refNode.getRepository();
 		IInputValidator inputValidator = ValidationUtils
 				.getRefNameInputValidator(db, prefix, true);
-		String defaultValue = Repository.shortenRefName(oldName);
+		String defaultValue = db.shortenRefName(oldName);
 		InputDialog newNameDialog = new InputDialog(shell,
 				UIText.RepositoriesView_RenameBranchTitle, NLS.bind(
 						UIText.RepositoriesView_RenameBranchMessage,
 						defaultValue), defaultValue, inputValidator);
 		if (newNameDialog.open() == Window.OK) {
+			RefRename r;
 			try {
-				String newName = newNameDialog.getValue();
-				new RenameBranchOperation(db, refNode.getObject(), newName)
-						.execute(null);
-			} catch (CoreException e) {
+				String newName = prefix + newNameDialog.getValue();
+				r = db.renameRef(oldName, newName);
+				if (r.rename() != Result.RENAMED)
+					MessageDialog.openError(shell,
+							UIText.RepositoriesView_RenameBranchTitle,
+							UIText.RepositoriesView_RenameBranchFailure);
+			} catch (IOException e) {
 				Activator.handleError(
 						UIText.RepositoriesView_RenameBranchFailure, e, true);
 			}

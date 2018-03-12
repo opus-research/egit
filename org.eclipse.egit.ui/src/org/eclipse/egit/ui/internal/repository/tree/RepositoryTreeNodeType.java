@@ -26,21 +26,21 @@ public enum RepositoryTreeNodeType {
 	/** */
 	REF(UIIcons.BRANCH.createImage()), //
 	/** */
-	LOCAL(PlatformUI.getWorkbench().getSharedImages().getImage(
+	LOCALBRANCHES(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
 			/** */
 	BRANCHHIERARCHY(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
 	/** */
-	REMOTETRACKING(PlatformUI.getWorkbench().getSharedImages().getImage(
+	REMOTEBRANCHES(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
 	/** */
 	TAGS(UIIcons.TAGS.createImage()), //
 	/** */
-	ADDITIONALREFS(PlatformUI.getWorkbench().getSharedImages().getImage(
+	SYMBOLICREFS(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
 	/** */
-	ADDITIONALREF(PlatformUI.getWorkbench().getSharedImages().getImage(
+	SYMBOLICREF(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FILE)), // TODO icon
 	/** */
 	TAG(UIIcons.TAG.createImage()), //

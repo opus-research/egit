@@ -31,13 +31,14 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.IteratorService;
+import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -65,8 +66,6 @@ import org.eclipse.ui.PlatformUI;
  * Scan for modified resources in the same project as the selected resources.
  */
 public class CommitActionHandler extends RepositoryActionHandler {
-
-	private Map<Repository, IndexDiff> indexDiffs;
 
 	private ArrayList<IFile> notIndexed;
 
@@ -165,7 +164,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		CommitDialog commitDialog = new CommitDialog(getShell(event));
 		commitDialog.setAmending(amending);
 		commitDialog.setAmendAllowed(amendAllowed);
-		commitDialog.setFileList(files, indexDiffs);
+		commitDialog.setFileList(files);
 		commitDialog.setPreselectedFiles(getSelectedFiles(event));
 		commitDialog.setAuthor(author);
 		commitDialog.setCommitter(committer);
@@ -240,7 +239,6 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		notTracked = new ArrayList<IFile>();
 		amending = false;
 		previousCommit = null;
-		indexDiffs = new HashMap<Repository, IndexDiff>();
 	}
 
 	/**
@@ -319,10 +317,12 @@ public class CommitActionHandler extends RepositoryActionHandler {
 					repository.getDirectory().getPath()));
 			HashSet<IProject> projects = entry.getValue();
 
-			IndexDiff indexDiff = new IndexDiff(repository, Constants.HEAD,
-					IteratorService.createInitialIterator(repository));
+			AdaptableFileTreeIterator fileTreeIterator =
+				new AdaptableFileTreeIterator(repository.getWorkTree(),
+						ResourcesPlugin.getWorkspace().getRoot());
+
+			IndexDiff indexDiff = new IndexDiff(repository, Constants.HEAD, fileTreeIterator);
 			indexDiff.diff();
-			indexDiffs.put(repository, indexDiff);
 
 			for (IProject project : projects) {
 				includeList(project, indexDiff.getAdded(), indexChanges);
@@ -338,7 +338,6 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		}
 		monitor.done();
 	}
-
 
 	private void includeList(IProject project, HashSet<String> added,
 			ArrayList<IFile> category) {

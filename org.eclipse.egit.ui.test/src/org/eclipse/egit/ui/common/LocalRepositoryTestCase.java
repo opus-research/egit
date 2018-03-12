@@ -343,27 +343,24 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		RefUpdate updateRef = myRepository.updateRef(newRefName);
 		Ref sourceBranch = myRepository.getRef("refs/heads/master");
 		ObjectId startAt = sourceBranch.getObjectId();
-		String startBranch = Repository.shortenRefName(sourceBranch.getName());
+		String startBranch = myRepository
+				.shortenRefName(sourceBranch.getName());
 		updateRef.setNewObjectId(startAt);
 		updateRef
 				.setRefLogMessage("branch: Created from " + startBranch, false); //$NON-NLS-1$
 		updateRef.update();
 	}
 
-	protected void assertClickOpens(SWTBotTree tree, String menu, String window) {
+	protected void assertClickOpens(SWTBotTree tree, String menu, String window)
+			throws InterruptedException {
 		ContextMenuHelper.clickContextMenu(tree, menu);
 		SWTBotShell shell = bot.shell(window);
 		shell.activate();
+		waitInUI();
 		shell.bot().button(IDialogConstants.CANCEL_LABEL).click();
 		shell.close();
 	}
 
-	/**
-	 *  This method should only be used in exceptional cases.
-	 *  Try to avoid using it e.g. by joining execution jobs
-	 *  instead of waiting a given amount of time {@link TestUtil#joinJobs(Object)}
-	 * @throws InterruptedException
-	 */
 	protected static void waitInUI() throws InterruptedException {
 		Thread.sleep(1000);
 	}
@@ -428,7 +425,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		String message = commitMessage;
 		if (message == null)
 			message = newContent;
-		// TODO: remove after replacing GitIndex in CommitOperation
 		waitInUI();
 		CommitOperation op = new CommitOperation(commitables,
 				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,

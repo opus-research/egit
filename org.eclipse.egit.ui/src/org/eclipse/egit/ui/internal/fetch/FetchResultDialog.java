@@ -24,20 +24,14 @@ import org.eclipse.jgit.transport.FetchResult;
 /**
  * Dialog displaying result of fetch operation.
  */
-public class FetchResultDialog extends Dialog {
+class FetchResultDialog extends Dialog {
 	private final Repository localDb;
 
 	private final FetchResult result;
 
 	private final String sourceString;
 
-	/**
-	 * @param parentShell
-	 * @param localDb
-	 * @param result
-	 * @param sourceString
-	 */
-	public FetchResultDialog(final Shell parentShell, final Repository localDb,
+	FetchResultDialog(final Shell parentShell, final Repository localDb,
 			final FetchResult result, final String sourceString) {
 		super(parentShell);
 		setShellStyle(getShellStyle() | SWT.RESIZE);
@@ -53,7 +47,7 @@ public class FetchResultDialog extends Dialog {
 	}
 
 	@Override
-	public Control createDialogArea(final Composite parent) {
+	protected Control createDialogArea(final Composite parent) {
 		final Composite composite = (Composite) super.createDialogArea(parent);
 
 		final Label label = new Label(composite, SWT.NONE);
@@ -76,14 +70,9 @@ public class FetchResultDialog extends Dialog {
 		tableLayout.heightHint = 300;
 		tableControl.setLayoutData(tableLayout);
 
+		getShell().setText(
+				NLS.bind(UIText.FetchResultDialog_title, sourceString));
 		applyDialogFont(composite);
 		return composite;
-	}
-
-	@Override
-	protected void configureShell(Shell newShell) {
-		super.configureShell(newShell);
-		newShell
-				.setText(NLS.bind(UIText.FetchResultDialog_title, sourceString));
 	}
 }

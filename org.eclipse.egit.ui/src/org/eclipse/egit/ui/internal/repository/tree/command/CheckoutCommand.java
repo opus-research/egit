@@ -22,10 +22,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
@@ -41,13 +39,6 @@ public class CheckoutCommand extends
 			return null;
 
 		final Ref ref = (Ref) node.getObject();
-		Repository repo = node.getRepository();
-		String refName = ref.getLeaf().getName();
-		final BranchOperation op;
-		if (refName.startsWith(Constants.R_REFS))
-			op = new BranchOperation(repo, ref.getName());
-		else
-			op = new BranchOperation(repo, ref.getLeaf().getObjectId());
 
 		// for the sake of UI responsiveness, let's start a job
 		Job job = new Job(NLS.bind(UIText.RepositoriesView_CheckingOutMessage,
@@ -55,6 +46,11 @@ public class CheckoutCommand extends
 
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
+
+				Repository repo = node.getRepository();
+
+				final BranchOperation op = new BranchOperation(repo, ref
+						.getName());
 				IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
 
 					public void run(IProgressMonitor myMonitor)
@@ -73,13 +69,6 @@ public class CheckoutCommand extends
 				}
 
 				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.CHECKOUT))
-					return true;
-				return super.belongsTo(family);
 			}
 		};
 

@@ -266,7 +266,7 @@ public class TestRepository {
 			startBranch = refName;
 		else
 			startBranch = startAt.name();
-		startBranch = Repository.shortenRefName(startBranch);
+		startBranch = repository.shortenRefName(startBranch);
 		updateRef.setNewObjectId(startAt);
 		updateRef
 				.setRefLogMessage("branch: Created from " + startBranch, false); //$NON-NLS-1$
@@ -332,7 +332,7 @@ public class TestRepository {
 	 * @throws IOException
 	 */
 	public void appendFileContent(File file, String content) throws IOException {
-		appendFileContent(file, content, true);
+		appendFileContent(file, new String(content), true);
 	}
 
 	/**

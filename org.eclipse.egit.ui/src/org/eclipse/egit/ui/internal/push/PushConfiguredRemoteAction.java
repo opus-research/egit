@@ -25,7 +25,6 @@ import org.eclipse.egit.core.op.PushOperation;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
@@ -151,15 +150,6 @@ public class PushConfiguredRemoteAction {
 							.getCause().getMessage(), e);
 				}
 			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.PUSH))
-					return true;
-				return super.belongsTo(family);
-			}
-
-
 
 		};
 
