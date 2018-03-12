@@ -65,8 +65,8 @@ public class ResetCommand extends
 
 			@Override
 			public void addPages() {
-				addPage(new SelectResetTypePage(repoName, currentBranch,
-						targetBranch));
+				addPage(new SelectResetTypePage(repoName, node.getRepository(),
+						currentBranch, targetBranch));
 				setWindowTitle(UIText.ResetCommand_WizardTitle);
 			}
 
