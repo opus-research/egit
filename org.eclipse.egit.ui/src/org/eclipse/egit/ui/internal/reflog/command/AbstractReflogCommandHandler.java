@@ -54,13 +54,11 @@ abstract class AbstractReflogCommandHandler extends AbstractHandler {
 	}
 
 	protected IStructuredSelection getSelection(ReflogView view) {
-		if (view == null)
-			return StructuredSelection.EMPTY;
 		ISelection pageSelection = view.getSelectionProvider().getSelection();
 		if (pageSelection instanceof IStructuredSelection)
 			return (IStructuredSelection) pageSelection;
 		else
-			return StructuredSelection.EMPTY;
+			return new StructuredSelection();
 	}
 
 }
