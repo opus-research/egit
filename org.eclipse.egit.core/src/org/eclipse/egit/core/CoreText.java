@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -67,9 +66,6 @@ public class CoreText extends NLS {
 	public static String CommitOperation_couldNotFindRepositoryMapping;
 
 	/** */
-	public static String CommitOperation_errorParsingPersonIdent;
-
-	/** */
 	public static String ConfigureFetchAfterCloneTask_couldNotFetch;
 
 	/** */
@@ -110,15 +106,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String DiscardChangesOperation_repoNotFound;
-
-	/** */
-	public static String DeleteResourcesOperation_deletingResources;
-
-	/** */
-	public static String DeleteResourcesOperation_deleteFailed;
-
-	/** */
-	public static String DeleteResourcesOperation_deleteFailedSeeLog;
 
 	/** */
 	public static String DisconnectProviderOperation_disconnecting;

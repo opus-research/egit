@@ -6,7 +6,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Stefan Lay <stefan.lay@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,23 +31,29 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
+import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -104,15 +109,15 @@ public class CommitUI  {
 		this.preselectAll = preselectAll;
 	}
 
-	/**1
+	/**
 	 * Performs a commit
-	 * @return true if a commit operation was triggered
 	 */
-	public boolean commit() {
+	public void commit() {
 		// let's see if there is any dirty editor around and
 		// ask the user if they want to save or abort
-		if (!UIUtils.saveAllEditors(repo))
-			return false;
+		if (!PlatformUI.getWorkbench().saveAllEditors(true)) {
+			return;
+		}
 
 		BasicConfigurationDialog.show(new Repository[]{repo});
 
@@ -133,9 +138,9 @@ public class CommitUI  {
 		} catch (InvocationTargetException e) {
 			Activator.handleError(UIText.CommitAction_errorComputingDiffs, e.getCause(),
 					true);
-			return false;
+			return;
 		} catch (InterruptedException e) {
-			return false;
+			return;
 		}
 
 		CommitHelper commitHelper = new CommitHelper(repo);
@@ -145,7 +150,7 @@ public class CommitUI  {
 					shell,
 					UIText.CommitAction_cannotCommit,
 					commitHelper.getCannotCommitMessage());
-			return false;
+			return;
 		}
 		boolean amendAllowed = commitHelper.amendAllowed();
 		if (files.isEmpty()) {
@@ -154,13 +159,13 @@ public class CommitUI  {
 						UIText.CommitAction_noFilesToCommit,
 						UIText.CommitAction_amendCommit);
 				if (!result)
-					return false;
+					return;
 				amending = true;
 			} else {
 				MessageDialog.openWarning(shell,
 						UIText.CommitAction_noFilesToCommit,
 						UIText.CommitAction_amendNotPossible);
-				return false;
+				return;
 			}
 		}
 
@@ -176,7 +181,7 @@ public class CommitUI  {
 		commitDialog.setCommitMessage(commitHelper.getCommitMessage());
 
 		if (commitDialog.open() != IDialogConstants.OK_ID)
-			return false;
+			return;
 
 		final CommitOperation commitOperation;
 		try {
@@ -186,7 +191,7 @@ public class CommitUI  {
 					commitDialog.getCommitter(), commitDialog.getCommitMessage());
 		} catch (CoreException e1) {
 			Activator.handleError(UIText.CommitUI_commitFailed, e1, true);
-			return false;
+			return;
 		}
 		if (commitDialog.isAmending())
 			commitOperation.setAmending(true);
@@ -194,11 +199,67 @@ public class CommitUI  {
 		commitOperation.setCommitAll(commitHelper.isMergedResolved);
 		if (commitHelper.isMergedResolved)
 			commitOperation.setRepository(repo);
-		Job commitJob = new CommitJob(repo, commitOperation).
-				setPushUpstream(commitDialog.isPushRequested());
-		commitJob.schedule();
+		performCommit(repo, commitOperation, false);
+		return;
+	}
 
-		return true;
+	/**
+	 * Uses a Job to perform the given CommitOperation
+	 * @param repository
+	 * @param commitOperation
+	 * @param openNewCommit
+	 */
+	public static void performCommit(final Repository repository,
+			final CommitOperation commitOperation, final boolean openNewCommit) {
+		String jobname = UIText.CommitAction_CommittingChanges;
+		Job job = new Job(jobname) {
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				RevCommit commit = null;
+				try {
+					commitOperation.execute(monitor);
+					commit = commitOperation.getCommit();
+					CommitMessageComponentStateManager.deleteState(
+							repository);
+					RepositoryMapping mapping = RepositoryMapping
+							.findRepositoryMapping(repository);
+					if (mapping != null)
+						mapping.fireRepositoryChanged();
+				} catch (CoreException e) {
+					if (e.getCause() instanceof JGitInternalException)
+						return Activator.createErrorStatus(
+								e.getLocalizedMessage(), e.getCause());
+					return Activator.createErrorStatus(
+							UIText.CommitAction_CommittingFailed, e);
+				} finally {
+					GitLightweightDecorator.refresh();
+				}
+				if (openNewCommit && commit != null)
+					openCommit(repository, commit);
+				return Status.OK_STATUS;
+			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				if (family.equals(JobFamilies.COMMIT))
+					return true;
+				return super.belongsTo(family);
+			}
+
+		};
+		job.setUser(true);
+		job.schedule();
+	}
+
+	private static void openCommit(final Repository repository,
+			final RevCommit newCommit) {
+		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+
+			public void run() {
+				CommitEditor.openQuiet(new RepositoryCommit(repository,
+						newCommit));
+			}
+		});
 	}
 
 	private IProject[] getProjectsOfRepositories() {
