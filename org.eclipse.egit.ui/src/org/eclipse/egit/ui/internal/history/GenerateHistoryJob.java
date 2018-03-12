@@ -39,7 +39,6 @@ class GenerateHistoryJob extends Job {
 	protected IStatus run(final IProgressMonitor monitor) {
 		IStatus status = Status.OK_STATUS;
 		try {
-			page.setErrorMessage(UIText.GenerateHistoryJob_BuildingListMessage);
 			try {
 				for (;;) {
 					final int oldsz = allCommits.size();
@@ -62,7 +61,6 @@ class GenerateHistoryJob extends Job {
 				return Status.CANCEL_STATUS;
 			updateUI();
 		} finally {
-			page.setErrorMessage(null);
 			monitor.done();
 		}
 		return status;
