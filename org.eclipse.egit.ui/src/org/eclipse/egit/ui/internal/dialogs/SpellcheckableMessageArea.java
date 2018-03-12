@@ -76,6 +76,7 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
@@ -744,14 +745,33 @@ public class SpellcheckableMessageArea extends Composite {
 
 				@Override
 				public void textChanged(TextEvent event) {
-					textWidget.setStyleRanges(
-							new StyleRange[0]);
+					removeHyperlinkStyleRanges();
 					UIUtils.applyHyperlinkDetectorStyleRanges(sourceViewer,
 							configuration.getHyperlinkDetectors(sourceViewer));
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)
 						redoAction.update();
+				}
+
+				private void removeHyperlinkStyleRanges() {
+					StyleRange[] hyperlinkStyleRanges = textWidget.getStyleRanges(true);
+					Color blue = Display.getDefault()
+							.getSystemColor(SWT.COLOR_BLUE);
+					Color white = Display.getDefault()
+							.getSystemColor(SWT.COLOR_WHITE);
+					for (int i = 0; i < hyperlinkStyleRanges.length; i++) {
+						StyleRange styleRange = hyperlinkStyleRanges[i];
+						if (styleRange.underline == true
+								&& styleRange.foreground == blue
+								&& styleRange.background == white) {
+							styleRange = (StyleRange) styleRange.clone();
+							styleRange.background = null;
+							styleRange.foreground = null;
+							styleRange.underline = false;
+							textWidget.setStyleRange(styleRange);
+						}
+					}
 				}
 			});
 
@@ -1021,6 +1041,16 @@ public class SpellcheckableMessageArea extends Composite {
 	public void setText(String text) {
 		if (text != null)
 			getTextWidget().setText(text);
+	}
+
+	/**
+	 * Set the same background color to the styledText widget as the Composite
+	 */
+	@Override
+	public void setBackground(Color color) {
+		super.setBackground(color);
+		StyledText textWidget = getTextWidget();
+		textWidget.setBackground(color);
 	}
 
 	/**
