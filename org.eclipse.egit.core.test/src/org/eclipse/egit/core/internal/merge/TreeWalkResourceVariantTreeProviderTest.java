@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.NameConflictTreeWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.team.core.variants.IResourceVariant;
 import org.junit.Test;
@@ -57,12 +58,12 @@ public class TreeWalkResourceVariantTreeProviderTest extends VariantsTestCase {
 			RevTree baseTree = walk.parseTree(baseCommit.getId());
 			RevTree sourceTree = walk.parseTree(repo.resolve(MASTER));
 			RevTree remoteTree = walk.parseTree(repo.resolve(BRANCH));
-			TreeWalk tw = new TreeWalk(repo);
-			tw.addTree(baseTree);
-			tw.addTree(sourceTree);
-			tw.addTree(remoteTree);
+			TreeWalk treeWalk = new NameConflictTreeWalk(repo);
+			treeWalk.addTree(baseTree);
+			treeWalk.addTree(sourceTree);
+			treeWalk.addTree(remoteTree);
 			TreeWalkResourceVariantTreeProvider treeProvider = new TreeWalkResourceVariantTreeProvider(
-					repo, tw, 0, 1, 2);
+					repo, treeWalk);
 
 			assertEquals(1, treeProvider.getRoots().size());
 			assertTrue(treeProvider.getRoots().contains(iProject));
