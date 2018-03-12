@@ -87,6 +87,24 @@ public class UIText extends NLS {
 	public static String AddConfigEntryDialog_ValueLabel;
 
 	/** */
+	public static String AddRemotePage_EnterRemoteNameMessage;
+
+	/** */
+	public static String AddRemotePage_RemoteNameAlreadyExistsError;
+
+	/** */
+	public static String AddRemotePage_RemoteNameEmptyError;
+
+	/** */
+	public static String AddRemotePage_RemoteNameInvalidError;
+
+	/** */
+	public static String AddRemotePage_RemoteNameLabel;
+
+	/** */
+	public static String AddRemoteWizard_Title;
+
+	/** */
 	public static String AddSubmoduleWizard_WindowTitle;
 
 	/** */
@@ -516,9 +534,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_rebaseMenuItem;
 
 	/** */
-	public static String GitHistoryPage_rebaseInteractiveMenuItem;
-
-	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
@@ -732,7 +747,31 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_StartMergeRadioText;
 
 	/** */
+	public static String RebaseResultDialog_StatusAborted;
+
+	/** */
+	public static String RebaseResultDialog_StatusConflicts;
+
+	/** */
+	public static String RebaseResultDialog_StatusFailed;
+
+	/** */
+	public static String RebaseResultDialog_StatusFastForward;
+
+	/** */
 	public static String RebaseResultDialog_StatusLabel;
+
+	/** */
+	public static String RebaseResultDialog_StatusNothingToCommit;
+
+	/** */
+	public static String RebaseResultDialog_StatusOK;
+
+	/** */
+	public static String RebaseResultDialog_StatusStopped;
+
+	/** */
+	public static String RebaseResultDialog_StatusUpToDate;
 
 	/** */
 	public static String RebaseResultDialog_Stopped;
@@ -1713,6 +1752,9 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_ignorecase;
 
 	/** */
+	public static String HistoryPage_findbar_all;
+
+	/** */
 	public static String HistoryPage_findbar_commit;
 
 	/** */
@@ -1723,6 +1765,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String HistoryPage_findbar_committer;
+
+	/** */
+	public static String HistoryPage_findbar_changeto_all;
 
 	/** */
 	public static String HistoryPage_findbar_changeto_commit;
@@ -1804,6 +1849,39 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushAction_wrongURITitle;
+
+	/** */
+	public static String PushBranchPage_BranchNameLabel;
+
+	/** */
+	public static String PushBranchPage_ChooseBranchNameError;
+
+	/** */
+	public static String PushBranchPage_ChooseRemoteError;
+
+	/** */
+	public static String PushBranchPage_InvalidBranchNameError;
+
+	/** */
+	public static String PushBranchPage_NewRemoteButton;
+
+	/** */
+	public static String PushBranchPage_PageMessage;
+
+	/** */
+	public static String PushBranchPage_PageName;
+
+	/** */
+	public static String PushBranchPage_PageTitle;
+
+	/** */
+	public static String PushBranchPage_RemoteLabel;
+
+	/** */
+	public static String PushBranchPage_UpstreamConfigOverwriteWarning;
+
+	/** */
+	public static String PushBranchWizard_WindowTitle;
 
 	/** */
 	public static String PushCommand_pushBranchTitle;
@@ -2253,37 +2331,10 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_CreatingBranchMessage;
 
 	/** */
-	public static String CreateBranchPage_LocalBranchWarningText;
-
-	/** */
-	public static String CreateBranchPage_LocalBranchWarningTooltip;
-
-	/** */
-	public static String CreateBranchPage_MergeRadioButton;
+	public static String CreateBranchPage_LocalBranchWarningMessage;
 
 	/** */
 	public static String CreateBranchPage_MissingSourceMessage;
-
-	/** */
-	public static String CreateBranchPage_NoneRadioButton;
-
-	/** */
-	public static String CreateBranchPage_PullMergeTooltip;
-
-	/** */
-	public static String CreateBranchPage_PullNoneTooltip;
-
-	/** */
-	public static String CreateBranchPage_PullRebaseTooltip;
-
-	/** */
-	public static String CreateBranchPage_PullStrategyGroupHeader;
-
-	/** */
-	public static String CreateBranchPage_PullStrategyTooltip;
-
-	/** */
-	public static String CreateBranchPage_RebaseRadioButton;
 
 	/** */
 	public static String CreateBranchPage_SourceBranchLabel;
@@ -2466,9 +2517,6 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_CreatingTagTaskName;
 
 	/** */
-	public static String FetchGerritChangePage_ExistingRefMessage;
-
-	/** */
 	public static String FetchGerritChangePage_FetchingTaskName;
 
 	/** */
@@ -2488,9 +2536,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchGerritChangePage_PageTitle;
-
-	/** */
-	public static String FetchGerritChangePage_ProvideRefNameMessage;
 
 	/** */
 	public static String FetchGerritChangePage_RunInBackground;
@@ -3393,6 +3438,42 @@ public class UIText extends NLS {
 	public static String MergeResultDialog_result;
 
 	/** */
+	public static String MergeResultDialog_StatusAborted;
+
+	/** */
+	public static String MergeResultDialog_StatusAlreadyUpToDate;
+
+	/** */
+	public static String MergeResultDialog_StatusCheckoutConflict;
+
+	/** */
+	public static String MergeResultDialog_StatusConflicting;
+
+	/** */
+	public static String MergeResultDialog_StatusFailed;
+
+	/** */
+	public static String MergeResultDialog_StatusFastForward;
+
+	/** */
+	public static String MergeResultDialog_StatusFastForwardSquashed;
+
+	/** */
+	public static String MergeResultDialog_StatusMerged;
+
+	/** */
+	public static String MergeResultDialog_StatusMergedNotCommitted;
+
+	/** */
+	public static String MergeResultDialog_StatusMergedSquashed;
+
+	/** */
+	public static String MergeResultDialog_StatusMergedSquashedNotCommitted;
+
+	/** */
+	public static String MergeResultDialog_StatusNotSupported;
+
+	/** */
 	public static String MergeTargetSelectionDialog_ButtonMerge;
 
 	/** */
@@ -3508,6 +3589,21 @@ public class UIText extends NLS {
 
 	/** */
 	public static String Untrack_untrack;
+
+	/** */
+	public static String UpstreamConfigComponent_ConfigureUpstreamCheck;
+
+	/** */
+	public static String UpstreamConfigComponent_ConfigureUpstreamToolTip;
+
+	/** */
+	public static String UpstreamConfigComponent_MergeRadio;
+
+	/** */
+	public static String UpstreamConfigComponent_PullGroup;
+
+	/** */
+	public static String UpstreamConfigComponent_RebaseRadio;
 
 	/** */
 	public static String TagAction_cannotCheckout;
@@ -3842,6 +3938,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NewRemoteDialog_FetchRadio;
+
+	/** */
+	public static String NewRemoteDialog_InvalidRemoteName;
 
 	/** */
 	public static String NewRemoteDialog_NameLabel;
