@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.factories;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -58,20 +59,16 @@ public class GitAdapterFactory implements IAdapterFactory {
 				&& adapterType == IResource.class) {
 			GitModelObject obj = (GitModelObject) adaptableObject;
 
-			if (obj instanceof GitModelBlob) {
-				IResource res = root.getFileForLocation(obj.getLocation());
-				if (res == null)
-					res = root.getFile(obj.getLocation());
-
-				return res;
-			}
+			if (obj instanceof GitModelBlob)
+				return root.getFileForLocation(obj.getLocation());
 
 			if (obj instanceof GitModelTree) {
-				IResource res = root.getContainerForLocation(obj.getLocation());
-				if (res == null)
-					res = root.getFolder(obj.getLocation());
+				IContainer container = root.getProject(obj.getName());
+				if (container == null)
+					container = root.getFolder(obj.getLocation()
+							.makeRelativeTo(root.getLocation()));
 
-				return res;
+				return container;
 			}
 		}
 
