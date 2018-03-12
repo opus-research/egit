@@ -151,22 +151,10 @@ public class UIText extends NLS {
 	public static String SecureStoreUtils_writingCredentialsFailed;
 
 	/** */
-	public static String SelectResetTypePage_labelCurrentHead;
-
-	/** */
-	public static String SelectResetTypePage_labelResettingTo;
-
-	/** */
 	public static String SelectResetTypePage_PageMessage;
 
 	/** */
 	public static String SelectResetTypePage_PageTitle;
-
-	/** */
-	public static String SelectResetTypePage_tooltipCurrentHead;
-
-	/** */
-	public static String SelectResetTypePage_tooltipResettingTo;
 
 	/** */
 	public static String SharingWizard_windowTitle;
@@ -277,7 +265,7 @@ public class UIText extends NLS {
 	public static String ExistingOrNewPage_FolderWillBeCreatedMessage;
 
 	/** */
-	public static String ExistingOrNewPage_HeaderLocation;
+	public static String ExistingOrNewPage_HeaderPath;
 
 	/** */
 	public static String ExistingOrNewPage_HeaderProject;
@@ -1736,15 +1724,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushAction_wrongURITitle;
-
-	/** */
-	public static String PushCommand_pushBranchTitle;
-
-	/** */
-	public static String PushCommand_pushTagTitle;
-
-	/** */
-	public static String PushCommitHandler_pushCommitTitle;
 
 	/** */
 	public static String PushOperationUI_MultiRepositoriesDestinationString;
@@ -3521,12 +3500,6 @@ public class UIText extends NLS {
 	public static String CommitEditorInput_ToolTip;
 
 	/** */
-	public static String CommitEditorPage_JobName;
-
-	/** */
-	public static String CommitEditorPage_SectionBranchesEmpty;
-
-	/** */
 	public static String CommitEditorPage_LabelAuthor;
 
 	/** */
@@ -3543,9 +3516,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitEditorPage_SectionFiles;
-
-	/** */
-	public static String CommitEditorPage_SectionFilesEmpty;
 
 	/** */
 	public static String CommitEditorPage_SectionMessage;
@@ -4379,16 +4349,10 @@ public class UIText extends NLS {
 	public static String StashCreateCommand_jobTitle;
 
 	/** */
-	public static String StashCreateCommand_messageEnterCommitMessage;
-
-	/** */
 	public static String StashCreateCommand_messageNoChanges;
 
 	/** */
 	public static String StashCreateCommand_stashFailed;
-
-	/** */
-	public static String StashCreateCommand_titleEnterCommitMessage;
 
 	/** */
 	public static String StashCreateCommand_titleNoChanges;
