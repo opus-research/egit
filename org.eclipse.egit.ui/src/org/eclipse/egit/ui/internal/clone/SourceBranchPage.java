@@ -379,9 +379,8 @@ class SourceBranchPage extends WizardPage {
 	private void transportError(final Throwable why) {
 		Throwable cause = why.getCause();
 		if (why instanceof TransportException && cause != null)
-			transportError(NLS.bind(
-					UIText.SourceBranchPage_CompositeTransportErrorMessage,
-					why.getMessage(), cause.getMessage()));
+			NLS.bind(UIText.SourceBranchPage_CompositeTransportErrorMessage,
+					why.getMessage(), cause.getMessage());
 		else
 			transportError(why.getMessage());
 	}
