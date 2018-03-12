@@ -124,9 +124,6 @@ public class UIText extends NLS {
 	public static String ReleaseStartHandler_provideReleaseName;
 
 	/**	 */
-	public static String ReleaseStartHandler_startCommitCouldNotBeDetermined;
-
-	/**	 */
 	public static String ReleaseStartHandler_startingNewRelease;
 
 	/**	 */
