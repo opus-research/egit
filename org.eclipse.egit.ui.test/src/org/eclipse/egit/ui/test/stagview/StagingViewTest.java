@@ -18,7 +18,6 @@ import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.common.StagingViewTester;
-import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.test.CommitMessageUtil;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
@@ -51,7 +50,7 @@ public class StagingViewTest extends LocalRepositoryTestCase {
 		TestUtil.configureTestCommitterAsUser(repository);
 		Activator.getDefault().getRepositoryUtil()
 				.addConfiguredRepository(repositoryFile);
-		repositoriesView = TestUtil.showView(RepositoriesView.VIEW_ID);
+		repositoriesView = repoViewUtil.openRepositoriesView(bot);
 		repoViewTree = repositoriesView.bot().tree();
 	}
 

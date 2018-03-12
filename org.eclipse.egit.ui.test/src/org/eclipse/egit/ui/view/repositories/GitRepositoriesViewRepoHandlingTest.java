@@ -224,7 +224,8 @@ public class GitRepositoriesViewRepoHandlingTest extends
 
 		getOrOpenView().show();
 
-		SWTBotView view = TestUtil.showExplorerView();
+		SWTBotView view = bot.viewById("org.eclipse.jdt.ui.PackageExplorer");
+		view.show();
 		SWTBotTree explorerTree = view.bot().tree();
 		SWTBotTreeItem projectItem = getProjectItem(explorerTree, PROJ1)
 				.select();
