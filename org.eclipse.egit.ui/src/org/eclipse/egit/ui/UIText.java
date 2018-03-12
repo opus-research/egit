@@ -1150,7 +1150,7 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_ChooseBranchAndNameMessage;
 
 	/** */
-	public static String CreateBranchPage_ChosseNameMessage;
+	public static String CreateBranchPage_ChooseNameMessage;
 
 	/** */
 	public static String CreateBranchPage_CreatingBranchMessage;
@@ -2046,9 +2046,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_deselectAll;
-
-	/** */
-	public static String GitBranchSubscriberParticipant_git;
 
 	/** */
 	public static String RemoteSelectionCombo_remoteName;
