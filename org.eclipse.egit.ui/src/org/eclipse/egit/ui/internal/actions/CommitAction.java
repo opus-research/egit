@@ -65,7 +65,7 @@ public class CommitAction extends RepositoryAction {
 	private boolean amending;
 
 	@Override
-	public void execute(IAction act) {
+	public void run(IAction act) {
 		resetState();
 		try {
 			buildIndexHeadDiffList();
