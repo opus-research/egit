@@ -16,15 +16,17 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
@@ -38,7 +40,7 @@ import org.eclipse.team.core.RepositoryProvider;
 /**
  * Connects Eclipse to an existing Git repository
  */
-public class ConnectProviderOperation implements IWorkspaceRunnable {
+public class ConnectProviderOperation implements IEGitOperation {
 	private final Map<IProject, File> projects = new HashMap<IProject, File>();
 
 	/**
@@ -76,7 +78,10 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 		this.projects.putAll(projects);
 	}
 
-	public void run(IProgressMonitor m) throws CoreException {
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
+	 */
+	public void execute(IProgressMonitor m) throws CoreException {
 		if (m == null) {
 			m = new NullProgressMonitor();
 		}
@@ -94,7 +99,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 				if (GitTraceLocation.CORE.isActive())
 					GitTraceLocation.getTrace().trace(
 							GitTraceLocation.CORE.getLocation(),
-							"Locating repository for " + project);
+							"Locating repository for " + project); //$NON-NLS-1$
 
 				Collection<RepositoryMapping> repos = new RepositoryFinder(
 						project).find(new SubProgressMonitor(m, 40));
@@ -131,6 +136,14 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 		} finally {
 			m.done();
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
+	 */
+	public ISchedulingRule getSchedulingRule() {
+		Set<IProject> projectSet = projects.keySet();
+		return new MultiRule(projectSet.toArray(new IProject[projectSet.size()]));
 	}
 
 	/**

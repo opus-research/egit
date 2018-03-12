@@ -12,29 +12,29 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
-import org.eclipse.jface.viewers.BaseLabelProvider;
-import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jface.viewers.ColumnViewer;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.widgets.Tree;
-import org.eclipse.swt.widgets.TreeColumn;
+import org.eclipse.swt.graphics.Rectangle;
 
 /**
  * Label Provider for the Git Repositories View
  */
-public class RepositoriesViewLabelProvider extends BaseLabelProvider implements
-		ITableLabelProvider {
+public class RepositoriesViewLabelProvider extends LabelProvider {
+
+	/**
+	 * A map of regular images to their decorated counterpart.
+	 */
+	private Map<Image, Image> decoratedImages = new HashMap<Image, Image>();
 
 	// private DefaultInformationControl infoControl;
 
@@ -42,12 +42,9 @@ public class RepositoriesViewLabelProvider extends BaseLabelProvider implements
 	 *
 	 * @param viewer
 	 */
-	RepositoriesViewLabelProvider(final TreeViewer viewer) {
+	public RepositoriesViewLabelProvider(final ColumnViewer viewer) {
 
 		viewer.setLabelProvider(this);
-		Tree tree = viewer.getTree();
-		TreeColumn col = new TreeColumn(tree, SWT.NONE);
-		col.setWidth(400);
 		// we could implement some hover here to display additional information
 		// viewer.getTree().addMouseTrackListener(new MouseTrackAdapter() {
 		//
@@ -130,55 +127,79 @@ public class RepositoriesViewLabelProvider extends BaseLabelProvider implements
 
 	}
 
-	public Image getColumnImage(Object element, int columnIndex) {
+	@Override
+	public Image getImage(Object element) {
 		return decorateImage(
 				((RepositoryTreeNode) element).getType().getIcon(), element);
 	}
 
-	public String getColumnText(Object element, int columnIndex) {
+	@Override
+	public String getText(Object element) {
 
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
 		switch (node.getType()) {
 		case REPO:
 			File directory = ((Repository) node.getObject()).getDirectory();
-			return (directory.getParentFile().getName() + " - " + directory //$NON-NLS-1$
-					.getAbsolutePath());
+			StringBuilder sb = new StringBuilder();
+			sb.append(directory.getParentFile().getName());
+			sb.append(" - "); //$NON-NLS-1$
+			sb.append(directory.getAbsolutePath());
+			return sb.toString();
 		case FILE:
-		case FOLDER: // fall through
+			// fall through
+		case FOLDER:
 			return ((File) node.getObject()).getName();
 		case BRANCHES:
 			return UIText.RepositoriesView_Branches_Nodetext;
+		case LOCALBRANCHES:
+			return UIText.RepositoriesViewLabelProvider_LocalBranchesNodetext;
+		case REMOTEBRANCHES:
+			return UIText.RepositoriesViewLabelProvider_RemoteBrancheNodetext;
+		case TAGS:
+			return UIText.RepositoriesViewLabelProvider_TagsNodeText;
+		case SYMBOLICREFS:
+			return UIText.RepositoriesViewLabelProvider_SymbolicRefNodeText;
 		case REMOTES:
 			return UIText.RepositoriesView_RemotesNodeText;
 		case REMOTE:
+			// fall through
+		case ERROR:
 			return (String) node.getObject();
-		case PROJECTS:
-			return UIText.RepositoriesView_ExistingProjects_Nodetext;
 		case REF:
+			// fall through
+		case TAG:
+			// fall through
+		case SYMBOLICREF:
 			Ref ref = (Ref) node.getObject();
 			// shorten the name
 			String refName = node.getRepository().shortenRefName(ref.getName());
 			if (ref.isSymbolic()) {
-				refName = refName
-						+ " - " //$NON-NLS-1$
-						+ node.getRepository().shortenRefName(
-								ref.getLeaf().getName());
+				refName = refName + " - " //$NON-NLS-1$
+						+ ref.getLeaf().getName();
 			}
 			return refName;
-		case PROJ:
-
-			File file = (File) node.getObject();
-			return file.getName();
-
 		case WORKINGDIR:
 
-			return UIText.RepositoriesView_WorkingDir_treenode
-					+ " - " //$NON-NLS-1$
+			return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
 					+ node.getRepository().getWorkDir().getAbsolutePath();
+		case PUSH:
+			// fall through
+		case FETCH:
+			return (String) node.getObject();
 
-		default:
-			return null;
 		}
+
+		return null;
+	}
+
+	@Override
+	public void dispose() {
+		// dispose of our decorated images
+		for (Image image : decoratedImages.values()) {
+			image.dispose();
+		}
+		decoratedImages.clear();
+		super.dispose();
 	}
 
 	private Image decorateImage(final Image image, Object element) {
@@ -189,64 +210,47 @@ public class RepositoriesViewLabelProvider extends BaseLabelProvider implements
 		case REF:
 			Ref ref = (Ref) node.getObject();
 			// shorten the name
-			String refName = node.getRepository().shortenRefName(ref.getName());
+			String refName = ref.getName();
 			try {
-				String branch = node.getBranch();
+				String branch = node.getRepository().getFullBranch();
 				if (refName.equals(branch)) {
-					CompositeImageDescriptor cd = new CompositeImageDescriptor() {
-
-						@Override
-						protected Point getSize() {
-							return new Point(image.getBounds().width, image
-									.getBounds().width);
-						}
-
-						@Override
-						protected void drawCompositeImage(int width, int height) {
-							drawImage(image.getImageData(), 0, 0);
-							drawImage(UIIcons.OVR_CHECKEDOUT.getImageData(), 0,
-									0);
-
-						}
-					};
-					return cd.createImage();
+					return getDecoratedImage(image);
 				}
 			} catch (IOException e1) {
 				// simply ignore here
 			}
 			return image;
 
-		case PROJ:
-
-			File file = (File) node.getObject();
-
-			for (IProject proj : ResourcesPlugin.getWorkspace().getRoot()
-					.getProjects()) {
-				if (proj.getLocation().equals(new Path(file.getAbsolutePath()))) {
-					CompositeImageDescriptor cd = new CompositeImageDescriptor() {
-
-						@Override
-						protected Point getSize() {
-							return new Point(image.getBounds().width, image
-									.getBounds().width);
-						}
-
-						@Override
-						protected void drawCompositeImage(int width, int height) {
-							drawImage(image.getImageData(), 0, 0);
-							drawImage(UIIcons.OVR_CHECKEDOUT.getImageData(), 0,
-									0);
-
-						}
-					};
-					return cd.createImage();
-				}
-			}
-			return image;
-
 		default:
 			return image;
 		}
+	}
+
+	private Image getDecoratedImage(final Image image) {
+		// check if we have a decorated image yet or not
+		Image decoratedImage = decoratedImages.get(image);
+		if (decoratedImage == null) {
+			// create one
+			CompositeImageDescriptor cd = new CompositeImageDescriptor() {
+
+				@Override
+				protected Point getSize() {
+					Rectangle bounds = image.getBounds();
+					return new Point(bounds.width, bounds.height);
+				}
+
+				@Override
+				protected void drawCompositeImage(int width, int height) {
+					drawImage(image.getImageData(), 0, 0);
+					drawImage(UIIcons.OVR_CHECKEDOUT.getImageData(), 0, 0);
+
+				}
+			};
+			decoratedImage = cd.createImage();
+			// store it
+			decoratedImages.put(image, decoratedImage);
+		}
+		return decoratedImage;
 	}
 
 }

@@ -10,7 +10,7 @@
 	    id="org.eclipse.egit.ui.internal.clone.gitclonecategory"/>
       <wizard name="%Git_clone_wizard"
 	    icon="icons/obj16/import_obj.gif"
-	    class="org.eclipse.egit.ui.internal.clone.GitCloneWizard"
+	    class="org.eclipse.egit.ui.internal.clone.GitImportWizard"
 	    id="org.eclipse.egit.ui.internal.clone.GitCloneWizard"
 	    category="org.eclipse.egit.ui.internal.clone.gitclonecategory">
 	    <description>%Git_clone_description</description>
@@ -90,20 +90,6 @@
                tooltip="%AssumeUnchangedAction_tooltip"
                menubarPath="team.main/group1"
                id="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ShowResourceInHistoryAction"
-               id="org.eclipse.egit.ui.internal.actions.ShowResourceInHistoryAction"
-               label="%ShowResourceInHistoryAction_label"
-               menubarPath="team.main/group1"
-               tooltip="%ShowResourceInHistoryAction_tooltip"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ShowInRepositoriesViewAction"
-               definitionId="org.eclipse.egit.ui.ShowInRepositoriesView"
-               enablesFor="1"
-               id="org.eclipse.egit.ui.internal.actions.ShowInRepositoriesView"
-               label="&amp;Show in Git Repositories View"
-               menubarPath="team.main/group1">
-         </action>
          <action
                class="org.eclipse.egit.ui.internal.actions.Update"
                id="org.eclipse.egit.ui.internal.actions.Update"
@@ -491,5 +477,32 @@
             id="org.eclipse.egit.ui.GitRepositoryExploring"
             name="%GitRepositoryPerspective_name">
       </perspective>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.ui.resourcePerspective">
+         <showInPart
+               id="org.eclipse.egit.ui.RepositoriesView">
+         </showInPart>
+      </perspectiveExtension>
+      <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+         <showInPart
+               id="org.eclipse.egit.ui.RepositoriesView">
+         </showInPart>
+      </perspectiveExtension>
+      <perspectiveExtension
+            targetID="org.eclipse.debug.ui.DebugPerspective">
+         <showInPart
+               id="org.eclipse.egit.ui.RepositoriesView">
+         </showInPart>
+      </perspectiveExtension>
+      <perspectiveExtension
+            targetID="org.eclipse.pde.ui.PDEPerspective">
+         <showInPart
+               id="org.eclipse.egit.ui.RepositoriesView">
+         </showInPart>
+      </perspectiveExtension>
    </extension>
 </plugin>

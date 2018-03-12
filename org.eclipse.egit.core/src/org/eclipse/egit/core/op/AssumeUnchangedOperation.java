@@ -18,11 +18,12 @@ import java.util.Map;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.GitProjectData;
@@ -35,8 +36,8 @@ import org.eclipse.osgi.util.NLS;
 /**
  * Tell JGit to ignore changes in selected files
  */
-public class AssumeUnchangedOperation implements IWorkspaceRunnable {
-	private final Collection rsrcList;
+public class AssumeUnchangedOperation implements IEGitOperation {
+	private final Collection<IResource> rsrcList;
 
 	private final IdentityHashMap<Repository, DirCache> caches;
 
@@ -49,13 +50,16 @@ public class AssumeUnchangedOperation implements IWorkspaceRunnable {
 	 *            collection of {@link IResource}s which should be ignored when
 	 *            looking for changes or committing.
 	 */
-	public AssumeUnchangedOperation(final Collection rsrcs) {
+	public AssumeUnchangedOperation(final Collection<IResource> rsrcs) {
 		rsrcList = rsrcs;
 		caches = new IdentityHashMap<Repository, DirCache>();
 		mappings = new IdentityHashMap<RepositoryMapping, Object>();
 	}
 
-	public void run(IProgressMonitor m) throws CoreException {
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
+	 */
+	public void execute(IProgressMonitor m) throws CoreException {
 		if (m == null)
 			m = new NullProgressMonitor();
 
@@ -92,6 +96,13 @@ public class AssumeUnchangedOperation implements IWorkspaceRunnable {
 			mappings.clear();
 			m.done();
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
+	 */
+	public ISchedulingRule getSchedulingRule() {
+		return new MultiRule(rsrcList.toArray(new IResource[rsrcList.size()]));
 	}
 
 	private void assumeValid(final IResource resource) throws CoreException {
