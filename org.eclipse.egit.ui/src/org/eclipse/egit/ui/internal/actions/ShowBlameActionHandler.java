@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011, 2012 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    François Rey - gracefully ignore linked resources
  *****************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
@@ -53,12 +52,5 @@ public class ShowBlameActionHandler extends RepositoryActionHandler {
 				null, shell, page), UIText.ShowBlameHandler_JobName,
 				JobFamilies.BLAME);
 		return null;
-	}
-
-	@Override
-	public boolean isEnabled() {
-		IResource[] selectedResources = getSelectedResources();
-		return selectedResources.length == 1 &&
-				selectionMapsToSingleRepository();
 	}
 }
