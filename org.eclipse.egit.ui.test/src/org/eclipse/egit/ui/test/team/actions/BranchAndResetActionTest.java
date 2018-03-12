@@ -316,9 +316,9 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		SWTBotShell deleteBranchDialog = openDeleteBranchDialog();
 		deleteBranchDialog.bot().tree().getTreeItem(LOCAL_BRANCHES).expand().getNode("newBranch").select();
 		deleteBranchDialog.bot().button(IDialogConstants.OK_LABEL).click();
-		
+
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-		assertNull(lookupRepository(repositoryFile).resolve("newBranch"));		
+		assertNull(lookupRepository(repositoryFile).resolve("newBranch"));
 	}
 
 	private SWTBotShell openCheckoutBranchDialog() {
