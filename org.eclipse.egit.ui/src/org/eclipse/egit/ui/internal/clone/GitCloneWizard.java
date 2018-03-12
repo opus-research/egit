@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,61 +29,73 @@ import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.IImportWizard;
+import org.eclipse.ui.IViewPart;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Import Git Repository Wizard. A front end to a git clone operation.
  */
-public class GitCloneWizard extends Wizard {
+public class GitCloneWizard extends Wizard implements IImportWizard {
 	private RepositorySelectionPage cloneSource;
 
 	private SourceBranchPage validSource;
 
 	private CloneDestinationPage cloneDestination;
 
-	String alreadyClonedInto;
+	private GitProjectsImportPage importProject;
 
-	/**
-	 * The default constructor
-	 */
-	public GitCloneWizard() {
+	public void init(IWorkbench arg0, IStructuredSelection arg1) {
 		setWindowTitle(UIText.GitCloneWizard_title);
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
 		cloneSource = new RepositorySelectionPage(true, null);
 		validSource = new SourceBranchPage(cloneSource);
 		cloneDestination = new CloneDestinationPage(cloneSource, validSource);
+		importProject = new GitProjectsImportPage() {
+			@Override
+			public void setVisible(boolean visible) {
+				if (visible) {
+					if (cloneDestination.alreadyClonedInto == null) {
+						if (performClone(false))
+							cloneDestination.alreadyClonedInto = cloneDestination
+									.getDestinationFile().getAbsolutePath();
+					}
+					setProjectsList(cloneDestination.alreadyClonedInto);
+				}
+				super.setVisible(visible);
+			}
+		};
 	}
 
 	@Override
 	public boolean performCancel() {
-		if (alreadyClonedInto != null) {
-			File test = new File(alreadyClonedInto);
-			if (test.exists()
-					&& MessageDialog.openQuestion(getShell(),
-							UIText.GitCloneWizard_abortingCloneTitle,
+		if (cloneDestination.alreadyClonedInto != null) {
+			if (MessageDialog
+					.openQuestion(getShell(), UIText.GitCloneWizard_abortingCloneTitle,
 							UIText.GitCloneWizard_abortingCloneMsg)) {
-				deleteRecursively(new File(alreadyClonedInto));
+				deleteRecursively(new File(cloneDestination.alreadyClonedInto));
 			}
 		}
 		return true;
 	}
 
 	private void deleteRecursively(File f) {
-		File[] children = f.listFiles();
-		if (children != null)
-			for (File i : children) {
-				if (i.isDirectory()) {
-					deleteRecursively(i);
-				} else {
-					if (!i.delete()) {
-						i.deleteOnExit();
-					}
+		for (File i : f.listFiles()) {
+			if (i.isDirectory()) {
+				deleteRecursively(i);
+			} else {
+				if (!i.delete()) {
+					i.deleteOnExit();
 				}
 			}
+		}
 		if (!f.delete())
 			f.deleteOnExit();
 	}
@@ -94,25 +105,25 @@ public class GitCloneWizard extends Wizard {
 		addPage(cloneSource);
 		addPage(validSource);
 		addPage(cloneDestination);
+		addPage(importProject);
 	}
 
 	@Override
 	public boolean canFinish() {
-		return cloneDestination.isPageComplete();
+		return cloneDestination.isPageComplete()
+				&& !cloneDestination.showImportWizard.getSelection()
+				|| importProject.isPageComplete();
 	}
 
 	@Override
 	public boolean performFinish() {
-		try {
-			return performClone(false);
-		} finally {
-			setWindowTitle(UIText.GitCloneWizard_title);
-		}
+		if (!cloneDestination.showImportWizard.getSelection())
+			return performClone(true);
+		return importProject.createProjects();
 	}
 
 	boolean performClone(boolean background) {
 		final URIish uri = cloneSource.getSelection().getURI();
-		setWindowTitle(NLS.bind(UIText.GitCloneWizard_jobName, uri.toString()));
 		final boolean allSelected;
 		final Collection<Ref> selectedBranches;
 		if (validSource.isSourceRepoEmpty()) {
@@ -128,7 +139,6 @@ public class GitCloneWizard extends Wizard {
 		final String remoteName = cloneDestination.getRemote();
 
 		workdir.mkdirs();
-
 		if (!workdir.isDirectory()) {
 			final String errorMessage = NLS.bind(
 					UIText.GitCloneWizard_errorCannotCreate, workdir.getPath());
@@ -139,11 +149,18 @@ public class GitCloneWizard extends Wizard {
 			return false;
 		}
 
+		final RepositoriesView view;
+		IViewPart vp = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+				.getActivePage().findView(RepositoriesView.VIEW_ID);
+		if (vp != null) {
+			view = (RepositoriesView) vp;
+		} else {
+			view = null;
+		}
+
 		final CloneOperation op = new CloneOperation(uri, allSelected,
 				selectedBranches, workdir, branch, remoteName);
-
-		alreadyClonedInto = workdir.getPath();
-
+		importProject.setGitDir(op.getGitDir());
 		if (background) {
 			final Job job = new Job(NLS.bind(UIText.GitCloneWizard_jobName, uri
 					.toString())) {
@@ -153,6 +170,9 @@ public class GitCloneWizard extends Wizard {
 						op.run(monitor);
 						RepositorySelectionPage.saveUriInPrefs(uri.toString());
 						RepositoriesView.addDir(op.getGitDir());
+						if (view != null)
+							view.scheduleRefresh();
+
 						return Status.OK_STATUS;
 					} catch (InterruptedException e) {
 						return Status.CANCEL_STATUS;
@@ -176,13 +196,12 @@ public class GitCloneWizard extends Wizard {
 							throws InvocationTargetException,
 							InterruptedException {
 						op.run(monitor);
-						if (monitor.isCanceled())
-							throw new InterruptedException();
 					}
 				});
-
 				RepositorySelectionPage.saveUriInPrefs(uri.toString());
 				RepositoriesView.addDir(op.getGitDir());
+				if (view != null)
+					view.scheduleRefresh();
 				return true;
 			} catch (InterruptedException e) {
 				MessageDialog.openInformation(getShell(),

@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (c) 2010, Stefan Lay <stefan.lay@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,12 +29,12 @@ import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.ResourceList;
+import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
@@ -91,6 +90,7 @@ import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.internal.ui.IPreferenceIds;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
 import org.eclipse.team.internal.ui.Utils;
+import org.eclipse.team.internal.ui.history.FileRevisionTypedElement;
 import org.eclipse.team.ui.history.HistoryPage;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
 import org.eclipse.ui.IActionBars;
@@ -135,8 +135,6 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 	private IAction compareModeAction;
 
 	private boolean compareMode = false;
-
-	private CreatePatchAction createPatchAction = new CreatePatchAction();
 
 	/**
 	 * Determine if the input can be shown in this viewer.
@@ -399,8 +397,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 					final String gitPath = mapping.getRepoRelativePath(resource);
 					IStructuredSelection selection = (IStructuredSelection) event.getSelection();
 					SWTCommit commit = (SWTCommit) selection.getFirstElement();
-					ITypedElement right = CompareUtils
-							.getFileRevisionTypedElement(gitPath, commit, db);
+					ITypedElement right = getFileRevisionTypedElement(resource, gitPath, commit);
 					final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 							SaveableCompareEditorInput.createFileElement(resource),
 							right,
@@ -436,6 +433,36 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 		layout();
 
 		Repository.addAnyRepositoryChangedListener(this);
+	}
+
+	private ITypedElement getFileRevisionTypedElement(final IFile resource,
+			final String gitPath, SWTCommit commit) {
+		ITypedElement right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
+				NLS.bind(UIText.GitHistoryPage_FileNotInCommit, resource
+						.getName(), commit));
+
+		try {
+			IFileRevision nextFile = getFileRevision(resource, gitPath, commit);
+			if (nextFile != null)
+				right = new FileRevisionTypedElement(nextFile);
+		} catch (IOException e) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					gitPath, commit.getId()), e);
+		}
+		return right;
+	}
+
+	private IFileRevision getFileRevision(final IFile resource,
+			final String gitPath, SWTCommit commit) throws IOException {
+
+		TreeWalk w = TreeWalk.forPath(db, gitPath, commit.getTree());
+		// check if file is contained in commit
+		if (w != null) {
+			final IFileRevision fileRevision = GitFileRevision.inCommit(db,
+					commit, gitPath, null);
+			return fileRevision;
+		}
+		return null;
 	}
 
 	private void openInCompare(CompareEditorInput input) {
@@ -555,7 +582,6 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 			c.addMenuDetectListener(new MenuDetectListener() {
 
 				public void menuDetected(MenuDetectEvent e) {
-					popupMgr.remove(new ActionContributionItem(createPatchAction));
 					popupMgr.remove(new ActionContributionItem(compareAction));
 					popupMgr.remove(new ActionContributionItem(
 							compareVersionsAction));
@@ -563,11 +589,6 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 							viewVersionsAction));
 					int size = ((IStructuredSelection) revObjectSelectionProvider
 							.getSelection()).size();
-					if (size == 1) {
-						popupMgr.add(new Separator());
-						popupMgr.add(createPatchAction);
-						createPatchAction.setEnabled(createPatchAction.isEnabled());
-					}
 					if (IFile.class.isAssignableFrom(getInput().getClass())) {
 						popupMgr.add(new Separator());
 						if (size == 1) {
@@ -584,7 +605,6 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 			c.addMenuDetectListener(new MenuDetectListener() {
 
 				public void menuDetected(MenuDetectEvent e) {
-					popupMgr.remove(new ActionContributionItem(createPatchAction));
 					popupMgr.remove(new ActionContributionItem(compareAction));
 					popupMgr.remove(new ActionContributionItem(
 							compareVersionsAction));
@@ -955,7 +975,6 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 		fileViewer.addSelectionChangedListener(commentViewer);
 		commentViewer.setTreeWalk(fileWalker);
 		commentViewer.setDb(db);
-		createPatchAction.setTreeWalk(fileWalker);
 		findToolbar.clear();
 		graph.setInput(highlightFlag, null, null);
 
@@ -1197,8 +1216,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 					IFile file = (IFile) getInput();
 					final RepositoryMapping mapping = RepositoryMapping.getMapping(file.getProject());
 					final String gitPath = mapping.getRepoRelativePath(file);
-					ITypedElement right = CompareUtils
-							.getFileRevisionTypedElement(gitPath, commit, db);
+					ITypedElement right = getFileRevisionTypedElement(file, gitPath, commit);
 					final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 							SaveableCompareEditorInput.createFileElement(file),
 							right,
@@ -1241,10 +1259,8 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 					final String gitPath = map
 							.getRepoRelativePath(resource);
 
-					final ITypedElement base = CompareUtils
-							.getFileRevisionTypedElement(gitPath, commit1, db);
-					final ITypedElement next = CompareUtils
-							.getFileRevisionTypedElement(gitPath, commit2, db);
+					final ITypedElement base = getFileRevisionTypedElement(resource, gitPath, commit1);
+					final ITypedElement next = getFileRevisionTypedElement(resource, gitPath, commit2);
 					CompareEditorInput in = new GitCompareFileRevisionEditorInput(base, next, null);
 					openInCompare(in);
 				}
@@ -1287,7 +1303,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 				SWTCommit commit = (SWTCommit) it.next();
 				IFileRevision rev = null;
 				try {
-					rev = CompareUtils.getFileRevision(gitPath, commit, db, null);
+					rev = getFileRevision(resource, gitPath, commit);
 				} catch (IOException e) {
 					Activator.logError(NLS.bind(
 							UIText.GitHistoryPage_errorLookingUpPath, gitPath,
@@ -1331,41 +1347,4 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 
 	}
 
-	private class CreatePatchAction extends Action {
-
-		private TreeWalk walker;
-
-		public CreatePatchAction() {
-			super(UIText.GitHistoryPage_CreatePatch);
-		}
-
-		@Override
-		public void run() {
-			IStructuredSelection selection = ((IStructuredSelection) revObjectSelectionProvider
-					.getSelection());
-			if (selection.size() == 1) {
-
-				Iterator<?> it = selection.iterator();
-				SWTCommit commit = (SWTCommit) it.next();
-
-				GitCreatePatchWizard.run(getHistoryPageSite().getPart(),
-						commit, walker, db);
-			}
-		}
-
-		public void setTreeWalk(TreeWalk walker) {
-			this.walker = walker;
-		}
-
-		@Override
-		public boolean isEnabled() {
-			IStructuredSelection selection = ((IStructuredSelection) revObjectSelectionProvider
-					.getSelection());
-			Iterator<?> it = selection.iterator();
-			SWTCommit commit = (SWTCommit) it.next();
-			return (commit.getParentCount() == 1);
-
-		}
-
-	}
 }

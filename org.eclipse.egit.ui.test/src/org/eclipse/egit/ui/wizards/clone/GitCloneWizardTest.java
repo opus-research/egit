@@ -193,6 +193,7 @@ public class GitCloneWizardTest {
 		workingCopy.assertDirectory(destRepo.toString());
 		workingCopy.assertBranch("master");
 		workingCopy.assertRemoteName("origin");
+		workingCopy.doNotImportProjectsAfterClone();
 		workingCopy.waitForCreate();
 
 		// Some random sampling to see we got something. We do not test
@@ -252,6 +253,7 @@ public class GitCloneWizardTest {
 		workingCopy.setDirectory(destRepo.toString());
 		workingCopy.assertBranch("historical/pre-eclipse");
 		workingCopy.setRemoteName("src");
+		workingCopy.doNotImportProjectsAfterClone();
 		workingCopy.waitForCreate();
 
 		// Some random sampling to see we got something. We do not test
