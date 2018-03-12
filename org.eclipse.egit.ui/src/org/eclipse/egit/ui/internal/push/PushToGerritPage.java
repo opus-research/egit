@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 SAP SE and others.
+ * Copyright (c) 2012, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Christian Georgi (SAP SE) - Bug 466900 (Make PushResultDialog amodal)
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
@@ -58,10 +57,8 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbenchCommandConstants;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Push the current HEAD to Gerrit
@@ -248,17 +245,10 @@ class PushToGerritPage extends WizardPage {
 					}
 				}
 			});
-			getShell().getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					Shell shell = PlatformUI.getWorkbench()
-							.getActiveWorkbenchWindow().getShell();
-					PushResultDialog dlg = new PushResultDialog(shell,
-							repository, result[0], op.getDestinationString());
-					dlg.showConfigureButton(false);
-					dlg.open();
-				}
-			});
+			PushResultDialog dlg = new PushResultDialog(getShell(), repository,
+					result[0], op.getDestinationString());
+			dlg.showConfigureButton(false);
+			dlg.open();
 			storeLastUsedUri(uriCombo.getText());
 			storeLastUsedBranch(branchText.getText());
 		} catch (URISyntaxException e) {
