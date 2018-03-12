@@ -117,7 +117,7 @@ public class CommitDialog extends Dialog {
 
 	}
 
-	static class CommitLabelProvider extends WorkbenchLabelProvider implements
+	class CommitLabelProvider extends WorkbenchLabelProvider implements
 			ITableLabelProvider {
 		public String getColumnText(Object obj, int columnIndex) {
 			CommitItem item = (CommitItem) obj;
@@ -167,8 +167,6 @@ public class CommitDialog extends Dialog {
 	private static final String COMMITTER_VALUES_PREF = "CommitDialog.committerValues"; //$NON-NLS-1$
 
 	private static final String AUTHOR_VALUES_PREF = "CommitDialog.authorValues"; //$NON-NLS-1$
-
-	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
 
 
 	/**
@@ -319,18 +317,9 @@ public class CommitDialog extends Dialog {
 		});
 
 		showUntrackedButton = new Button(container, SWT.CHECK);
+		showUntrackedButton.setSelection(showUntracked);
 		showUntrackedButton.setText(UIText.CommitDialog_ShowUntrackedFiles);
 		showUntrackedButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
-
-		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
-				.getDialogSettings();
-		if (settings.get(SHOW_UNTRACKED_PREF) != null) {
-			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
-					.booleanValue();
-		}
-
-		showUntrackedButton.setSelection(showUntracked);
-
 		showUntrackedButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
@@ -385,7 +374,6 @@ public class CommitDialog extends Dialog {
 			}
 		}
 
-		applyDialogFont(container);
 		container.pack();
 		return container;
 	}
@@ -571,7 +559,7 @@ public class CommitDialog extends Dialog {
 	private boolean signedOff = false;
 	private boolean amending = false;
 	private boolean amendAllowed = true;
-	private boolean showUntracked = true;
+	private boolean showUntracked = false;
 
 	private ArrayList<IFile> selectedFiles = new ArrayList<IFile>();
 	private String previousCommitMessage = ""; //$NON-NLS-1$
@@ -741,9 +729,6 @@ public class CommitDialog extends Dialog {
 		addValueToPrefs(author, AUTHOR_VALUES_PREF);
 		addValueToPrefs(committer, COMMITTER_VALUES_PREF);
 
-		IDialogSettings settings = org.eclipse.egit.ui.Activator
-			.getDefault().getDialogSettings();
-		settings.put(SHOW_UNTRACKED_PREF, showUntracked);
 		super.okPressed();
 	}
 
@@ -881,6 +866,22 @@ public class CommitDialog extends Dialog {
 	 */
 	public void setAmending(boolean amending) {
 		this.amending = amending;
+	}
+
+	/**
+	 * @return whether the untracked files should be shown
+	 */
+	public boolean isShowUntracked() {
+		return showUntracked;
+	}
+
+	/**
+	 * Pre-set whether the untracked files should be shown
+	 *
+	 * @param showUntracked
+	 */
+	public void setShowUntracked(boolean showUntracked) {
+		this.showUntracked = showUntracked;
 	}
 
 	/**

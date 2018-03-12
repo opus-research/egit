@@ -15,16 +15,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
@@ -38,7 +34,6 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteBranchesNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemotesNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.SymbolicRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.SymbolicRefsNode;
@@ -58,39 +53,10 @@ import org.eclipse.jgit.transport.RemoteConfig;
  */
 public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
-	private final RepositoryCache repositoryCache = org.eclipse.egit.core.Activator
-			.getDefault().getRepositoryCache();
-
 	@SuppressWarnings("unchecked")
 	public Object[] getElements(Object inputElement) {
 
-		List<RepositoryTreeNode> nodes = new ArrayList<RepositoryTreeNode>();
-		List<String> directories = new ArrayList<String>();
-
-		if (inputElement instanceof Collection) {
-			for (Iterator it = ((Collection) inputElement).iterator(); it
-					.hasNext();) {
-				Object next = it.next();
-				if (next instanceof RepositoryTreeNode)
-					nodes.add((RepositoryTreeNode) next);
-				else if (next instanceof String)
-					directories.add((String) next);
-			}
-		} else if (inputElement instanceof IWorkspaceRoot) {
-			directories.addAll(Activator.getDefault().getRepositoryUtil()
-					.getConfiguredRepositories());
-		}
-
-		for (String directory : directories) {
-			try {
-				RepositoryNode rNode = new RepositoryNode(null, repositoryCache
-						.lookupRepository(new File(directory)));
-				nodes.add(rNode);
-			} catch (IOException e) {
-				// ignore for now
-			}
-		}
-
+		List<RepositoryTreeNode> nodes = (List<RepositoryTreeNode>) inputElement;
 		Collections.sort(nodes);
 		return nodes.toArray();
 	}
@@ -297,10 +263,10 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 			if (!rc.getPushURIs().isEmpty())
 				if (rc.getPushURIs().size() == 1)
 					children.add(new PushNode(node, node.getRepository(), rc
-							.getPushURIs().get(0).toPrivateString()));
+							.getURIs().get(0).toPrivateString()));
 				else
 					children.add(new PushNode(node, node.getRepository(), rc
-							.getPushURIs().get(0).toPrivateString()
+							.getURIs().get(0).toPrivateString()
 							+ "...")); //$NON-NLS-1$
 
 			return children.toArray();
@@ -336,9 +302,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 	}
 
 	public Object getParent(Object element) {
-		if (element instanceof RepositoryTreeNode)
-			return ((RepositoryTreeNode) element).getParent();
-		return null;
+
+		return ((RepositoryTreeNode) element).getParent();
 	}
 
 	public boolean hasChildren(Object element) {

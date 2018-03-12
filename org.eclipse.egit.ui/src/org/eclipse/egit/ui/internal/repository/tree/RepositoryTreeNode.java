@@ -184,7 +184,7 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 				* result
 				+ ((myRepository == null) ? 0 : myRepository.getDirectory()
 						.hashCode());
-		result = prime * result + myType.hashCode();
+		result = prime * result + ((myType == null) ? 0 : myType.hashCode());
 		return result;
 	}
 
@@ -304,7 +304,7 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		case SYMBOLICREFS:
 			// fall through
 		case ERROR:
-			// fall through TODO fix this: Repository may be null
+			// fall through
 		case WORKINGDIR:
 			return ((Repository) myObject).getDirectory().equals(
 					((Repository) otherObject).getDirectory());

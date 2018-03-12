@@ -25,7 +25,6 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteBranchesNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
-import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.InputDialog;
@@ -106,7 +105,7 @@ public class BranchSelectionDialog extends TitleAreaDialog {
 		// TODO deprecated constructor for now
 		FilteredTree tree = new FilteredTree(parent, SWT.SINGLE | SWT.BORDER, new PatternFilter());
 		branchTree = tree.getViewer();
-		branchTree.setLabelProvider(new RepositoriesViewLabelProvider());
+		new RepositoriesViewLabelProvider(branchTree);
 		branchTree.setContentProvider(new RepositoriesViewContentProvider());
 
 		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300).applyTo(
@@ -150,8 +149,7 @@ public class BranchSelectionDialog extends TitleAreaDialog {
 			public void open(OpenEvent event) {
 				RepositoryTreeNode node = (RepositoryTreeNode) ((IStructuredSelection) branchTree
 						.getSelection()).getFirstElement();
-				if (node.getType() != RepositoryTreeNodeType.REF
-						&& node.getType() != RepositoryTreeNodeType.TAG)
+				if (node.getType() != RepositoryTreeNodeType.REF)
 					branchTree.setExpandedState(node, !branchTree
 							.getExpandedState(node));
 				else if (confirmationBtn.isEnabled())
@@ -168,8 +166,6 @@ public class BranchSelectionDialog extends TitleAreaDialog {
 		setTitle(title);
 		setMessage(getMessageText());
 		getShell().setText(title);
-
-		applyDialogFont(parent);
 
 		return parent;
 	}
@@ -200,32 +196,32 @@ public class BranchSelectionDialog extends TitleAreaDialog {
 		// selects the entry specified by the name
 		if (refName == null)
 			return false;
-
-		RepositoryTreeNode node;
+		Ref actRef;
 		try {
-			if (refName.startsWith(Constants.R_HEADS)) {
-				Ref ref = this.repo.getRef(refName);
-				node = new RefNode(localBranches, this.repo, ref);
-			} else {
-				String mappedRef = Activator.getDefault().getRepositoryUtil()
-						.mapCommitToRef(this.repo, refName, false);
-				if (mappedRef != null
-						&& mappedRef.startsWith(Constants.R_REMOTES)) {
-					Ref ref = this.repo.getRef(mappedRef);
-					node = new RefNode(remoteBranches, this.repo, ref);
-				} else if (mappedRef != null
-						&& mappedRef.startsWith(Constants.R_TAGS)) {
-					Ref ref = this.repo.getRef(mappedRef);
-					node = new TagNode(tags, this.repo, ref);
-				} else {
-					return false;
-				}
-			}
+			actRef = repo.getRef(refName);
 		} catch (IOException e) {
+			// ignore
 			return false;
 		}
 
-		branchTree.setSelection(new StructuredSelection(node), true);
+		if (actRef == null)
+			return false;
+
+		RepositoryTreeNode<Repository> parentNode;
+		if (refName.startsWith(Constants.R_HEADS)) {
+			parentNode = localBranches;
+			// TODO fix this: if we are on a local branch or tag, we must do the
+			// indirection through the commit
+		} else if (refName.startsWith(Constants.R_REMOTES)) {
+			parentNode = remoteBranches;
+		} else if (refName.startsWith(Constants.R_TAGS)) {
+			parentNode = tags;
+		} else {
+			return false;
+		}
+
+		RefNode actNode = new RefNode(parentNode, repo, actRef);
+		branchTree.setSelection(new StructuredSelection(actNode), true);
 		return true;
 	}
 

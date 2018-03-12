@@ -58,7 +58,6 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.Team;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.internal.ui.Utils;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Scan for modified resources in the same project as the selected resources.
@@ -77,12 +76,6 @@ public class CommitAction extends RepositoryAction {
 
 	@Override
 	public void execute(IAction act) {
-		// let's see if there is any dirty editor around and
-		// ask the user if they want to save or abort
-		if (!PlatformUI.getWorkbench().saveAllEditors(true)) {
-			return;
-		}
-
 		resetState();
 		try {
 			buildIndexHeadDiffList();
@@ -151,6 +144,8 @@ public class CommitAction extends RepositoryAction {
 		commitDialog.setPreselectedFiles(getSelectedFiles());
 		commitDialog.setAuthor(author);
 		commitDialog.setCommitter(committer);
+		if(notTracked.size() == files.size())
+			commitDialog.setShowUntracked(true);
 
 		if (previousCommit != null) {
 			commitDialog.setPreviousCommitMessage(previousCommit.getMessage());
@@ -326,10 +321,18 @@ public class CommitAction extends RepositoryAction {
 				if (!filename.startsWith(repoRelativePath))
 					continue;
 				String projectRelativePath = filename.substring(repoRelativePath.length());
-				IFile member = project.getFile(projectRelativePath);
-				if (!files.contains(member))
-					files.add(member);
-				category.add(member);
+				IResource member = project.getFile(projectRelativePath);
+				if (member != null && member instanceof IFile) {
+					if (!files.contains(member))
+						files.add((IFile) member);
+					category.add((IFile) member);
+				} else {
+					// TODO is this the right Location?
+					if (GitTraceLocation.UI.isActive())
+						GitTraceLocation.getTrace().trace(
+								GitTraceLocation.UI.getLocation(),
+								"Couldn't find " + filename); //$NON-NLS-1$
+				}
 			} catch (Exception e) {
 				if (GitTraceLocation.UI.isActive())
 					GitTraceLocation.getTrace().trace(GitTraceLocation.UI.getLocation(), e.getMessage(), e);
