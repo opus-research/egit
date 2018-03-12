@@ -47,6 +47,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
  * the file content.
  */
 public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		boolean compareMode = Boolean.TRUE.toString().equals(
 				event.getParameter(HistoryViewCommands.COMPARE_MODE_PARAM));
@@ -128,10 +129,10 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 				}
 				if (rev != null) {
 					if (compareMode)
-						try {
+						try (RevWalk rw = new RevWalk(repo)) {
 							ITypedElement left = CompareUtils
 									.getFileRevisionTypedElement(gitPath,
-											new RevWalk(repo).parseCommit(repo
+											rw.parseCommit(repo
 													.resolve(Constants.HEAD)),
 											repo);
 							ITypedElement right = CompareUtils

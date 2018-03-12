@@ -108,6 +108,8 @@ class CommitMessageViewer extends SourceViewer {
 
 	private BooleanPrefAction showTagSequencePrefAction;
 
+	private BooleanPrefAction showBranchSequencePrefAction;
+
 	private BooleanPrefAction wrapCommentsPrefAction;
 
 	private BooleanPrefAction fillParagraphsPrefAction;
@@ -123,6 +125,7 @@ class CommitMessageViewer extends SourceViewer {
 
 		// set the cursor when hovering over a link
 		t.addListener(SWT.MouseMove, new Listener() {
+			@Override
 			public void handleEvent(final Event e) {
 				StyleRange styleRange = getStyleRange(e.x, e.y);
 				if (styleRange != null && styleRange.underline)
@@ -153,13 +156,17 @@ class CommitMessageViewer extends SourceViewer {
 
 		// react on changes in the fill and wrap preferences
 		listener = new IPropertyChangeListener() {
+			@Override
 			public void propertyChange(PropertyChangeEvent event) {
-				if (event.getProperty().equals(
+				String property = event.getProperty();
+				if (property.equals(
 						UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL)) {
 					setFill(((Boolean) event.getNewValue()).booleanValue());
 					return;
 				}
-				if (event.getProperty().equals(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE)) {
+				if (property.equals(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE)
+						|| property.equals(
+								UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE)) {
 					format();
 					return;
 				}
@@ -197,6 +204,7 @@ class CommitMessageViewer extends SourceViewer {
 		};
 		// register and unregister the global actions upon focus events
 		getControl().addFocusListener(new FocusListener() {
+			@Override
 			public void focusLost(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.SELECT_ALL.getId(), null);
@@ -205,6 +213,7 @@ class CommitMessageViewer extends SourceViewer {
 				site.getActionBars().updateActionBars();
 			}
 
+			@Override
 			public void focusGained(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.SELECT_ALL.getId(), selectAll);
@@ -219,6 +228,16 @@ class CommitMessageViewer extends SourceViewer {
 		c.setMenu(mgr.createContextMenu(c));
 
 		IPersistentPreferenceStore pstore = (IPersistentPreferenceStore) store;
+
+		showBranchSequencePrefAction = new BooleanPrefAction(pstore,
+				UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE,
+				UIText.ResourceHistory_ShowBranchSequence) {
+			@Override
+			protected void apply(boolean value) {
+				// nothing, just toggle
+			}
+		};
+		mgr.add(showBranchSequencePrefAction);
 
 		showTagSequencePrefAction = new BooleanPrefAction(pstore,
 				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
@@ -255,6 +274,7 @@ class CommitMessageViewer extends SourceViewer {
 	void addDoneListenerToFormatJob() {
 		formatJob.addJobChangeListener(new JobChangeAdapter() {
 
+			@Override
 			public void done(IJobChangeEvent event) {
 				if (!event.getResult().isOK())
 					return;
@@ -263,6 +283,7 @@ class CommitMessageViewer extends SourceViewer {
 					return;
 				final FormatJob job = (FormatJob) event.getJob();
 				text.getDisplay().asyncExec(new Runnable() {
+					@Override
 					public void run() {
 						applyFormatJobResultInUI(job.getFormatResult());
 					}
@@ -282,6 +303,7 @@ class CommitMessageViewer extends SourceViewer {
 		if (refsChangedListener != null)
 			refsChangedListener.remove();
 		refsChangedListener = null;
+		showBranchSequencePrefAction.dispose();
 		showTagSequencePrefAction.dispose();
 		wrapCommentsPrefAction.dispose();
 		fillParagraphsPrefAction.dispose();
@@ -314,6 +336,7 @@ class CommitMessageViewer extends SourceViewer {
 			refsChangedListener = db.getListenerList().addRefsChangedListener(
 					new RefsChangedListener() {
 
+						@Override
 						public void onRefsChanged(RefsChangedEvent event) {
 							allRefs = getBranches(db);
 						}
@@ -322,6 +345,7 @@ class CommitMessageViewer extends SourceViewer {
 		format();
 	}
 
+	@Override
 	public Object getInput() {
 		return commit;
 	}
@@ -394,6 +418,7 @@ class CommitMessageViewer extends SourceViewer {
 	static final class ObjectLink extends StyleRange {
 		RevCommit targetCommit;
 
+		@Override
 		public boolean similarTo(final StyleRange style) {
 			if (!(style instanceof ObjectLink))
 				return false;

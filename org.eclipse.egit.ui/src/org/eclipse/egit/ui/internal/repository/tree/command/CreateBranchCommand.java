@@ -34,13 +34,14 @@ import org.eclipse.jgit.revwalk.RevWalk;
  */
 public class CreateBranchCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final RepositoryTreeNode node = getSelectedNodes(event).get(0);
 
 		if (node.getType() == RepositoryTreeNodeType.ADDITIONALREF) {
 			Ref ref = (Ref) node.getObject();
-			try {
-				RevCommit baseCommit = new RevWalk(node.getRepository())
+			try (RevWalk rw = new RevWalk(node.getRepository())) {
+				RevCommit baseCommit = rw
 						.parseCommit(ref.getLeaf().getObjectId());
 				WizardDialog dlg = new WizardDialog(
 						getShell(event),
