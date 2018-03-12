@@ -21,8 +21,6 @@ import org.eclipse.core.resources.IProject;
  */
 public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 
-	private boolean containsFolderLevelSynchronizationRequest = false;
-
 	private final Set<GitSynchronizeData> gsd;
 
 	private final Map<String, GitSynchronizeData> projectMapping;
@@ -50,10 +48,6 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 */
 	public void add(GitSynchronizeData data) {
 		gsd.add(data);
-		if (data.getIncludedPaths() != null
-				&& data.getIncludedPaths().size() > 0)
-			containsFolderLevelSynchronizationRequest = true;
-
 		for (IProject proj : data.getProjects()) {
 			projectMapping.put(proj.getName(), data);
 		}
@@ -65,15 +59,6 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 */
 	public boolean contains(IProject project) {
 		return projectMapping.containsKey(project.getName());
-	}
-
-	/**
-	 * @return {@code true} when at least one {@link GitSynchronizeData} is
-	 *         configured to include changes only for particular folder,
-	 *         {@code false} otherwise
-	 */
-	public boolean containsFolderLevelSynchronizationRequest() {
-		return containsFolderLevelSynchronizationRequest;
 	}
 
 	/**
