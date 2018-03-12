@@ -501,7 +501,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 				FormToolkit.TREE_BORDER);
 		unstagedViewer.getTree().setLinesVisible(true);
 		unstagedViewer.setLabelProvider(createLabelProvider(unstagedViewer));
-		unstagedViewer.setContentProvider(createStagingContentProvider(true));
+		unstagedViewer.setContentProvider(new StagingViewContentProvider(this,
+				true));
 		unstagedViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
 				| DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer(),
@@ -765,7 +766,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 				FormToolkit.TREE_BORDER);
 		stagedViewer.getTree().setLinesVisible(true);
 		stagedViewer.setLabelProvider(createLabelProvider(stagedViewer));
-		stagedViewer.setContentProvider(createStagingContentProvider(false));
+		stagedViewer.setContentProvider(new StagingViewContentProvider(this,
+				false));
 		stagedViewer.addDragSupport(
 				DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer(),
@@ -1227,8 +1229,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				final boolean enable = isChecked();
 				getLabelProvider(stagedViewer).setFileNameMode(enable);
 				getLabelProvider(unstagedViewer).setFileNameMode(enable);
-				getContentProvider(stagedViewer).setFileNameMode(enable);
-				getContentProvider(unstagedViewer).setFileNameMode(enable);
 				refreshViewersPreservingExpandedElements();
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
@@ -1363,15 +1363,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		ProblemLabelDecorator decorator = new ProblemLabelDecorator(treeViewer);
 		return new TreeDecoratingLabelProvider(baseProvider, decorator);
-	}
-
-	private StagingViewContentProvider createStagingContentProvider(
-			boolean unstaged) {
-		StagingViewContentProvider provider = new StagingViewContentProvider(
-				this, unstaged);
-		provider.setFileNameMode(getPreferenceStore().getBoolean(
-				UIPreferences.STAGING_VIEW_FILENAME_MODE));
-		return provider;
 	}
 
 	private IPreferenceStore getPreferenceStore() {
@@ -2100,15 +2091,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 					return;
 
 				final IndexDiffData indexDiff = doReload(repository);
-				boolean indexDiffAvailable;
-				boolean noConflicts;
-				if (indexDiff == null) {
-					indexDiffAvailable = false;
-					noConflicts = true;
-				} else {
-					indexDiffAvailable = true;
-					noConflicts = indexDiff.getConflicting().isEmpty();
-				}
+				boolean indexDiffAvailable = (indexDiff != null);
 
 				if (repositoryChanged) {
 					// Reset paths, they're from the old repository
@@ -2141,10 +2124,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 				updateRebaseButtonVisibility(repository.getRepositoryState()
 						.isRebasing());
 
-
 				boolean commitEnabled = indexDiffAvailable
 						&& repository.getRepositoryState().canCommit()
-						&& noConflicts;
+						&& indexDiff.getConflicting().isEmpty();
 				commitButton.setEnabled(commitEnabled);
 
 				boolean commitAndPushEnabled = commitEnabled
@@ -2153,12 +2135,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 				boolean rebaseContinueEnabled = indexDiffAvailable
 						&& repository.getRepositoryState().isRebasing()
-						&& noConflicts;
+						&& indexDiff.getConflicting().isEmpty();
 				rebaseContinueButton.setEnabled(rebaseContinueEnabled);
 
 				form.setText(StagingView.getRepositoryName(repository));
 				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
-				enableCommitWidgets(indexDiffAvailable && noConflicts);
+				enableCommitWidgets(indexDiffAvailable
+						&& indexDiff.getConflicting().isEmpty());
 				updateSectionText();
 			}
 		});
