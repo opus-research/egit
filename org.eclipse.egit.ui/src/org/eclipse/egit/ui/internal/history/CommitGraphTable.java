@@ -57,7 +57,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -229,8 +228,7 @@ class CommitGraphTable {
 					int relativeX = e.x - item.getBounds().x;
 					for (int i = 0; i < commit.getRefCount(); i++) {
 						Point textSpan = renderer.getRefHSpan(commit.getRef(i));
-						if ((textSpan != null)
-								&& (relativeX >= textSpan.x && relativeX <= textSpan.y)) {
+						if ((relativeX >= textSpan.x && relativeX <= textSpan.y)) {
 							hoverShell = new Shell(getTableView().getTable()
 									.getShell(), SWT.ON_TOP | SWT.NO_FOCUS
 									| SWT.TOOL);
@@ -447,7 +445,7 @@ class CommitGraphTable {
 	private void createColumns(final Table rawTable, final TableLayout layout) {
 		final TableColumn graph = new TableColumn(rawTable, SWT.NONE);
 		graph.setResizable(true);
-		graph.setText(UIText.CommitGraphTable_messageColumn);
+		graph.setText(""); //$NON-NLS-1$
 		graph.setWidth(250);
 		layout.addColumnData(new ColumnWeightData(20, true));
 
@@ -595,7 +593,7 @@ class CommitGraphTable {
 			}
 		}
 
-		private File createTempFile(RevCommit commit) throws IOException {
+		private File createTempFile(RevCommit commit) {
 			String tmpDir = System.getProperty("java.io.tmpdir"); //$NON-NLS-1$
 			String patchName = "egit-patch" + commit.getId().name(); //$NON-NLS-1$
 			File patchDir = new File(tmpDir, patchName);
@@ -604,7 +602,7 @@ class CommitGraphTable {
 				patchDir = new File(tmpDir, patchName + "_" + counter); //$NON-NLS-1$
 				counter++;
 			}
-			FileUtils.mkdir(patchDir);
+			patchDir.mkdir();
 			patchDir.deleteOnExit();
 			File patchFile;
 			String suggestedFileName = CreatePatchOperation
@@ -706,17 +704,12 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CHECKOUT,
 						UIText.GitHistoryPage_CheckoutMenuLabel));
-				popupMgr.add(new Separator());
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_BRANCH,
 						UIText.GitHistoryPage_CreateBranchMenuLabel));
 				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.DELETE_BRANCH,
-						UIText.CommitGraphTable_DeleteBranchAction));
-				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_TAG,
 						UIText.GitHistoryPage_CreateTagMenuLabel));
-				popupMgr.add(new Separator());
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_PATCH,
 						UIText.GitHistoryPage_CreatePatchMenuLabel));

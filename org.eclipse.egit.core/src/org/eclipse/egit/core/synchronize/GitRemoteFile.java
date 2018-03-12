@@ -8,39 +8,19 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import org.eclipse.core.resources.IStorage;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.storage.CommitBlobStorage;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.team.core.TeamException;
 
 class GitRemoteFile extends GitRemoteResource {
 
-	private final Repository repo;
-
-	GitRemoteFile(Repository repo, RevCommit commitId, ObjectId objectId,
-			String path) {
-		super(commitId, objectId, path);
-		this.repo = repo;
+	GitRemoteFile(Repository repo, RevCommit revCommit,
+			ObjectId objectId, String path) {
+		super(repo, revCommit, objectId, path);
 	}
 
 	public boolean isContainer() {
 		return false;
-	}
-
-	@Override
-	protected void fetchContents(IProgressMonitor monitor) throws TeamException {
-		CommitBlobStorage content = new CommitBlobStorage(repo, getPath(),
-				getObjectId(), getCommitId());
-		try {
-			setContents(content.getContents(), monitor);
-		} catch (CoreException e) {
-			Activator.error("", e); //$NON-NLS-1$
-		}
 	}
 
 	@Override
@@ -56,12 +36,6 @@ class GitRemoteFile extends GitRemoteResource {
 		}
 
 		return false;
-	}
-
-	@Override
-	public IStorage getStorage(IProgressMonitor monitor) throws TeamException {
-		return new CommitBlobStorage(repo, getCachePath(), getObjectId(),
-				getCommitId());
 	}
 
 	@Override
