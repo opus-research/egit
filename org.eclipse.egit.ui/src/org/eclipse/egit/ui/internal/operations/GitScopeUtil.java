@@ -13,18 +13,15 @@ package org.eclipse.egit.ui.internal.operations;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.mapping.ResourceMapping;
-import org.eclipse.core.resources.mapping.ResourceMappingContext;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
@@ -33,7 +30,9 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.team.core.subscribers.Subscriber;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
+import org.eclipse.ui.IContributorResourceAdapter;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.ide.IContributorResourceAdapter2;
 import org.eclipse.ui.progress.IProgressService;
 
 /**
@@ -101,6 +100,28 @@ public class GitScopeUtil {
 		return manager;
 	}
 
+	private static ResourceMapping getResourceMapping(Object o) {
+		if (o instanceof ResourceMapping)
+			return (ResourceMapping) o;
+		if (o instanceof IAdaptable) {
+			IAdaptable adaptable = (IAdaptable) o;
+			Object adapted = adaptable.getAdapter(ResourceMapping.class);
+			if (adapted instanceof ResourceMapping)
+				return (ResourceMapping) adapted;
+			adapted = adaptable.getAdapter(IContributorResourceAdapter.class);
+			if (adapted instanceof IContributorResourceAdapter2) {
+				IContributorResourceAdapter2 cra = (IContributorResourceAdapter2) adapted;
+				return cra.getAdaptedResourceMapping(adaptable);
+			}
+		} else {
+			Object adapted = Platform.getAdapterManager().getAdapter(o,
+					ResourceMapping.class);
+			if (adapted instanceof ResourceMapping)
+				return (ResourceMapping) adapted;
+		}
+		return null;
+	}
+
 	/**
 	 * Returns all resource mappings for the given resources
 	 *
@@ -108,12 +129,9 @@ public class GitScopeUtil {
 	 * @return ResourceMappings
 	 */
 	private static ResourceMapping[] getResourceMappings(IResource[] resources) {
-		Set<ResourceMapping> result = new LinkedHashSet<ResourceMapping>();
-		for (IResource resource : resources) {
-			ResourceMapping[] additional = ResourceUtil.getResourceMappings(
-					resource, ResourceMappingContext.LOCAL_CONTEXT);
-			result.addAll(Arrays.asList(additional));
-		}
+		List<ResourceMapping> result = new ArrayList<ResourceMapping>();
+		for (IResource resource : resources)
+			result.add(getResourceMapping(resource));
 		return result.toArray(new ResourceMapping[result.size()]);
 	}
 
