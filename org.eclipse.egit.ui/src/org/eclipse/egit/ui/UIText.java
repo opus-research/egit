@@ -430,9 +430,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_HistoryGroupHeader;
 
 	/** */
-	public static String GitPreferenceRoot_InitialConfiguration;
-
-	/** */
 	public static String GitPreferenceRoot_MergeGroupHeader;
 
 	/** */
@@ -2750,12 +2747,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitCombo_showSuggestedCommits;
-
-	/** */
-	public static String CommitCommand_committingNotPossible;
-
-	/** */
-	public static String CommitCommand_noProjectsImported;
 
 	/**
 	 * Do not in-line this into the static initializer as the
