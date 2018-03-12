@@ -13,10 +13,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.storage.TreeParserResourceVariant;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
@@ -56,62 +55,76 @@ public class TreeWalkResourceVariantTreeProvider implements
 	 *            The repository this tree walk has been created for.
 	 * @param treeWalk
 	 *            The tree walk to iterate over.
-	 * @param baseTreeIndex
-	 *            Index of the base tree in this tree walk.
-	 * @param oursTreeIndex
-	 *            Index of our tree in this tree walk.
-	 * @param theirsTreeIndex
-	 *            Index of their tree in this tree walk.
+	 * @param baseIndex
+	 *            Index of the ancestor tree in the given TreeWalk (value
+	 *            returned by {@link TreeWalk#addTree(AbstractTreeIterator)})
+	 * @param ourIndex
+	 *            Index of our tree in the given TreeWalk (value returned by
+	 *            {@link TreeWalk#addTree(AbstractTreeIterator)})
+	 * @param theirIndex
+	 *            Index of their tree in the given TreeWalk (value returned by
+	 *            {@link TreeWalk#addTree(AbstractTreeIterator)})
 	 * @throws IOException
 	 *             if we somehow cannot iterate over the treewalk.
 	 */
 	public TreeWalkResourceVariantTreeProvider(Repository repository,
-			TreeWalk treeWalk, int baseTreeIndex, int oursTreeIndex,
-			int theirsTreeIndex) throws IOException {
+			TreeWalk treeWalk, int baseIndex, int ourIndex, int theirIndex)
+			throws IOException {
 		// Record the initial state of this tree walk before iterating
 		final AbstractTreeIterator[] initialTrees = new AbstractTreeIterator[treeWalk
 				.getTreeCount()];
-		for (int i = 0; i < treeWalk.getTreeCount(); i++)
+		for (int i = 0; i < treeWalk.getTreeCount(); i++) {
 			initialTrees[i] = treeWalk.getTree(i, AbstractTreeIterator.class);
+		}
 
 		final GitResourceVariantCache baseCache = new GitResourceVariantCache();
 		final GitResourceVariantCache theirsCache = new GitResourceVariantCache();
 		final GitResourceVariantCache oursCache = new GitResourceVariantCache();
 
 		while (treeWalk.next()) {
-			final int modeBase = treeWalk.getRawMode(baseTreeIndex);
-			final int modeTheirs = treeWalk.getRawMode(theirsTreeIndex);
-			final int modeOurs = treeWalk.getRawMode(oursTreeIndex);
-			if (modeBase == 0 && modeOurs == 0 && modeTheirs == 0)
-				// untracked
+			final int modeBase = treeWalk.getRawMode(baseIndex);
+			final int modeOurs = treeWalk.getRawMode(ourIndex);
+			final int modeTheirs = treeWalk.getRawMode(theirIndex);
+			if (!hasSignificantDifference(modeBase, modeOurs, modeTheirs)) {
+				// conflict on file modes, leave the default merger handle it
 				continue;
-
-			final CanonicalTreeParser base = treeWalk.getTree(baseTreeIndex,
-					CanonicalTreeParser.class);
-			final CanonicalTreeParser theirs = treeWalk.getTree(
-					theirsTreeIndex, CanonicalTreeParser.class);
-			final CanonicalTreeParser ours = treeWalk.getTree(oursTreeIndex,
-					CanonicalTreeParser.class);
-
-			final IPath path = new Path(treeWalk.getPathString());
-			final IResource resource = ResourceUtil
-					.getResourceHandleForLocation(path);
-			// Resource variants only make sense for IResources. Do not consider
-			// files outside of the workspace or otherwise non accessible.
-			if (resource == null || resource.getProject().isAccessible()) {
-				if (modeBase != 0)
-					baseCache.setVariant(resource,
-							TreeParserResourceVariant.create(repository, base));
-				if (modeTheirs != 0)
-					theirsCache.setVariant(resource,
-							TreeParserResourceVariant.create(repository, theirs));
-				if (modeOurs != 0)
-					oursCache.setVariant(resource,
-							TreeParserResourceVariant.create(repository, ours));
 			}
 
-			if (treeWalk.isSubtree())
+			final CanonicalTreeParser base = treeWalk.getTree(baseIndex,
+					CanonicalTreeParser.class);
+			final CanonicalTreeParser ours = treeWalk.getTree(ourIndex,
+					CanonicalTreeParser.class);
+			final CanonicalTreeParser theirs = treeWalk.getTree(theirIndex,
+					CanonicalTreeParser.class);
+
+			final int nonZeroMode = modeBase != 0 ? modeBase
+					: modeOurs != 0 ? modeOurs : modeTheirs;
+			final IResource resource = ResourceUtil
+					.getResourceHandleForLocation(repository,
+							treeWalk.getPathString(),
+							FileMode.fromBits(nonZeroMode) == FileMode.TREE);
+			// Resource variants only make sense for IResources. Do not consider
+			// files outside of the workspace or otherwise non accessible.
+
+			if (resource != null && resource.getProject() != null
+					&& resource.getProject().isAccessible()) {
+				if (modeBase != 0) {
+					baseCache.setVariant(resource,
+							TreeParserResourceVariant.create(repository, base));
+				}
+				if (modeOurs != 0) {
+					oursCache.setVariant(resource,
+							TreeParserResourceVariant.create(repository, ours));
+				}
+				if (modeTheirs != 0) {
+					theirsCache.setVariant(resource,
+							TreeParserResourceVariant.create(repository, theirs));
+				}
+			}
+
+			if (treeWalk.isSubtree()) {
 				treeWalk.enterSubtree();
+			}
 		}
 
 		// TODO any better way to reset the tree walk after an iteration?
@@ -134,6 +147,22 @@ public class TreeWalkResourceVariantTreeProvider implements
 		knownResources.addAll(baseCache.getKnownResources());
 		knownResources.addAll(oursCache.getKnownResources());
 		knownResources.addAll(theirsCache.getKnownResources());
+	}
+
+	private boolean hasSignificantDifference(int modeBase, int modeOurs,
+			int modeTheirs) {
+		if (modeBase == 0) {
+			if (FileMode.fromBits(modeOurs | modeTheirs) != FileMode.MISSING) {
+				return true;
+			} else {
+				return (FileMode.fromBits(modeOurs) == FileMode.TREE && FileMode
+						.fromBits(modeTheirs) != FileMode.TREE)
+						|| (FileMode.fromBits(modeOurs) != FileMode.TREE && FileMode
+								.fromBits(modeTheirs) == FileMode.TREE);
+			}
+		}
+		return FileMode.fromBits(modeBase & modeOurs) != FileMode.MISSING
+				|| FileMode.fromBits(modeBase & modeTheirs) != FileMode.MISSING;
 	}
 
 	public IResourceVariantTree getBaseTree() {

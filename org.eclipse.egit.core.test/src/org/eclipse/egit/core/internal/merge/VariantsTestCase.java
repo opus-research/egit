@@ -55,8 +55,10 @@ public abstract class VariantsTestCase extends GitTestCase {
 		repo = RepositoryMapping.getMapping(iProject).getRepository();
 
 		// make initial commit
-		new Git(repo).commit().setAuthor("JUnit", "junit@jgit.org")
+		try (Git git = new Git(repo)) {
+			git.commit().setAuthor("JUnit", "junit@jgit.org")
 				.setMessage("Initial commit").call();
+		}
 	}
 
 	@After
@@ -87,19 +89,13 @@ public abstract class VariantsTestCase extends GitTestCase {
 
 	protected void assertContentEquals(IStorage storage, String expectedContents)
 			throws Exception {
-		Scanner scanner = null;
-		try {
-			scanner = new Scanner(storage.getContents()).useDelimiter("\\A");
-
+		try (Scanner scanner = new Scanner(storage.getContents())) {
+			scanner.useDelimiter("\\A");
 			String fileContent = "";
 			if (scanner.hasNext()) {
 				fileContent = scanner.next();
 			}
-
 			assertEquals(expectedContents, fileContent);
-		} finally {
-			if (scanner != null)
-				scanner.close();
 		}
 	}
 }

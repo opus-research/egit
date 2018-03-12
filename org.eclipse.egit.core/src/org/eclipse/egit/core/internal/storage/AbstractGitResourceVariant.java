@@ -22,9 +22,6 @@ public abstract class AbstractGitResourceVariant implements IResourceVariant {
 	/** Repository-relative path of this resource. */
 	protected final String path;
 
-	/** Name of the resource. Typically the last segment of {@link #path}. */
-	protected final String fileName;
-
 	/**
 	 * Whether this resource is a container or not in this particular variant.
 	 * This may be different than the local resource's state (if there is a
@@ -43,8 +40,6 @@ public abstract class AbstractGitResourceVariant implements IResourceVariant {
 	 *            Repository in which this variant's content will be accessed.
 	 * @param path
 	 *            Repository-relative path of this resource.
-	 * @param fileName
-	 *            Name of the resource.
 	 * @param isContainer
 	 *            Whether this resource is a container or not in this particular
 	 *            variant.
@@ -54,17 +49,17 @@ public abstract class AbstractGitResourceVariant implements IResourceVariant {
 	 *            Raw mode bits of this variant.
 	 */
 	protected AbstractGitResourceVariant(Repository repository, String path,
-			String fileName, boolean isContainer, ObjectId objectId, int rawMode) {
+			boolean isContainer, ObjectId objectId, int rawMode) {
 		this.repository = repository;
 		this.path = path;
-		this.fileName = fileName;
 		this.isContainer = isContainer;
 		this.objectId = objectId;
 		this.rawMode = rawMode;
 	}
 
 	public String getName() {
-		return fileName;
+		int lastSeparator = path.lastIndexOf('/');
+		return path.substring(lastSeparator + 1);
 	}
 
 	public boolean isContainer() {

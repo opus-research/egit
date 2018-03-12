@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011, 2014 GitHub Inc
+ *  Copyright (c) 2011, 2015 GitHub Inc
  *  and other copyright owners as documented in the project's IP log.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0

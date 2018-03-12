@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 Obeo.
+ * Copyright (c) 2015 Obeo.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,28 +18,29 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.RemoteResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.storage.TreeParserResourceVariant;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.dircache.DirCacheBuildIterator;
 import org.eclipse.jgit.dircache.DirCacheBuilder;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
+import org.eclipse.jgit.errors.CorruptObjectException;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Repository;
@@ -51,6 +52,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.diff.IDiff;
 import org.eclipse.team.core.mapping.IMergeContext;
 import org.eclipse.team.core.mapping.IResourceMappingMerger;
@@ -136,176 +138,155 @@ public class RecursiveModelMerger extends RecursiveMerger {
 		// logical model that defines its own specific merger will be handled as
 		// it would by the RecursiveMerger.
 		while (treeWalk.next()) {
-			if (treeWalk.getRawMode(T_BASE) == 0
-					&& treeWalk.getRawMode(T_OURS) == 0
-					&& treeWalk.getRawMode(T_THEIRS) == 0)
+			final int modeBase = treeWalk.getRawMode(T_BASE);
+			final int modeOurs = treeWalk.getRawMode(T_OURS);
+			final int modeTheirs = treeWalk.getRawMode(T_THEIRS);
+			if (modeBase == 0 && modeOurs == 0 && modeTheirs == 0) {
 				// untracked
 				continue;
-
-			final String pathString = treeWalk.getPathString();
-			if (handledPaths.contains(pathString)) {
+			}
+			final String path = treeWalk.getPathString();
+			if (handledPaths.contains(path)) {
 				// This one has been handled as a result of a previous model
 				// merge. Simply make sure we use its latest content if it is
 				// not in conflict.
 				if (treeWalk.isSubtree() && enterSubtree)
 					treeWalk.enterSubtree();
-				if (!unmergedPaths.contains(pathString))
-					makeInSync.add(pathString);
+				if (!unmergedPaths.contains(path))
+					makeInSync.add(path);
 				continue;
 			}
 
-			final IResource resource = getResourceForGitPath(pathString);
+			final int nonZeroMode = modeBase != 0 ? modeBase
+					: modeOurs != 0 ? modeOurs : modeTheirs;
+			final IResource resource = ResourceUtil
+					.getResourceHandleForLocation(getRepository(), path,
+							FileMode.fromBits(nonZeroMode) == FileMode.TREE);
 			Set<IResource> logicalModel = logicalModels.getModel(resource);
 
 			IResourceMappingMerger modelMerger = null;
 			if (logicalModel != null) {
 				try {
+					// We need to refresh because new resources may have been added
+					refreshRoots(subscriber.roots());
 					modelMerger = LogicalModels.findAdapter(logicalModel,
 							IResourceMappingMerger.class);
 				} catch (CoreException e) {
+					Activator.logError(
+							CoreText.RecursiveModelMerger_AdaptError, e);
 					// ignore this model and fall back to default
-				}
-			}
-
-			if (modelMerger != null) {
-				assert logicalModel != null;
-				enterSubtree = true;
-				final IMergeContext mergeContext;
-				try {
-					mergeContext = prepareMergeContext(subscriber, logicalModel, remoteMappingContext);
-				} catch (CoreException e) {
-					final String message = NLS
-							.bind(CoreText.RecursiveModelMerger_ScopeInitializationError,
-									pathString);
-					Activator.logError(message, e);
-					cleanUp();
-					return false;
-				} catch (OperationCanceledException e) {
-					final String message = NLS
-							.bind(CoreText.RecursiveModelMerger_ScopeInitializationInterrupted,
-									pathString);
-					Activator.logError(message, e);
-					cleanUp();
-					return false;
-				} catch (InterruptedException e) {
-					final String message = NLS
-							.bind(CoreText.RecursiveModelMerger_ScopeInitializationInterrupted,
-									pathString);
-					Activator.logError(message, e);
-					cleanUp();
-					return false;
-				}
-				try {
-					final IStatus status = modelMerger.merge(mergeContext,
-							new NullProgressMonitor());
-					for (IResource handledFile : logicalModel) {
-						final String filePath = handledFile.getFullPath()
-								.toString().substring(1);
-						modifiedFiles.add(filePath);
-						handledPaths.add(filePath);
-
-						// If the merge failed, mark all parts of the logical
-						// model as conflicting
-						if (status.getSeverity() != IStatus.OK) {
-							unmergedPaths.add(filePath);
-							mergeResults.put(
-									filePath,
-									new MergeResult<RawText>(Collections
-											.<RawText> emptyList()));
-							final TreeParserResourceVariant baseVariant = (TreeParserResourceVariant) subscriber.getBaseTree().getResourceVariant(handledFile);
-							final TreeParserResourceVariant oursVariant = (TreeParserResourceVariant) subscriber.getSourceTree().getResourceVariant(handledFile);
-							final TreeParserResourceVariant theirsVariant = (TreeParserResourceVariant) subscriber.getRemoteTree().getResourceVariant(handledFile);
-							markConflict(filePath, builder, baseVariant,
-									oursVariant, theirsVariant);
-						} else if (mergeContext.getDiffTree().getDiff(
-								handledFile) == null) {
-							// If no diff, the model merger does... nothing
-							// Make sure this file will be added to the index.
-							makeInSync.add(filePath);
-						}
+					if (!fallBackToDefaultMerge(treeWalk, ignoreConflicts)) {
+						cleanUp();
+						return false;
 					}
-				} catch (CoreException e) {
-					Activator.logError(e.getMessage(), e);
-					cleanUp();
-					return false;
-				}
-				if (treeWalk.isSubtree())
-					enterSubtree = true;
-			} else {
-				// This is either a file with no logical model or a file with no
-				// specific model merger.
-				// Fall back to the RecursiveMerger's behavior
-				boolean hasWorkingTreeIterator = tw.getTreeCount() > T_FILE;
-				if (!processEntry(
-						treeWalk.getTree(T_BASE, CanonicalTreeParser.class),
-						treeWalk.getTree(T_OURS, CanonicalTreeParser.class),
-						treeWalk.getTree(T_THEIRS, CanonicalTreeParser.class),
-						treeWalk.getTree(T_INDEX, DirCacheBuildIterator.class),
-						hasWorkingTreeIterator ? treeWalk.getTree(T_FILE,
-								WorkingTreeIterator.class) : null,
-						ignoreConflicts)) {
-					cleanUp();
-					return false;
 				}
 			}
-			if (treeWalk.isSubtree() && enterSubtree)
+			if (modelMerger != null) {
+				enterSubtree = true;
+				if (!new ModelMerge(this, subscriber, remoteMappingContext,
+						path, logicalModel, modelMerger).run()) {
+					return false;
+				}
+				if (treeWalk.isSubtree()) {
+					enterSubtree = true;
+				}
+			} else if (!fallBackToDefaultMerge(treeWalk, ignoreConflicts)) {
+				cleanUp();
+				return false;
+			}
+			if (treeWalk.isSubtree() && enterSubtree) {
 				treeWalk.enterSubtree();
+			}
 		}
-		if (makeInSync.isEmpty())
-			return true;
-
-		// The models are done modifying local files.
-		// Add them to the index now.
-		final TreeWalk syncingTreeWalk = new TreeWalk(getRepository());
-		syncingTreeWalk.addTree(new DirCacheIterator(dircache));
-		syncingTreeWalk.addTree(new FileTreeIterator(getRepository()));
-		syncingTreeWalk.setRecursive(true);
-		syncingTreeWalk
-				.setFilter(PathFilterGroup.createFromStrings(makeInSync));
-		String lastAdded = null;
-		while (syncingTreeWalk.next()) {
-			String path = syncingTreeWalk.getPathString();
-			if (path.equals(lastAdded))
-				continue;
-
-			WorkingTreeIterator workingTree = syncingTreeWalk.getTree(1,
-					WorkingTreeIterator.class);
-			DirCacheIterator dirCache = syncingTreeWalk.getTree(0,
-					DirCacheIterator.class);
-			if (dirCache == null && workingTree != null
-					&& workingTree.isEntryIgnored()) {
-				// nothing to do on this one
-			} else if (workingTree != null) {
-				if (dirCache == null || dirCache.getDirCacheEntry() == null
-						|| !dirCache.getDirCacheEntry().isAssumeValid()) {
-					final DirCacheEntry dce = new DirCacheEntry(path);
-					final FileMode mode = workingTree
-							.getIndexFileMode(dirCache);
-					dce.setFileMode(mode);
-
-					if (FileMode.GITLINK != mode) {
-						dce.setLength(workingTree.getEntryLength());
-						dce.setLastModified(workingTree.getEntryLastModified());
-						InputStream is = workingTree.openEntryStream();
-						try {
-							dce.setObjectId(getObjectInserter().insert(
-									Constants.OBJ_BLOB,
-									workingTree.getEntryContentLength(), is));
-						} finally {
-							is.close();
-						}
-					} else
-						dce.setObjectId(workingTree.getEntryObjectId());
-					builder.add(dce);
-					lastAdded = path;
-				} else
-					builder.add(dirCache.getDirCacheEntry());
-			} else if (dirCache != null
-					&& FileMode.GITLINK == dirCache.getEntryFileMode())
-				builder.add(dirCache.getDirCacheEntry());
+		if (!makeInSync.isEmpty()) {
+			indexModelMergedFiles();
 		}
-
 		return true;
+	}
+
+	private boolean fallBackToDefaultMerge(TreeWalk treeWalk,
+			boolean ignoreConflicts) throws MissingObjectException,
+			IncorrectObjectTypeException, CorruptObjectException, IOException {
+		boolean hasWorkingTreeIterator = tw.getTreeCount() > T_FILE;
+		return processEntry(
+				treeWalk.getTree(T_BASE, CanonicalTreeParser.class),
+				treeWalk.getTree(T_OURS, CanonicalTreeParser.class),
+				treeWalk.getTree(T_THEIRS, CanonicalTreeParser.class),
+				treeWalk.getTree(T_INDEX, DirCacheBuildIterator.class),
+				hasWorkingTreeIterator ? treeWalk.getTree(T_FILE,
+						WorkingTreeIterator.class) : null, ignoreConflicts);
+	}
+
+	/**
+	 * Add files modified by model mergers to the index.
+	 *
+	 * @throws CorruptObjectException
+	 * @throws MissingObjectException
+	 * @throws IncorrectObjectTypeException
+	 * @throws IOException
+	 */
+	private void indexModelMergedFiles() throws CorruptObjectException,
+			MissingObjectException, IncorrectObjectTypeException, IOException {
+		try (final TreeWalk syncingTreeWalk = new TreeWalk(getRepository())) {
+			syncingTreeWalk.addTree(new DirCacheIterator(dircache));
+			syncingTreeWalk.addTree(new FileTreeIterator(getRepository()));
+			syncingTreeWalk.setRecursive(true);
+			syncingTreeWalk.setFilter(PathFilterGroup
+					.createFromStrings(makeInSync));
+			String lastAdded = null;
+			while (syncingTreeWalk.next()) {
+				String path = syncingTreeWalk.getPathString();
+				if (path.equals(lastAdded))
+					continue;
+
+				WorkingTreeIterator workingTree = syncingTreeWalk.getTree(1,
+						WorkingTreeIterator.class);
+				DirCacheIterator dirCache = syncingTreeWalk.getTree(0,
+						DirCacheIterator.class);
+				if (dirCache == null && workingTree != null
+						&& workingTree.isEntryIgnored()) {
+					// nothing to do on this one
+				} else if (workingTree != null) {
+					if (dirCache == null || dirCache.getDirCacheEntry() == null
+							|| !dirCache.getDirCacheEntry().isAssumeValid()) {
+						final DirCacheEntry dce = new DirCacheEntry(path);
+						final FileMode mode = workingTree
+								.getIndexFileMode(dirCache);
+						dce.setFileMode(mode);
+
+						if (FileMode.GITLINK != mode) {
+							dce.setLength(workingTree.getEntryLength());
+							dce.setLastModified(workingTree
+									.getEntryLastModified());
+							InputStream is = workingTree.openEntryStream();
+							try {
+								dce.setObjectId(getObjectInserter()
+										.insert(Constants.OBJ_BLOB,
+												workingTree
+														.getEntryContentLength(),
+												is));
+							} finally {
+								is.close();
+							}
+						} else {
+							dce.setObjectId(workingTree.getEntryObjectId());
+						}
+						builder.add(dce);
+						lastAdded = path;
+					} else {
+						builder.add(dirCache.getDirCacheEntry());
+					}
+				} else if (dirCache != null
+						&& FileMode.GITLINK == dirCache.getEntryFileMode()) {
+					builder.add(dirCache.getDirCacheEntry());
+				}
+			}
+		}
+	}
+
+	private static String getRepoRelativePath(IResource file) {
+		final RepositoryMapping mapping = RepositoryMapping.getMapping(file);
+		return mapping.getRepoRelativePath(file);
 	}
 
 	/**
@@ -324,41 +305,19 @@ public class RecursiveModelMerger extends RecursiveMerger {
 	 *             its children.
 	 */
 	private void refreshRoots(IResource[] resources) throws CoreException {
-		for (IResource root : resources)
+		for (IResource root : resources) {
 			root.refreshLocal(IResource.DEPTH_INFINITE,
 					new NullProgressMonitor());
-	}
-
-	/**
-	 * Returns an handle to the workspace resource at the given location.
-	 * <p>
-	 * This is a resource handle operation; neither the resource nor the result
-	 * need exist in the workspace.
-	 * </p>
-	 *
-	 * @param pathString
-	 *            Git path for which we seek a workspace resource.
-	 * @return The resource pointed by {@code pathString}.
-	 */
-	private static IResource getResourceForGitPath(String pathString) {
-		final IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace()
-				.getRoot();
-
-		final IPath path = new Path(pathString);
-		final IResource resource;
-		if (path.segmentCount() > 1)
-			resource = workspaceRoot.getFile(path);
-		else
-			resource = workspaceRoot.getProject(pathString);
-		return resource;
+		}
 	}
 
 	private void markConflict(String filePath, DirCacheBuilder cacheBuilder,
-			TreeParserResourceVariant baseVariant, TreeParserResourceVariant oursVariant,
-			TreeParserResourceVariant theirsVariant) {
+			TreeParserResourceVariant baseVariant,
+			TreeParserResourceVariant ourVariant,
+			TreeParserResourceVariant theirVariant) {
 		add(filePath, cacheBuilder, baseVariant, DirCacheEntry.STAGE_1);
-		add(filePath, cacheBuilder, oursVariant, DirCacheEntry.STAGE_2);
-		add(filePath, cacheBuilder, theirsVariant, DirCacheEntry.STAGE_3);
+		add(filePath, cacheBuilder, ourVariant, DirCacheEntry.STAGE_2);
+		add(filePath, cacheBuilder, theirVariant, DirCacheEntry.STAGE_3);
 	}
 
 	private void add(String path, DirCacheBuilder cacheBuilder,
@@ -373,70 +332,162 @@ public class RecursiveModelMerger extends RecursiveMerger {
 		}
 	}
 
-	/**
-	 * Create and initialize the merge context for the given model.
-	 *
-	 * @param subscriber
-	 *            The subscriber.
-	 * @param model
-	 *            The model we are preparing to merge.
-	 * @param mappingContext
-	 *            The context from which remote content could be retrieved.
-	 * @return An initialized merge context for the given model.
-	 * @throws CoreException
-	 *             Thrown if we cannot initialize the scope for this merge
-	 *             context.
-	 * @throws OperationCanceledException
-	 *             Thrown if the user cancelled the initialization.
-	 * @throws InterruptedException
-	 *             Thrown if the initialization is interrupted somehow.
-	 */
-	private IMergeContext prepareMergeContext(Subscriber subscriber,
-			Set<IResource> model, RemoteResourceMappingContext mappingContext)
-			throws CoreException, OperationCanceledException,
-			InterruptedException {
-		final Set<ResourceMapping> allMappings = LogicalModels
-				.getResourceMappings(model, mappingContext);
-		final ResourceMapping[] mappings = allMappings
-				.toArray(new ResourceMapping[allMappings.size()]);
+	private static class ModelMerge {
+		private final RecursiveModelMerger merger;
 
-		final ISynchronizationScopeManager manager = new SubscriberScopeManager(
-				subscriber.getName(), mappings, subscriber, mappingContext,
-				true) {
-			@Override
-			public ISchedulingRule getSchedulingRule() {
-				return RuleUtil.getRule(getRepository());
+		private final GitResourceVariantTreeSubscriber subscriber;
+
+		private final RemoteResourceMappingContext remoteMappingContext;
+
+		private final String path;
+
+		private final Set<IResource> logicalModel;
+
+		private final IResourceMappingMerger modelMerger;
+
+		public ModelMerge(RecursiveModelMerger merger,
+				GitResourceVariantTreeSubscriber subscriber,
+				RemoteResourceMappingContext remoteMappingContext, String path,
+				Set<IResource> logicalModel, IResourceMappingMerger modelMerger) {
+			this.merger = merger;
+			this.subscriber = subscriber;
+			this.remoteMappingContext = remoteMappingContext;
+			this.path = path;
+			this.logicalModel = logicalModel;
+			this.modelMerger = modelMerger;
+		}
+
+		private boolean run() throws CorruptObjectException, IOException {
+			try {
+				final IMergeContext mergeContext = prepareMergeContext();
+				final IStatus status = modelMerger.merge(mergeContext,
+						new NullProgressMonitor());
+				registerHandledFiles(mergeContext, status);
+			} catch (CoreException e) {
+				Activator.logError(e.getMessage(), e);
+				merger.cleanUp();
+				return false;
+			} catch (OperationCanceledException e) {
+				final String message = NLS
+						.bind(CoreText.RecursiveModelMerger_ScopeInitializationInterrupted,
+								path);
+				Activator.logError(message, e);
+				merger.cleanUp();
+				return false;
 			}
-		};
-		manager.initialize(new NullProgressMonitor());
+			return true;
+		}
 
-		final IMergeContext context = new GitMergeContext(subscriber, manager);
-		// Wait for the asynchronous scope expanding to end (started from the
-		// initialization of our merge context)
-		Job.getJobManager().join(context, new NullProgressMonitor());
+		private void registerHandledFiles(final IMergeContext mergeContext,
+				final IStatus status) throws TeamException {
+			for (IResource handledFile : logicalModel) {
+				final String filePath = getRepoRelativePath(handledFile);
+				merger.modifiedFiles.add(filePath);
+				merger.handledPaths.add(filePath);
 
-		return context;
+				// The merge failed. If some parts of the model were
+				// auto-mergeable, the model merger told us so through
+				// GitMergeContext#markAsMerged() (stored within #makeInSync).
+				// All other components of the logical model should be marked as
+				// conflicts.
+				if (status.getSeverity() != IStatus.OK
+						&& !merger.makeInSync.contains(filePath)) {
+					merger.unmergedPaths.add(filePath);
+					merger.mergeResults.put(filePath, new MergeResult<RawText>(
+							Collections.<RawText> emptyList()));
+					final TreeParserResourceVariant baseVariant = (TreeParserResourceVariant) subscriber
+							.getBaseTree().getResourceVariant(handledFile);
+					final TreeParserResourceVariant ourVariant = (TreeParserResourceVariant) subscriber
+							.getSourceTree().getResourceVariant(handledFile);
+					final TreeParserResourceVariant theirVariant = (TreeParserResourceVariant) subscriber
+							.getRemoteTree().getResourceVariant(handledFile);
+					merger.markConflict(filePath, merger.builder, baseVariant,
+							ourVariant, theirVariant);
+				} else if (mergeContext.getDiffTree().getDiff(handledFile) == null) {
+					// If no diff, the model merger does... nothing
+					// Make sure this file will be added to the index.
+					merger.makeInSync.add(filePath);
+				}
+			}
+		}
+
+		/**
+		 * Create and initialize the merge context for the given model.
+		 *
+		 * @return An initialized merge context for the given model.
+		 * @throws CoreException
+		 *             Thrown if we cannot initialize the scope for this merge
+		 *             context.
+		 * @throws OperationCanceledException
+		 *             Thrown if the user cancelled the initialization.
+		 */
+		private IMergeContext prepareMergeContext() throws CoreException,
+				OperationCanceledException {
+			final Set<ResourceMapping> allMappings = LogicalModels
+					.getResourceMappings(logicalModel, remoteMappingContext);
+			final ResourceMapping[] mappings = allMappings
+					.toArray(new ResourceMapping[allMappings.size()]);
+
+			final ISynchronizationScopeManager manager = new SubscriberScopeManager(
+					subscriber.getName(), mappings, subscriber,
+					remoteMappingContext, true) {
+				@Override
+				public ISchedulingRule getSchedulingRule() {
+					return RuleUtil.getRule(merger.getRepository());
+				}
+			};
+			manager.initialize(new NullProgressMonitor());
+
+			final IMergeContext context = new GitMergeContext(merger,
+					subscriber, manager);
+			// Wait for the asynchronous scope expanding to end (started from
+			// the initialization of our merge context)
+			waitForScope(context);
+
+			return context;
+		}
+
+		private void waitForScope(IMergeContext context) {
+			// The UILockListener might prevent us from properly joining.
+			boolean joined = false;
+			while (!joined) {
+				try {
+					Job.getJobManager()
+							.join(context, new NullProgressMonitor());
+					joined = true;
+				} catch (InterruptedException e) {
+					// Some other UI threads were trying to run. Let the
+					// syncExecs do their jobs and re-try to join on ours.
+				}
+			}
+		}
 	}
 
-	private class GitMergeContext extends SubscriberMergeContext {
+	private static class GitMergeContext extends SubscriberMergeContext {
+
+		private final RecursiveModelMerger merger;
+
 		/**
 		 * Create and initialize a merge context for the given subscriber.
 		 *
+		 * @param merger
+		 *            the merger
 		 * @param subscriber
 		 *            the subscriber.
 		 * @param scopeManager
 		 *            the scope manager.
 		 */
-		public GitMergeContext(Subscriber subscriber,
-				ISynchronizationScopeManager scopeManager) {
+		public GitMergeContext(RecursiveModelMerger merger,
+				Subscriber subscriber, ISynchronizationScopeManager scopeManager) {
 			super(subscriber, scopeManager);
+			this.merger = merger;
 			initialize();
 		}
 
 		public void markAsMerged(IDiff node, boolean inSyncHint,
 				IProgressMonitor monitor) throws CoreException {
 			final IResource resource = getDiffTree().getResource(node);
-			makeInSync.add(resource.getFullPath().toString().substring(1));
+			merger.addSyncPath(resource);
 		}
 
 		public void reject(IDiff diff, IProgressMonitor monitor)
@@ -447,7 +498,11 @@ public class RecursiveModelMerger extends RecursiveMerger {
 		protected void makeInSync(IDiff diff, IProgressMonitor monitor)
 				throws CoreException {
 			final IResource resource = getDiffTree().getResource(diff);
-			makeInSync.add(resource.getFullPath().toString().substring(1));
+			merger.addSyncPath(resource);
 		}
+	}
+
+	private void addSyncPath(IResource resource) {
+		makeInSync.add(getRepoRelativePath(resource));
 	}
 }

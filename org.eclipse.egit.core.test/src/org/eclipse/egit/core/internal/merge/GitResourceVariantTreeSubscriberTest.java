@@ -20,7 +20,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.NameConflictTreeWalk;
@@ -35,9 +34,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class GitResourceVariantTreeSubscriberTest extends VariantsTestCase {
-	private final String BRANCH_CHANGES = "branch changes\n";
+	private static final String BRANCH_CHANGES = "branch changes\n";
 
-	private final String MASTER_CHANGES = "\nsome changes";
+	private static final String MASTER_CHANGES = "\nsome changes";
+
+	private static final String BASE = "base";
+
+	private File file1;
+
+	private File file2;
+
 	private IFile iFile1;
 
 	private IFile iFile2;
@@ -46,8 +52,8 @@ public class GitResourceVariantTreeSubscriberTest extends VariantsTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 
-		File file1 = testRepo.createFile(iProject, "file1");
-		File file2 = testRepo.createFile(iProject, "file2");
+		file1 = testRepo.createFile(iProject, "file1");
+		file2 = testRepo.createFile(iProject, "file2");
 
 		iFile1 = testRepo.getIFile(iProject, file1);
 		iFile2 = testRepo.getIFile(iProject, file2);
@@ -121,9 +127,9 @@ public class GitResourceVariantTreeSubscriberTest extends VariantsTestCase {
 		assertNull(remoteDiff1);
 		assertTrue(localDiff1 instanceof ResourceDiff);
 		final IFileRevision localState1 = ((ResourceDiff) localDiff1)
-				.getBeforeState();
-		final IFileRevision baseState1 = ((ResourceDiff) localDiff1)
 				.getAfterState();
+		final IFileRevision baseState1 = ((ResourceDiff) localDiff1)
+				.getBeforeState();
 		assertNotNull(localState1);
 		assertNotNull(baseState1);
 		assertTrue(iFile1.getName().equals(localState1.getName()));
@@ -144,31 +150,192 @@ public class GitResourceVariantTreeSubscriberTest extends VariantsTestCase {
 		final IDiff remoteDiff2 = ((IThreeWayDiff) diff2).getRemoteChange();
 		assertTrue(remoteDiff2 instanceof ResourceDiff);
 		assertNull(localDiff2);
-		final IFileRevision localState2 = ((ResourceDiff) remoteDiff2)
-				.getBeforeState();
 		final IFileRevision remoteState2 = ((ResourceDiff) remoteDiff2)
 				.getAfterState();
-		assertTrue(iFile2.getName().equals(localState2.getName()));
+		final IFileRevision ancestorState2 = ((ResourceDiff) remoteDiff2)
+				.getBeforeState();
+		assertTrue(iFile2.getName().equals(ancestorState2.getName()));
 		assertTrue(iFile2.getName().equals(remoteState2.getName()));
-		assertNotNull(localState2);
-		assertNotNull(remoteState2);
-		final IStorage localStorage2 = localState2
+		final IStorage ancestorStorage2 = ancestorState2
 				.getStorage(new NullProgressMonitor());
 		final IStorage remoteStorage2 = remoteState2
 				.getStorage(new NullProgressMonitor());
-		assertContentEquals(localStorage2, INITIAL_CONTENT_2);
+		assertContentEquals(ancestorStorage2, INITIAL_CONTENT_2);
 		assertContentEquals(remoteStorage2, BRANCH_CHANGES + INITIAL_CONTENT_2);
+	}
+
+	@Test
+	public void testAddLocalAndRemote() throws Exception {
+		GitResourceVariantTreeProvider provider = createTreeProviderWithAdditions();
+		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
+				provider);
+
+		// file1 has been added locally
+		final IDiff diff1 = subscriber.getDiff(iFile1);
+		assertTrue(diff1 instanceof IThreeWayDiff);
+		assertEquals(IDiff.ADD, diff1.getKind());
+		assertEquals(IThreeWayDiff.OUTGOING,
+				((IThreeWayDiff) diff1).getDirection());
+		final IDiff localDiff1 = ((IThreeWayDiff) diff1).getLocalChange();
+		final IDiff remoteDiff1 = ((IThreeWayDiff) diff1).getRemoteChange();
+		assertTrue(localDiff1 instanceof ResourceDiff);
+		assertNull(remoteDiff1);
+		final IFileRevision ancestorState1 = ((ResourceDiff) localDiff1)
+				.getBeforeState();
+		final IFileRevision localState1 = ((ResourceDiff) localDiff1)
+				.getAfterState();
+		assertTrue(iFile1.getName().equals(localState1.getName()));
+		assertNull(ancestorState1);
+		final IStorage localStorage1 = localState1
+				.getStorage(new NullProgressMonitor());
+		assertContentEquals(localStorage1, INITIAL_CONTENT_1);
+
+		// file2 has been added remotely
+		final IDiff diff2 = subscriber.getDiff(iFile2);
+		assertTrue(diff2 instanceof IThreeWayDiff);
+		assertEquals(IDiff.ADD, diff2.getKind());
+		assertEquals(IThreeWayDiff.INCOMING,
+				((IThreeWayDiff) diff2).getDirection());
+		final IDiff localDiff2 = ((IThreeWayDiff) diff2).getLocalChange();
+		final IDiff remoteDiff2 = ((IThreeWayDiff) diff2).getRemoteChange();
+		assertTrue(remoteDiff2 instanceof ResourceDiff);
+		assertNull(localDiff2);
+		final IFileRevision ancestorState2 = ((ResourceDiff) remoteDiff2)
+				.getBeforeState();
+		final IFileRevision remoteState2 = ((ResourceDiff) remoteDiff2)
+				.getAfterState();
+		assertNull(ancestorState2);
+		assertTrue(iFile2.getName().equals(remoteState2.getName()));
+		final IStorage remoteStorage2 = remoteState2
+				.getStorage(new NullProgressMonitor());
+		assertContentEquals(remoteStorage2, INITIAL_CONTENT_2);
+	}
+
+	@Test
+	public void testRemoveLocalAndRemote() throws Exception {
+		GitResourceVariantTreeProvider provider = createTreeProviderWithDeletions();
+		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
+				provider);
+
+		// file1 has been removed locally
+		final IDiff diff1 = subscriber.getDiff(iFile1);
+		assertTrue(diff1 instanceof IThreeWayDiff);
+		assertEquals(IDiff.REMOVE, diff1.getKind());
+		assertEquals(IThreeWayDiff.OUTGOING,
+				((IThreeWayDiff) diff1).getDirection());
+		final IDiff localDiff1 = ((IThreeWayDiff) diff1).getLocalChange();
+		final IDiff remoteDiff1 = ((IThreeWayDiff) diff1).getRemoteChange();
+		assertTrue(localDiff1 instanceof ResourceDiff);
+		assertNull(remoteDiff1);
+		final IFileRevision ancestorState1 = ((ResourceDiff) localDiff1)
+				.getBeforeState();
+		final IFileRevision localState1 = ((ResourceDiff) localDiff1)
+				.getAfterState();
+		assertTrue(iFile1.getName().equals(ancestorState1.getName()));
+		assertNull(localState1);
+		final IStorage ancestorStorage1 = ancestorState1
+				.getStorage(new NullProgressMonitor());
+		assertContentEquals(ancestorStorage1, INITIAL_CONTENT_1);
+
+		// file2 has been removed remotely
+		final IDiff diff2 = subscriber.getDiff(iFile2);
+		assertTrue(diff2 instanceof IThreeWayDiff);
+		assertEquals(IDiff.REMOVE, diff2.getKind());
+		assertEquals(IThreeWayDiff.INCOMING,
+				((IThreeWayDiff) diff2).getDirection());
+		final IDiff localDiff2 = ((IThreeWayDiff) diff2).getLocalChange();
+		final IDiff remoteDiff2 = ((IThreeWayDiff) diff2).getRemoteChange();
+		assertTrue(remoteDiff2 instanceof ResourceDiff);
+		assertNull(localDiff2);
+		final IFileRevision ancestorState2 = ((ResourceDiff) remoteDiff2)
+				.getBeforeState();
+		final IFileRevision remoteState2 = ((ResourceDiff) remoteDiff2)
+				.getAfterState();
+		assertTrue(iFile2.getName().equals(ancestorState2.getName()));
+		assertNull(remoteState2);
+		final IStorage rancestorStorage2 = ancestorState2
+				.getStorage(new NullProgressMonitor());
+		assertContentEquals(rancestorStorage2, INITIAL_CONTENT_2);
+	}
+
+	@Test
+	public void testChangeLocalAndDeleteRemote() throws Exception {
+		GitResourceVariantTreeProvider provider = createTreeProviderWithChangeDeleteConflicts();
+		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
+				provider);
+
+		// file1 has been changed locally and deleted remotely
+		final IDiff diff1 = subscriber.getDiff(iFile1);
+		assertTrue(diff1 instanceof IThreeWayDiff);
+		assertEquals(IDiff.CHANGE, diff1.getKind());
+		assertEquals(IThreeWayDiff.CONFLICTING,
+				((IThreeWayDiff) diff1).getDirection());
+		final IDiff localDiff1 = ((IThreeWayDiff) diff1).getLocalChange();
+		final IDiff remoteDiff1 = ((IThreeWayDiff) diff1).getRemoteChange();
+		assertTrue(localDiff1 instanceof ResourceDiff);
+		assertTrue(remoteDiff1 instanceof ResourceDiff);
+
+		IFileRevision ancestorState1 = ((ResourceDiff) localDiff1)
+				.getBeforeState();
+		final IFileRevision localState1 = ((ResourceDiff) localDiff1)
+				.getAfterState();
+		assertTrue(iFile1.getName().equals(ancestorState1.getName()));
+		assertTrue(iFile1.getName().equals(localState1.getName()));
+		IStorage ancestorStorage1 = ancestorState1
+				.getStorage(new NullProgressMonitor());
+		assertContentEquals(ancestorStorage1, INITIAL_CONTENT_1);
+		IStorage localStorage1 = localState1
+				.getStorage(new NullProgressMonitor());
+		assertContentEquals(localStorage1, INITIAL_CONTENT_1 + MASTER_CHANGES);
+
+		ancestorState1 = ((ResourceDiff) remoteDiff1).getBeforeState();
+		final IFileRevision remoteState1 = ((ResourceDiff) remoteDiff1)
+				.getAfterState();
+		assertTrue(iFile1.getName().equals(ancestorState1.getName()));
+		assertNull(remoteState1);
+		ancestorStorage1 = ancestorState1.getStorage(new NullProgressMonitor());
+		assertContentEquals(ancestorStorage1, INITIAL_CONTENT_1);
+
+		// file2 has been deleted locally and changed remotely
+		final IDiff diff2 = subscriber.getDiff(iFile2);
+		assertTrue(diff2 instanceof IThreeWayDiff);
+		assertEquals(IDiff.CHANGE, diff2.getKind());
+		assertEquals(IThreeWayDiff.CONFLICTING,
+				((IThreeWayDiff) diff2).getDirection());
+		final IDiff localDiff2 = ((IThreeWayDiff) diff2).getLocalChange();
+		final IDiff remoteDiff2 = ((IThreeWayDiff) diff2).getRemoteChange();
+		assertTrue(localDiff2 instanceof ResourceDiff);
+		assertTrue(remoteDiff2 instanceof ResourceDiff);
+
+		IFileRevision ancestorState2 = ((ResourceDiff) localDiff2)
+				.getBeforeState();
+		final IFileRevision localState2 = ((ResourceDiff) localDiff2)
+				.getAfterState();
+		assertTrue(iFile2.getName().equals(ancestorState2.getName()));
+		assertNull(localState2);
+		IStorage ancestorStorage2 = ancestorState2
+				.getStorage(new NullProgressMonitor());
+		assertContentEquals(ancestorStorage2, INITIAL_CONTENT_2);
+
+		ancestorState2 = ((ResourceDiff) remoteDiff2).getBeforeState();
+		final IFileRevision remoteState2 = ((ResourceDiff) remoteDiff2)
+				.getAfterState();
+		assertTrue(iFile2.getName().equals(ancestorState2.getName()));
+		assertTrue(iFile2.getName().equals(remoteState2.getName()));
+		ancestorStorage2 = ancestorState2.getStorage(new NullProgressMonitor());
+		assertContentEquals(ancestorStorage2, INITIAL_CONTENT_2);
+		IStorage remoteStorage2 = remoteState2
+				.getStorage(new NullProgressMonitor());
+		assertContentEquals(remoteStorage2, INITIAL_CONTENT_2 + BRANCH_CHANGES);
 	}
 
 	private GitResourceVariantTreeProvider createTreeProvider()
 			throws Exception {
-		File file1 = testRepo.createFile(iProject, "file1");
-		File file2 = testRepo.createFile(iProject, "file2");
-
 		testRepo.appendContentAndCommit(iProject, file1, INITIAL_CONTENT_1,
 				"first file - initial commit");
-		RevCommit baseCommit = testRepo.appendContentAndCommit(iProject, file2,
+		testRepo.appendContentAndCommit(iProject, file2,
 				INITIAL_CONTENT_2, "second file - initial commit");
+		testRepo.createBranch(MASTER, BASE);
 
 		testRepo.createAndCheckoutBranch(MASTER, BRANCH);
 
@@ -177,23 +344,125 @@ public class GitResourceVariantTreeSubscriberTest extends VariantsTestCase {
 
 		testRepo.checkoutBranch(MASTER);
 
-
 		setContentsAndCommit(testRepo, iFile1, INITIAL_CONTENT_1
 				+ MASTER_CHANGES, "master commit");
 		iProject.refreshLocal(IResource.DEPTH_INFINITE,
 				new NullProgressMonitor());
-		// end setup
 
 		// as if we tried to merge branch into master
-		RevWalk walk = new RevWalk(repo);
-		RevTree baseTree = walk.parseTree(baseCommit.getId());
-		RevTree sourceTree = walk.parseTree(repo.resolve(MASTER));
-		RevTree remoteTree = walk.parseTree(repo.resolve(BRANCH));
-		TreeWalk tw = new NameConflictTreeWalk(repo);
-		tw.addTree(baseTree);
-		tw.addTree(sourceTree);
-		tw.addTree(remoteTree);
-		return new TreeWalkResourceVariantTreeProvider(
-				repo, tw, 0, 1, 2);
+		try (RevWalk walk = new RevWalk(repo)) {
+			RevTree baseTree = walk.parseTree(repo.resolve(BASE));
+			RevTree sourceTree = walk.parseTree(repo.resolve(MASTER));
+			RevTree remoteTree = walk.parseTree(repo.resolve(BRANCH));
+			TreeWalk treeWalk = new NameConflictTreeWalk(repo);
+			treeWalk.addTree(baseTree);
+			treeWalk.addTree(sourceTree);
+			treeWalk.addTree(remoteTree);
+			return new TreeWalkResourceVariantTreeProvider(repo, treeWalk, 0,
+					1, 2);
+		}
+	}
+
+	private GitResourceVariantTreeProvider createTreeProviderWithAdditions()
+			throws Exception {
+		testRepo.createBranch(MASTER, BASE);
+		testRepo.createAndCheckoutBranch(MASTER, BRANCH);
+		file2 = testRepo.createFile(iProject, "file2");
+		testRepo.appendContentAndCommit(iProject, file2, INITIAL_CONTENT_2,
+				"Creation of file2 in branch2.");
+
+		testRepo.checkoutBranch(MASTER);
+		file1 = testRepo.createFile(iProject, "file1");
+		testRepo.appendContentAndCommit(iProject, file1, INITIAL_CONTENT_1,
+				"Creation of file1 in branch1.");
+
+		iProject.refreshLocal(IResource.DEPTH_INFINITE,
+				new NullProgressMonitor());
+
+		// as if we tried to merge branch3 into branch2
+		try (RevWalk walk = new RevWalk(repo)) {
+			RevTree baseTree = walk.parseTree(repo.resolve(BASE));
+			RevTree sourceTree = walk.parseTree(repo.resolve(MASTER));
+			RevTree remoteTree = walk.parseTree(repo.resolve(BRANCH));
+			TreeWalk treeWalk = new NameConflictTreeWalk(repo);
+			treeWalk.addTree(baseTree);
+			treeWalk.addTree(sourceTree);
+			treeWalk.addTree(remoteTree);
+			return new TreeWalkResourceVariantTreeProvider(repo, treeWalk, 0,
+					1, 2);
+		}
+	}
+
+	private GitResourceVariantTreeProvider createTreeProviderWithChangeDeleteConflicts()
+			throws Exception {
+		file1 = testRepo.createFile(iProject, "file1");
+		testRepo.appendContentAndCommit(iProject, file1, INITIAL_CONTENT_1,
+				"Creation of file1 in master.");
+		file2 = testRepo.createFile(iProject, "file2");
+		testRepo.appendContentAndCommit(iProject, file2, INITIAL_CONTENT_2,
+				"Creation of file2 in master.");
+		testRepo.createBranch(MASTER, BASE);
+
+		testRepo.createAndCheckoutBranch(MASTER, BRANCH);
+		testRepo.untrack(file1);
+		testRepo.appendContentAndCommit(iProject, file2, BRANCH_CHANGES,
+				"Modified file2 in branch.");
+		testRepo.commit("Removed file1 in branch.");
+
+		testRepo.checkoutBranch(MASTER);
+		testRepo.untrack(file2);
+		testRepo.appendContentAndCommit(iProject, file1, MASTER_CHANGES,
+				"Modified file1 in master.");
+
+		iProject.refreshLocal(IResource.DEPTH_INFINITE,
+				new NullProgressMonitor());
+
+		// as if we tried to merge branch3 into branch2
+		try (RevWalk walk = new RevWalk(repo)) {
+			RevTree baseTree = walk.parseTree(repo.resolve(BASE));
+			RevTree sourceTree = walk.parseTree(repo.resolve(MASTER));
+			RevTree remoteTree = walk.parseTree(repo.resolve(BRANCH));
+			TreeWalk treeWalk = new TreeWalk(repo);
+			treeWalk.addTree(baseTree);
+			treeWalk.addTree(sourceTree);
+			treeWalk.addTree(remoteTree);
+			return new TreeWalkResourceVariantTreeProvider(repo, treeWalk, 0,
+					1, 2);
+		}
+	}
+
+	private GitResourceVariantTreeProvider createTreeProviderWithDeletions()
+			throws Exception {
+		file1 = testRepo.createFile(iProject, "file1");
+		testRepo.appendContentAndCommit(iProject, file1, INITIAL_CONTENT_1,
+				"Creation of file1 in branch1.");
+		file2 = testRepo.createFile(iProject, "file2");
+		testRepo.appendContentAndCommit(iProject, file2, INITIAL_CONTENT_2,
+				"Creation of file2 in branch2.");
+		testRepo.createBranch(MASTER, BASE);
+
+		testRepo.createAndCheckoutBranch(MASTER, BRANCH);
+		testRepo.untrack(file2);
+		testRepo.commit("Removed file2 in branch.");
+
+		testRepo.checkoutBranch(MASTER);
+		testRepo.untrack(file1);
+		testRepo.commit("Removed file1 in master.");
+
+		iProject.refreshLocal(IResource.DEPTH_INFINITE,
+				new NullProgressMonitor());
+
+		// as if we tried to merge branch3 into branch2
+		try (RevWalk walk = new RevWalk(repo)) {
+			RevTree baseTree = walk.parseTree(repo.resolve(BASE));
+			RevTree sourceTree = walk.parseTree(repo.resolve(MASTER));
+			RevTree remoteTree = walk.parseTree(repo.resolve(BRANCH));
+			TreeWalk treeWalk = new NameConflictTreeWalk(repo);
+			treeWalk.addTree(baseTree);
+			treeWalk.addTree(sourceTree);
+			treeWalk.addTree(remoteTree);
+			return new TreeWalkResourceVariantTreeProvider(repo, treeWalk, 0,
+					1, 2);
+		}
 	}
 }
