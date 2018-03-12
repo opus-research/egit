@@ -281,6 +281,13 @@
             </adapter>
          </factory>
          <factory
+               adaptableType="org.eclipse.egit.ui.internal.commit.RepositoryCommit"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter
+                  type="org.eclipse.team.ui.history.IHistoryPageSource">
+            </adapter>
+         </factory>
+         <factory
                adaptableType="org.eclipse.egit.ui.internal.history.HistoryPageInput"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
@@ -435,9 +442,18 @@
       </page>
       <page
             category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.ViewsPreferencePage"
-            id="org.eclipse.egit.ui.internal.preferences.ViewsPreferencePage"
-            name="%ViewsPreferencePage.name">
+            class="org.eclipse.egit.ui.internal.preferences.SynchronizePreferencePage"
+            id="org.eclipse.egit.ui.internal.preferences.SynchronizePreferencePage"
+            name="%SynchronizePreferencePage.name">
+         <keywordReference
+               id="org.eclipse.egit.ui.keyword.git">
+         </keywordReference>
+      </page>
+      <page
+            category="org.eclipse.egit.ui.GitPreferences"
+            class="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"
+            id="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"
+            name="%HistoryPreferencePage.name">
          <keywordReference
                id="org.eclipse.egit.ui.keyword.git">
          </keywordReference>
@@ -487,7 +503,7 @@
             location="BOTTOM_RIGHT"
             id="org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator">
             <enablement>
-              <objectClass name="org.eclipse.core.resources.IResource"/>
+              <objectClass name="org.eclipse.core.resources.mapping.ResourceMapping"/>
             </enablement>
          <description>
             %Decorator_description
@@ -1463,26 +1479,6 @@
          </activeWhen>
       </handler>
       <handler
-            commandId="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.ConfigureGerritRemoteCommand">
-         </class>
-         <activeWhen>
-             <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-         </activeWhen>
-      </handler>
-      <handler
             commandId="org.eclipse.ui.edit.rename">
          <class
                class="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand">
@@ -2167,26 +2163,6 @@
                         operator="and">
                      <instanceof
                            value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote"
-               label="%RepoViewConfigureGerritRemote.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
                      </instanceof>
                   </iterate>
                </and>
@@ -3404,11 +3380,6 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
             name="%DeleteRemoteCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            id="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote"
-            name="%ConfigureGerritRemoteCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
