@@ -201,7 +201,7 @@ public class PushOperation {
 								.getCause().getMessage() : e.getMessage();
 						String userMessage = NLS
 								.bind(
-										CoreText.PushOperation_InternalExceptionOccurredMessage,
+										CoreText.PushOperation_InternalExceptionOccuredMessage,
 										errorMessage);
 						operationResult.addOperationResult(uri, userMessage);
 					} catch (InvalidRemoteException e) {
@@ -231,7 +231,7 @@ public class PushOperation {
 				String errorMessage = e.getCause() != null ? e.getCause()
 						.getMessage() : e.getMessage();
 				String userMessage = NLS.bind(
-						CoreText.PushOperation_InternalExceptionOccurredMessage,
+						CoreText.PushOperation_InternalExceptionOccuredMessage,
 						errorMessage);
 				URIish uri = rc.getPushURIs().isEmpty() ? rc.getURIs().get(0)
 						: rc.getPushURIs().get(0);

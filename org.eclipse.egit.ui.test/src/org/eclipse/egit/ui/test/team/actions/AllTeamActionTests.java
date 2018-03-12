@@ -21,8 +21,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		PushActionTest.class, //
 		FetchAndMergeActionTest.class, //
 		DisconnectConnectTest.class, //
-		ShowInTest.class, //
-		CompareActionsTest.class
+		ShowInTest.class //
 })
 public class AllTeamActionTests {
 	// nothing

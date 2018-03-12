@@ -144,47 +144,18 @@ public class GitModelRepository extends GitModelObject {
 	}
 
 	private void getChildrenImpl() {
-		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
-		if (srcRev != null && dstRev != null)
-			result.addAll(getListOfCommit());
-		else {
-			GitModelWorkingTree changes = getLocaWorkingTreeChanges();
-			if (changes != null)
-				result.add(changes);
-		}
-
-
-		childrens = result.toArray(new GitModelObjectContainer[result.size()]);
-	}
-
-	private List<GitModelObjectContainer> getListOfCommit() {
-		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
-
 		RevWalk rw = new RevWalk(repo);
+		RevFlag localFlag = rw.newFlag("local"); //$NON-NLS-1$
+		RevFlag remoteFlag = rw.newFlag("remote"); //$NON-NLS-1$
+		RevFlagSet allFlags = new RevFlagSet();
+		allFlags.add(localFlag);
+		allFlags.add(remoteFlag);
+		rw.carry(allFlags);
+		List<GitModelObjectContainer> result = new ArrayList<GitModelObjectContainer>();
+
 		rw.setRetainBody(true);
 		try {
 			RevCommit srcCommit = rw.parseCommit(srcRev);
-
-			if (includeLocal) {
-				GitModelCache gitModelCache = new GitModelCache(this, srcCommit);
-				if (gitModelCache.getChildren().length > 0)
-					result.add(gitModelCache);
-
-				GitModelWorkingTree gitModelWorkingTree = getLocaWorkingTreeChanges();
-				if (gitModelWorkingTree != null)
-					result.add(gitModelWorkingTree);
-			}
-
-			if (srcRev.equals(dstRev))
-				return result;
-
-			RevFlag localFlag = rw.newFlag("local"); //$NON-NLS-1$
-			RevFlag remoteFlag = rw.newFlag("remote"); //$NON-NLS-1$
-			RevFlagSet allFlags = new RevFlagSet();
-			allFlags.add(localFlag);
-			allFlags.add(remoteFlag);
-			rw.carry(allFlags);
-
 			srcCommit.add(localFlag);
 			rw.markStart(srcCommit);
 
@@ -201,24 +172,23 @@ public class GitModelRepository extends GitModelObject {
 				else if (nextCommit.has(remoteFlag))
 					result.add(new GitModelCommit(this, nextCommit, LEFT));
 			}
+
+			if (includeLocal) {
+				GitModelCache gitModelCache = new GitModelCache(this, srcCommit);
+				if (gitModelCache.getChildren().length > 0)
+					result.add(gitModelCache);
+
+				GitModelWorkingTree gitModelWorkingTree = new GitModelWorkingTree(
+						this, srcCommit);
+				if (gitModelWorkingTree.getChildren().length > 0)
+					result.add(gitModelWorkingTree);
+			}
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}
 
-		return result;
-	}
 
-	private GitModelWorkingTree getLocaWorkingTreeChanges() {
-		try {
-			GitModelWorkingTree gitModelWorkingTree = new GitModelWorkingTree(this);
-
-			if (gitModelWorkingTree.getChildren().length > 0)
-				return gitModelWorkingTree;
-		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
-		}
-
-		return null;
+		childrens = result.toArray(new GitModelObjectContainer[result.size()]);
 	}
 
 }

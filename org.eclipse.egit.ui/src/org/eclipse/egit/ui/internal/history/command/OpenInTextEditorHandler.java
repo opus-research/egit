@@ -35,7 +35,7 @@ import org.eclipse.team.core.history.IFileRevision;
 /**
  * Open a file or files in a text editor
  */
-public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
+public class OpenInTextEditorHandler extends AbstractHistoryCommanndHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IStructuredSelection selection = getSelection(getPage());
 		if (selection.size() < 1)
@@ -43,7 +43,7 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 		Object input = getPage().getInputInternal().getSingleFile();
 		if (input == null)
 			return null;
-		boolean errorOccurred = false;
+		boolean errorOccured = false;
 		List<ObjectId> ids = new ArrayList<ObjectId>();
 		String gitPath = null;
 		if (input instanceof IFile) {
@@ -62,7 +62,7 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 					Activator.logError(NLS.bind(
 							UIText.GitHistoryPage_errorLookingUpPath, gitPath,
 							commit.getId()), e);
-					errorOccurred = true;
+					errorOccured = true;
 				}
 				if (rev != null) {
 					try {
@@ -70,7 +70,7 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 								.getSite().getPage(), rev, null);
 					} catch (CoreException e) {
 						Activator.logError(e.getMessage(), e);
-						errorOccurred = true;
+						errorOccured = true;
 					}
 				} else {
 					ids.add(commit.getId());
@@ -92,7 +92,7 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 					Activator.logError(NLS.bind(
 							UIText.GitHistoryPage_errorLookingUpPath, gitPath,
 							commit.getId()), e);
-					errorOccurred = true;
+					errorOccured = true;
 				}
 				if (rev != null) {
 					try {
@@ -100,14 +100,14 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 								.getSite().getPage(), rev, null);
 					} catch (CoreException e) {
 						Activator.logError(e.getMessage(), e);
-						errorOccurred = true;
+						errorOccured = true;
 					}
 				} else {
 					ids.add(commit.getId());
 				}
 			}
 		}
-		if (errorOccurred)
+		if (errorOccured)
 			Activator.showError(UIText.GitHistoryPage_openFailed, null);
 		if (ids.size() > 0) {
 			StringBuilder idList = new StringBuilder(""); //$NON-NLS-1$

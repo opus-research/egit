@@ -96,16 +96,12 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Text branchText;
 
-	private String refName;
-
 	/**
 	 * @param repository
-	 * @param refName initial value for the ref field
 	 */
-	public FetchGerritChangePage(Repository repository, String refName) {
+	public FetchGerritChangePage(Repository repository) {
 		super(FetchGerritChangePage.class.getName());
 		this.repository = repository;
-		this.refName = refName;
 		setTitle(NLS
 				.bind(UIText.FetchGerritChangePage_PageTitle,
 						Activator.getDefault().getRepositoryUtil()
@@ -152,8 +148,6 @@ public class FetchGerritChangePage extends WizardPage {
 		});
 
 		branchTextlabel = new Label(checkoutGroup, SWT.NONE);
-		GridDataFactory.defaultsFor(branchTextlabel).exclude(false)
-				.applyTo(branchTextlabel);
 		branchTextlabel.setText(UIText.FetchGerritChangePage_BranchNameText);
 		branchText = new Text(checkoutGroup, SWT.SINGLE | SWT.BORDER);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(branchText);
@@ -244,16 +238,9 @@ public class FetchGerritChangePage extends WizardPage {
 		for (String aUri : uris)
 			uriCombo.add(aUri);
 		uriCombo.select(0);
-		refText.setFocus();
+
 		Dialog.applyDialogFont(main);
 		setControl(main);
-	}
-
-	@Override
-	public void setVisible(boolean visible) {
-		super.setVisible(visible);
-		if (visible && refName != null)
-			refText.setText(refName);
 	}
 
 	private void checkPage() {
@@ -579,14 +566,6 @@ public class FetchGerritChangePage extends WizardPage {
 		public Integer getPatchSetNumber() {
 			return patchSetNumber;
 		}
-
-		/* (non-Javadoc)
-		 * @see java.lang.Object#toString()
-		 */
-		@Override
-		public String toString() {
-			return refName;
-		}
 	}
 
 	private final static class ChangeContentProposal implements
@@ -614,14 +593,6 @@ public class FetchGerritChangePage extends WizardPage {
 		public String getLabel() {
 			return NLS
 					.bind("{0} - {1}", myChange.getChangeNumber(), myChange.getPatchSetNumber()); //$NON-NLS-1$
-		}
-
-		/* (non-Javadoc)
-		 * @see java.lang.Object#toString()
-		 */
-		@Override
-		public String toString() {
-			return getContent();
 		}
 	}
 }

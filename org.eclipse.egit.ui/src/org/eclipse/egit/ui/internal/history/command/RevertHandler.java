@@ -25,7 +25,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 /**
  * Executes the RevertCommit
  */
-public class RevertHandler extends AbstractHistoryCommandHandler {
+public class RevertHandler extends AbstractHistoryCommanndHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		BasicConfigurationDialog.show();
 		RevCommit commit = (RevCommit) getSelection(getPage()).getFirstElement();
