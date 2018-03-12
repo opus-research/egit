@@ -32,12 +32,10 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.DefaultScope;
@@ -225,14 +223,6 @@ public class CompareUtils {
 		}
 		return ancestor;
 	}
-/**
-	 * @param element
-	 * @param adapterType
-	 * @return the adapted element, or null
-	 */
-	public static Object getAdapter(Object element, Class adapterType) {
-		return getAdapter(element, adapterType, false);
-	}
 
 	/**
 	 * @param ci
@@ -243,35 +233,6 @@ public class CompareUtils {
 			return ci.substring(0, 7);
 		else
 			return ci;
-	}
-
-	/**
-	 * @param element
-	 * @param adapterType
-	 * @param load
-	 * @return the adapted element, or null
-	 */
-	private static Object getAdapter(Object element, Class adapterType,
-			boolean load) {
-		if (adapterType.isInstance(element))
-			return element;
-		if (element instanceof IAdaptable) {
-			Object adapted = CommonUtils.getAdapter(((IAdaptable) element), adapterType);
-			if (adapterType.isInstance(adapted))
-				return adapted;
-		}
-		if (load) {
-			Object adapted = Platform.getAdapterManager().loadAdapter(element,
-					adapterType.getName());
-			if (adapterType.isInstance(adapted))
-				return adapted;
-		} else {
-			Object adapted = Platform.getAdapterManager().getAdapter(element,
-					adapterType);
-			if (adapterType.isInstance(adapted))
-				return adapted;
-		}
-		return null;
 	}
 
 	/**
@@ -416,7 +377,13 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkspace(Repository repository,
 			IFile file) {
-		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
+		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
+		if (mapping == null) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					file.getLocation(), repository), null);
+			return;
+		}
+		String path = mapping.getRepoRelativePath(
 				file);
 		ITypedElement base = getHeadTypedElement(repository, path);
 		if (base == null)
@@ -464,6 +431,11 @@ public class CompareUtils {
 				}
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
+				if (mapping == null) {
+					return Activator.createErrorStatus(
+							NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+									file.getLocation(), repository));
+				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 				final ITypedElement base = SaveableCompareEditorInput
 						.createFileElement(file);
@@ -548,7 +520,7 @@ public class CompareUtils {
 				}
 				final String gitPath = getRepoRelativePath(location, repository);
 				final ITypedElement base = new LocalNonWorkspaceTypedElement(
-						location);
+						repository, location);
 
 				CompareEditorInput in;
 				try {
@@ -656,6 +628,11 @@ public class CompareUtils {
 				final IFile file = (IFile) resources[0];
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
+				if (mapping == null) {
+					Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+							file.getLocation(), repository), null);
+					return;
+				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 
 				compareBetween(repository, gitPath, leftRev, rightRev, page);
@@ -953,6 +930,11 @@ public class CompareUtils {
 	public static ITypedElement getIndexTypedElement(final IFile baseFile)
 			throws IOException {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
+		if (mapping == null) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					baseFile.getLocation(), null), null);
+			return null;
+		}
 		final Repository repository = mapping.getRepository();
 		final String gitPath = mapping.getRepoRelativePath(baseFile);
 		final String encoding = CompareCoreUtils.getResourceEncoding(baseFile);

@@ -110,9 +110,14 @@ public class ContextMenuHelper {
 
 	private static void clickContextMenuInternal(final AbstractSWTBot<?> bot,
 			final boolean sync, final String... texts) {
+		// set focus on current widget and let the UI process events
+		bot.setFocus();
+		TestUtil.processUIEvents();
+
 		// show
 		final MenuItem menuItem = UIThreadRunnable
 				.syncExec(new WidgetResult<MenuItem>() {
+					@Override
 					public MenuItem run() {
 						MenuItem theItem = getMenuItem(bot, texts);
 						if (theItem != null && !theItem.isEnabled())
@@ -131,6 +136,7 @@ public class ContextMenuHelper {
 
 		// hide
 		UIThreadRunnable.syncExec(new VoidResult() {
+			@Override
 			public void run() {
 				if (menuItem.isDisposed())
 					return; // menu already gone
@@ -143,6 +149,7 @@ public class ContextMenuHelper {
 			final String... texts) {
 		final MenuItem menuItem = UIThreadRunnable
 				.syncExec(new WidgetResult<MenuItem>() {
+					@Override
 					public MenuItem run() {
 						return getMenuItem(bot, texts);
 					}
@@ -199,6 +206,7 @@ public class ContextMenuHelper {
 		// show
 		final MenuItem menuItem = UIThreadRunnable
 				.syncExec(new WidgetResult<MenuItem>() {
+					@Override
 					public MenuItem run() {
 						MenuItem theItem = getMenuItem(bot, texts);
 						if (theItem != null && theItem.isEnabled())
@@ -211,6 +219,7 @@ public class ContextMenuHelper {
 					+ Arrays.asList(texts));
 		// hide
 		UIThreadRunnable.syncExec(new VoidResult() {
+			@Override
 			public void run() {
 				if (menuItem.isDisposed())
 					return; // menu already gone
@@ -240,6 +249,7 @@ public class ContextMenuHelper {
 		event.type = SWT.Selection;
 
 		VoidResult toExecute = new VoidResult() {
+			@Override
 			public void run() {
 				menuItem.notifyListeners(SWT.Selection, event);
 			}

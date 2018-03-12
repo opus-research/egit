@@ -16,10 +16,10 @@ import java.io.IOException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
@@ -86,25 +86,28 @@ public class GitProjectPropertyPage extends PropertyPage {
 		if (element instanceof IResource) {
 			project = ((IResource) element).getProject();
 		} else {
-			Object adapter = CommonUtils.getAdapter(element, IResource.class);
-			if (adapter instanceof IResource) {
-				project = ((IResource) adapter).getProject();
+			IResource adapter = AdapterUtils.adapt(element, IResource.class);
+			if (adapter != null) {
+				project = adapter.getProject();
 			}
 		}
 
-		Repository repository = RepositoryMapping.getMapping(project)
-				.getRepository();
+		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+		if (mapping != null) {
+			Repository repository = mapping.getRepository();
 
-		if (repository != null) {
-			try {
-				createHeadLink(repository, composite);
-				fillValues(repository);
-			} catch (IOException e) {
-				if (GitTraceLocation.UI.isActive())
-					GitTraceLocation.getTrace().trace(GitTraceLocation.UI.getLocation(), e.getMessage(), e);
+			if (repository != null) {
+				try {
+					createHeadLink(repository, composite);
+					fillValues(repository);
+				} catch (IOException e) {
+					if (GitTraceLocation.UI.isActive())
+						GitTraceLocation.getTrace().trace(
+								GitTraceLocation.UI.getLocation(),
+								e.getMessage(), e);
+				}
 			}
 		}
-
 		return composite;
 	}
 

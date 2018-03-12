@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.variables;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -21,10 +22,11 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.variables.IDynamicVariable;
 import org.eclipse.core.variables.IDynamicVariableResolver;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -68,6 +70,9 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
 		if (mapping != null) {
 			String repoRelativePath = mapping.getRepoRelativePath(res);
+			if (repoRelativePath == null) {
+				return ""; //$NON-NLS-1$
+			}
 			if (repoRelativePath.equals("")) //$NON-NLS-1$
 				return "."; //$NON-NLS-1$
 			else
@@ -85,13 +90,17 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 			return ""; //$NON-NLS-1$
 	}
 
+	@NonNull
 	private String getGitWorkTree(String argument) throws CoreException {
 		IResource res = getResource(argument);
 		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
-		if (mapping != null)
-			return mapping.getWorkTree().getAbsolutePath();
-		else
-			return ""; //$NON-NLS-1$
+		if (mapping != null) {
+			File workTree = mapping.getWorkTree();
+			if (workTree != null) {
+				return workTree.getAbsolutePath();
+			}
+		}
+		return ""; //$NON-NLS-1$
 	}
 
 	private String getGitBranch(String argument) throws CoreException {
@@ -167,7 +176,7 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 				IWorkbenchPart part = page.getActivePart();
 				if(part instanceof IEditorPart) {
 					IEditorPart epart = (IEditorPart) part;
-					resource = CommonUtils.getAdapter(epart.getEditorInput(), IResource.class);
+					resource = AdapterUtils.adapt(epart.getEditorInput(), IResource.class);
 				}
 				else if(part != null) {
 					IWorkbenchPartSite site = part.getSite();

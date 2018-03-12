@@ -5,6 +5,7 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,10 +18,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.dialogs.Dialog;
@@ -35,6 +35,7 @@ import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -309,7 +310,7 @@ public class CloneDestinationPage extends WizardPage {
 	 * @return location the user wants to store this repository.
 	 */
 	public File getDestinationFile() {
-		return new File(directoryText.getText());
+		return FileUtils.canonicalize(new File(directoryText.getText()));
 	}
 
 	/**
@@ -448,13 +449,8 @@ public class CloneDestinationPage extends WizardPage {
 			// update repo-related selection only if it changed
 			final String n = validatedRepoSelection.getURI().getHumanishName();
 			setDescription(NLS.bind(UIText.CloneDestinationPage_description, n));
-			String defaultRepoDir = UIUtils.getDefaultRepositoryDir();
-			File parentDir;
-			if (defaultRepoDir.length() > 0)
-				parentDir = new File(defaultRepoDir);
-			else
-				parentDir = ResourcesPlugin.getWorkspace().getRoot()
-						.getRawLocation().toFile();
+			String defaultRepoDir = RepositoryUtil.getDefaultRepositoryDir();
+			File parentDir = new File(defaultRepoDir);
 			directoryText.setText(new File(parentDir, n).getAbsolutePath());
 		}
 

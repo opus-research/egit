@@ -21,7 +21,6 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -29,6 +28,8 @@ import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -54,7 +55,9 @@ public class SelectionUtils {
 	 * @param selection
 	 * @return the single selected repository, or <code>null</code>
 	 */
-	public static Repository getRepository(IStructuredSelection selection) {
+	@Nullable
+	public static Repository getRepository(
+			@NonNull IStructuredSelection selection) {
 		return getRepository(false, selection, null);
 	}
 
@@ -62,7 +65,9 @@ public class SelectionUtils {
 	 * @param evaluationContext
 	 * @return the single selected repository, or <code>null</code>
 	 */
-	public static Repository getRepository(IEvaluationContext evaluationContext) {
+	@Nullable
+	public static Repository getRepository(
+			@Nullable IEvaluationContext evaluationContext) {
 		return getRepository(false, getSelection(evaluationContext), null);
 	}
 
@@ -75,8 +80,9 @@ public class SelectionUtils {
 	 *            the shell for showing the warning
 	 * @return the single selected repository, or <code>null</code>
 	 */
+	@Nullable
 	public static Repository getRepositoryOrWarn(
-			IStructuredSelection selection, Shell shell) {
+			@NonNull IStructuredSelection selection, @NonNull Shell shell) {
 		return getRepository(true, selection, shell);
 	}
 
@@ -84,7 +90,9 @@ public class SelectionUtils {
 	 * @param context
 	 * @return the structured selection of the evaluation context
 	 */
-	public static IStructuredSelection getSelection(IEvaluationContext context) {
+	@NonNull
+	public static IStructuredSelection getSelection(
+			@Nullable IEvaluationContext context) {
 		if (context == null)
 			return StructuredSelection.EMPTY;
 
@@ -110,8 +118,9 @@ public class SelectionUtils {
 	 * @param selection
 	 * @return the structured selection, or an empty selection
 	 */
+	@NonNull
 	public static IStructuredSelection getStructuredSelection(
-			ISelection selection) {
+			@NonNull ISelection selection) {
 		if (selection instanceof ITextSelection)
 			return getSelectionFromEditorInput(getEvaluationContext());
 		else if (selection instanceof IStructuredSelection)
@@ -123,7 +132,9 @@ public class SelectionUtils {
 	 * @param selection
 	 * @return the selected locations
 	 */
-	public static IPath[] getSelectedLocations(IStructuredSelection selection) {
+	@NonNull
+	public static IPath[] getSelectedLocations(
+			@NonNull IStructuredSelection selection) {
 		Set<IPath> result = new LinkedHashSet<IPath>();
 		for (Object o : selection.toList()) {
 			IResource resource = AdapterUtils.adapt(o, IResource.class);
@@ -150,8 +161,9 @@ public class SelectionUtils {
 	 * @param selection
 	 * @return the resources in the selection
 	 */
+	@NonNull
 	public static IResource[] getSelectedResources(
-			IStructuredSelection selection) {
+			@NonNull IStructuredSelection selection) {
 		Set<IResource> result = new LinkedHashSet<IResource>();
 		for (Object o : selection.toList()) {
 			IResource resource = AdapterUtils.adapt(o, IResource.class);
@@ -199,9 +211,9 @@ public class SelectionUtils {
 	 *            must be provided if warn = true
 	 * @return repository for current project, or null
 	 */
+	@Nullable
 	private static Repository getRepository(boolean warn,
-			IStructuredSelection selection, Shell shell) {
-		RepositoryMapping mapping = null;
+			@NonNull IStructuredSelection selection, Shell shell) {
 
 		IPath[] locations = getSelectedLocations(selection);
 		if (GitTraceLocation.SELECTION.isActive())
@@ -209,32 +221,39 @@ public class SelectionUtils {
 					GitTraceLocation.SELECTION.getLocation(), "selection=" //$NON-NLS-1$
 							+ selection + ", locations=" //$NON-NLS-1$
 							+ Arrays.toString(locations));
-
+		boolean hadNull = false;
+		Repository result = null;
 		for (IPath location : locations) {
-			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(location);
-			if (mapping == null)
-				mapping = repositoryMapping;
-			if (repositoryMapping == null)
-				return null;
-			if (mapping.getRepository() != repositoryMapping.getRepository()) {
-				if (warn)
+			RepositoryMapping mapping = RepositoryMapping.getMapping(location);
+			Repository repo;
+			if (mapping != null) {
+				repo = mapping.getRepository();
+			} else {
+				// location is outside workspace
+				repo = org.eclipse.egit.core.Activator.getDefault()
+						.getRepositoryCache().getRepository(location);
+			}
+			if (repo == null) {
+				hadNull = true;
+			}
+			if (result == null) {
+				result = repo;
+			}
+			boolean mismatch = hadNull && result != null;
+			if (mismatch || result != repo) {
+				if (warn) {
 					MessageDialog.openError(shell,
 							UIText.RepositoryAction_multiRepoSelectionTitle,
 							UIText.RepositoryAction_multiRepoSelection);
+				}
 				return null;
 			}
 		}
-		Repository result = null;
-		if (mapping == null)
+
+		if (result == null) {
 			for (Object o : selection.toArray()) {
-				Repository nextRepo = null;
-				if (o instanceof Repository)
-					nextRepo = (Repository) o;
-				else if (o instanceof PlatformObject)
-					nextRepo = CommonUtils.getAdapter(((PlatformObject) o), Repository.class);
-				if (nextRepo != null && result != null
-						&& !result.equals(nextRepo)) {
+				Repository nextRepo = AdapterUtils.adapt(o, Repository.class);
+				if (nextRepo != null && result != null && result != nextRepo) {
 					if (warn)
 						MessageDialog
 								.openError(
@@ -245,8 +264,8 @@ public class SelectionUtils {
 				}
 				result = nextRepo;
 			}
-		else
-			result = mapping.getRepository();
+		}
+
 		if (result == null) {
 			if (warn)
 				MessageDialog.openError(shell,

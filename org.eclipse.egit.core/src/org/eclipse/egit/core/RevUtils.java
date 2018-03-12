@@ -103,6 +103,7 @@ public class RevUtils {
 				}
 			} else if (state == RepositoryState.MERGING) {
 				List<ObjectId> mergeHeads = repository.readMergeHeads();
+				Assert.isNotNull(mergeHeads);
 				if (mergeHeads.size() == 1) {
 					ObjectId mergeHead = mergeHeads.get(0);
 					RevCommit mergeCommit = walk.parseCommit(mergeHead);
@@ -138,8 +139,7 @@ public class RevUtils {
 
 		final int skew = 24 * 60 * 60; // one day clock skew
 
-		RevWalk walk = new RevWalk(repo);
-		try {
+		try (RevWalk walk = new RevWalk(repo)) {
 			RevCommit commit = walk.parseCommit(commitId);
 			for (Ref ref : refs) {
 				RevCommit refCommit = walk.parseCommit(ref.getObjectId());
@@ -154,7 +154,6 @@ public class RevUtils {
 				if (contained)
 					return true;
 			}
-		} finally {
 			walk.dispose();
 		}
 		return false;

@@ -9,19 +9,21 @@
  *   Chris Aniszczyk <caniszczyk@gmail.com> - initial implementation
  *   EclipseSource - Filtered Viewer
  *   Robin Stocker <robin@nibor.org> - Show In support
+ *   Tobias Baumann <tobbaumann@gmail.com> - Bug 475836
+ *   Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.reflog;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ResetMenu;
@@ -39,7 +41,9 @@ import org.eclipse.jface.layout.TreeColumnLayout;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.OpenStrategy;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ColumnWeightData;
@@ -120,10 +124,13 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 	private ListenerHandle addRefsChangedListener;
 
-	private final DateFormat absoluteFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
+	private IPropertyChangeListener uiPrefsListener;
+
+	private PreferenceBasedDateFormatter dateFormatter;
 
 	@Override
 	public void createPartControl(Composite parent) {
+		dateFormatter = PreferenceBasedDateFormatter.create();
 		GridLayoutFactory.fillDefaults().applyTo(parent);
 
 		toolkit = new FormToolkit(parent.getDisplay());
@@ -225,7 +232,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				final ReflogEntry entry = (ReflogEntry) element;
 				final PersonIdent who = entry.getWho();
 				// TODO add option to use RelativeDateFormatter
-				return absoluteFormatter.format(who.getWhen());
+				return dateFormatter.formatDate(who);
 			}
 
 			@Override
@@ -316,6 +323,19 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 			}
 		};
 
+		uiPrefsListener = new IPropertyChangeListener() {
+			@Override
+			public void propertyChange(PropertyChangeEvent event) {
+				String property = event.getProperty();
+				if (UIPreferences.DATE_FORMAT.equals(property)
+						|| UIPreferences.DATE_FORMAT_CHOICE.equals(property)) {
+					dateFormatter = PreferenceBasedDateFormatter.create();
+					refLogTableTreeViewer.refresh();
+				}
+			}
+		};
+		Activator.getDefault().getPreferenceStore()
+				.addPropertyChangeListener(uiPrefsListener);
 		selectionChangedListener = new ISelectionListener() {
 			@Override
 			public void selectionChanged(IWorkbenchPart part,
@@ -373,49 +393,55 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		super.dispose();
 		ISelectionService service = CommonUtils.getService(getSite(), ISelectionService.class);
 		service.removePostSelectionListener(selectionChangedListener);
-		if (addRefsChangedListener != null)
+		if (addRefsChangedListener != null) {
 			addRefsChangedListener.remove();
+		}
+		Activator.getDefault().getPreferenceStore()
+				.removePropertyChangeListener(uiPrefsListener);
 	}
 
 	private void reactOnSelection(ISelection selection) {
-		if (!(selection instanceof IStructuredSelection))
+		if (!(selection instanceof IStructuredSelection)) {
 			return;
+		}
 		IStructuredSelection ssel = (IStructuredSelection) selection;
-		if (ssel.size() != 1)
+		if (ssel.size() != 1) {
 			return;
+		}
 		Repository selectedRepo = null;
 		Object first = ssel.getFirstElement();
 		if (first instanceof IResource) {
-			IResource resource = (IResource) ssel.getFirstElement();
-			RepositoryMapping mapping = RepositoryMapping.getMapping(resource
-					.getProject());
-			if (mapping != null)
+			IResource resource = (IResource) first;
+			RepositoryMapping mapping = RepositoryMapping
+					.getMapping(resource.getProject());
+			if (mapping != null) {
 				selectedRepo = mapping.getRepository();
+			}
 		}
-		if (selectedRepo == null && first instanceof IAdaptable) {
-			IResource adapted = CommonUtils.getAdapter(((IAdaptable) ssel
-					.getFirstElement()), IResource.class);
+		if (selectedRepo == null) {
+			IResource adapted = AdapterUtils.adapt(first, IResource.class);
 			if (adapted != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(adapted);
-				if (mapping != null)
+				if (mapping != null) {
 					selectedRepo = mapping.getRepository();
+				}
 			}
 		}
-		if (selectedRepo == null && first instanceof RepositoryTreeNode) {
-			RepositoryTreeNode repoNode = (RepositoryTreeNode) ssel
-					.getFirstElement();
-			selectedRepo = repoNode.getRepository();
+		if (selectedRepo == null) {
+			selectedRepo = AdapterUtils.adapt(first, Repository.class);
 		}
-		if (selectedRepo == null)
+		if (selectedRepo == null) {
 			return;
+		}
 
 		// Only update when different repository is selected
 		Repository currentRepo = getRepository();
 		if (currentRepo == null
 				|| !selectedRepo.getDirectory().equals(
-						currentRepo.getDirectory()))
+						currentRepo.getDirectory())) {
 			showReflogFor(selectedRepo);
+		}
 	}
 
 	private void updateRefLink(final String name) {

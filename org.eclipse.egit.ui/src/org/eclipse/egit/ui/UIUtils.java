@@ -25,15 +25,14 @@ import org.eclipse.core.commands.NotEnabledException;
 import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.variables.IStringVariableManager;
-import org.eclipse.core.variables.VariablesPlugin;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.bindings.Trigger;
 import org.eclipse.jface.bindings.TriggerSequence;
@@ -675,23 +674,6 @@ public class UIUtils {
 	}
 
 	/**
-	 * @return The default repository directory as configured in the
-	 *         preferences, with variables substituted. An empty string if there
-	 *         was an error during substitution.
-	 */
-	public static String getDefaultRepositoryDir() {
-		String dir = Activator.getDefault().getPreferenceStore()
-				.getString(UIPreferences.DEFAULT_REPO_DIR);
-		IStringVariableManager manager = VariablesPlugin.getDefault()
-				.getStringVariableManager();
-		try {
-			return manager.performStringSubstitution(dir);
-		} catch (CoreException e) {
-			return ""; //$NON-NLS-1$
-		}
-	}
-
-	/**
 	 * Is viewer in a usable state?
 	 *
 	 * @param viewer
@@ -830,7 +812,16 @@ public class UIUtils {
 	 *
 	 * @param textViewer
 	 * @param hyperlinkDetectors
+	 * @deprecated Instead of applying SWT styling directly use JFace
+	 *             infrastructure (
+	 *             {@link org.eclipse.jface.text.rules.DefaultDamagerRepairer
+	 *             DefaultDamagerRepairer},
+	 *             {@link org.eclipse.jface.text.rules.ITokenScanner
+	 *             ITokenScanner}) to do syntax coloring. See also
+	 *             {@link org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner}
+	 *             .
 	 */
+	@Deprecated
 	public static void applyHyperlinkDetectorStyleRanges(
 			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
 		StyleRange[] styleRanges = getHyperlinkDetectorStyleRanges(textViewer,
@@ -849,7 +840,16 @@ public class UIUtils {
 	 * @param textViewer
 	 * @param hyperlinkDetectors
 	 * @return the style ranges to render the detected hyperlinks
+	 * @deprecated Instead of applying SWT styling directly use JFace
+	 *             infrastructure (
+	 *             {@link org.eclipse.jface.text.rules.DefaultDamagerRepairer
+	 *             DefaultDamagerRepairer},
+	 *             {@link org.eclipse.jface.text.rules.ITokenScanner
+	 *             ITokenScanner}) to do syntax coloring. See also
+	 *             {@link org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner}
+	 *             .
 	 */
+	@Deprecated
 	public static StyleRange[] getHyperlinkDetectorStyleRanges(
 			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
 		HashSet<StyleRange> styleRangeList = new LinkedHashSet<StyleRange>();
@@ -889,8 +889,8 @@ public class UIUtils {
 	}
 
 	private static String getShowInMenuLabel() {
-		IBindingService bindingService = CommonUtils.getAdapter(PlatformUI
-				.getWorkbench(), IBindingService.class);
+		IBindingService bindingService = AdapterUtils.adapt(PlatformUI
+		.getWorkbench(), IBindingService.class);
 		if (bindingService != null) {
 			String keyBinding = bindingService
 					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);
@@ -912,9 +912,13 @@ public class UIUtils {
 	 *         binding service returns a {@code TriggerSequence} containing more
 	 *         than one {@code Trigger}.
 	 */
+	@Nullable
 	public static KeyStroke getKeystrokeOfBestActiveBindingFor(String commandId) {
-		IBindingService bindingService = CommonUtils.getAdapter(
-				PlatformUI.getWorkbench(), IBindingService.class);
+		IBindingService bindingService = AdapterUtils
+				.adapt(PlatformUI.getWorkbench(), IBindingService.class);
+		if (bindingService == null) {
+			return null;
+		}
 		TriggerSequence ts = bindingService.getBestActiveBindingFor(commandId);
 		if (ts == null)
 			return null;

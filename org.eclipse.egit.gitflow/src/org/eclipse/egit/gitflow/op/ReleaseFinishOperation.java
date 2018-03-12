@@ -48,9 +48,18 @@ public final class ReleaseFinishOperation extends AbstractReleaseOperation {
 	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		String releaseBranchName = repository.getConfig().getReleaseBranchName(versionName);
-		mergeTo(monitor, releaseBranchName, repository.getConfig().getMaster());
-		finish(monitor, releaseBranchName);
+		String master = repository.getConfig().getMaster();
+		mergeResult = mergeTo(monitor, releaseBranchName, master, false /* TODO */, false);
+		if (!mergeResult.getMergeStatus().isSuccessful()) {
+			// problems during merge to master => this repository is not in a healthy state
+			return;
+		}
+
+		// this may result in conflicts, but that's ok
 		safeCreateTag(monitor, repository.getConfig().getVersionTagPrefix() + versionName,
 				NLS.bind(CoreText.ReleaseFinishOperation_releaseOf, versionName));
+
+		finish(monitor, releaseBranchName, false /* TODO: squash should also be supported for releases */
+				, false /* TODO: keep should also be supported for releases */, false);
 	}
 }

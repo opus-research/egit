@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -37,6 +38,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
+import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -60,6 +62,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
+import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -69,6 +72,7 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -88,7 +92,7 @@ public class TestUtil {
 
 	private final static char AMPERSAND = '&';
 
-	private ResourceBundle myBundle;
+	private Map<Bundle, ResourceBundle> bundle2ResourceBundle = new HashMap<>();
 
 	/**
 	 * Allows access to the localized values of the EGit UI Plug-in
@@ -124,10 +128,28 @@ public class TestUtil {
 	 */
 	public synchronized String getPluginLocalizedValue(String key,
 			boolean keepAmpersands) throws MissingResourceException {
-		if (myBundle == null) {
+		return getPluginLocalizedValue(key, keepAmpersands, Activator.getDefault().getBundle());
+	}
 
-			BundleContext context = Activator.getDefault().getBundle()
-					.getBundleContext();
+	/**
+	 * Allows access to the localized values of the given Bundle
+	 * <p>
+	 *
+	 * @param key
+	 *            see {@link #getPluginLocalizedValue(String)}
+	 * @param keepAmpersands
+	 *            if <code>true</code>, ampersands will be kept
+	 * @param bundle
+	 *            the Bundle that contains the localization
+	 * @return see {@link #getPluginLocalizedValue(String)}
+	 * @throws MissingResourceException
+	 *             see {@link #getPluginLocalizedValue(String)}
+	 */
+	public synchronized String getPluginLocalizedValue(String key,
+			boolean keepAmpersands, Bundle bundle) throws MissingResourceException {
+		ResourceBundle myBundle = bundle2ResourceBundle.get(bundle);
+		if (myBundle == null) {
+			BundleContext context = bundle.getBundleContext();
 
 			ServiceTracker<BundleLocalization, BundleLocalization> localizationTracker =
 					new ServiceTracker<BundleLocalization, BundleLocalization>(
@@ -135,9 +157,11 @@ public class TestUtil {
 			localizationTracker.open();
 
 			BundleLocalization location = localizationTracker.getService();
-			if (location != null)
-				myBundle = location.getLocalization(Activator.getDefault()
-						.getBundle(), Locale.getDefault().toString());
+			if (location != null) {
+				myBundle = location.getLocalization(bundle, Locale.getDefault().toString());
+				bundle2ResourceBundle.put(bundle, myBundle);
+			}
+
 		}
 		if (myBundle != null) {
 			String raw = myBundle.getString(key);
@@ -163,7 +187,37 @@ public class TestUtil {
 	 * @throws InterruptedException
 	 */
 	public static void joinJobs(Object family) throws InterruptedException  {
+		// join() returns immediately if the job is not yet scheduled.
+		// To avoid unstable tests, let us first wait some time
+		TestUtil.waitForJobs(100, 1000);
 		Job.getJobManager().join(family, null);
+		TestUtil.processUIEvents();
+	}
+
+	/**
+	 * Utility for waiting until the execution of jobs of any family has
+	 * finished or timeout is reached. If no jobs are running, the method waits
+	 * given minimum wait time. While this method is waiting for jobs, UI events
+	 * are processed.
+	 *
+	 * @param minTimeMs
+	 *            minimum wait time in milliseconds
+	 * @param maxTimeMs
+	 *            maximum wait time in milliseconds
+	 */
+	public static void waitForJobs(long minTimeMs, long maxTimeMs) {
+		if (maxTimeMs < minTimeMs) {
+			throw new IllegalArgumentException(
+					"Max time is smaller as min time!");
+		}
+		final long start = System.currentTimeMillis();
+		while (System.currentTimeMillis() - start < minTimeMs) {
+			processUIEvents();
+		}
+		while (!Job.getJobManager().isIdle()
+				&& System.currentTimeMillis() - start < maxTimeMs) {
+			processUIEvents();
+		}
 	}
 
 	/**
@@ -171,13 +225,40 @@ public class TestUtil {
 	 * until all pending events are processed in UI thread.
 	 */
 	public static void processUIEvents() {
+		processUIEvents(0);
+	}
+
+	/**
+	 * Process all queued UI events. If called from background thread, blocks
+	 * until all pending events are processed in UI thread.
+	 *
+	 * @param timeInMillis
+	 *            time to wait. During this time all UI events are processed but
+	 *            the current thread is blocked
+	 */
+	public static void processUIEvents(final long timeInMillis) {
 		if (Display.getCurrent() != null) {
-			while (Display.getCurrent().readAndDispatch()) {
-				// process queued ui events
+			if (timeInMillis <= 0) {
+				while (Display.getCurrent().readAndDispatch()) {
+					// process queued ui events at least once
+				}
+			} else {
+				long start = System.currentTimeMillis();
+				while (System.currentTimeMillis() - start <= timeInMillis) {
+					while (Display.getCurrent().readAndDispatch()) {
+						// process queued ui events
+						try {
+							Thread.sleep(10);
+						} catch (InterruptedException e) {
+							break;
+						}
+					}
+				}
 			}
 		} else {
 			// synchronously refresh UI
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+				@Override
 				public void run() {
 					processUIEvents();
 				}
@@ -221,6 +302,7 @@ public class TestUtil {
 			throws TimeoutException {
 		bot.waitUntil(new ICondition() {
 
+			@Override
 			public boolean test() throws Exception {
 				for (SWTBotTreeItem item : tree.getAllItems())
 					if (item.getText().contains(text))
@@ -228,10 +310,12 @@ public class TestUtil {
 				return false;
 			}
 
+			@Override
 			public void init(SWTBot bot2) {
 				// empty
 			}
 
+			@Override
 			public String getFailureMessage() {
 				return null;
 			}
@@ -251,6 +335,7 @@ public class TestUtil {
 			throws TimeoutException {
 		bot.waitUntil(new ICondition() {
 
+			@Override
 			public boolean test() throws Exception {
 				for (SWTBotTreeItem item : treeItem.getItems())
 					if (item.getText().contains(text))
@@ -258,10 +343,12 @@ public class TestUtil {
 				return false;
 			}
 
+			@Override
 			public void init(SWTBot bot2) {
 				// empty
 			}
 
+			@Override
 			public String getFailureMessage() {
 				return null;
 			}
@@ -282,14 +369,17 @@ public class TestUtil {
 			throws TimeoutException {
 		bot.waitUntil(new ICondition() {
 
+			@Override
 			public boolean test() throws Exception {
 				return tree.selection().get(0, 0).equals(text);
 			}
 
+			@Override
 			public void init(SWTBot bot2) {
 				// empty
 			}
 
+			@Override
 			public String getFailureMessage() {
 				return null;
 			}
@@ -308,16 +398,19 @@ public class TestUtil {
 			final String text, long timeout) throws TimeoutException {
 		bot.waitUntil(new ICondition() {
 
+			@Override
 			public boolean test() throws Exception {
 				if (table.indexOf(text)<0)
 					return false;
 				return true;
 			}
 
+			@Override
 			public void init(SWTBot bot2) {
 				// empty
 			}
 
+			@Override
 			public String getFailureMessage() {
 				return null;
 			}
@@ -328,14 +421,17 @@ public class TestUtil {
 			final SWTBotEditor editor, long timeout) {
 		bot.waitUntil(new ICondition() {
 
+			@Override
 			public boolean test() throws Exception {
 				return editor.isActive();
 			}
 
+			@Override
 			public void init(SWTBot bot2) {
 				// empty
 			}
 
+			@Override
 			public String getFailureMessage() {
 				return null;
 			}
@@ -366,14 +462,16 @@ public class TestUtil {
 		Set<String> expectedfiles = new HashSet<String>();
 		for (String path : paths)
 			expectedfiles.add(path);
-		TreeWalk treeWalk = new TreeWalk(repository);
-		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-		treeWalk.setRecursive(true);
-		while (treeWalk.next()) {
-			String path = treeWalk.getPathString();
-			if (!expectedfiles.contains(path))
-				fail("Repository contains unexpected expected file " + path);
-			expectedfiles.remove(path);
+		try (TreeWalk treeWalk = new TreeWalk(repository)) {
+			treeWalk.addTree(repository.resolve("HEAD^{tree}"));
+			treeWalk.setRecursive(true);
+			while (treeWalk.next()) {
+				String path = treeWalk.getPathString();
+				if (!expectedfiles.contains(path))
+					fail("Repository contains unexpected expected file "
+							+ path);
+				expectedfiles.remove(path);
+			}
 		}
 		if (expectedfiles.size() > 0) {
 			StringBuilder message = new StringBuilder(
@@ -401,22 +499,24 @@ public class TestUtil {
 	public static void assertRepositoryContainsFilesWithContent(Repository repository,
 			String... args) throws Exception {
 		HashMap<String, String> expectedfiles = mkmap(args);
-		TreeWalk treeWalk = new TreeWalk(repository);
-		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-		treeWalk.setRecursive(true);
-		while (treeWalk.next()) {
-			String path = treeWalk.getPathString();
-			assertTrue(expectedfiles.containsKey(path));
-			ObjectId objectId = treeWalk.getObjectId(0);
-			byte[] expectedContent = expectedfiles.get(path).getBytes("UTF-8");
-			byte[] repoContent = treeWalk.getObjectReader().open(objectId)
-					.getBytes();
-			if (!Arrays.equals(repoContent, expectedContent))
-				fail("File " + path + " has repository content "
-						+ new String(repoContent, "UTF-8")
-						+ " instead of expected content "
-						+ new String(expectedContent, "UTF-8"));
-			expectedfiles.remove(path);
+		try (TreeWalk treeWalk = new TreeWalk(repository)) {
+			treeWalk.addTree(repository.resolve("HEAD^{tree}"));
+			treeWalk.setRecursive(true);
+			while (treeWalk.next()) {
+				String path = treeWalk.getPathString();
+				assertTrue(expectedfiles.containsKey(path));
+				ObjectId objectId = treeWalk.getObjectId(0);
+				byte[] expectedContent = expectedfiles.get(path)
+						.getBytes("UTF-8");
+				byte[] repoContent = treeWalk.getObjectReader().open(objectId)
+						.getBytes();
+				if (!Arrays.equals(repoContent, expectedContent))
+					fail("File " + path + " has repository content "
+							+ new String(repoContent, "UTF-8")
+							+ " instead of expected content "
+							+ new String(expectedContent, "UTF-8"));
+				expectedfiles.remove(path);
+			}
 		}
 		if (expectedfiles.size() > 0) {
 			StringBuilder message = new StringBuilder(
@@ -510,8 +610,11 @@ public class TestUtil {
 			throws Exception {
 		RevCommit headCommit = null;
 		ObjectId parentId = repository.resolve(Constants.HEAD);
-		if (parentId != null)
-			headCommit = new RevWalk(repository).parseCommit(parentId);
+		if (parentId != null) {
+			try (RevWalk rw = new RevWalk(repository)) {
+				headCommit = rw.parseCommit(parentId);
+			}
+		}
 		return headCommit;
 	}
 
@@ -533,12 +636,14 @@ public class TestUtil {
 
 	public static void waitUntilViewWithGivenIdShows(final String viewId) {
 		waitForView(new BaseMatcher<IViewReference>() {
+			@Override
 			public boolean matches(Object item) {
 				if (item instanceof IViewReference)
 					return viewId.equals(((IViewReference) item).getId());
 				return false;
 			}
 
+			@Override
 			public void describeTo(Description description) {
 				description.appendText("Wait for view with ID=" + viewId);
 			}
@@ -547,6 +652,7 @@ public class TestUtil {
 
 	public static void waitUntilViewWithGivenTitleShows(final String viewTitle) {
 		waitForView(new BaseMatcher<IViewReference>() {
+			@Override
 			public boolean matches(Object item) {
 				if (item instanceof IViewReference)
 					return viewTitle.equals(((IViewReference) item).getTitle());
@@ -554,6 +660,7 @@ public class TestUtil {
 				return false;
 			}
 
+			@Override
 			public void describeTo(Description description) {
 				description.appendText("Wait for view with title " + viewTitle);
 			}
@@ -570,6 +677,7 @@ public class TestUtil {
 				return title != null && title.startsWith(titlePrefix);
 			}
 
+			@Override
 			public void describeTo(Description description) {
 				description.appendText("Shell with title starting with '"
 						+ titlePrefix + "'");
@@ -582,6 +690,7 @@ public class TestUtil {
 
 	public static SWTBotView showView(final String viewId) {
 		Display.getDefault().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow();
@@ -605,27 +714,31 @@ public class TestUtil {
 
 	public static void hideView(final String viewId) {
 		Display.getDefault().syncExec(new Runnable() {
+			@Override
 			public void run() {
-				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow();
-				IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
-				IViewReference[] views = workbenchPage.getViewReferences();
-				for (int i = 0; i < views.length; i++) {
-					IViewReference view = views[i];
-					if (viewId.equals(view.getId())) {
-						workbenchPage.hideView(view);
+				IWorkbenchWindow[] windows = PlatformUI.getWorkbench()
+						.getWorkbenchWindows();
+				for (IWorkbenchWindow window : windows) {
+					IWorkbenchPage workbenchPage = window.getActivePage();
+					IViewReference[] views = workbenchPage.getViewReferences();
+					for (int i = 0; i < views.length; i++) {
+						IViewReference view = views[i];
+						if (viewId.equals(view.getId())) {
+							workbenchPage.hideView(view);
+						}
 					}
+					processUIEvents();
 				}
 			}
 		});
 	}
 
 	public static SWTBotView showHistoryView() {
-		return showView("org.eclipse.team.ui.GenericHistoryView");
+		return showView(IHistoryView.VIEW_ID);
 	}
 
 	public static SWTBotView showExplorerView() {
-		return showView("org.eclipse.jdt.ui.PackageExplorer");
+		return showView(JavaUI.ID_PACKAGES);
 	}
 
 	public static SWTBotTree getExplorerTree() {

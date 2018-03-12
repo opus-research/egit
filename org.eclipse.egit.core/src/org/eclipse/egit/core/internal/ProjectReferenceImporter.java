@@ -148,6 +148,11 @@ public class ProjectReferenceImporter {
 		final Map<URIish, Map<String, Set<ProjectReference>>> repositories = new LinkedHashMap<URIish, Map<String, Set<ProjectReference>>>();
 
 		for (final String reference : referenceStrings) {
+			if (reference == null) {
+				// BundleImporterDelegate doesn't check invalid project URI's,
+				// so we can receive null references.
+				continue;
+			}
 			try {
 				final ProjectReference projectReference = new ProjectReference(
 						reference);
@@ -187,16 +192,16 @@ public class ProjectReferenceImporter {
 	 */
 	private static IPath getWorkingDir(URIish gitUrl, String branch,
 			Set<String> allBranches) {
-		final IPath workspaceLocation = ResourcesPlugin.getWorkspace()
-				.getRoot().getRawLocation();
+		final IPath defaultRepoLocation = new Path(
+				RepositoryUtil.getDefaultRepositoryDir());
 		final String humanishName = gitUrl.getHumanishName();
 		String extendedName;
-		if (allBranches.size() == 1 || branch.equals(Constants.MASTER))
+		if (allBranches.size() == 1 || branch.equals(Constants.MASTER)) {
 			extendedName = humanishName;
-		else
+		} else {
 			extendedName = humanishName + "_" + branch; //$NON-NLS-1$
-		final IPath workDir = workspaceLocation.append(extendedName);
-		return workDir;
+		}
+		return defaultRepoLocation.append(extendedName);
 	}
 
 	static File findConfiguredRepository(URIish gitUrl) {

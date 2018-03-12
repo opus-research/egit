@@ -20,12 +20,14 @@ import org.eclipse.egit.gitflow.op.ReleaseStartOperation;
 import org.eclipse.egit.gitflow.ui.internal.JobFamilies;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
 import org.eclipse.egit.gitflow.ui.internal.validation.ReleaseNameValidator;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -40,14 +42,23 @@ public class ReleaseStartHandler extends AbstractHandler {
 		final GitFlowRepository gfRepo = GitFlowHandlerUtil.getRepository(event);
 		final String startCommitSha1 = getStartCommit(event);
 
+		Shell activeShell = HandlerUtil.getActiveShell(event);
+
+		doExecute(gfRepo, startCommitSha1, activeShell);
+
+		return null;
+	}
+
+	void doExecute(GitFlowRepository gfRepo,
+			final String startCommitSha1, Shell activeShell) {
 		InputDialog inputDialog = new InputDialog(
-				HandlerUtil.getActiveShell(event),
+				activeShell,
 				UIText.ReleaseStartHandler_provideReleaseName,
 				UIText.ReleaseStartHandler_provideANameForTheNewRelease, "", //$NON-NLS-1$
 				new ReleaseNameValidator(gfRepo));
 
 		if (inputDialog.open() != Window.OK) {
-			return null;
+			return;
 		}
 
 		final String releaseName = inputDialog.getValue();
@@ -57,8 +68,6 @@ public class ReleaseStartHandler extends AbstractHandler {
 		JobUtil.scheduleUserWorkspaceJob(releaseStartOperation,
 				UIText.ReleaseStartHandler_startingNewRelease,
 				JobFamilies.GITFLOW_FAMILY);
-
-		return null;
 	}
 
 	private String getStartCommit(ExecutionEvent event)
@@ -69,7 +78,11 @@ public class ReleaseStartHandler extends AbstractHandler {
 			RevCommit plotCommit = (RevCommit) selection.getFirstElement();
 			return plotCommit.getName();
 		} else {
-			GitFlowRepository gitFlowRepository = new GitFlowRepository(getRepository(event));
+			Repository repository = getRepository(event);
+			if (repository == null) {
+				throw new ExecutionException(UIText.ReleaseStartHandler_startCommitCouldNotBeDetermined);
+			}
+			GitFlowRepository gitFlowRepository = new GitFlowRepository(repository);
 			RevCommit head;
 			try {
 				head = gitFlowRepository.findHead();
@@ -80,7 +93,7 @@ public class ReleaseStartHandler extends AbstractHandler {
 		}
 	}
 
-	private Repository getRepository(ExecutionEvent event)
+	private @Nullable Repository getRepository(ExecutionEvent event)
 			throws ExecutionException {
 		PlatformObject firstElement;
 		IStructuredSelection selection = (IStructuredSelection) HandlerUtil
