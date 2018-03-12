@@ -2166,9 +2166,6 @@ public class UIText extends NLS {
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
 
 	/** */
-	public static String CompareWithWorkingTreeHandler_errorCommonAncestor;
-
-	/** */
 	public static String ConfirmationPage_cantConnectToAnyTitle;
 
 	/** */

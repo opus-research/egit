@@ -20,7 +20,6 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
@@ -66,11 +65,8 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 			Iterator<?> it = selection.iterator();
 			while (it.hasNext()) {
 				RevCommit commit = (RevCommit) it.next();
-				RevCommit commonAncestor = null;
 				IFileRevision rev = null;
 				try {
-					Repository repo = getRepository(event);
-					commonAncestor = RevUtils.getCommonAncestor(repo, repo.resolve(Constants.HEAD), commit);
 					rev = CompareUtils.getFileRevision(gitPath, commit, map
 							.getRepository(), null);
 				} catch (IOException e) {
@@ -84,12 +80,9 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 						ITypedElement right = CompareUtils
 								.getFileRevisionTypedElement(gitPath, commit,
 										map.getRepository());
-						ITypedElement ancestor = null;
-						if (commonAncestor != null)
-							ancestor = CompareUtils.getFileRevisionTypedElement(gitPath, commonAncestor, map.getRepository());
 						final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 								SaveableCompareEditorInput
-										.createFileElement(resource), right, ancestor,
+										.createFileElement(resource), right,
 								null);
 						try {
 							openInCompare(event, in);
@@ -119,10 +112,8 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 			Iterator<?> it = selection.iterator();
 			while (it.hasNext()) {
 				RevCommit commit = (RevCommit) it.next();
-				RevCommit commonAncestor = null;
 				IFileRevision rev = null;
 				try {
-					commonAncestor = RevUtils.getCommonAncestor(repo, repo.resolve(Constants.HEAD), commit);
 					rev = CompareUtils.getFileRevision(gitPath, commit, repo,
 							null);
 				} catch (IOException e) {
@@ -142,11 +133,8 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 							ITypedElement right = CompareUtils
 									.getFileRevisionTypedElement(gitPath,
 											commit, repo);
-							ITypedElement ancestor = null;
-							if (commonAncestor != null)
-								ancestor = CompareUtils.getFileRevisionTypedElement(gitPath, commonAncestor, repo);
 							final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-									left, right, ancestor, null);
+									left, right, null);
 							openInCompare(event, in);
 						} catch (IOException e) {
 							errorOccurred = true;
