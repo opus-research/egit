@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2012 SAP AG and others.
+ * Copyright (c) 2010-2012 SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,8 +11,6 @@
  *    Stefan Lay (SAP AG) - initial implementation
  *    Yann Simon <yann.simon.fr@gmail.com> - implementation of getHeadTypedElement
  *    Robin Stocker <robin@nibor.org>
- *    Laurent Goubet <laurent.goubet@obeo.fr>
- *    Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
@@ -30,11 +28,7 @@ import org.eclipse.compare.structuremergeviewer.DiffNode;
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.compare.structuremergeviewer.IStructureComparator;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.mapping.ResourceMapping;
-import org.eclipse.core.resources.mapping.ResourceMappingContext;
-import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Platform;
@@ -43,12 +37,10 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
@@ -69,9 +61,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
@@ -179,36 +168,7 @@ public class CompareUtils {
 		return null;
 	}
 
-
 	/**
-	 * Creates a {@link ITypedElement} for the commit which is the common ancestor of
-	 * the provided commits.
-	 * @param gitPath
-	 *            path within the ancestor commit's tree of the file.
-	 * @param commit1
-	 * @param commit2
-	 * @param db
-	 *            the repository this commit was loaded out of.
-	 * @return an instance of {@link ITypedElement} which can be used in
-	 *         {@link CompareEditorInput}
-	 */
-	public static ITypedElement getFileRevisionTypedElementForCommonAncestor(
-			final String gitPath, ObjectId commit1, ObjectId commit2,
-			Repository db) {
-		ITypedElement ancestor = null;
-		RevCommit commonAncestor = null;
-		try {
-			commonAncestor = RevUtils.getCommonAncestor(db, commit1, commit2);
-		} catch (IOException e) {
-			Activator.logError(NLS.bind(UIText.CompareUtils_errorCommonAncestor,
-					commit1.getName(), commit2.getName()), e);
-		}
-		if (commonAncestor != null)
-			ancestor = CompareUtils
-				.getFileRevisionTypedElement(gitPath, commonAncestor, db);
-		return ancestor;
-	}
-/**
 	 * @param element
 	 * @param adapterType
 	 * @return the adapted element, or null
@@ -320,7 +280,7 @@ public class CompareUtils {
 	 */
 	public static class ReuseCompareEditorAction extends Action implements
 			IPreferenceChangeListener, IWorkbenchAction {
-		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN);
+		IEclipsePreferences node = new InstanceScope().getNode(TEAM_UI_PLUGIN);
 
 		/**
 		 * Default constructor
@@ -347,14 +307,14 @@ public class CompareUtils {
 	}
 
 	private static boolean isReuseOpenEditor() {
-		boolean defaultReuse = DefaultScope.INSTANCE.getNode(TEAM_UI_PLUGIN)
+		boolean defaultReuse = new DefaultScope().getNode(TEAM_UI_PLUGIN)
 				.getBoolean(REUSE_COMPARE_EDITOR_PREFID, false);
-		return InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN).getBoolean(
+		return new InstanceScope().getNode(TEAM_UI_PLUGIN).getBoolean(
 				REUSE_COMPARE_EDITOR_PREFID, defaultReuse);
 	}
 
 	private static void setReuseOpenEditor(boolean value) {
-		InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN).putBoolean(
+		new InstanceScope().getNode(TEAM_UI_PLUGIN).putBoolean(
 				REUSE_COMPARE_EDITOR_PREFID, value);
 	}
 
@@ -410,12 +370,8 @@ public class CompareUtils {
 	}
 
 	/**
-	 * Get a typed element for the file as contained in HEAD. Tries to return
-	 * the last commit that modified the file in order to have more useful
-	 * author information.
-	 * <p>
-	 * Returns an empty typed element if there is not yet a head (initial import
-	 * case).
+	 * Get a typed element for the file as contained in HEAD. Returns an empty
+	 * typed element if there is not yet a head (initial import case).
 	 * <p>
 	 * If there is an error getting the HEAD commit, it is handled and null
 	 * returned.
@@ -431,24 +387,8 @@ public class CompareUtils {
 			if (head == null || head.getObjectId() == null)
 				// Initial import, not yet a HEAD commit
 				return new EmptyTypedElement(""); //$NON-NLS-1$
-
-			RevCommit latestFileCommit;
-			RevWalk rw = new RevWalk(repository);
-			try {
-				RevCommit headCommit = rw.parseCommit(head.getObjectId());
-				rw.markStart(headCommit);
-				rw.setTreeFilter(AndTreeFilter.create(
-						PathFilter.create(repoRelativePath),
-						TreeFilter.ANY_DIFF));
-				latestFileCommit = rw.next();
-				// Fall back to HEAD
-				if (latestFileCommit == null)
-					latestFileCommit = headCommit;
-			} finally {
-				rw.release();
-			}
-
-			return CompareUtils.getFileRevisionTypedElement(repoRelativePath, latestFileCommit, repository);
+			RevCommit headCommit = new RevWalk(repository).parseCommit(head.getObjectId());
+			return CompareUtils.getFileRevisionTypedElement(repoRelativePath, headCommit, repository);
 		} catch (IOException e) {
 			Activator.handleError(UIText.CompareUtils_errorGettingHeadCommit,
 					e, true);
@@ -468,28 +408,7 @@ public class CompareUtils {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
 		final Repository repository = mapping.getRepository();
 		final String gitPath = mapping.getRepoRelativePath(baseFile);
-		final String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
-		return getIndexTypedElement(repository, gitPath, encoding);
-	}
 
-	/**
-	 * Get a typed element for the repository and repository-relative path in the index.
-	 *
-	 * @param repository
-	 * @param repoRelativePath
-	 * @return typed element
-	 * @throws IOException
-	 */
-	public static ITypedElement getIndexTypedElement(
-			final Repository repository, final String repoRelativePath)
-			throws IOException {
-		String encoding = CompareCoreUtils.getResourceEncoding(repository, repoRelativePath);
-		return getIndexTypedElement(repository, repoRelativePath, encoding);
-	}
-
-	private static ITypedElement getIndexTypedElement(
-			final Repository repository, final String gitPath,
-			String encoding) throws IOException {
 		DirCache dc = repository.lockDirCache();
 		final DirCacheEntry entry;
 		try {
@@ -499,6 +418,7 @@ public class CompareUtils {
 		}
 
 		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
+		String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
 		final EditableRevision next = new EditableRevision(nextFile, encoding);
 
 		IContentChangeListener listener = new IContentChangeListener() {
@@ -536,8 +456,6 @@ public class CompareUtils {
 		next.addContentChangeListener(listener);
 		return next;
 	}
-
-
 
 	/**
 	 * Extracted from {@link CompareWithCommitActionHandler}
@@ -694,47 +612,4 @@ public class CompareUtils {
 		}
 	}
 
-	/**
-	 * Indicates if it is OK to open the selected file directly in a compare
-	 * editor.
-	 * <p>
-	 * It is not OK to show the single file if the file is part of a
-	 * logical model element that spans multiple files.
-	 * </p>
-	 *
-	 * @param file
-	 *            file the user is trying to compare
-	 * @return <code>true</code> if the file can be opened directly in a compare
-	 *         editor, <code>false</code> if the synchronize view should be
-	 *         opened instead.
-	 */
-	public static boolean canDirectlyOpenInCompare(IFile file) {
-		/*
-		 * Note : it would be better to use a remote context here in order to
-		 * give the model provider a chance to resolve the remote logical model
-		 * instead of only relying on the local one. However, this might be a
-		 * long operation and would not really provide more context : we're
-		 * trying to determine if the local file can be compared alone, this can
-		 * be done by relying on the local model only.
-		 */
-		final ResourceMapping[] mappings = ResourceUtil.getResourceMappings(
-				file, ResourceMappingContext.LOCAL_CONTEXT);
-
-		for (ResourceMapping mapping : mappings) {
-			try {
-				final ResourceTraversal[] traversals = mapping.getTraversals(
-						ResourceMappingContext.LOCAL_CONTEXT, null);
-				for (ResourceTraversal traversal : traversals) {
-					final IResource[] resources = traversal.getResources();
-					for (IResource resource : resources) {
-						if (!resource.equals(file))
-							return false;
-					}
-				}
-			} catch (CoreException e) {
-				Activator.logError(e.getMessage(), e);
-			}
-		}
-		return true;
-	}
 }

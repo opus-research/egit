@@ -6,8 +6,6 @@
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -126,8 +124,6 @@ public class CommitMessageComponent {
 
 	private String commitMessage = null;
 
-	private String commitMessageBeforeAmending = EMPTY_STRING;
-
 	private String previousCommitMessage = EMPTY_STRING;
 
 	private String author = null;
@@ -185,8 +181,7 @@ public class CommitMessageComponent {
 	public void resetState() {
 		originalChangeId = null;
 		commitMessage = null;
-		commitMessageBeforeAmending = EMPTY_STRING;
-		previousCommitMessage = EMPTY_STRING;
+		previousCommitMessage =EMPTY_STRING;
 		author = null;
 		previousAuthor = null;
 		committer = null;
@@ -200,10 +195,7 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Returns the commit message, converting platform-specific line endings to
-	 * '\n' and hard-wrapping lines if necessary.
-	 *
-	 * @return the message
+	 * @return The message the user entered
 	 */
 	public String getCommitMessage() {
 		commitMessage = commitText.getCommitMessage();
@@ -324,7 +316,6 @@ public class CommitMessageComponent {
 	 */
 	public void setAmendAllowed(boolean amendAllowed) {
 		this.amendAllowed = amendAllowed;
-		commitMessageBeforeAmending = EMPTY_STRING;
 	}
 
 	/**
@@ -335,12 +326,9 @@ public class CommitMessageComponent {
 		if (!selection) {
 			originalChangeId = null;
 			authorText.setText(author);
-			commitText.setText(commitMessageBeforeAmending);
-			commitMessageBeforeAmending = EMPTY_STRING;
 		} else {
 			getHeadCommitInfo();
 			saveOriginalChangeId();
-			commitMessageBeforeAmending = commitText.getText();
 			commitText.setText(previousCommitMessage);
 			if (previousAuthor != null)
 				authorText.setText(previousAuthor);
@@ -359,7 +347,7 @@ public class CommitMessageComponent {
 	 *
 	 */
 	public void updateStateFromUI() {
-		commitMessage = commitText.getText();
+		commitMessage = commitText.getCommitMessage();
 		author = authorText.getText().trim();
 		committer = committerText.getText().trim();
 	}

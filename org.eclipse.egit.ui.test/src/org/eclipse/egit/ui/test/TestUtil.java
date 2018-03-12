@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -110,16 +110,17 @@ public class TestUtil {
 	public synchronized String getPluginLocalizedValue(String key,
 			boolean keepAmpersands) throws MissingResourceException {
 		if (myBundle == null) {
+			ServiceTracker localizationTracker;
 
 			BundleContext context = Activator.getDefault().getBundle()
 					.getBundleContext();
 
-			ServiceTracker<BundleLocalization, BundleLocalization> localizationTracker =
-					new ServiceTracker<BundleLocalization, BundleLocalization>(
-					context, BundleLocalization.class, null);
+			localizationTracker = new ServiceTracker(context,
+					BundleLocalization.class.getName(), null);
 			localizationTracker.open();
 
-			BundleLocalization location = localizationTracker.getService();
+			BundleLocalization location = (BundleLocalization) localizationTracker
+					.getService();
 			if (location != null)
 				myBundle = location.getLocalization(Activator.getDefault()
 						.getBundle(), Locale.getDefault().toString());
@@ -312,8 +313,8 @@ public class TestUtil {
 	 */
 	public static void disableProxy() {
 		BundleContext context = Activator.getDefault().getBundle().getBundleContext();
-		ServiceReference<IProxyService> serviceReference = context.getServiceReference(IProxyService.class);
-		IProxyService proxyService = context.getService(serviceReference);
+		ServiceReference serviceReference = context.getServiceReference(IProxyService.class.getName());
+		IProxyService proxyService = (IProxyService) context.getService(serviceReference);
 		proxyService.setSystemProxiesEnabled(false);
 		proxyService.setProxiesEnabled(false);
 	}
