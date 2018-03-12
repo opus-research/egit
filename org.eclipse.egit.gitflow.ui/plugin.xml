@@ -118,15 +118,6 @@
 						label="%TeamGitFlowHotfixPublish.name"
 						style="push">
 				</command>
-				<separator
-						name="org.eclipse.egit.gitflow.ui.separator3"
-						visible="true">
-				</separator>
-				<command
-						commandId="org.eclipse.egit.gitflow.ui.command.developCheckout"
-						label="%TeamGitFlowDevelopCheckout.name"
-						style="push">
-				</command>
 			</menu>
 		</menuContribution>
 	</extension>
@@ -185,10 +176,6 @@
 				id="org.eclipse.egit.gitflow.ui.command.hotfixFinish"
 				name="%TeamGitFlowHotfixFinish.name">
 		</command>
-		<command
-				id="org.eclipse.egit.gitflow.ui.command.developCheckout"
-				name="%TeamGitFlowDevelopCheckout.name">
-		</command>
 	</extension>
 	<extension
 			point="org.eclipse.ui.handlers">
@@ -219,27 +206,6 @@
 							forcePluginActivation="true"
 							property="GitFlowRepository.isInitialized">
 					</test>
-				</with>
-			</enabledWhen>
-		</handler>
-		<handler
-				commandId="org.eclipse.egit.gitflow.ui.command.developCheckout">
-			<class
-					class="org.eclipse.egit.gitflow.ui.internal.actions.DevelopCheckoutHandler">
-			</class>
-			<activeWhen>
-				<reference
-						definitionId="org.eclipse.egit.gitflow.ui.commandEnabled">
-				</reference>
-			</activeWhen>
-			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<not>
-						<test
-								forcePluginActivation="true"
-								property="GitFlowRepository.isDevelop">
-						</test>
-					</not>
 				</with>
 			</enabledWhen>
 		</handler>
@@ -616,15 +582,6 @@
 				<command
 						commandId="org.eclipse.egit.gitflow.ui.command.hotfixPublish"
 						label="%TeamGitFlowHotfixPublish.name"
-						style="push">
-				</command>
-				<separator
-						name="org.eclipse.egit.gitflow.ui.separator3"
-						visible="true">
-				</separator>
-				<command
-						commandId="org.eclipse.egit.gitflow.ui.command.developCheckout"
-						label="%TeamGitFlowDevelopCheckout.name"
 						style="push">
 				</command>
 			</menu>

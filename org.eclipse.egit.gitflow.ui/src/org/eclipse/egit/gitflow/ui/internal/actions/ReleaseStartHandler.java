@@ -82,7 +82,7 @@ public class ReleaseStartHandler extends AbstractHandler {
 			try {
 				head = gitFlowRepository.findHead();
 			} catch (WrongGitFlowStateException e) {
-				throw new ExecutionException(e.getMessage(), e);
+				throw new ExecutionException(e.getMessage());
 			}
 			return head.getName();
 		}
