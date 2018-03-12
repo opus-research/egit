@@ -155,7 +155,8 @@ class GitSynchronizeWizardPage extends WizardPage {
 					treeViewer.refresh(element, true);
 				}
 
-				validatePage();
+				setPageComplete(selectedBranches.size() == selectedRepositories
+						.size());
 			}
 
 			@Override
@@ -261,7 +262,13 @@ class GitSynchronizeWizardPage extends WizardPage {
 				selectedProjects.clear();
 
 				save();
-				validatePage();
+
+				if (event.getChecked()) {
+					setPageComplete(selectedBranches.size() == selectedRepositories
+							.size());
+				} else if (treeViewer.getCheckedElements().length == 0) {
+					setPageComplete(false);
+				}
 			}
 		});
 
@@ -279,7 +286,8 @@ class GitSynchronizeWizardPage extends WizardPage {
 			public void handleEvent(Event event) {
 				treeViewer.setCheckedElements(array);
 				save();
-				validatePage();
+				setPageComplete(selectedBranches.size() == selectedRepositories
+						.size());
 			}
 		});
 		selectAllBtn.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, false,
@@ -294,7 +302,8 @@ class GitSynchronizeWizardPage extends WizardPage {
 				// clear all selection
 				selectedRepositories.clear();
 				selectedProjects.clear();
-				validatePage();
+				// mark page as being incomplete
+				setPageComplete(false);
 			}
 		});
 		deselectAllBtn.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING,
@@ -335,11 +344,6 @@ class GitSynchronizeWizardPage extends WizardPage {
 				selectedProjects.add((IProject) checkedElement);
 			}
 		}
-	}
-
-	private void validatePage() {
-		setPageComplete(!selectedRepositories.isEmpty()
-				&& selectedRepositories.size() == selectedBranches.size());
 	}
 
 	Map<Repository, String> getSelectedBranches() {
