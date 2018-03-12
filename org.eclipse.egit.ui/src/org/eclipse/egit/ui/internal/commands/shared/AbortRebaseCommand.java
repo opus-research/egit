@@ -14,7 +14,6 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.rebase.RebaseInteracitveHandler;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 
 /**
@@ -32,7 +31,6 @@ public class AbortRebaseCommand extends AbstractRebaseCommandHandler {
 	@Override
 	public RebaseOperation createRebaseOperation(ExecutionEvent event)
 			throws ExecutionException {
-		return new RebaseOperation(getRepository(event), Operation.ABORT,
-				RebaseInteracitveHandler.INSTANCE);
+		return new RebaseOperation(getRepository(event), Operation.ABORT);
 	}
 }
