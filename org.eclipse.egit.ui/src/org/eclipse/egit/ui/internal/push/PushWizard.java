@@ -160,7 +160,7 @@ public class PushWizard extends Wizard {
 			} else {
 				final Collection<RefSpec> fetchSpecs;
 				if (config != null)
-					fetchSpecs = config.getPushRefSpecs();
+					fetchSpecs = config.getFetchRefSpecs();
 				else
 					fetchSpecs = null;
 
@@ -176,7 +176,7 @@ public class PushWizard extends Wizard {
 				}
 
 				spec = new PushOperationSpecification();
-				for (final URIish uri : repoPage.getSelection().getPushURIs())
+				for (final URIish uri : repoPage.getSelection().getAllURIs())
 					spec.addURIRefUpdates(uri, ConfirmationPage
 							.copyUpdates(updates));
 			}
