@@ -1,26 +1,25 @@
 /*******************************************************************************
- * Copyright (c) 2010 IBM Corporation and others.
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com >
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.staging;
+package org.eclipse.egit.ui.internal.actions;
 
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.egit.core.op.TagOperation;
 
-class StagedNode extends StatusNode {
-
-	StagedNode(Repository repository) {
-		super(repository);
+/**
+ * An action for creating tag.
+ *
+ * @see TagOperation
+ */
+public class UntrackAction extends RepositoryAction {
+	/**
+	 *
+	 */
+	public UntrackAction() {
+		super(ActionCommands.UNTRACK_ACTION, new UntrackActionHandler());
 	}
-
-	@Override
-	String getLabel() {
-		return "Staged"; //$NON-NLS-1$
-	}
-
 }

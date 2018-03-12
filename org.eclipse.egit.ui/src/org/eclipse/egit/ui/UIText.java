@@ -418,6 +418,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_ShowSubMenuLabel;
 
 	/** */
+	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
+
+	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
 
 	/** */
@@ -452,6 +455,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_SynchronizeView;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -662,6 +668,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
+
+	/** */
+	public static String CheckoutDialog_Message;
+
+	/** */
+	public static String CheckoutDialog_Title;
+
+	/** */
+	public static String CheckoutDialog_WindowTitle;
 
 	/** */
 	public static String CheckoutHandler_SelectBranchMessage;
@@ -1732,6 +1747,15 @@ public class UIText extends NLS {
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
+	public static String CompareWithPreviousActionHandler_MessageRevisionNotFound;
+
+	/** */
+	public static String CompareWithPreviousActionHandler_TaskGeneratingInput;
+
+	/** */
+	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
+
+	/** */
 	public static String ConfirmationPage_cantConnectToAnyTitle;
 
 	/** */
@@ -1766,6 +1790,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ContinueRebaseCommand_JobName;
+
+	/** */
+	public static String CreateBranchDialog_DialogTitle;
+
+	/** */
+	public static String CreateBranchDialog_OKButtonText;
+
+	/** */
+	public static String CreateBranchDialog_SelectRefMessage;
+
+	/** */
+	public static String CreateBranchDialog_WindowTitle;
 
 	/** */
 	public static String CreateBranchPage_BranchNameLabel;
@@ -2206,39 +2242,6 @@ public class UIText extends NLS {
 	public static String BranchResultDialog_CheckoutConflictsTitle;
 
 	/** */
-	public static String BranchSelectionDialog_TitleCheckout;
-
-	/** */
-	public static String BranchSelectionDialog_ErrorCouldNotCreateNewRef;
-
-	/** */
-	public static String BranchSelectionDialog_ErrorCouldNotDeleteRef;
-
-	/** */
-	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
-
-	/** */
-	public static String BranchSelectionDialog_QuestionNewBranchTitle;
-
-	/** */
-	public static String BranchSelectionDialog_QuestionNewBranchNameMessage;
-
-	/** */
-	public static String BranchSelectionDialog_NewBranch;
-
-	/** */
-	public static String BranchSelectionDialog_OkCheckout;
-
-	/** */
-	public static String BranchSelectionDialog_Refs;
-
-	/** */
-	public static String BranchSelectionDialog_Rename;
-
-	/** */
-	public static String BranchSelectionDialog_Delete;
-
-	/** */
 	public static String CommitDialogPreferencePage_title;
 
 	/** */
@@ -2246,12 +2249,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialogPreferencePage_hardWrapMessageTooltip;
-
-	/** */
-	public static String CommitDialogPreferencePage_createChangeId;
-
-	/** */
-	public static String CommitDialogPreferencePage_createChangeIdTooltip;
 
 	/** */
 	public static String CommitDialogPreferencePage_footers;
@@ -2380,6 +2377,15 @@ public class UIText extends NLS {
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
 
 	/** */
+	public static String DeleteBranchDialog_DialogMessage;
+
+	/** */
+	public static String DeleteBranchDialog_DialogTitle;
+
+	/** */
+	public static String DeleteBranchDialog_WindowTitle;
+
+	/** */
 	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;
 
 	/** */
@@ -2495,6 +2501,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
+
+	/** */
+	public static String DiffEditorPage_TaskGeneratingDiff;
+
+	/** */
+	public static String DiffEditorPage_TaskUpdatingViewer;
+
+	/** */
+	public static String DiffEditorPage_Title;
 
 	/** */
 	public static String DiscardChangesAction_confirmActionTitle;
@@ -2906,6 +2921,33 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_repository;
 
 	/** */
+	public static String CommitEditor_TitleHeader;
+
+	/** */
+	public static String CommitEditorInput_Name;
+
+	/** */
+	public static String CommitEditorInput_ToolTip;
+
+	/** */
+	public static String CommitEditorPage_LabelAuthor;
+
+	/** */
+	public static String CommitEditorPage_LabelCommitter;
+
+	/** */
+	public static String CommitEditorPage_LabelParent;
+
+	/** */
+	public static String CommitEditorPage_SectionFiles;
+
+	/** */
+	public static String CommitEditorPage_SectionMessage;
+
+	/** */
+	public static String CommitEditorPage_Title;
+
+	/** */
 	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
 
 	/** */
@@ -3102,6 +3144,27 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RenameBranchCommand_WrongNameMessage;
+
+	/** */
+	public static String RenameBranchDialog_DialogMessage;
+
+	/** */
+	public static String RenameBranchDialog_DialogTitle;
+
+	/** */
+	public static String RenameBranchDialog_NewNameInputDialogPrompt;
+
+	/** */
+	public static String RenameBranchDialog_RenameBranchDialogNewNameInputWindowTitle;
+
+	/** */
+	public static String RenameBranchDialog_RenameButtonLabel;
+
+	/** */
+	public static String RenameBranchDialog_RenameErrorMessage;
+
+	/** */
+	public static String RenameBranchDialog_WindowTitle;
 
 	/** */
 	public static String RevertHandler_AlreadyRevertedMessae;
@@ -3410,6 +3473,18 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
+	public static String CommitSearchQuery_Label;
+
+	/** */
+	public static String CommitSearchQuery_TaskSearchCommits;
+
+	/** */
+	public static String CommitSearchResult_LabelPlural;
+
+	/** */
+	public static String CommitSearchResult_LabelSingle;
+
+	/** */
 	public static String CommitSelectionDialog_BuildingCommitListMessage;
 
 	/** */
@@ -3437,29 +3512,6 @@ public class UIText extends NLS {
 	public static String DecoratableResourceHelper_noHead;
 
 	/** */
-	public static String ModifiedNode_Label;
-
-	/** */
-	public static String StagedNode_Label;
-
-	/** */
-	public static String UntrackedNode_Label;
-
-	/** */
-	public static String StagingView_StagingJobLabel;
-
-	/** */
-	public static String StagingView_StagingJobTaskName;
-
-	/** */
-	public static String StagingView_AnalyzeJobLabel;
-
-	/** */
-	public static String StagingView_AnalyzeJobTaskName;
-
-	/** */
-	public static String StagingView_AnalyzeJobSubTaskName;
-
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}

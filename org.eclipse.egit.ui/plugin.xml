@@ -34,7 +34,7 @@
                value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
          </filter>
          <action
-               class="org.eclipse.egit.ui.internal.actions.Disconnect"
+               class="org.eclipse.egit.ui.internal.actions.DisconnectAction"
                icon="$nl$/icons/obj16/disconnect_co.gif"
                id="org.eclipse.egit.ui.internal.actions.Disconnect"
                label="%DisconnectAction_label"
@@ -54,24 +54,12 @@
                label="%SynchronizeWith_label"
                menubarPath="team.main/group3"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.TagAction"
-               icon="$nl$/icons/obj16/tags.gif"
-               id="org.eclipse.egit.ui.internal.actions.TagAction"
-               label="%TagAction_label"
-               menubarPath="team.main/group5"/>
-         <action
                class="org.eclipse.egit.ui.internal.actions.MergeAction"
                definitionId="org.eclipse.egit.ui.team.Merge"
                icon="$nl$/icons/obj16/merge.gif"
                id="org.eclipse.egit.ui.internal.actions.MergeAction"
                label="%MergeAction_label"
                menubarPath="team.main/group4"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.BranchAction"
-               icon="$nl$/icons/obj16/branch_obj.gif"
-               id="org.eclipse.egit.ui.internal.actions.BranchAction"
-               label="%BranchAction_label"
-               menubarPath="team.main/group5"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamConfigAction"
                definitionId="org.eclipse.egit.ui.team.Pull"
@@ -105,23 +93,10 @@
                value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
          </filter>
          <action
-               class="org.eclipse.egit.ui.internal.actions.Untrack"
+               class="org.eclipse.egit.ui.internal.actions.UntrackAction"
                icon="$nl$/icons/obj16/untrack.gif"
                id="org.eclipse.egit.ui.internal.actions.Untrack"
                label="%UntrackAction_label"
-               menubarPath="team.main/group9"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.NoAssumeUnchangedAction"
-               icon="icons/obj16/no-assume-unchanged.gif"
-               id="org.eclipse.egit.ui.internal.actions.NoAssumeUnchanged"
-               label="%NoAssumeUnchangedAction_label"
-               menubarPath="team.main/group9">
-         </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.AssumeUnchangedAction"
-               icon="icons/obj16/assume-unchanged.gif"
-               id="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"
-               label="%AssumeUnchangedAction_label"
                menubarPath="team.main/group9"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.CommitAction"
@@ -141,6 +116,13 @@
                label="%CompareWithBranchOrTagAction.label"
                menubarPath="compareWithMenu/gitCompareWithGroup">
          </action>
+          <action
+               class="org.eclipse.egit.ui.internal.actions.CompareWithPreviousAction"
+               definitionId="org.eclipse.egit.ui.team.CompareWithPrevious"
+               enablesFor="1"
+               id="org.eclipse.egit.ui.internal.actions.CompareWithPreviousAction"
+               label="%CompareWithPreviousAction.label"
+               menubarPath="compareWithMenu/gitCompareWithGroup"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.CompareWithHeadAction"
                id="org.eclipse.egit.ui.internal.actions.CompareWithHeadAction"
@@ -494,6 +476,66 @@
             %Theme_CommitMessageEditorFont_description
          </description>
       </fontDefinition>
+      <colorDefinition
+            categoryId="org.eclipse.egit.ui.GitTheme"
+            id="org.eclipse.egit.ui.DiffHunkBackgroundColor"
+            isEditable="true"
+            label="%Theme_DiffHunkBackgroundColor_label"
+            value="234,242,245">
+         <description>
+            %Theme_DiffHunkBackgroundColor_description
+         </description>
+      </colorDefinition>
+      <colorDefinition
+            categoryId="org.eclipse.egit.ui.GitTheme"
+            id="org.eclipse.egit.ui.DiffHunkForegroundColor"
+            isEditable="true"
+            label="%Theme_DiffHunkForegroundColor_label"
+            value="153,153,153">
+         <description>
+            %Theme_DiffHunkForegroundColor_description
+         </description>
+      </colorDefinition>
+      <colorDefinition
+            categoryId="org.eclipse.egit.ui.GitTheme"
+            id="org.eclipse.egit.ui.DiffAddBackgroundColor"
+            isEditable="true"
+            label="%Theme_DiffAddBackgroundColor_label"
+            value="221,255,221">
+         <description>
+            %Theme_DiffAddBackgroundColor_description
+         </description>
+      </colorDefinition>
+      <colorDefinition
+            categoryId="org.eclipse.egit.ui.GitTheme"
+            id="org.eclipse.egit.ui.DiffAddForegroundColor"
+            isEditable="true"
+            label="%Theme_DiffAddForegroundColor_label"
+            value="COLOR_BLACK">
+         <description>
+            %Theme_DiffAddForegroundColor_description
+         </description>
+      </colorDefinition>
+      <colorDefinition
+            categoryId="org.eclipse.egit.ui.GitTheme"
+            id="org.eclipse.egit.ui.DiffRemoveBackgroundColor"
+            isEditable="true"
+            label="%Theme_DiffRemoveBackgroundColor_label"
+            value="255,221,221">
+         <description>
+            %Theme_DiffRemoveBackgroundColor_description
+         </description>
+      </colorDefinition>
+      <colorDefinition
+            categoryId="org.eclipse.egit.ui.GitTheme"
+            id="org.eclipse.egit.ui.DiffRemoveForegroundColor"
+            isEditable="true"
+            label="%Theme_DiffRemoveForegroundColor_label"
+            value="COLOR_BLACK">
+         <description>
+            %Theme_DiffRemoveForegroundColor_description
+         </description>
+      </colorDefinition>
    </extension>
 
 <!-- ********** QuickDiff text editor support ************** -->
@@ -1089,13 +1131,6 @@
             name="%GitRepositoriesView_name"
             restorable="true">
       </view>
-      <view
-            category="org.eclipse.egit.ui.GitCategory"
-            class="org.eclipse.egit.ui.internal.staging.StagingView"
-            icon="icons/eview16/repo_rep.gif"
-            id="org.eclipse.egit.ui.StagingView"
-            name="Staging">
-      </view>
       <category
             id="org.eclipse.egit.ui.GitCategory"
             name="%GitCategory_name">
@@ -1108,27 +1143,6 @@
             name="%TreeCompareView.name"
             restorable="false">
       </view>
-   </extension>
-   <extension
-         point="org.eclipse.ui.handlers">
-      <handler
-            class="org.eclipse.egit.ui.internal.staging.RefreshHandler"
-            commandId="org.eclipse.ui.file.refresh">
-         <activeWhen>
-            <with
-                  variable="activePartId">
-               <equals value="org.eclipse.egit.ui.StagingView"/>
-            </with>
-         </activeWhen>
-      </handler>
-   </extension>
-   <extension
-         point="org.eclipse.ui.menus">
-      <menuContribution
-            locationURI="popup:org.eclipse.egit.ui.StagingView?after=additions">
-         <command commandId="org.eclipse.ui.file.refresh"/>
-         <command commandId="org.eclipse.ui.file.properties"/>
-      </menuContribution>
    </extension>
    <extension
          point="org.eclipse.ui.perspectives">
@@ -1263,7 +1277,7 @@
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewCreateBranch"
-               icon="icons/obj16/branch_obj.gif"
+               icon="icons/obj16/new_branch_obj.gif"
                label="%RepoViewCreateBranch.label"
                style="push">
             <visibleWhen
@@ -2434,6 +2448,131 @@
                </visibleWhen>
             </menu>
             <separator
+                  name="org.eclipse.egit.ui.AdvancedSeparator">
+            </separator>
+            <menu
+                  label="%AdvancedMenu.label">
+               <command
+                     commandId="org.eclipse.egit.ui.team.RenameBranch"
+                     label="%RenameBranchMenu.label"
+                     style="push">
+                  <visibleWhen
+                        checkEnabled="false">
+                     <and>
+                        <count
+                              value="1">
+                        </count>
+                        <iterate>
+                           <and>
+                              <adapt
+                                    type="org.eclipse.core.resources.IProject">
+                                 <test
+                                       property="GitResource.isShared">
+                                 </test>
+                              </adapt>
+                           </and>
+                        </iterate>
+                     </and>
+                  </visibleWhen>
+               </command>
+               <command
+                     commandId="org.eclipse.egit.ui.team.DeleteBranch"
+                     label="%DeleteBranchMenu.label"
+                     style="push">
+                  <visibleWhen
+                        checkEnabled="false">
+                     <and>
+                        <count
+                              value="1">
+                        </count>
+                        <iterate>
+                           <and>
+                              <adapt
+                                    type="org.eclipse.core.resources.IProject">
+                                 <test
+                                       property="GitResource.isShared">
+                                 </test>
+                              </adapt>
+                           </and>
+                        </iterate>
+                     </and>
+                  </visibleWhen>
+               </command>
+               <separator
+                     name="org.eclipse.egit.ui.separator1"
+                     visible="true">
+               </separator>
+               <command
+                     commandId="org.eclipse.egit.ui.team.Tag"
+                     label="%TagAction_label"
+                     style="push">
+                  <visibleWhen
+                        checkEnabled="false">
+                     <and>
+                        <count
+                              value="1">
+                        </count>
+                        <iterate>
+                           <and>
+                              <adapt
+                                    type="org.eclipse.core.resources.IProject">
+                                 <test
+                                       property="GitResource.isShared">
+                                 </test>
+                              </adapt>
+                           </and>
+                        </iterate>
+                     </and>
+                  </visibleWhen>
+               </command>
+               <separator
+                     name="org.eclipse.egit.ui.TeamAdvancedFileSeparator"
+                     visible="true">
+               </separator>
+               <command
+                     commandId="org.eclipse.egit.ui.team.AssumeUnchanged"
+                     label="%AssumeUnchangedAction_label"
+                     style="push">
+                  <visibleWhen
+                        checkEnabled="false">
+                    <and>
+                       <count
+                              value="+">
+                       </count>
+                       <iterate>
+                          <adapt
+                               type="org.eclipse.core.resources.IResource">
+                             <test
+                                  property="GitResource.isShared">
+                             </test>
+                          </adapt>
+                        </iterate>
+                     </and>
+                  </visibleWhen>
+               </command>
+               <command
+                     commandId="org.eclipse.egit.ui.team.NoAssumeUnchanged"
+                     label="%NoAssumeUnchangedAction_label"
+                     style="push">
+                  <visibleWhen
+                        checkEnabled="false">
+                     <and>
+                        <count
+                              value="+">
+                        </count>
+                        <iterate>
+                          <adapt
+                               type="org.eclipse.core.resources.IResource">
+                             <test
+                                 property="GitResource.isShared">
+                             </test>
+                          </adapt>
+                        </iterate>
+                     </and>
+                  </visibleWhen>
+               </command>
+            </menu>
+            <separator
                   name="applyPatchGroup"
                   visible="false">
             </separator>
@@ -2458,7 +2597,8 @@
                  label="%RebaseWithDialog_label">
 	           <visibleWhen checkEnabled="false">
 	              <and>
-	                 <iterate>
+	                 <iterate
+                        ifEmpty="false">
 	                    <and>
 	                       <adapt
 	                             type="org.eclipse.core.resources.IProject">
@@ -2482,7 +2622,8 @@
 	                 commandId="org.eclipse.egit.ui.ContinueRebase" style="push" />
 	           <visibleWhen checkEnabled="false">
 	              <and>
-	                 <iterate>
+	                 <iterate
+                        ifEmpty="false">
 	                    <and>
 	                       <adapt
 	                             type="org.eclipse.core.resources.IProject">
@@ -2757,7 +2898,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.CreateBranch"
-            icon="icons/obj16/branch_obj.gif">
+            icon="icons/obj16/new_branch_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.CheckoutCommand"
@@ -2765,7 +2906,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewCreateBranch"
-            icon="icons/obj16/branch_obj.gif">
+            icon="icons/obj16/new_branch_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewNewRemote"
@@ -2911,6 +3052,22 @@
             commandId="org.eclipse.egit.ui.team.Tag"
             icon="icons/obj16/tags.gif">
       </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.AssumeUnchanged"
+            icon="icons/obj16/assume-unchanged.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.NoAssumeUnchanged"
+            icon="icons/obj16/no-assume-unchanged.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.DeleteBranch"
+            icon="icons/obj16/delete_obj.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.team.RenameBranch"
+            icon="icons/obj16/editconfig.gif">
+      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -3040,6 +3197,12 @@
             id="org.eclipse.egit.ui.team.CompareWithHead"
             name="%CompareWithHeadCommand.name">
       </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.CompareWithPreviousActionHandler"
+            id="org.eclipse.egit.ui.team.CompareWithPrevious"
+            name="%CompareWithPreviousCommand.name">
+      </command>
             <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.CompareWithRevision"
@@ -3109,6 +3272,30 @@
             id="org.eclipse.egit.ui.team.ConfigurePush"
             name="%ConfigureUpstreamPushCommand.name">
       </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.DeleteBranchActionHandler"
+            id="org.eclipse.egit.ui.team.DeleteBranch"
+            name="%DeleteBranchCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.RenameBranchActionHandler"
+            id="org.eclipse.egit.ui.team.RenameBranch"
+            name="%RenameBranchCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.AssumeUnchangedActionHandler"
+            id="org.eclipse.egit.ui.team.AssumeUnchanged"
+            name="Assume Unchanged">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.NoAssumeUnchangedActionHandler"
+            id="org.eclipse.egit.ui.team.NoAssumeUnchanged"
+            name="No Assume Unchanged">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">
@@ -3152,7 +3339,7 @@
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CompareVersionsInTreeHandler"
             id="org.eclipse.egit.ui.history.CompareVersionsInTree"
-            name="Compare in Tree">
+            name="%CompareInTreeCommand.name">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CompareWithWorkingTreeHandler"
@@ -3281,13 +3468,20 @@
          point="org.eclipse.core.expressions.propertyTesters">
    </extension>
    <extension
-         point="org.eclipse.core.runtime.adapters">
+         point="org.eclipse.ui.editors">
+      <editor
+            class="org.eclipse.egit.ui.internal.commit.CommitEditor"
+            default="false"
+            icon="icons/obj16/changelog_obj.gif"
+            id="org.eclipse.egit.ui.commitEditor"
+            name="%CommitEditor.name">
+      </editor>
+   </extension>
+   <extension
+         point="org.eclipse.ui.elementFactories">
       <factory
-            adaptableType="org.eclipse.egit.ui.internal.staging.ResourceNode"
-            class="org.eclipse.egit.ui.internal.staging.ResourceNodeAdapterFactory">
-         <adapter
-               type="org.eclipse.core.resources.IResource">
-         </adapter>
+            class="org.eclipse.egit.ui.internal.commit.CommitEditorInputFactory"
+            id="org.eclipse.egit.ui.internal.commit.CommitEditorInputFactory">
       </factory>
    </extension>
 </plugin>
