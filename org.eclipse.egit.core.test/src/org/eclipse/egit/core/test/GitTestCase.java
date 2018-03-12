@@ -27,6 +27,7 @@ public abstract class GitTestCase extends TestCase {
 	protected void setUp() throws Exception {
 		super.setUp();
 		project = new TestProject(true);
+		checkNotNested();
 		gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), ".git");
 		rmrf(gitDir);
