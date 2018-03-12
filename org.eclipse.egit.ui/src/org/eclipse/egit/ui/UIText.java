@@ -181,12 +181,6 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_NoCommits;
 
 	/** */
-	public static String GenerateHistoryJob_taskFoundMultipleCommits;
-
-	/** */
-	public static String GenerateHistoryJob_taskFoundSingleCommit;
-
-	/** */
 	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
 
 	/** */
@@ -727,22 +721,13 @@ public class UIText extends NLS {
 	public static String RebaseTargetSelectionDialog_DialogMessage;
 
 	/** */
-	public static String RebaseTargetSelectionDialog_DialogMessageWithBranch;
-
-	/** */
 	public static String RebaseTargetSelectionDialog_DialogTitle;
-
-	/** */
-	public static String RebaseTargetSelectionDialog_DialogTitleWithBranch;
 
 	/** */
 	public static String RebaseTargetSelectionDialog_RebaseButton;
 
 	/** */
 	public static String RebaseTargetSelectionDialog_RebaseTitle;
-
-	/** */
-	public static String RebaseTargetSelectionDialog_RebaseTitleWithBranch;
 
 	/** */
 	public static String ReplaceTargetSelectionDialog_ReplaceButton;
@@ -3217,13 +3202,7 @@ public class UIText extends NLS {
 	public static String MergeTargetSelectionDialog_SelectRef;
 
 	/** */
-	public static String MergeTargetSelectionDialog_SelectRefWithBranch;
-
-	/** */
 	public static String MergeTargetSelectionDialog_TitleMerge;
-
-	/** */
-	public static String MergeTargetSelectionDialog_TitleMergeWithBranch;
 
 	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
@@ -3803,6 +3782,9 @@ public class UIText extends NLS {
 	public static String SimpleConfigureFetchDialog_AddRefSpecButton;
 
 	/** */
+	public static String SimpleConfigureFetchDialog_AdvancedCompositeButton;
+
+	/** */
 	public static String SimpleConfigureFetchDialog_BranchLabel;
 
 	/** */
@@ -4259,6 +4241,9 @@ public class UIText extends NLS {
 	public static String StagingView_ColumnLayout;
 
 	/** */
+	public static String StagingView_IndexDiffReload;
+
+	/** */
 	public static String StagingView_Refresh;
 
 	/** */
@@ -4275,9 +4260,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_StageItemMenuLabel;
-
-	/** */
-	public static String StagingViewContentProvider_SubmoduleError;
 
 	/** */
 	public static String StashApplyCommand_applyFailed;
@@ -4365,15 +4347,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchChangeFromGerritCommand_noRepositorySelectedMessage;
-
-	/** */
-	public static String RebasePulldownAction_Continue;
-
-	/** */
-	public static String RebasePulldownAction_Skip;
-
-	/** */
-	public static String RebasePulldownAction_Abort;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
