@@ -6,6 +6,8 @@
  * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
+ * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -35,6 +37,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
+
+	/** */
+	public static String AbstractHistoryCommanndHandler_NoUniqueRepository;
 
 	/** */
 	public static String AbstractRebaseCommand_DialogTitle;
@@ -419,6 +424,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_CheckoutMenuLabel;
+
+	/** */
+	public static String GitHistoryPage_CheckoutMenuLabel2;
 
 	/** */
 	public static String GitHistoryPage_CompareModeMenuLabel;
@@ -895,7 +903,31 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
+	public static String CleanRepositoryPage_cleanDirs;
+
+	/** */
+	public static String CleanRepositoryPage_cleanFiles;
+
+	/** */
+	public static String CleanRepositoryPage_cleaningItems;
+
+	/** */
+	public static String CleanRepositoryPage_findingItems;
+
+	/** */
+	public static String CleanRepositoryPage_includeIgnored;
+
+	/** */
+	public static String CleanRepositoryPage_message;
+
+	/** */
+	public static String CleanRepositoryPage_title;
+
+	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
+
+	/** */
+	public static String CheckoutConflictDialog_conflictMessage;
 
 	/** */
 	public static String CheckoutDialog_Message;
@@ -2155,6 +2187,9 @@ public class UIText extends NLS {
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
+	public static String CompareWithRefAction_errorOnSynchronize;
+
+	/** */
 	public static String CompareWithPreviousActionHandler_MessageRevisionNotFound;
 
 	/** */
@@ -2750,6 +2785,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchResultDialog_CheckoutConflictsTitle;
+
+	/** */
+	public static String BranchResultDialog_dontShowAgain;
 
 	/** */
 	public static String CheckoutDialog_ErrorCouldNotCreateNewRef;
