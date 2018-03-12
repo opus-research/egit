@@ -33,6 +33,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,6 +49,12 @@ public class MergeToolTest extends LocalRepositoryTestCase {
 		File repositoryFile = createProjectAndCommitToRepository();
 		Repository repository = lookupRepository(repositoryFile);
 		testRepository = new TestRepository<Repository>(repository);
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		deleteAllProjects();
+		shutDownRepositories();
 	}
 
 	@Test
@@ -69,7 +76,8 @@ public class MergeToolTest extends LocalRepositoryTestCase {
 		cache.getIndexDiffCacheEntry(testRepository.getRepository());
 		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 
-		SWTBotTree packageExplorer = TestUtil.getExplorerTree();
+		SWTBotTree packageExplorer = bot
+				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		SWTBotTreeItem project1 = getProjectItem(packageExplorer, PROJ1)
 				.select();
 

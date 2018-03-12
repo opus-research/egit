@@ -32,9 +32,7 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
-import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.RepositoryCache;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
@@ -63,9 +61,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
@@ -95,8 +91,8 @@ import org.junit.BeforeClass;
  *  private File localRepo;
  *  private File remoteRepo;
  * ...
- * {@literal @}Before
- *  public void initRepos() throws Exception {
+ * {@literal @}BeforeClass
+ *  public static void initRepos() throws Exception {
  *     localRepo = repositoryFile = createProjectAndCommitToRepository();
  *     remtoeRepo =remoteRepositoryFile = createRemoteRepository(repositoryFile);
  *  }
@@ -108,10 +104,8 @@ import org.junit.BeforeClass;
  */
 public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
-	private static int testMethodNumber = 0;
-
 	// the temporary directory
-	private File testDirectory;
+	private static File testDirectory;
 
 	protected static final String REPO1 = "FirstRepository";
 
@@ -133,16 +127,15 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected static TestUtils testUtils = new TestUtils();
 
-	public File getTestDirectory() {
+	public static File getTestDirectory() {
 		return testDirectory;
 	}
 
-	@Before
-	public void initNewTestDirectory() throws Exception {
-		testMethodNumber++;
+	@BeforeClass
+	public static void beforeClassBase() throws Exception {
+		deleteAllProjects();
 		// create standalone temporary directory
-		testDirectory = testUtils.createTempDir("LocalRepositoriesTests"
-				+ testMethodNumber);
+		testDirectory = testUtils.createTempDir("LocalRepositoriesTests");
 		if (testDirectory.exists())
 			FileUtils.delete(testDirectory, FileUtils.RECURSIVE
 					| FileUtils.RETRY);
@@ -152,30 +145,15 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		File repoRoot = new File(testDirectory, "RepositoryRoot");
 		if (!repoRoot.exists())
 			FileUtils.mkdir(repoRoot, true);
-		// make sure the default directory for Repos is not the user home
-		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
-	}
-
-	@After
-	public void resetWorkspace() throws Exception {
-		// close all editors/dialogs
-		new Eclipse().reset();
-		// cleanup
-		for (IProject project : ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects())
-			project.delete(false, false, null);
-		shutDownRepositories();
-	}
-
-	@BeforeClass
-	public static void beforeClassBase() throws Exception {
 		// suppress auto-ignoring and auto-sharing to avoid interference
 		IEclipsePreferences corePrefs = InstanceScope.INSTANCE
 				.getNode(org.eclipse.egit.core.Activator.getPluginId());
 		corePrefs.putBoolean(
 				GitCorePreferences.core_autoIgnoreDerivedResources, false);
 		corePrefs.putBoolean(GitCorePreferences.core_autoShareProjects, false);
+		// make sure the default directory for Repos is not the user home
+		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
+				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 		// suppress the configuration dialog
 		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, false);
@@ -189,7 +167,13 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	@AfterClass
 	public static void afterClassBase() throws Exception {
-		testUtils.deleteTempDirs();
+		// close all editors/dialogs
+		new Eclipse().reset();
+		// cleanup
+		deleteAllProjects();
+		shutDownRepositories();
+		FileUtils.delete(testDirectory, FileUtils.RECURSIVE | FileUtils.RETRY);
+		Activator.getDefault().getRepositoryCache().clear();
 	}
 
 	protected static void shutDownRepositories() {
@@ -213,11 +197,11 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	}
 
-	protected File createProjectAndCommitToRepository() throws Exception {
+	protected static File createProjectAndCommitToRepository() throws Exception {
 		return createProjectAndCommitToRepository(REPO1);
 	}
 
-	protected File createProjectAndCommitToRepository(String repoName)
+	protected static File createProjectAndCommitToRepository(String repoName)
 			throws Exception {
 
 		File gitDir = new File(new File(testDirectory, repoName),
@@ -291,15 +275,10 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		createStableBranch(myRepository);
 		// and check in some stuff into master again
 		touchAndSubmit(null);
-
-		// Make sure cache entry is already listening for changes
-		IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();
-		cache.getIndexDiffCacheEntry(lookupRepository(gitDir));
-
 		return gitDir;
 	}
 
-	protected File createRemoteRepository(File repositoryDir)
+	protected static File createRemoteRepository(File repositoryDir)
 			throws Exception {
 		Repository myRepository = lookupRepository(repositoryDir);
 		File gitDir = new File(testDirectory, REPO2);
@@ -342,7 +321,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		myRepository.getConfig().save();
 		// and push
-		PushOperationUI pa = new PushOperationUI(myRepository, "push", false);
+		PushOperationUI pa = new PushOperationUI(myRepository, "push", 0, false);
 		pa.execute(null);
 
 		try {
@@ -361,7 +340,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		return myRemoteRepository.getDirectory();
 	}
 
-	protected File createChildRepository(File repositoryDir)
+	protected static File createChildRepository(File repositoryDir)
 			throws Exception {
 		Repository myRepository = lookupRepository(repositoryDir);
 		URIish uri = new URIish("file:///" + myRepository.getDirectory());
@@ -473,6 +452,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		String message = commitMessage;
 		if (message == null)
 			message = newContent;
+		// TODO: remove after replacing GitIndex in CommitOperation
+		waitInUI();
 		CommitOperation op = new CommitOperation(commitables,
 				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
 				message);
@@ -510,13 +491,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (!prj.isAccessible())
 			throw new IllegalStateException("No project to touch");
 		IFile file = prj.getFile(new Path(filePath));
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(
-				newContent.getBytes(prj.getDefaultCharset()));
-		if (!file.exists())
-			file.create(inputStream, 0, null);
-		else
-			file.setContents(inputStream, 0, null);
-		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
+		file.setContents(
+				new ByteArrayInputStream(newContent.getBytes(prj
+						.getDefaultCharset())), 0, null);
 		return file;
 	}
 

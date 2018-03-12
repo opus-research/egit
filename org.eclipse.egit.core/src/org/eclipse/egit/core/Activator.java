@@ -1,5 +1,9 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2013 Shawn O. Pearce <spearce@spearce.org> and others.
+ * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
+ * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2011, 2013 Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -157,25 +161,10 @@ public class Activator extends Plugin implements DebugOptionsListener {
 					IResource resource = event.getResource();
 					if (resource instanceof IProject) {
 						IProject project = (IProject) resource;
-						if (project.isAccessible()) {
-							if (RepositoryProvider.getProvider(project) instanceof GitProvider) {
-								IResource dotGit = project
-										.findMember(Constants.DOT_GIT);
-								if (dotGit != null
-										&& dotGit.getType() == IResource.FOLDER)
-									GitProjectData.reconfigureWindowCache();
-							}
-						} else {
-							// bug 419706: project is closed - use java.io API
-							IPath locationPath = project.getLocation();
-							if (locationPath != null) {
-								File locationDir = locationPath.toFile();
-								File dotGit = new File(locationDir,
-										Constants.DOT_GIT);
-								if (dotGit.exists() && dotGit.isDirectory()) {
-									GitProjectData.reconfigureWindowCache();
-								}
-							}
+						if (RepositoryProvider.getProvider(project) instanceof GitProvider) {
+							IResource dotGit = project.findMember(Constants.DOT_GIT);
+							if (dotGit != null && dotGit.getType() == IResource.FOLDER)
+								GitProjectData.reconfigureWindowCache();
 						}
 					}
 				}

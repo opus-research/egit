@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -26,9 +26,9 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseCommand;
-import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.RebaseCommand.InteractiveHandler;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
+import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoHeadException;
@@ -62,7 +62,10 @@ public class RebaseOperation implements IEGitOperation {
 	 *            the branch or tag
 	 */
 	public RebaseOperation(Repository repository, Ref ref) {
-		this(repository, ref, Operation.BEGIN, null);
+		this.repository = repository;
+		this.operation = Operation.BEGIN;
+		this.ref = ref;
+		this.handler = null;
 	}
 
 	/**
@@ -79,7 +82,10 @@ public class RebaseOperation implements IEGitOperation {
 	 */
 	public RebaseOperation(Repository repository, Ref ref,
 			InteractiveHandler handler) {
-		this(repository, ref, Operation.BEGIN, handler);
+		this.repository = repository;
+		this.operation = Operation.BEGIN;
+		this.ref = ref;
+		this.handler = handler;
 	}
 
 	/**
@@ -93,7 +99,10 @@ public class RebaseOperation implements IEGitOperation {
 	 *            {@link Operation#SKIP}
 	 */
 	public RebaseOperation(Repository repository, Operation operation) {
-		this(repository, null, operation, null);
+		this.repository = repository;
+		this.operation = operation;
+		this.ref = null;
+		this.handler = null;
 	}
 
 	/**
@@ -109,14 +118,9 @@ public class RebaseOperation implements IEGitOperation {
 	 */
 	public RebaseOperation(Repository repository, Operation operation,
 			InteractiveHandler handler) {
-		this(repository, null, operation, handler);
-	}
-
-	private RebaseOperation(Repository repository, Ref ref,
-			Operation operation, InteractiveHandler handler) {
 		this.repository = repository;
-		this.ref = ref;
 		this.operation = operation;
+		this.ref = null;
 		this.handler = handler;
 	}
 
