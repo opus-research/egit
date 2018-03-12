@@ -29,9 +29,7 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
@@ -65,8 +63,7 @@ public class ResetCommand extends
 		final String repoName = Activator.getDefault().getRepositoryUtil()
 				.getRepositoryName(node.getRepository());
 
-		RevCommit latestCommit = getLatestCommit(targetBranch,
-				node.getRepository());
+		RevCommit latestCommit = getLatestCommit(node);
 		final String targetCommit = latestCommit.abbreviate(7).name() + ' '
 				+ latestCommit.getShortMessage();
 
@@ -126,19 +123,11 @@ public class ResetCommand extends
 		return null;
 	}
 
-	private RevCommit getLatestCommit(String branch, Repository repository) {
-		ObjectId resolved;
-		try {
-			resolved = repository.resolve(branch);
-		} catch (IOException e) {
-			return null;
-		}
-		if (resolved == null)
-			return null;
-		RevWalk walk = new RevWalk(repository);
+	private RevCommit getLatestCommit(RepositoryTreeNode node) {
+		RevWalk walk = new RevWalk(node.getRepository());
 		walk.setRetainBody(true);
 		try {
-			return walk.parseCommit(resolved);
+			return walk.parseCommit(((Ref) node.getObject()).getObjectId());
 		} catch (IOException ignored) {
 			return null;
 		} finally {
