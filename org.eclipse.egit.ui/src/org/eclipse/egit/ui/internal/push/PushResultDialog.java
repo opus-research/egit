@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler mathias.kinzler@sap.com>
- * Copyright (C) 2015, Christian Georgi <christian.georgi@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -38,15 +37,40 @@ class PushResultDialog extends TitleAreaDialog {
 
 	private boolean hideConfigure = false;
 
+	/**
+	 * Shows this dialog asynchronously
+	 *
+	 * @param repository
+	 * @param result
+	 * @param sourceString
+	 * @param showConfigureButton
+	 *            whether to show the "Configure..." button in the result dialog
+	 *            or not
+	 */
+	public static void show(final Repository repository,
+			final PushOperationResult result, final String sourceString,
+			final boolean showConfigureButton) {
+		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			public void run() {
+				PlatformUI.getWorkbench().getDisplay().asyncExec(
+						new Runnable() {
+							public void run() {
+								Shell shell = PlatformUI.getWorkbench()
+										.getActiveWorkbenchWindow().getShell();
+								PushResultDialog dialog = new PushResultDialog(
+										shell, repository, result, sourceString);
+								dialog.showConfigureButton(showConfigureButton);
+								dialog.open();
+							}
+						});
+			}
+		});
+	}
+
 	PushResultDialog(final Shell parentShell, final Repository localDb,
-			final PushOperationResult result, final String destinationString,
-			boolean modal) {
+			final PushOperationResult result, final String destinationString) {
 		super(parentShell);
-		int shellStyle = getShellStyle() | SWT.RESIZE;
-		if (!modal) {
-			shellStyle &= ~SWT.APPLICATION_MODAL;
-		}
-		setShellStyle(shellStyle);
+		setShellStyle(getShellStyle() | SWT.RESIZE);
 		this.localDb = localDb;
 		this.result = result;
 		this.destinationString = destinationString;
@@ -69,11 +93,9 @@ class PushResultDialog extends TitleAreaDialog {
 		if (buttonId == CONFIGURE) {
 			super.buttonPressed(IDialogConstants.OK_ID);
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
-					Dialog dlg = SimpleConfigurePushDialog.getDialog(
-							PlatformUI.getWorkbench()
-									.getModalDialogShellProvider().getShell(),
+					Dialog dlg = SimpleConfigurePushDialog.getDialog(PlatformUI
+							.getWorkbench().getDisplay().getActiveShell(),
 							localDb);
 					dlg.open();
 				}
@@ -93,8 +115,7 @@ class PushResultDialog extends TitleAreaDialog {
 		} else
 			title = NLS.bind(UIText.PushResultDialog_label, destinationString);
 		setTitle(title);
-		final PushResultTable table = new PushResultTable(composite,
-				getDialogBoundsSettings());
+		final PushResultTable table = new PushResultTable(composite);
 		table.setData(localDb, result);
 		final Control tableControl = table.getControl();
 		final GridData tableLayout = new GridData(SWT.FILL, SWT.FILL, true,
@@ -126,7 +147,6 @@ class PushResultDialog extends TitleAreaDialog {
 		this.hideConfigure = !show;
 	}
 
-	@Override
 	protected IDialogSettings getDialogBoundsSettings() {
 		return UIUtils.getDialogBoundSettings(getClass());
 	}

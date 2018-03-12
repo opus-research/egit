@@ -21,17 +21,16 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
@@ -48,7 +47,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 
 		final Repository repository = getRepository(true, event);
@@ -95,7 +93,6 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 				UIText.CompareIndexWithHeadActionHandler_fileNotStaged,
 				location.toOSString());
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				MessageDialog.openInformation(null, title, message);
 
@@ -103,33 +100,27 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 		});
 	}
 
-	private void runCompare(ExecutionEvent event, @NonNull final Repository repository)
+	private void runCompare(ExecutionEvent event, final Repository repository)
 			throws Exception {
 		IWorkbenchPage workBenchPage = HandlerUtil
 				.getActiveWorkbenchWindowChecked(event).getActivePage();
-		IResource[] resources = getSelectedResources(event);
+		IResource[] resources = getSelectedResources();
 
 		if (resources.length > 0) {
 			CompareUtils.compare(resources, repository, GitFileRevision.INDEX,
 					Constants.HEAD, false, workBenchPage);
 		} else {
 			IPath[] locations = getSelectedLocations(event);
-			if (locations.length == 0) {
-				return;
-			}
-			IPath location = locations[0];
-			if (location == null) {
-				return;
-			}
-			CompareUtils.compare(location, repository,
-					GitFileRevision.INDEX, Constants.HEAD, false,
-					workBenchPage);
+			if (locations.length > 0)
+				CompareUtils.compare(locations[0], repository,
+						GitFileRevision.INDEX, Constants.HEAD, false,
+						workBenchPage);
 		}
 	}
 
 	private Object getSingleSelectedObject(ExecutionEvent event)
 			throws ExecutionException {
-		IResource[] resources = getSelectedResources(event);
+		IResource[] resources = getSelectedResources();
 		if (resources.length == 1) {
 			return resources[0];
 		} else {
@@ -170,15 +161,13 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 
 	private boolean isStaged(Repository repository, IPath location,
 			boolean checkIndex) {
-		if (location == null || location.toFile().isDirectory()
-				|| repository.isBare()) {
+		if (location == null || location.toFile().isDirectory()) {
 			return false;
 		}
-		IPath workDir = new Path(repository.getWorkTree().getAbsolutePath());
-		String resRelPath = location.makeRelativeTo(workDir).toString();
+		String resRelPath = RepositoryMapping.getMapping(location).getRepoRelativePath(location);
+
 		// This action at the moment only works for files anyway
-		if (resRelPath.length() == 0
-				|| resRelPath.equals(location.toString())) {
+		if (resRelPath == null || resRelPath.length() == 0) {
 			return false;
 		}
 

@@ -66,7 +66,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		comparator = new EntryComparator();
 	}
 
-	@Override
 	public Object getParent(Object element) {
 		if (element instanceof StagingFolderEntry)
 			return ((StagingFolderEntry) element).getParent();
@@ -75,17 +74,14 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		return null;
 	}
 
-	@Override
 	public boolean hasChildren(Object element) {
 		return !(element instanceof StagingEntry);
 	}
 
-	@Override
 	public Object[] getElements(Object inputElement) {
 		return getChildren(inputElement);
 	}
 
-	@Override
 	public Object[] getChildren(Object parentElement) {
 		if (repository == null)
 			return new Object[0];
@@ -130,11 +126,11 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		if (content == null || content.length == 0)
 			return new Object[0];
 
-		List<Object> roots = new ArrayList<>();
-		Map<IPath, List<Object>> childrenForPath = new HashMap<>();
+		List<Object> roots = new ArrayList<Object>();
+		Map<IPath, List<Object>> childrenForPath = new HashMap<IPath, List<Object>>();
 
-		Set<IPath> folderPaths = new HashSet<>();
-		Map<IPath, String> childSegments = new HashMap<>();
+		Set<IPath> folderPaths = new HashSet<IPath>();
+		Map<IPath, String> childSegments = new HashMap<IPath, String>();
 
 		for (StagingEntry file : content) {
 			IPath folderPath = file.getParentPath();
@@ -167,7 +163,7 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		IPath workingDirectory = new Path(repository.getWorkTree()
 				.getAbsolutePath());
 
-		List<StagingFolderEntry> folderEntries = new ArrayList<>();
+		List<StagingFolderEntry> folderEntries = new ArrayList<StagingFolderEntry>();
 		for (IPath folderPath : folderPaths) {
 			IPath parent = folderPath.removeLastSegments(1);
 			// Find first existing parent node, but stop at root
@@ -211,7 +207,7 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 			IPath path, Object child) {
 		List<Object> children = childrenForPath.get(path);
 		if (children == null) {
-			children = new ArrayList<>();
+			children = new ArrayList<Object>();
 			childrenForPath.put(path, children);
 		}
 		children.add(child);
@@ -232,7 +228,7 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 	}
 
 	List<StagingEntry> getStagingEntriesFiltered(StagingFolderEntry folder) {
-		List<StagingEntry> stagingEntries = new ArrayList<>();
+		List<StagingEntry> stagingEntries = new ArrayList<StagingEntry>();
 		for (StagingEntry stagingEntry : content) {
 			if (folder.getLocation().isPrefixOf(stagingEntry.getLocation())) {
 				if (isInFilter(stagingEntry))
@@ -264,7 +260,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		return content;
 	}
 
-	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		if (!(newInput instanceof StagingViewUpdate))
 			return;
@@ -285,9 +280,8 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 
 		repository = update.repository;
 
-		Set<StagingEntry> nodes = new TreeSet<>(
+		Set<StagingEntry> nodes = new TreeSet<StagingEntry>(
 				new Comparator<StagingEntry>() {
-					@Override
 					public int compare(StagingEntry o1, StagingEntry o2) {
 						return o1.getPath().compareTo(o2.getPath());
 					}
@@ -342,7 +336,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		compactTreeRoots = null;
 	}
 
-	@Override
 	public void dispose() {
 		// nothing to dispose
 	}
@@ -374,7 +367,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 	private static class EntryComparator implements Comparator<Object> {
 		boolean fileNameMode;
 
-		@Override
 		public int compare(Object o1, Object o2) {
 			if (o1 instanceof StagingEntry) {
 				if (o2 instanceof StagingEntry) {
@@ -420,9 +412,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 	private void setSymlinkFileMode(IndexDiffData indexDiff,
 			Collection<StagingEntry> entries) {
 		final Set<String> symlinks = indexDiff.getSymlinks();
-		if (symlinks.isEmpty()) {
-			return;
-		}
 		for (StagingEntry stagingEntry : entries) {
 			if (symlinks.contains(stagingEntry.getPath()))
 				stagingEntry.setSymlink(true);
@@ -441,9 +430,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 	private void setSubmoduleFileMode(IndexDiffData indexDiff,
 			Collection<StagingEntry> entries) {
 		final Set<String> submodules = indexDiff.getSubmodules();
-		if (submodules.isEmpty()) {
-			return;
-		}
 		for (StagingEntry stagingEntry : entries) {
 			if (submodules.contains(stagingEntry.getPath()))
 				stagingEntry.setSubmodule(true);

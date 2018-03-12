@@ -49,21 +49,18 @@ import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.ColumnWeightData;
-import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
@@ -156,6 +153,8 @@ class CommitGraphTable {
 
 	private RevCommit commitToShow;
 
+	private GraphLabelProvider graphLabelProvider;
+
 	private final TableLoader tableLoader;
 
 	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
@@ -164,11 +163,6 @@ class CommitGraphTable {
 
 	CommitGraphTable(Composite parent, final TableLoader loader,
 			final ResourceManager resources) {
-		this(parent, loader, resources, true);
-	}
-
-	CommitGraphTable(Composite parent, final TableLoader loader,
-			final ResourceManager resources, boolean canShowEmailAddresses) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 		tableLoader = loader;
@@ -179,7 +173,6 @@ class CommitGraphTable {
 		rawTable.setLinesVisible(false);
 		rawTable.setFont(nFont);
 		rawTable.addListener(SWT.SetData, new Listener() {
-			@Override
 			public void handleEvent(Event event) {
 				if (tableLoader != null) {
 					TableItem item = (TableItem) event.item;
@@ -200,35 +193,23 @@ class CommitGraphTable {
 		createPaintListener(rawTable);
 
 		table = new TableViewer(rawTable) {
-			@Override
 			protected Widget doFindItem(final Object element) {
 				return element != null ? ((SWTCommit) element).widget : null;
 			}
 
-			@Override
 			protected void mapElement(final Object element, final Widget item) {
-				if (element == null) {
-					return;
-				}
 				((SWTCommit) element).widget = item;
 			}
 		};
 
-		GraphLabelProvider graphLabelProvider = new GraphLabelProvider(
-				canShowEmailAddresses);
-		graphLabelProvider.addListener(new ILabelProviderListener() {
-			@Override
-			public void labelProviderChanged(LabelProviderChangedEvent event) {
-				table.refresh();
-			}
-		});
+		graphLabelProvider = new GraphLabelProvider();
+
 		table.setLabelProvider(graphLabelProvider);
 		table.setContentProvider(new GraphContentProvider());
 		renderer = new SWTPlotRenderer(rawTable.getDisplay(), resources);
 
 		clipboard = new Clipboard(rawTable.getDisplay());
 		rawTable.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(final DisposeEvent e) {
 				clipboard.dispose();
 			}
@@ -239,7 +220,6 @@ class CommitGraphTable {
 		table.setUseHashlookup(true);
 
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				ISelection s = event.getSelection();
 				if (s.isEmpty() || !(s instanceof IStructuredSelection))
@@ -257,7 +237,6 @@ class CommitGraphTable {
 
 		table.getTable().addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				if (allCommits != null)
 					allCommits.dispose();
@@ -277,27 +256,24 @@ class CommitGraphTable {
 
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
-			@Override
 			public void focusLost(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.SELECT_ALL.getId(), null);
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.COPY.getId(), null);
-				site.getActionBars().getMenuManager().update(false);
+				site.getActionBars().updateActionBars();
 			}
 
-			@Override
 			public void focusGained(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.SELECT_ALL.getId(), selectAll);
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.COPY.getId(), copy);
-				site.getActionBars().getMenuManager().update(false);
+				site.getActionBars().updateActionBars();
 			}
 		});
 
 		getTableView().addOpenListener(new IOpenListener() {
-			@Override
 			public void open(OpenEvent event) {
 				if (input == null || !input.isSingleFile())
 					return;
@@ -365,6 +341,14 @@ class CommitGraphTable {
 		table.removePostSelectionChangedListener(l);
 	}
 
+	void setRelativeDate(boolean booleanValue) {
+		graphLabelProvider.setRelativeDate(booleanValue);
+	}
+
+	void setShowEmailAddresses(boolean booleanValue) {
+		graphLabelProvider.setShowEmailAddresses(booleanValue);
+	}
+
 	private boolean canDoCopy() {
 		return !table.getSelection().isEmpty();
 	}
@@ -421,7 +405,7 @@ class CommitGraphTable {
 	}
 
 	private void initCommitsMap() {
-		commitsMap = new HashMap<>();
+		commitsMap = new HashMap<String, PlotCommit>();
 		// ensure that filling (GenerateHistoryJob) and reading (here)
 		// the commit list is thread safe
 		synchronized (allCommits) {
@@ -480,7 +464,6 @@ class CommitGraphTable {
 		// Tell SWT we will completely handle painting for some columns.
 		//
 		rawTable.addListener(SWT.EraseItem, new Listener() {
-			@Override
 			public void handleEvent(final Event event) {
 				if (0 <= event.index && event.index <= 5)
 					event.detail &= ~SWT.FOREGROUND;
@@ -488,7 +471,6 @@ class CommitGraphTable {
 		});
 
 		rawTable.addListener(SWT.PaintItem, new Listener() {
-			@Override
 			public void handleEvent(final Event event) {
 				doPaint(event);
 			}
@@ -511,11 +493,10 @@ class CommitGraphTable {
 			if (lane != null && lane.color.isDisposed())
 				return;
 		}
-		if (highlight != null && c != null && c.has(highlight)) {
+		if (highlight != null && c.has(highlight))
 			event.gc.setFont(hFont);
-		} else {
+		else
 			event.gc.setFont(nFont);
-		}
 
 		if (event.index == 1) {
 			renderer.paint(event, input == null ? null : input.getHead());
@@ -580,7 +561,6 @@ class CommitGraphTable {
 			event.doit = commit.getParentCount() == 1;
 		}
 
-		@Override
 		public void dragSetData(DragSourceEvent event) {
 			boolean isFileTransfer = FileTransfer.getInstance()
 					.isSupportedType(event.dataType);
@@ -695,7 +675,6 @@ class CommitGraphTable {
 			this.input = input;
 		}
 
-		@Override
 		public void menuDetected(MenuDetectEvent e) {
 			popupMgr.removeAll();
 
@@ -818,14 +797,14 @@ class CommitGraphTable {
 					HistoryViewCommands.SET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_SetAsBaselineMenuLabel));
 
-			Map<String, String> parameters = new HashMap<>();
+			Map<String, String> parameters = new HashMap<String, String>();
 			parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD"); //$NON-NLS-1$
 			quickDiffManager.add(getCommandContributionItem(
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_ResetBaselineToHeadMenuLabel,
 					parameters));
 
-			parameters = new HashMap<>();
+			parameters = new HashMap<String, String>();
 			parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD^1"); //$NON-NLS-1$
 			quickDiffManager.add(getCommandContributionItem(
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
@@ -864,18 +843,11 @@ class CommitGraphTable {
 				Map<String, Ref> branches = lastInput.getRepository()
 						.getRefDatabase().getRefs(Constants.R_HEADS);
 				int count = 0;
-				IStructuredSelection selection = (IStructuredSelection) selectionProvider
-						.getSelection();
-				if (selection.isEmpty()) {
-					return false;
-				}
-				ObjectId selectedId = ((RevCommit) selection.getFirstElement())
-						.getId();
 				for (Ref branch : branches.values()) {
-					ObjectId objectId = branch.getLeaf().getObjectId();
-					if (objectId != null && objectId.equals(selectedId)) {
+					if (branch.getLeaf().getObjectId()
+							.equals(((RevCommit) ((IStructuredSelection) selectionProvider
+									.getSelection()).getFirstElement()).getId()))
 						count++;
-					}
 				}
 				return (count > 1);
 

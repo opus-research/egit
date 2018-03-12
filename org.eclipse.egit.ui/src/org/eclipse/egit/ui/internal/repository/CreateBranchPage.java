@@ -47,7 +47,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -118,7 +117,7 @@ class CreateBranchPage extends WizardPage {
 
 	private Label sourceIcon;
 
-	private StyledText sourceNameLabel;
+	private Label sourceNameLabel;
 
 	private String sourceRefName = ""; //$NON-NLS-1$
 
@@ -175,7 +174,6 @@ class CreateBranchPage extends WizardPage {
 		setMessage(UIText.CreateBranchPage_ChooseNameMessage);
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(4, false));
@@ -189,9 +187,7 @@ class CreateBranchPage extends WizardPage {
 		sourceIcon.setLayoutData(GridDataFactory.fillDefaults()
 				.align(SWT.END, SWT.CENTER).create());
 
-		sourceNameLabel = new StyledText(main, SWT.NONE);
-		sourceNameLabel.setBackground(main.getBackground());
-		sourceNameLabel.setEditable(false);
+		sourceNameLabel = new Label(main, SWT.NONE);
 		sourceNameLabel.setLayoutData(GridDataFactory.fillDefaults()
 				.align(SWT.FILL, SWT.CENTER)
 				.grab(true, false).create());
@@ -215,14 +211,12 @@ class CreateBranchPage extends WizardPage {
 		nameText = new Text(main, SWT.BORDER);
 		// give focus to the nameText if label is activated using the mnemonic
 		nameLabel.addTraverseListener(new TraverseListener() {
-			@Override
 			public void keyTraversed(TraverseEvent e) {
 				nameText.setFocus();
 			}
 		});
 
 		nameText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				nameIsSuggestion = false;
 			}
@@ -239,7 +233,6 @@ class CreateBranchPage extends WizardPage {
 
 		upstreamConfigComponent
 				.addUpstreamConfigSelectionListener(new UpstreamConfigSelectionListener() {
-					@Override
 					public void upstreamConfigSelected(
 							UpstreamConfig newUpstreamConfig) {
 						upstreamConfig = newUpstreamConfig;
@@ -276,7 +269,6 @@ class CreateBranchPage extends WizardPage {
 		nameText.setFocus();
 		// add the listener just now to avoid unneeded checkPage()
 		nameText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -399,7 +391,7 @@ class CreateBranchPage extends WizardPage {
 					myBaseCommit);
 		else
 			cbop = new CreateLocalBranchOperation(myRepository, newRefName,
-					myRepository.findRef(this.sourceRefName),
+					myRepository.getRef(this.sourceRefName),
 					upstreamConfig);
 
 		cbop.execute(monitor);
@@ -448,11 +440,10 @@ class CreateBranchPage extends WizardPage {
 	}
 
 	private String getBranchNameSuggestionFromProvider() {
-		final AtomicReference<String> ref = new AtomicReference<>();
+		final AtomicReference<String> ref = new AtomicReference<String>();
 		final IBranchNameProvider branchNameProvider = getBranchNameProvider();
 		if (branchNameProvider != null)
 			SafeRunner.run(new SafeRunnable() {
-				@Override
 				public void run() throws Exception {
 					ref.set(branchNameProvider.getBranchNameSuggestion());
 				}

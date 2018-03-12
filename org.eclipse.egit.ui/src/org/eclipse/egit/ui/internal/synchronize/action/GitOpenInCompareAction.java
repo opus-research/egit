@@ -26,8 +26,6 @@ import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.synchronize.compare.LocalNonWorkspaceTypedElement;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCacheFile;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelWorkingFile;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.viewers.ISelection;
@@ -59,7 +57,6 @@ public class GitOpenInCompareAction extends Action {
 		this.oldAction = oldAction;
 	}
 
-	@Override
 	public void run() {
 		ISelection selection = conf.getSite().getSelectionProvider()
 				.getSelection();
@@ -87,29 +84,11 @@ public class GitOpenInCompareAction extends Action {
 		ITypedElement left;
 		ITypedElement right;
 		if (obj instanceof GitModelWorkingFile) {
-			IPath location = obj.getLocation();
-			if (location == null) {
-				return;
-			}
-			IFile file = ResourceUtil.getFileForLocation(location, false);
-			if (file == null) {
-				Repository repository = null;
-				GitModelObject modelObject = obj;
-				while (modelObject != null) {
-					if (modelObject instanceof GitModelRepository) {
-						repository = ((GitModelRepository) modelObject)
-								.getRepository();
-						break;
-					}
-					modelObject = modelObject.getParent();
-				}
-				if (repository == null) {
-					return;
-				}
-				left = new LocalNonWorkspaceTypedElement(repository, location);
-			} else {
+			IFile file = ResourceUtil.getFileForLocation(obj.getLocation());
+			if (file == null)
+				left = new LocalNonWorkspaceTypedElement(obj.getLocation());
+			else
 				left = SaveableCompareEditorInput.createFileElement(file);
-			}
 			right = getCachedFileElement(obj);
 		} else if (obj instanceof GitModelCacheFile) {
 			left = getCachedFileElement(obj);
@@ -144,9 +123,6 @@ public class GitOpenInCompareAction extends Action {
 		try {
 			IPath location = blob.getLocation();
 			RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-			if (mapping == null) {
-				return null;
-			}
 			Repository repo = mapping.getRepository();
 			String repoRelativePath = mapping.getRepoRelativePath(location);
 			return CompareUtils.getIndexTypedElement(repo, repoRelativePath);
@@ -157,9 +133,6 @@ public class GitOpenInCompareAction extends Action {
 
 	private ITypedElement getHeadFileElement(GitModelBlob blob) {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(blob.getLocation());
-		if (mapping == null) {
-			return null;
-		}
 		Repository repo = mapping.getRepository();
 		String gitPath = mapping.getRepoRelativePath(blob.getLocation());
 		return CompareUtils.getHeadTypedElement(repo, gitPath);

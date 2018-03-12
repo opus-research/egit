@@ -13,8 +13,8 @@ package org.eclipse.egit.ui.internal.repository;
 import java.text.NumberFormat;
 import java.util.Properties;
 
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.api.GarbageCollectCommand;
 import org.eclipse.jgit.api.Git;
@@ -50,7 +50,6 @@ public class RepositoryStatisticsPage extends PropertyPage {
 				.getLocale());
 	}
 
-	@Override
 	protected Control createContents(Composite parent) {
 		Table table = new Table(parent, SWT.MULTI | SWT.BORDER
 				| SWT.FULL_SELECTION);
@@ -62,12 +61,12 @@ public class RepositoryStatisticsPage extends PropertyPage {
 			column.setText(titles[i]);
 		}
 
-		Repository repo = AdapterUtils.adapt(getElement(), Repository.class);
-		if (repo == null) {
+		Repository repo = CommonUtils.getAdapter(getElement(), Repository.class);
+		if (repo == null)
 			return table;
-		}
-		try (Git git = new Git(repo)) {
-			GarbageCollectCommand gc = git.gc();
+		Git git = new Git(repo);
+		GarbageCollectCommand gc = git.gc();
+		try {
 			Properties stats = gc.getStatistics();
 
 			table.setLinesVisible(true);

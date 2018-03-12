@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2016 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Lars Vogel <Lars.Vogel@vogella.com> - Bug 497820
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.rebase;
 
@@ -88,7 +87,7 @@ public class RebaseResultDialog extends MessageDialog {
 
 	private final Repository repo;
 
-	private final Set<String> conflictPaths = new HashSet<>();
+	private final Set<String> conflictPaths = new HashSet<String>();
 
 	private Button toggleButton;
 
@@ -109,10 +108,6 @@ public class RebaseResultDialog extends MessageDialog {
 	 */
 	public static void show(final RebaseResult result,
 			final Repository repository) {
-		if (result.getStatus() == Status.ABORTED) {
-			return;
-		}
-
 		boolean shouldShow = result.getStatus() == Status.STOPPED
 				|| result.getStatus() == Status.STASH_APPLY_CONFLICTS
 				|| Activator.getDefault().getPreferenceStore().getBoolean(
@@ -120,7 +115,6 @@ public class RebaseResultDialog extends MessageDialog {
 
 		if(result.getStatus() == Status.CONFLICTS) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
 					Shell shell = PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getShell();
@@ -140,7 +134,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return;
 		}
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
@@ -449,7 +442,6 @@ public class RebaseResultDialog extends MessageDialog {
 		startMergeButton.setEnabled(mergeToolAvailable);
 		startMergeButton.addSelectionListener(new SelectionListener() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (startMergeButton.getSelection())
 					nextSteps
@@ -458,7 +450,6 @@ public class RebaseResultDialog extends MessageDialog {
 									UIText.RebaseResultDialog_NextStepsAfterResolveConflicts);
 			}
 
-			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -469,13 +460,11 @@ public class RebaseResultDialog extends MessageDialog {
 		skipCommitButton.setText(UIText.RebaseResultDialog_SkipCommitButton);
 		skipCommitButton.addSelectionListener(new SelectionListener() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (skipCommitButton.getSelection())
 					nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
 			}
 
-			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -487,13 +476,11 @@ public class RebaseResultDialog extends MessageDialog {
 				.setText(UIText.RebaseResultDialog_AbortRebaseRadioText);
 		abortRebaseButton.addSelectionListener(new SelectionListener() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (abortRebaseButton.getSelection())
 					nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
 			}
 
-			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -504,14 +491,12 @@ public class RebaseResultDialog extends MessageDialog {
 		doNothingButton.setText(UIText.RebaseResultDialog_DoNothingRadioText);
 		doNothingButton.addSelectionListener(new SelectionListener() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (doNothingButton.getSelection())
 					nextSteps.getTextWidget().setText(
 							UIText.RebaseResultDialog_NextStepsDoNothing);
 			}
 
-			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -573,7 +558,7 @@ public class RebaseResultDialog extends MessageDialog {
 						}
 					}
 				}
-				List<IPath> locationList = new ArrayList<>();
+				List<IPath> locationList = new ArrayList<IPath>();
 				IPath repoWorkdirPath = new Path(repo.getWorkTree().getPath());
 				for (String repoPath : conflictPaths) {
 					IPath location = repoWorkdirPath.append(repoPath);

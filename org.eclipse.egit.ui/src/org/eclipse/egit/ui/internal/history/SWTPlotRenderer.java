@@ -72,12 +72,12 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	/**
 	 * Map from ref name to its label coordinates
 	 */
-	private final Map<String, Point> labelCoordinates = new HashMap<>();
+	private final Map<String, Point> labelCoordinates = new HashMap<String, Point>();
 
 	/**
 	 * Set of ref names that are shown as an ellipsis
 	 */
-	private final Set<String> ellipsisTags = new HashSet<>();
+	private final Set<String> ellipsisTags = new HashSet<String>();
 
 	private int textHeight;
 
@@ -133,7 +133,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		paintCommit(commit , event.height);
 	}
 
-	@Override
 	protected void drawLine(final Color color, final int x1, final int y1,
 			final int x2, final int y2, final int width) {
 		g.setForeground(color);
@@ -154,19 +153,16 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		g.drawOval(dotX, dotY, dotW, dotH);
 	}
 
-	@Override
 	protected void drawCommitDot(final int x, final int y, final int w,
 			final int h) {
 		drawDot(commitDotOutline, commitDotFill, x, y, w, h);
 	}
 
-	@Override
 	protected void drawBoundaryDot(final int x, final int y, final int w,
 			final int h) {
 		drawDot(sys_gray, sys_white, x, y, w, h);
 	}
 
-	@Override
 	protected void drawText(final String msg, final int x, final int y) {
 		final Point textsz = g.textExtent(msg);
 		final int texty = (y - textsz.y) / 2;
@@ -295,7 +291,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		return isHead;
 	}
 
-	@Override
 	protected Color laneColor(final SWTLane myLane) {
 		return myLane != null ? myLane.color : sys_black;
 	}

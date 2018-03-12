@@ -23,7 +23,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -87,24 +86,21 @@ public class NewRemoteDialog extends TitleAreaDialog {
 		nameText = new Text(main, SWT.BORDER);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(nameText);
 		nameText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
 		});
 
-		Composite buttonComposite = new Composite(main, SWT.NONE);
-		GridDataFactory.fillDefaults().span(2, 1).applyTo(buttonComposite);
-		buttonComposite.setLayout(new RowLayout(SWT.VERTICAL));
-		forPush = new Button(buttonComposite, SWT.RADIO);
+		forPush = new Button(main, SWT.RADIO);
+		GridDataFactory.fillDefaults().span(2, 1).applyTo(forPush);
 		forPush.setText(UIText.NewRemoteDialog_PushRadio);
 		forPush.setSelection(true);
 
-		Button forFetch = new Button(buttonComposite, SWT.RADIO);
+		Button forFetch = new Button(main, SWT.RADIO);
+		GridDataFactory.fillDefaults().span(2, 1).applyTo(forFetch);
 		forFetch.setText(UIText.NewRemoteDialog_FetchRadio);
 		nameText.setFocus();
 		applyDialogFont(main);
-		main.setTabList(new Control[] { nameText, buttonComposite });
 		return main;
 	}
 

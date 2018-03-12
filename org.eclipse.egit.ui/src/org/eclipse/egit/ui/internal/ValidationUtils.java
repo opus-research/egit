@@ -36,7 +36,6 @@ public class ValidationUtils {
 	public static IInputValidator getRefNameInputValidator(
 			final Repository repo, final String refPrefix, final boolean errorOnEmptyName) {
 		return new IInputValidator() {
-			@Override
 			public String isValid(String newText) {
 				if (newText.length() == 0) {
 					if (errorOnEmptyName)
@@ -58,7 +57,7 @@ public class ValidationUtils {
 					RefDatabase refDatabase = repo.getRefDatabase();
 					Collection<String> conflictingNames = refDatabase.getConflictingNames(testFor);
 					if (!conflictingNames.isEmpty()) {
-						ArrayList<String> names = new ArrayList<>(conflictingNames);
+						ArrayList<String> names = new ArrayList<String>(conflictingNames);
 						Collections.sort(names);
 						String joined = StringUtils.join(names, ", "); //$NON-NLS-1$
 						return NLS.bind(

@@ -37,7 +37,7 @@ public class RevUtils {
 	}
 
 	/**
-	 * Finds and returns instance of common ancestor commit for given two
+	 * Finds and returns instance of common ancestor commit for given to
 	 * commit's
 	 *
 	 * @param repo repository in which common ancestor should be searched, cannot be null
@@ -103,7 +103,6 @@ public class RevUtils {
 				}
 			} else if (state == RepositoryState.MERGING) {
 				List<ObjectId> mergeHeads = repository.readMergeHeads();
-				Assert.isNotNull(mergeHeads);
 				if (mergeHeads.size() == 1) {
 					ObjectId mergeHead = mergeHeads.get(0);
 					RevCommit mergeCommit = walk.parseCommit(mergeHead);
@@ -139,7 +138,8 @@ public class RevUtils {
 
 		final int skew = 24 * 60 * 60; // one day clock skew
 
-		try (RevWalk walk = new RevWalk(repo)) {
+		RevWalk walk = new RevWalk(repo);
+		try {
 			RevCommit commit = walk.parseCommit(commitId);
 			for (Ref ref : refs) {
 				RevCommit refCommit = walk.parseCommit(ref.getObjectId());
@@ -154,6 +154,7 @@ public class RevUtils {
 				if (contained)
 					return true;
 			}
+		} finally {
 			walk.dispose();
 		}
 		return false;

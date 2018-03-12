@@ -33,7 +33,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
  * of the repository.
  */
 public class CompareWithIndexActionHandler extends RepositoryActionHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(true, event);
 		// assert all resources map to the same repository
@@ -49,15 +48,10 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 						GitFileRevision.INDEX, true, workBenchPage);
 			else {
 				IPath[] locations = getSelectedLocations(event);
-				if (locations.length == 0) {
-					return null;
-				}
-				IPath location = locations[0];
-				if (location == null) {
-					return null;
-				}
-				CompareUtils.compare(location, repository, Constants.HEAD,
-						GitFileRevision.INDEX, true, workBenchPage);
+				if (locations.length > 0)
+					CompareUtils.compare(locations[0], repository,
+							Constants.HEAD, GitFileRevision.INDEX, true,
+							workBenchPage);
 			}
 		} catch (IOException e) {
 			Activator.handleError(

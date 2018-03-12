@@ -1,26 +1,24 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Bernard Leach <leachbj@bouncycastle.org> and others.
- * Copyright (C) 2015 Denis Zygann <d.zygann@web.de>
+ * Copyright (C) 2011, 2014 Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.DecorationResult;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
 import org.eclipse.egit.ui.internal.staging.StagingView.Presentation;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
@@ -29,8 +27,8 @@ import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
@@ -43,6 +41,9 @@ public class StagingViewLabelProvider extends LabelProvider {
 	private StagingView stagingView;
 
 	private WorkbenchLabelProvider workbenchLabelProvider = new WorkbenchLabelProvider();
+
+	private Image DEFAULT = PlatformUI.getWorkbench().getSharedImages()
+			.getImage(ISharedImages.IMG_OBJ_FILE);
 
 	private final Image FOLDER = PlatformUI.getWorkbench().getSharedImages()
 			.getImage(ISharedImages.IMG_OBJ_FOLDER);
@@ -87,24 +88,31 @@ public class StagingViewLabelProvider extends LabelProvider {
 	}
 
 	private Image getEditorImage(StagingEntry diff) {
-		if (diff.isSubmodule()) {
+		if (diff.isSubmodule())
 			return SUBMODULE;
-		}
 
-		Image image;
-		if (diff.getPath() != null) {
-			image = (Image) resourceManager
-					.get(UIUtils.getEditorImage(diff.getPath()));
-		} else {
-			image = (Image) resourceManager.get(UIUtils.DEFAULT_FILE_IMG);
+		Image image = DEFAULT;
+		String name = new Path(diff.getPath()).lastSegment();
+		if (name != null) {
+			ImageDescriptor descriptor = PlatformUI.getWorkbench()
+					.getEditorRegistry().getImageDescriptor(name);
+			image = (Image) this.resourceManager.get(descriptor);
 		}
 		if (diff.isSymlink()) {
-			IPath diffLocation = diff.getLocation();
-			if (diffLocation != null) {
-				File diffFile = diffLocation.toFile();
-				if (diffFile.isDirectory()) {
-					image = FOLDER;
+			try {
+				IPath diffLocation = diff.getLocation();
+				if (diffLocation != null) {
+					File diffFile = diffLocation.toFile();
+					if (diffFile.exists()) {
+						String targetPath = FS.DETECTED.readSymLink(diffFile);
+						if (targetPath != null
+								&& new File(diffFile, targetPath).isDirectory())
+							image = FOLDER;
+					}
 				}
+			} catch (IOException e) {
+				Activator
+						.error(UIText.StagingViewLabelProvider_SymlinkError, e);
 			}
 			image = addSymlinkDecorationToImage(image);
 		}
@@ -123,7 +131,6 @@ public class StagingViewLabelProvider extends LabelProvider {
 		return (Image) this.resourceManager.get(decorated);
 	}
 
-	@Override
 	public Image getImage(Object element) {
 
 		if (element instanceof StagingFolderEntry) {
@@ -149,12 +156,7 @@ public class StagingViewLabelProvider extends LabelProvider {
 			return stagingFolderEntry.getNodePath().toString();
 		}
 
-		StagingEntry stagingEntry = getStagingEntry(element);
-
-		if (stagingEntry == null) {
-			return ""; //$NON-NLS-1$
-		}
-
+		StagingEntry stagingEntry = (StagingEntry) element;
 		final DecorationResult decoration = new DecorationResult();
 		decorationHelper.decorate(decoration, stagingEntry);
 		final StyledString styled = new StyledString();
@@ -188,23 +190,6 @@ public class StagingViewLabelProvider extends LabelProvider {
 			styled.append(stagingEntry.getName());
 		}
 		return styled.toString();
-	}
-
-	@Nullable
-	private StagingEntry getStagingEntry(Object element) {
-		StagingEntry entry = null;
-
-		if (element instanceof StagingEntry) {
-			entry = (StagingEntry) element;
-		}
-
-		if (element instanceof TreeItem) {
-			TreeItem item = (TreeItem) element;
-			if (item.getData() instanceof StagingEntry) {
-				entry = (StagingEntry) item.getData();
-			}
-		}
-		return entry;
 	}
 
 }

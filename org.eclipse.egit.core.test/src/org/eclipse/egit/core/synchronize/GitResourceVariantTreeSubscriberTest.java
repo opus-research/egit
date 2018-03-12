@@ -46,7 +46,6 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 
 	private IFile changedFile;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();

@@ -85,7 +85,6 @@ public class DiffViewer extends SourceViewer {
 
 	private IPropertyChangeListener themeListener = new IPropertyChangeListener() {
 
-		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			String property = event.getProperty();
 			if (IThemeManager.CHANGE_CURRENT_THEME.equals(property)
@@ -107,7 +106,6 @@ public class DiffViewer extends SourceViewer {
 
 	private IPropertyChangeListener editorPrefListener = new IPropertyChangeListener() {
 
-		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			styleViewer();
 		}
@@ -139,7 +137,6 @@ public class DiffViewer extends SourceViewer {
 		initListeners();
 		getControl().addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				EditorsUI.getPreferenceStore().removePropertyChangeListener(
 						editorPrefListener);
@@ -179,7 +176,6 @@ public class DiffViewer extends SourceViewer {
 				this.editorPrefListener);
 		getTextWidget().addLineBackgroundListener(new LineBackgroundListener() {
 
-			@Override
 			public void lineGetBackground(LineBackgroundEvent event) {
 				StyledText text = getTextWidget();
 				if (event.lineOffset < text.getCharCount()) {

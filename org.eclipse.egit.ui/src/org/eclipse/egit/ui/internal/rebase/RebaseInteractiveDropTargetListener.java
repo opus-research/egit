@@ -31,7 +31,6 @@ final class RebaseInteractiveDropTargetListener extends ViewerDropAdapter {
 		this.rebaseInteractiveView = rebaseInteractiveView;
 	}
 
-	@Override
 	public boolean performDrop(Object data) {
 		if (!this.rebaseInteractiveView.isDragAndDropEnabled())
 			return false;
@@ -45,7 +44,7 @@ final class RebaseInteractiveDropTargetListener extends ViewerDropAdapter {
 		if (selectionList.contains(getCurrentTarget()))
 			return false;
 
-		List<RebaseInteractivePlan.PlanElement> sourceElements = new ArrayList<>();
+		List<RebaseInteractivePlan.PlanElement> sourceElements = new ArrayList<RebaseInteractivePlan.PlanElement>();
 		for (Object obj : selectionList) {
 			if (obj instanceof RebaseInteractivePlan.PlanElement)
 				sourceElements.add((RebaseInteractivePlan.PlanElement) obj);

@@ -68,7 +68,6 @@ public class CherryPickHandler extends SelectionHandler {
 	 */
 	public static final String ID = "org.eclipse.egit.ui.commit.CherryPick"; //$NON-NLS-1$
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		RevCommit commit = getSelectedItem(RevCommit.class, event);
 		if (commit == null)
@@ -150,7 +149,6 @@ public class CherryPickHandler extends SelectionHandler {
 
 		shell.getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				ConfirmCherryPickDialog dialog = new ConfirmCherryPickDialog(
 						shell, message, repository, Arrays.asList(commit));
@@ -173,7 +171,7 @@ public class CherryPickHandler extends SelectionHandler {
 							IDialogConstants.CANCEL_LABEL }, 0);
 			setShellStyle(getShellStyle() | SWT.RESIZE);
 
-			List<RepositoryCommit> repoCommits = new ArrayList<>();
+			List<RepositoryCommit> repoCommits = new ArrayList<RepositoryCommit>();
 			for (RevCommit commit : revCommits)
 				repoCommits.add(new RepositoryCommit(repository, commit));
 			this.commits = repoCommits.toArray(new RepositoryCommit[0]);
@@ -197,12 +195,10 @@ public class CherryPickHandler extends SelectionHandler {
 
 		private static class ContentProvider extends WorkbenchContentProvider {
 
-			@Override
 			public Object[] getElements(final Object element) {
 				return (Object[]) element;
 			}
 
-			@Override
 			public Object[] getChildren(Object element) {
 				if (element instanceof RepositoryCommit)
 					return ((RepositoryCommit) element).getDiffs();
@@ -214,7 +210,6 @@ public class CherryPickHandler extends SelectionHandler {
 	private void showNotPerformedDialog(final Shell shell) {
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				MessageDialog.openWarning(shell,
 						UIText.CherryPickHandler_NoCherryPickPerformedTitle,
@@ -226,7 +221,6 @@ public class CherryPickHandler extends SelectionHandler {
 	private void showConflictDialog(final Shell shell) {
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				MessageDialog.openWarning(shell,
 						UIText.CherryPickHandler_CherryPickConflictsTitle,

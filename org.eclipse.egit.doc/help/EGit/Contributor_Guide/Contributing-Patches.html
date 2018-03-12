@@ -28,11 +28,11 @@
 				<td style="width: 60%" align="center"></td>
 				<td style="width: 20%" align="right" valign="top">Gerrit Code Review Cheatsheet</td>
 			</tr>
-		</table><hr class="navigation-separator"/>
+		</table><hr/>
 		<h1 id="Contributing_Patches">Contributing Patches</h1>
 		<h2 id="Using_Gerrit_at_Eclipse">Using Gerrit at Eclipse</h2>
 		<p>EGit and JGit projects are using 
-			<a href="https://www.gerritcodereview.com/" target="egit_external">Gerrit Code Review</a> for Git based patch submission and review. 
+			<a href="http://code.google.com/p/gerrit/" target="egit_external">Gerrit Code Review</a> for Git based patch submission and review. 
 		</p>
 		<p>Parts of this chapter are also available in the 
 			<a href="http://wiki.eclipse.org/Gerrit#Doing_Code_Reviews_with_Gerrit" target="egit_external">Eclipse Gerrit wiki</a>.
@@ -315,7 +315,7 @@ git config remote.review.push HEAD:refs/for/master
 				<i>Gerrit</i> parse this meta data to provide additional functionality.
 				<ul>
 					<li>If there is an associated bug number in Bugzilla about it, it should come as a 
-						<i>Bug:</i> footer right before Gerrit's Change-Id entry (if available) or towards the end. Use exactly the capitalization "Bug", since the automatic linking mechanism to the bug database is case sensitive.
+						<i>Bug:</i> footer right before Gerrit's Change-Id entry (if available) or towards the end.
 					</li>
 					<li>If a 
 						<i>Contribution Questionnaire</i> has been issued to initiate and track the review of contributed changes by the Eclipse Foundation's IP team the IPZilla bug number should be added as  
@@ -323,7 +323,7 @@ git config remote.review.push HEAD:refs/for/master
 					</li>
 					<li>A 
 						<i>Gerrit Change-Id</i> footer is required for all changes pushed to Gerrit (to enable pushing new patchsets for the same change), it should be added in the format shown below. Use the 
-						<a href="Gerrit-Code-Review-Cheatsheet.html#Install_the_commit-msg_hook_in_your_repository" title="EGit/Contributor_Guide#Install_the_commit-msg_hook_in_your_repository">Gerrit commit message hook or EGit</a> to add the 
+						<a href="Install_the_commit-msg_hook_in_your_repository" title="EGit/Contributor_Guide#Install_the_commit-msg_hook_in_your_repository">Gerrit commit message hook or EGit</a> to add the 
 						<i>Change-Id</i>.
 					</li>
 					<li>A "Signed-off-by" can be added at the end of the commit message (see example below). Note: at the moment this is not required but may be used to list all who modified (amended, rebased, cherry-picked) this change.</li>
@@ -371,8 +371,11 @@ Copyright (C) YEAR Your Name &lt;you@example.org&gt;
 		</p>
 		<ul>
 			<li>Run all existing tests. It does not take very long.</li>
-			<li>Pay attention to the Java and Eclipse SDK baselines. EGit requires only Java 7 and Eclipse 3.8.2. You cannot use API's that are newer.</li>
+			<li>Pay attention to the Java and Eclipse SDK baselines. EGit requires only Java5 and Eclipse 3.5. You cannot use API's that are newer. We often see breakages because Java 6 API's are used.</li>
 		</ul>
+		<p>Note: In order to test in Eclipse 3.5 (Galileo), consider building EGit with the <code>platform-galileo</code> maven profile (see the 
+			<a href="Builds.html#Maven_Build_Sequence">Maven Build Sequence</a> for more details).
+		</p>
 		<h2 id="Sending_patches_by_mail">Sending patches by mail</h2>
 		<p>Although sending patches by mail is the approved way of interacting with, and asking feedback from, the Git project, please don't send patches via 
 			<a href="http://www.kernel.org/pub//software/scm/git/docs/git-send-email.html" target="egit_external">git send-email</a>. Instead, please use 
@@ -385,7 +388,7 @@ Copyright (C) YEAR Your Name &lt;you@example.org&gt;
 		</p>
 		<p>
 			<br/>
-		</p><hr class="navigation-separator"/>
+		</p><hr/>
 		<table class="navigation" style="width: 100%;" border="0" summary="navigation">
 			<tr>
 				<td style="width: 20%" align="left">

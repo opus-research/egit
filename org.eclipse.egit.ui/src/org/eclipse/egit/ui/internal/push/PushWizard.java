@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,11 +11,13 @@
 package org.eclipse.egit.ui.internal.push;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
@@ -33,6 +34,7 @@ import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
@@ -44,6 +46,8 @@ import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Wizard allowing user to specify all needed data to push to another repository
@@ -160,16 +164,12 @@ public class PushWizard extends Wizard {
 			operation.setCredentialsProvider(new EGitCredentialsProvider(
 					credentials.getUser(), credentials.getPassword()));
 		final PushOperationResult resultToCompare;
-		if (confirmPage.isShowOnlyIfChangedSelected()) {
+		if (confirmPage.isShowOnlyIfChangedSelected())
 			resultToCompare = confirmPage.getConfirmedResult();
-		} else {
+		else
 			resultToCompare = null;
-		}
-		final Job job = new PushJob(
-				NLS.bind(UIText.PushWizard_jobName,
-						getURIsString(operation.getSpecification().getURIs())),
-				localDb, operation, resultToCompare,
-				getDestinationString(repoPage.getSelection()), true);
+		final Job job = new PushJob(localDb, operation, resultToCompare,
+				getDestinationString(repoPage.getSelection()));
 
 		job.setUser(true);
 		job.schedule();
@@ -212,7 +212,7 @@ public class PushWizard extends Wizard {
 				// obtain the push ref specs from the configuration
 				// use our own list here, as the config returns a non-modifiable
 				// list
-				final Collection<RefSpec> pushSpecs = new ArrayList<>();
+				final Collection<RefSpec> pushSpecs = new ArrayList<RefSpec>();
 				pushSpecs.addAll(config.getPushRefSpecs());
 				final Collection<RemoteRefUpdate> updates = Transport
 						.findRemoteRefUpdatesFor(localDb, pushSpecs,
@@ -271,4 +271,56 @@ public class PushWizard extends Wizard {
 		return destination;
 	}
 
+	static class PushJob extends Job {
+		private final PushOperation operation;
+
+		private final PushOperationResult resultToCompare;
+
+		private final String destinationString;
+
+		private Repository localDb;
+
+		public PushJob(final Repository localDb, final PushOperation operation,
+				final PushOperationResult resultToCompare,
+				final String destinationString) {
+			super(NLS.bind(UIText.PushWizard_jobName, getURIsString(operation
+					.getSpecification().getURIs())));
+			this.operation = operation;
+			this.resultToCompare = resultToCompare;
+			this.destinationString = destinationString;
+			this.localDb = localDb;
+		}
+
+		@Override
+		protected IStatus run(final IProgressMonitor monitor) {
+			try {
+				operation.run(monitor);
+			} catch (final InvocationTargetException e) {
+				return new Status(IStatus.ERROR, Activator.getPluginId(),
+						UIText.PushWizard_unexpectedError, e.getCause());
+			}
+
+			final PushOperationResult result = operation.getOperationResult();
+			if (!result.isSuccessfulConnectionForAnyURI()) {
+				return new Status(IStatus.ERROR, Activator.getPluginId(), NLS
+						.bind(UIText.PushWizard_cantConnectToAny, result
+								.getErrorStringForAllURis()));
+			}
+
+			if (resultToCompare == null || !result.equals(resultToCompare)) {
+				PlatformUI.getWorkbench().getDisplay().asyncExec(
+						new Runnable() {
+							public void run() {
+								final Shell shell = PlatformUI.getWorkbench()
+										.getActiveWorkbenchWindow().getShell();
+								final Dialog dialog = new PushResultDialog(
+										shell, localDb, result,
+										destinationString);
+								dialog.open();
+							}
+						});
+			}
+			return Status.OK_STATUS;
+		}
+	}
 }

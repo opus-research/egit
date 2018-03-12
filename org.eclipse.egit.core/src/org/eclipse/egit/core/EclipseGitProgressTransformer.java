@@ -36,12 +36,10 @@ public class EclipseGitProgressTransformer implements ProgressMonitor {
 		root = eclipseMonitor;
 	}
 
-	@Override
 	public void start(final int totalTasks) {
 		root.beginTask(EMPTY_STRING, totalTasks * 1000);
 	}
 
-	@Override
 	public void beginTask(final String name, final int total) {
 		endTask();
 		msg = name;
@@ -55,7 +53,6 @@ public class EclipseGitProgressTransformer implements ProgressMonitor {
 		task.subTask(msg);
 	}
 
-	@Override
 	public void update(final int work) {
 		if (task == null)
 			return;
@@ -95,7 +92,6 @@ public class EclipseGitProgressTransformer implements ProgressMonitor {
 		task.worked(work);
 	}
 
-	@Override
 	public void endTask() {
 		if (task != null) {
 			try {
@@ -106,7 +102,6 @@ public class EclipseGitProgressTransformer implements ProgressMonitor {
 		}
 	}
 
-	@Override
 	public boolean isCancelled() {
 		if (task != null)
 			return task.isCanceled();

@@ -24,10 +24,13 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.history.HistoryPageInput;
@@ -72,26 +75,38 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 	protected Repository getRepository(ExecutionEvent event)
 			throws ExecutionException {
 		Object input = getInput(event);
-		if (input == null) {
+		if (input == null)
 			return null;
-		}
-		if (input instanceof HistoryPageInput) {
+		if (input instanceof HistoryPageInput)
 			return ((HistoryPageInput) input).getRepository();
-		}
-		if (input instanceof RepositoryTreeNode) {
+		if (input instanceof RepositoryTreeNode)
 			return ((RepositoryTreeNode) input).getRepository();
-		}
-		Repository repo = AdapterUtils.adapt(input, Repository.class);
-		if (repo != null) {
-			return repo;
-		}
-		IResource resource = AdapterUtils.adaptToAnyResource(input);
-		if (resource != null) {
-			Repository repository = ResourceUtil.getRepository(resource);
-			if (repository != null) {
+		if (input instanceof IResource) {
+			IResource resource = (IResource) input;
+			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+			if (mapping != null)
+				return mapping.getRepository();
+			// for closed projects team framework doesn't allow to get mapping
+			// so try again using a path based approach
+			Repository repository = Activator.getDefault().getRepositoryCache()
+					.getRepository(resource);
+			if (repository != null)
 				return repository;
-			}
 		}
+		if (input instanceof IAdaptable) {
+			IResource resource = CommonUtils.getAdapter(((IAdaptable) input), IResource.class);
+			if (resource != null) {
+				RepositoryMapping mapping = RepositoryMapping
+						.getMapping(resource);
+				if (mapping != null)
+					return mapping.getRepository();
+			}
+
+		}
+
+		Repository repo = AdapterUtils.adapt(input, Repository.class);
+		if (repo != null)
+			return repo;
 
 		throw new ExecutionException(
 				UIText.AbstractHistoryCommanndHandler_CouldNotGetRepositoryMessage);
@@ -113,17 +128,16 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 			throws ExecutionException {
 		Repository repo = getRepository(event);
 		Collection<Ref> revTags = repo.getTags().values();
-		List<RevTag> tags = new ArrayList<>();
-		try (RevWalk walk = new RevWalk(repo)) {
-			for (Ref ref : revTags) {
-				try {
-					tags.add(walk.parseTag(repo.resolve(ref.getName())));
-				} catch (IOException e) {
-					throw new ExecutionException(e.getMessage(), e);
-				}
+		List<RevTag> tags = new ArrayList<RevTag>();
+		RevWalk walk = new RevWalk(repo);
+		for (Ref ref : revTags) {
+			try {
+				tags.add(walk.parseTag(repo.resolve(ref.getName())));
+			} catch (IOException e) {
+				throw new ExecutionException(e.getMessage(), e);
 			}
-			return tags;
 		}
+		return tags;
 	}
 
 	protected GitHistoryPage getPage() {
@@ -224,7 +238,7 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 		IStructuredSelection selection = getSelection(event);
 		if (selection.isEmpty())
 			return Collections.emptyList();
-		List<RevCommit> commits = new ArrayList<>();
+		List<RevCommit> commits = new ArrayList<RevCommit>();
 		try (RevWalk walk = new RevWalk(repository)) {
 			for (Object element : selection.toList()) {
 				RevCommit commit = (RevCommit) element;
@@ -250,23 +264,19 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 	 */
 	protected List<RefNode> getRefNodes(ObjectId commit, Repository repo,
 			String... refPrefixes) {
-		List<Ref> availableBranches = new ArrayList<>();
-		List<RefNode> nodes = new ArrayList<>();
+		List<Ref> availableBranches = new ArrayList<Ref>();
+		List<RefNode> nodes = new ArrayList<RefNode>();
 		try {
-			Map<String, Ref> branches = new HashMap<>();
-			for (String refPrefix : refPrefixes) {
+			Map<String, Ref> branches = new HashMap<String, Ref>();
+			for (String refPrefix : refPrefixes)
 				branches.putAll(repo.getRefDatabase().getRefs(refPrefix));
-			}
 			for (Ref branch : branches.values()) {
-				ObjectId objectId = branch.getLeaf().getObjectId();
-				if (objectId != null && objectId.equals(commit)) {
+				if (branch.getLeaf().getObjectId().equals(commit))
 					availableBranches.add(branch);
-				}
 			}
 			RepositoryNode repoNode = new RepositoryNode(null, repo);
-			for (Ref ref : availableBranches) {
+			for (Ref ref : availableBranches)
 				nodes.add(new RefNode(repoNode, repo, ref));
-			}
 
 		} catch (IOException e) {
 			// ignore here
@@ -288,7 +298,7 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 	private List<Ref> getBranchesOfCommit(IStructuredSelection selection,
 			String head,
 			boolean hideCurrentBranch) {
-		final List<Ref> branchesOfCommit = new ArrayList<>();
+		final List<Ref> branchesOfCommit = new ArrayList<Ref>();
 		if (selection.isEmpty())
 			return branchesOfCommit;
 		PlotCommit commit = (PlotCommit) selection.getFirstElement();

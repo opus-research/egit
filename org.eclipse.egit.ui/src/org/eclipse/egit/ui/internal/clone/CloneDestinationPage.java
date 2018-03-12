@@ -5,7 +5,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +17,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.egit.core.RepositoryUtil;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.dialogs.Dialog;
@@ -32,11 +32,9 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -61,7 +59,7 @@ import org.eclipse.ui.dialogs.WorkingSetGroup;
  */
 public class CloneDestinationPage extends WizardPage {
 
-	private final List<Ref> availableRefs = new ArrayList<>();
+	private final List<Ref> availableRefs = new ArrayList<Ref>();
 
 	private RepositorySelection validatedRepoSelection;
 
@@ -96,7 +94,6 @@ public class CloneDestinationPage extends WizardPage {
 		setTitle(UIText.CloneDestinationPage_title);
 	}
 
-	@Override
 	public void createControl(final Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NULL);
 		final GridLayout layout = new GridLayout();
@@ -133,24 +130,22 @@ public class CloneDestinationPage extends WizardPage {
 	 * @param head
 	 *            HEAD in source repository
 	 */
-	public void setSelection(@NonNull RepositorySelection repositorySelection,
-			List<Ref> availableRefs, List<Ref> branches, Ref head) {
+	public void setSelection(RepositorySelection repositorySelection, List<Ref> availableRefs, List<Ref> branches, Ref head){
 		this.availableRefs.clear();
 		this.availableRefs.addAll(availableRefs);
 		checkPreviousPagesSelections(repositorySelection, branches, head);
-		revalidate(repositorySelection, branches, head);
+		revalidate(repositorySelection,branches, head);
 	}
 
 	private void checkPreviousPagesSelections(
-			@NonNull RepositorySelection repositorySelection,
-			List<Ref> branches, Ref head) {
+			RepositorySelection repositorySelection, List<Ref> branches,
+			Ref head) {
 		if (!repositorySelection.equals(validatedRepoSelection)
 				|| !branches.equals(validatedSelectedBranches)
-				|| (head != null && !head.equals(validatedHEAD))) {
+				|| !head.equals(validatedHEAD))
 			setPageComplete(false);
-		} else {
+		else
 			checkPage();
-		}
 	}
 
 	private void createDestinationGroup(final Composite parent) {
@@ -169,7 +164,6 @@ public class CloneDestinationPage extends WizardPage {
 		directoryText = new Text(p, SWT.BORDER);
 		directoryText.setLayoutData(createFieldGridData());
 		directoryText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				checkPage();
 			}
@@ -177,7 +171,6 @@ public class CloneDestinationPage extends WizardPage {
 		final Button b = new Button(p, SWT.PUSH);
 		b.setText(UIText.CloneDestinationPage_browseButton);
 		b.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				final FileDialog d;
 
@@ -227,7 +220,6 @@ public class CloneDestinationPage extends WizardPage {
 		remoteText.setText(Constants.DEFAULT_REMOTE_NAME);
 		remoteText.setLayoutData(createFieldGridData());
 		remoteText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -245,7 +237,6 @@ public class CloneDestinationPage extends WizardPage {
 				.getPreferenceStore()
 				.getBoolean(UIPreferences.CLONE_WIZARD_IMPORT_PROJECTS));
 		importProjectsButton.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Activator
 						.getDefault()
@@ -313,7 +304,7 @@ public class CloneDestinationPage extends WizardPage {
 	 * @return location the user wants to store this repository.
 	 */
 	public File getDestinationFile() {
-		return FileUtils.canonicalize(new File(directoryText.getText()));
+		return new File(directoryText.getText());
 	}
 
 	/**
@@ -407,11 +398,7 @@ public class CloneDestinationPage extends WizardPage {
 		clonedRemote = getRemote();
 	}
 
-	/**
-	 * @return whether user updated clone settings
-	 * @since 4.0.0
-	 */
-	public boolean cloneSettingsChanged() {
+	boolean cloneSettingsChanged() {
 		boolean cloneSettingsChanged = false;
 		if (clonedDestination == null || !clonedDestination.equals(getDestinationFile()) ||
 				clonedInitialBranch == null || !clonedInitialBranch.equals(getInitialBranch()) ||
@@ -439,11 +426,10 @@ public class CloneDestinationPage extends WizardPage {
 		return canCreateSubdir(parent.getParentFile());
 	}
 
-	private void revalidate(@NonNull RepositorySelection repoSelection,
-			List<Ref> branches, Ref head) {
+	private void revalidate(RepositorySelection repoSelection, List<Ref> branches, Ref head) {
 		if (repoSelection.equals(validatedRepoSelection)
 				&& branches.equals(validatedSelectedBranches)
-				&& head != null && head.equals(validatedHEAD)) {
+				&& head.equals(validatedHEAD)) {
 			checkPage();
 			return;
 		}
@@ -453,8 +439,13 @@ public class CloneDestinationPage extends WizardPage {
 			// update repo-related selection only if it changed
 			final String n = validatedRepoSelection.getURI().getHumanishName();
 			setDescription(NLS.bind(UIText.CloneDestinationPage_description, n));
-			String defaultRepoDir = RepositoryUtil.getDefaultRepositoryDir();
-			File parentDir = new File(defaultRepoDir);
+			String defaultRepoDir = UIUtils.getDefaultRepositoryDir();
+			File parentDir;
+			if (defaultRepoDir.length() > 0)
+				parentDir = new File(defaultRepoDir);
+			else
+				parentDir = ResourcesPlugin.getWorkspace().getRoot()
+						.getRawLocation().toFile();
 			directoryText.setText(new File(parentDir, n).getAbsolutePath());
 		}
 

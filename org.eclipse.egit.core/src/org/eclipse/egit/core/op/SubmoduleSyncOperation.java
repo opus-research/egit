@@ -57,11 +57,9 @@ public class SubmoduleSyncOperation implements IEGitOperation {
 		return this;
 	}
 
-	@Override
 	public void execute(final IProgressMonitor monitor) throws CoreException {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
 				pm.beginTask("", 1); //$NON-NLS-1$
 				Map<String, String> updates = null;
@@ -86,7 +84,6 @@ public class SubmoduleSyncOperation implements IEGitOperation {
 				monitor != null ? monitor : new NullProgressMonitor());
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return null;
 	}

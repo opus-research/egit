@@ -20,13 +20,11 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.KnownHosts;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.IRemoteSelectionListener;
@@ -138,7 +136,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	 */
 	public static class Protocol {
 		/** Ordered list of all protocols **/
-		private static final TreeMap<String, Protocol> protocols = new TreeMap<>();
+		private static final TreeMap<String, Protocol> protocols = new TreeMap<String, Protocol>();
 
 		/** Git native transfer */
 		public static final Protocol GIT = new Protocol("git", //$NON-NLS-1$
@@ -326,31 +324,25 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 		String preset = presetUri;
 		if (presetUri == null) {
-			Clipboard clipboard = new Clipboard(Display.getCurrent());
-			String text = (String) clipboard
-					.getContents(TextTransfer.getInstance());
+			Clipboard clippy = new Clipboard(Display.getCurrent());
+			String text = (String) clippy.getContents(TextTransfer
+					.getInstance());
 			try {
 				if (text != null) {
-					text = stripGitCloneCommand(text);
-					// Split on any whitespace character
-					text = text.split(
-							"[ \\f\\n\\r\\x0B\\t\\xA0\\u1680\\u180e\\u2000-\\u200a\\u202f\\u205f\\u3000]", //$NON-NLS-1$
-							2)[0];
+					text = text.trim();
+					int index = text.indexOf(' ');
+					if (index > 0)
+						text = text.substring(0, index);
 					URIish u = new URIish(text);
-					if (canHandleProtocol(u)) {
+					if (canHandleProtocol(u))
 						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
-								|| (Protocol.HTTP.handles(u)
-										|| Protocol.HTTPS.handles(u))
-										&& KnownHosts.isKnownHost(u.getHost())
-								|| text.endsWith(Constants.DOT_GIT_EXT)) {
+								|| text.endsWith(Constants.DOT_GIT_EXT))
 							preset = text;
-						}
-					}
 				}
 			} catch (URISyntaxException e) {
 				// ignore, preset is null
 			}
-			clipboard.dispose();
+			clippy.dispose();
 		}
 		this.presetUri = preset;
 
@@ -413,7 +405,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		return selection.equals(s);
 	}
 
-	@Override
 	public void createControl(final Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NULL);
 		panel.setLayout(new GridLayout());
@@ -461,7 +452,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		remoteCombo = new RemoteSelectionCombo(remotePanel, SWT.NULL, selectionType);
 		remoteConfig = remoteCombo.setItems(configuredRemotes);
 		remoteCombo.addRemoteSelectionListener(new IRemoteSelectionListener() {
-			@Override
 			public void remoteSelected(RemoteConfig rc) {
 				remoteConfig = rc;
 				checkPage();
@@ -482,7 +472,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			uriButton = new Button(parent, SWT.RADIO);
 			uriButton.setText(UIText.RepositorySelectionPage_uriChoice + ":"); //$NON-NLS-1$
 			uriButton.addSelectionListener(new SelectionAdapter() {
-				@Override
 				public void widgetSelected(SelectionEvent e) {
 					// occurs either on selection or unselection event
 					updateRemoteAndURIPanels();
@@ -519,7 +508,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 		uriText.setLayoutData(createFieldGridData());
 		uriText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				updateFields(uriText.getText());
 			}
@@ -562,8 +550,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					}
 				// if nothing else, we start the search from the default folder for repositories
 				if (EMPTY_STRING.equals(dialog.getFilterPath()))
-					dialog.setFilterPath(
-							RepositoryUtil.getDefaultRepositoryDir());
+					dialog.setFilterPath(UIUtils.getDefaultRepositoryDir());
 				String result = dialog.open();
 				if (result != null)
 					uriText.setText("file:///" + result); //$NON-NLS-1$
@@ -575,7 +562,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		hostText = new Text(g, SWT.BORDER);
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(hostText);
 		hostText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setHost(nullString(hostText.getText())));
 			}
@@ -585,7 +571,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		pathText = new Text(g, SWT.BORDER);
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(pathText);
 		pathText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setPath(nullString(pathText.getText())));
 			}
@@ -601,7 +586,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		userText = new Text(g, SWT.BORDER);
 		userText.setLayoutData(createFieldGridData());
 		userText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				Protocol protocol = getProtocol();
 				if (protocol != Protocol.HTTP && protocol != Protocol.HTTPS)
@@ -614,7 +598,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		passText = new Text(g, SWT.BORDER | SWT.PASSWORD);
 		passText.setLayoutData(createFieldGridData());
 		passText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setPass(null));
 				password = passText.getText();
@@ -626,12 +609,10 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 				.setText(UIText.RepositorySelectionPage_storeInSecureStore);
 		storeCheckbox.setSelection(storeInSecureStore);
 		storeCheckbox.addSelectionListener(new SelectionListener() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				storeInSecureStore = storeCheckbox.getSelection();
 			}
 
-			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				storeInSecureStore = storeCheckbox.getSelection();
 			}
@@ -649,7 +630,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		for (Protocol p : Protocol.values())
 			scheme.add(p.getDefaultScheme());
 		scheme.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				final int idx = scheme.getSelectionIndex();
 				if (idx < 0) {
@@ -668,7 +648,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		portText.addVerifyListener(new VerifyListener() {
 			final Pattern p = Pattern.compile("^(?:[1-9][0-9]*)?$"); //$NON-NLS-1$
 
-			@Override
 			public void verifyText(final VerifyEvent e) {
 				final String v = portText.getText();
 				e.doit = p.matcher(
@@ -677,7 +656,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			}
 		});
 		portText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				final String val = nullString(portText.getText());
 				if (val == null)
@@ -733,13 +711,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			eventDepth++;
 			if (eventDepth == 1) {
 				uri = u;
-				String oldUriText = uriText.getText();
-				String newUriText = uri.toString();
-				// avoid moving the cursor to the first position if there are no
-				// changes by this automatic update
-				if (!oldUriText.equals(newUriText)) {
-					uriText.setText(newUriText);
-				}
+				uriText.setText(uri.toString());
 				checkPage();
 			}
 		} finally {
@@ -752,7 +724,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		if (remotes == null)
 			return null;
 
-		List<RemoteConfig> result = new ArrayList<>();
+		List<RemoteConfig> result = new ArrayList<RemoteConfig>();
 
 		for (RemoteConfig config : remotes)
 			if ((sourceSelection && !config.getURIs().isEmpty() || !sourceSelection
@@ -889,7 +861,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		if (input.startsWith(GIT_CLONE_COMMAND_PREFIX)) {
 			return input.substring(GIT_CLONE_COMMAND_PREFIX.length()).trim();
 		}
-		return input;
+		return input.trim();
 	}
 
 	private boolean setSafePassword(String p) {
@@ -1069,7 +1041,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		return Activator.getDefault().getPreferenceStore();
 	}
 
-	@Override
 	public GitRepositoryInfo getGitRepositoryInfo() {
 		GitRepositoryInfo info = new GitRepositoryInfo(uri.toString());
 		info.setCredentials(user, password);

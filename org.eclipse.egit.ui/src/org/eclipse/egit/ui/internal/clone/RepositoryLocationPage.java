@@ -53,12 +53,11 @@ public class RepositoryLocationPage extends WizardPage {
 	public RepositoryLocationPage(List<CloneSourceProvider> cloneSourceProvider) {
 		super(RepositoryLocationPage.class.getName());
 		this.repositoryImports = cloneSourceProvider;
-		resolvedWizardPages = new HashMap<>();
+		resolvedWizardPages = new HashMap<CloneSourceProvider, WizardPage>();
 		setTitle(UIText.RepositoryLocationPage_title);
 		setMessage(UIText.RepositoryLocationPage_info);
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 
@@ -78,7 +77,6 @@ public class RepositoryLocationPage extends WizardPage {
 
 		tv.addSelectionChangedListener(new ISelectionChangedListener() {
 
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				checkPage();
 			}
@@ -86,7 +84,6 @@ public class RepositoryLocationPage extends WizardPage {
 
 		tv.addDoubleClickListener(new IDoubleClickListener() {
 
-			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				checkPage();
 				if (isPageComplete())

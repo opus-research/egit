@@ -49,7 +49,7 @@ import org.eclipse.ui.PlatformUI;
 class ConfirmationPage extends WizardPage {
 	static Collection<RemoteRefUpdate> copyUpdates(
 			final Collection<RemoteRefUpdate> refUpdates) throws IOException {
-		final Collection<RemoteRefUpdate> copy = new ArrayList<>(
+		final Collection<RemoteRefUpdate> copy = new ArrayList<RemoteRefUpdate>(
 				refUpdates.size());
 		for (final RemoteRefUpdate rru : refUpdates)
 			copy.add(new RemoteRefUpdate(rru, null));
@@ -82,7 +82,6 @@ class ConfirmationPage extends WizardPage {
 		setDescription(UIText.ConfirmationPage_description);
 	}
 
-	@Override
 	public void createControl(final Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NONE);
 		panel.setLayout(new GridLayout());
@@ -164,7 +163,6 @@ class ConfirmationPage extends WizardPage {
 		setErrorMessage(null);
 		setPageComplete(false);
 		getControl().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				revalidateImpl();
 			}
@@ -203,7 +201,6 @@ class ConfirmationPage extends WizardPage {
 				operation.setCredentialsProvider(new EGitCredentialsProvider(
 						credentials.getUser(), credentials.getPassword()));
 			getContainer().run(true, true, new IRunnableWithProgress() {
-				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
 					operation.run(monitor);

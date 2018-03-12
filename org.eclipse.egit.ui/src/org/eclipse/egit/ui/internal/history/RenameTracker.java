@@ -34,7 +34,6 @@ class RenameTracker {
 
 	private final RevFilter filter = new RevFilter() {
 
-		@Override
 		public boolean include(final RevWalk walker, final RevCommit commit)
 				throws IOException {
 			if (currentPath != null)
@@ -47,7 +46,6 @@ class RenameTracker {
 			return true;
 		}
 
-		@Override
 		public RevFilter clone() {
 			return null;
 		}
@@ -55,7 +53,6 @@ class RenameTracker {
 
 	private final RenameCallback callback = new RenameCallback() {
 
-		@Override
 		public void renamed(final DiffEntry entry) {
 			currentDiff = entry;
 			currentPath = null;
@@ -68,7 +65,7 @@ class RenameTracker {
 
 	private String currentPath;
 
-	private Map<RevCommit, String> renames = new LinkedHashMap<>();
+	private Map<RevCommit, String> renames = new LinkedHashMap<RevCommit, String>();
 
 	/**
 	 * @return filter

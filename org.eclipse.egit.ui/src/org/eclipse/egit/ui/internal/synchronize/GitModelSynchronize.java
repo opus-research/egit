@@ -45,6 +45,7 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.team.ui.TeamUI;
 import org.eclipse.team.ui.synchronize.ISynchronizeParticipant;
@@ -57,6 +58,8 @@ import org.eclipse.ui.PlatformUI;
  * Utility class that launches model synchronization action
  */
 public class GitModelSynchronize {
+
+	private static final String GIT_PROVIDER_ID = "org.eclipse.egit.core.GitProvider"; //$NON-NLS-1$
 
 	/**
 	 * This can be used to open the synchronize view for the given set of
@@ -78,28 +81,25 @@ public class GitModelSynchronize {
 	 * @param includeLocal
 	 *            If <code>true</code>, this will use local data for the "left"
 	 *            side of the synchronization.
-	 * @param context
-	 *            the mapping context from which to retrieve resource variants.
 	 * @throws IOException
 	 */
 	public static final void synchronize(IResource[] resources,
 			Repository repository, String srcRev, String dstRev,
-			boolean includeLocal, ResourceMappingContext context)
-			throws IOException {
-		final Set<IResource> includedResources = new HashSet<>(
+			boolean includeLocal) throws IOException {
+		final Set<IResource> includedResources = new HashSet<IResource>(
 				Arrays.asList(resources));
-		final Set<ResourceMapping> allMappings = new HashSet<>();
+		final Set<ResourceMapping> allMappings = new HashSet<ResourceMapping>();
 
-		Set<IResource> newResources = new HashSet<>(
+		Set<IResource> newResources = new HashSet<IResource>(
 				includedResources);
 		do {
 			final Set<IResource> copy = newResources;
-			newResources = new HashSet<>();
+			newResources = new HashSet<IResource>();
 			for (IResource resource : copy) {
 				ResourceMapping[] mappings = ResourceUtil.getResourceMappings(
-						resource, context);
+						resource, ResourceMappingContext.LOCAL_CONTEXT);
 				allMappings.addAll(Arrays.asList(mappings));
-				newResources.addAll(collectResources(mappings, context));
+				newResources.addAll(collectResources(mappings));
 			}
 		} while (includedResources.addAll(newResources));
 
@@ -125,9 +125,9 @@ public class GitModelSynchronize {
 		}
 	}
 
-	private static Set<IResource> collectResources(ResourceMapping[] mappings,
-			ResourceMappingContext context) {
-		final Set<IResource> resources = new HashSet<>();
+	private static Set<IResource> collectResources(ResourceMapping[] mappings) {
+		final Set<IResource> resources = new HashSet<IResource>();
+		ResourceMappingContext context = ResourceMappingContext.LOCAL_CONTEXT;
 		for (ResourceMapping mapping : mappings) {
 			try {
 				ResourceTraversal[] traversals = mapping.getTraversals(context,
@@ -205,7 +205,7 @@ public class GitModelSynchronize {
 	 */
 	private static ResourceMapping[] getGitResourceMappings(
 			IResource[] elements) {
-		List<ResourceMapping> gitMappings = new ArrayList<>();
+		List<ResourceMapping> gitMappings = new ArrayList<ResourceMapping>();
 
 		for (IResource element : elements) {
 			ResourceMapping mapping = AdapterUtils.adapt(element,
@@ -227,9 +227,11 @@ public class GitModelSynchronize {
 	private static boolean isMappedToGitProvider(ResourceMapping element) {
 		IProject[] projects = element.getProjects();
 		for (IProject project: projects) {
-			if (ResourceUtil.isSharedWithGit(project)) {
+			RepositoryProvider provider = RepositoryProvider
+					.getProvider(project);
+
+			if (provider != null && provider.getID().equals(GIT_PROVIDER_ID))
 				return true;
-			}
 		}
 		return false;
 	}

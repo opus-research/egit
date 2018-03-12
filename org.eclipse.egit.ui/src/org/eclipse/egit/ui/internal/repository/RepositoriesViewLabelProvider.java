@@ -21,7 +21,6 @@ import org.eclipse.core.commands.IStateListener;
 import org.eclipse.core.commands.State;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.GitLabels;
 import org.eclipse.egit.ui.internal.ResourcePropertyTester;
@@ -31,7 +30,6 @@ import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
-import org.eclipse.egit.ui.internal.repository.tree.SubmodulesNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
@@ -48,7 +46,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
@@ -64,7 +61,7 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 	/**
 	 * A map of regular images to their decorated counterpart.
 	 */
-	private Map<Image, Image> decoratedImages = new HashMap<>();
+	private Map<Image, Image> decoratedImages = new HashMap<Image, Image>();
 
 	private ResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
@@ -186,20 +183,17 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 						RevCommit commit = rw.parseCommit(id);
 						compareString = commit.getId().name();
 					}
-				} else if (refName.equals(Constants.HEAD)) {
+				} else if (refName.equals(Constants.HEAD))
 					return getDecoratedImage(image);
-				} else {
+				else {
 					String leafname = leaf.getName();
 					if (leafname.startsWith(Constants.R_REFS)
 							&& leafname.equals(node.getRepository()
-									.getFullBranch())) {
+									.getFullBranch()))
 						return getDecoratedImage(image);
-					}
-					ObjectId objectId = leaf.getObjectId();
-					if (objectId != null && objectId.equals(
-							node.getRepository().resolve(Constants.HEAD))) {
+					else if (leaf.getObjectId().equals(
+							node.getRepository().resolve(Constants.HEAD)))
 						return getDecoratedImage(image);
-					}
 					// some other symbolic reference
 					return image;
 				}
@@ -276,19 +270,15 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 	 * @return styled string
 	 */
 	protected StyledString getStyledTextForSubmodule(RepositoryTreeNode node) {
+		StyledString string = new StyledString();
 		Repository repository = (Repository) node.getObject();
-		if (repository == null) {
-			return new StyledString();
-		}
-		StyledString string = GitLabels.getChangedPrefix(repository);
-
 		String path = Repository.stripWorkDir(node.getParent().getRepository()
 				.getWorkTree(), repository.getWorkTree());
 		string.append(path);
 
 		Ref head;
 		try {
-			head = repository.exactRef(Constants.HEAD);
+			head = repository.getRef(Constants.HEAD);
 		} catch (IOException e) {
 			return string;
 		}
@@ -338,49 +328,6 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 		return string;
 	}
 
-	/**
-	 * Gets the {@link StyledString} for a {@link SubmodulesNode}.
-	 *
-	 * @param node
-	 *            to get the text for
-	 * @return the {@link StyledString}
-	 */
-	protected StyledString getStyledTextForSubmodules(SubmodulesNode node) {
-		String label = getSimpleText(node);
-		if (label == null) {
-			return new StyledString();
-		}
-		StyledString styled = new StyledString(label);
-		Repository repository = node.getRepository();
-		if (repository != null) {
-			boolean hasChanges = false;
-			try (SubmoduleWalk walk = SubmoduleWalk.forIndex(repository)) {
-				while (!hasChanges && walk.next()) {
-					Repository submodule = walk.getRepository();
-					if (submodule != null) {
-						Repository cached = org.eclipse.egit.core.Activator
-								.getDefault().getRepositoryCache()
-								.lookupRepository(submodule.getDirectory()
-										.getAbsoluteFile());
-						hasChanges = cached != null
-								&& RepositoryUtil.hasChanges(cached);
-						submodule.close();
-					}
-				}
-			} catch (IOException e) {
-				hasChanges = false;
-			}
-			if (hasChanges) {
-				StyledString prefixed = new StyledString();
-				prefixed.append('>', StyledString.DECORATIONS_STYLER);
-				prefixed.append(' ').append(styled);
-				return prefixed;
-			}
-		}
-		return styled;
-	}
-
-	@Override
 	public StyledString getStyledText(Object element) {
 		if (!(element instanceof RepositoryTreeNode))
 			return null;
@@ -451,8 +398,6 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 			return getStyledTextForTag((TagNode) node);
 		case STASHED_COMMIT:
 			return getStyledTextForCommit((StashedCommitNode) node);
-		case SUBMODULES:
-			return getStyledTextForSubmodules((SubmodulesNode) node);
 		case PUSH:
 			// fall through
 		case FETCH:
@@ -476,6 +421,8 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 		case REMOTES:
 			// fall through
 		case REMOTE:
+			// fall through
+		case SUBMODULES:
 			// fall through
 		case STASH:
 			// fall through
@@ -601,7 +548,6 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 	 * @see org.eclipse.core.commands.IStateListener#handleStateChange(org.eclipse.core.commands.State,
 	 *      java.lang.Object)
 	 */
-	@Override
 	public void handleStateChange(State state, Object oldValue) {
 		try {
 			this.verboseBranchMode = ((Boolean) state.getValue())

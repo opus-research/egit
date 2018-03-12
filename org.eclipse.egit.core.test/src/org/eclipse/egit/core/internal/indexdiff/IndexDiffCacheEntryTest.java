@@ -20,11 +20,12 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.jobs.IJobManager;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.egit.core.test.TestRepository;
-import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.jgit.lib.Repository;
 import org.junit.After;
 import org.junit.Before;
@@ -84,24 +85,6 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 	}
 
 	@Test
-	public void testProjectDeletion() throws Exception {
-		prepareCacheEntry();
-
-		testRepository.connect(project.project);
-		waitForJobs(MAX_WAIT_TIME, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
-
-		// Should have something from the project
-		String projectName = project.project.getName();
-		assertTrue(containsItemsStartingWith(
-				entry.getIndexDiff().getUntracked(), projectName + '/'));
-
-		project.project.delete(true, null);
-		waitForJobs(MAX_WAIT_TIME, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
-		assertFalse(containsItemsStartingWith(
-				entry.getIndexDiff().getUntracked(), projectName + '/'));
-	}
-
-	@Test
 	public void testReloadAndUpdate() throws Exception {
 		prepareCacheEntry();
 
@@ -132,7 +115,6 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 		cleanEntryFlags();
 
 		ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor monitor) throws CoreException {
 				try {
 					project.createFile("bla", "bla\n".getBytes("UTF-8"));
@@ -152,7 +134,6 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 		cleanEntryFlags();
 
 		ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor monitor) throws CoreException {
 				try {
 					project.createFile("blip", "blip\n".getBytes("UTF-8"));
@@ -170,7 +151,6 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 		cleanEntryFlags();
 
 		ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor monitor) throws CoreException {
 				try {
 					project.createFile(".gitignore", "\n".getBytes("UTF-8"));
@@ -197,7 +177,18 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 	 */
 	private void waitForJobs(long maxWaitTime, Object family)
 			throws InterruptedException {
-		TestUtils.waitForJobs(maxWaitTime, family);
+		Thread.sleep(50);
+		long start = System.currentTimeMillis();
+		IJobManager jobManager = Job.getJobManager();
+
+		Job[] jobs = jobManager.find(family);
+		while (jobs.length > 0) {
+			Thread.sleep(100);
+			jobs = jobManager.find(family);
+			if (System.currentTimeMillis() - start > maxWaitTime) {
+				return;
+			}
+		}
 	}
 
 	private void cleanEntryFlags() {
@@ -216,17 +207,6 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 		return entry;
 	}
 
-	private boolean containsItemsStartingWith(Collection<String> values,
-			String prefix) {
-		for (String item : values) {
-			if (item.startsWith(prefix)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -234,7 +214,6 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 		repository = testRepository.getRepository();
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		entry.dispose();
@@ -250,7 +229,7 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 		boolean updateScheduled;
 
 		public IndexDiffCacheEntry2(Repository repository) {
-			super(repository, null);
+			super(repository);
 		}
 
 		@Override
@@ -271,7 +250,6 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 			return filesToUpdate.size() > MAX_FILES_FOR_UPDATE;
 		}
 
-		@Override
 		public IndexDiffUpdateJob getUpdateJob() {
 			return super.getUpdateJob();
 		}

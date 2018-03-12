@@ -19,10 +19,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.GitSubscriberMergeContext;
 import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache;
@@ -30,7 +30,6 @@ import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObjectContainer;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRoot;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.team.core.mapping.ISynchronizationContext;
 import org.eclipse.team.ui.mapping.SynchronizationContentProvider;
@@ -47,7 +46,7 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 
 	private GitModelRoot modelRoot;
 
-	private Map<Object, ResourceTraversal[]> traversalCache = new HashMap<>();
+	private Map<Object, ResourceTraversal[]> traversalCache = new HashMap<Object, ResourceTraversal[]>();
 
 	@Override
 	public boolean hasChildren(Object element) {
@@ -87,14 +86,10 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 	protected ResourceTraversal[] getTraversals(
 			ISynchronizationContext context, Object object) {
 		if (object instanceof IAdaptable) {
-			if (traversalCache.containsKey(object)) {
+			if (traversalCache.containsKey(object))
 				return traversalCache.get(object);
-			}
 
 			ResourceMapping rm = getResourceMapping(object);
-			if(rm == null){
-				return null;
-			}
 			GitSubscriberMergeContext ctx = (GitSubscriberMergeContext) getContext();
 			ResourceMappingContext rmCtx = new GitSubscriberResourceMappingContext(
 					(GitResourceVariantTreeSubscriber) ctx.getSubscriber(),
@@ -110,9 +105,8 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 		return null;
 	}
 
-	@Nullable
 	private ResourceMapping getResourceMapping(Object object) {
-		return AdapterUtils.adapt(object, ResourceMapping.class);
+		return CommonUtils.getAdapter(((IAdaptable) object), ResourceMapping.class);
 	}
 
 	@Override
@@ -132,7 +126,6 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 		super.refresh();
 	}
 
-	@Override
 	protected boolean isVisible(ISynchronizationContext context, Object object) {
 		if (object instanceof GitModelRepository
 				|| object instanceof GitModelCommit

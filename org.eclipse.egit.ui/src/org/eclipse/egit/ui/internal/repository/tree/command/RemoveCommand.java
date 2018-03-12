@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013, 2015 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,8 +8,7 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Delete empty working directory
- *    Laurent Goubet <laurent.goubet@obeo.fr> - Bug 404121
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 479964
+ *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -56,17 +55,16 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.ui.PlatformUI;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
-import org.eclipse.ui.services.IServiceLocator;
 
 /**
  * "Removes" one or several nodes
  */
 public class RemoveCommand extends
 		RepositoriesViewCommandHandler<RepositoryNode> {
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		removeRepository(event, false);
 		return null;
@@ -81,12 +79,8 @@ public class RemoveCommand extends
 	 */
 	protected void removeRepository(final ExecutionEvent event,
 			final boolean delete) {
-		IServiceLocator serviceLocator = HandlerUtil.getActiveSite(event);
-		IWorkbenchSiteProgressService service = null;
-		if (serviceLocator != null) {
-			service = CommonUtils.getService(serviceLocator,
-					IWorkbenchSiteProgressService.class);
-		}
+		IWorkbenchSite activeSite = HandlerUtil.getActiveSite(event);
+		IWorkbenchSiteProgressService service = CommonUtils.getService(activeSite, IWorkbenchSiteProgressService.class);
 
 		// get selected nodes
 		final List<RepositoryNode> selectedNodes;
@@ -130,9 +124,8 @@ public class RemoveCommand extends
 			if (!projectsToDelete.isEmpty()) {
 				final boolean[] confirmedCanceled = new boolean[] { false,
 						false };
-				PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+				Display.getDefault().syncExec(new Runnable() {
 
-					@Override
 					public void run() {
 						try {
 							confirmedCanceled[0] = confirmProjectDeletion(
@@ -160,7 +153,7 @@ public class RemoveCommand extends
 
 				if (removeProj) {
 					// confirmed deletion
-					deleteProjects(deleteWorkDir, projectsToDelete,
+					deleteProjects(delete, projectsToDelete,
 							monitor);
 				}
 				for (RepositoryNode node : selectedNodes) {
@@ -174,16 +167,6 @@ public class RemoveCommand extends
 						return Activator.createErrorStatus(e.getMessage(), e);
 					}
 				}
-				PlatformUI.getWorkbench().getDisplay()
-						.asyncExec(new Runnable() {
-
-					@Override
-					public void run() {
-						for (RepositoryNode node : selectedNodes) {
-							node.clear();
-						}
-					}
-				});
 				return Status.OK_STATUS;
 			}
 
@@ -196,11 +179,7 @@ public class RemoveCommand extends
 			}
 		};
 
-		if (service == null) {
-			job.schedule();
-		} else {
-			service.schedule(job);
-		}
+		service.schedule(job);
 	}
 
 	private void deleteProjects(
@@ -209,7 +188,6 @@ public class RemoveCommand extends
 			IProgressMonitor monitor) {
 		IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor actMonitor)
 			throws CoreException {
 
@@ -293,29 +271,26 @@ public class RemoveCommand extends
 	private boolean isTracked(File file, Repository repo) throws IOException {
 		ObjectId objectId = repo.resolve(Constants.HEAD);
 		RevTree tree;
-		try (RevWalk rw = new RevWalk(repo);
-				TreeWalk treeWalk = new TreeWalk(repo)) {
-			if (objectId != null)
-				tree = rw.parseTree(objectId);
-			else
-				tree = null;
+		if (objectId != null)
+			tree = new RevWalk(repo).parseTree(objectId);
+		else
+			tree = null;
 
-			treeWalk.setRecursive(true);
-			if (tree != null)
-				treeWalk.addTree(tree);
-			else
-				treeWalk.addTree(new EmptyTreeIterator());
-			treeWalk.addTree(new DirCacheIterator(repo.readDirCache()));
-			treeWalk.setFilter(PathFilterGroup
-					.createFromStrings(Collections.singleton(Repository
-							.stripWorkDir(repo.getWorkTree(), file))));
-			return treeWalk.next();
-		}
+		TreeWalk treeWalk = new TreeWalk(repo);
+		treeWalk.setRecursive(true);
+		if (tree != null)
+			treeWalk.addTree(tree);
+		else
+			treeWalk.addTree(new EmptyTreeIterator());
+		treeWalk.addTree(new DirCacheIterator(repo.readDirCache()));
+		treeWalk.setFilter(PathFilterGroup.createFromStrings(Collections.singleton(
+				Repository.stripWorkDir(repo.getWorkTree(), file))));
+		return treeWalk.next();
 
 	}
 
 	private List<IProject> findProjectsToDelete(final List<RepositoryNode> selectedNodes) {
-		final List<IProject> projectsToDelete = new ArrayList<>();
+		final List<IProject> projectsToDelete = new ArrayList<IProject>();
 		for (RepositoryNode node : selectedNodes) {
 			if (node.getRepository().isBare())
 				continue;

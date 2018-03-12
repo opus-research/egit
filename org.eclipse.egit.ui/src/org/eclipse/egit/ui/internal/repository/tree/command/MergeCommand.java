@@ -48,7 +48,6 @@ import org.eclipse.ui.PlatformUI;
  */
 public class MergeCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		RepositoryTreeNode node = getSelectedNodes(event).get(0);
 		final Repository repository = node.getRepository();
@@ -62,7 +61,7 @@ public class MergeCommand extends
 		if (node instanceof RefNode) {
 			String refName = ((RefNode) node).getObject().getName();
 			try {
-				if (refName.equals(repository.getFullBranch()))
+				if (repository.getFullBranch().equals(refName))
 					targetRef = null;
 				else
 					targetRef = refName;
@@ -115,7 +114,6 @@ public class MergeCommand extends
 				IStatus result = jobEvent.getJob().getResult();
 				if (result.getSeverity() == IStatus.CANCEL)
 					Display.getDefault().asyncExec(new Runnable() {
-						@Override
 						public void run() {
 							// don't use getShell(event) here since
 							// the active shell has changed since the
@@ -132,7 +130,6 @@ public class MergeCommand extends
 							.getException(), true);
 				else
 					Display.getDefault().asyncExec(new Runnable() {
-						@Override
 						public void run() {
 							Shell shell = PlatformUI.getWorkbench()
 									.getActiveWorkbenchWindow().getShell();

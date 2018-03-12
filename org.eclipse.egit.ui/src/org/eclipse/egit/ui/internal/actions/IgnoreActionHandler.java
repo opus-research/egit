@@ -22,12 +22,11 @@ import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 /** Action for ignoring files via .gitignore. */
 public class IgnoreActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final IResource[] resources = getSelectedResources(event);
 		if (resources.length == 0)
 			return null;
-		List<IPath> paths = new ArrayList<>();
+		List<IPath> paths = new ArrayList<IPath>();
 		for (IResource resource : resources)
 			paths.add(resource.getLocation());
 

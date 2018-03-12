@@ -94,8 +94,8 @@ public class GitMoveDeleteHookTest {
 		SystemReader.setInstance(null);
 	}
 
-	private TestProject initRepoInsideProjectInsideWorkspace()
-			throws Exception {
+	private TestProject initRepoInsideProjectInsideWorkspace() throws IOException,
+			CoreException {
 		TestProject project = new TestProject(true, "Project-1", true, workspaceSupplement);
 		File gitDir = new File(project.getProject().getLocationURI().getPath(),
 				Constants.DOT_GIT);
@@ -108,7 +108,7 @@ public class GitMoveDeleteHookTest {
 	}
 
 	private TestProject initRepoInsideProjectOutsideWorkspace()
-			throws Exception {
+			throws IOException, CoreException {
 		TestProject project = new TestProject(true, "Project-1", false,
 				workspaceSupplement);
 		File gitDir = new File(project.getProject().getLocationURI().getPath(),
@@ -121,12 +121,12 @@ public class GitMoveDeleteHookTest {
 	}
 
 	private TestProject initRepoAboveProjectInsideWs(String srcParent, String d)
-			throws Exception {
+	throws IOException, CoreException {
 		return initRepoAboveProject(srcParent, d, true);
 	}
 
 	private TestProject initRepoAboveProject(String srcParent, String d, boolean insidews)
-			throws Exception {
+			throws IOException, CoreException {
 		registerWorkspaceRelativeTestDir(srcParent);
 		TestProject project = new TestProject(true, srcParent + "Project-1", insidews, workspaceSupplement);
 		File gd = new File(insidews?workspace:workspaceSupplement, d);
@@ -146,9 +146,8 @@ public class GitMoveDeleteHookTest {
 				"some text");
 		testUtils.addFileToProject(project.getProject(), "file2.txt",
 				"some  more text");
-		IFile file = project.getProject().getFile("file.txt");
 		AddToIndexOperation addToIndexOperation = new AddToIndexOperation(
-				new IResource[] { file,
+				new IResource[] { project.getProject().getFile("file.txt"),
 						project.getProject().getFile("file2.txt") });
 		addToIndexOperation.execute(null);
 
@@ -159,12 +158,9 @@ public class GitMoveDeleteHookTest {
 		assertNotNull(dirCache.getEntry("file.txt"));
 		assertNotNull(dirCache.getEntry("file2.txt"));
 		// Modify the content before the move
-		testUtils.changeContentOfFile(project.getProject(), file, "other text");
-		TestUtils.waitForJobs(500, 10000, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
-
-		file.delete(true, null);
-
-		TestUtils.waitForJobs(500, 10000, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
+		testUtils.changeContentOfFile(project.getProject(), project
+				.getProject().getFile("file.txt"), "other text");
+		project.getProject().getFile("file.txt").delete(true, null);
 
 		// Check index for the deleted file
 		dirCache.read();
@@ -172,7 +168,7 @@ public class GitMoveDeleteHookTest {
 		assertNull(dirCache.getEntry("file.txt"));
 		assertNotNull(dirCache.getEntry("file2.txt"));
 		// Actual file is deleted
-		assertFalse(file.exists());
+		assertFalse(project.getProject().getFile("file.txt").exists());
 		// But a non-affected file remains
 		assertTrue(project.getProject().getFile("file2.txt").exists());
 	}
@@ -600,7 +596,7 @@ public class GitMoveDeleteHookTest {
 
 	private void dotestMoveProjectWithinRepo(String srcParent,
 			String srcProjectName, String dstParent, String dstProjecName,
-			String gitDir, boolean sourceInsideWs) throws Exception {
+			String gitDir, boolean sourceInsideWs) throws IOException, CoreException {
 		String gdRelativeSrcParent = srcParent + srcProjectName + "/";
 		if (gdRelativeSrcParent.startsWith(gitDir))
 			gdRelativeSrcParent = gdRelativeSrcParent

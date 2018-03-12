@@ -58,7 +58,6 @@ public class PushMenu extends CompoundContributionItem implements
 		return true;
 	}
 
-	@Override
 	public void initialize(IServiceLocator locator) {
 		this.serviceLocator = locator;
 		this.handlerService = CommonUtils.getService(locator, IHandlerService.class);
@@ -66,7 +65,7 @@ public class PushMenu extends CompoundContributionItem implements
 
 	@Override
 	protected IContributionItem[] getContributionItems() {
-		List<IContributionItem> res = new ArrayList<>();
+		List<IContributionItem> res = new ArrayList<IContributionItem>();
 
 		if (this.handlerService != null) {
 			Repository repository = SelectionUtils.getRepository(handlerService

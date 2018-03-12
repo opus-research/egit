@@ -32,7 +32,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.op.PullOperation;
-import org.eclipse.egit.core.op.PullOperation.PullReferenceConfig;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
@@ -83,21 +82,6 @@ public class PullOperationUI extends JobChangeAdapter {
 		pullOperation.setCredentialsProvider(new EGitCredentialsProvider());
 		for (Repository repository : repositories)
 			results.put(repository, NOT_TRIED_STATUS);
-	}
-
-	/**
-	 * @param configs
-	 */
-	public PullOperationUI(Map<Repository, PullReferenceConfig> configs) {
-		this.repositories = configs.keySet()
-				.toArray(new Repository[configs.size()]);
-		int timeout = Activator.getDefault().getPreferenceStore()
-				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-		pullOperation = new PullOperation(configs, timeout);
-		pullOperation.setCredentialsProvider(new EGitCredentialsProvider());
-		for (Repository repository : repositories) {
-			results.put(repository, NOT_TRIED_STATUS);
-		}
 	}
 
 	/**
@@ -163,13 +147,11 @@ public class PullOperationUI extends JobChangeAdapter {
 		}
 	}
 
-	@Override
 	public void done(IJobChangeEvent event) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 
-			@Override
 			public void run() {
-				Map<Repository, Object> res = new LinkedHashMap<>(
+				Map<Repository, Object> res = new LinkedHashMap<Repository, Object>(
 						PullOperationUI.this.results);
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
@@ -246,7 +228,6 @@ public class PullOperationUI extends JobChangeAdapter {
 
 	private void showResults() {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();

@@ -3,7 +3,6 @@
  * Copyright (C) 2010, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2013, Dariusz Luksza <dariusz.luksza@gmail.com>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,15 +12,10 @@
 package org.eclipse.egit.ui.internal.preferences;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.VariablesPlugin;
-import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
@@ -34,8 +28,6 @@ import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.StringFieldEditor;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.util.Policy;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -46,7 +38,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
-import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 /** Root preference page for the all of our workspace preferences. */
 public class GitPreferenceRoot extends FieldEditorPreferencePage implements
@@ -66,8 +57,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		MERGE_MODE_NAMES_AND_VALUES[2][1] = "2"; //$NON-NLS-1$
 	}
 
-	private ScopedPreferenceStore corePreferences;
-
 	/**
 	 * The default constructor
 	 */
@@ -75,40 +64,12 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		super(FLAT);
 	}
 
-	@Override
 	protected IPreferenceStore doGetPreferenceStore() {
 		return Activator.getDefault().getPreferenceStore();
 	}
 
-	@Override
 	public void init(final IWorkbench workbench) {
-		corePreferences = new ScopedPreferenceStore(InstanceScope.INSTANCE,
-				org.eclipse.egit.core.Activator.getPluginId());
-	}
-
-	@Override
-	public void dispose() {
-		super.dispose();
-		corePreferences = null;
-	}
-
-	@Override
-	public boolean performOk() {
-		boolean isOk = super.performOk();
-		if (isOk && corePreferences.needsSaving()) {
-			try {
-				corePreferences.save();
-			} catch (IOException e) {
-				String message = JFaceResources.format(
-						"PreferenceDialog.saveErrorMessage", getTitle(), //$NON-NLS-1$
-						e.getMessage());
-				Policy.getStatusHandler().show(
-						new Status(IStatus.ERROR, Policy.JFACE, message, e),
-						JFaceResources
-								.getString("PreferenceDialog.saveErrorTitle")); //$NON-NLS-1$
-			}
-		}
-		return isOk;
+		// Do nothing.
 	}
 
 	@Override
@@ -121,16 +82,11 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
 				.applyTo(cloningGroup);
 		DirectoryFieldEditor editor = new DirectoryFieldEditor(
-				GitCorePreferences.core_defaultRepositoryDir,
+				UIPreferences.DEFAULT_REPO_DIR,
 				UIText.GitPreferenceRoot_DefaultRepoFolderLabel, cloningGroup) {
 
 			/** The own control is the variableButton */
 			private static final int NUMBER_OF_OWN_CONTROLS = 1;
-
-			@Override
-			public IPreferenceStore getPreferenceStore() {
-				return corePreferences;
-			}
 
 			@Override
 			protected boolean doCheckState() {
@@ -185,7 +141,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 				variableButton.setText(UIText.GitPreferenceRoot_DefaultRepoFolderVariableButton);
 
 				variableButton.addSelectionListener(new SelectionAdapter() {
-					@Override
 					public void widgetSelected(SelectionEvent e) {
 						org.eclipse.debug.ui.StringVariableSelectionDialog dialog = new org.eclipse.debug.ui.StringVariableSelectionDialog(
 								getShell());

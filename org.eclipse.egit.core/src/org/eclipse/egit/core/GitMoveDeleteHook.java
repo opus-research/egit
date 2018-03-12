@@ -58,7 +58,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		data = d;
 	}
 
-	@Override
 	public boolean deleteFile(final IResourceTree tree, final IFile file,
 			final int updateFlags, final IProgressMonitor monitor) {
 		// Linked resources are not files, hence not tracked by git
@@ -78,9 +77,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 				.getIndexDiffCache();
 		IndexDiffCacheEntry indexDiffCacheEntry = indexDiffCache
 				.getIndexDiffCacheEntry(map.getRepository());
-		if (indexDiffCacheEntry == null) {
-			return false;
-		}
 		IndexDiffData indexDiff = indexDiffCacheEntry.getIndexDiff();
 		if (indexDiff != null) {
 			if (indexDiff.getUntracked().contains(repoRelativePath))
@@ -141,7 +137,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return true;
 	}
 
-	@Override
 	public boolean deleteFolder(final IResourceTree tree, final IFolder folder,
 			final int updateFlags, final IProgressMonitor monitor) {
 		// Deleting a GIT repository which is in use is a pretty bad idea. To
@@ -154,7 +149,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		}
 	}
 
-	@Override
 	public boolean deleteProject(final IResourceTree tree,
 			final IProject project, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -163,7 +157,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return FINISH_FOR_ME;
 	}
 
-	@Override
 	public boolean moveFile(final IResourceTree tree, final IFile srcf,
 			final IFile dstf, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -216,7 +209,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return I_AM_DONE;
 	}
 
-	@Override
 	public boolean moveFolder(final IResourceTree tree, final IFolder srcf,
 			final IFolder dstf, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -265,16 +257,17 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			TeamException {
 		IProject destination = source.getWorkspace().getRoot()
 				.getProject(description.getName());
-		RepositoryMapping repositoryMapping = RepositoryMapping.create(destination, gitDir.toFile());
-		if (repositoryMapping != null) {
-			GitProjectData projectData = new GitProjectData(destination);
-			projectData.setRepositoryMappings(Arrays.asList(repositoryMapping));
-			projectData.store();
-			GitProjectData.add(destination, projectData);
-			RepositoryProvider.map(destination, GitProvider.class.getName());
-			destination.refreshLocal(IResource.DEPTH_INFINITE,
-					new SubProgressMonitor(monitor, 50));
-		}
+		GitProjectData projectData = new GitProjectData(destination);
+		RepositoryMapping repositoryMapping = new RepositoryMapping(
+				destination, gitDir.toFile());
+		projectData.setRepositoryMappings(Arrays
+				.asList(repositoryMapping));
+		projectData.store();
+		GitProjectData.add(destination, projectData);
+		RepositoryProvider
+				.map(destination, GitProvider.class.getName());
+		destination.refreshLocal(IResource.DEPTH_INFINITE,
+				new SubProgressMonitor(monitor, 50));
 	}
 
 	private boolean unmapProject(final IResourceTree tree, final IProject source) {
@@ -291,7 +284,6 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		return false;
 	}
 
-	@Override
 	public boolean moveProject(final IResourceTree tree, final IProject source,
 			final IProjectDescription description, final int updateFlags,
 			final IProgressMonitor monitor) {
@@ -326,8 +318,9 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 			return moveProjectHelperMoveOnlyProject(tree, source, description, updateFlags,
 					monitor, srcm, newLocationFile);
 		} else {
-			int dstAboveSrcRepo = newLocation.matchingFirstSegments(srcm.getGitDirAbsolutePath());
-			int srcAboveSrcRepo = sourceLocation.matchingFirstSegments(srcm.getGitDirAbsolutePath());
+			int dstAboveSrcRepo = newLocation.matchingFirstSegments(RepositoryMapping
+					.getMapping(source).getGitDirAbsolutePath());
+			int srcAboveSrcRepo = sourceLocation.matchingFirstSegments(RepositoryMapping.getMapping(source).getGitDirAbsolutePath());
 			if (dstAboveSrcRepo > 0 && srcAboveSrcRepo > 0) {
 				return moveProjectHelperMoveRepo(tree, source, description, updateFlags, monitor,
 					srcm, newLocation, sourceLocation);
@@ -401,14 +394,11 @@ class GitMoveDeleteHook implements IMoveDeleteHook {
 		// Moving repo, we need to unplug the previous location and
 		// Re-plug it again with the new location.
 		IPath gitDir = srcm.getGitDirAbsolutePath();
-		if (unmapProject(tree, source)) {
+		if (unmapProject(tree, source))
 			return true; // Error information in tree
-		}
 
 		monitor.worked(100);
-		if (gitDir == null) {
-			return true; // mapping on deleted container with relative path
-		}
+
 		IPath relativeGitDir = gitDir.makeRelativeTo(sourceLocation);
 		tree.standardMoveProject(source, description, updateFlags,
 				monitor);

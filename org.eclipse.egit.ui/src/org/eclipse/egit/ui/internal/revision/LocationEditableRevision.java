@@ -68,7 +68,6 @@ public class LocationEditableRevision extends EditableRevision {
 					fork = false;
 			}
 			runnableContext.run(fork, false, new IRunnableWithProgress() {
-				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
 					IFileStore store = EFS.getLocalFileSystem().getStore(

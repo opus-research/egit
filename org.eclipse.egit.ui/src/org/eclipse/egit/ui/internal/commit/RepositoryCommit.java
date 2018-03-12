@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2015 GitHub Inc. and others.
+ *  Copyright (c) 2011, 2013 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -8,20 +8,20 @@
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
  *    Robin Stocker (independent)
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
 import java.io.IOException;
+import java.text.DateFormat;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.FileDiff;
@@ -47,6 +47,23 @@ import org.eclipse.ui.model.WorkbenchAdapter;
  * introduced by the commit.
  */
 public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
+
+	private static DateFormat FORMAT = DateFormat.getDateTimeInstance(
+			DateFormat.MEDIUM, DateFormat.SHORT);
+
+	/**
+	 * Format commit date
+	 *
+	 * @param date
+	 * @return date string
+	 */
+	public static String formatDate(final Date date) {
+		if (date == null)
+			return ""; //$NON-NLS-1$
+		synchronized (FORMAT) {
+			return FORMAT.format(date);
+		}
+	}
 
 	/**
 	 * NAME_LENGTH
@@ -79,7 +96,6 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 		this.commit = commit;
 	}
 
-	@Override
 	public Object getAdapter(Class adapter) {
 		if (Repository.class == adapter)
 			return repository;
@@ -193,7 +209,7 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 	 */
 	public RepositoryCommitNote[] getNotes() {
 		if (notes == null) {
-			List<RepositoryCommitNote> noteList = new ArrayList<>();
+			List<RepositoryCommitNote> noteList = new ArrayList<RepositoryCommitNote>();
 			try {
 				Repository repo = getRepository();
 				Git git = Git.wrap(repo);
@@ -215,22 +231,18 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 		return notes;
 	}
 
-	@Override
 	public Object[] getChildren(Object o) {
 		return new Object[0];
 	}
 
-	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		return UIIcons.CHANGESET;
 	}
 
-	@Override
 	public String getLabel(Object o) {
 		return abbreviate();
 	}
 
-	@Override
 	public Object getParent(Object o) {
 		return null;
 	}
@@ -249,17 +261,15 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 		PersonIdent author = commit.getAuthorIdent();
 		PersonIdent committer = commit.getCommitterIdent();
 		if (author != null && committer != null) {
-			PreferenceBasedDateFormatter formatter = PreferenceBasedDateFormatter
-					.create();
 			if (author.getName().equals(committer.getName())) {
-				styled.append(
-						MessageFormat.format(UIText.RepositoryCommit_AuthorDate,
-								author.getName(), formatter.formatDate(author)),
+				styled.append(MessageFormat.format(
+						UIText.RepositoryCommit_AuthorDate, author.getName(),
+						formatDate(author.getWhen())),
 						StyledString.QUALIFIER_STYLER);
 			} else {
 				styled.append(MessageFormat.format(
 						UIText.RepositoryCommit_AuthorDateCommitter,
-								author.getName(), formatter.formatDate(author),
+						author.getName(), formatDate(author.getWhen()),
 						committer.getName()), StyledString.QUALIFIER_STYLER);
 			}
 		}

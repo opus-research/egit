@@ -159,7 +159,6 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 			return true;
 		}
 
-		@Override
 		public int compareTo(OptionNode o) {
 			return option.compareTo(o.option);
 		}
@@ -173,18 +172,16 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 			this.myOptionsMap = optionsMap;
 		}
 
-		@Override
 		public Object[] getElements(Object inputElement) {
 			if (inputElement instanceof Object[])
 				return (Object[]) inputElement;
 			return new Object[0];
 		}
 
-		@Override
 		public Object[] getChildren(Object parentElement) {
 			if (parentElement instanceof PluginNode) {
 				PluginNode node = (PluginNode) parentElement;
-				List<OptionNode> result = new ArrayList<>();
+				List<OptionNode> result = new ArrayList<OptionNode>();
 				for (Object key : myOptionsMap.get(node).keySet()) {
 					// hide the main switch
 					if (key.equals(node.getPlugin() + MAINSWITCH))
@@ -197,24 +194,20 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 			return null;
 		}
 
-		@Override
 		public Object getParent(Object element) {
 			if (element instanceof OptionNode)
 				return ((OptionNode) element).getPlugin();
 			return null;
 		}
 
-		@Override
 		public boolean hasChildren(Object element) {
 			return element instanceof PluginNode;
 		}
 
-		@Override
 		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 			// Do nothing
 		}
 
-		@Override
 		public void dispose() {
 			// Do nothing
 		}
@@ -230,7 +223,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 
 	private static final int DEFAULT_ID = 88;
 
-	private final Map<PluginNode, Properties> optionsMap = new HashMap<>();
+	private final Map<PluginNode, Properties> optionsMap = new HashMap<PluginNode, Properties>();
 
 	private boolean isDirty;
 
@@ -317,7 +310,6 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 		});
 
 		tv.addCheckStateListener(new ICheckStateListener() {
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				setDirty(true);
 			}
@@ -353,12 +345,10 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 		DebugOptions options = getOptions();
 		fillOptionsMapFromCurrent(options);
 		tv.setCheckStateProvider(new ICheckStateProvider() {
-			@Override
 			public boolean isGrayed(Object element) {
 				return false;
 			}
 
-			@Override
 			public boolean isChecked(Object element) {
 				Object data = element;
 				Properties props;
@@ -441,7 +431,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 			options.setDebugEnabled(platformSwitch.getSelection());
 			if (platformSwitch.getSelection()) {
 				// if this is off, we won't be able to save anything
-				List<String> checkedKeys = new ArrayList<>();
+				List<String> checkedKeys = new ArrayList<String>();
 				for (Object checked : Arrays.asList(tv.getCheckedElements())) {
 					if (checked instanceof PluginNode)
 						checkedKeys.add(((PluginNode) checked).getPlugin()
@@ -471,7 +461,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 	}
 
 	private void fillOptionsMapFromOptions() {
-		Map<String, String> oldValues = new HashMap<>();
+		Map<String, String> oldValues = new HashMap<String, String>();
 		for (Properties props : optionsMap.values())
 			for (Object keyObject : props.keySet()) {
 				String key = (String) keyObject;
@@ -498,7 +488,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 			optionsMap.put(plugin, props);
 		}
 
-		Map<String, String> newValues = new HashMap<>();
+		Map<String, String> newValues = new HashMap<String, String>();
 		for (Properties props : optionsMap.values())
 			for (Object keyObject : props.keySet()) {
 				String key = (String) keyObject;

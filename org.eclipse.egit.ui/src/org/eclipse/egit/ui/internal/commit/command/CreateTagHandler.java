@@ -36,7 +36,6 @@ public class CreateTagHandler extends CommitCommandHandler {
 	 */
 	public static final String ID = "org.eclipse.egit.ui.commit.CreateTag"; //$NON-NLS-1$
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		List<RepositoryCommit> commits = getCommits(event);
 		if (commits.size() == 1) {

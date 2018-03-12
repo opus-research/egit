@@ -49,7 +49,6 @@ public class PushTagsWizard extends Wizard {
 	public static void openWizardDialog(final Repository repository,
 			final String... tagNames) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
@@ -122,7 +121,7 @@ public class PushTagsWizard extends Wizard {
 	}
 
 	private List<RefSpec> getRefSpecs() {
-		List<RefSpec> specs = new ArrayList<>();
+		List<RefSpec> specs = new ArrayList<RefSpec>();
 		String prefix;
 		if (pushTagsPage.isForceUpdateSelected())
 			prefix = "+"; //$NON-NLS-1$

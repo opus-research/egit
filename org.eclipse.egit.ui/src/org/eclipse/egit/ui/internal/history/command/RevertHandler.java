@@ -39,7 +39,6 @@ public class RevertHandler extends AbstractHistoryCommandHandler {
 	 */
 	public static final String ID = "org.eclipse.egit.ui.history.Revert"; //$NON-NLS-1$
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final List<RevCommit> commits = getSelectedCommits(event);
 		Repository repo = getRepository(event);
@@ -69,7 +68,7 @@ public class RevertHandler extends AbstractHistoryCommandHandler {
 
 		BasicConfigurationDialog.show(repo);
 
-		List<RepositoryCommit> repositoryCommits = new ArrayList<>();
+		List<RepositoryCommit> repositoryCommits = new ArrayList<RepositoryCommit>();
 		for (RevCommit commit : commits)
 			repositoryCommits.add(new RepositoryCommit(repo, commit));
 		final IStructuredSelection selected = new StructuredSelection(

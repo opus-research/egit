@@ -161,7 +161,6 @@ public class CreatePatchOperation implements IEGitOperation {
 		this.commit = commit;
 	}
 
-	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		EclipseGitProgressTransformer gitMonitor;
 		if (monitor == null)
@@ -181,7 +180,7 @@ public class CreatePatchOperation implements IEGitOperation {
 				// for "workspace patches" add project header each time project changes
 				if (DiffHeaderFormat.WORKSPACE == headerFormat) {
 					IProject p = getProject(ent);
-					if (p != null && !p.equals(project)) {
+					if (!p.equals(project)) {
 						project = p;
 						getOutputStream().write(
 								encodeASCII("#P " + project.getName() + "\n")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -396,9 +395,6 @@ public class CreatePatchOperation implements IEGitOperation {
 	 */
 	public static IPath computeWorkspacePath(final IPath path, final IProject project) {
 		RepositoryMapping rm = RepositoryMapping.getMapping(project);
-		if (rm == null) {
-			return path;
-		}
 		String repoRelativePath = rm.getRepoRelativePath(project);
 		// the relative path cannot be determined, return unchanged
 		if (repoRelativePath == null)
@@ -457,7 +453,6 @@ public class CreatePatchOperation implements IEGitOperation {
 		return name;
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return null;
 	}
