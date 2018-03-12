@@ -26,8 +26,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.clone.GitCloneWizard;
-import org.eclipse.egit.ui.internal.push.PushWizard;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
@@ -59,6 +57,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Wizard page that allows the user entering the location of a remote repository
@@ -119,6 +118,8 @@ public class RepositorySelectionPage extends WizardPage {
 	private String password;
 
 	private boolean storeInSecureStore = true;
+
+	private String helpContext = null;
 
 	/**
 	 * Transport protocol abstraction
@@ -386,14 +387,6 @@ public class RepositorySelectionPage extends WizardPage {
 	 */
 	public boolean selectionEquals(final RepositorySelection s) {
 		return selection.equals(s);
-	}
-
-	@Override
-	public void performHelp() {
-		if (this.getWizard() instanceof GitCloneWizard)
-			GitCloneWizard.openCheatSheet();
-		else if (this.getWizard() instanceof PushWizard)
-			PushWizard.openCheatSheet();
 	}
 
 	public void createControl(final Composite parent) {
@@ -912,6 +905,21 @@ public class RepositorySelectionPage extends WizardPage {
 	 */
 	public boolean getStoreInSecureStore() {
 		return this.storeInSecureStore;
+	}
+
+	/**
+	 * Set the ID for context sensitive help
+	 *
+	 * @param id
+	 *            help context
+	 */
+	public void setHelpContext(String id) {
+		helpContext = id;
+	}
+
+	@Override
+	public void performHelp() {
+		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
 	}
 
 	private void setEnabledRecursively(final Control control,

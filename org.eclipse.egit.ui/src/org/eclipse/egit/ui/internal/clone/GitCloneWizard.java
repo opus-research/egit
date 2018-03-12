@@ -42,7 +42,6 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.ui.cheatsheets.OpenCheatSheetAction;
 
 /**
  * Import Git Repository Wizard. A front end to a git clone operation.
@@ -54,7 +53,7 @@ public class GitCloneWizard extends Wizard {
 	 */
 	public static final Object CLONE_JOB_FAMILY = new Object();
 
-	private static final String CLONE_CHEATSHEET = "org.eclipse.egit.cheatsheets.clone"; //$NON-NLS-1$
+	private static final String HELP_CONTEXT = "org.eclipse.egit.ui.GitCloneWizard"; //$NON-NLS-1$
 
 	private RepositorySelectionPage cloneSource;
 
@@ -76,6 +75,7 @@ public class GitCloneWizard extends Wizard {
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
 		cloneSource = new RepositorySelectionPage(true, null);
+		cloneSource.setHelpContext(HELP_CONTEXT);
 		validSource = new SourceBranchPage() {
 
 			@Override
@@ -87,6 +87,7 @@ public class GitCloneWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
+		validSource.setHelpContext(HELP_CONTEXT);
 		cloneDestination = new CloneDestinationPage() {
 			@Override
 			public void setVisible(boolean visible) {
@@ -97,6 +98,7 @@ public class GitCloneWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
+		cloneDestination.setHelpContext(HELP_CONTEXT);
 	}
 
 	/**
@@ -151,13 +153,6 @@ public class GitCloneWizard extends Wizard {
 		} finally {
 			setWindowTitle(UIText.GitCloneWizard_title);
 		}
-	}
-
-	/**
-	 * Display the clone wizard's cheat sheet
-	 */
-	public static void openCheatSheet() {
-		new OpenCheatSheetAction(CLONE_CHEATSHEET).run();
 	}
 
 	boolean performClone() {

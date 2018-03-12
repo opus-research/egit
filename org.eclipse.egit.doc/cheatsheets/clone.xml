@@ -7,9 +7,9 @@
 	</intro>
 	<item title="Start Clone Wizard" dialog="true">
 		<description>
-			The clone wizard can be started from the &quot;Import Projects from Git&quot; wizard using &quot;Import... &gt; Git &gt; Projects from Git &gt; Next &gt; Clone...&quot; or from the &quot;Git Repositories View&quot; using the &quot;Clone a Git Repository&quot; toolbar button.<br /><br />
-			<b>Afterwards click the help icon to view the cheat sheet as part of the wizard dialog.</b><br /><br />
-			Alternatively you can click &quot;Click to perform&quot; below to launch the wizard.
+			The clone wizard can be started by clicking &quot;Click to perform&quot; below.<br /><br />
+			Alternatively you can launch this wizard from the &quot;Import Projects from Git&quot; wizard using &quot;Import... &gt; Git &gt; Projects from Git &gt; Next &gt; Clone...&quot; or from the &quot;Git Repositories View&quot; using the &quot;Clone a Git Repository&quot; toolbar button.<br /><br />
+			<b>To start this cheat sheet from a separately opened wizard, click the help icon and then select &quot;Cloning a Git Repository&quot;.</b>
 		</description>
 		<command required="false" serialization="org.eclipse.egit.ui.RepositoriesViewClone" />
 	</item>
