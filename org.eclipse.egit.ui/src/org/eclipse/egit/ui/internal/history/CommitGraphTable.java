@@ -241,7 +241,7 @@ class CommitGraphTable {
 		table.getTable().addMouseMoveListener(new MouseMoveListener() {
 			public void mouseMove(MouseEvent e) {
 				synchronized (this) {
-					if (hoverShell == null)
+					if (hoverShell == null || hoverShell.isDisposed())
 						return;
 					hoverShell.setVisible(false);
 					hoverShell.dispose();
@@ -253,8 +253,10 @@ class CommitGraphTable {
 		table.getTable().addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				allCommits.dispose();
-				renderer.dispose();
+				if ( allCommits != null)
+					allCommits.dispose();
+				if (renderer != null)
+					renderer.dispose();
 			}
 		});
 	}
@@ -377,6 +379,8 @@ class CommitGraphTable {
 			r.append(d.getId().name());
 		}
 
+		if (clipboard == null || clipboard.isDisposed())
+			return;
 		clipboard.setContents(new Object[] { r.toString() },
 				new Transfer[] { TextTransfer.getInstance() }, DND.CLIPBOARD);
 	}
@@ -412,7 +416,8 @@ class CommitGraphTable {
 		// the commit list is thread safe
 		synchronized (allCommits) {
 			for (PlotCommit commit : allCommits)
-				commitsMap.put(commit.getId().name(), commit);
+				if (commit != null)
+					commitsMap.put(commit.getId().name(), commit);
 		}
 	}
 
