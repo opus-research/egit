@@ -53,8 +53,6 @@ public class NewRemoteWizard extends Wizard {
 		if (page == configureFetchSpecPage)
 			if (!selNamePage.configurePush.getSelection())
 				return null;
-			else
-				configurePushUriPage.setURI(configureFetchUriPage.getUri());
 
 		if (page == configureFetchUriPage)
 			configureFetchSpecPage.setSelection(new RepositorySelection(
@@ -62,7 +60,7 @@ public class NewRemoteWizard extends Wizard {
 
 		if (page == configurePushUriPage)
 			configurePushSpecPage.setSelection(new RepositorySelection(
-					configurePushUriPage.getAllUris().get(0), null));
+					configurePushUriPage.getUris().get(0), null));
 
 		return super.getNextPage(page);
 	}
@@ -93,13 +91,13 @@ public class NewRemoteWizard extends Wizard {
 		selNamePage = new SelectRemoteNamePage();
 		addPage(selNamePage);
 
-		configureFetchUriPage = new ConfigureUriPage(true, null);
+		configureFetchUriPage = new ConfigureUriPage(true);
 		addPage(configureFetchUriPage);
 
 		configureFetchSpecPage = new RefSpecPage(repository, false);
 		addPage(configureFetchSpecPage);
 
-		configurePushUriPage = new ConfigureUriPage(false, null);
+		configurePushUriPage = new ConfigureUriPage(false);
 		addPage(configurePushUriPage);
 
 		configurePushSpecPage = new RefSpecPage(repository, true);
