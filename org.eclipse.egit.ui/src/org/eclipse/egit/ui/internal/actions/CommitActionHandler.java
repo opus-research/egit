@@ -38,7 +38,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -46,6 +45,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
+import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -91,6 +91,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			return null;
 		}
 
+		BasicConfigurationDialog.show();
 		resetState();
 		final IProject[] projects = getProjectsInRepositoryOfSelectedResources(event);
 		try {
@@ -313,18 +314,17 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		}
 
 		monitor.beginTask(UIText.CommitActionHandler_calculatingChanges,
-				repositories.size() * 1000);
+				repositories.size());
 		for (Map.Entry<Repository, HashSet<IProject>> entry : repositories
 				.entrySet()) {
 			Repository repository = entry.getKey();
-			EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(monitor);
+			monitor.subTask(NLS.bind(UIText.CommitActionHandler_repository,
+					repository.getDirectory().getPath()));
 			HashSet<IProject> projects = entry.getValue();
 
 			IndexDiff indexDiff = new IndexDiff(repository, Constants.HEAD,
 					IteratorService.createInitialIterator(repository));
-			indexDiff.diff(jgitMonitor, NLS.bind(
-					UIText.CommitActionHandler_repository, repository
-							.getDirectory().getPath()));
+			indexDiff.diff();
 			indexDiffs.put(repository, indexDiff);
 
 			for (IProject project : projects) {
@@ -337,6 +337,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			}
 			if (monitor.isCanceled())
 				throw new OperationCanceledException();
+			monitor.worked(1);
 		}
 		monitor.done();
 	}
