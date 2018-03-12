@@ -77,7 +77,6 @@ import org.eclipse.egit.ui.internal.commit.CommitJob;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
-import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageArea;
@@ -2005,11 +2004,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 					openWorkingTreeVersion.setEnabled(!submoduleSelected
 							&& anyElementIsExistingFile(fileSelection));
 					menuMgr.add(openWorkingTreeVersion);
-					String label = stagingEntryList.get(0)
-							.staged() != Staged.NOT_STAGED
-									? UIText.CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel
-									: UIText.StagingView_CompareWithIndexMenuLabel;
-					Action openCompareWithIndex = new Action(label) {
+
+					Action openCompareWithIndex = new Action(
+							UIText.StagingView_CompareWithIndexMenuLabel) {
 						@Override
 						public void run() {
 							runCommand(ActionCommands.COMPARE_WITH_INDEX_ACTION,
