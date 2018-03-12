@@ -53,10 +53,6 @@ public class StagingViewContentProvider implements
 		return content;
 	}
 
-	int getStagingEntryCount() {
-		return content.length;
-	}
-
 	public void inputChanged(Viewer viewer, Object oldInput,
 			Object newInput) {
 		if (!(newInput instanceof StagingViewUpdate))
