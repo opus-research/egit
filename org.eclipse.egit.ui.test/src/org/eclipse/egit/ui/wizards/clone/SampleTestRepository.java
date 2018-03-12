@@ -85,11 +85,12 @@ public class SampleTestRepository {
 	/**
 	 * Create a bare repository, generate some sample data and start git daemon
 	 * on a free port
-	 * 
+	 *
 	 * @param n
 	 *            hint how many random commits should be generated
-	 * @param serveHttp
-	 * 
+	 * @param
+	 * 			  serveHttp 
+	 *
 	 * @throws Exception
 	 */
 	public SampleTestRepository(int n, boolean serveHttp) throws Exception {

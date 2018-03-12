@@ -145,7 +145,6 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 						try {
 							out.close();
 						} catch (IOException ex) {
-							// ignore
 						}
 				}
 			}

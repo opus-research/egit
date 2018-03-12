@@ -85,8 +85,8 @@ public abstract class GitFileRevision extends FileRevision {
 
 	private final String path;
 
-	GitFileRevision(final String path) {
-		this.path = path;
+	GitFileRevision(final String fileName) {
+		path = fileName;
 	}
 
 	public String getName() {

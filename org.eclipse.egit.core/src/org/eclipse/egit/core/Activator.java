@@ -17,10 +17,8 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -38,7 +36,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
@@ -259,9 +256,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 		public void resourceChanged(IResourceChangeEvent event) {
 			try {
-
-				final Map<IProject, File> projects = new HashMap<IProject, File>();
-
 				event.getDelta().accept(new IResourceDeltaVisitor() {
 
 					public boolean visit(IResourceDelta delta)
@@ -295,9 +289,11 @@ public class Activator extends Plugin implements DebugOptionsListener {
 										.next();
 								final File repositoryDir = m
 										.getGitDirAbsolutePath().toFile();
-
-								projects.put(project, repositoryDir);
-
+								final ConnectProviderOperation op = new ConnectProviderOperation(
+										project, repositoryDir);
+								JobUtil.scheduleUserJob(op,
+										CoreText.Activator_AutoShareJobName,
+										JobFamilies.AUTO_SHARE);
 								Activator.getDefault().getRepositoryUtil()
 										.addConfiguredRepository(repositoryDir);
 							}
@@ -307,15 +303,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 						return false;
 					}
 				});
-
-				if (projects.size() > 0) {
-					ConnectProviderOperation op = new ConnectProviderOperation(
-							projects);
-					JobUtil.scheduleUserJob(op,
-							CoreText.Activator_AutoShareJobName,
-							JobFamilies.AUTO_SHARE);
-				}
-
 			} catch (CoreException e) {
 				Activator.logError(e.getMessage(), e);
 				return;
@@ -365,11 +352,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 							return false;
 
 						final IResource r = delta.getResource();
-						// don't consider resources contained in a project not
-						// shared with Git team provider
-						if ((r.getProject() != null)
-								&& (RepositoryMapping.getMapping(r) == null))
-							return false;
 						if (r.isTeamPrivateMember())
 							return false;
 

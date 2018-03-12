@@ -40,13 +40,14 @@ import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.internal.storage.file.WindowCache;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
@@ -191,9 +192,7 @@ public class GitProjectData {
 
 	/**
 	 * @param p
-	 * @return {@link GitProjectData} for the specified project, or null if the
-	 *         Git provider is not associated with the project or an exception
-	 *         occurred
+	 * @return {@link GitProjectData} for the specified project
 	 */
 	public synchronized static GitProjectData get(final IProject p) {
 		try {
@@ -277,7 +276,7 @@ public class GitProjectData {
 		c.setPackedGitMMAP(p.getBoolean(GitCorePreferences.core_packedGitMMAP, d.getBoolean(GitCorePreferences.core_packedGitMMAP, false)));
 		c.setDeltaBaseCacheLimit(p.getInt(GitCorePreferences.core_deltaBaseCacheLimit, d.getInt(GitCorePreferences.core_deltaBaseCacheLimit, 0)));
 		c.setStreamFileThreshold(p.getInt(GitCorePreferences.core_streamFileThreshold, d.getInt(GitCorePreferences.core_streamFileThreshold, 0)));
-		c.install();
+		WindowCache.reconfigure(c);
 	}
 
 	private final IProject project;
