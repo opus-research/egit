@@ -39,6 +39,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
@@ -306,10 +307,10 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 				child.putString(SRC_REV_KEY, gsd.getSrcRev());
 				child.putString(DST_REV_KEY, gsd.getDstRev());
 				child.putBoolean(INCLUDE_LOCAL_KEY, gsd.shouldIncludeLocal());
-				Set<? extends IResource> includedPaths = gsd.getIncludedPaths();
-				if (includedPaths != null && !includedPaths.isEmpty()) {
+				Set<IResource> includedResources = gsd.getIncludedResources();
+				if (includedResources != null && !includedResources.isEmpty()) {
 					IMemento paths = child.createChild(INCLUDED_PATHS_NODE_KEY);
-					for (IResource resource : includedPaths) {
+					for (IResource resource : includedResources) {
 						String path = getPathForResource(resource);
 						paths.createChild(INCLUDED_PATH_KEY).putString(
 								INCLUDED_PATH_KEY, path);
@@ -368,12 +369,12 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 			String dstRev = child.getString(DST_REV_KEY);
 			boolean includeLocal = getBoolean(
 					child.getBoolean(INCLUDE_LOCAL_KEY), true);
-			Set<IContainer> includedPaths = getIncludedPaths(child);
+			Set<IResource> includedResources = getIncludedResources(child);
 			try {
 				GitSynchronizeData data = new GitSynchronizeData(repo, srcRev,
 						dstRev, includeLocal);
-				if (includedPaths != null)
-					data.setIncludedPaths(includedPaths);
+				if (includedResources != null)
+					data.setIncludedResources(includedResources);
 				gsds.add(data);
 			} catch (IOException e) {
 				Activator.logError(e.getMessage(), e);
@@ -403,17 +404,18 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		return resource.getLocation().toPortableString();
 	}
 
-	private Set<IContainer> getIncludedPaths(IMemento memento) {
+	private Set<IResource> getIncludedResources(IMemento memento) {
 		IMemento child = memento.getChild(INCLUDED_PATHS_NODE_KEY);
-		Set<IContainer> result = new HashSet<IContainer>();
+		Set<IResource> result = new HashSet<IResource>();
 		if (child != null) {
 			IMemento[] pathNode = child.getChildren(INCLUDED_PATH_KEY);
 			if (pathNode != null) {
 				for (IMemento path : pathNode) {
 					String includedPath = path.getString(INCLUDED_PATH_KEY);
-					IContainer container = ResourcesPlugin.getWorkspace().getRoot()
-							.getContainerForLocation(new Path(includedPath));
-					result.add(container);
+					IResource resource = ResourceUtil
+							.getResourceForLocation(new Path(includedPath));
+					if (resource != null)
+						result.add(resource);
 				}
 				return result;
 			}
