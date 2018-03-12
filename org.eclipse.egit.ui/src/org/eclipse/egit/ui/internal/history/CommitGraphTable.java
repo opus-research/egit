@@ -64,8 +64,6 @@ class CommitGraphTable {
 		return UIUtils.getBoldFont(UIPreferences.THEME_CommitGraphNormalFont);
 	}
 
-	private static final String LINESEP = System.getProperty("line.separator"); //$NON-NLS-1$
-
 	private final TableViewer table;
 
 	private Clipboard clipboard;
@@ -149,7 +147,7 @@ class CommitGraphTable {
 		while (itr.hasNext()) {
 			final PlotCommit d = itr.next();
 			if (r.length() > 0)
-				r.append(LINESEP);
+				r.append("\n"); //$NON-NLS-1$
 			r.append(d.getId().name());
 		}
 

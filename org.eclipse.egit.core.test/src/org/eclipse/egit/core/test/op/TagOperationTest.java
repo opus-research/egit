@@ -1,11 +1,3 @@
-/*******************************************************************************
- * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *******************************************************************************/
 package org.eclipse.egit.core.test.op;
 
 import static org.junit.Assert.assertFalse;
@@ -93,7 +85,7 @@ public class TagOperationTest extends DualRepositoryTestCase {
 		Tag newTag = new Tag(repository1.getRepository());
 		newTag.setTag("TheNewTag");
 		newTag.setMessage("Well, I'm the tag");
-		newTag.setTagger(new PersonIdent(TestUtils.AUTHOR));
+		newTag.setAuthor(new PersonIdent(TestUtils.AUTHOR));
 		newTag.setObjId(repository1.getRepository()
 				.resolve("refs/heads/master"));
 		TagOperation top = new TagOperation(repository1.getRepository(),

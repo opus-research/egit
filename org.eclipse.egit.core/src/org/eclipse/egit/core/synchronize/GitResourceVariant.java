@@ -11,16 +11,15 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.team.core.variants.IResourceVariant;
 
 abstract class GitResourceVariant implements IResourceVariant {
@@ -31,27 +30,33 @@ abstract class GitResourceVariant implements IResourceVariant {
 
 	private final ObjectId objectId;
 
+	private final RevCommit revCommit;
+
 	private String name;
 
 	private IPath fullPath;
-
-	private static final IWorkspaceRoot workspaceRoot = ResourcesPlugin
-			.getWorkspace().getRoot();
 
 	/**
 	 * Construct Git representation of {@link IResourceVariant}.
 	 *
 	 * @param repo
-	 * @param objectId
+	 * @param revCommit
 	 * @param path
 	 *            should be repository relative
 	 * @throws IOException
 	 */
-	GitResourceVariant(Repository repo, ObjectId objectId, String path)
+	GitResourceVariant(Repository repo, RevCommit revCommit, String path)
 			throws IOException {
-		this.path = path;
 		this.repo = repo;
-		this.objectId = objectId;
+		this.revCommit = revCommit;
+		TreeWalk tw = getTreeWalk(repo, revCommit.getTree(), path);
+		if (tw == null) {
+			objectId = null;
+			this.path = null;
+		} else {
+			objectId = tw.getObjectId(0);
+			this.path = new String(tw.getRawPath());
+		}
 	}
 
 	public String getContentIdentifier() {
@@ -83,14 +88,25 @@ abstract class GitResourceVariant implements IResourceVariant {
 		return false;
 	}
 
-	public byte[] asBytes() {
-		return getObjectId().getName().getBytes();
-	}
-
 	@Override
 	public String toString() {
 		return path + "(" + objectId.getName() + ")"; //$NON-NLS-1$ //$NON-NLS-2$
 	}
+
+	/**
+	 *
+	 * @param repo
+	 * @param revTree
+	 *            base commit
+	 * @param path
+	 *            to resource variant
+	 * @return new tree walk positioned on given object or <code>null</code>
+	 *         when given path was not found in repository
+	 * @throws IOException
+	 *             when something goes wrong during tree walk initialization
+	 */
+	protected abstract TreeWalk getTreeWalk(Repository repo, RevTree revTree,
+			String path) throws IOException;
 
 	protected ObjectId getObjectId() {
 		return objectId;
@@ -100,32 +116,23 @@ abstract class GitResourceVariant implements IResourceVariant {
 		return repo;
 	}
 
+	protected RevCommit getRevCommit() {
+		return revCommit;
+	}
+
 	protected String getPath() {
 		return path;
 	}
 
 	protected IPath getFullPath() {
-		if (fullPath == null) {
-			IResource resource;
-			IPath location = new Path(repo.getWorkTree() + File.separator
-					+ path);
-
-			if (isContainer())
-				resource = workspaceRoot.getContainerForLocation(location);
-			else
-				resource = workspaceRoot.getFileForLocation(location);
-
-			if (resource != null)
-				fullPath = resource.getFullPath();
-			else
-				fullPath = new Path(path);
-		}
+		if (fullPath == null)
+			fullPath = new Path(path);
 
 		return fullPath;
 	}
 
 	public boolean exists() {
-		return true;
+		return objectId != null && !objectId.equals(ObjectId.zeroId());
 	}
 
 }

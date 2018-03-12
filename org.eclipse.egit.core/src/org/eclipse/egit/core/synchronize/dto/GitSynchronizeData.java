@@ -9,7 +9,6 @@
 package org.eclipse.egit.core.synchronize.dto;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,10 +16,7 @@ import java.util.Set;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.ObjectWalk;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * Simple data transfer object containing all necessary information for
@@ -32,9 +28,9 @@ public class GitSynchronizeData {
 
 	private final Repository repo;
 
-	private final RevCommit srcRev;
+	private final String srcRev;
 
-	private final RevCommit dstRev;
+	private final String dstRev;
 
 	private final Set<IProject> projects;
 
@@ -49,19 +45,12 @@ public class GitSynchronizeData {
 	 * @param includeLocal
 	 *            <code>true</code> if local changes should be included in
 	 *            comparison
-	 * @throws IOException
 	 */
 	public GitSynchronizeData(Repository repository, String srcRev,
-			String dstRev, boolean includeLocal) throws IOException {
+			String dstRev, boolean includeLocal) {
 		repo = repository;
-
-		Ref srcRef = repo.getRef(srcRev);
-		Ref dstRef = repo.getRef(dstRev);
-		ObjectWalk ow = new ObjectWalk(repo);
-
-		this.srcRev = ow.parseCommit(srcRef.getObjectId());
-		this.dstRev = ow.parseCommit(dstRef.getObjectId());
-
+		this.srcRev = srcRev;
+		this.dstRev = dstRev;
 		this.includeLocal = includeLocal;
 		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();
 
@@ -86,14 +75,14 @@ public class GitSynchronizeData {
 	/**
 	 * @return synchronize source rev name
 	 */
-	public RevCommit getSrcRevCommit() {
+	public String getSrcRev() {
 		return srcRev;
 	}
 
 	/**
 	 * @return synchronize destination rev name
 	 */
-	public RevCommit getDstRevCommit() {
+	public String getDstRev() {
 		return dstRev;
 	}
 
