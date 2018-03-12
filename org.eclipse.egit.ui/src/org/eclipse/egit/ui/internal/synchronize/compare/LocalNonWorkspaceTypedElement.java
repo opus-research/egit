@@ -151,7 +151,7 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 
 	/** {@inheritDoc} */
 	@Override
-	public synchronized boolean isDirty() {
+	public boolean isDirty() {
 		return fDirty || (sharedDocumentAdapter != null && sharedDocumentAdapter.hasBufferedContents());
 	}
 
@@ -166,11 +166,6 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 				return null;
 		}
 		return Platform.getAdapterManager().getAdapter(this, adapter);
-	}
-
-	public void setSharedDocumentListener(
-			EditableSharedDocumentAdapter.ISharedDocumentAdapterListener sharedDocumentListener) {
-		this.sharedDocumentListener = sharedDocumentListener;
 	}
 
 	@Override
