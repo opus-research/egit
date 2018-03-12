@@ -236,7 +236,7 @@ public class GitModelBlobTest extends GitModelTestCase {
 		IPath leftLocation = left.getResource().getLocation();
 		assertEquals(file.getLocation(), leftLocation);
 	}
-	
+
 	@BeforeClass public static void setupEnvironment() throws Exception {
 		leftRepoFile = createProjectAndCommitToRepository();
 
