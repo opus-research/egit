@@ -226,18 +226,19 @@ public class SelectionUtils {
 		for (IPath location : locations) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
 					.getMapping(location);
-			if (mapping == null) {
-				mapping = repositoryMapping;
+			if (repositoryMapping == null) {
+				Repository repository = org.eclipse.egit.core.Activator
+						.getDefault().getRepositoryCache()
+						.getRepository(location);
+				return repository;
 			}
-			if (mapping != null && repositoryMapping != null
-					&& mapping.getRepository() != repositoryMapping
-							.getRepository()
-					|| (mapping != null) != (repositoryMapping != null)) {
-				if (warn) {
+			if (mapping == null)
+				mapping = repositoryMapping;
+			if (mapping.getRepository() != repositoryMapping.getRepository()) {
+				if (warn)
 					MessageDialog.openError(shell,
 							UIText.RepositoryAction_multiRepoSelectionTitle,
 							UIText.RepositoryAction_multiRepoSelection);
-				}
 				return null;
 			}
 		}
