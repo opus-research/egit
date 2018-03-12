@@ -193,12 +193,6 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_CreateProjectsTask;
 
 	/** */
-	public static String SecureStoreUtils_errorClearingCredentials;
-
-	/** */
-	public static String SecureStoreUtils_errorReadingCredentials;
-
-	/** */
 	public static String SecureStoreUtils_writingCredentialsFailed;
 
 	/** */
@@ -272,6 +266,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GerritConfigurationPage_UserLabel;
+
+	/** */
+	public static String EGitCredentialsProvider_errorReadingCredentials;
+
+	/** */
+	public static String EGitCredentialsProvider_FailedToClearCredentials;
 
 	/** */
 	public static String EgitUiUtils_CouldNotOpenEditorMessage;
@@ -929,9 +929,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseResultDialog_StatusFastForward;
-
-	/** */
-	public static String RebaseResultDialog_StatusLabel;
 
 	/** */
 	public static String RebaseResultDialog_StatusNothingToCommit;
@@ -2542,12 +2539,6 @@ public class UIText extends NLS {
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
 
 	/** */
-	public static String CompareIndexWithHeadActionHandler_nothingToDoTitle;
-
-	/** */
-	public static String CompareIndexWithHeadActionHandler_fileNotStaged;
-
-	/** */
 	public static String CompareUtils_jobName;
 
 	/** */
@@ -3061,9 +3052,6 @@ public class UIText extends NLS {
 	public static String BranchConfigurationDialog_ExceptionGettingRefs;
 
 	/** */
-	public static String BranchConfigurationDialog_RebaseLabel;
-
-	/** */
 	public static String BranchConfigurationDialog_RemoteLabel;
 
 	/** */
@@ -3107,6 +3095,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LaunchFinder_ContinueQuestion;
+
+	/** */
+	public static String BranchRebaseMode_Rebase;
+
+	/** */
+	public static String BranchRebaseMode_Preserve;
+
+	/** */
+	public static String BranchRebaseMode_Interactive;
+
+	/** */
+	public static String BranchRebaseMode_None;
 
 	/** */
 	public static String BranchRenameDialog_Message;
@@ -3515,6 +3515,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String IgnoreActionHandler_addToGitignore;
+
+	/** */
+	public static String IgnoreActionHandler_manyFilesToBeIgnoredTitle;
+
+	/** */
+	public static String IgnoreActionHandler_manyFilesToBeIgnoredQuestion;
 
 	/** */
 	public static String RepositoriesView_BranchDeletionFailureMessage;
@@ -4105,13 +4111,7 @@ public class UIText extends NLS {
 	public static String UpstreamConfigComponent_ConfigureUpstreamToolTip;
 
 	/** */
-	public static String UpstreamConfigComponent_MergeRadio;
-
-	/** */
-	public static String UpstreamConfigComponent_PullGroup;
-
-	/** */
-	public static String UpstreamConfigComponent_RebaseRadio;
+	public static String BranchRebaseModeCombo_RebaseModeLabel;
 
 	/** */
 	public static String TagAction_cannotCheckout;
@@ -4256,7 +4256,13 @@ public class UIText extends NLS {
 	public static String CommitEditorPage_LabelAuthor;
 
 	/** */
+	public static String CommitEditorPage_LabelAuthorRelative;
+
+	/** */
 	public static String CommitEditorPage_LabelCommitter;
+
+	/** */
+	public static String CommitEditorPage_LabelCommitterRelative;
 
 	/** */
 	public static String CommitEditorPage_LabelParent;
@@ -5238,6 +5244,9 @@ public class UIText extends NLS {
 	public static String StagingView_IgnoreItemMenuLabel;
 
 	/** */
+	public static String StagingView_IgnoreFolderMenuLabel;
+
+	/** */
 	public static String StagingView_DeleteItemMenuLabel;
 
 	/** */
@@ -5359,6 +5368,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SubmoduleUpdateCommand_UpdateError;
+
+	/** */
+	public static String SubmoduleUpdateCommand_UncommittedChanges;
 
 	/** */
 	public static String SynchronizeWithMenu_custom;
