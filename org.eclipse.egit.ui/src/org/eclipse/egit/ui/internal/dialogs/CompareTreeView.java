@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2014 SAP AG and others.
+ * Copyright (c) 2011, 2016 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  *    Robin Stocker <robin@nibor.org> - Unify workbench and PathNode tree code
  *    Marc Khouzam <marc.khouzam@ericsson.com> - Add compare mode toggle
  *    Marc Khouzam <marc.khouzam@ericsson.com> - Skip expensive computations for equal content (bug 431610)
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Prevent NPE on empty content
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
@@ -40,10 +41,10 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
+import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView.PathNode.Type;
 import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
@@ -98,8 +99,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
@@ -277,8 +276,10 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 						compareInput);
 			} else {
 				IFile file = fileNode.getFile();
-				if (file != null)
-					openFileInEditor(file.getLocation().toOSString());
+				if (file != null) {
+					DiffViewer.openFileInEditor(file.getLocation().toFile(),
+							-1);
+				}
 			}
 		}
 	}
@@ -911,6 +912,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		@Override
 		public Object[] getElements(Object inputElement) {
 			ContainerNode rootContainer = containerNodes.get(new Path("")); //$NON-NLS-1$
+			if (rootContainer == null) {
+				return new PathNode[0];
+			}
 			if (rootContainer.isOnlyEqualContent() && !showEquals)
 				return new String[] { UIText.CompareTreeView_NoDifferencesFoundMessage };
 
@@ -1110,18 +1114,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		getSite().registerContextMenu(manager, tree);
 	}
 
-	private void openFileInEditor(String filePath) {
-		IWorkbenchWindow window = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
-		File file = new File(filePath);
-		if (!file.exists()) {
-			String message = NLS.bind(UIText.CommitFileDiffViewer_FileDoesNotExist, filePath);
-			Activator.showError(message, null);
-		}
-		IWorkbenchPage page = window.getActivePage();
-		EgitUiEditorUtils.openEditor(file, page);
-	}
-
 	private IAction createOpenAction(ITreeSelection selection) {
 		final List<String> pathsToOpen = getSelectedPaths(selection);
 		if (pathsToOpen == null || pathsToOpen.isEmpty())
@@ -1129,10 +1121,12 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 		return new Action(
 				UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel) {
+
 			@Override
 			public void run() {
-				for (String filePath : pathsToOpen)
-					openFileInEditor(filePath);
+				for (String filePath : pathsToOpen) {
+					DiffViewer.openFileInEditor(new File(filePath), -1);
+				}
 			}
 		};
 	}

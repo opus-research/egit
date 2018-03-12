@@ -15,10 +15,10 @@ import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -68,11 +68,17 @@ public class GitFlowHandlerUtil {
 	static String gatherRevision(ExecutionEvent event) throws IOException {
 		final GitFlowRepository gfRepo = GitFlowHandlerUtil
 				.getRepository(event);
+		if (gfRepo == null) {
+			throw new IllegalStateException(
+					"Gitflow command called with no Gitflow repository present"); //$NON-NLS-1$
+		}
+
 		Ref develop = gfRepo.getRepository()
 				.exactRef(gfRepo.getConfig().getDevelopFull());
 		if (develop == null) {
 			throw new IllegalStateException(
-					"Gitflow command called on non-Gitflow repository"); //$NON-NLS-1$
+					"Gitflow command called on Gitflow repository with no develop branch. " //$NON-NLS-1$
+							+ "The Gitflow configuration is either corrupt or incomplete."); //$NON-NLS-1$
 		}
 		return develop.getName();
 	}
