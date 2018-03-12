@@ -277,7 +277,7 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	protected SWTBotEditor getCompareEditorForFileInGitChangeSetModel()
 			throws Exception {
-		SWTBotTree syncViewTree = setPresentationModel("Git Change Set")
+		SWTBotTree syncViewTree = setPresentationModel("Git Commits")
 				.tree();
 		SWTBotTreeItem commitNode = syncViewTree.getAllItems()[0];
 		commitNode.expand();
@@ -310,12 +310,12 @@ public abstract class AbstractSynchronizeViewTest extends
 		untracked.addAll(Arrays.asList(commitables));
 
 		CommitOperation op = new CommitOperation(commitables,
-				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
-				TestUtil.TESTCOMMITTER, "Add .gitignore file");
+				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
+				"Add .gitignore file");
 		op.execute(null);
 	}
 
-	protected void commit(String projectName) throws InterruptedException {
+	private void commit(String projectName) throws InterruptedException {
 		showDialog(projectName, "Team", CommitAction_commit);
 
 		bot.shell(CommitDialog_CommitChanges).bot().activeShell();
