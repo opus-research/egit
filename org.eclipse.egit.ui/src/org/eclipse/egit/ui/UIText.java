@@ -2590,6 +2590,12 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_recomputeAncestorDecorationsTooltip;
 
 	/** */
+	public static String DecoratorPreferencesPage_computeRecursiveLimit;
+
+	/** */
+	public static String DecoratorPreferencesPage_computeRecursiveLimitTooltip;
+
+	/** */
 	public static String DecoratorPreferencesPage_description;
 
 	/** */

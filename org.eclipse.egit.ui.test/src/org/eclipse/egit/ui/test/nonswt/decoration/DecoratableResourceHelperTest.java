@@ -2,14 +2,13 @@
  * Copyright (C) 2011, Philipp Thun <philipp.thun@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Christian Halstrick <christian.halstrick@sap.com>
- * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.decorators;
+package org.eclipse.egit.ui.test.nonswt.decoration;
 
 import static org.junit.Assert.assertTrue;
 
@@ -27,9 +26,11 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.internal.decorators.DecoratableResource;
+import org.eclipse.egit.ui.internal.decorators.DecoratableResourceHelper;
+import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.api.Git;
@@ -44,7 +45,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase {
+public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 
 	private static final String TEST_PROJECT = "TestProject";
 
@@ -79,8 +80,7 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 		repository = new FileRepository(gitDir);
 		repository.create();
 		repository.close();
-		repository = Activator.getDefault().getRepositoryCache()
-				.lookupRepository(gitDir);
+		repository = Activator.getDefault().getRepositoryCache().lookupRepository(gitDir);
 
 		project = root.getProject(TEST_PROJECT);
 		project.create(null);
@@ -88,8 +88,7 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 
 		project.getFolder(TEST_FOLDER2).create(true, true, null);
 		IFile testFile2 = project.getFile(TEST_FILE2);
-		testFile2.create(new ByteArrayInputStream("content".getBytes()), true,
-				null);
+		testFile2.create(new ByteArrayInputStream("content".getBytes()), true, null);
 
 		RepositoryMapping mapping = new RepositoryMapping(project, gitDir);
 
@@ -104,8 +103,7 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 		git.add().addFilepattern(".").call();
 		git.commit().setMessage("Initial commit").call();
 
-		indexDiffCacheEntry = Activator.getDefault().getIndexDiffCache()
-				.getIndexDiffCacheEntry(repository);
+		indexDiffCacheEntry = Activator.getDefault().getIndexDiffCache().getIndexDiffCacheEntry(repository);
 		waitForIndexDiffUpdate(false);
 	}
 
@@ -140,8 +138,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 		IDecoratableResource[] expectedDRs = new IDecoratableResource[] { new TestDecoratableResource(
 				project, true, false, false, false, Staged.NOT_STAGED) };
 
-		IDecoratableResource[] actualDRs = { new DecoratableResourceAdapter(
-				indexDiffCacheEntry.getIndexDiff(), project) };
+		IDecoratableResource[] actualDRs = DecoratableResourceHelper
+				.createDecoratableResources(new IResource[] { project });
 
 		for (int i = 0; i < expectedDRs.length; i++)
 			assertTrue(expectedDRs[i].equals(actualDRs[i]));
@@ -160,15 +158,12 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 						Staged.NOT_STAGED),
 				new TestDecoratableResource(folder, false, false, false, false,
 						Staged.NOT_STAGED),
-				new TestDecoratableResource(subFolder, false, false, false,
-						false, Staged.NOT_STAGED) };
+				new TestDecoratableResource(subFolder, false, false, false, false,
+						Staged.NOT_STAGED) };
 
 		waitForIndexDiffUpdate(true);
-		IndexDiffData indexDiffData = indexDiffCacheEntry.getIndexDiff();
-		IDecoratableResource[] actualDRs = {
-				new DecoratableResourceAdapter(indexDiffData, project),
-				new DecoratableResourceAdapter(indexDiffData, folder),
-				new DecoratableResourceAdapter(indexDiffData, subFolder) };
+		IDecoratableResource[] actualDRs = DecoratableResourceHelper
+				.createDecoratableResources(new IResource[] { project, folder, subFolder });
 
 		for (int i = 0; i < expectedDRs.length; i++)
 			assertTrue(expectedDRs[i].equals(actualDRs[i]));
@@ -182,9 +177,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 		IDecoratableResource[] expectedDRs = new IDecoratableResource[] { new TestDecoratableResource(
 				testFolder2, true, false, false, false, Staged.NOT_STAGED) };
 		waitForIndexDiffUpdate(true);
-		IndexDiffData indexDiffData = indexDiffCacheEntry.getIndexDiff();
-		IDecoratableResource[] actualDRs = { new DecoratableResourceAdapter(
-				indexDiffData, testFolder2) };
+		IDecoratableResource[] actualDRs = DecoratableResourceHelper
+				.createDecoratableResources(new IResource[] { testFolder2 });
 
 		for (int i = 0; i < expectedDRs.length; i++)
 			assertTrue(expectedDRs[i].equals(actualDRs[i]));
@@ -203,10 +197,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 				new TestDecoratableResource(file, false, false, false, false,
 						Staged.NOT_STAGED) };
 		waitForIndexDiffUpdate(true);
-		IndexDiffData indexDiffData = indexDiffCacheEntry.getIndexDiff();
-		IDecoratableResource[] actualDRs = {
-				new DecoratableResourceAdapter(indexDiffData, project),
-				new DecoratableResourceAdapter(indexDiffData, file) };
+		IDecoratableResource[] actualDRs = DecoratableResourceHelper
+				.createDecoratableResources(new IResource[] { project, file });
 
 		for (int i = 0; i < expectedDRs.length; i++)
 			assertTrue(expectedDRs[i].equals(actualDRs[i]));
@@ -227,10 +219,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 				new TestDecoratableResource(file, true, false, false, false,
 						Staged.ADDED) };
 		waitForIndexDiffUpdate(true);
-		IndexDiffData indexDiffData = indexDiffCacheEntry.getIndexDiff();
-		IDecoratableResource[] actualDRs = {
-				new DecoratableResourceAdapter(indexDiffData, project),
-				new DecoratableResourceAdapter(indexDiffData, file) };
+		IDecoratableResource[] actualDRs = DecoratableResourceHelper
+				.createDecoratableResources(new IResource[] { project, file });
 
 		for (int i = 0; i < expectedDRs.length; i++)
 			assertTrue(expectedDRs[i].equals(actualDRs[i]));
@@ -253,10 +243,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 						Staged.NOT_STAGED) };
 
 		waitForIndexDiffUpdate(true);
-		IndexDiffData indexDiffData = indexDiffCacheEntry.getIndexDiff();
-		IDecoratableResource[] actualDRs = {
-				new DecoratableResourceAdapter(indexDiffData, project),
-				new DecoratableResourceAdapter(indexDiffData, file) };
+		IDecoratableResource[] actualDRs = DecoratableResourceHelper
+				.createDecoratableResources(new IResource[] { project, file });
 
 		for (int i = 0; i < expectedDRs.length; i++)
 			assertTrue(expectedDRs[i].equals(actualDRs[i]));
@@ -283,10 +271,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 						Staged.NOT_STAGED) };
 
 		waitForIndexDiffUpdate(true);
-		IndexDiffData indexDiffData = indexDiffCacheEntry.getIndexDiff();
-		IDecoratableResource[] actualDRs = {
-				new DecoratableResourceAdapter(indexDiffData, project),
-				new DecoratableResourceAdapter(indexDiffData, file) };
+		IDecoratableResource[] actualDRs = DecoratableResourceHelper
+				.createDecoratableResources(new IResource[] { project, file });
 
 		for (int i = 0; i < expectedDRs.length; i++)
 			assertTrue(expectedDRs[i].equals(actualDRs[i]));
@@ -333,10 +319,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 						Staged.NOT_STAGED) };
 
 		waitForIndexDiffUpdate(true);
-		IndexDiffData indexDiffData = indexDiffCacheEntry.getIndexDiff();
-		IDecoratableResource[] actualDRs = {
-				new DecoratableResourceAdapter(indexDiffData, project),
-				new DecoratableResourceAdapter(indexDiffData, file) };
+		IDecoratableResource[] actualDRs = DecoratableResourceHelper
+				.createDecoratableResources(new IResource[] { project, file });
 
 		for (int i = 0; i < expectedDRs.length; i++)
 			assertTrue(expectedDRs[i].equals(actualDRs[i]));
