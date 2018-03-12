@@ -99,7 +99,7 @@ class ExistingOrNewPage extends WizardPage {
 
 	private IPath minumumPath;
 
-	private Label dotGitSegment;
+	private Text dotGitSegment;
 
 	private Composite externalComposite;
 
@@ -309,7 +309,7 @@ class ExistingOrNewPage extends WizardPage {
 		c1.setText(UIText.ExistingOrNewPage_HeaderProject);
 		c1.setWidth(100);
 		TreeColumn c2 = new TreeColumn(tree, SWT.NONE);
-		c2.setText(UIText.ExistingOrNewPage_HeaderLocation);
+		c2.setText(UIText.ExistingOrNewPage_HeaderPath);
 		c2.setWidth(400);
 		TreeColumn c3 = new TreeColumn(tree, SWT.NONE);
 		c3.setText(UIText.ExistingOrNewPage_HeaderRepository);
@@ -427,8 +427,9 @@ class ExistingOrNewPage extends WizardPage {
 						.segmentCount());
 			}
 		});
-		dotGitSegment = new Label(parentRepoComposite, SWT.NONE);
+		dotGitSegment = new Text(parentRepoComposite, SWT.NONE);
 		dotGitSegment.setEnabled(false);
+		dotGitSegment.setEditable(false);
 		dotGitSegment.setText(File.separatorChar + Constants.DOT_GIT);
 		dotGitSegment.setLayoutData(GridDataFactory.fillDefaults()
 				.align(SWT.LEFT, SWT.CENTER).create());
