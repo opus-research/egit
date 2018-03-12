@@ -62,13 +62,11 @@ public class ModelTestCase extends GitTestCase {
 	}
 
 	protected RevCommit setContentsAndCommit(TestRepository testRepository,
-			String repoRelativePath, IFile targetFile, String newContents,
-			String commitMessage) throws Exception {
+			IFile targetFile, String newContents, String commitMessage)
+			throws Exception {
 		targetFile.setContents(
 				new ByteArrayInputStream(newContents.getBytes()),
 				IResource.FORCE, new NullProgressMonitor());
-		new Git(testRepository.getRepository()).add()
-				.addFilepattern(repoRelativePath).call();
 		testRepository.addToIndex(targetFile);
 		return testRepository.commit(commitMessage);
 	}
