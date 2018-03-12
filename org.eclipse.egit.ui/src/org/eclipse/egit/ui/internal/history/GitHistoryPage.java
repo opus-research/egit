@@ -1653,8 +1653,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private void createNewWalk(Repository db, AnyObjectId headId) {
 		currentHeadId = headId;
+		if (currentWalk != null)
+			currentWalk.release();
 		currentWalk = new SWTWalk(db);
-		System.out.println("Created " + currentWalk); //$NON-NLS-1$
 		try {
 			if (store
 					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS))
@@ -1775,14 +1776,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void scheduleNewGenerateHistoryJob() {
-		final GenerateHistoryJob rj = new GenerateHistoryJob(this,
-				graph.getControl(), currentWalk);
+		final SWTCommitList list = new SWTCommitList(graph.getControl());
+		list.source(currentWalk);
+		final GenerateHistoryJob rj = new GenerateHistoryJob(this, list);
 		rj.setRule(this);
 		rj.addJobChangeListener(new JobChangeAdapter() {
 			@Override
 			public void done(final IJobChangeEvent event) {
-				rj.getWalk().release();
-				System.out.println("Released " + rj.getWalk()); //$NON-NLS-1$
 				final Control graphctl = graph.getControl();
 				if (job != rj || graphctl.isDisposed())
 					return;
