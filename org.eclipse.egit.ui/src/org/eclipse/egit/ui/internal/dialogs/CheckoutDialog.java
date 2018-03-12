@@ -50,7 +50,7 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 
 	private String currentBranch;
 
-	private Button deleteButton;
+	private Button deleteteButton;
 
 	private Button renameButton;
 
@@ -100,18 +100,19 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 		if (((TreeSelection) branchTree.getSelection()).size() > 1) {
 			TreeSelection selection = (TreeSelection) branchTree
 					.getSelection();
+			boolean onlyBranchesAreSelected = onlyBranchesAreSelected(selection);
 
+			// enable/disable buttons
+			deleteteButton.setEnabled(onlyBranchesAreSelected);
 			renameButton.setEnabled(false);
-			deleteButton
-					.setEnabled(onlyBranchesExcludingCurrentAreSelected(selection));
 			newButton.setEnabled(false);
 		} else {
 			okButton.setEnabled(branchSelected || tagSelected);
 
 			// we don't support rename on tags
 			renameButton.setEnabled(branchSelected && !tagSelected);
-			deleteButton.setEnabled(branchSelected && !tagSelected
-					&& !isCurrentBranch(refName));
+			deleteteButton.setEnabled(branchSelected && !tagSelected);
+
 			// new button should be always enabled
 			newButton.setEnabled(true);
 		}
@@ -121,13 +122,7 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 		else
 			okButton.setText(UIText.CheckoutDialog_OkCheckout);
 
-		okButton.setEnabled(!isCurrentBranch(refName));
-	}
-
-	private boolean isCurrentBranch(String refName) {
-		if (refName != null)
-			return refName.equals(currentBranch);
-		return false;
+		okButton.setEnabled(refName != null && !refName.equals(currentBranch));
 	}
 
 	@Override
@@ -144,10 +139,10 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 		setButtonLayoutData(renameButton);
 		((GridLayout) parent.getLayout()).numColumns++;
 
-		deleteButton = new Button(parent, SWT.PUSH);
-		deleteButton.setFont(JFaceResources.getDialogFont());
-		deleteButton.setText(UIText.CheckoutDialog_Delete);
-		setButtonLayoutData(deleteButton);
+		deleteteButton = new Button(parent, SWT.PUSH);
+		deleteteButton.setFont(JFaceResources.getDialogFont());
+		deleteteButton.setText(UIText.CheckoutDialog_Delete);
+		setButtonLayoutData(deleteteButton);
 		((GridLayout) parent.getLayout()).numColumns++;
 
 		renameButton.addSelectionListener(new SelectionAdapter() {
@@ -210,7 +205,7 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 			}
 		});
 
-		deleteButton.addSelectionListener(new SelectionAdapter() {
+		deleteteButton.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent selectionEvent) {
 				try {
 					CommonUtils.runCommand(
@@ -248,8 +243,7 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 		Activator.handleError(msg, e, true);
 	}
 
-	private boolean onlyBranchesExcludingCurrentAreSelected(
-			TreeSelection selection) {
+	private boolean onlyBranchesAreSelected(TreeSelection selection) {
 		Iterator selIterator = selection.iterator();
 		while (selIterator.hasNext()) {
 			Object sel = selIterator.next();
@@ -258,8 +252,6 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 				String refName = node.getObject().getName();
 				if (!refName.startsWith(R_HEADS)
 						&& !refName.startsWith(R_REMOTES))
-					return false;
-				if (isCurrentBranch(refName))
 					return false;
 			} else
 				return false;
