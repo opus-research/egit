@@ -665,9 +665,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_SecureStoreUseByDefault;
 
 	/** */
-	public static String GitPreferenceRoot_useLogicalModel;
-
-	/** */
 	public static String ProcessStepsRebaseCommand_CancelDialogMessage;
 
 	/** */
@@ -2540,6 +2537,9 @@ public class UIText extends NLS {
 	public static String CreateRepositoryPage_DirectoryLabel;
 
 	/** */
+	public static String CreateRepositoryPage_MissingNameMessage;
+
+	/** */
 	public static String CreateRepositoryPage_NotADirectoryMessage;
 
 	/** */
@@ -2555,7 +2555,10 @@ public class UIText extends NLS {
 	public static String CreateRepositoryPage_PleaseSelectDirectoryMessage;
 
 	/** */
-	public static String CreateRepositoryPage_PleaseUseAbsolutePathMessage;
+	public static String CreateRepositoryPage_PleaseUseAbsoluePathMessage;
+
+	/** */
+	public static String CreateRepositoryPage_RepositoryNameLabel;
 
 	/** */
 	public static String PushResultDialog_ConfigureButton;
@@ -2721,9 +2724,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchGerritChangePage_LocalBranchRadio;
-
-	/** */
-	public static String FetchGerritChangePage_LocalBranchCheckout;
 
 	/** */
 	public static String FetchGerritChangePage_MissingChangeMessage;
@@ -2936,22 +2936,10 @@ public class UIText extends NLS {
 	public static String BranchOperationUI_CheckoutRemoteTrackingTitle;
 
 	/** */
-	public static String BranchOperationUI_Continue;
-
-	/** */
 	public static String BranchOperationUI_DetachedHeadTitle;
 
 	/** */
 	public static String BranchOperationUI_DetachedHeadMessage;
-
-	/** */
-	public static String BranchOperationUI_RunningLaunchDontShowAgain;
-
-	/** */
-	public static String BranchOperationUI_RunningLaunchMessage;
-
-	/** */
-	public static String BranchOperationUI_RunningLaunchTitle;
 
 	/** */
 	public static String BranchRenameDialog_Message;
@@ -3354,9 +3342,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_RebaseCheckbox;
-
-	/** */
-	public static String DialogsPreferencePage_RunningLaunchOnCheckout;
 
 	/** */
 	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
@@ -4050,9 +4035,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenInEditorMenuLabel;
 
 	/** */
-	public static String CommitFileDiffViewer_OpenPreviousInEditorMenuLabel;
-
-	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
 
 	/** */
@@ -4072,9 +4054,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitGraphTable_DeleteBranchAction;
-
-	/** */
-	public static String CommitGraphTable_HoverAdditionalTags;
 
 	/** */
 	public static String CommitGraphTable_messageColumn;

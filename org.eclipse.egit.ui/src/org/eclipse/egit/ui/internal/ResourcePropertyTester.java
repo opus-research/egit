@@ -21,7 +21,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Config;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.transport.RefSpec;
@@ -163,17 +162,7 @@ public class ResourcePropertyTester extends PropertyTester {
 					String destination = pushSpec.getDestination();
 					if (destination == null)
 						continue;
-					if (destination.startsWith(GerritUtil.REFS_FOR))
-						return true;
-				}
-				for (RefSpec fetchSpec : remoteConfig.getFetchRefSpecs()) {
-					String source = fetchSpec.getSource();
-					String destination = fetchSpec.getDestination();
-					if (source == null || destination == null)
-						continue;
-					if (source.startsWith(Constants.R_NOTES)
-							&& destination.startsWith(Constants.R_NOTES))
-						return true;
+					return destination.startsWith(GerritUtil.REFS_FOR);
 				}
 			}
 		} catch (URISyntaxException e) {
