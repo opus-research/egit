@@ -12,6 +12,8 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,40 +35,20 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.api.CheckoutCommand;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.dircache.DirCache;
+import org.eclipse.jgit.dircache.DirCacheCheckout;
+import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 
 /**
  * The operation discards changes on a set of resources. In case of a folder
- * resource all file resources in the sub tree are processed. Untracked files
- * are ignored.
+ * resource all file resources in the sub tree are processed.
+ * Untracked files are ignored.
  */
 public class DiscardChangesOperation implements IEGitOperation {
 
-	/**
-	 * Discard operation type
-	 */
-	public static enum Type {
-
-		/**
-		 * Copy HEAD revision working directory
-		 */
-		HEAD,
-
-		/**
-		 * Copy index to working directory
-		 */
-		INDEX,
-
-	}
-
 	IResource[] files;
-
-	Type type;
 
 	ISchedulingRule schedulingRule;
 
@@ -76,25 +58,12 @@ public class DiscardChangesOperation implements IEGitOperation {
 	 * @param files
 	 */
 	public DiscardChangesOperation(IResource[] files) {
-		this(files, Type.INDEX);
-	}
-
-	/**
-	 * Construct a {@link DiscardChangesOperation} object.
-	 *
-	 * @param files
-	 * @param type
-	 */
-	public DiscardChangesOperation(IResource[] files, Type type) {
 		this.files = new IResource[files.length];
 		System.arraycopy(files, 0, this.files, 0, files.length);
-		this.type = type;
 		schedulingRule = calcRefreshRule(files);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
+	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
 	 */
 	public ISchedulingRule getSchedulingRule() {
@@ -148,7 +117,7 @@ public class DiscardChangesOperation implements IEGitOperation {
 			}
 			try {
 				discardChange(res, repo);
-			} catch (GitAPIException e) {
+			} catch (IOException e) {
 				errorOccurred = true;
 				String message = NLS.bind(
 						CoreText.DiscardChangesOperation_discardFailed, res
@@ -185,13 +154,19 @@ public class DiscardChangesOperation implements IEGitOperation {
 	}
 
 	private void discardChange(IResource res, Repository repository)
-			throws GitAPIException {
+			throws IOException {
 		String resRelPath = RepositoryMapping.getMapping(res)
 				.getRepoRelativePath(res);
-		CheckoutCommand co = new Git(repository).checkout().addPath(resRelPath);
-		if (type == Type.HEAD)
-			co.setStartPoint(Constants.HEAD);
-		co.call();
+		DirCache dc = repository.lockDirCache();
+		try {
+			DirCacheEntry entry = dc.getEntry(resRelPath);
+			if (entry != null) {
+				File file = new File(res.getLocationURI());
+				DirCacheCheckout.checkoutEntry(repository, file, entry);
+			}
+		} finally {
+			dc.unlock();
+		}
 	}
 
 	/**
