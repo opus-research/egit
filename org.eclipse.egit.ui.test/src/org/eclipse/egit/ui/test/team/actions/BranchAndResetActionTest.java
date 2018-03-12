@@ -313,9 +313,6 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		assertFalse(branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL)
 				.isEnabled());
 		branchName.setText("NewBranch");
-		// suppress checkout so that the dialog remains open
-		branchNameDialog.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
-				.deselect();
 		branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 
 		assertEquals("New Branch should be selected", "NewBranch", bot.tree()
@@ -362,9 +359,6 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		assertFalse(branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL)
 				.isEnabled());
 		branchName.setText("Unrenamed");
-		// suppress checkout so that the dialog remains open
-		branchNameDialog.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
-				.deselect();
 		branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 
 		assertEquals("New Branch should be selected", "Unrenamed", bot.tree()

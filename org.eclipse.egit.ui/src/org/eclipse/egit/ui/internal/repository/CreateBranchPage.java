@@ -239,8 +239,7 @@ class CreateBranchPage extends WizardPage {
 		buttonConfigRebase.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (buttonConfigRebase.getSelection())
-					upstreamConfig = UpstreamConfig.REBASE;
+				upstreamConfig = UpstreamConfig.REBASE;
 			}
 		});
 		buttonConfigRebase
@@ -251,8 +250,7 @@ class CreateBranchPage extends WizardPage {
 		buttonConfigMerge.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (buttonConfigMerge.getSelection())
-					upstreamConfig = UpstreamConfig.MERGE;
+				upstreamConfig = UpstreamConfig.MERGE;
 			}
 		});
 		buttonConfigMerge
@@ -263,8 +261,7 @@ class CreateBranchPage extends WizardPage {
 		buttonConfigNone.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (buttonConfigNone.getSelection())
-					upstreamConfig = UpstreamConfig.NONE;
+				upstreamConfig = UpstreamConfig.NONE;
 			}
 		});
 		buttonConfigNone
