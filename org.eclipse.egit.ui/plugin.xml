@@ -2,7 +2,6 @@
 <?eclipse version="3.0"?>
 <plugin>
    <extension-point id="commitMessageProvider" name="%CommitMessageProviderExtension-point.name" schema="schema/commitMessageProvider.exsd"/>
-   <extension-point id="cloneSourceProvider" name="%CloneSourceProviderExtension-point.name" schema="schema/cloneSourceProvider.exsd"/>
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.eclipse.egit.ui.PluginPreferenceInitializer"/>
    </extension>
@@ -1105,19 +1104,13 @@
                <count
                      value="1">
                </count>
-               <iterate>
-	               <or>
-		               <instanceof
-		                     value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-		               </instanceof>
-		               <instanceof
-		                     value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-		               </instanceof>
-		               <instanceof
-		                     value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-		               </instanceof>
-	               </or>
-               </iterate>
+               <and>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
             </and>
          </activeWhen>
       </handler>
@@ -1485,26 +1478,6 @@
          </activeWhen>
       </handler>
       <handler
-            commandId="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.ConfigureGerritRemoteCommand">
-         </class>
-         <activeWhen>
-             <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-         </activeWhen>
-      </handler>
-      <handler
             commandId="org.eclipse.ui.edit.rename">
          <class
                class="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand">
@@ -1722,44 +1695,6 @@
                            </test>
                         </not>
                      </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.team.Push"
-               icon="icons/obj16/push.gif"
-               label="%RepoViewPushBranch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.team.Push"
-               icon="icons/obj16/push.gif"
-               label="%RepoViewPushTag.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2233,26 +2168,6 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote"
-               label="%RepoViewConfigureGerritRemote.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
                commandId="org.eclipse.ui.edit.delete"
                label="%RepoViewRemoveRemote.label"
                style="push">
@@ -2383,10 +2298,12 @@
                   <count
                         value="1">
                   </count>
-                  <iterate>
-	                     <instanceof
-	                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-	                     </instanceof>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -3465,11 +3382,6 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            id="org.eclipse.egit.ui.RepositoriesViewConfigureGerritRemote"
-            name="%ConfigureGerritRemoteCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ChangeCredentialsCommand"
             id="org.eclipse.egit.ui.RepositoriesViewChangeCredentials"
             name="%ChangeCredentialsCommand">
@@ -3646,10 +3558,6 @@
       <image
             commandId="org.eclipse.egit.ui.history.CreateTag"
             icon="icons/obj16/new_tag_obj.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.history.PushCommit"
-            icon="icons/obj16/push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.CheckoutCommand"
@@ -4141,11 +4049,6 @@
             name="%CreateTagCommand.name">
       </command>
       <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.PushCommitHandler"
-            id="org.eclipse.egit.ui.history.PushCommit"
-            name="%PushCommit.name">
-      </command>
-      <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.ResetHandler"
             id="org.eclipse.egit.ui.history.Reset"
             name="%ResetCommand.name">
@@ -4392,15 +4295,5 @@
 			<property name="product" value="EGit"/>
 			<property name="component" value="Mylyn"/>
 		</mapping>
-  </extension>
-  <extension
-        point="org.eclipse.egit.ui.cloneSourceProvider">
-     <source
-           hasFixLocation="true"
-           icon="/icons/obj16/editconfig.gif"
-           label="%CloneUri.label">
-     </source>
-     <repositorySearchPage
-           class="org.eclipse.egit.ui.internal.components.RepositorySelectionPage"></repositorySearchPage>
   </extension>
 </plugin>
