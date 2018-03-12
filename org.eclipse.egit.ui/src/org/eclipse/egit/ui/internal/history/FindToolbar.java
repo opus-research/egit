@@ -66,8 +66,6 @@ public class FindToolbar extends Composite {
 
 	private static final int PREFS_FINDIN_COMMITTER = 5;
 
-	private static final int PREFS_FINDIN_ID = 6;
-
 	private Color errorBackgroundColor;
 
 	/**
@@ -103,8 +101,6 @@ public class FindToolbar extends Composite {
 
 	private MenuItem committerItem;
 
-	private MenuItem idItem;
-
 	private Image nextIcon;
 
 	private Image previousIcon;
@@ -116,8 +112,6 @@ public class FindToolbar extends Composite {
 	private Image authorIcon;
 
 	private Image committerIcon;
-
-	private Image idIcon;
 
 	/**
 	 * Creates the toolbar.
@@ -138,7 +132,6 @@ public class FindToolbar extends Composite {
 		commentsIcon = UIIcons.ELCL16_COMMENTS.createImage();
 		authorIcon = UIIcons.ELCL16_AUTHOR.createImage();
 		committerIcon = UIIcons.ELCL16_COMMITTER.createImage();
-		idIcon = UIIcons.ELCL16_ID.createImage();
 
 		GridLayout findLayout = new GridLayout();
 		findLayout.marginHeight = 2;
@@ -182,8 +175,6 @@ public class FindToolbar extends Composite {
 		authorItem.setText(UIText.HistoryPage_findbar_author);
 		committerItem = new MenuItem(prefsMenu, SWT.RADIO);
 		committerItem.setText(UIText.HistoryPage_findbar_committer);
-		idItem = new MenuItem(prefsMenu, SWT.RADIO);
-		idItem.setText(UIText.FindToolbar_idMenuItem);
 
 		prefsItem.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
@@ -205,9 +196,6 @@ public class FindToolbar extends Composite {
 						committerItem.notifyListeners(SWT.Selection, null);
 						break;
 					case PREFS_FINDIN_COMMITTER:
-						idItem.notifyListeners(SWT.Selection, null);
-						break;
-					case PREFS_FINDIN_ID:
 						commitIdItem.notifyListeners(SWT.Selection, null);
 						break;
 					}
@@ -243,7 +231,6 @@ public class FindToolbar extends Composite {
 				finder.findInComments = commentsItem.getSelection();
 				finder.findInAuthor = authorItem.getSelection();
 				finder.findInCommitter = committerItem.getSelection();
-				finder.findInId = idItem.getSelection();
 				getDisplay().timerExec(200, new Runnable() {
 					public void run() {
 						finder.start();
@@ -267,7 +254,6 @@ public class FindToolbar extends Composite {
 					finder.findInComments = commentsItem.getSelection();
 					finder.findInAuthor = authorItem.getSelection();
 					finder.findInCommitter = committerItem.getSelection();
-					finder.findInId = idItem.getSelection();
 					finder.start();
 					patternField.setSelection(0, 0);
 				} else {
@@ -388,28 +374,13 @@ public class FindToolbar extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				prefsItem.setImage(committerIcon);
 				prefsItem
-						.setToolTipText(UIText.FindToolbar_changeto_id);
+						.setToolTipText(UIText.HistoryPage_findbar_changeto_commit);
 				prefsItemChanged(PREFS_FINDIN_COMMITTER, committerItem);
 			}
 		});
 		if (selectedPrefsItem == PREFS_FINDIN_COMMITTER) {
 			committerItem.setSelection(true);
 			prefsItem.setImage(committerIcon);
-			prefsItem
-					.setToolTipText(UIText.FindToolbar_changeto_id);
-		}
-
-		idItem.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				prefsItem.setImage(idIcon);
-				prefsItem
-						.setToolTipText(UIText.HistoryPage_findbar_changeto_commit);
-				prefsItemChanged(PREFS_FINDIN_ID, idItem);
-			}
-		});
-		if (selectedPrefsItem == PREFS_FINDIN_ID) {
-			idItem.setSelection(true);
-			prefsItem.setImage(idIcon);
 			prefsItem
 					.setToolTipText(UIText.HistoryPage_findbar_changeto_commit);
 		}
@@ -428,7 +399,6 @@ public class FindToolbar extends Composite {
 		commentsItem.setSelection(false);
 		authorItem.setSelection(false);
 		committerItem.setSelection(false);
-		idItem.setSelection(false);
 		item.setSelection(true);
 		clear();
 	}
@@ -442,7 +412,6 @@ public class FindToolbar extends Composite {
 		commentsIcon.dispose();
 		authorIcon.dispose();
 		committerIcon.dispose();
-		idIcon.dispose();
 		super.dispose();
 	}
 
