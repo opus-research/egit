@@ -1085,24 +1085,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 			return SWT.VERTICAL;
 	}
 
-	private void enableAllWidgets(boolean enabled) {
-		if (isDisposed())
-			return;
-		enableCommitWidgets(enabled);
-		enableStagingWidgets(enabled);
-	}
-
-	private void enableStagingWidgets(boolean enabled) {
-		if (isDisposed())
-			return;
-		unstagedViewer.getControl().setEnabled(enabled);
-		stagedViewer.getControl().setEnabled(enabled);
-	}
-
 	private void enableCommitWidgets(boolean enabled) {
 		if (isDisposed())
 			return;
 
+		unstagedViewer.getControl().setEnabled(enabled);
+		stagedViewer.getControl().setEnabled(enabled);
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		enableAuthorText(enabled);
@@ -2404,14 +2392,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 			.setPushUpstream(pushUpstream);
 
 		// don't allow to do anything as long as commit is in progress
-		enableAllWidgets(false);
+		enableCommitWidgets(false);
 		commitJob.addJobChangeListener(new JobChangeAdapter() {
 			@Override
 			public void done(IJobChangeEvent event) {
 				PlatformUI.getWorkbench().getDisplay()
 						.asyncExec(new Runnable() {
 							public void run() {
-								enableAllWidgets(true);
+								enableCommitWidgets(true);
 							}
 						});
 			}
@@ -2420,7 +2408,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) getSite()
 				.getService(IWorkbenchSiteProgressService.class);
 		if (service != null)
-			service.schedule(commitJob, 0, true);
+			service.schedule(commitJob);
 		else
 			commitJob.schedule();
 
