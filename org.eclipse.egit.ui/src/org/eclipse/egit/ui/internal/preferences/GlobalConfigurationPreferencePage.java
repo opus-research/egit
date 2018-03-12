@@ -27,6 +27,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
@@ -123,7 +124,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 		sysTabItem.setText(UIText.GlobalConfigurationPreferencePage_systemSettingTabTitle);
 
 		Composite repoTab = new Composite(tabFolder, SWT.NONE);
-		repoTab.setLayout(new GridLayout(1, false));
+		GridLayoutFactory.swtDefaults().margins(0, 0).applyTo(repoTab);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(repoTab);
 		Composite repositoryComposite = new Composite(repoTab, SWT.NONE);
 		repositoryComposite.setLayout(new GridLayout(2, false));
@@ -236,9 +237,11 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 			List<String> repoPaths = Activator.getDefault().getRepositoryUtil().getConfiguredRepositories();
 			RepositoryCache repositoryCache = org.eclipse.egit.core.Activator.getDefault().getRepositoryCache();
 			for (String repoPath : repoPaths) {
+				File gitDir = new File(repoPath);
+				if (!gitDir.exists())
+					continue;
 				try {
-					Repository repository = repositoryCache.lookupRepository(new File(repoPath));
-					repositories.add(repository);
+					repositories.add(repositoryCache.lookupRepository(gitDir));
 				} catch (IOException e) {
 					continue;
 				}
@@ -247,13 +250,16 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 		}
 	}
 
+	private String getName(final Repository repo) {
+		return Activator.getDefault().getRepositoryUtil()
+				.getRepositoryName(repo);
+	}
+
 	private void sortRepositoriesByName() {
 		Collections.sort(repositories, new Comparator<Repository>() {
 
 			public int compare(Repository repo1, Repository repo2) {
-				String repo1Name = repo1.getDirectory().getParentFile().getName();
-				String repo2Name = repo2.getDirectory().getParentFile().getName();
-				return repo1Name.compareTo(repo2Name);
+				return getName(repo1).compareTo(getName(repo2));
 			}
 		});
 	}
@@ -261,8 +267,9 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 	private String[] getRepositoryComboItems() {
 		List<String> items = new ArrayList<String>();
 		for (Repository repository : repositories) {
-			String repoName = repository.getDirectory().getParentFile().getName();
-			items.add(repoName);
+			String repoName = getName(repository);
+			if (repoName.length() > 0)
+				items.add(repoName);
 		}
 		return items.toArray(new String[items.size()]);
 	}
