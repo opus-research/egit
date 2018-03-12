@@ -31,7 +31,6 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
@@ -41,6 +40,7 @@ import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.op.CommitOperation;
+import org.eclipse.egit.core.op.DeleteResourcesOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
@@ -61,9 +61,9 @@ import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
-import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -136,6 +136,7 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.actions.DeleteResourceAction;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
@@ -876,7 +877,14 @@ public class StagingView extends ViewPart {
 					else
 						menuMgr.add(createItem(ActionCommands.REPLACE_WITH_HEAD_ACTION, tableViewer));
 				if (addDelete) {
-					menuMgr.add(new DeleteAction(selection));
+					if (selectionIncludesNonWorkspaceResources) {
+						menuMgr.add(new DeleteAction(selection));
+					} else {
+						DeleteResourceAction deleteResourceAction = new DeleteResourceAction(getSite());
+						deleteResourceAction.selectionChanged(selection);
+						ActionContributionItem item = new ActionContributionItem(deleteResourceAction);
+						menuMgr.add(item);
+					}
 				}
 				if (addLaunchMergeTool)
 					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION, tableViewer));
@@ -919,18 +927,30 @@ public class StagingView extends ViewPart {
 
 		@Override
 		public void run() {
-			DeletePathsOperationUI operation = new DeletePathsOperationUI(getSelectedPaths(), getSite());
-			operation.run();
+			boolean performAction = MessageDialog.openConfirm(form.getShell(),
+					UIText.DeleteResourcesAction_confirmActionTitle,
+					UIText.DeleteResourcesAction_confirmActionMessage);
+			if (!performAction)
+				return;
+
+			List<IResource> resources = getSelectedResources();
+			DeleteResourcesOperation operation = new DeleteResourcesOperation(resources);
+
+			try {
+				operation.execute(null);
+			} catch (CoreException e) {
+				Activator.handleError(UIText.StagingView_deleteFailed, e, true);
+			}
 		}
 
-		private List<IPath> getSelectedPaths() {
-			List<IPath> paths = new ArrayList<IPath>();
+		private List<IResource> getSelectedResources() {
+			List<IResource> resources = new ArrayList<IResource>();
 			Iterator iterator = selection.iterator();
 			while (iterator.hasNext()) {
 				StagingEntry stagingEntry = (StagingEntry) iterator.next();
-				paths.add(stagingEntry.getLocation());
+				resources.add(stagingEntry.getFile());
 			}
-			return paths;
+			return resources;
 		}
 	}
 
