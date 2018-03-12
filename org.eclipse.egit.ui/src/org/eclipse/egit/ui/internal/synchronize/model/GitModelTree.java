@@ -8,16 +8,16 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
+import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -34,8 +34,6 @@ public class GitModelTree extends GitModelCommit {
 	private final ObjectId remoteId;
 
 	private final ObjectId ancestorId;
-
-	private GitModelObject[] children;
 
 	private IPath location;
 
@@ -54,10 +52,11 @@ public class GitModelTree extends GitModelCommit {
 	 *            name resource associated with this tree
 	 * @throws IOException
 	 */
-	public GitModelTree(GitModelObject parent, RevCommit commit,
+	public GitModelTree(GitModelObjectContainer parent, RevCommit commit,
 			ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, String name)
 			throws IOException {
-		super(parent, commit);
+		// only direction is important for us, therefore we mask rest of bits in kind
+		super(parent, commit, parent.getKind() & (LEFT | RIGHT));
 		this.name = name;
 		this.baseId = baseId;
 		this.remoteId = remoteId;
@@ -65,21 +64,8 @@ public class GitModelTree extends GitModelCommit {
 	}
 
 	@Override
-	public GitModelObject[] getChildren() {
-		if (children == null)
-			getChildrenImpl();
-
-		return children;
-	}
-
-	@Override
 	public String getName() {
 		return name;
-	}
-
-	@Override
-	public IProject[] getProjects() {
-		return getParent().getProjects();
 	}
 
 	/**
@@ -109,28 +95,11 @@ public class GitModelTree extends GitModelCommit {
 		return location;
 	}
 
-	@Override
-	protected String getAncestorSha1() {
-		return ancestorId.getName();
-	}
-
-	@Override
-	protected String getBaseSha1() {
-		return baseId.getName();
-	}
-
-	@Override
-	protected String getRemoteSha1() {
-		return remoteId.getName();
-	}
-
-	private void getChildrenImpl() {
+	protected GitModelObject[] getChildrenImpl() {
 		TreeWalk tw = createTreeWalk();
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
 		try {
-			List<String> notIgnored = getNotIgnoredNodes(remoteId);
-
 			int remoteNth = tw.addTree(remoteId);
 
 			int baseNth = -1;
@@ -142,10 +111,7 @@ public class GitModelTree extends GitModelCommit {
 				ancestorNth = tw.addTree(ancestorId);
 
 			while (tw.next()) {
-				if (!notIgnored.contains(tw.getNameString()))
-					continue;
-
-				GitModelObject obj = createChildren(tw, ancestorNth, baseNth,
+				GitModelObject obj = getModelObject(tw, ancestorNth, baseNth,
 						remoteNth);
 				if (obj != null)
 					result.add(obj);
@@ -154,29 +120,7 @@ public class GitModelTree extends GitModelCommit {
 			Activator.logError(e.getMessage(), e);
 		}
 
-		children = result.toArray(new GitModelObject[result.size()]);
-	}
-
-	private GitModelObject createChildren(TreeWalk tw, int ancestorNth,
-			int baseNth, int remoteNth) throws IOException {
-		ObjectId objRemoteId = tw.getObjectId(remoteNth);
-		if (objRemoteId.equals(zeroId()))
-			return null;
-
-		String objName = tw.getNameString();
-		ObjectId objBaseId = baseNth != -1 ? tw.getObjectId(baseNth) : zeroId();
-		ObjectId objAncestorId = ancestorNth != -1 ? tw
-				.getObjectId(ancestorNth) : zeroId();
-		int objectType = tw.getFileMode(remoteNth).getObjectType();
-
-		if (objectType == Constants.OBJ_BLOB)
-			return new GitModelBlob(this, getRemoteCommit(), objAncestorId,
-					objBaseId, objRemoteId, objName);
-		else if (objectType == Constants.OBJ_TREE)
-			return new GitModelTree(this, getRemoteCommit(), objAncestorId,
-					objBaseId, objRemoteId, objName);
-
-		return null;
+		return result.toArray(new GitModelObject[result.size()]);
 	}
 
 }
