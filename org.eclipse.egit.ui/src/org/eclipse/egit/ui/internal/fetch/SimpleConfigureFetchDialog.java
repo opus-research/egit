@@ -265,9 +265,9 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 			public void widgetSelected(SelectionEvent e) {
 				SelectUriWizard wiz;
 				if (commonUriText.getText().length() > 0)
-					wiz = new SelectUriWizard(true, commonUriText.getText());
+					wiz = new SelectUriWizard(false, commonUriText.getText());
 				else
-					wiz = new SelectUriWizard(true);
+					wiz = new SelectUriWizard(false);
 				if (new WizardDialog(getShell(), wiz).open() == Window.OK) {
 					if (commonUriText.getText().length() > 0)
 						try {
