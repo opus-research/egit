@@ -9,7 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
-import static org.eclipse.egit.ui.UIText.SynchronizeWithAction_tagsName;
 import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.eclipse.jgit.lib.Constants.MASTER;
@@ -147,10 +146,7 @@ public class SelectSynchronizeResourceDialog extends TitleAreaDialog {
 		dstRefCombo = new RemoteSelectionCombo(composite, syncRepos,
 				UIText.RemoteSelectionCombo_destinationName,
 				UIText.RemoteSelectionCombo_destinationRef);
-		if (!dstRefCombo.setDefaultValue(getDefaultRemoteName(), MASTER)) {
-			dstRefCombo.setDefaultValue(
-					UIText.SynchronizeWithAction_localRepoName, HEAD);
-		}
+		dstRefCombo.setDefaultValue(getDefaultRemoteName(), MASTER);
 		dstRefCombo.setLayoutData(data);
 		dstRefCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
 				false).create());
@@ -164,12 +160,9 @@ public class SelectSynchronizeResourceDialog extends TitleAreaDialog {
 	}
 
 	private String getDefaultRemoteName() {
-		int syncReposSize = syncRepos.size();
-		boolean onlyOneRemote = syncReposSize == 3
-				|| (syncReposSize == 2 && !SynchronizeWithAction_tagsName
-						.equals(syncRepos.get(1).getName()));
+		boolean onlyOneRemote = syncRepos.size() == 2;
 		if (onlyOneRemote)
-			return syncRepos.get(syncReposSize - 1).getName();
+			return syncRepos.get(1).getName();
 		else {
 			for (SyncRepoEntity repo : syncRepos)
 				if (repo.getName().equals(DEFAULT_REMOTE_NAME))

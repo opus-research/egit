@@ -54,9 +54,6 @@ public class CoreText extends NLS {
 	public static String CommitOperation_PerformingCommit;
 
 	/** */
-	public static String CommitOperation_couldNotFindRepositoryMapping;
-
-	/** */
 	public static String ConnectProviderOperation_connecting;
 
 	/** */
@@ -213,7 +210,7 @@ public class CoreText extends NLS {
 	public static String ProjectUtil_refreshing;
 
 	/** */
-	public static String PushOperation_InternalExceptionOccurredMessage;
+	public static String PushOperation_InternalExceptionOccuredMessage;
 
 	/** */
 	public static String PushConfiguredRemoteAction_PushJobName;
