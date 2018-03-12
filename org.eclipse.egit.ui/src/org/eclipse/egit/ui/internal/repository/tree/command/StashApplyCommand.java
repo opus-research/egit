@@ -35,7 +35,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 public class StashApplyCommand extends
 		RepositoriesViewCommandHandler<StashedCommitNode> {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		List<StashedCommitNode> nodes = getSelectedNodes(event);
 		if (nodes.isEmpty())

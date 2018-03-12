@@ -46,8 +46,6 @@ public class IndexDiffData {
 
 	private final Set<String> symlinks;
 
-	private final Set<String> submodules;
-
 	private final Collection<IResource> changedResources;
 
 	/**
@@ -73,8 +71,6 @@ public class IndexDiffData {
 				.getIgnoredNotInIndex()));
 		symlinks = Collections.unmodifiableSet(new HashSet<String>(indexDiff
 				.getPathsWithIndexMode(FileMode.SYMLINK)));
-		submodules = Collections.unmodifiableSet(new HashSet<String>(indexDiff
-				.getPathsWithIndexMode(FileMode.GITLINK)));
 		changedResources = null;
 	}
 
@@ -110,7 +106,6 @@ public class IndexDiffData {
 		Set<String> untracked2 = new HashSet<String>(baseDiff.getUntracked());
 		Set<String> conflicts2 = new HashSet<String>(baseDiff.getConflicting());
 		Set<String> symlinks2 = new HashSet<String>(baseDiff.getSymlinks());
-		Set<String> submodules2 = new HashSet<String>(baseDiff.getSubmodules());
 
 		mergeList(added2, changedFiles, diffForChangedFiles.getAdded());
 		mergeList(changed2, changedFiles, diffForChangedFiles.getChanged());
@@ -120,8 +115,6 @@ public class IndexDiffData {
 		mergeList(untracked2, changedFiles, diffForChangedFiles.getUntracked());
 		mergeList(symlinks2, changedFiles,
 				diffForChangedFiles.getPathsWithIndexMode(FileMode.SYMLINK));
-		mergeList(submodules2, changedFiles,
-				diffForChangedFiles.getPathsWithIndexMode(FileMode.GITLINK));
 		Set<String> untrackedFolders2 = mergeUntrackedFolders(
 				baseDiff.getUntrackedFolders(), changedFiles,
 				getUntrackedFolders(diffForChangedFiles));
@@ -140,7 +133,6 @@ public class IndexDiffData {
 		conflicts = Collections.unmodifiableSet(conflicts2);
 		ignored = Collections.unmodifiableSet(ignored2);
 		symlinks = Collections.unmodifiableSet(symlinks2);
-		submodules = Collections.unmodifiableSet(submodules2);
 	}
 
 	private void mergeList(Set<String> baseList,
@@ -177,47 +169,22 @@ public class IndexDiffData {
 		return false;
 	}
 
-	/**
-	 * THIS METHOD IS PROTECTED FOR TESTS ONLY
-	 *
-	 * @param oldIgnoredPaths
-	 * @param changedPaths
-	 * @param newIgnoredPaths
-	 * @return never null
-	 */
-	protected static Set<String> mergeIgnored(Set<String> oldIgnoredPaths,
+	private static Set<String> mergeIgnored(Set<String> oldIgnoredPaths,
 			Collection<String> changedPaths, Set<String> newIgnoredPaths) {
 		Set<String> merged = new HashSet<String>();
 		for (String oldIgnoredPath : oldIgnoredPaths) {
 			boolean changed = isAnyPrefixOf(oldIgnoredPath, changedPaths);
-			if (!changed) {
+			if (!changed)
 				merged.add(oldIgnoredPath);
-			}
 		}
 		merged.addAll(newIgnoredPaths);
 		return merged;
 	}
 
-	/**
-	 * THIS METHOD IS PROTECTED FOR TESTS ONLY
-	 *
-	 * @param pathToCheck
-	 * @param possiblePrefixes
-	 * @return true if given path starts with any of given prefixes (possibly
-	 *         followed by slash)
-	 */
-	protected static boolean isAnyPrefixOf(String pathToCheck,
-			Collection<String> possiblePrefixes) {
-		for (String possiblePrefix : possiblePrefixes) {
-			if (pathToCheck.startsWith(possiblePrefix)) {
+	private static boolean isAnyPrefixOf(String pathToCheck, Collection<String> possiblePrefixes) {
+		for (String possiblePrefix : possiblePrefixes)
+			if (pathToCheck.startsWith(possiblePrefix) || possiblePrefix.equals(pathToCheck + '/'))
 				return true;
-			}
-			if (possiblePrefix.length() == pathToCheck.length() + 1
-					&& possiblePrefix.charAt(possiblePrefix.length() - 1) == '/'
-					&& possiblePrefix.startsWith(pathToCheck)) {
-				return true;
-			}
-		}
 		return false;
 	}
 
@@ -294,13 +261,6 @@ public class IndexDiffData {
 	}
 
 	/**
-	 * @return list of files that are submodules
-	 */
-	public Set<String> getSubmodules() {
-		return submodules;
-	}
-
-	/**
 	 * @return the changed files
 	 */
 	public Collection<IResource> getChangedResources() {
@@ -320,7 +280,6 @@ public class IndexDiffData {
 		dumpList(builder, "conflicts", conflicts); //$NON-NLS-1$
 		dumpList(builder, "ignored", ignored); //$NON-NLS-1$
 		dumpList(builder, "symlinks", symlinks); //$NON-NLS-1$
-		dumpList(builder, "submodules", submodules); //$NON-NLS-1$
 		dumpResourceList(builder,
 				"changedResources", changedResources); //$NON-NLS-1$
 		return builder.toString();
