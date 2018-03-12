@@ -598,8 +598,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		public void propertyChange(PropertyChangeEvent event) {
 			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(event
 					.getProperty()))
-				if (graph.setRelativeDate(isShowingRelativeDates()))
-					graph.getTableView().refresh();
+				graph.setRelativeDate(isShowingRelativeDates());
+				graph.getTableView().refresh();
 			}
 	};
 
