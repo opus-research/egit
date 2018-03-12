@@ -444,8 +444,6 @@ public class RepositoryPropertySource implements IPropertySource {
 
 		private final String myTitle;
 
-		ConfigurationEditorComponent editor;
-
 		public EditDialog(Shell shell, FileBasedConfig config, String title) {
 			super(shell);
 			myConfig = config;
@@ -458,19 +456,13 @@ public class RepositoryPropertySource implements IPropertySource {
 			Composite main = (Composite) super.createDialogArea(parent);
 			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).grab(true,
 					true).applyTo(main);
-			editor = new ConfigurationEditorComponent(main, myConfig, true) {
+			Control result = new ConfigurationEditorComponent(main, myConfig,
+					true) {
 				@Override
 				protected void setErrorMessage(String message) {
 					EditDialog.this.setErrorMessage(message);
 				}
-
-				@Override
-				protected void setDirty(boolean dirty) {
-					getButton(IDialogConstants.OK_ID).setEnabled(dirty);
-				}
-			};
-
-			Control result = editor.createContents();
+			}.createContents();
 			applyDialogFont(main);
 			return result;
 		}
@@ -488,17 +480,13 @@ public class RepositoryPropertySource implements IPropertySource {
 			super.create();
 			setTitle(myTitle);
 			setMessage(UIText.RepositoryPropertySource_EditorMessage);
-			getButton(IDialogConstants.OK_ID).setEnabled(false);
 		}
 
 		@Override
-		protected void okPressed() {
-			try {
-				editor.save();
-			} catch (IOException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			}
-			super.okPressed();
+		protected void createButtonsForButtonBar(Composite parent) {
+			// OK button only
+			createButton(parent, IDialogConstants.OK_ID,
+					IDialogConstants.OK_LABEL, true);
 		}
 	}
 }
