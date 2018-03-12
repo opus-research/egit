@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2014 Tasktop Technologies Inc and others.
+ * Copyright (C) 2011, Tasktop Technologies Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,7 +8,6 @@
  *
  * Contributors:
  *    Benjamin Muskalla (benjamin.muskalla@tasktop.com) - initial implementation
- *    Philip Langer (planger@eclipsesource.com) - change integration of logical model
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.operations;
 
@@ -23,10 +22,10 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.egit.core.internal.util.OperationUtil;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -65,7 +64,9 @@ public class GitScopeUtil {
 			return new IResource[0];
 		IResource[] resourcesInScope;
 		// Only builds the logical model if the preference holds true
-		if (OperationUtil.isUseLogicalModel()) {
+		if (Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.USE_LOGICAL_MODEL)) {
+
 			try {
 				resourcesInScope = findRelatedChanges(part, resources);
 			} catch (InvocationTargetException e) {

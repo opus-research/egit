@@ -1,13 +1,6 @@
 /******************************************************************************
-<<<<<<< HEAD
  *  Copyright (c) 2011, 2014 GitHub Inc
  *  and other copyright owners as documented in the project's IP log.
-=======
- *  Copyright (c) 2011 GitHub Inc.
- *  Copyright (c) 2014, Obeo.
- *  Copyright (c) 2014, EclipseSource.
- *
->>>>>>> 0f53fbf... Use a workspace-aware merging strategy when working from EGit
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -16,7 +9,6 @@
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
  *    Maik Schreiber - modify to using interactive rebase mechanics
- *    Philip Langer - setting merge strategy from OperationUtil
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -36,7 +28,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.egit.core.internal.util.OperationUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseCommand;
@@ -121,7 +112,6 @@ public class CherryPickOperation implements IEGitOperation {
 					result = git.rebase()
 							.setUpstream(headCommit.getParent(0))
 							.runInteractively(handler)
-							.setStrategy(OperationUtil.getMergeStrategy())
 							.setOperation(RebaseCommand.Operation.BEGIN).call();
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),

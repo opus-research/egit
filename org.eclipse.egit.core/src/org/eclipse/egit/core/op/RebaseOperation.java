@@ -1,8 +1,5 @@
 /*******************************************************************************
  * Copyright (c) 2010, 2013 SAP AG.
- * Copyright (c) 2014, Obeo.
- * Copyright (c) 2014, EclipseSource.
- *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler <mathias.kinzler@sap.com> - initial implementation
- *    Philip Langer <planger@eclipsesource.com> - setting merge strategy from OperationUtil
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -29,7 +25,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.egit.core.internal.util.OperationUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseCommand;
@@ -143,8 +138,7 @@ public class RebaseOperation implements IEGitOperation {
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				RebaseCommand cmd = new Git(repository).rebase()
 						.setProgressMonitor(
-								new EclipseGitProgressTransformer(actMonitor))
-						.setStrategy(OperationUtil.getMergeStrategy());
+								new EclipseGitProgressTransformer(actMonitor));
 				try {
 					if (handler != null)
 						cmd.runInteractively(handler, true);

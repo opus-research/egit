@@ -1,8 +1,5 @@
 /******************************************************************************
  *  Copyright (c) 2011 GitHub Inc.
- *  Copyright (c) 2014, Obeo.
- *  Copyright (c) 2014, EclipseSource.
- *
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -10,7 +7,6 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Philip Langer (EclipseSource) - setting merge strategy from OperationUtil
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -27,7 +23,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.egit.core.internal.util.OperationUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult;
@@ -89,8 +84,7 @@ public class RevertCommitOperation implements IEGitOperation {
 				pm.subTask(MessageFormat.format(
 						CoreText.RevertCommitOperation_reverting,
 						Integer.valueOf(commits.size())));
-				RevertCommand command = new Git(repo).revert().setStrategy(
-						OperationUtil.getMergeStrategy());
+				RevertCommand command = new Git(repo).revert();
 				for (RevCommit commit : commits)
 					command.include(commit);
 				try {

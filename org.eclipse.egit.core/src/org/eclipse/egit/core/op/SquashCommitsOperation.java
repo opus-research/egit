@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (c) 2014 Maik Schreiber
- * Copyright (c) 2014 EclipseSource
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,7 +8,6 @@
  *
  * Contributors:
  *    Maik Schreiber - initial implementation
- *    Philip Langer - setting merge strategy from OperationUtil
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -27,7 +25,6 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CommitUtil;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.egit.core.internal.util.OperationUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseCommand;
@@ -110,9 +107,7 @@ public class SquashCommitsOperation implements IEGitOperation {
 					Git git = new Git(repository);
 					git.rebase().setUpstream(commits.get(0).getParent(0))
 							.runInteractively(handler)
-							.setOperation(RebaseCommand.Operation.BEGIN)
-							.setStrategy(OperationUtil.getMergeStrategy())
-							.call();
+							.setOperation(RebaseCommand.Operation.BEGIN).call();
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());

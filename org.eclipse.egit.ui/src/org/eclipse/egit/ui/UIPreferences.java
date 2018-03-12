@@ -153,6 +153,9 @@ public class UIPreferences {
 	/** */
 	public static final String REMOTE_CONNECTION_TIMEOUT = "remote_connection_timeout"; //$NON-NLS-1$
 
+	/** Holds true if the logical model should be used. */
+	public static final String USE_LOGICAL_MODEL = "enable_logical_model"; //$NON-NLS-1$
+
 	/**
 	 * When reading this preference, use
 	 * {@link UIUtils#getDefaultRepositoryDir()} instead (for variable
@@ -214,6 +217,8 @@ public class UIPreferences {
 	public static final String CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG = "CloneWizard_ShowDetailedFailureDialog"; //$NON-NLS-1$
 	/** */
 	public final static String REBASE_INTERACTIVE_ORDER_REVERSE = "rebase_interactive_order_reverse"; //$NON-NLS-1$
+	/** */
+	public static final String REBASE_INTERACTIVE_SYNC_SELECTION = "RebaseInteractive_SyncWithSelection"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array
