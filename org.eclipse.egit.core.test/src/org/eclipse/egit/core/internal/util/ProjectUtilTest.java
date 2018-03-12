@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
- package org.eclipse.egit.core.internal.util;
+package org.eclipse.egit.core.internal.util;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -51,7 +51,8 @@ public class ProjectUtilTest extends GitTestCase {
 
 	@Test
 	public void testGetValidOpenProjects() throws Exception {
-		IProject[] projects = ProjectUtil.getValidOpenProjects(repository.getRepository());
+		IProject[] projects = ProjectUtil.getValidOpenProjects(repository
+				.getRepository());
 		assertEquals(1, projects.length);
 		IProject p = projects[0];
 		assertEquals("Project-1", p.getDescription().getName());
@@ -79,7 +80,8 @@ public class ProjectUtilTest extends GitTestCase {
 	@Test
 	public void testGetValidOpenProjectsClosedProject() throws Exception {
 		project.getProject().close(new NullProgressMonitor());
-		IProject[] projects = ProjectUtil.getValidOpenProjects(repository.getRepository());
+		IProject[] projects = ProjectUtil.getValidOpenProjects(repository
+				.getRepository());
 		assertEquals(0, projects.length);
 	}
 
@@ -90,15 +92,18 @@ public class ProjectUtilTest extends GitTestCase {
 		IProject[] projects = new IProject[1];
 		projects[0] = p;
 		ProjectUtil.refreshValidProjects(projects, new NullProgressMonitor());
-		verify(p).refreshLocal(eq(IResource.DEPTH_INFINITE), any(IProgressMonitor.class));
+		verify(p).refreshLocal(eq(IResource.DEPTH_INFINITE),
+				any(IProgressMonitor.class));
 	}
 
 	@Test
 	public void testCloseMissingProject() throws Exception {
 		IProject p = mock(IProject.class);
-		File projectFile = project.getProject().getLocation().append(".project").toFile();
+		File projectFile = project.getProject().getLocation()
+				.append(".project").toFile();
 		FileUtils.delete(projectFile);
-		ProjectUtil.closeMissingProject(p, projectFile, new NullProgressMonitor());
+		ProjectUtil.closeMissingProject(p, projectFile,
+				new NullProgressMonitor());
 		verify(p).close(any(IProgressMonitor.class));
 	}
 
@@ -108,12 +113,14 @@ public class ProjectUtilTest extends GitTestCase {
 		IResource[] resources = new IResource[1];
 		resources[0] = r;
 		ProjectUtil.refreshResources(resources, new NullProgressMonitor());
-		verify(r).refreshLocal(eq(IResource.DEPTH_INFINITE), any(IProgressMonitor.class));
+		verify(r).refreshLocal(eq(IResource.DEPTH_INFINITE),
+				any(IProgressMonitor.class));
 	}
 
 	@Test
 	public void testGetProjectsUnconnected() throws Exception {
-		IProject[] projects = ProjectUtil.getProjects(repository.getRepository());
+		IProject[] projects = ProjectUtil.getProjects(repository
+				.getRepository());
 		assertEquals(0, projects.length);
 	}
 
@@ -122,7 +129,8 @@ public class ProjectUtilTest extends GitTestCase {
 		ConnectProviderOperation operation = new ConnectProviderOperation(
 				project.getProject(), gitDir);
 		operation.execute(null);
-		IProject[] projects = ProjectUtil.getProjects(repository.getRepository());
+		IProject[] projects = ProjectUtil.getProjects(repository
+				.getRepository());
 		assertEquals(1, projects.length);
 		IProject p = projects[0];
 		assertEquals("Project-1", p.getDescription().getName());
@@ -131,21 +139,25 @@ public class ProjectUtilTest extends GitTestCase {
 	@Test
 	public void testFindProjectFiles() {
 		Collection<File> files = new ArrayList<File>();
-		assertTrue(ProjectUtil.findProjectFiles(files, gitDir.getParentFile(), null, new NullProgressMonitor()));
+		assertTrue(ProjectUtil.findProjectFiles(files, gitDir.getParentFile(),
+				null, new NullProgressMonitor()));
 	}
 
 	@Test
 	public void testFindProjectFilesNullDir() {
 		Collection<File> files = new ArrayList<File>();
-		assertFalse(ProjectUtil.findProjectFiles(files, null, null, new NullProgressMonitor()));
+		assertFalse(ProjectUtil.findProjectFiles(files, null, null,
+				new NullProgressMonitor()));
 	}
 
 	@Test
 	public void testFindProjectFilesEmptyDir() throws Exception {
 		Collection<File> files = new ArrayList<File>();
-		File dir = new File(gitDir.getParentFile().getPath() + File.separator + "xxx");
+		File dir = new File(gitDir.getParentFile().getPath() + File.separator
+				+ "xxx");
 		FileUtils.mkdir(dir);
-		assertFalse(ProjectUtil.findProjectFiles(files, dir, null, new NullProgressMonitor()));
+		assertFalse(ProjectUtil.findProjectFiles(files, dir, null,
+				new NullProgressMonitor()));
 	}
 
 }
