@@ -2,7 +2,6 @@
 <?eclipse version="3.0"?>
 <plugin>
    <extension-point id="commitMessageProvider" name="%CommitMessageProviderExtension-point.name" schema="schema/commitMessageProvider.exsd"/>
-   <extension-point id="cloneSourceProvider" name="%CloneSourceProviderExtension-point.name" schema="schema/cloneSourceProvider.exsd"/>
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.eclipse.egit.ui.PluginPreferenceInitializer"/>
    </extension>
@@ -214,8 +213,16 @@
                label="%CompareWithCommitAction.label"
                menubarPath="compareWithMenu/gitCompareWithGroup">
          </action>
-	  </objectContribution>
-   	  <objectContribution
+         <action
+               class="org.eclipse.egit.ui.internal.actions.CreatePatchAction"
+               enablesFor="1"
+               id="org.eclipse.egit.ui.internal.actions.CreatePatchAction"
+               label="%CreatePatchAction.label"
+               menubarPath="team.main/group6"
+               tooltip="%CreatePatchAction.tooltip">
+         </action>
+      </objectContribution>
+      <objectContribution
          adaptable="true"
          id="org.eclipse.egit.ui.fileContributions"
          objectClass="org.eclipse.core.resources.IFile">
@@ -4250,14 +4257,5 @@
 			<property name="product" value="EGit"/>
 			<property name="component" value="Mylyn"/>
 		</mapping>
-  </extension>
-  <extension
-        point="org.eclipse.egit.ui.cloneSourceProvider">
-     <source
-           hasFixLocation="true"
-           label="Custom URI">
-     </source>
-     <repositorySearchPage
-           class="org.eclipse.egit.ui.internal.components.RepositorySelectionPage"></repositorySearchPage>
   </extension>
 </plugin>
