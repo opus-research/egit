@@ -19,11 +19,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
@@ -39,7 +37,6 @@ import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.Transport;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -74,10 +71,8 @@ public class FetchWizard extends Wizard {
 		refSpecPage = new RefSpecPage(localDb, false) {
 			@Override
 			public void setVisible(boolean visible) {
-				if (visible) {
+				if (visible)
 					setSelection(repoPage.getSelection());
-					setCredentials(repoPage.getCredentials());
-				}
 				super.setVisible(visible);
 			}
 		};
@@ -97,11 +92,6 @@ public class FetchWizard extends Wizard {
 		if (repoPage.getSelection().isConfigSelected()
 				&& refSpecPage.isSaveRequested())
 			saveConfig();
-		if (repoPage.getStoreInSecureStore()) {
-			if (!SecureStoreUtils.storeCredentials(repoPage
-					.getCredentials(), repoPage.getSelection().getURI()))
-				return false;
-		}
 
 		final Transport transport;
 		final RepositorySelection repoSelection = repoPage.getSelection();
@@ -118,11 +108,6 @@ public class FetchWizard extends Wizard {
 							.getPluginId(), e.getMessage(), e));
 			return false;
 		}
-		UserPasswordCredentials credentials = repoPage.getCredentials();
-		if (credentials != null)
-			transport.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
-					credentials.getUser(), credentials.getPassword()));
-
 		transport.setTagOpt(refSpecPage.getTagOpt());
 
 		final Job fetchJob = new FetchJob(transport, refSpecPage.getRefSpecs(),
