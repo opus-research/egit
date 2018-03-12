@@ -1612,6 +1612,15 @@ public class UIText extends NLS {
 	public static String GlobalConfigurationPreferencePage_userSettingTabTitle;
 
 	/** */
+	public static String GlobalConfigurationPreferencePage_repositorySettingTabTitle;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_repositorySettingRepositoryLabel;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
+
+	/** */
 	public static String ConfigureRemoteWizard_WizardTitle_Change;
 
 	/** */
@@ -3264,9 +3273,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String EgitUiEditorUtils_openFailed;
-
-	/** */
-	public static String GitActionContributor_ExpandAll;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
