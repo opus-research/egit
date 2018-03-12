@@ -42,10 +42,6 @@ import org.eclipse.egit.ui.internal.ConfigurationChecker;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.egit.ui.internal.variables.GitTemplateVariableResolver;
-import org.eclipse.jdt.internal.ui.JavaPlugin;
-import org.eclipse.jface.text.templates.ContextTypeRegistry;
-import org.eclipse.jface.text.templates.TemplateContextType;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.events.IndexChangedEvent;
@@ -233,27 +229,10 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		setupFocusHandling();
 		setupCredentialsProvider();
 		ConfigurationChecker.checkConfiguration();
-
-		registerTemplateVariableResolvers();
 	}
 
 	private void setupCredentialsProvider() {
 		CredentialsProvider.setDefault(new EGitCredentialsProvider());
-	}
-
-	private void registerTemplateVariableResolvers() {
-		if (hasJavaPlugin()) {
-			final ContextTypeRegistry codeTemplateContextRegistry = JavaPlugin
-					.getDefault().getCodeTemplateContextRegistry();
-			final Iterator<?> ctIter = codeTemplateContextRegistry
-					.contextTypes();
-
-			while (ctIter.hasNext()) {
-				final TemplateContextType contextType = (TemplateContextType) ctIter
-						.next();
-				contextType.addResolver(new GitTemplateVariableResolver());
-			}
-		}
 	}
 
 	/**
@@ -662,14 +641,4 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		return org.eclipse.egit.core.Activator.getDefault().getRepositoryUtil();
 	}
 
-	/**
-	 * @return true if the Java Plugin is loaded
-	 */
-	public static final boolean hasJavaPlugin() {
-		try {
-			return Class.forName("org.eclipse.jdt.internal.ui.JavaPlugin") != null; //$NON-NLS-1$
-		} catch (ClassNotFoundException e) {
-			return false;
-		}
-	}
 }
