@@ -12,12 +12,9 @@
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -26,7 +23,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
+import org.eclipse.egit.ui.internal.synchronize.GitSynchronize;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -57,11 +54,7 @@ public class SynchronizeCommand extends
 					data = new GitSynchronizeData(node
 							.getRepository(), Constants.HEAD, ref.getName(), false);
 
-					Set<IProject> projects = data.getProjects();
-					IResource[] resources = projects
-							.toArray(new IResource[projects.size()]);
-
-					GitModelSynchronize.launch(data, resources);
+					new GitSynchronize(data);
 				} catch (IOException e) {
 					Activator.logError(e.getMessage(), e);
 				}
@@ -74,5 +67,4 @@ public class SynchronizeCommand extends
 
 		return null;
 	}
-
 }
