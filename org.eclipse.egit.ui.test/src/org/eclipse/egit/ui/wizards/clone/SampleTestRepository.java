@@ -109,7 +109,7 @@ public class SampleTestRepository {
 		RevCommit X = A;
 		for (int i = 0; i < n; i++) {
 			X = src.commit().parent(X)
-					.add(randomAciiString(), randomAciiString()).create();
+					.add(randomAsciiString(), randomAsciiString()).create();
 		}
 
 		B = src.commit().parent(X).add(A_txt_name, "C").add("B", "B").create();
@@ -125,17 +125,18 @@ public class SampleTestRepository {
 		src.update(Constants.R_TAGS + v2_0_name, v2_0);
 	}
 
-	private String randomAciiString() {
-		String randstring = "";
+	private String randomAsciiString() {
+		StringBuilder randstring = new StringBuilder("");
 		Random rand = new Random();
 		int strlen = rand.nextInt(20) + 10;
-		for (int i = 0; i < strlen; i++) {
+		for (int i = 0, j = 0; i < strlen; i++) {
 			if (rand.nextInt(2) == 1)
-				randstring += "" + (char) (rand.nextInt(26) + 97);
+				j = 97;
 			else
-				randstring += "" + (char) (rand.nextInt(26) + 65);
+				j = 65;
+			randstring.append((char) (rand.nextInt(26) + j));
 		}
-		return randstring;
+		return randstring.toString();
 	}
 
 	private void serve() throws IOException {
