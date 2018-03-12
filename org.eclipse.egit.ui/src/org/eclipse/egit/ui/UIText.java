@@ -2978,19 +2978,10 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_CompareWithEachOtherInTreeMenuLabel;
 
 	/** */
+	public static String CommitGraphTable_OpenCommitLabel;
+
+	/** */
 	public static String GitSynchronizeWizard_synchronize;
-
-	/** */
-	public static String GitSynchronizeWizard_SourceBranch;
-
-	/** */
-	public static String GitSynchronizeWizard_DestinationBranch;
-
-	/** */
-	public static String GitSynchronizeWizard_IncludeLocal;
-
-	/** */
-	public static String GitSynchronizeWizard_IncludeLocalToolTip;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_title;
