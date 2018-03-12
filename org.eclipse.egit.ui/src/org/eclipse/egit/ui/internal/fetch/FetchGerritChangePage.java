@@ -185,7 +185,6 @@ public class FetchGerritChangePage extends WizardPage {
 		Clipboard clipboard = new Clipboard(parent.getDisplay());
 		String clipText = (String) clipboard.getContents(TextTransfer
 				.getInstance());
-		clipboard.dispose();
 		String defaultUri = null;
 		String defaultCommand = null;
 		String defaultChange = null;

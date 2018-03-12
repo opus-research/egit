@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +26,6 @@ import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
@@ -36,8 +34,6 @@ import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
-import org.eclipse.egit.ui.internal.jobs.RepositoryJob;
-import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
@@ -272,7 +268,7 @@ public class PushWizard extends Wizard {
 		return destination;
 	}
 
-	static class PushJob extends RepositoryJob {
+	static class PushJob extends Job {
 		private final PushOperation operation;
 
 		private final PushOperationResult resultToCompare;
@@ -280,8 +276,6 @@ public class PushWizard extends Wizard {
 		private final String destinationString;
 
 		private Repository localDb;
-
-		private PushOperationResult operationResult;
 
 		public PushJob(final Repository localDb, final PushOperation operation,
 				final PushOperationResult resultToCompare,
@@ -295,7 +289,7 @@ public class PushWizard extends Wizard {
 		}
 
 		@Override
-		protected IStatus performJob(final IProgressMonitor monitor) {
+		protected IStatus run(final IProgressMonitor monitor) {
 			try {
 				operation.run(monitor);
 			} catch (final InvocationTargetException e) {
@@ -303,34 +297,18 @@ public class PushWizard extends Wizard {
 						UIText.PushWizard_unexpectedError, e.getCause());
 			}
 
-			operationResult = operation.getOperationResult();
-			if (!operationResult.isSuccessfulConnectionForAnyURI()) {
-				return new Status(IStatus.ERROR, Activator.getPluginId(),
-						NLS.bind(UIText.PushWizard_cantConnectToAny,
-								operationResult.getErrorStringForAllURis()));
+			final PushOperationResult result = operation.getOperationResult();
+			if (!result.isSuccessfulConnectionForAnyURI()) {
+				return new Status(IStatus.ERROR, Activator.getPluginId(), NLS
+						.bind(UIText.PushWizard_cantConnectToAny, result
+								.getErrorStringForAllURis()));
 			}
 
+			if (resultToCompare == null || !result.equals(resultToCompare)) {
+				PushResultDialog.show(localDb, result, destinationString, true,
+						false);
+			}
 			return Status.OK_STATUS;
 		}
-
-		@Override
-		protected IAction getAction() {
-			Repository repo = localDb;
-			if (repo != null && (resultToCompare == null
-					|| !resultToCompare.equals(operationResult))) {
-				return new ShowPushResultAction(repo, operationResult,
-						destinationString, true);
-			}
-			return null;
-		}
-
-		@Override
-		public boolean belongsTo(Object family) {
-			if (JobFamilies.PUSH.equals(family)) {
-				return true;
-			}
-			return super.belongsTo(family);
-		}
-
 	}
 }
