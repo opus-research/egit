@@ -8,8 +8,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.view.synchronize;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.util.concurrent.TimeUnit;
 
@@ -72,7 +72,7 @@ public class SynchronizeViewPushTest extends AbstractSynchronizeViewTest {
 		jobJoiner.join();
 
 		String destinationString = repositoryFile.getParentFile().getName() + " - " + "origin";
-		SWTBotShell resultDialog = bot.shell(NLS.bind(UIText.ResultDialog_title, destinationString));
+		SWTBotShell resultDialog = bot.shell(NLS.bind(UIText.PushResultDialog_title, destinationString));
 		resultDialog.close();
 
 		Repository remoteRepository = lookupRepository(childRepositoryFile);

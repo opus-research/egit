@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.view.synchronize;
 
-import static org.eclipse.egit.ui.internal.UIText.CommitAction_commit;
 import static org.eclipse.egit.ui.internal.UIText.CommitDialog_Commit;
 import static org.eclipse.egit.ui.internal.UIText.CommitDialog_CommitChanges;
 import static org.eclipse.egit.ui.internal.UIText.CommitDialog_SelectAll;
@@ -42,6 +41,7 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.common.CompareEditorTester;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.test.JobJoiner;
@@ -56,8 +56,6 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
-import org.eclipse.swtbot.swt.finder.waits.Conditions;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
@@ -263,7 +261,7 @@ public abstract class AbstractSynchronizeViewTest extends
 	}
 
 	protected void commit(String projectName) throws InterruptedException {
-		showDialog(projectName, "Team", CommitAction_commit);
+		showDialog(projectName, "Team", "Commit...");
 
 		SWTBot shellBot = bot.shell(CommitDialog_CommitChanges).bot();
 		shellBot.styledText(0).setText(TEST_COMMIT_MSG);
@@ -272,17 +270,12 @@ public abstract class AbstractSynchronizeViewTest extends
 		TestUtil.joinJobs(JobFamilies.COMMIT);
 	}
 
-	protected SWTBotEditor getCompareEditor(SWTBotTreeItem projectNode,
+	protected CompareEditorTester getCompareEditor(SWTBotTreeItem projectNode,
 			final String fileName) {
 		SWTBotTreeItem folderNode = waitForNodeWithText(projectNode, FOLDER);
 		waitForNodeWithText(folderNode, fileName).doubleClick();
 
-		SWTBotEditor editor = bot
-				.editor(new CompareEditorTitleMatcher(fileName));
-		// Ensure that both StyledText widgets are enabled
-		SWTBotStyledText styledText = editor.toTextEditor().getStyledText();
-		bot.waitUntil(Conditions.widgetIsEnabled(styledText));
-		return editor;
+		return CompareEditorTester.forTitleContaining(fileName);
 	}
 
 	private static void showDialog(String projectName, String... cmd) {

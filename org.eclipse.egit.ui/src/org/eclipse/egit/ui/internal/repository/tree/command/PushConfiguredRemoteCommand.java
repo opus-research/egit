@@ -18,48 +18,47 @@ import java.net.URISyntaxException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.egit.ui.internal.actions.SimplePushActionHandler;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.internal.push.SimpleConfigurePushDialog;
 import org.eclipse.egit.ui.internal.repository.tree.PushNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.swt.widgets.Shell;
 
 /**
  * Pushes to the remote
  */
 public class PushConfiguredRemoteCommand extends
-		RepositoriesViewCommandHandler<PushNode> {
+		RepositoriesViewCommandHandler<RepositoryTreeNode<?>> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		Shell shell = getShell(event);
 		RepositoryTreeNode node = getSelectedNodes(event).get(0);
 		RemoteConfig config = getRemoteConfig(node);
-		SimplePushActionHandler.pushOrConfigure(node.getRepository(), config,
-				shell);
+		if (config == null) {
+			MessageDialog.openInformation(getShell(event),
+					UIText.SimplePushActionHandler_NothingToPushDialogTitle,
+					UIText.SimplePushActionHandler_NothingToPushDialogMessage);
+			return null;
+		}
+		int timeout = Activator.getDefault().getPreferenceStore()
+				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
+		new PushOperationUI(node.getRepository(), config.getName(), timeout, false)
+				.start();
 		return null;
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
-		// TODO: Do we need to do the same thing as in
-		// SimplePushActionHandler.isEnabled here?
-		if (evaluationContext instanceof IEvaluationContext) {
-			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
-			Object selection = getSelection(ctx);
-			if (selection instanceof IStructuredSelection) {
-				IStructuredSelection sel = (IStructuredSelection) selection;
-				if (sel.getFirstElement() instanceof RepositoryTreeNode) {
-					setBaseEnabled(true);
-					return;
-				}
-			}
+	public boolean isEnabled() {
+		RepositoryTreeNode<?> node = getSelectedNodes().get(0);
+		try {
+			return getRemoteConfig(node) != null;
+		} catch (ExecutionException e) {
+			return false;
 		}
-
-		setBaseEnabled(false);
 	}
 
 	private RemoteConfig getRemoteConfig(RepositoryTreeNode node)
@@ -76,9 +75,6 @@ public class PushConfiguredRemoteCommand extends
 		if (node instanceof RemoteNode)
 			try {
 				RemoteNode remote = (RemoteNode) node;
-				// TODO: We should check whether the branch is already
-				// configured with this remote. If yes, push. If no, execute
-				// wizard with the remote preselected. Same for PushNode above.
 				return new RemoteConfig(node.getRepository().getConfig(),
 						remote.getObject());
 			} catch (URISyntaxException e) {

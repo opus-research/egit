@@ -9,7 +9,7 @@
 package org.eclipse.egit.ui.internal.actions;
 
 /**
- * Action for "Push to Upstream"
+ * Action for "simple" push
  */
 public class SimplePushAction extends RepositoryAction {
 	/**
