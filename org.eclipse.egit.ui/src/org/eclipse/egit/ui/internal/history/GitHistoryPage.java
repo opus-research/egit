@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,13 +24,13 @@ import org.eclipse.core.commands.IParameter;
 import org.eclipse.core.commands.Parameterization;
 import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.common.NotDefinedException;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-import org.eclipse.egit.core.ResourceList;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
@@ -37,6 +38,9 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
+import org.eclipse.egit.ui.internal.repository.tree.FileNode;
+import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -157,6 +161,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	private ListenerHandle myRefsChangedHandle;
 
+	private HistoryPageInput input;
+
+	private String name;
+
 	/**
 	 * Determine if the input can be shown in this viewer.
 	 *
@@ -167,26 +175,21 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	 *         FOLDER or PROJECT and we can show it; false otherwise.
 	 */
 	public static boolean canShowHistoryFor(final Object object) {
-		if (object instanceof ResourceList) {
-			final IResource[] array = ((ResourceList) object).getItems();
-			if (array.length == 0)
-				return false;
-			for (final IResource r : array) {
-				if (!typeOk(r))
-					return false;
-			}
+		if (object instanceof HistoryPageInput) {
 			return true;
-
 		}
+
+		if (object instanceof IResource) {
+			return typeOk((IResource) object);
+		}
+
+		if (object instanceof RepositoryTreeNode)
+			return true;
 
 		if (object instanceof IAdaptable) {
 			IResource resource = (IResource) ((IAdaptable) object)
 					.getAdapter(IResource.class);
 			return resource == null ? false : typeOk(resource);
-		}
-
-		if (object instanceof IResource) {
-			return typeOk((IResource) object);
 		}
 
 		return false;
@@ -234,9 +237,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	/** Last HEAD */
 	private AnyObjectId currentHeadId;
-
-	/** We need to remember the current repository */
-	private Repository db;
 
 	/**
 	 * Highlight flag that can be applied to commits to make them stand out.
@@ -455,10 +455,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		graph = new CommitGraphTable(graphDetailSplit);
 		graph.getTableView().addOpenListener(new IOpenListener() {
 			public void open(OpenEvent event) {
-				final Object input = getInput();
-				// if multiple resources (IResourceList) or something not a file
-				// is selected we do nothing
-				if (!(input instanceof IFile)) {
+				if (!input.isSingleFile()) {
 					return;
 				}
 
@@ -527,7 +524,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private Runnable refschangedRunnable;
 
 	public void onRefsChanged(final RefsChangedEvent e) {
-		if (e.getRepository() != db)
+		if (input == null || e.getRepository() != input.getRepository())
 			return;
 
 		if (getControl().isDisposed())
@@ -586,18 +583,18 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					int selectionSize = ((IStructuredSelection) getSelectionProvider()
 							.getSelection()).size();
 
-					int type = 0;
-					Object actInput = getInput();
-					if (actInput instanceof IResource) {
-						type = ((IResource) actInput).getType();
-					}
-
-					if (type == IResource.FILE) {
+					if (input.isSingleFile()) {
 						if (selectionSize == 1)
-							popupMgr
-									.add(getCommandContributionItem(
-											HistoryViewCommands.COMPARE_WITH_TREE,
-											UIText.GitHistoryPage_CompareWithWorkingTreeMenuMenuLabel));
+							if (input.getSingleFile() instanceof IResource)
+								popupMgr
+										.add(getCommandContributionItem(
+												HistoryViewCommands.COMPARE_WITH_TREE,
+												UIText.GitHistoryPage_CompareWithWorkingTreeMenuMenuLabel));
+							else
+								popupMgr
+										.add(getCommandContributionItem(
+												HistoryViewCommands.COMPARE_WITH_TREE,
+												UIText.GitHistoryPage_CompareWithCurrentHeadMenu));
 						else if (selectionSize == 2)
 							popupMgr
 									.add(getCommandContributionItem(
@@ -985,6 +982,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	public void refresh() {
+		this.input = null;
 		inputSet();
 	}
 
@@ -998,99 +996,178 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		return ourControl;
 	}
 
-	public Object getInput() {
-		final ResourceList r = (ResourceList) super.getInput();
-		if (r == null)
-			return null;
-		final IResource[] in = r.getItems();
-		if (in == null || in.length == 0)
-			return null;
-		if (in.length == 1)
-			return in[0];
-		return r;
-	}
-
-	public boolean setInput(final Object o) {
-		final Object in;
-		if (o instanceof IResource)
-			in = new ResourceList(new IResource[] { (IResource) o });
-		else if (o instanceof ResourceList)
-			in = o;
-		else if (o instanceof IAdaptable) {
-			IResource resource = (IResource) ((IAdaptable) o)
-					.getAdapter(IResource.class);
-			in = resource == null ? null : new ResourceList(
-					new IResource[] { resource });
-		} else
-			in = null;
-		return super.setInput(in);
+	@Override
+	public boolean setInput(Object object) {
+		if (object == getInput())
+			return true;
+		this.input = null;
+		return super.setInput(object);
 	}
 
 	@Override
 	public boolean inputSet() {
 		cancelRefreshJob();
 
-		if (graph == null)
-			return false;
+		if (this.input != null)
+			return true;
 
 		setErrorMessage(null);
-		if (super.getInput() == null) {
+		if (currentWalk != null)
+			currentWalk.release();
+		currentWalk = null;
+		Object o = super.getInput();
+		if (o == null) {
 			setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
 			return false;
 		}
 
-		final IResource[] in = ((ResourceList) super.getInput()).getItems();
-		if (in == null || in.length == 0)
-			return false;
-
-		db = null;
-
-		final ArrayList<String> paths = new ArrayList<String>(in.length);
-		for (final IResource r : in) {
-			final RepositoryMapping map = RepositoryMapping.getMapping(r);
-			if (map == null)
-				continue;
-
-			if (db == null)
-				db = map.getRepository();
-			else if (db != map.getRepository()) {
-				super.setInput(null);
-				db = null;
-				setErrorMessage(UIText.GitHistoryPage_DifferentRepositoriesMessage);
-				return false;
+		if (o instanceof IResource) {
+			RepositoryMapping mapping = RepositoryMapping
+					.getMapping((IResource) o);
+			if (mapping != null) {
+				Repository repo = mapping.getRepository();
+				input = new HistoryPageInput(repo,
+						new IResource[] { (IResource) o });
+			}
+		} else if (o instanceof RepositoryTreeNode) {
+			RepositoryTreeNode repoNode = (RepositoryTreeNode) o;
+			switch (repoNode.getType()) {
+			case FILE:
+				File file = ((FileNode) repoNode).getObject();
+				input = new HistoryPageInput(repoNode.getRepository(),
+						new File[] { file });
+				break;
+			case FOLDER:
+				File folder = ((FolderNode) repoNode).getObject();
+				input = new HistoryPageInput(repoNode.getRepository(),
+						new File[] { folder });
+				break;
+			default:
+				input = new HistoryPageInput(repoNode.getRepository());
 			}
 
-			if (showAllFilter == ShowFilter.SHOWALLFOLDER) {
-				final String name = map.getRepoRelativePath(r.getParent());
-				if (name != null && name.length() > 0)
-					paths.add(name);
-			} else if (showAllFilter == ShowFilter.SHOWALLPROJECT) {
-				final String name = map.getRepoRelativePath(r.getProject());
-				if (name != null && name.length() > 0)
-					paths.add(name);
-			} else if (showAllFilter == ShowFilter.SHOWALLREPO) {
-				// nothing
-			} else /* if (showAllFilter == ShowFilter.SHOWALLRESOURCE) */{
-				final String name = map.getRepoRelativePath(r);
-				if (name != null && name.length() > 0)
-					paths.add(name);
+		} else if (o instanceof HistoryPageInput)
+			input = (HistoryPageInput) o;
+		else if (o instanceof IAdaptable) {
+			IResource resource = (IResource) ((IAdaptable) o)
+					.getAdapter(IResource.class);
+			if (resource != null) {
+				RepositoryMapping mapping = RepositoryMapping
+						.getMapping((IResource) o);
+				Repository repo = mapping.getRepository();
+				input = new HistoryPageInput(repo, new IResource[] { resource });
 			}
 		}
-
-		if (db == null)
+		if (input == null) {
+			this.name = ""; //$NON-NLS-1$
+			setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
 			return false;
+		}
+
+		final IResource[] inResources = input.getItems();
+		final File[] inFiles = input.getFileList();
+		if (inResources != null && inResources.length == 0) {
+			this.name = ""; //$NON-NLS-1$
+			setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
+			return false;
+		}
+
+		this.name = calcluateName(input);
+
+		final Repository db = input.getRepository();
+
+		final ArrayList<String> paths;
+		if (inResources != null) {
+			paths = new ArrayList<String>(inResources.length);
+			for (final IResource r : inResources) {
+				final RepositoryMapping map = RepositoryMapping.getMapping(r);
+				if (map == null)
+					continue;
+				if (db != map.getRepository()) {
+					setErrorMessage(UIText.AbstractHistoryCommanndHandler_NoUniqueRepository);
+					return false;
+				}
+
+				if (showAllFilter == ShowFilter.SHOWALLFOLDER) {
+					final String path = map.getRepoRelativePath(r.getParent());
+					if (path != null && path.length() > 0)
+						paths.add(path);
+				} else if (showAllFilter == ShowFilter.SHOWALLPROJECT) {
+					final String path = map.getRepoRelativePath(r.getProject());
+					if (path != null && path.length() > 0)
+						paths.add(path);
+				} else if (showAllFilter == ShowFilter.SHOWALLREPO) {
+					// nothing
+				} else /* if (showAllFilter == ShowFilter.SHOWALLRESOURCE) */{
+					final String path = map.getRepoRelativePath(r);
+					if (path != null && path.length() > 0)
+						paths.add(path);
+				}
+			}
+		} else if (inFiles != null) {
+			IPath workdirPath = new Path(db.getWorkTree().getPath());
+			IPath gitDirPath = new Path(db.getDirectory().getPath());
+			int segmentCount = workdirPath.segmentCount();
+			paths = new ArrayList<String>(inFiles.length);
+			for (File file : inFiles) {
+				IPath filePath;
+				if (showAllFilter == ShowFilter.SHOWALLFOLDER) {
+					filePath = new Path(file.getParentFile().getPath());
+				} else if (showAllFilter == ShowFilter.SHOWALLPROJECT
+						|| showAllFilter == ShowFilter.SHOWALLREPO) {
+					// we don't know of projects here -> treat as SHOWALLREPO
+					continue;
+				} else /* if (showAllFilter == ShowFilter.SHOWALLRESOURCE) */{
+					filePath = new Path(file.getPath());
+				}
+
+				if (gitDirPath.isPrefixOf(filePath)) {
+					setErrorMessage(NLS
+							.bind(
+									UIText.GitHistoryPage_FileOrFolderPartOfGitDirMessage,
+									filePath.toOSString()));
+					return false;
+				}
+
+				IPath pathToAdd = filePath.removeFirstSegments(segmentCount)
+						.setDevice(null);
+				if (!pathToAdd.isEmpty()) {
+					paths.add(pathToAdd.toString());
+				}
+			}
+		} else {
+			paths = new ArrayList<String>(0);
+		}
+		// disable the filters if we have a Repository as input
+		boolean filtersActive = inResources != null || inFiles != null;
+		showAllRepoVersionsAction.setEnabled(filtersActive);
+		showAllProjectVersionsAction.setEnabled(filtersActive);
+		// the repository itself has no notion of projects
+		showAllFolderVersionsAction.setEnabled(inResources != null);
+		showAllResourceVersionsAction.setEnabled(filtersActive);
 
 		final AnyObjectId headId;
 		try {
 			headId = db.resolve(Constants.HEAD);
 		} catch (IOException e) {
-			Activator.logError(NLS.bind(UIText.GitHistoryPage_errorParsingHead,
-					db.getDirectory().getAbsolutePath()), e);
+			String errorMessage = NLS.bind(
+					UIText.GitHistoryPage_errorParsingHead, db.getDirectory()
+							.getAbsolutePath());
+			setErrorMessage(errorMessage);
+			return false;
+		}
+
+		if (headId == null) {
+			String errorMessage = NLS.bind(
+					UIText.GitHistoryPage_errorParsingHead, Activator
+							.getDefault().getRepositoryUtil()
+							.getRepositoryName(db));
+			setErrorMessage(errorMessage);
 			return false;
 		}
 
 		if (pathChange(pathFilters, paths) || currentWalk == null
-				|| headId != null && !headId.equals(currentHeadId)) {
+				|| !headId.equals(currentHeadId)) {
 			// TODO Do not dispose SWTWalk just because HEAD changed
 			// In theory we should be able to update the graph and
 			// not dispose of the SWTWalk, even if HEAD was reset to
@@ -1107,10 +1184,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			currentWalk.reset();
 		}
 
-		if (headId == null)
-			return false;
-
 		try {
+
 			if (showAllBranches) {
 				markStartAllRefs(Constants.R_HEADS);
 				markStartAllRefs(Constants.R_REMOTES);
@@ -1191,7 +1266,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	 */
 	private void markStartAllRefs(String prefix) throws IOException, MissingObjectException,
 			IncorrectObjectTypeException {
-		for (Entry<String, Ref> refEntry : db.getRefDatabase()
+		for (Entry<String, Ref> refEntry : input.getRepository().getRefDatabase()
 				.getRefs(prefix).entrySet()) {
 			Ref ref = refEntry.getValue();
 			if (ref.isSymbolic())
@@ -1269,6 +1344,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	public String getName() {
+		return this.name;
+	}
+
+	/**
+	 * @return the internal input object, or <code>null</code>
+	 */
+	public HistoryPageInput getInputInternal() {
+		return this.input;
+	}
+
+	private static String calcluateName(HistoryPageInput in) {
 		// we always visualize the current input in the form
 		// <type>: <path> [<respository name>]
 		// in order to give the user an understanding which context
@@ -1276,12 +1362,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		// we show the filter hint only upon getDescription()
 		// as it wrongly pollutes the navigation history
 		final String repositoryName = Activator.getDefault()
-				.getRepositoryUtil().getRepositoryName(db);
-		final ResourceList in = (ResourceList) super.getInput();
-		if (currentWalk == null || in == null || in.getItems().length == 0)
-			return ""; //$NON-NLS-1$
-
-		if (in.getItems().length == 1) {
+				.getRepositoryUtil().getRepositoryName(in.getRepository());
+		if (in.getItems() == null && in.getFileList() == null) {
+			// plain repository, no files specified
+			return NLS.bind(UIText.GitHistoryPage_RepositoryNamePattern,
+					repositoryName);
+		} else if (in.getItems() != null && in.getItems().length == 1) {
+			// single resource
 			IResource resource = in.getItems()[0];
 			final String type;
 			switch (resource.getType()) {
@@ -1300,31 +1387,70 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				path = path + '/';
 			return NLS.bind(NAME_PATTERN, new Object[] { type, path,
 					repositoryName });
+		} else if (in.getFileList() != null && in.getFileList().length == 1) {
+			// single file from Repository
+			File resource = in.getFileList()[0];
+			String path;
+			final String type;
+			if (resource.isDirectory()) {
+				type = UIText.GitHistoryPage_FolderType;
+				path = resource.getPath() + IPath.SEPARATOR;
+			} else {
+				type = UIText.GitHistoryPage_FileType;
+				path = resource.getPath();
+			}
+			return NLS.bind(NAME_PATTERN, new Object[] { type, path,
+					repositoryName });
 		} else {
 			// user has selected multiple resources and then hits Team->Show in
 			// History (the generic history view can not deal with multiple
 			// selection)
+			int count = 0;
 			StringBuilder b = new StringBuilder();
-			for (IResource res : in.getItems()) {
-				b.append(res.getFullPath());
-				if (res.getType() == IResource.FOLDER)
-					b.append('/');
-				// limit the total length
-				if (b.length() > 100) {
-					b.append("...  "); //$NON-NLS-1$
-					break;
+			if (in.getItems() != null) {
+				count = in.getItems().length;
+				for (IResource res : in.getItems()) {
+					b.append(res.getFullPath());
+					if (res.getType() == IResource.FOLDER)
+						b.append('/');
+					// limit the total length
+					if (b.length() > 100) {
+						b.append("...  "); //$NON-NLS-1$
+						break;
+					}
+					b.append(", "); //$NON-NLS-1$
 				}
-				b.append(", "); //$NON-NLS-1$
+			}
+			if (in.getFileList() != null) {
+				count = in.getFileList().length;
+				for (File file : in.getFileList()) {
+					b.append(getRepoRelativePath(in.getRepository(), file));
+					if (file.isDirectory())
+						b.append('/');
+					// limit the total length
+					if (b.length() > 100) {
+						b.append("...  "); //$NON-NLS-1$
+						break;
+					}
+					b.append(", "); //$NON-NLS-1$
+				}
 			}
 			// trim off the last ", " (or "  " if total length exceeded)
 			if (b.length() > 2)
 				b.setLength(b.length() - 2);
 			String multiResourcePrefix = NLS.bind(
 					UIText.GitHistoryPage_MultiResourcesType, Integer
-							.valueOf(in.getItems().length));
+							.valueOf(count));
 			return NLS.bind(NAME_PATTERN, new Object[] { multiResourcePrefix,
 					b.toString(), repositoryName });
 		}
+	}
+
+	private static String getRepoRelativePath(Repository repo, File file) {
+		IPath workdirPath = new Path(repo.getWorkTree().getPath());
+		IPath filePath = new Path(file.getPath()).setDevice(null);
+		return filePath.removeFirstSegments(workdirPath.segmentCount())
+				.toString();
 	}
 
 	public String getDescription() {
