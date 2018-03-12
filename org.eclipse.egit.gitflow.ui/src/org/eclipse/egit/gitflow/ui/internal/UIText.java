@@ -46,9 +46,6 @@ public class UIText extends NLS {
 	public static String FeatureFinishHandler_finishingFeature;
 
 	/**	 */
-	public static String FeatureFinishHandler_rewordSquashedCommitMessage;
-
-	/**	 */
 	public static String FeatureRebaseHandler_problemsOccurred;
 
 	/**	 */
@@ -127,9 +124,6 @@ public class UIText extends NLS {
 	public static String ReleaseStartHandler_provideReleaseName;
 
 	/**	 */
-	public static String ReleaseStartHandler_startCommitCouldNotBeDetermined;
-
-	/**	 */
 	public static String ReleaseStartHandler_startingNewRelease;
 
 	/**	 */
@@ -161,15 +155,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FeatureCheckoutHandler_cleanupDialog_text;
-
-	/** */
-	public static String FinishFeatureDialog_squashCheck;
-
-	/** */
-	public static String FinishFeatureDialog_title;
-
-	/** */
-	public static String FinishFeatureDialog_setParameterForFinishing;
 
 	/** */
 	public static String HotfixFinishOperation_unexpectedConflictsHotfixAborted;

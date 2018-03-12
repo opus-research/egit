@@ -100,12 +100,4 @@ public class Activator extends AbstractUIPlugin {
 		}
 		StatusManager.getManager().handle(status, style);
 	}
-
-	/**
-	 * @param message
-	 * @param e
-	 */
-	public static void logError(String message, Throwable e) {
-		handleError(message, e, false);
-	}
 }

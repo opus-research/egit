@@ -148,16 +148,10 @@ public class RepositoryMapping {
 	}
 
 	/**
-	 * @return the workdir file, i.e. where the files are checked out, or null
-	 *         if repository is bare
+	 * @return the workdir file, i.e. where the files are checked out
 	 */
-	@Nullable
 	public File getWorkTree() {
-		Repository repo = getRepository();
-		if (repo.isBare()) {
-			return null;
-		}
-		return repo.getWorkTree();
+		return getRepository().getWorkTree();
 	}
 
 	synchronized void clear() {
@@ -192,7 +186,7 @@ public class RepositoryMapping {
 
 		String projectRelativePathStr = res.getProjectRelativePath().toString();
 		try {
-			if (!db.isBare() && SubmoduleWalk.containsGitModulesFile(db)) {
+			if (SubmoduleWalk.containsGitModulesFile(db)) {
 				SubmoduleWalk sw = SubmoduleWalk.forIndex(db);
 				while (sw.next()) {
 					if (projectRelativePathStr.startsWith(sw.getPath())) {
@@ -220,15 +214,11 @@ public class RepositoryMapping {
 
 	synchronized void setRepository(final Repository r) {
 		db = r;
-		File workTree = getWorkTree();
-		if (workTree == null) {
-			return;
-		}
-		workdirPrefix = workTree.getAbsolutePath();
+
+		workdirPrefix = getWorkTree().getAbsolutePath();
 		workdirPrefix = workdirPrefix.replace('\\', '/');
-		if (!workdirPrefix.endsWith("/")) {  //$NON-NLS-1$
+		if (!workdirPrefix.endsWith("/"))  //$NON-NLS-1$
 			workdirPrefix += "/";  //$NON-NLS-1$
-		}
 	}
 
 	/**
@@ -308,19 +298,14 @@ public class RepositoryMapping {
 	 *         determined.
 	 */
 	@Nullable
-	public synchronized String getRepoRelativePath(@NonNull IPath location) {
-		if (workdirPrefix == null) {
-			return null;
-		}
+	public String getRepoRelativePath(@NonNull IPath location) {
 		final int pfxLen = workdirPrefix.length();
 		final String p = location.toString();
 		final int pLen = p.length();
-		if (pLen > pfxLen) {
+		if (pLen > pfxLen)
 			return p.substring(pfxLen);
-		}
-		if (pLen == pfxLen - 1) {
+		if (pLen == pfxLen - 1)
 			return ""; //$NON-NLS-1$
-		}
 		return null;
 	}
 
@@ -393,19 +378,13 @@ public class RepositoryMapping {
 		RepositoryMapping bestMapping = null;
 
 		for (IProject project : projects) {
-			if (isNonWorkspace(project)) {
+			if (isNonWorkspace(project))
 				continue;
-			}
 			RepositoryMapping mapping = getMapping(project);
-			if (mapping == null) {
+			if (mapping == null)
 				continue;
-			}
 
-			File workTree = mapping.getWorkTree();
-			if (workTree == null) {
-				continue;
-			}
-			IPath workingTree = new Path(workTree.toString());
+			IPath workingTree = new Path(mapping.getWorkTree().toString());
 			if (workingTree.isPrefixOf(path)) {
 				if (bestWorkingTree == null
 						|| workingTree.segmentCount() > bestWorkingTree

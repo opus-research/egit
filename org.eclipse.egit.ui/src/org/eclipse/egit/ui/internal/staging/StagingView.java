@@ -82,7 +82,6 @@ import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IAction;
@@ -93,8 +92,6 @@ import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.action.ToolBarManager;
-import org.eclipse.jface.dialogs.DialogSettings;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -210,9 +207,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private static final String EMPTY_STRING = ""; //$NON-NLS-1$
 
-	private static final String HORIZONTAL_SASH_FORM_WEIGHT = "HORIZONTAL_SASH_FORM_WEIGHT"; //$NON-NLS-1$
+	private static final String MEMENTO_HORIZONTAL_SASH_FORM_WEIGHT = "HORIZONTAL_SASH_FORM_WEIGHT"; //$NON-NLS-1$
 
-	private static final String STAGING_SASH_FORM_WEIGHT = "STAGING_SASH_FORM_WEIGHT"; //$NON-NLS-1$
+	private static final String MEMENTO_STAGING_SASH_FORM_WEIGHT = "STAGING_SASH_FORM_WEIGHT"; //$NON-NLS-1$
+
+	private IMemento memento;
 
 	private ISelection initialSelection;
 
@@ -565,6 +564,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	public void init(IViewSite site, IMemento viewMemento)
 			throws PartInitException {
 		super.init(site, viewMemento);
+		this.memento = viewMemento;
 		this.initialSelection = site.getWorkbenchWindow().getSelectionService()
 				.getSelection();
 	}
@@ -597,16 +597,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 		GridLayoutFactory.swtDefaults().applyTo(form.getBody());
 
 		horizontalSashForm = new SashForm(form.getBody(), SWT.NONE);
-		saveSashFormWeightsOnDisposal(horizontalSashForm,
-				HORIZONTAL_SASH_FORM_WEIGHT);
 		toolkit.adapt(horizontalSashForm, true, true);
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(horizontalSashForm);
 
 		stagingSashForm = new SashForm(horizontalSashForm,
 				getStagingFormOrientation());
-		saveSashFormWeightsOnDisposal(stagingSashForm,
-				STAGING_SASH_FORM_WEIGHT);
 		toolkit.adapt(stagingSashForm, true, true);
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(stagingSashForm);
@@ -1058,45 +1054,17 @@ public class StagingView extends ViewPart implements IShowInSource {
 			service.showBusyForFamily(org.eclipse.egit.core.JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 	}
 
-	private void saveSashFormWeightsOnDisposal(final SashForm sashForm,
-			final String settingsKey) {
-		sashForm.addDisposeListener(new DisposeListener() {
-			@Override
-			public void widgetDisposed(DisposeEvent e) {
-				getDialogSettings().put(settingsKey,
-						intArrayToString(sashForm.getWeights()));
-			}
-		});
-	}
-
-	private IDialogSettings getDialogSettings() {
-		return DialogSettings.getOrCreateSection(
-				Activator.getDefault().getDialogSettings(),
-				StagingView.class.getName());
-	}
-
-	private static String intArrayToString(int[] ints) {
-		StringBuilder res = new StringBuilder();
-		if (ints != null && ints.length > 0) {
-			res.append(String.valueOf(ints[0]));
-			for (int i = 1; i < ints.length; i++) {
-				res.append(',');
-				res.append(String.valueOf(ints[i]));
-			}
-		}
-		return res.toString();
-	}
-
 	private void restoreSashFormWeights() {
-		restoreSashFormWeights(horizontalSashForm,
-				HORIZONTAL_SASH_FORM_WEIGHT);
-		restoreSashFormWeights(stagingSashForm,
-				STAGING_SASH_FORM_WEIGHT);
+		if (memento != null) {
+			restoreSashFormWeights(horizontalSashForm,
+					MEMENTO_HORIZONTAL_SASH_FORM_WEIGHT);
+			restoreSashFormWeights(stagingSashForm,
+					MEMENTO_STAGING_SASH_FORM_WEIGHT);
+		}
 	}
 
-	private void restoreSashFormWeights(SashForm sashForm, String settingsKey) {
-		IDialogSettings settings = getDialogSettings();
-		String weights = settings.get(settingsKey);
+	private void restoreSashFormWeights(SashForm sashForm, String mementoKey) {
+		String weights = memento.getString(mementoKey);
 		if (weights != null && !weights.isEmpty()) {
 			sashForm.setWeights(stringToIntArray(weights));
 		}
@@ -2436,10 +2404,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 * Clear the view's state.
 	 * <p>
 	 * This method must be called from the UI-thread
-	 *
-	 * @param repository
 	 */
-	private void clearRepository(@Nullable Repository repository) {
+	private void clearRepository() {
 		saveCommitMessageComponentState();
 		currentRepository = null;
 		StagingViewUpdate update = new StagingViewUpdate(null, null, null);
@@ -2448,11 +2414,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		enableCommitWidgets(false);
 		refreshAction.setEnabled(false);
 		updateSectionText();
-		if (repository != null && repository.isBare()) {
-			form.setText(UIText.StagingView_BareRepoSelection);
-		} else {
-			form.setText(UIText.StagingView_NoSelectionTitle);
-		}
+		form.setText(UIText.StagingView_NoSelectionTitle);
 	}
 
 	/**
@@ -2513,19 +2475,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 			asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					clearRepository(null);
+					clearRepository();
 				}
 			});
 			return;
 		}
 
 		if (!isValidRepo(repository)) {
-			asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					clearRepository(repository);
-				}
-			});
 			return;
 		}
 
@@ -2911,6 +2867,31 @@ public class StagingView extends ViewPart implements IShowInSource {
 	@Override
 	public void setFocus() {
 		unstagedViewer.getControl().setFocus();
+	}
+
+	@Override
+	public void saveState(IMemento viewMemento) {
+		super.saveState(viewMemento);
+		saveSashFormWeights(viewMemento);
+	}
+
+	private void saveSashFormWeights(IMemento viewMemento) {
+		viewMemento.putString(MEMENTO_HORIZONTAL_SASH_FORM_WEIGHT,
+				intArrayToString(horizontalSashForm.getWeights()));
+		viewMemento.putString(MEMENTO_STAGING_SASH_FORM_WEIGHT,
+				intArrayToString(stagingSashForm.getWeights()));
+	}
+
+	private static String intArrayToString(int[] ints) {
+		StringBuilder res = new StringBuilder();
+		if (ints != null && ints.length > 0) {
+			res.append(String.valueOf(ints[0]));
+			for (int i = 1; i < ints.length; i++) {
+				res.append(',');
+				res.append(String.valueOf(ints[i]));
+			}
+		}
+		return res.toString();
 	}
 
 	@Override
