@@ -101,7 +101,7 @@ public class ResourceStatePropertyTester extends PropertyTester {
 		while (iterator.hasNext()) {
 			IResource resource = AdapterUtils.adapt(iterator.next(),
 					IResource.class);
-			if (resource == null || !resource.isAccessible()) {
+			if (resource == null || !resource.exists()) {
 				continue;
 			}
 			IResourceState state = ResourceStateFactory.getInstance()
@@ -113,8 +113,7 @@ public class ResourceStatePropertyTester extends PropertyTester {
 				}
 				break;
 			case HAS_UNSTAGED_CHANGES:
-				if (!state.isTracked() || state.isDirty()
-						|| state.isMissing()) {
+				if (!state.isTracked() || state.isDirty()) {
 					return true;
 				}
 				break;
