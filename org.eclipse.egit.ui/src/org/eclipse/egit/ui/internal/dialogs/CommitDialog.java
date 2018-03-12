@@ -35,7 +35,6 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -49,10 +48,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.contentassist.ContentAssistant;
-import org.eclipse.jface.text.contentassist.IContentAssistant;
-import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
@@ -272,6 +267,7 @@ public class CommitDialog extends TitleAreaDialog {
 			return result;
 		}
 	}
+
 
 	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
 
@@ -592,28 +588,7 @@ public class CommitDialog extends TitleAreaDialog {
 		messageSection.setTextClient(headerArea);
 
 		commitText = new SpellcheckableMessageArea(messageArea, commitMessage,
-				SWT.NONE) {
-
-			protected IContentAssistant createContentAssistant(
-					ISourceViewer viewer) {
-				ContentAssistant assistant = new ContentAssistant();
-				assistant.enableAutoInsert(true);
-				Collection<String> paths = getFileList();
-				final CommitProposalProcessor processor = new CommitProposalProcessor(
-						paths.toArray(new String[paths.size()]));
-				viewer.getTextWidget().addDisposeListener(
-						new DisposeListener() {
-
-							public void widgetDisposed(DisposeEvent e) {
-								processor.dispose();
-							}
-						});
-				assistant.setContentAssistProcessor(processor,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				return assistant;
-			}
-
-		};
+				SWT.NONE);
 		commitText
 				.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TEXT_BORDER);
 		messageSection.setClient(messageArea);
@@ -622,9 +597,6 @@ public class CommitDialog extends TitleAreaDialog {
 		commitText.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, true).hint(size).minSize(size.x, minHeight)
 				.align(SWT.FILL, SWT.FILL).create());
-
-		UIUtils.addBulbDecorator(commitText.getTextWidget(),
-				UIText.CommitDialog_ContentAssist);
 
 		// allow to commit with ctrl-enter
 		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
