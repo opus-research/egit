@@ -43,6 +43,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.FileEditableRevision;
@@ -99,7 +100,6 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
-import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.model.IWorkbenchAdapter;
 import org.eclipse.ui.model.WorkbenchContentProvider;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
@@ -217,14 +217,24 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		getViewSite().getActionBars().getToolBarManager().add(showEqualsAction);
 
 		IAction expandAllAction = new Action(
+				UIText.CompareTreeView_ExpandAllTooltip) {
+			@Override
+			public void run() {
+				tree.expandAll();
+			}
+		};
+		expandAllAction.setImageDescriptor(UIIcons.EXPAND_ALL);
+		getViewSite().getActionBars().getToolBarManager().add(expandAllAction);
+
+		IAction collapseAllAction = new Action(
 				UIText.CompareTreeView_CollapseAllTooltip) {
 			@Override
 			public void run() {
 				tree.collapseAll();
 			}
 		};
-		expandAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
-		getViewSite().getActionBars().getToolBarManager().add(expandAllAction);
+		collapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
+		getViewSite().getActionBars().getToolBarManager().add(collapseAllAction);
 	}
 
 	private void reactOnOpen(OpenEvent event) {
@@ -1138,10 +1148,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		if (openAction != null)
 			manager.appendToGroup(ICommonMenuConstants.GROUP_OPEN, openAction);
 
-		MenuManager showInSubMenu = new MenuManager(
-				UIText.CompareTreeView_ShowIn_label);
-		showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN
-				.create(getSite().getWorkbenchWindow()));
+		MenuManager showInSubMenu = UIUtils.createShowInMenu(
+				getSite().getWorkbenchWindow());
 		manager.appendToGroup(ICommonMenuConstants.GROUP_OPEN, showInSubMenu);
 	}
 
