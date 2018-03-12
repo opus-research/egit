@@ -13,12 +13,12 @@ package org.eclipse.egit.ui.internal.search;
 import java.text.MessageFormat;
 
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.search.ui.ISearchQuery;
 import org.eclipse.search.ui.text.AbstractTextSearchResult;
 import org.eclipse.search.ui.text.IEditorMatchAdapter;
 import org.eclipse.search.ui.text.IFileMatchAdapter;
+import org.eclipse.search.ui.text.Match;
 import org.eclipse.ui.model.IWorkbenchAdapter;
 
 /**
@@ -39,14 +39,14 @@ public class CommitSearchResult extends AbstractTextSearchResult implements
 	}
 
 	/**
-	 * Add commit to result
+	 * Add result
 	 *
-	 * @param commit
+	 * @param object
 	 * @return this result
 	 */
-	public CommitSearchResult addResult(RepositoryCommit commit) {
-		if (commit != null)
-			addMatch(new CommitMatch(commit));
+	public CommitSearchResult addResult(Object object) {
+		if (object != null)
+			addMatch(new Match(object, 0, 0));
 		return this;
 	}
 
@@ -55,13 +55,11 @@ public class CommitSearchResult extends AbstractTextSearchResult implements
 	 */
 	public String getLabel() {
 		int matches = getMatchCount();
-		String pattern = ((CommitSearchQuery) query).getPattern();
 		if (matches != 1)
-			return MessageFormat.format(UIText.CommitSearchResult_LabelPlural,
-					pattern, Integer.valueOf(matches));
+			return UIText.CommitSearchResult_LabelSingle;
 		else
-			return MessageFormat.format(UIText.CommitSearchResult_LabelSingle,
-					pattern);
+			return MessageFormat.format(UIText.CommitSearchResult_LabelPlural,
+					Integer.valueOf(matches));
 	}
 
 	/**
