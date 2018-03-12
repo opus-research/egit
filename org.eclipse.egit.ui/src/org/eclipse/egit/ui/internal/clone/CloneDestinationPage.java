@@ -21,6 +21,7 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
@@ -72,15 +73,11 @@ class CloneDestinationPage extends WizardPage {
 
 	private Button importProjectsButton;
 
+	private Button cloneSubmodulesButton;
+
 	private WorkingSetGroup workingSetGroup;
 
 	private String helpContext = null;
-
-	private File clonedDestination;
-
-	private Ref clonedInitialBranch;
-
-	private String clonedRemote;
 
 	CloneDestinationPage() {
 		super(CloneDestinationPage.class.getName());
@@ -189,6 +186,11 @@ class CloneDestinationPage extends WizardPage {
 					return ((Ref)element).getName().substring(Constants.R_HEADS.length());
 				return ((Ref)element).getName();
 			} });
+
+		cloneSubmodulesButton = new Button(g, SWT.CHECK);
+		cloneSubmodulesButton
+				.setText(UIText.CloneDestinationPage_cloneSubmodulesButton);
+		GridDataFactory.swtDefaults().span(2, 1).applyTo(cloneSubmodulesButton);
 	}
 
 	private void createConfigGroup(final Composite parent) {
@@ -264,6 +266,14 @@ class CloneDestinationPage extends WizardPage {
 	}
 
 	/**
+	 * @return true to clone submodules, false otherwise
+	 */
+	public boolean isCloneSubmodules() {
+		return cloneSubmodulesButton != null
+				&& cloneSubmodulesButton.getSelection();
+	}
+
+	/**
 	 * @return selected working sets
 	 */
 	public IWorkingSet[] getWorkingSets() {
@@ -314,11 +324,6 @@ class CloneDestinationPage extends WizardPage {
 	 * Check internal state for page completion status.
 	 */
 	private void checkPage() {
-		if (!cloneSettingsChanged()) {
-			setErrorMessage(null);
-			setPageComplete(true);
-			return;
-		}
 		final String dstpath = directoryText.getText();
 		if (dstpath.length() == 0) {
 			setErrorMessage(UIText.CloneDestinationPage_errorDirectoryRequired);
@@ -354,21 +359,6 @@ class CloneDestinationPage extends WizardPage {
 
 		setErrorMessage(null);
 		setPageComplete(true);
-	}
-
-	void saveSettingsForClonedRepo() {
-		clonedDestination = getDestinationFile();
-		clonedInitialBranch = getInitialBranch();
-		clonedRemote = getRemote();
-	}
-
-	boolean cloneSettingsChanged() {
-		boolean cloneSettingsChanged = false;
-		if (clonedDestination == null || !clonedDestination.equals(getDestinationFile()) ||
-				clonedInitialBranch == null || !clonedInitialBranch.equals(getInitialBranch()) ||
-				clonedRemote == null || !clonedRemote.equals(getRemote()))
-			cloneSettingsChanged = true;
-		return cloneSettingsChanged;
 	}
 
 	private static boolean isEmptyDir(final File dir) {

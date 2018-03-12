@@ -191,6 +191,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		if (credentials != null)
 			op.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
 					credentials.getUser(), credentials.getPassword()));
+		op.setCloneSubmodules(cloneDestination.isCloneSubmodules());
 
 		if (gerritConfiguration != null
 				&& gerritConfiguration.configureGerrit()) {
