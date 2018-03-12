@@ -63,7 +63,7 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 	protected IResourceVariant fetchVariant(IResource resource, int depth,
 			IProgressMonitor monitor) throws TeamException {
 		SubMonitor subMonitor = SubMonitor.convert(monitor);
-		if (resource == null || resource.getLocation() == null) {
+		if (resource == null) {
 			subMonitor.done();
 			return null;
 		}
