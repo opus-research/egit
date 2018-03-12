@@ -47,7 +47,7 @@ public class GitImportWizard extends Wizard implements ProjectCreator,
 
 	private GitSelectRepositoryPage selectRepoPage = new GitSelectRepositoryPage();
 
-	private GitSelectWizardPage importWithDirectoriesPage = new GitSelectWizardPage();
+	private GitImportWithDirectoriesPage importWithDirectoriesPage = new GitImportWithDirectoriesPage();
 
 	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage();
 
