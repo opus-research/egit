@@ -58,9 +58,6 @@ public class UIText extends NLS {
 	public static String AbstractReflogCommandHandler_NoInput;
 
 	/** */
-	public static String Activator_CantRegisterShellListener;
-
-	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
