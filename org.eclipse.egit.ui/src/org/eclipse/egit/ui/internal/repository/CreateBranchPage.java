@@ -15,7 +15,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -23,10 +25,11 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
-import org.eclipse.egit.ui.IWorkflowProvider;
+import org.eclipse.egit.ui.IBranchNameProvider;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.ValidationUtils;
@@ -34,9 +37,11 @@ import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.util.SafeRunnable;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
@@ -70,6 +75,34 @@ import org.eclipse.ui.PlatformUI;
  * suggested initially.
  */
 class CreateBranchPage extends WizardPage {
+
+	private static final String BRANCH_NAME_PROVIDER_ID = "org.eclipse.egit.ui.commitMessageProvider"; //$NON-NLS-1$
+
+	/**
+	 * Get proposed target branch name for given source branch name
+	 *
+	 * @param sourceName
+	 * @return target name
+	 */
+	public static String getProposedTargetName(String sourceName) {
+		if (sourceName == null)
+			return null;
+
+		if (sourceName.startsWith(Constants.R_REMOTES)) {
+			String target = sourceName.substring(Constants.R_REMOTES.length());
+			int postSlash = target.indexOf('/') + 1;
+			if (postSlash > 0 && postSlash < target.length())
+				return target.substring(postSlash);
+			else
+				return target;
+		}
+
+		if (sourceName.startsWith(Constants.R_TAGS))
+			return sourceName.substring(Constants.R_TAGS.length());
+
+		return null;
+	}
+
 	private final Repository myRepository;
 
 	private final IInputValidator myValidator;
@@ -79,6 +112,11 @@ class CreateBranchPage extends WizardPage {
 	private final RevCommit myBaseCommit;
 
 	private Text nameText;
+
+	/**
+	 * Whether the contents of {@code nameText} is a suggestion or was entered by the user.
+	 */
+	private boolean nameIsSuggestion;
 
 	private Button checkout;
 
@@ -170,7 +208,25 @@ class CreateBranchPage extends WizardPage {
 		if (this.myBaseCommit != null) {
 			this.branchCombo.add(myBaseCommit.name());
 			this.branchCombo.setText(myBaseCommit.name());
-			this.branchCombo.setEnabled(false);
+			try {
+				Map<String, Ref> map = myRepository.getRefDatabase().getRefs(
+						Constants.R_HEADS);
+				for (Entry<String, Ref> entry : map.entrySet())
+					if (entry.getValue().getLeaf().getObjectId()
+							.equals(myBaseCommit))
+						this.branchCombo.add(entry.getValue().getName());
+				map = myRepository.getRefDatabase()
+						.getRefs(Constants.R_REMOTES);
+				for (Entry<String, Ref> entry : map.entrySet())
+					if (entry.getValue().getLeaf().getObjectId()
+							.equals(myBaseCommit))
+						this.branchCombo.add(entry.getValue().getName());
+			} catch (IOException e) {
+				// bad luck, we can't extend the drop down; let's log an error
+				Activator.logError(
+						"Exception while trying to find Refs for Commit", e); //$NON-NLS-1$
+			}
+			this.branchCombo.setEnabled(this.branchCombo.getItemCount() > 1);
 		} else {
 			List<String> refs = new ArrayList<String>();
 			RefDatabase refDatabase = myRepository.getRefDatabase();
@@ -178,9 +234,10 @@ class CreateBranchPage extends WizardPage {
 				for (Ref ref : refDatabase.getAdditionalRefs())
 					refs.add(ref.getName());
 
-				Set<Entry<String, Ref>> entrys = refDatabase.getRefs(RefDatabase.ALL).entrySet();
+				Set<Entry<String, Ref>> entrys = refDatabase.getRefs(
+						RefDatabase.ALL).entrySet();
 				for (Entry<String, Ref> ref : entrys)
-						refs.add(ref.getValue().getName());
+					refs.add(ref.getValue().getName());
 			} catch (IOException e1) {
 				// ignore here
 			}
@@ -189,18 +246,20 @@ class CreateBranchPage extends WizardPage {
 			for (String refName : refs)
 				this.branchCombo.add(refName);
 
-			this.branchCombo.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					upstreamConfig = getDefaultUpstreamConfig(myRepository,
-							branchCombo.getText());
-					checkPage();
-				}
-			});
 			// select the current branch in the drop down
 			if (myBaseRef != null)
 				this.branchCombo.setText(myBaseRef);
 		}
+
+		this.branchCombo.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				String ref = branchCombo.getText();
+				suggestBranchName(ref);
+				upstreamConfig = getDefaultUpstreamConfig(myRepository, ref);
+				checkPage();
+			}
+		});
 
 		Label nameLabel = new Label(main, SWT.NONE);
 		nameLabel.setText(UIText.CreateBranchPage_BranchNameLabel);
@@ -215,6 +274,11 @@ class CreateBranchPage extends WizardPage {
 		nameLabel.addTraverseListener(new TraverseListener() {
 			public void keyTraversed(TraverseEvent e) {
 				nameText.setFocus();
+			}
+		});
+		nameText.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				nameIsSuggestion = false;
 			}
 		});
 		// enable testing with SWTBot
@@ -301,25 +365,8 @@ class CreateBranchPage extends WizardPage {
 		Dialog.applyDialogFont(main);
 		setControl(main);
 		nameText.setFocus();
-		if (myBaseRef != null
-				&& (myBaseRef.startsWith(Constants.R_REMOTES) || myBaseRef
-						.startsWith(Constants.R_TAGS))) {
-			// additional convenience: the last part of the name is suggested
-			// as name for the local branch
-			nameText.setText(myBaseRef
-					.substring(myBaseRef.lastIndexOf('/') + 1));
-			nameText.selectAll();
-		} else
-			// in any case, we will have to enter the name
-			setPageComplete(false);
+		suggestBranchName(myBaseRef);
 
-		String suggestedName = getBranchNameSuggestion();
-		if (suggestedName != null) {
-			nameText.setText(suggestedName);
-			this.upstreamConfig = getDefaultUpstreamConfig(myRepository,
-					this.branchCombo.getText());
-		}
-		
 		checkPage();
 		// add the listener just now to avoid unneeded checkPage()
 		nameText.addModifyListener(new ModifyListener() {
@@ -336,8 +383,11 @@ class CreateBranchPage extends WizardPage {
 			gd.exclude = !branchCombo.getText().startsWith(Constants.R_HEADS);
 			warningComposite.setVisible(!gd.exclude);
 
+			warningComposite.getParent().getParent().layout(true);
+
+			boolean showRebase = !branchCombo.getText().startsWith(Constants.R_TAGS) && !ObjectId.isId(branchCombo.getText());
 			gd = (GridData) upstreamConfigGroup.getLayoutData();
-			gd.exclude = branchCombo.getText().startsWith(Constants.R_TAGS);
+			gd.exclude = !showRebase;
 			upstreamConfigGroup.setVisible(!gd.exclude);
 
 			upstreamConfigGroup.getParent().layout(true);
@@ -394,7 +444,7 @@ class CreateBranchPage extends WizardPage {
 
 		final CreateLocalBranchOperation cbop;
 
-		if (myBaseCommit != null)
+		if (myBaseCommit != null && this.branchCombo.getText().equals(myBaseCommit.name()))
 			cbop = new CreateLocalBranchOperation(myRepository, newRefName,
 					myBaseCommit);
 		else
@@ -445,36 +495,48 @@ class CreateBranchPage extends WizardPage {
 		return UpstreamConfig.MERGE;
 	}
 
-	private IWorkflowProvider getWorkflowProvider() throws CoreException {
+
+	private void suggestBranchName(String ref) {
+		if (nameText.getText().length() == 0 || nameIsSuggestion) {
+			String branchNameSuggestion = getBranchNameSuggestionFromProvider();
+			if (branchNameSuggestion == null)
+				branchNameSuggestion = getProposedTargetName(ref);
+
+			if (branchNameSuggestion != null) {
+				nameText.setText(branchNameSuggestion);
+				nameText.selectAll();
+				nameIsSuggestion = true;
+			}
+		}
+	}
+
+	private IBranchNameProvider getBranchNameProvider() {
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
 		IConfigurationElement[] config = registry
-				.getConfigurationElementsFor(IWorkflowProvider.WORKFLOW_PROVIDER_ID);
+				.getConfigurationElementsFor(BRANCH_NAME_PROVIDER_ID);
 		if (config.length > 0) {
 			Object provider;
-			provider = config[0].createExecutableExtension("class");//$NON-NLS-1$
-			if (provider instanceof IWorkflowProvider) {
-				return (IWorkflowProvider) provider;
-			} else {
-				Activator.logError(
-						UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
-						null);
+			try {
+				provider = config[0].createExecutableExtension("class"); //$NON-NLS-1$
+				if (provider instanceof IBranchNameProvider)
+					return (IBranchNameProvider) provider;
+			} catch (Throwable e) {
+				Activator.logError("Failed to create branch name provider", e); //$NON-NLS-1$
 			}
 		}
 		return null;
 	}
 
-	private String getBranchNameSuggestion() {
-		IWorkflowProvider workflowProvider;
-
-		try {
-			workflowProvider = getWorkflowProvider();
-			if (workflowProvider != null) {
-				return workflowProvider.getBranchNameSuggestion();
-			}
-		} catch (CoreException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+	private String getBranchNameSuggestionFromProvider() {
+		final AtomicReference<String> ref = new AtomicReference<String>();
+		final IBranchNameProvider branchNameProvider = getBranchNameProvider();
+		if (branchNameProvider != null)
+			SafeRunner.run(new SafeRunnable() {
+				public void run() throws Exception {
+					ref.set(branchNameProvider.getBranchNameSuggestion());
+				}
+			});
+		return ref.get();
 	}
+
 }

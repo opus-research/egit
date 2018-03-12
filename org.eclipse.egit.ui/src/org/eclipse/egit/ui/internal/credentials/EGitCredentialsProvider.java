@@ -9,6 +9,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.credentials;
 
+import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.egit.core.Activator;
@@ -32,6 +34,25 @@ import org.eclipse.ui.PlatformUI;
  * secure store. A login popup is shown if no credentials are available.
  */
 public class EGitCredentialsProvider extends CredentialsProvider {
+
+	private String user;
+	private String password;
+
+	/**
+	 * Default constructor
+	 */
+	public EGitCredentialsProvider() {
+		// empty
+	}
+
+	/**
+	 * @param user
+	 * @param password
+	 */
+	public EGitCredentialsProvider(String user, String password) {
+		this.user = user;
+		this.password = password;
+	}
 
 	@Override
 	public boolean isInteractive() {
@@ -77,7 +98,11 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 		}
 
 		if (!isSpecial && (userItem != null || passwordItem != null)) {
-			UserPasswordCredentials credentials = getCredentialsFromSecureStore(uri);
+			UserPasswordCredentials credentials = null;
+			if ((user != null) && (password != null))
+				credentials = new UserPasswordCredentials(user, password);
+			else
+				credentials = getCredentialsFromSecureStore(uri);
 
 			if (credentials == null) {
 				credentials = getCredentialsFromUser(uri);
@@ -109,6 +134,17 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 		});
 
 		return result[0];
+	}
+
+	@Override
+	public void reset(URIish uri) {
+		try {
+			Activator.getDefault().getSecureStore().clearCredentials(uri);
+		} catch (IOException e) {
+			Activator.logError(MessageFormat.format(
+					UIText.EGitCredentialsProvider_FailedToClearCredentials,
+					uri), e);
+		}
 	}
 
 	/**

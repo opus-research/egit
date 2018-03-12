@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -45,13 +47,11 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
-import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
@@ -264,14 +264,17 @@ public class CommitEditorPage extends FormPage {
 		createTagsArea(userArea, toolkit, 2);
 	}
 
-	private List<String> getTags() {
-		RevCommit commit = getCommit().getRevCommit();
+	private List<Ref> getTags() {
 		Repository repository = getCommit().getRepository();
-		List<String> tags = new ArrayList<String>();
-		for (Ref tag : repository.getTags().values())
-			if (commit.equals(repository.peel(tag).getPeeledObjectId()))
-				tags.add(Repository.shortenRefName(tag.getName()));
-		Collections.sort(tags);
+		List<Ref> tags = new ArrayList<Ref>(repository.getTags().values());
+		Collections.sort(tags, new Comparator<Ref>() {
+
+			public int compare(Ref r1, Ref r2) {
+				return Repository.shortenRefName(r1.getName())
+						.compareToIgnoreCase(
+								Repository.shortenRefName(r2.getName()));
+			}
+		});
 		return tags;
 	}
 
@@ -294,12 +297,23 @@ public class CommitEditorPage extends FormPage {
 		GridLayoutFactory.fillDefaults().spacing(1, 1).numColumns(4)
 				.applyTo(tagLabelArea);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tagLabelArea);
-		List<String> tags = getTags();
-		for (String tag : tags) {
+		RevCommit commit = getCommit().getRevCommit();
+		Repository repository = getCommit().getRepository();
+		for (Ref tag : getTags()) {
+			tag = repository.peel(tag);
+			ObjectId id = tag.getPeeledObjectId();
+			boolean annotated = id != null;
+			if (id == null)
+				id = tag.getObjectId();
+			if (!commit.equals(id))
+				continue;
 			CLabel tagLabel = new CLabel(tagLabelArea, SWT.NONE);
 			toolkit.adapt(tagLabel, false, false);
-			tagLabel.setImage(getImage(UIIcons.TAG));
-			tagLabel.setText(tag);
+			if (annotated)
+				tagLabel.setImage(getImage(UIIcons.TAG_ANNOTATED));
+			else
+				tagLabel.setImage(getImage(UIIcons.TAG));
+			tagLabel.setText(Repository.shortenRefName(tag.getName()));
 		}
 	}
 
@@ -405,26 +419,14 @@ public class CommitEditorPage extends FormPage {
 	private void createFilesArea(Composite parent, FormToolkit toolkit, int span) {
 		Section files = createSection(parent, toolkit, span);
 		Composite filesArea = createSectionClient(files, toolkit);
-		GridLayout filesAreaLayout = (GridLayout) filesArea.getLayout();
-		filesAreaLayout.marginLeft = 0;
-		filesAreaLayout.marginRight = 0;
-		filesAreaLayout.marginTop = 0;
-		filesAreaLayout.marginBottom = 0;
 
 		CommitFileDiffViewer viewer = new CommitFileDiffViewer(filesArea,
 				getSite(), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
 						| SWT.FULL_SELECTION | toolkit.getBorderStyle());
-		// commit file diff viewer uses a nested composite with a stack layout
-		// and so margins need to be applied to have form toolkit style borders
-		toolkit.paintBordersFor(viewer.getTable().getParent());
 		viewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		StackLayout viewerLayout = (StackLayout) viewer.getControl()
-				.getParent().getLayout();
-		viewerLayout.marginHeight = 2;
-		viewerLayout.marginWidth = 2;
 		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 80)
-				.applyTo(viewer.getTable().getParent());
+				.applyTo(viewer.getControl());
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
 		viewer.setTreeWalk(getCommit().getRepository(), null);
 

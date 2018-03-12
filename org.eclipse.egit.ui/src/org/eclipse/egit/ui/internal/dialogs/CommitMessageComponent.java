@@ -29,7 +29,7 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.ui.IWorkflowProvider;
+import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
@@ -70,7 +70,7 @@ public class CommitMessageComponent {
 	/**
 	 * Constant for the extension point for the commit message provider
 	 */
-	private static final String COMMIT_MESSAGE_PROVIDER_ID = "org.eclipse.egit.ui.workflowProvider"; //$NON-NLS-1$
+	private static final String COMMIT_MESSAGE_PROVIDER_ID = "org.eclipse.egit.ui.commitMessageProvider"; //$NON-NLS-1$
 
 	private static final String COMMITTER_VALUES_PREF = "CommitDialog.committerValues"; //$NON-NLS-1$
 
@@ -514,12 +514,12 @@ public class CommitMessageComponent {
 				resources.add(file.getProject());
 		}
 		try {
-			IWorkflowProvider messageProvider = getCommitMessageProvider();
+			ICommitMessageProvider messageProvider = getCommitMessageProvider();
 			if (messageProvider != null) {
 				IResource[] resourcesArray = resources
 						.toArray(new IResource[0]);
 				calculatedCommitMessage = messageProvider
-						.getCommitMessage(resourcesArray);
+						.getMessage(resourcesArray);
 			}
 		} catch (CoreException coreException) {
 			Activator.error(coreException.getLocalizedMessage(), coreException);
@@ -530,7 +530,7 @@ public class CommitMessageComponent {
 			return EMPTY_STRING;
 	}
 
-	private IWorkflowProvider getCommitMessageProvider()
+	private ICommitMessageProvider getCommitMessageProvider()
 			throws CoreException {
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
 		IConfigurationElement[] config = registry
@@ -538,8 +538,8 @@ public class CommitMessageComponent {
 		if (config.length > 0) {
 			Object provider;
 			provider = config[0].createExecutableExtension("class");//$NON-NLS-1$
-			if (provider instanceof IWorkflowProvider) {
-				return (IWorkflowProvider) provider;
+			if (provider instanceof ICommitMessageProvider) {
+				return (ICommitMessageProvider) provider;
 			} else {
 				Activator.logError(
 						UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
@@ -555,7 +555,7 @@ public class CommitMessageComponent {
 			int endOfChangeId = findNextEOL(changeIdOffset,
 					previousCommitMessage);
 			if (endOfChangeId < 0)
-				endOfChangeId = previousCommitMessage.length() - 1;
+				endOfChangeId = previousCommitMessage.length();
 			int sha1Offset = changeIdOffset + Text.DELIMITER.length() + "Change-Id: I".length(); //$NON-NLS-1$
 			try {
 				originalChangeId = ObjectId.fromString(previousCommitMessage
@@ -600,9 +600,13 @@ public class CommitMessageComponent {
 			String text = commitText.getText();
 			int changeIdOffset = findOffsetOfChangeIdLine(text);
 			if (changeIdOffset > 0) {
+				String cleanedText;
 				int endOfChangeId = findNextEOL(changeIdOffset, text);
-				String cleanedText = text.substring(0, changeIdOffset)
-						+ text.substring(endOfChangeId);
+				if (endOfChangeId == -1)
+					cleanedText = text.substring(0, changeIdOffset);
+				else
+					cleanedText = text.substring(0, changeIdOffset)
+							+ text.substring(endOfChangeId);
 				commitText.setText(cleanedText);
 			}
 		}

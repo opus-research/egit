@@ -22,6 +22,7 @@ import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
+import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -56,7 +57,8 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		childRepositoryFile = createChildRepository(repositoryFile);
 		perspective = bot.activePerspective();
 		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
-		RepositoriesViewLabelProvider provider = new RepositoriesViewLabelProvider();
+		RepositoriesViewLabelProvider provider = GitRepositoriesViewTestUtils
+				.createLabelProvider();
 		Repository repo = lookupRepository(childRepositoryFile);
 		REMOTE_BRANCHES = provider.getText(new RemoteTrackingNode(
 				new RepositoryNode(null, repo), repo));
@@ -88,7 +90,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		SWTBotShell fetchDialog = openFetchDialog();
 		fetchDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
 		fetchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-		
+
 		String uri = lookupRepository(childRepositoryFile).getConfig()
 				.getString(ConfigConstants.CONFIG_REMOTE_SECTION, "origin",
 						ConfigConstants.CONFIG_KEY_URL);
@@ -150,8 +152,8 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 				menuString);
 		Repository repo = lookupRepository(childRepositoryFile);
 		SWTBotShell dialog = bot.shell(NLS.bind(
-				UIText.MergeTargetSelectionDialog_TitleMerge, repo
-						.getDirectory().toString()));
+				UIText.MergeTargetSelectionDialog_TitleMergeWithBranch,
+				repo.getBranch()));
 		return dialog;
 	}
 }
