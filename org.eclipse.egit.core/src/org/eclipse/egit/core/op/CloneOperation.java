@@ -137,6 +137,8 @@ public class CloneOperation {
 			cloneRepository.setCredentialsProvider(credentialsProvider);
 			if (refName != null)
 				cloneRepository.setBranch(refName);
+			else
+				cloneRepository.setNoCheckout(true);
 			cloneRepository.setDirectory(workdir);
 			cloneRepository.setProgressMonitor(gitMonitor);
 			cloneRepository.setRemote(remoteName);
@@ -163,7 +165,9 @@ public class CloneOperation {
 					repository.close();
 				FileUtils.delete(workdir, FileUtils.RECURSIVE);
 			} catch (IOException ioe) {
-				throw new InvocationTargetException(ioe);
+				throw new InvocationTargetException(e, NLS.bind(
+						CoreText.CloneOperation_failed_cleanup,
+						ioe.getLocalizedMessage()));
 			}
 			if (monitor.isCanceled())
 				throw new InterruptedException();

@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011 SAP AG.
- * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (C) 2011, 2012 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,6 +8,8 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ *    Daniel Megert <daniel_megert@ch.ibm.com> - remove unnecessary @SuppressWarnings
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.clone;
 
@@ -31,6 +32,8 @@ import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -149,6 +152,15 @@ public class GitSelectRepositoryPage extends WizardPage {
 			}
 		});
 
+		tv.addDoubleClickListener(new IDoubleClickListener() {
+
+			public void doubleClick(DoubleClickEvent event) {
+				checkPage();
+				if (isPageComplete())
+					getContainer().showPage(getNextPage());
+			}
+		});
+
 		tv.setInput(util.getConfiguredRepositories());
 
 		configChangeListener = new IPreferenceChangeListener() {
@@ -179,15 +191,13 @@ public class GitSelectRepositoryPage extends WizardPage {
 			// check in the dialog settings if a repository was selected before
 			// and select it if nothing else is selected
 			String repoDir = settings.get(LAST_SELECTED_REPO_PREF);
-			if (repoDir != null) {
+			if (repoDir != null)
 				for (TreeItem item : tv.getTree().getItems()) {
 					RepositoryNode node = (RepositoryNode) item.getData();
 					if (node.getRepository().getDirectory().getPath().equals(
-							repoDir)) {
+							repoDir))
 						tv.setSelection(new StructuredSelection(node));
-					}
 				}
-			}
 		} else {
 			// save selection in dialog settings
 			Object element = ((IStructuredSelection) tv.getSelection())
@@ -200,13 +210,12 @@ public class GitSelectRepositoryPage extends WizardPage {
 	}
 
 	private void refreshRepositoryList() {
-		@SuppressWarnings("unchecked")
 		List<String> dirsBefore = (List<String>) tv.getInput();
 		List<String> dirsAfter = util.getConfiguredRepositories();
 		if (!dirsBefore.containsAll(dirsAfter)) {
 			tv.setInput(dirsAfter);
-			for (String dir : dirsAfter) {
-				if (!dirsBefore.contains(dir)) {
+			for (String dir : dirsAfter)
+				if (!dirsBefore.contains(dir))
 					try {
 						RepositoryNode node = new RepositoryNode(
 								null, new FileRepository(new File(dir)));
@@ -216,8 +225,6 @@ public class GitSelectRepositoryPage extends WizardPage {
 						Activator.handleError(e1.getMessage(), e1,
 								false);
 					}
-				}
-			}
 		}
 	}
 

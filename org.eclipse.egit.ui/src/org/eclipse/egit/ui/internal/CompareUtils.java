@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, SAP AG
+ * Copyright (c) 2010-2012 SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,6 +10,7 @@
  *    Dariusz Luksza - add getFileCachedRevisionTypedElement(String, Repository)
  *    Stefan Lay (SAP AG) - initial implementation
  *    Yann Simon <yann.simon.fr@gmail.com> - implementation of getHeadTypedElement
+ *    Robin Stocker <robin@nibor.org>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
@@ -43,6 +44,7 @@ import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
 import org.eclipse.egit.ui.internal.actions.CompareWithCommitActionHandler;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
 import org.eclipse.jface.action.Action;
@@ -54,10 +56,14 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
@@ -238,8 +244,9 @@ public class CompareUtils {
 				else
 					workBenchPage.bringToTop(editor);
 			}
-		} else
+		} else {
 			CompareUI.openCompareEditor(input);
+		}
 	}
 
 	private static IEditorPart findReusableCompareEditor(
@@ -251,19 +258,22 @@ public class CompareUtils {
 			if (part != null
 					&& (part.getEditorInput() instanceof GitCompareFileRevisionEditorInput || part.getEditorInput() instanceof GitCompareEditorInput)
 					&& part instanceof IReusableEditor
-					&& part.getEditorInput().equals(input))
+					&& part.getEditorInput().equals(input)) {
 				return part;
+			}
 		}
 		// if none found and "Reuse open compare editors" preference is on use
 		// a non-dirty editor
-		if (isReuseOpenEditor())
+		if (isReuseOpenEditor()) {
 			for (int i = 0; i < editorRefs.length; i++) {
 				IEditorPart part = editorRefs[i].getEditor(false);
 				if (part != null
 						&& (part.getEditorInput() instanceof SaveableCompareEditorInput)
-						&& part instanceof IReusableEditor && !part.isDirty())
+						&& part instanceof IReusableEditor && !part.isDirty()) {
 					return part;
+				}
 			}
+		}
 		// no re-usable editor found
 		return null;
 	}
@@ -273,7 +283,7 @@ public class CompareUtils {
 	 */
 	public static class ReuseCompareEditorAction extends Action implements
 			IPreferenceChangeListener, IWorkbenchAction {
-		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN);
+		IEclipsePreferences node = new InstanceScope().getNode(TEAM_UI_PLUGIN);
 
 		/**
 		 * Default constructor
@@ -300,14 +310,14 @@ public class CompareUtils {
 	}
 
 	private static boolean isReuseOpenEditor() {
-		boolean defaultReuse = DefaultScope.INSTANCE.getNode(TEAM_UI_PLUGIN)
+		boolean defaultReuse = new DefaultScope().getNode(TEAM_UI_PLUGIN)
 				.getBoolean(REUSE_COMPARE_EDITOR_PREFID, false);
-		return InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN).getBoolean(
+		return new InstanceScope().getNode(TEAM_UI_PLUGIN).getBoolean(
 				REUSE_COMPARE_EDITOR_PREFID, defaultReuse);
 	}
 
 	private static void setReuseOpenEditor(boolean value) {
-		InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN).putBoolean(
+		new InstanceScope().getNode(TEAM_UI_PLUGIN).putBoolean(
 				REUSE_COMPARE_EDITOR_PREFID, value);
 	}
 
@@ -320,13 +330,12 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkspace(Repository repository,
 			IFile file) {
-		RevCommit headCommit = getHeadCommit(repository);
-		if (headCommit == null)
-			return;
 		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
 				file);
-		ITypedElement base = CompareUtils.getFileRevisionTypedElement(path,
-				headCommit, repository);
+		ITypedElement base = getHeadTypedElement(repository, path);
+		if (base == null)
+			return;
+
 		IFileRevision nextFile = new WorkspaceFileRevision(file);
 		String encoding = null;
 		try {
@@ -350,11 +359,9 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkingTree(Repository repository,
 			String path) {
-		RevCommit headCommit = getHeadCommit(repository);
-		if (headCommit == null)
+		ITypedElement base = getHeadTypedElement(repository, path);
+		if (base == null)
 			return;
-		ITypedElement base = CompareUtils.getFileRevisionTypedElement(path,
-				headCommit, repository);
 		IFileRevision nextFile;
 		nextFile = new WorkingTreeFileRevision(new File(
 				repository.getWorkTree(), path));
@@ -365,31 +372,61 @@ public class CompareUtils {
 		CompareUI.openCompareDialog(input);
 	}
 
-	private static RevCommit getHeadCommit(Repository repository) {
-		RevCommit headCommit;
+	/**
+	 * Get a typed element for the file as contained in HEAD. Tries to return
+	 * the last commit that modified the file in order to have more useful
+	 * author information.
+	 * <p>
+	 * Returns an empty typed element if there is not yet a head (initial import
+	 * case).
+	 * <p>
+	 * If there is an error getting the HEAD commit, it is handled and null
+	 * returned.
+	 *
+	 * @param repository
+	 * @param repoRelativePath
+	 * @return typed element, or null if there was an error getting the HEAD
+	 *         commit
+	 */
+	public static ITypedElement getHeadTypedElement(Repository repository, String repoRelativePath) {
 		try {
-			ObjectId objectId = repository.resolve(Constants.HEAD);
-			if (objectId == null) {
-				Activator.handleError(
-						UIText.CompareUtils_errorGettingHeadCommit, null, true);
-				return null;
+			Ref head = repository.getRef(Constants.HEAD);
+			if (head == null || head.getObjectId() == null)
+				// Initial import, not yet a HEAD commit
+				return new EmptyTypedElement(""); //$NON-NLS-1$
+
+			RevCommit latestFileCommit;
+			RevWalk rw = new RevWalk(repository);
+			try {
+				RevCommit headCommit = rw.parseCommit(head.getObjectId());
+				rw.markStart(headCommit);
+				rw.setTreeFilter(AndTreeFilter.create(
+						PathFilter.create(repoRelativePath),
+						TreeFilter.ANY_DIFF));
+				latestFileCommit = rw.next();
+				// Fall back to HEAD
+				if (latestFileCommit == null)
+					latestFileCommit = headCommit;
+			} finally {
+				rw.release();
 			}
-			headCommit = new RevWalk(repository).parseCommit(objectId);
+
+			return CompareUtils.getFileRevisionTypedElement(repoRelativePath, latestFileCommit, repository);
 		} catch (IOException e) {
 			Activator.handleError(UIText.CompareUtils_errorGettingHeadCommit,
 					e, true);
 			return null;
 		}
-		return headCommit;
 	}
 
 	/**
-	 * Extracted from {@link CompareWithCommitActionHandler}
+	 * Get a typed element for the file in the index.
+	 *
 	 * @param baseFile
 	 * @return typed element
 	 * @throws IOException
 	 */
-	public static ITypedElement getHeadTypedElement(final IFile baseFile)
+	public static ITypedElement getIndexTypedElement(final IFile baseFile)
 			throws IOException {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
 		final Repository repository = mapping.getRepository();
@@ -472,9 +509,11 @@ public class CompareUtils {
 					diffNode.add(childDiffNode);
 					if (ln.getType().equals(ITypedElement.FOLDER_TYPE)) {
 						ITypedElement[] children = (ITypedElement[])((IStructureComparator)ln).getChildren();
-						if(children != null && children.length > 0)
-							for (ITypedElement child : children)
+						if(children != null && children.length > 0) {
+							for (ITypedElement child : children) {
 								childDiffNode.add(addDirectoryFiles(child, Differencer.ADDITION));
+							}
+						}
 					}
 					++li;
 				} else {
@@ -482,9 +521,11 @@ public class CompareUtils {
 					diffNode.add(childDiffNode);
 					if (rn.getType().equals(ITypedElement.FOLDER_TYPE)) {
 						ITypedElement[] children = (ITypedElement[])((IStructureComparator)rn).getChildren();
-						if(children != null && children.length > 0)
-							for (ITypedElement child : children)
+						if(children != null && children.length > 0) {
+							for (ITypedElement child : children) {
 								childDiffNode.add(addDirectoryFiles(child, Differencer.DELETION));
+							}
+						}
 					}
 					++ri;
 				}
@@ -495,9 +536,11 @@ public class CompareUtils {
 				diffNode.add(childDiffNode);
 				if (ln.getType().equals(ITypedElement.FOLDER_TYPE)) {
 					ITypedElement[] children = (ITypedElement[])((IStructureComparator)ln).getChildren();
-					if(children != null && children.length > 0)
-						for (ITypedElement child : children)
+					if(children != null && children.length > 0) {
+						for (ITypedElement child : children) {
 							childDiffNode.add(addDirectoryFiles(child, Differencer.ADDITION));
+						}
+					}
 				}
 				++li;
 			}
@@ -507,15 +550,18 @@ public class CompareUtils {
 				diffNode.add(childDiffNode);
 				if (rn.getType().equals(ITypedElement.FOLDER_TYPE)) {
 					ITypedElement[] children = (ITypedElement[])((IStructureComparator)rn).getChildren();
-					if(children != null && children.length > 0)
-						for (ITypedElement child : children)
+					if(children != null && children.length > 0) {
+						for (ITypedElement child : children) {
 							childDiffNode.add(addDirectoryFiles(child, Differencer.DELETION));
+						}
+					}
 				}
 				++ri;
 			}
 			return diffNode;
-		} else
+		} else {
 			return new DiffNode(actLeft, actRight);
+		}
 	}
 
 	/**
@@ -527,20 +573,23 @@ public class CompareUtils {
 	private static DiffNode addDirectoryFiles(ITypedElement elem, int diffType) {
 		ITypedElement l = null;
 		ITypedElement r = null;
-		if (diffType == Differencer.DELETION)
+		if (diffType == Differencer.DELETION) {
 			r = elem;
-		else
+		} else {
 			l = elem;
+		}
 
 		if (elem.getType().equals(ITypedElement.FOLDER_TYPE)) {
 			DiffNode diffNode = null;
 			diffNode = new DiffNode(null,Differencer.CHANGE,null,l,r);
 			ITypedElement[] children = (ITypedElement[])((IStructureComparator)elem).getChildren();
-			for (ITypedElement child : children)
+			for (ITypedElement child : children) {
 				diffNode.add(addDirectoryFiles(child, diffType));
+			}
 			return diffNode;
-		} else
+		} else {
 			return new DiffNode(diffType, null, l, r);
+		}
 	}
 
 	private static class DirCacheEntryEditor extends DirCacheEditor.PathEdit {

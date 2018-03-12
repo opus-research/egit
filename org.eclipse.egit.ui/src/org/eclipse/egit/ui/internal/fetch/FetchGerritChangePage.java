@@ -107,6 +107,10 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private String refName;
 
+	private Composite warningAdditionalRefNotActive;
+
+	private Button activateAdditionalRefs;
+
 	/**
 	 * @param repository
 	 * @param refName initial value for the ref field
@@ -229,6 +233,19 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		});
 
+		warningAdditionalRefNotActive = new Composite(main, SWT.NONE);
+		GridDataFactory.fillDefaults().span(2, 1).grab(true, false)
+				.exclude(true).applyTo(warningAdditionalRefNotActive);
+		warningAdditionalRefNotActive.setLayout(new GridLayout(2, false));
+		warningAdditionalRefNotActive.setVisible(false);
+
+		activateAdditionalRefs = new Button(warningAdditionalRefNotActive,
+				SWT.CHECK);
+		activateAdditionalRefs
+				.setText(UIText.FetchGerritChangePage_ActivateAdditionalRefsButton);
+		activateAdditionalRefs
+				.setToolTipText(UIText.FetchGerritChangePage_ActivateAdditionalRefsTooltip);
+
 		refText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				Change change = Change.fromRef(refText.getText());
@@ -314,6 +331,20 @@ public class FetchGerritChangePage extends WizardPage {
 		gd.exclude = !createTagSelected;
 		branchText.getParent().layout(true);
 
+		boolean showActivateAdditionalRefs = false;
+		showActivateAdditionalRefs = (checkout.getSelection() || dontCheckout
+				.getSelection())
+				&& !Activator
+						.getDefault()
+						.getPreferenceStore()
+						.getBoolean(
+								UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS);
+
+		gd = (GridData) warningAdditionalRefNotActive.getLayoutData();
+		gd.exclude = !showActivateAdditionalRefs;
+		warningAdditionalRefNotActive.setVisible(showActivateAdditionalRefs);
+		warningAdditionalRefNotActive.getParent().layout(true);
+
 		setErrorMessage(null);
 		try {
 			if (refText.getText().length() > 0) {
@@ -361,7 +392,6 @@ public class FetchGerritChangePage extends WizardPage {
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
-							changeRefs = new ArrayList<Change>();
 							ListRemoteOperation listOp;
 							try {
 								listOp = new ListRemoteOperation(
@@ -376,6 +406,7 @@ public class FetchGerritChangePage extends WizardPage {
 							}
 
 							listOp.run(monitor);
+							changeRefs = new ArrayList<Change>();
 							for (Ref ref : listOp.getRemoteRefs()) {
 								Change change = Change.fromRef(ref.getName());
 								if (change != null)
@@ -411,6 +442,8 @@ public class FetchGerritChangePage extends WizardPage {
 			final boolean doCheckout = checkout.getSelection();
 			final boolean doCreateTag = createTag.getSelection();
 			final boolean doCreateBranch = createBranch.getSelection();
+			final boolean doActivateAdditionalRefs = (checkout.getSelection() || dontCheckout
+					.getSelection()) && activateAdditionalRefs.getSelection();
 			final String textForTag = tagText.getText();
 			final String textForBranch = branchText.getText();
 			getWizard().getContainer().run(true, true,
@@ -478,6 +511,22 @@ public class FetchGerritChangePage extends WizardPage {
 											.run(monitor);
 
 									monitor.worked(1);
+								}
+								if (doActivateAdditionalRefs) {
+									// do this in the UI thread as it results in a
+									// refresh() on the history page
+									getContainer().getShell().getDisplay()
+											.asyncExec(new Runnable() {
+
+												public void run() {
+													Activator
+															.getDefault()
+															.getPreferenceStore()
+															.setValue(
+																	UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS,
+																	true);
+												}
+											});
 								}
 								storeLastUsedUri(uri);
 							} catch (RuntimeException e) {
