@@ -26,7 +26,6 @@ import java.util.TreeSet;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -39,14 +38,12 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.op.BranchOperation;
-import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
@@ -56,6 +53,8 @@ import org.eclipse.egit.ui.internal.clone.GitCreateProjectViaWizardWizard;
 import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -454,85 +453,10 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	}
 
-	@SuppressWarnings("unchecked")
 	private void addMenuItemsForTreeSelection(Menu men) {
 
 		final IStructuredSelection sel = (IStructuredSelection) tv
 				.getSelection();
-
-		boolean importableProjectsOnly = true;
-
-		for (Object node : sel.toArray()) {
-			RepositoryTreeNode tnode = (RepositoryTreeNode) node;
-			importableProjectsOnly = tnode.getType() == RepositoryTreeNodeType.PROJ;
-			if (!importableProjectsOnly)
-				break;
-		}
-
-		if (importableProjectsOnly) {
-			MenuItem sync = new MenuItem(men, SWT.PUSH);
-			sync.setText(UIText.RepositoriesView_ImportProject_MenuItem);
-
-			sync.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-
-					IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
-
-						public void run(IProgressMonitor monitor)
-								throws CoreException {
-
-							for (Object selected : sel.toArray()) {
-								RepositoryTreeNode<File> projectNode = (RepositoryTreeNode<File>) selected;
-								File file = projectNode.getObject();
-
-								IProjectDescription pd = ResourcesPlugin
-										.getWorkspace().newProjectDescription(
-												file.getName());
-								IPath locationPath = new Path(file
-										.getAbsolutePath());
-
-								pd.setLocation(locationPath);
-
-								ResourcesPlugin.getWorkspace().getRoot()
-										.getProject(pd.getName()).create(pd,
-												monitor);
-								IProject project = ResourcesPlugin
-										.getWorkspace().getRoot().getProject(
-												pd.getName());
-								project.open(monitor);
-
-								File gitDir = projectNode.getRepository()
-										.getDirectory();
-
-								ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
-										project, gitDir);
-								connectProviderOperation
-										.execute(new SubProgressMonitor(
-												monitor, 20));
-
-							}
-
-						}
-					};
-
-					try {
-
-						ResourcesPlugin.getWorkspace().run(wsr,
-								ResourcesPlugin.getWorkspace().getRoot(),
-								IWorkspace.AVOID_UPDATE,
-								new NullProgressMonitor());
-
-						scheduleRefresh();
-					} catch (CoreException e1) {
-						Activator.logError(e1.getMessage(), e1);
-					}
-
-				}
-
-			});
-		}
 
 		// from here on, we only deal with single selection
 		if (sel.size() > 1)
@@ -1309,43 +1233,18 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 	}
 
 	private void addActionsToToolbar() {
-		importAction = new Action(UIText.RepositoriesView_Import_Button) {
+
+		IToolBarManager manager = getViewSite().getActionBars().getToolBarManager();
+
+		refreshAction = new Action(UIText.RepositoriesView_Refresh_Button) {
 
 			@Override
 			public void run() {
-				WizardDialog dlg = new WizardDialog(getSite().getShell(),
-						new GitCloneWizard());
-				if (dlg.open() == Window.OK)
-					scheduleRefresh();
+				scheduleRefresh();
 			}
 		};
-		importAction.setToolTipText(UIText.RepositoriesView_Clone_Tooltip);
-
-		importAction.setImageDescriptor(UIIcons.CLONEGIT);
-
-		getViewSite().getActionBars().getToolBarManager().add(importAction);
-
-		addAction = new Action(UIText.RepositoriesView_Add_Button) {
-
-			@Override
-			public void run() {
-				RepositorySearchDialog sd = new RepositorySearchDialog(
-						getSite().getShell(), getDirs());
-				if (sd.open() == Window.OK) {
-					Set<String> dirs = new HashSet<String>();
-					dirs.addAll(getDirs());
-					if (dirs.addAll(sd.getDirectories()))
-						saveDirs(dirs);
-					scheduleRefresh();
-				}
-
-			}
-		};
-		addAction.setToolTipText(UIText.RepositoriesView_AddRepository_Tooltip);
-
-		addAction.setImageDescriptor(UIIcons.NEW_REPOSITORY);
-
-		getViewSite().getActionBars().getToolBarManager().add(addAction);
+		refreshAction.setImageDescriptor(UIIcons.ELCL16_REFRESH);
+		manager.add(refreshAction);
 
 		linkWithSelectionAction = new Action(
 				UIText.RepositoriesView_LinkWithSelection_action,
@@ -1372,26 +1271,13 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 		linkWithSelectionAction
 				.setToolTipText(UIText.RepositoriesView_LinkWithSelection_action);
-
 		linkWithSelectionAction.setImageDescriptor(UIIcons.ELCL16_SYNCED);
-
 		linkWithSelectionAction.setChecked(getPrefs().getBoolean(PREFS_SYNCED,
 				false));
 
-		getViewSite().getActionBars().getToolBarManager().add(
-				linkWithSelectionAction);
+		manager.add(linkWithSelectionAction);
 
-		refreshAction = new Action(UIText.RepositoriesView_Refresh_Button) {
-
-			@Override
-			public void run() {
-				scheduleRefresh();
-			}
-		};
-
-		refreshAction.setImageDescriptor(UIIcons.ELCL16_REFRESH);
-
-		getViewSite().getActionBars().getToolBarManager().add(refreshAction);
+		manager.add(new Separator());
 
 		IAction collapseAllAction = new Action(
 				UIText.RepositoriesView_CollapseAllMenu) {
@@ -1401,6 +1287,46 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 				tv.collapseAll();
 			}
 		};
+		collapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
+		manager.add(collapseAllAction);
+
+		manager.add(new Separator());
+
+		importAction = new Action(UIText.RepositoriesView_Import_Button) {
+
+			@Override
+			public void run() {
+				WizardDialog dlg = new WizardDialog(getSite().getShell(),
+						new GitCloneWizard());
+				if (dlg.open() == Window.OK)
+					scheduleRefresh();
+			}
+		};
+		importAction.setToolTipText(UIText.RepositoriesView_Clone_Tooltip);
+		importAction.setImageDescriptor(UIIcons.CLONEGIT);
+
+		manager.add(importAction);
+
+		addAction = new Action(UIText.RepositoriesView_Add_Button) {
+
+			@Override
+			public void run() {
+				RepositorySearchDialog sd = new RepositorySearchDialog(
+						getSite().getShell(), getDirs());
+				if (sd.open() == Window.OK) {
+					Set<String> dirs = new HashSet<String>();
+					dirs.addAll(getDirs());
+					if (dirs.addAll(sd.getDirectories()))
+						saveDirs(dirs);
+					scheduleRefresh();
+				}
+
+			}
+		};
+		addAction.setToolTipText(UIText.RepositoriesView_AddRepository_Tooltip);
+		addAction.setImageDescriptor(UIIcons.NEW_REPOSITORY);
+
+		manager.add(addAction);
 
 		// copy and paste are global actions; we just implement them
 		// and register them with the global action handler
@@ -1500,11 +1426,6 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			}
 
 		};
-
-		collapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
-
-		getViewSite().getActionBars().getToolBarManager()
-				.add(collapseAllAction);
 
 		getViewSite().getActionBars().setGlobalActionHandler(
 				ActionFactory.PASTE.getId(), pasteAction);
