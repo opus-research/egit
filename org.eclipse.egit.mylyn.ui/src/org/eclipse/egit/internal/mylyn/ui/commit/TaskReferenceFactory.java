@@ -16,7 +16,6 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.runtime.IAdapterFactory;
@@ -48,7 +47,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 
 	@SuppressWarnings({ "rawtypes" })
 	public Class[] getAdapterList() {
-		return Arrays.copyOf(ADAPTER_TYPES, ADAPTER_TYPES.length);
+		return ADAPTER_TYPES;
 	}
 
 	@SuppressWarnings("rawtypes")
