@@ -29,8 +29,8 @@ import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
-import org.eclipse.egit.ui.internal.decorators.DecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.DecorationResult;
+import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.resources.IResourceState.StagingState;
 import org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetLabelProvider;
 import org.eclipse.jface.dialogs.Dialog;
@@ -153,7 +153,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 						"conflict.txt", IResource.FILE, "repository", null, null, true, false, true, StagingState.NOT_STAGED, true, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"assume-unchanged.txt", IResource.FILE, "repository", null, null, true, false, false, StagingState.NOT_STAGED, false, true)); //$NON-NLS-1$ //$NON-NLS-2$
+						"assume-valid.txt", IResource.FILE, "repository", null, null, true, false, false, StagingState.NOT_STAGED, false, true)); //$NON-NLS-1$ //$NON-NLS-2$
 		project.children = children;
 		PREVIEW_FILESYSTEM_ROOT = Collections.singleton(project);
 
@@ -564,7 +564,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private Button showConflicts;
 
-		private Button showAssumeUnchanged;
+		private Button showAssumeValid;
 
 		private Button showDirty;
 
@@ -580,8 +580,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					UIText.DecoratorPreferencesPage_iconsShowStaged);
 			showConflicts = SWTUtils.createCheckBox(composite,
 					UIText.DecoratorPreferencesPage_iconsShowConflicts);
-			showAssumeUnchanged = SWTUtils.createCheckBox(composite,
-					UIText.DecoratorPreferencesPage_iconsShowAssumeUnchanged);
+			showAssumeValid = SWTUtils.createCheckBox(composite,
+					UIText.DecoratorPreferencesPage_iconsShowAssumeValid);
 			showDirty = SWTUtils.createCheckBox(composite,
 					UIText.GitDecoratorPreferencePage_iconsShowDirty);
 
@@ -589,7 +589,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			showUntracked.addSelectionListener(this);
 			showStaged.addSelectionListener(this);
 			showConflicts.addSelectionListener(this);
-			showAssumeUnchanged.addSelectionListener(this);
+			showAssumeValid.addSelectionListener(this);
 			showDirty.addSelectionListener(this);
 
 			final TabItem tabItem = new TabItem(parent, SWT.NONE);
@@ -607,9 +607,9 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					.getBoolean(UIPreferences.DECORATOR_SHOW_STAGED_ICON));
 			showConflicts.setSelection(store
 					.getBoolean(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON));
-			showAssumeUnchanged
+			showAssumeValid
 					.setSelection(store
-							.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON));
+							.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON));
 			showDirty.setSelection(store
 					.getBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
 		}
@@ -628,9 +628,9 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			showConflicts
 					.setSelection(store
 							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON));
-			showAssumeUnchanged
+			showAssumeValid
 					.setSelection(store
-							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON));
+							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON));
 			showDirty
 					.setSelection(store
 							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
@@ -646,8 +646,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					.getSelection());
 			store.setValue(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON,
 					showConflicts.getSelection());
-			store.setValue(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON,
-					showAssumeUnchanged.getSelection());
+			store.setValue(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON,
+					showAssumeValid.getSelection());
 			store.setValue(UIPreferences.DECORATOR_SHOW_DIRTY_ICON,
 					showDirty.getSelection());
 		}
@@ -1021,31 +1021,49 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 	}
 
-	private static class PreviewResource extends DecoratableResource {
+	private static class PreviewResource implements IDecoratableResource {
 		private final String name;
+
+		private final String repositoryName;
+
+		private final String branch;
+
+		private final String branchStatus;
 
 		private final int type;
 
 		private Collection children;
 
+		private boolean tracked;
+
+		private boolean ignored;
+
+		private boolean dirty;
+
+		private boolean conflicts;
+
+		@NonNull
+		private StagingState staged;
+
+		private boolean assumeValid;
+
 		public PreviewResource(String name, int type, String repositoryName,
 				String branch, String branchStatus, boolean tracked,
 				boolean ignored, boolean dirty, @NonNull StagingState staged,
-				boolean conflicts, boolean assumeUnchanged) {
+				boolean conflicts, boolean assumeValid) {
 
-			super(null);
 			this.name = name;
 			this.repositoryName = repositoryName;
 			this.branch = branch;
 			this.branchStatus = branchStatus;
 			this.type = type;
 			this.children = Collections.EMPTY_LIST;
-			setTracked(tracked);
-			setIgnored(ignored);
-			setDirty(dirty);
-			setStagingState(staged);
-			setConflicts(conflicts);
-			setAssumeUnchanged(assumeUnchanged);
+			this.tracked = tracked;
+			this.ignored = ignored;
+			this.dirty = dirty;
+			this.staged = staged;
+			this.conflicts = conflicts;
+			this.assumeValid = assumeValid;
 		}
 
 		@Override
@@ -1054,9 +1072,63 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 
 		@Override
+		public String getRepositoryName() {
+			return repositoryName;
+		}
+
+		@Override
 		public int getType() {
 			return type;
 		}
 
+		@Override
+		public String getBranch() {
+			return branch;
+		}
+
+		@Override
+		public String getBranchStatus() {
+			return branchStatus;
+		}
+
+		@Override
+		public boolean isTracked() {
+			return tracked;
+		}
+
+		@Override
+		public boolean isIgnored() {
+			return ignored;
+		}
+
+		@Override
+		public boolean isDirty() {
+			return dirty;
+		}
+
+		@Override
+		public boolean isMissing() {
+			return false;
+		}
+
+		@Override
+		public StagingState getStagingState() {
+			return staged;
+		}
+
+		@Override
+		public boolean isStaged() {
+			return staged != StagingState.NOT_STAGED;
+		}
+
+		@Override
+		public boolean hasConflicts() {
+			return conflicts;
+		}
+
+		@Override
+		public boolean isAssumeValid() {
+			return assumeValid;
+		}
 	}
 }
