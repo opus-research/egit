@@ -43,7 +43,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.ui.PlatformUI;
 
 class ConfirmationPage extends WizardPage {
 	static Collection<RemoteRefUpdate> copyUpdates(
@@ -70,8 +69,6 @@ class ConfirmationPage extends WizardPage {
 	private Button showOnlyIfChanged;
 
 	private UserPasswordCredentials credentials;
-
-	private String helpContext = null;
 
 	public ConfirmationPage(final Repository local) {
 		super(ConfirmationPage.class.getName());
@@ -108,21 +105,6 @@ class ConfirmationPage extends WizardPage {
 
 	public void setCredentials(UserPasswordCredentials credentials) {
 		this.credentials = credentials;
-	}
-
-	/**
-	 * Set the ID for context sensitive help
-	 *
-	 * @param id
-	 *            help context
-	 */
-	public void setHelpContext(String id) {
-		helpContext = id;
-	}
-
-	@Override
-	public void performHelp() {
-		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
 	}
 
 	boolean isConfirmed() {
