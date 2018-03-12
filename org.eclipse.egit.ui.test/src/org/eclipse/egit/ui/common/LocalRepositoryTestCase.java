@@ -82,7 +82,7 @@ import org.junit.BeforeClass;
  * <p>
  * A typical code sequence for setting up these two repositories could look
  * like:
- *
+ * 
  * <pre>
  *  private File localRepo;
  *  private File remoteRepo;
@@ -124,7 +124,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	public static File getTestDirectory() {
 		return testDirectory;
 	}
-
+	
 	@BeforeClass
 	public static void beforeClassBase() throws Exception {
 		deleteAllProjects();
@@ -380,8 +380,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				return name.equals(".project");
 			}
 		};
-		for (File file : myRepository.getWorkTree().listFiles())
-			if (file.isDirectory())
+		for (File file : myRepository.getWorkTree().listFiles()) {
+			if (file.isDirectory()) {
 				if (file.list(projectFilter).length > 0) {
 					IProjectDescription desc = ResourcesPlugin.getWorkspace()
 							.newProjectDescription(file.getName());
@@ -394,6 +394,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 					new ConnectProviderOperation(prj, myRepository
 							.getDirectory()).execute(null);
 				}
+			}
+		}
 	}
 
 	@SuppressWarnings("boxing")
@@ -500,8 +502,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (file.exists()) {
 			byte[] bytes = IO.readFully(file.getLocation().toFile());
 			return new String(bytes, file.getCharset());
-		} else
+		} else {
 			return "";
+		}
 	}
 
 	/**
@@ -512,7 +515,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	 */
 	protected SWTBotTreeItem getProjectItem(SWTBotTree projectExplorerTree,
 			String project) {
-		return new TestUtil().getProjectItems(projectExplorerTree, project)[0];
+		return new TestUtil().getProjectItem(projectExplorerTree, project);
 	}
 
 	protected void pressAltAndChar(SWTBotShell shell, char charToPress) {

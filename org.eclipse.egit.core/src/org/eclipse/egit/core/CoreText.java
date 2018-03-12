@@ -90,9 +90,6 @@ public class CoreText extends NLS {
 	public static String DiffHeaderFormat_Oneline;
 
 	/** */
-	public static String DiffHeaderFormat_Workspace;
-
-	/** */
 	public static String DiscardChangesOperation_discardFailed;
 
 	/** */
@@ -238,9 +235,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CreatePatchOperation_cannotCreatePatchForFirstCommit;
-
-	/** */
-	public static String CreatePatchOperation_couldNotFindProject;
 
 	/** */
 	public static String CreatePatchOperation_patchFileCouldNotBeWritten;

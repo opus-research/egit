@@ -85,7 +85,6 @@ public class GitCreatePatchWizard extends Wizard {
 
 	private OptionsPage optionsPage;
 
-
 	// The initial size of this wizard.
 	private final static int INITIAL_WIDTH = 300;
 
@@ -224,7 +223,11 @@ public class GitCreatePatchWizard extends Wizard {
 			RepositoryMapping rm = RepositoryMapping.getMapping(r);
 			String repoRelativePath = rm.getRepoRelativePath(r);
 			if (repoRelativePath != null)
-				filters.add(PathFilter.create(repoRelativePath));
+				if (repoRelativePath.equals("")) //$NON-NLS-1$
+					// repository selected
+					return TreeFilter.ALL;
+				else
+					filters.add(PathFilter.create(repoRelativePath));
 		}
 		if (filters.size() == 0)
 			return null;
