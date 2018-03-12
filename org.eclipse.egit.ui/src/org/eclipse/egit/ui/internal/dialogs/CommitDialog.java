@@ -276,6 +276,7 @@ public class CommitDialog extends Dialog {
 		if (amending) {
 			amendingButton.setSelection(amending);
 			amendingButton.setEnabled(false); // if already set, don't allow any changes
+			commitText.setText(previousCommitMessage);
 			authorText.setText(previousAuthor);
 			saveOriginalChangeId();
 		} else if (!amendAllowed) {
@@ -293,8 +294,12 @@ public class CommitDialog extends Dialog {
 					saveOriginalChangeId();
 					if (!alreadyAdded) {
 						alreadyAdded = true;
-						commitText.setText(previousCommitMessage.replaceAll(
-								"\n", Text.DELIMITER)); //$NON-NLS-1$
+						String curText = commitText.getText();
+						if (curText.length() > 0)
+							curText += Text.DELIMITER;
+						commitText.setText(curText
+								+ previousCommitMessage.replaceAll(
+										"\n", Text.DELIMITER)); //$NON-NLS-1$
 					}
 					authorText.setText(previousAuthor);
 				}
@@ -444,15 +449,6 @@ public class CommitDialog extends Dialog {
 	 * @return the calculated commit message
 	 */
 	private String calculateCommitMessage() {
-		if(commitMessage != "") { //$NON-NLS-1$
-			// special case for merge
-			return commitMessage;
-		}
-
-		if (amending) {
-			return previousCommitMessage;
-		}
-
 		String calculatedCommitMessage = null;
 
 		Set<IResource> resources = new HashSet<IResource>();
