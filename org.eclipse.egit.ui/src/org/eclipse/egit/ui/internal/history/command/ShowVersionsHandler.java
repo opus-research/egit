@@ -92,8 +92,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 											.createFileElement(resource),
 									right, null);
 							try {
-								CompareUtils.openInCompare(workBenchPage,
-										map.getRepository(), in);
+								CompareUtils.openInCompare(workBenchPage, in);
 							} catch (Exception e) {
 								errorOccurred = true;
 							}
@@ -111,7 +110,6 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 						ids.add(commit.getId());
 					}
 				}
-
 			}
 		}
 		if (input instanceof File) {
@@ -145,7 +143,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 											commit, repo);
 							final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 									left, right, null);
-							CompareUtils.openInCompare(workBenchPage, repo, in);
+							CompareUtils.openInCompare(workBenchPage, in);
 						} catch (IOException e) {
 							errorOccurred = true;
 						}
