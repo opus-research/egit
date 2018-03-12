@@ -38,7 +38,6 @@ import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
-import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent.CommitStatus;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -925,26 +924,18 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private void updateMessage() {
-		String message = null;
-		int type = IMessageProvider.NONE;
+		String message = commitMessageComponent.getMessage();
 
 		String commitMsg = commitMessageComponent.getCommitMessage();
-		if (commitMsg == null || commitMsg.trim().length() == 0) {
+		if (message == null && (commitMsg == null || commitMsg.trim().length() == 0))
 			message = UIText.CommitDialog_Message;
-			type = IMessageProvider.INFORMATION;
-		} else if (filesViewer.getCheckedElements().length == 0
-				&& !amendingItem.getSelection()) {
-			message = UIText.CommitDialog_MessageNoFilesSelected;
-			type = IMessageProvider.INFORMATION;
-		} else {
-			CommitStatus status = commitMessageComponent.getStatus();
-			message = status.getMessage();
-			type = status.getMessageType();
-		}
 
-		setMessage(message, type);
-		commitButton.setEnabled(type == IMessageProvider.WARNING
-				|| type == IMessageProvider.NONE);
+		if (message == null && filesViewer.getCheckedElements().length == 0
+				&& !amendingItem.getSelection())
+			message = UIText.CommitDialog_MessageNoFilesSelected;
+
+		setMessage(message, IMessageProvider.INFORMATION);
+		commitButton.setEnabled(message == null);
 	}
 
 	private Collection<String> getFileList() {
