@@ -74,8 +74,9 @@ public class AddToIndexOperation implements IEGitOperation {
 				monitor.worked(200);
 			}
 
-			for (AddCommand command : addCommands.values())
+			for (AddCommand command : addCommands.values()) {
 				command.call();
+			}
 		} catch (RuntimeException e) {
 			throw new CoreException(Activator.error(CoreText.AddToIndexOperation_failed, e));
 		} catch (NoFilepatternException e) {

@@ -64,7 +64,7 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 							commit.getId()), e);
 					errorOccurred = true;
 				}
-				if (rev != null)
+				if (rev != null) {
 					try {
 						EgitUiEditorUtils.openTextEditor(getPart(event)
 								.getSite().getPage(), rev, null);
@@ -72,8 +72,9 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 						Activator.logError(e.getMessage(), e);
 						errorOccurred = true;
 					}
-				else
+				} else {
 					ids.add(commit.getId());
+				}
 			}
 		}
 		if (input instanceof File) {
@@ -93,7 +94,7 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 							commit.getId()), e);
 					errorOccurred = true;
 				}
-				if (rev != null)
+				if (rev != null) {
 					try {
 						EgitUiEditorUtils.openTextEditor(getPart(event)
 								.getSite().getPage(), rev, null);
@@ -101,8 +102,9 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 						Activator.logError(e.getMessage(), e);
 						errorOccurred = true;
 					}
-				else
+				} else {
 					ids.add(commit.getId());
+				}
 			}
 		}
 		if (errorOccurred)

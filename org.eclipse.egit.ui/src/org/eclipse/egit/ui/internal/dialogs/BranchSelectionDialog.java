@@ -103,12 +103,13 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 					WorkbenchJob refreshJob = super.doCreateRefreshJob();
 					refreshJob.addJobChangeListener(new JobChangeAdapter() {
 						public void done(IJobChangeEvent event) {
-							if (event.getResult().isOK())
+							if (event.getResult().isOK()) {
 								getDisplay().asyncExec(new Runnable() {
 									public void run() {
 										checkPage();
 									}
 								});
+							}
 						}
 					});
 					return refreshJob;
@@ -187,16 +188,19 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void buttonPressed(int buttonId) {
-		if (buttonId == OK)
+		if (buttonId == OK) {
 			if (multiMode) {
 				selected.clear();
 				Object[] checked = fTree.getCheckboxTreeViewer()
 						.getCheckedElements();
-				for (Object o : checked)
+				for (Object o : checked) {
 					selected.add((T) o);
-			} else
+				}
+			} else {
 				selected = ((IStructuredSelection) branchesList.getSelection())
 						.toList();
+			}
+		}
 		super.buttonPressed(buttonId);
 	}
 

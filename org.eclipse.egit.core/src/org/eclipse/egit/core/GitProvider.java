@@ -82,14 +82,16 @@ public class GitProvider extends RepositoryProvider {
 	 * to a Git repository.
 	 */
 	public synchronized GitProjectData getData() {
-		if (data == null)
+		if (data == null) {
 			data = GitProjectData.get(getProject());
+		}
 		return data;
 	}
 
 	public synchronized IFileHistoryProvider getFileHistoryProvider() {
-		if (historyProvider == null)
+		if (historyProvider == null) {
 			historyProvider = new GitFileHistoryProvider();
+		}
 		return historyProvider;
 	}
 

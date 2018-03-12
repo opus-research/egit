@@ -48,7 +48,8 @@ public class CompareWithRefActionHandler extends RepositoryActionHandler {
 		CompareTargetSelectionDialog dlg = new CompareTargetSelectionDialog(
 				getShell(event), repo, resources.length == 1 ? resources[0]
 						.getFullPath().toString() : null);
-		if (dlg.open() == Window.OK)
+		if (dlg.open() == Window.OK) {
+
 			if (resources.length == 1 && resources[0] instanceof IFile) {
 				final IFile baseFile = (IFile) resources[0];
 
@@ -83,6 +84,7 @@ public class CompareWithRefActionHandler extends RepositoryActionHandler {
 					Activator.handleError(e.getMessage(), e, true);
 				}
 			}
+		}
 		return null;
 	}
 

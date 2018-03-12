@@ -69,9 +69,10 @@ public class RepositoryFinder {
 		proj = p;
 		String ceilingDirectoriesVar = SystemReader.getInstance().getenv(
 				Constants.GIT_CEILING_DIRECTORIES_KEY);
-		if (ceilingDirectoriesVar != null)
+		if (ceilingDirectoriesVar != null) {
 			ceilingDirectories.addAll(Arrays.asList(ceilingDirectoriesVar
 					.split(File.pathSeparator)));
+		}
 	}
 
 	/**
@@ -109,8 +110,9 @@ public class RepositoryFinder {
 				final File ownCfg = configFor(fsLoc);
 				final IResource[] children;
 
-				if (ownCfg.isFile())
+				if (ownCfg.isFile()) {
 					register(c, ownCfg.getParentFile());
+				}
 				if (c.isLinked() || c instanceof IProject) {
 					File p = fsLoc.getParentFile();
 					while (p != null) {
@@ -121,8 +123,9 @@ public class RepositoryFinder {
 									"Looking at candidate dir: " //$NON-NLS-1$
 											+ p);
 						final File pCfg = configFor(p);
-						if (pCfg.isFile())
+						if (pCfg.isFile()) {
 							register(c, pCfg.getParentFile());
+						}
 						if (ceilingDirectories.contains(p.getPath()))
 							break;
 						p = p.getParentFile();
@@ -136,11 +139,12 @@ public class RepositoryFinder {
 					for (int k = 0; k < children.length; k++) {
 						final IResource o = children[k];
 						if (o instanceof IContainer
-								&& !o.getName().equals(Constants.DOT_GIT))
+								&& !o.getName().equals(Constants.DOT_GIT)) {
 							find(new SubProgressMonitor(m, scale),
 									(IContainer) o);
-						else
+						} else {
 							m.worked(scale);
+						}
 					}
 				}
 			}

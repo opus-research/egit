@@ -512,7 +512,7 @@ public class FetchGerritChangePage extends WizardPage {
 
 									monitor.worked(1);
 								}
-								if (doActivateAdditionalRefs)
+								if (doActivateAdditionalRefs) {
 									// do this in the UI thread as it results in a
 									// refresh() on the history page
 									getContainer().getShell().getDisplay()
@@ -527,6 +527,7 @@ public class FetchGerritChangePage extends WizardPage {
 																	true);
 												}
 											});
+								}
 								storeLastUsedUri(uri);
 							} catch (RuntimeException e) {
 								throw e;
@@ -568,8 +569,9 @@ public class FetchGerritChangePage extends WizardPage {
 				String patternString = contents;
 				// ignore spaces in the beginning
 				while (patternString.length() > 0
-						&& patternString.charAt(0) == ' ')
+						&& patternString.charAt(0) == ' ') {
 					patternString = patternString.substring(1);
+				}
 
 				// we quote the string as it may contain spaces
 				// and other stuff colliding with the Pattern
@@ -578,8 +580,9 @@ public class FetchGerritChangePage extends WizardPage {
 				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
 
 				// make sure we add a (logical) * at the end
-				if (!patternString.endsWith(".*")) //$NON-NLS-1$
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
 					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
 
 				// let's compile a case-insensitive pattern (assumes ASCII only)
 				Pattern pattern;

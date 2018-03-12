@@ -34,8 +34,9 @@ public class ExpandAllModelAction extends SynchronizeModelAction {
 		public void run() {
 			Viewer viewer = configuration.getPage().getViewer();
 			if (viewer == null || viewer.getControl().isDisposed()
-					|| !(viewer instanceof AbstractTreeViewer))
+					|| !(viewer instanceof AbstractTreeViewer)) {
 				return;
+			}
 			viewer.getControl().setRedraw(false);
 			((AbstractTreeViewer) viewer).expandAll();
 			viewer.getControl().setRedraw(true);

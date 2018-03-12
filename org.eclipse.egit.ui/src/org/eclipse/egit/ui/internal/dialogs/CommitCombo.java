@@ -67,8 +67,9 @@ public class CommitCombo extends Composite {
 			for (int i = 0; i < commits.size(); i++) {
 				String message = commits.get(i).message;
 				if (message.length() >= contents.length()
-						&& pattern.matcher(message).find())
+						&& pattern.matcher(message).find()) {
 					list.add(makeContentProposal(message));
+				}
 			}
 			return list.toArray(new IContentProposal[] {});
 		}
@@ -165,8 +166,9 @@ public class CommitCombo extends Composite {
 	public ObjectId getItem(int index) {
 		checkWidget();
 
-		if (!(0 <= index && index < commits.size()))
+		if (!(0 <= index && index < commits.size())) {
 			SWT.error(SWT.ERROR_INVALID_RANGE);
+		}
 		return commits.get(index).objectId;
 	}
 
@@ -201,8 +203,9 @@ public class CommitCombo extends Composite {
 	 * @param objectId
 	 */
 	public void setSelectedElement(ObjectId objectId) {
-		if (objectId == null)
+		if (objectId == null) {
 			return;
+		}
 
 		for (int i = 0; i < commits.size(); i++)
 			if (objectId.equals(commits.get(i).objectId)) {

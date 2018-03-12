@@ -71,8 +71,9 @@ public class FindToolbarThread extends Thread {
 
 	private void execFind() {
 		// If it isn't the last event, just ignore it.
-		if (currentThreadIx < globalThreadIx)
+		if (currentThreadIx < globalThreadIx) {
 			return;
+		}
 
 		FindResults findResults = toolbar.findResults;
 		findResults.clear();
@@ -80,8 +81,9 @@ public class FindToolbarThread extends Thread {
 		boolean maxResultsOverflow = false;
 		if (pattern.length() > 0 && fileRevisions != null) {
 			String findPattern = pattern;
-			if (ignoreCase)
+			if (ignoreCase) {
 				findPattern = pattern.toLowerCase();
+			}
 
 			long lastUIUpdate = System.currentTimeMillis();
 
@@ -91,16 +93,18 @@ public class FindToolbarThread extends Thread {
 			for (int i = 0; i < totalRevisions; i++) {
 				// If a new find event was generated, ends the current thread.
 				if (toolbar.getDisplay().isDisposed()
-						|| currentThreadIx < globalThreadIx)
+						|| currentThreadIx < globalThreadIx) {
 					return;
+				}
 
 				// Updates the toolbar with in process info.
 				if (System.currentTimeMillis() - lastUIUpdate > 500) {
 					final int percentage = (int) (((i + 1F) / totalRevisions) * 100);
 					toolbar.getDisplay().asyncExec(new Runnable() {
 						public void run() {
-							if (toolbar.isDisposed())
+							if (toolbar.isDisposed()) {
 								return;
+							}
 							toolbar.progressUpdate(percentage);
 						}
 					});
@@ -114,8 +118,9 @@ public class FindToolbarThread extends Thread {
 				if (findInCommitId) {
 					String contentId = revision.getId().name();
 					if (contentId != null) {
-						if (ignoreCase)
+						if (ignoreCase) {
 							contentId = contentId.toLowerCase();
+						}
 						if (contentId.indexOf(findPattern) != -1) {
 							totalMatches++;
 							findResults.add(i, revision);
@@ -127,8 +132,9 @@ public class FindToolbarThread extends Thread {
 				if (findInComments && notFound) {
 					String comment = revision.getFullMessage();
 					if (comment != null) {
-						if (ignoreCase)
+						if (ignoreCase) {
 							comment = comment.toLowerCase();
+						}
 						if (comment.indexOf(findPattern) != -1) {
 							totalMatches++;
 							findResults.add(i, revision);
@@ -140,8 +146,9 @@ public class FindToolbarThread extends Thread {
 				if (findInAuthor && notFound) {
 					String author = revision.getAuthorIdent().getName();
 					if (author != null) {
-						if (ignoreCase)
+						if (ignoreCase) {
 							author = author.toLowerCase();
+						}
 						if (author.indexOf(findPattern) != -1) {
 							totalMatches++;
 							findResults.add(i, revision);
@@ -152,8 +159,9 @@ public class FindToolbarThread extends Thread {
 						String email = revision.getAuthorIdent()
 								.getEmailAddress();
 						if (email != null) {
-							if (ignoreCase)
+							if (ignoreCase) {
 								email = email.toLowerCase();
+							}
 							if (email.indexOf(findPattern) != -1) {
 								totalMatches++;
 								findResults.add(i, revision);
@@ -166,8 +174,9 @@ public class FindToolbarThread extends Thread {
 				if (findInCommitter && notFound) {
 					String committer = revision.getCommitterIdent().getName();
 					if (committer != null) {
-						if (ignoreCase)
+						if (ignoreCase) {
 							committer = committer.toLowerCase();
+						}
 						if (committer.indexOf(findPattern) != -1) {
 							totalMatches++;
 							findResults.add(i, revision);
@@ -178,8 +187,9 @@ public class FindToolbarThread extends Thread {
 						String email = revision.getCommitterIdent()
 								.getEmailAddress();
 						if (email != null) {
-							if (ignoreCase)
+							if (ignoreCase) {
 								email = email.toLowerCase();
+							}
 							if (email.indexOf(findPattern) != -1) {
 								totalMatches++;
 								findResults.add(i, revision);
@@ -201,8 +211,9 @@ public class FindToolbarThread extends Thread {
 		final boolean overflow = maxResultsOverflow;
 		toolbar.getDisplay().syncExec(new Runnable() {
 			public void run() {
-				if (toolbar.isDisposed())
+				if (toolbar.isDisposed()) {
 					return;
+				}
 				toolbar.findCompletionUpdate(pattern, overflow);
 			}
 		});

@@ -102,10 +102,11 @@ public class FetchWizard extends Wizard {
 		if (repoPage.getSelection().isConfigSelected()
 				&& refSpecPage.isSaveRequested())
 			saveConfig();
-		if (repoPage.getStoreInSecureStore())
+		if (repoPage.getStoreInSecureStore()) {
 			if (!SecureStoreUtils.storeCredentials(repoPage.getCredentials(),
 					repoPage.getSelection().getURI()))
 				return false;
+		}
 
 		final FetchOperationUI op;
 		int timeout = Activator.getDefault().getPreferenceStore().getInt(

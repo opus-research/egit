@@ -115,8 +115,9 @@ public class CommitUI  {
 	public void commit() {
 		// let's see if there is any dirty editor around and
 		// ask the user if they want to save or abort
-		if (!PlatformUI.getWorkbench().saveAllEditors(true))
+		if (!PlatformUI.getWorkbench().saveAllEditors(true)) {
 			return;
+		}
 
 		BasicConfigurationDialog.show(new Repository[]{repo});
 
@@ -152,7 +153,7 @@ public class CommitUI  {
 			return;
 		}
 		boolean amendAllowed = commitHelper.amendAllowed();
-		if (files.isEmpty())
+		if (files.isEmpty()) {
 			if (amendAllowed && commitHelper.getPreviousCommit() != null) {
 				boolean result = MessageDialog.openQuestion(shell,
 						UIText.CommitAction_noFilesToCommit,
@@ -166,6 +167,7 @@ public class CommitUI  {
 						UIText.CommitAction_amendNotPossible);
 				return;
 			}
+		}
 
 		CommitDialog commitDialog = new CommitDialog(shell);
 		commitDialog.setAmending(amending);
@@ -299,18 +301,22 @@ public class CommitUI  {
 			IFile[] workspaceFiles = root.findFilesForLocationURI(uri);
 			if (workspaceFiles.length > 0) {
 				IFile file = workspaceFiles[0];
-				for (IResource resource : selectedResources)
+				for (IResource resource : selectedResources) {
 					// if any selected resource contains the file, add it as a
 					// preselection candidate
 					if (resource.contains(file)) {
 						preselectionCandidates.add(fileName);
 						break;
 					}
-			} else
+				}
+			} else {
 				// could be file outside of workspace
-				for (IResource resource : selectedResources)
-					if(resource.getFullPath().toFile().equals(new File(uri)))
+				for (IResource resource : selectedResources) {
+					if(resource.getFullPath().toFile().equals(new File(uri))) {
 						preselectionCandidates.add(fileName);
+					}
+				}
+			}
 		}
 		return preselectionCandidates;
 	}
@@ -323,12 +329,13 @@ public class CommitUI  {
 		EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(
 				monitor);
 		CountingVisitor counter = new CountingVisitor();
-		for (IProject p : selectedProjects)
+		for (IProject p : selectedProjects) {
 			try {
 				p.accept(counter);
 			} catch (CoreException e) {
 				// ignore
 			}
+		}
 		indexDiff = new IndexDiff(repo, Constants.HEAD,
 				IteratorService.createInitialIterator(repo));
 		indexDiff.diff(jgitMonitor, counter.count, 0, NLS.bind(

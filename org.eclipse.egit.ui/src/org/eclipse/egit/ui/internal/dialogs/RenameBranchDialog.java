@@ -63,9 +63,10 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 			refPrefix = Constants.R_REMOTES;
 		else if (refName.startsWith(Constants.R_TAGS))
 			refPrefix = Constants.R_TAGS;
-		else
+		else {
 			// the button should be disabled anyway, but we check again
 			return;
+		}
 
 		String branchName = refName.substring(refPrefix.length());
 

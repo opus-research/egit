@@ -89,7 +89,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 						} catch (Exception e) {
 							errorOccurred = true;
 						}
-					} else
+					} else {
 						try {
 							EgitUiEditorUtils.openEditor(getPart(event)
 									.getSite().getPage(), rev,
@@ -99,8 +99,10 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 									UIText.GitHistoryPage_openFailed, e);
 							errorOccurred = true;
 						}
-				} else
+					}
+				} else {
 					ids.add(commit.getId());
+				}
 			}
 		}
 		if (input instanceof File) {
@@ -121,7 +123,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 					errorOccurred = true;
 				}
 				if (rev != null) {
-					if (compareMode)
+					if (compareMode) {
 						try {
 							ITypedElement left = CompareUtils
 									.getFileRevisionTypedElement(gitPath,
@@ -137,7 +139,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 						} catch (IOException e) {
 							errorOccurred = true;
 						}
-					else
+					} else {
 						try {
 							EgitUiEditorUtils.openEditor(getPart(event)
 									.getSite().getPage(), rev,
@@ -147,16 +149,19 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 									UIText.GitHistoryPage_openFailed, e);
 							errorOccurred = true;
 						}
-				} else
+					}
+				} else {
 					ids.add(commit.getId());
+				}
 			}
 		}
 		if (errorOccurred)
 			Activator.showError(UIText.GitHistoryPage_openFailed, null);
 		if (ids.size() > 0) {
 			StringBuilder idList = new StringBuilder(""); //$NON-NLS-1$
-			for (ObjectId objectId : ids)
+			for (ObjectId objectId : ids) {
 				idList.append(objectId.getName()).append(' ');
+			}
 			MessageDialog.openError(getPart(event).getSite().getShell(),
 					UIText.GitHistoryPage_fileNotFound, NLS.bind(
 							UIText.GitHistoryPage_notContainedInCommits,

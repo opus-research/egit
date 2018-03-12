@@ -61,7 +61,7 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 
 	@Override
 	public boolean supports(CredentialItem... items) {
-		for (CredentialItem i : items)
+		for (CredentialItem i : items) {
 			if (i instanceof CredentialItem.StringType)
 				continue;
 			else if (i instanceof CredentialItem.CharArrayType)
@@ -72,6 +72,7 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 				continue;
 			else
 				return false;
+		}
 		return true;
 	}
 
@@ -79,20 +80,22 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 	public boolean get(final URIish uri, final CredentialItem... items)
 			throws UnsupportedCredentialItem {
 
-		if (items.length == 0)
+		if (items.length == 0) {
 			return true;
+		}
 
 		CredentialItem.Username userItem = null;
 		CredentialItem.Password passwordItem = null;
 		boolean isSpecial = false;
 
-		for (CredentialItem item : items)
+		for (CredentialItem item : items) {
 			if (item instanceof CredentialItem.Username)
 				userItem = (CredentialItem.Username) item;
 			else if (item instanceof CredentialItem.Password)
 				passwordItem = (CredentialItem.Password) item;
 			else
 				isSpecial = true;
+		}
 
 		if (!isSpecial && (userItem != null || passwordItem != null)) {
 			UserPasswordCredentials credentials = null;
@@ -124,8 +127,9 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 				if (items.length == 1) {
 					CredentialItem item = items[0];
 					result[0] = getSingleSpecial(shell, uri, item);
-				} else
+				} else {
 					result[0] = getMultiSpecial(shell, uri, items);
+				}
 			}
 		});
 
@@ -170,8 +174,9 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 					0);
 			dialog.setBlockOnOpen(true);
 			int r = dialog.open();
-			if (r < 0)
+			if (r < 0) {
 				return false;
+			}
 
 			switch (resultIDs[r]) {
 			case IDialogConstants.YES_ID: {
@@ -186,9 +191,10 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 				// abort
 				return false;
 			}
-		} else
+		} else {
 			// generically handles all other types of items
 			return getMultiSpecial(shell, uri, item);
+		}
 	}
 
 	/**
@@ -203,8 +209,9 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 		CustomPromptDialog dialog = new CustomPromptDialog(shell, uri, UIText.EGitCredentialsProvider_information, items);
 		dialog.setBlockOnOpen(true);
 		int r = dialog.open();
-		if (r == Window.OK)
+		if (r == Window.OK) {
 			return true;
+		}
 		return false;
 	}
 

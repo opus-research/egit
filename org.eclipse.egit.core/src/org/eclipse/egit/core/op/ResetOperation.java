@@ -107,8 +107,9 @@ public class ResetOperation implements IEGitOperation {
 			};
 			// lock workspace to protect working tree changes
 			ResourcesPlugin.getWorkspace().run(action, monitor);
-		} else
+		} else {
 			reset(monitor);
+		}
 	}
 
 	private void reset(IProgressMonitor monitor) throws CoreException {

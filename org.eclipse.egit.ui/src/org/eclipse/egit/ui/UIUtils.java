@@ -219,8 +219,9 @@ public class UIUtils {
 				String patternString = contents;
 				// ignore spaces in the beginning
 				while (patternString.length() > 0
-						&& patternString.charAt(0) == ' ')
+						&& patternString.charAt(0) == ' ') {
 					patternString = patternString.substring(1);
+				}
 
 				// we quote the string as it may contain spaces
 				// and other stuff colliding with the Pattern
@@ -229,8 +230,9 @@ public class UIUtils {
 				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
 
 				// make sure we add a (logical) * at the end
-				if (!patternString.endsWith(".*")) //$NON-NLS-1$
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
 					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
 
 				// let's compile a case-insensitive pattern (assumes ASCII only)
 				Pattern pattern;
@@ -290,8 +292,9 @@ public class UIUtils {
 				// don't store empty values
 				if (value.length() > 0) {
 					// we don't want to save too much in the preferences
-					if (value.length() > 2000)
+					if (value.length() > 2000) {
 						value = value.substring(0, 1999);
+					}
 					// now we need to mix the value into the list
 					IDialogSettings settings = org.eclipse.egit.ui.Activator
 							.getDefault().getDialogSettings();
@@ -361,8 +364,9 @@ public class UIUtils {
 				String patternString = contents;
 				// ignore spaces in the beginning
 				while (patternString.length() > 0
-						&& patternString.charAt(0) == ' ')
+						&& patternString.charAt(0) == ' ') {
 					patternString = patternString.substring(1);
+				}
 
 				// we quote the string as it may contain spaces
 				// and other stuff colliding with the Pattern
@@ -371,8 +375,9 @@ public class UIUtils {
 				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
 
 				// make sure we add a (logical) * at the end
-				if (!patternString.endsWith(".*")) //$NON-NLS-1$
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
 					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
 
 				// let's compile a case-insensitive pattern (assumes ASCII only)
 				Pattern pattern;

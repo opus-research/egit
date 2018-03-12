@@ -188,20 +188,22 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 	@Override
 	public boolean performOk() {
 		boolean ok = true;
-		if (userIsDirty)
+		if (userIsDirty) {
 			try {
 				userConfigEditor.save();
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
 				ok = false;
 			}
-		if (sysIsDirty)
+		}
+		if (sysIsDirty) {
 			try {
 				sysConfigEditor.save();
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
 				ok = false;
 			}
+		}
 		// Use array since calling save updates the dirty state which updates
 		// the set of dirty repositories that is being iterated over
 		final Repository[] repos = dirtyRepositories
@@ -223,8 +225,9 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 		try {
 			userConfigEditor.restore();
 			sysConfigEditor.restore();
-			for (ConfigurationEditorComponent editor : repoConfigEditors.values())
+			for (ConfigurationEditorComponent editor : repoConfigEditors.values()) {
 				editor.restore();
+			}
 
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
@@ -296,8 +299,9 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 			File configFile = ((FileBasedConfig) repository.getConfig()).getFile();
 			repositoryConfig = new FileBasedConfig(configFile, repository
 					.getFS());
-		} else
+		} else {
 			repositoryConfig = repository.getConfig();
+		}
 		ConfigurationEditorComponent editorComponent = new ConfigurationEditorComponent(repoConfigComposite, repositoryConfig, true, false) {
 			@Override
 			protected void setErrorMessage(String message) {

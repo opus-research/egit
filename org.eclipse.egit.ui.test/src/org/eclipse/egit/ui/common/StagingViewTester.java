@@ -106,8 +106,10 @@ public class StagingViewTester {
 		if (select) {
 			if (!button.isChecked())
 				button.select();
-		} else if (button.isChecked())
-			button.deselect();
+		} else {
+			if (button.isChecked())
+				button.deselect();
+		}
 	}
 
 	public String getCommitMessage() {

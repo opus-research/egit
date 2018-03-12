@@ -198,9 +198,10 @@ public class RebaseResultDialog extends MessageDialog {
 			commitMessage.getTextWidget().setText(commit.getFullMessage());
 			commitId.setText(commit.name());
 			dc = repo.lockDirCache();
-			for (int i = 0; i < dc.getEntryCount(); i++)
+			for (int i = 0; i < dc.getEntryCount(); i++) {
 				if (dc.getEntry(i).getStage() > 0)
 					conflictPaths.add(dc.getEntry(i).getPathString());
+			}
 			if (conflictPaths.size() > 0) {
 				message = NLS.bind(UIText.RebaseResultDialog_Conflicting,
 						Integer.valueOf(conflictPaths.size()));
@@ -286,11 +287,12 @@ public class RebaseResultDialog extends MessageDialog {
 		startMergeButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				if (startMergeButton.getSelection())
+				if (startMergeButton.getSelection()) {
 					nextSteps
 							.getTextWidget()
 							.setText(
 									UIText.RebaseResultDialog_NextStepsAfterResolveConflicts);
+				}
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -407,13 +409,14 @@ public class RebaseResultDialog extends MessageDialog {
 				IPath repoWorkdirPath = new Path(repo.getWorkTree().getPath());
 				for (String repoPath : conflictPaths) {
 					IPath filePath = repoWorkdirPath.append(repoPath);
-					for (IProject project : validProjects)
+					for (IProject project : validProjects) {
 						if (project.getLocation().isPrefixOf(filePath)) {
 							IResource res = project.getFile(filePath
 									.removeFirstSegments(project.getLocation()
 											.segmentCount()));
 							resourceList.add(res);
 						}
+					}
 				}
 				IResource[] resources = new IResource[resourceList.size()];
 				resourceList.toArray(resources);
@@ -432,7 +435,7 @@ public class RebaseResultDialog extends MessageDialog {
 				}
 				CompareUI.openCompareEditor(input);
 				return;
-			} else if (skipCommitButton.getSelection())
+			} else if (skipCommitButton.getSelection()) {
 				// skip the rebase
 				try {
 					final RebaseOperation op = new RebaseOperation(repo,
@@ -443,7 +446,7 @@ public class RebaseResultDialog extends MessageDialog {
 				} catch (CoreException e) {
 					Activator.handleError(e.getMessage(), e, true);
 				}
-			else if (abortRebaseButton.getSelection())
+			} else if (abortRebaseButton.getSelection()) {
 				// abort the rebase
 				try {
 					final RebaseOperation op = new RebaseOperation(repo,
@@ -454,7 +457,7 @@ public class RebaseResultDialog extends MessageDialog {
 				} catch (CoreException e) {
 					Activator.handleError(e.getMessage(), e, true);
 				}
-			else if (doNothingButton.getSelection()) {
+			} else if (doNothingButton.getSelection()) {
 				// nothing
 			}
 		}

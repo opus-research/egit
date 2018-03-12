@@ -103,8 +103,9 @@ public class MergeOperation implements IEGitOperation {
 				} catch (IOException e) {
 					throw new TeamException(CoreText.MergeOperation_InternalError, e);
 				}
-				if (mergeStrategy != null)
+				if (mergeStrategy != null) {
 					merge.setStrategy(mergeStrategy);
+				}
 				try {
 					mergeResult = merge.call();
 					mymonitor.worked(1);

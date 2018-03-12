@@ -134,9 +134,10 @@ public class SpellcheckableMessageAreaTest {
 		List<WrapEdit> wrapEdits = SpellcheckableMessageArea
 				.calculateWrapEdits(text,
 						SpellcheckableMessageArea.MAX_LINE_WIDTH, lineDelimiter);
-		for (WrapEdit wrapEdit : wrapEdits)
+		for (WrapEdit wrapEdit : wrapEdits) {
 			sb.replace(wrapEdit.getStart(),
 					wrapEdit.getStart() + wrapEdit.getLength(), lineDelimiter);
+		}
 		return sb.toString();
 	}
 }

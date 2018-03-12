@@ -100,13 +100,14 @@ public class NonDeletedFilesDialog extends MessageDialog {
 			filePaths.addAll(newPaths);
 			tree.setInput(filePaths);
 			tree.expandAll();
-			if (refresh)
+			if (refresh) {
 				try {
 					ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
 							IResource.DEPTH_INFINITE, null);
 				} catch (CoreException e) {
 					Activator.handleError(e.getMessage(), e, false);
 				}
+			}
 			retry.setEnabled(!filePaths.isEmpty());
 			return;
 		}

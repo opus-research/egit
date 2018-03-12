@@ -100,8 +100,9 @@ public class CommitNonWSChangesTest extends LocalRepositoryTestCase {
 	}
 
 	private void selectAllCheckboxes(SWTBotTable table) {
-		for (int i = 0; i < table.rowCount(); i++)
+		for (int i = 0; i < table.rowCount(); i++) {
 			table.getTableItem(i).check();
+		}
 	}
 
 	private void clickOnCommit() throws Exception {

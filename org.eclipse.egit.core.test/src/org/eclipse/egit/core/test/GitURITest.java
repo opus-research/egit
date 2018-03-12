@@ -170,12 +170,14 @@ public class GitURITest {
 		 *            property value or <code>null</code> to remove the property
 		 */
 		public synchronized void setProperty(String key, Object value) {
-			if (properties == null)
+			if (properties == null) {
 				properties = new HashMap();
-			if (value == null)
+			}
+			if (value == null) {
 				properties.remove(key);
-			else
+			} else {
 				properties.put(key, value);
+			}
 
 		}
 
@@ -187,8 +189,9 @@ public class GitURITest {
 		 * @return property value or <code>null</code>
 		 */
 		public synchronized Object getProperty(String key) {
-			if (properties == null)
+			if (properties == null) {
 				return null;
+			}
 			return properties.get(key);
 		}
 	}

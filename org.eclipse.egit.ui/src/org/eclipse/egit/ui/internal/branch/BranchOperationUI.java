@@ -285,8 +285,9 @@ public class BranchOperationUI {
 			return null;
 		}
 
-		if (dialog.open() != Window.OK)
+		if (dialog.open() != Window.OK) {
 			return null;
+		}
 		return dialog.getRefName();
 	}
 

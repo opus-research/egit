@@ -217,12 +217,13 @@ public class CommitOperation implements IEGitOperation {
 				addCommand.addFilepattern(path);
 				fileAdded = true;
 			}
-		if (fileAdded)
+		if (fileAdded) {
 			try {
 				addCommand.call();
 			} catch (NoFilepatternException e) {
 				throw new CoreException(Activator.error(e.getMessage(), e));
 			}
+		}
 	}
 
 	public ISchedulingRule getSchedulingRule() {

@@ -117,9 +117,10 @@ public class FetchDestinationPage extends WizardPage {
 					.getPreviousPage(this);
 			String sourceString = fsp.getSource();
 			sourceText.setText(sourceString);
-			if (sourceString.length() > 0)
+			if (sourceString.length() > 0) {
 				destinationText.setText(Constants.R_REMOTES + config.getName()
 						+ '/' + Repository.shortenRefName(sourceString));
+			}
 			destinationText.setFocus();
 		}
 	}
@@ -143,8 +144,9 @@ public class FetchDestinationPage extends WizardPage {
 			List<Ref> proposals = new ArrayList<Ref>();
 			try {
 				for (Ref ref : repository.getRefDatabase().getRefs(
-						Constants.R_REMOTES).values())
+						Constants.R_REMOTES).values()) {
 					proposals.add(ref);
+				}
 				this.trackingBranches = proposals;
 			} catch (IOException e) {
 				setErrorMessage(UIText.FetchDestinationPage_CouldNotGetBranchesMessage);
@@ -162,9 +164,10 @@ public class FetchDestinationPage extends WizardPage {
 			return;
 		}
 		boolean found = false;
-		for (Ref ref : getRemoteRefs())
+		for (Ref ref : getRemoteRefs()) {
 			if (ref.getName().equals(destinationText.getText()))
 				found = true;
+		}
 		if (!found)
 			setMessage(NLS.bind(
 					UIText.FetchDestinationPage_TrackingBranchNotFoundMessage,

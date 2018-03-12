@@ -83,8 +83,9 @@ public class GitModelSynchronize {
 			});
 
 			fetchJob.schedule();
-		} else
+		} else {
 			fireSynchronizeAction(window, gsdSet, mappings);
+		}
 	}
 
 	/**

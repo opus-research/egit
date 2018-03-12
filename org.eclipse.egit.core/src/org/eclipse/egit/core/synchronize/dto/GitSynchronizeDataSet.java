@@ -67,8 +67,9 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 				&& data.getIncludedPaths().size() > 0)
 			containsFolderLevelSynchronizationRequest = true;
 
-		for (IProject proj : data.getProjects())
+		for (IProject proj : data.getProjects()) {
 			projectMapping.put(proj.getName(), data);
+		}
 	}
 
 	/**
@@ -121,8 +122,9 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 */
 	public IProject[] getAllProjects() {
 		Set<IProject> resource = new HashSet<IProject>();
-		for (GitSynchronizeData data : gsdSet)
+		for (GitSynchronizeData data : gsdSet) {
 			resource.addAll(data.getProjects());
+		}
 		return resource.toArray(new IProject[resource.size()]);
 	}
 

@@ -114,10 +114,10 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 	/** {@inheritDoc} */
 	@Override
 	public void commit(IProgressMonitor monitor) throws CoreException {
-		if (isDirty())
-			if (isConnected())
+		if (isDirty()) {
+			if (isConnected()) {
 				super.commit(monitor);
-			else {
+			} else {
 				IResource resource = getResource();
 				if (resource instanceof IFile) {
 					FileOutputStream out = null;
@@ -135,8 +135,9 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 					} finally {
 						fireContentChanged();
 						RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-						if (mapping != null)
+						if (mapping != null) {
 							mapping.getRepository().fireEvent(new IndexChangedEvent());
+						}
 						if (out != null)
 							try {
 								out.close();
@@ -145,6 +146,7 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 					}
 				}
 			}
+		}
 	}
 
 	/** {@inheritDoc} */
@@ -157,11 +159,12 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 	 * @see org.eclipse.core.runtime.IAdaptable#getAdapter(java.lang.Class)
 	 */
 	public Object getAdapter(Class adapter) {
-		if (adapter == ISharedDocumentAdapter.class)
+		if (adapter == ISharedDocumentAdapter.class) {
 			if (isSharedDocumentsEnable())
 				return getSharedDocumentAdapter();
 			else
 				return null;
+		}
 		return Platform.getAdapterManager().getAdapter(this, adapter);
 	}
 

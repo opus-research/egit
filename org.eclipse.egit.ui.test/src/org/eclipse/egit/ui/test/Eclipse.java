@@ -39,9 +39,11 @@ public class Eclipse {
 
 	private void closeAllShells() {
 		SWTBotShell[] shells = bot.shells();
-		for (SWTBotShell shell : shells)
-			if (!isEclipseShell(shell))
+		for (SWTBotShell shell : shells) {
+			if (!isEclipseShell(shell)) {
 				shell.close();
+			}
+		}
 	}
 
 	@SuppressWarnings("boxing")
@@ -57,14 +59,16 @@ public class Eclipse {
 
 	public void closeAllEditors() {
 		List<? extends SWTBotEditor> editors = bot.editors();
-		for (SWTBotEditor editor : editors)
+		for (SWTBotEditor editor : editors) {
 			editor.close();
+		}
 	}
 
 	public void saveAll() {
 		List<? extends SWTBotEditor> editors = bot.editors();
-		for (SWTBotEditor editor : editors)
+		for (SWTBotEditor editor : editors) {
 			editor.save();
+		}
 	}
 	
 	/**

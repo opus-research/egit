@@ -243,8 +243,9 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 				return false;
 			}
 			statusMessage(false, ""); //$NON-NLS-1$
-		} else
+		} else {
 			statusMessage(false, UIText.CommitSearchPage_ContainingTextHint);
+		}
 		return true;
 	}
 
