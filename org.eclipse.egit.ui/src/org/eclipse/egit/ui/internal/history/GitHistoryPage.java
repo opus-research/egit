@@ -138,6 +138,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	/** Fill comment */
 	private IAction fillCommentAction;
 
+	/** Compare mode toggle */
+	private IAction compareModeAction;
+
+	private boolean compareMode = false;
+
+	/** Show all branches toggle */
+	private IAction showAllBranchesAction;
+
+	private boolean showAllBranches = false;
+
 	/** An error text to be shown instead of the control */
 	private StyledText errorText;
 
@@ -357,31 +367,32 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		showAllResourceVersionsAction
 				.setChecked(showAllFilter == showAllResourceVersionsAction.filter);
 
-		BooleanPrefAction compareModeAction = new BooleanPrefAction(
-				UIPreferences.RESOURCEHISTORY_COMPARE_MODE,
-				UIText.GitHistoryPage_CompareModeMenuLabel) {
-			@Override
-			void apply(boolean value) {
-				// nothing, just switch the preference
+		compareModeAction = new Action(UIText.GitHistoryPage_compareMode,
+				IAction.AS_CHECK_BOX) {
+			public void run() {
+				compareMode = !compareMode;
+				setChecked(compareMode);
+				fileViewer.setCompareMode(compareMode);
 			}
 		};
-		actionsToDispose.add(compareModeAction);
-
 		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
+		compareModeAction.setChecked(compareMode);
+		compareModeAction.setText(UIText.GitHistoryPage_CompareModeMenuLabel);
 		compareModeAction.setToolTipText(UIText.GitHistoryPage_compareMode);
+		fileViewer.setCompareMode(compareMode);
 
-		BooleanPrefAction showAllBranchesAction = new BooleanPrefAction(
-				UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES,
-				UIText.GitHistoryPage_ShowAllBranchesMenuLabel) {
-
-			@Override
-			void apply(boolean value) {
+		showAllBranchesAction = new Action(
+				UIText.GitHistoryPage_showAllBranches, IAction.AS_CHECK_BOX) {
+			public void run() {
+				showAllBranches = !showAllBranches;
+				setChecked(showAllBranches);
 				refresh();
 			}
 		};
-		actionsToDispose.add(showAllBranchesAction);
-
 		showAllBranchesAction.setImageDescriptor(UIIcons.BRANCH);
+		showAllBranchesAction.setChecked(showAllBranches);
+		showAllBranchesAction
+				.setText(UIText.GitHistoryPage_ShowAllBranchesMenuLabel);
 		showAllBranchesAction
 				.setToolTipText(UIText.GitHistoryPage_showAllBranches);
 
@@ -415,7 +426,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	 *            switch compare mode button of the view on / off
 	 */
 	public void setCompareMode(boolean compareMode) {
-		store.setValue(UIPreferences.RESOURCEHISTORY_COMPARE_MODE, compareMode);
+		if (compareModeAction != null) {
+			this.compareMode = compareMode;
+			compareModeAction.setChecked(compareMode);
+		}
 	}
 
 	@Override
@@ -451,8 +465,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 						IHandlerService.class);
 				Command cmd = srv.getCommand(HistoryViewCommands.SHOWVERSIONS);
 				Parameterization[] parms;
-				if (store
-						.getBoolean(UIPreferences.RESOURCEHISTORY_COMPARE_MODE)) {
+				if (compareMode) {
 					try {
 						IParameter parm = cmd
 								.getParameter(HistoryViewCommands.COMPARE_MODE_PARAM);
@@ -522,11 +535,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				refschangedRunnable = new Runnable() {
 					public void run() {
 						if (!getControl().isDisposed()) {
-							if (GitTraceLocation.HISTORYVIEW.isActive())
+							// TODO is this the right location?
+							if (GitTraceLocation.UI.isActive())
 								GitTraceLocation
 										.getTrace()
 										.trace(
-												GitTraceLocation.HISTORYVIEW
+												GitTraceLocation.UI
 														.getLocation(),
 												"Executing async repository changed event"); //$NON-NLS-1$
 							refschangedRunnable = null;
@@ -761,8 +775,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			revInfoSplit.setMaximizedControl(commentViewer.getControl());
 		} else if (!showComment && showFiles) {
 			graphDetailSplit.setMaximizedControl(null);
-			// the parent of the control!
-			revInfoSplit.setMaximizedControl(fileViewer.getControl().getParent());
+			revInfoSplit.setMaximizedControl(fileViewer.getControl());
 		} else if (!showComment && !showFiles) {
 			graphDetailSplit.setMaximizedControl(graph.getControl());
 		}
@@ -836,7 +849,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
 				UIText.ResourceHistory_toggleCommentWrap) {
 			void apply(boolean wrap) {
-				// nothing, just set the Preference
+				commentViewer.setWrap(wrap);
 			}
 		};
 		a.apply(a.isChecked());
@@ -849,7 +862,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL,
 				UIText.ResourceHistory_toggleCommentFill) {
 			void apply(boolean fill) {
-				// nothing, just set the Preference
+				commentViewer.setFill(fill);
 			}
 		};
 		a.apply(a.isChecked());
@@ -863,9 +876,15 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				UIText.ResourceHistory_toggleRevComment) {
 			void apply(final boolean value) {
 				layout();
+			}
+
+			@Override
+			public void run() {
+				super.run();
 				wrapCommentAction.setEnabled(isChecked());
 				fillCommentAction.setEnabled(isChecked());
 			}
+
 		};
 		actionsToDispose.add(a);
 		return a;
@@ -1166,7 +1185,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		}
 
 		try {
-			if (store.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES)) {
+
+			if (showAllBranches) {
 				markStartAllRefs(Constants.R_HEADS);
 				markStartAllRefs(Constants.R_REMOTES);
 			} else
@@ -1222,25 +1242,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		return true;
 	}
 
-	/**
-	 * @param message
-	 *            the message to display instead of the control
-	 */
-	public void setErrorMessage(final String message) {
-		getHistoryPageSite().getShell().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				StackLayout layout = (StackLayout) getControl().getParent()
-						.getLayout();
-				if (message != null) {
-					errorText.setText(message);
-					layout.topControl = errorText;
-				} else {
-					errorText.setText(""); //$NON-NLS-1$
-					layout.topControl = getControl();
-				}
-				getControl().getParent().layout();
-			}
-		});
+	private void setErrorMessage(String message) {
+		StackLayout layout = (StackLayout) getControl().getParent().getLayout();
+		if (message != null) {
+			errorText.setText(message);
+			layout.topControl = errorText;
+		} else {
+			errorText.setText(""); //$NON-NLS-1$
+			layout.topControl = getControl();
+		}
+		getControl().getParent().layout();
 	}
 
 	/**
@@ -1482,6 +1493,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					Activator.handleError(e.getMessage(), e, false);
 				}
 			}
+			apply(isChecked());
 		}
 
 		abstract void apply(boolean value);
