@@ -12,7 +12,6 @@ package org.eclipse.egit.core;
 
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.jgit.annotations.Nullable;
 
@@ -42,10 +41,7 @@ public class AdapterUtils {
 			return target.cast(object);
 		}
 		if (object instanceof IAdaptable) {
-			V adapter = Utils.getAdapter(((IAdaptable) object), target);
-			if (adapter != null || object instanceof PlatformObject) {
-				return adapter;
-			}
+			return Utils.getAdapter(((IAdaptable) object), target);
 		}
 		Object adapted = Platform.getAdapterManager().getAdapter(object, target);
 		return target.cast(adapted);
