@@ -42,22 +42,20 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 	private final IResourceChangeListener resourceChangeListener;
 
-	private final GitResourceVariantTreeSubscriber subscriber;
-
 	/**
 	 * @param subscriber
 	 * @param manager
 	 * @param gsds
 	 */
-	public GitSubscriberMergeContext(GitResourceVariantTreeSubscriber subscriber,
+	public GitSubscriberMergeContext(final GitResourceVariantTreeSubscriber subscriber,
 			ISynchronizationScopeManager manager, GitSynchronizeDataSet gsds) {
 		super(subscriber, manager);
 		this.gsds = gsds;
-		this.subscriber = subscriber;
+
 
 		repoChangeListener = new RepositoryChangeListener() {
 			public void repositoryChanged(RepositoryMapping which) {
-				update(which);
+				update(subscriber, which);
 			}
 		};
 		resourceChangeListener = new IResourceChangeListener() {
@@ -69,7 +67,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 				for (IResourceDelta delta : event.getDelta().getAffectedChildren()) {
 					RepositoryMapping repo = RepositoryMapping.getMapping(delta.getResource());
 					if (repo != null)
-						update(repo);
+						update(subscriber, repo);
 				}
 			}
 		};
@@ -111,13 +109,12 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 	public void dispose() {
 		GitProjectData.removeRepositoryChangeListener(repoChangeListener);
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
-		subscriber.dispose();
-
 		super.dispose();
 	}
 
 
-	private void update(RepositoryMapping which) {
+	private void update(GitResourceVariantTreeSubscriber subscriber,
+			RepositoryMapping which) {
 		for (GitSynchronizeData gsd : gsds) {
 			if (which.getRepository().equals(gsd.getRepository())) {
 				try {
