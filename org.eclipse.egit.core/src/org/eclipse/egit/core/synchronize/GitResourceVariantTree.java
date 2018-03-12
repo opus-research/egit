@@ -77,9 +77,13 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 				if (tw.next())
 					return new GitBlobResourceVariant(repo,
 							tw.getObjectId(nth), path);
-			} else
-				return new GitFolderResourceVariant(repo, revCommit.getTree(),
+			} else {
+				while (tw.next() && !path.equals(tw.getPathString()))
+					if (tw.isSubtree())
+						tw.enterSubtree();
+				return new GitFolderResourceVariant(repo, tw.getObjectId(nth),
 						path);
+			}
 		} catch (IOException e) {
 			throw new TeamException(
 					NLS.bind(
