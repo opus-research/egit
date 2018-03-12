@@ -27,8 +27,6 @@ public class HistoryPageInput {
 
 	private final Object singleFile;
 
-	private final Object singleItem;
-
 	/**
 	 * @param repository
 	 *            the {@link Repository}
@@ -39,16 +37,11 @@ public class HistoryPageInput {
 			final IResource[] resourceItems) {
 		this.repo = repository;
 		list = resourceItems;
-		if (resourceItems.length == 1) {
-			singleItem = resourceItems[0];
-			if (resourceItems[0].getType() == IResource.FILE)
-				singleFile = resourceItems[0];
-			else
-				singleFile = null;
-		} else {
-			singleItem = null;
+		if (resourceItems.length == 1
+				&& resourceItems[0].getType() == IResource.FILE)
+			singleFile = resourceItems[0];
+		else
 			singleFile = null;
-		}
 		files = null;
 	}
 
@@ -61,13 +54,10 @@ public class HistoryPageInput {
 	public HistoryPageInput(final Repository repository, final File[] fileItems) {
 		this.repo = repository;
 		list = null;
-		if (fileItems.length == 1) {
-			singleItem = fileItems[0];
-			singleFile = Boolean.valueOf(fileItems[0].isFile());
-		} else {
-			singleItem = null;
+		if (fileItems.length == 1 && fileItems[0].isFile())
+			singleFile = fileItems[0];
+		else
 			singleFile = null;
-		}
 		files = fileItems;
 	}
 
@@ -79,7 +69,6 @@ public class HistoryPageInput {
 		this.repo = repository;
 		list = null;
 		singleFile = null;
-		singleItem = null;
 		files = null;
 	}
 
@@ -110,14 +99,6 @@ public class HistoryPageInput {
 	 */
 	public Object getSingleFile() {
 		return singleFile;
-	}
-
-	/**
-	 * @return the single Item, either a {@link IResource} or {@link File}, or
-	 *         <code>null</code>
-	 */
-	public Object getSingleItem() {
-		return singleItem;
 	}
 
 	/**

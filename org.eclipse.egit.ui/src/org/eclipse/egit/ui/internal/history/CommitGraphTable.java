@@ -439,6 +439,11 @@ class CommitGraphTable {
 								.add(getCommandContributionItem(
 										HistoryViewCommands.COMPARE_WITH_TREE,
 										UIText.GitHistoryPage_CompareWithCurrentHeadMenu));
+				else if (selectionSize == 2)
+					popupMgr
+							.add(getCommandContributionItem(
+									HistoryViewCommands.COMPARE_VERSIONS,
+									UIText.GitHistoryPage_CompareWithEachOtherMenuLabel));
 				if (selectionSize > 0) {
 					popupMgr.add(getCommandContributionItem(
 							HistoryViewCommands.OPEN,
@@ -498,10 +503,6 @@ class CommitGraphTable {
 				resetManager.add(getCommandContributionItem(
 						HistoryViewCommands.RESET,
 						UIText.GitHistoryPage_ResetHardMenuLabel, parameters));
-			} else if (selectionSize == 2) {
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.COMPARE_VERSIONS,
-						UIText.GitHistoryPage_CompareWithEachOtherMenuLabel));
 			}
 			popupMgr.add(new Separator());
 
