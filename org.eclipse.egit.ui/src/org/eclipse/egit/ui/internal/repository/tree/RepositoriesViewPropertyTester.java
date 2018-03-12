@@ -29,7 +29,7 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
-		boolean value = internalTest(receiver, property);
+		boolean value = internalTest(receiver, property, args, expectedValue);
 		boolean trace = GitTraceLocation.PROPERTIESTESTER.isActive();
 		if (trace)
 			GitTraceLocation
@@ -39,7 +39,8 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 		return value;
 	}
 
-	private boolean internalTest(Object receiver, String property) {
+	private boolean internalTest(Object receiver, String property, Object[] args,
+			Object expectedValue) {
 
 		if (!(receiver instanceof RepositoryTreeNode))
 			return false;

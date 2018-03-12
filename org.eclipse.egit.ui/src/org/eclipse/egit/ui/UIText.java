@@ -903,9 +903,6 @@ public class UIText extends NLS {
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
-	public static String CheckoutConflictDialog_conflictMessage;
-
-	/** */
 	public static String CheckoutDialog_Message;
 
 	/** */
@@ -2761,9 +2758,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchResultDialog_CheckoutConflictsTitle;
-
-	/** */
-	public static String BranchResultDialog_dontShowAgain;
 
 	/** */
 	public static String CheckoutDialog_ErrorCouldNotCreateNewRef;
