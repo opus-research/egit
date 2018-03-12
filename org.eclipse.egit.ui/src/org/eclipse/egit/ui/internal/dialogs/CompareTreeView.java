@@ -165,8 +165,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 	private boolean showEquals = false;
 
-	private boolean partialMaps;
-
 	@Override
 	public void createPartControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
@@ -493,7 +491,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 								throws InvocationTargetException,
 								InterruptedException {
 							try {
-								if (buildMaps || partialMaps)
+								if (buildMaps)
 									buildMaps(repo, baseCommit, compareCommit,
 											monitor);
 								PlatformUI.getWorkbench().getDisplay()
@@ -529,7 +527,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		boolean useIndex = compareVersion.equals(INDEX_VERSION);
 		fileNodes.clear();
 		containerNodes.clear();
-		partialMaps = !showEquals;
 		boolean checkIgnored = false;
 		TreeWalk tw = new TreeWalk(repository);
 		try {
@@ -603,10 +600,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 					boolean equalContent = compareVersionIterator
 							.getEntryObjectId().equals(
 									baseVersionIterator.getEntryObjectId());
-					if (!showEquals && equalContent)
+					if (equalContent)
 						continue;
-					type = equalContent ? Type.FILE_BOTH_SIDES_SAME
-							: Type.FILE_BOTH_SIDES_DIFFER;
+					type = Type.FILE_BOTH_SIDES_DIFFER;
 				} else if (compareVersionIterator != null
 						&& baseVersionIterator == null) {
 					type = Type.FILE_DELETED;
@@ -615,13 +611,10 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 					type = Type.FILE_ADDED;
 				}
 
-				IFile file = null;
-				if (type != Type.FILE_BOTH_SIDES_SAME) {
-					monitor.setTaskName(currentPath.toString());
+				monitor.setTaskName(currentPath.toString());
 
-					file = ResourceUtil.getFileForLocation(repository,
+				IFile file = ResourceUtil.getFileForLocation(repository,
 						repoRelativePath);
-				}
 
 				if (baseVersionIterator != null) {
 					if (baseCommit == null) {
@@ -663,13 +656,11 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				// If a file is not "equal content", the container nodes up to
 				// the root must be shown in any case, so propagate the
 				// change of the "only equal content" flag.
-				if (type != Type.FILE_BOTH_SIDES_SAME) {
-					IPath path = currentPath;
-					while (path.segmentCount() > 0) {
-						path = path.removeLastSegments(1);
-						ContainerNode node = containerNodes.get(path);
-						node.setOnlyEqualContent(false);
-					}
+				IPath path = currentPath;
+				while (path.segmentCount() > 0) {
+					path = path.removeLastSegments(1);
+					ContainerNode node = containerNodes.get(path);
+					node.setOnlyEqualContent(false);
 				}
 			}
 		} finally {
