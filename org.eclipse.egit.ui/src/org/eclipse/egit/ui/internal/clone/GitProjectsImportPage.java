@@ -4,7 +4,6 @@ package org.eclipse.egit.ui.internal.clone;
  * Copyright (c) 2004, 2008 IBM Corporation and others.
  * Copyright (C) 2007, Martin Oberhuber (martin.oberhuber@windriver.com)
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
- * Copyright (C) 2009, Mykola Nikishov <mn@mn.com.ua>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -95,12 +94,6 @@ public class GitProjectsImportPage extends WizardPage {
 		IProjectDescription description;
 
 		/**
-		 * Relative path to repository, '../.git' is by default. If you'll set
-		 * it null you're on your own, no checks for null performed.
-		 */
-		File repository = new File("../.git"); //$NON-NLS-1$
-
-		/**
 		 * Create a record for a project based on the info in the file.
 		 *
 		 * @param file
@@ -108,19 +101,6 @@ public class GitProjectsImportPage extends WizardPage {
 		ProjectRecord(File file) {
 			projectSystemFile = file;
 			setProjectName();
-		}
-
-		/**
-		 * Create a record for a project based on the info in the file.
-		 *
-		 * @param file
-		 * @param aRepository
-		 *            relative path to repository
-		 */
-		ProjectRecord(File file, File aRepository) {
-			projectSystemFile = file;
-			setProjectName();
-			repository = aRepository;
 		}
 
 		/**
@@ -732,7 +712,7 @@ public class GitProjectsImportPage extends WizardPage {
 					monitor, openTicks));
 			if (share) {
 				ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
-						project, record.repository);
+						project);
 				connectProviderOperation
 						.run(new SubProgressMonitor(monitor, 20));
 			}
