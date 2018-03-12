@@ -24,7 +24,7 @@ public class OpenInCommitViewerHandler extends AbstractReflogCommandHandler {
 		Repository repository = getRepository(event);
 		RevCommit commit = getSelectedCommit(event, repository);
 		if (commit != null)
-				CommitEditor.openQuiet((new RepositoryCommit(repository, commit)));
+			CommitEditor.openQuiet((new RepositoryCommit(repository, commit)));
 		return null;
 	}
 
