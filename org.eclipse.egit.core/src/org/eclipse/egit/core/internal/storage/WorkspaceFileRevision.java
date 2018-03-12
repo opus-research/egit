@@ -17,7 +17,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.team.core.history.IFileRevision;
 
 /** An {@link IFileRevision} for the current version in the workspace. */
-public class WorkspaceFileRevision extends GitFileRevision {
+public class WorkspaceFileRevision extends GitFileRevision implements IFileRevision {
 	private final IResource rsrc;
 
 	/**
@@ -34,6 +34,11 @@ public class WorkspaceFileRevision extends GitFileRevision {
 
 	public boolean isPropertyMissing() {
 		return false;
+	}
+
+	public IFileRevision withAllProperties(IProgressMonitor monitor)
+			throws CoreException {
+		return null;
 	}
 
 	public String getAuthor() {

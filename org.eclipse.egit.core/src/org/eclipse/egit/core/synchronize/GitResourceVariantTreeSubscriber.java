@@ -12,6 +12,7 @@
 package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.jgit.lib.Repository.stripWorkDir;
+import static org.eclipse.team.core.Team.isIgnoredHint;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,12 +49,12 @@ public class GitResourceVariantTreeSubscriber extends
 	/**
 	 * A resource variant tree of the remote branch(es).
 	 */
-	private GitRemoteResourceVariantTree remoteTree;
+	private IResourceVariantTree remoteTree;
 
 	/**
 	 * A resource variant tree against HEAD.
 	 */
-	private GitBaseResourceVariantTree baseTree;
+	private IResourceVariantTree baseTree;
 
 	private GitSynchronizeDataSet gsds;
 
@@ -89,7 +90,8 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public boolean isSupervised(IResource res) throws TeamException {
 		return IResource.FILE == res.getType()
-				&& gsds.contains(res.getProject()) && shouldBeIncluded(res);
+				&& gsds.contains(res.getProject()) && !isIgnoredHint(res)
+				&& shouldBeIncluded(res);
 	}
 
 	/**
@@ -203,17 +205,6 @@ public class GitResourceVariantTreeSubscriber extends
 		roots = null;
 		baseTree = null;
 		remoteTree = null;
-	}
-
-	/**
-	 * Disposes nested resources
-	 */
-	public void dispose() {
-		if (baseTree != null)
-			baseTree.dispose();
-		if (remoteTree != null)
-			remoteTree.dispose();
-		gsds.dispose();
 	}
 
 	@Override
