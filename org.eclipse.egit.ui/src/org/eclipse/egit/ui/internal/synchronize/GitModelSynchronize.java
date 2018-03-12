@@ -17,7 +17,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.mapping.RemoteResourceMappingContext;
@@ -96,13 +95,10 @@ public class GitModelSynchronize {
 			final Set<IResource> copy = newResources;
 			newResources = new HashSet<IResource>();
 			for (IResource resource : copy) {
-				if (resource instanceof IFile) {
-					ResourceMapping[] mappings = ResourceUtil
-							.getResourceMappings((IFile) resource,
-									ResourceMappingContext.LOCAL_CONTEXT);
-					allMappings.addAll(Arrays.asList(mappings));
-					newResources.addAll(collectResources(mappings));
-				}
+				ResourceMapping[] mappings = ResourceUtil.getResourceMappings(
+						resource, ResourceMappingContext.LOCAL_CONTEXT);
+				allMappings.addAll(Arrays.asList(mappings));
+				newResources.addAll(collectResources(mappings));
 			}
 		} while (includedResources.addAll(newResources));
 
@@ -117,13 +113,13 @@ public class GitModelSynchronize {
 			final ResourceMapping[] mappings = allMappings
 					.toArray(new ResourceMapping[allMappings.size()]);
 			final GitSynchronizeData data = new GitSynchronizeData(repository,
-					srcRev, dstRev, true, includedResources);
+					srcRev, dstRev, true);
 			launch(new GitSynchronizeDataSet(data), mappings);
 		} else {
 			final ResourceMapping[] mappings = allMappings
 					.toArray(new ResourceMapping[allMappings.size()]);
 			final GitSynchronizeData data = new GitSynchronizeData(repository,
-					srcRev, dstRev, includeLocal, includedResources);
+					srcRev, dstRev, includeLocal);
 			launch(new GitSynchronizeDataSet(data), mappings);
 		}
 	}

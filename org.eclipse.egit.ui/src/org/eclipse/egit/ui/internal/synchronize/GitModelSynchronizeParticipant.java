@@ -296,16 +296,15 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 			RepositoryMapping mapping = RepositoryMapping.findRepositoryMapping(repo);
 			if (mapping != null) {
 				IMemento child = memento.createChild(DATA_NODE_KEY);
-				child.putString(CONTAINER_PATH_KEY,
-						getPathForResource(mapping.getContainer()));
+				child.putString(CONTAINER_PATH_KEY, getPathForContainer(mapping.getContainer()));
 				child.putString(SRC_REV_KEY, gsd.getSrcRev());
 				child.putString(DST_REV_KEY, gsd.getDstRev());
 				child.putBoolean(INCLUDE_LOCAL_KEY, gsd.shouldIncludeLocal());
-				Set<? extends IResource> includedPaths = gsd.getIncludedPaths();
+				Set<IContainer> includedPaths = gsd.getIncludedPaths();
 				if (includedPaths != null && !includedPaths.isEmpty()) {
 					IMemento paths = child.createChild(INCLUDED_PATHS_NODE_KEY);
-					for (IResource resource : includedPaths) {
-						String path = getPathForResource(resource);
+					for (IContainer container : includedPaths) {
+						String path = getPathForContainer(container);
 						paths.createChild(INCLUDED_PATH_KEY).putString(
 								INCLUDED_PATH_KEY, path);
 					}
@@ -392,8 +391,8 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		return value != null ? value.booleanValue() : defaultValue;
 	}
 
-	private String getPathForResource(IResource resource) {
-		return resource.getLocation().toPortableString();
+	private String getPathForContainer(IContainer container) {
+		return container.getLocation().toPortableString();
 	}
 
 	private Set<IContainer> getIncludedPaths(IMemento memento) {
