@@ -344,10 +344,9 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		 * project to refresh and schedule the refresh as a job.
 		 */
 		void triggerRefresh() {
-			if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
+			if (GitTraceLocation.UI.isActive())
 				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
-						"Triggered refresh"); //$NON-NLS-1$
+						GitTraceLocation.UI.getLocation(), "Triggered refresh"); //$NON-NLS-1$
 			IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 					.getProjects();
 			Set<IProject> toRefresh = new HashSet<IProject>();
@@ -415,28 +414,29 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				for (Repository repo : repos) {
 					if (monitor.isCanceled())
 						break;
-					if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
+					// TODO is this the right location?
+					if (GitTraceLocation.UI.isActive())
 						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.REPOSITORYCHANGESCANNER
-										.getLocation(),
+								GitTraceLocation.UI.getLocation(),
 								"Scanning " + repo + " for changes"); //$NON-NLS-1$ //$NON-NLS-2$
 
 					repo.scanForRepoChanges();
 					monitor.worked(1);
 				}
 			} catch (IOException e) {
-				if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
+				// TODO is this the right location?
+				if (GitTraceLocation.UI.isActive())
 					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.REPOSITORYCHANGESCANNER
-									.getLocation(),
+							GitTraceLocation.UI.getLocation(),
 							"Stopped rescheduling " + getName() + "job"); //$NON-NLS-1$ //$NON-NLS-2$
 				return createErrorStatus(UIText.Activator_scanError, e);
 			} finally {
 				monitor.done();
 			}
-			if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
+			// TODO is this the right location?
+			if (GitTraceLocation.UI.isActive())
 				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
+						GitTraceLocation.UI.getLocation(),
 						"Rescheduling " + getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
 			if (doReschedule)
 				schedule(REPO_SCAN_INTERVAL);
@@ -483,27 +483,26 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			focusListener = null;
 		}
 
-		if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
+		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
+					GitTraceLocation.UI.getLocation(),
 					"Trying to cancel " + rcs.getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		rcs.setReschedule(false);
 
 		rcs.cancel();
-		if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
+		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
+					GitTraceLocation.UI.getLocation(),
 					"Trying to cancel " + refreshJob.getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
 		refreshJob.cancel();
 
 		rcs.join();
 		refreshJob.join();
 
-		if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
+		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
-					"Jobs terminated"); //$NON-NLS-1$
+					GitTraceLocation.UI.getLocation(), "Jobs terminated"); //$NON-NLS-1$
 
 		super.stop(context);
 		plugin = null;
