@@ -3,7 +3,6 @@
 <plugin>
    <extension-point id="commitMessageProvider" name="%CommitMessageProviderExtension-point.name" schema="schema/commitMessageProvider.exsd"/>
    <extension-point id="cloneSourceProvider" name="%CloneSourceProviderExtension-point.name" schema="schema/cloneSourceProvider.exsd"/>
-   <extension-point id="branchNameProvider" name="%BranchNameProviderExtension-point.name" schema="schema/branchNameProvider.exsd"/>
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.eclipse.egit.ui.PluginPreferenceInitializer"/>
    </extension>
@@ -4576,14 +4575,6 @@
             icon="icons/obj16/reword.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.history.Edit"
-            icon="icons/obj16/editconfig.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.commit.Edit"
-            icon="icons/obj16/editconfig.gif">
-      </image>
-      <image
             commandId="org.eclipse.egit.ui.commit.Checkout"
             icon="icons/obj16/checkout.gif">
       </image>
@@ -5253,16 +5244,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.commit.command.RewordHandler"
             id="org.eclipse.egit.ui.commit.Reword"
             name="%RewordCommitCommand.name">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.EditHandler"
-            id="org.eclipse.egit.ui.history.Edit"
-            name="%EditCommitCommand.name">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.commit.command.EditHandler"
-            id="org.eclipse.egit.ui.commit.Edit"
-            name="%EditCommitCommand.name">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.RevertHandler"
