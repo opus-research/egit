@@ -12,6 +12,7 @@
 package org.eclipse.egit.ui.internal.actions;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -42,6 +43,8 @@ import org.eclipse.egit.ui.internal.preferences.GitPreferenceRoot;
 import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.revision.ResourceEditableRevision;
 import org.eclipse.jface.window.Window;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
 
@@ -66,20 +69,20 @@ public class MergeToolActionHandler extends RepositoryActionHandler {
 			input = new GitMergeEditorInput(useWorkspace, locations);
 		}
 		if (GitPreferenceRoot.useExternalMergeTool()) {
-			openInCompareExternal(input);
+			openMergeToolExternal(input);
 		} else {
-			openInCompareInternal(input);
+			openMergeToolInternal(input);
 		}
 		return null;
 	}
 
-	private static void openInCompareInternal(CompareEditorInput input) {
+	private static void openMergeToolInternal(CompareEditorInput input) {
 		CompareUI.openCompareEditor(input);
 	}
 
-	private static void openInCompareExternal(CompareEditorInput input) {
+	private static void openMergeToolExternal(CompareEditorInput input) {
 		System.out.println(
-				"---------------- openInCompare with external tool ------------------"); //$NON-NLS-1$
+				"---------------- openMergeToolExternal ----------------"); //$NON-NLS-1$
 
 		final GitMergeEditorInput gitMergeInput = (GitMergeEditorInput) input;
 
@@ -121,35 +124,55 @@ public class MergeToolActionHandler extends RepositoryActionHandler {
 					FileRevisionTypedElement baseRevision = (FileRevisionTypedElement) node
 							.getAncestor();
 					// get file names
-					String mergedCompareFilePath = null;
-					String mergedCompareFileName = null;
-					String localCompareFilePath = null;
-					String remoteCompareFilePath = null;
-					String baseCompareFilePath = null;
+					String mergedAbsoluteFilePath = null;
+					String mergedRelativeFilePath = null;
+					String mergedFileName = null;
+					String localAbsoluteFilePath = null;
+					String remoteAbsoluteFilePath = null;
+					String baseAbsoluteFilePath = null;
 					String mergeCmd = null;
+					String mergeBaseLessCmd = null;
 					boolean prompt = false;
 					boolean trustExitCode = true;
 					// boolean keepBackup = false; // TODO
 					boolean writeToTemp = false;
 					boolean keepTemporaries = false;
-					File baseDir = null;
-					File tempDir = null;
+					File mergedDirPath = null;
+					File tempDirPath = null;
+					File workDirPath = null;
+					Repository repository = null;
 					if (leftResource != null) {
-						mergedCompareFilePath = leftResource.getRawLocation()
+						mergedAbsoluteFilePath = leftResource.getRawLocation()
 								.toOSString();
-						mergedCompareFileName = leftResource.getName();
-						baseDir = leftResource.getRawLocation().toFile()
+						mergedFileName = leftResource.getName();
+						mergedDirPath = leftResource.getRawLocation().toFile()
 								.getParentFile();
-						System.out.println("mergedCompareFilePath: " //$NON-NLS-1$
-								+ mergedCompareFilePath);
+						System.out.println("file: " //$NON-NLS-1$
+								+ mergedAbsoluteFilePath);
 					}
-					if (mergedCompareFilePath != null && leftRevision != null
+					if (mergedAbsoluteFilePath != null) {
+						IPath[] paths = new Path[1];
+						paths[0] = new Path(mergedAbsoluteFilePath);
+						Map<Repository, Collection<String>> pathsByRepository = ResourceUtil
+								.splitPathsByRepository(Arrays.asList(paths));
+						Set<Repository> repos = pathsByRepository.keySet();
+						if (repos.size() == 1) {
+							repository = repos.iterator().next();
+						}
+						if (repository != null) {
+							workDirPath = repository.getWorkTree();
+						}
+					}
+					if (mergedAbsoluteFilePath != null && leftRevision != null
 							&& rightRevision != null) {
+						// get the relative project path from left revision here
+						mergedRelativeFilePath = leftRevision.getPath();
 						// get the tool
 						ITool tool = GitPreferenceRoot.getExternalMergeTool();
 						if (tool != null) {
 							// get the command
-							mergeCmd = tool.getCommand();
+							mergeCmd = tool.getCommand(); // empty or index = 0 is the default command (with $BASE support)
+							mergeBaseLessCmd = tool.getCommand(1); // index = 1 is the alternative command (without $BASE support)
 							// get other attribute values
 							prompt = GitPreferenceRoot
 									.getExternalMergeToolAttributeValueBoolean(
@@ -171,7 +194,7 @@ public class MergeToolActionHandler extends RepositoryActionHandler {
 								int response = ToolsUtils.askUserAboutToolExecution(
 										"mergetool", //$NON-NLS-1$
 										"Merging file: " //$NON-NLS-1$
-												+ mergedCompareFilePath
+														+ mergedRelativeFilePath
 												+ "\n\nLaunch '" //$NON-NLS-1$
 												+ tool.getName()
 												+ "' ?"); //$NON-NLS-1$
@@ -183,60 +206,82 @@ public class MergeToolActionHandler extends RepositoryActionHandler {
 							}
 							// check if temp dir should be created
 							if (writeToTemp) {
-								tempDir = ToolsUtils
+								tempDirPath = ToolsUtils
 										.createDirectoryForTempFiles();
-								baseDir = tempDir;
+								mergedDirPath = tempDirPath;
 							}
-							localCompareFilePath = ToolsUtils.loadToTempFile(baseDir,
-									mergedCompareFileName, "LOCAL", //$NON-NLS-1$
+							localAbsoluteFilePath = ToolsUtils.loadToTempFile(
+									mergedDirPath,
+									mergedFileName, "LOCAL", //$NON-NLS-1$
 									leftRevision, writeToTemp);
-							remoteCompareFilePath = ToolsUtils.loadToTempFile(baseDir,
-									mergedCompareFileName, "REMOTE", //$NON-NLS-1$
+							remoteAbsoluteFilePath = ToolsUtils.loadToTempFile(
+									mergedDirPath,
+									mergedFileName, "REMOTE", //$NON-NLS-1$
 									rightRevision, writeToTemp);
-							baseCompareFilePath = ToolsUtils.loadToTempFile(baseDir,
-									mergedCompareFileName, "BASE", //$NON-NLS-1$
+							baseAbsoluteFilePath = ToolsUtils.loadToTempFile(
+									mergedDirPath,
+									mergedFileName, "BASE", //$NON-NLS-1$
 									baseRevision, writeToTemp);
 						}
 					}
 					// execute
-					int exitCode = ToolsUtils.executeTool(mergedCompareFilePath,
-							localCompareFilePath,
-							remoteCompareFilePath, baseCompareFilePath,
-							mergeCmd, tempDir);
-					// delete temp
-					if (tempDir != null && !keepTemporaries) {
-						ToolsUtils.deleteDirectoryForTempFiles(tempDir);
+					int exitCode = -1;
+					try {
+						exitCode = ToolsUtils.executeTool(workDirPath,
+								mergedAbsoluteFilePath,
+								localAbsoluteFilePath, remoteAbsoluteFilePath,
+										baseAbsoluteFilePath,
+										baseAbsoluteFilePath != null ? mergeCmd
+												: mergeBaseLessCmd,
+										tempDirPath);
+					} catch (IOException | InterruptedException e) {
+						e.printStackTrace();
+						ToolsUtils.informUserAboutError("mergetool - error", //$NON-NLS-1$
+								e.getMessage() + "\n\nMerge aborted!"); //$NON-NLS-1$
+						return; // abort the merge process
+					} finally {
+						System.out.println("exitCode: " //$NON-NLS-1$
+								+ Integer.toString(exitCode));
+						// delete temp
+						if (tempDirPath != null && !keepTemporaries) {
+							ToolsUtils.deleteDirectoryForTempFiles(tempDirPath);
+						}
 					}
 					// add file to stage if successfully merged
-					if (exitCode == 0) {
-						if (!trustExitCode) {
-							int response = ToolsUtils.askUserAboutToolExecution(
-									"mergetool", //$NON-NLS-1$
-									"Merging file: " //$NON-NLS-1$
-											+ mergedCompareFilePath
-											+ "\n\nWas the merge successful?"); //$NON-NLS-1$
-							if (response == SWT.YES) {
-								/*
-								 * TODO: implement add
-								AddCommand addCommand = new Git(repo).add();
-								boolean fileAdded = false;
-								for (String path : notTracked)
-									if (commitFileList.contains(path)) {
-										addCommand.addFilepattern(path);
-										fileAdded = true;
-									}
-								if (fileAdded)
-									try {
-										addCommand.call();
-									} catch (Exception e) {
-										throw new CoreException(Activator
-												.error(e.getMessage(), e));
-									}
-								*/
-							} else if (response == SWT.CANCEL) {
-								return;
-							}
+					boolean addFile = false;
+					if (trustExitCode) {
+						System.out.println("trustExitCode: true"); //$NON-NLS-1$
+						if (exitCode == 0) {
+							addFile = true;
 						}
+					} else {
+						System.out.println("trustExitCode: false"); //$NON-NLS-1$
+						int response = ToolsUtils.askUserAboutToolExecution(
+								"mergetool - trustExitCode: false", //$NON-NLS-1$
+								"Merging file: " //$NON-NLS-1$
+										+ mergedRelativeFilePath
+										+ "\n\nWas the merge successful?"); //$NON-NLS-1$
+						if (response == SWT.YES) {
+							addFile = true;
+						} else if (response == SWT.CANCEL) {
+							return; // abort the merge process
+						}
+					}
+					if (repository != null) {
+						if (addFile && GitPreferenceRoot.autoAddToIndex()
+								&& mergedAbsoluteFilePath != null) {
+							System.out.println("addFile: " //$NON-NLS-1$
+									+ mergedFileName);
+							Git git = new Git(repository);
+							try {
+								git.add().addFilepattern(mergedRelativeFilePath)
+										.call();
+							} catch (GitAPIException e) {
+								e.printStackTrace();
+							}
+							git.close();
+						}
+						repository.close();
 					}
 					break;
 				}

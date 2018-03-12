@@ -148,32 +148,37 @@ public class ToolsUtils {
 	}
 
 	/**
+	 * @param workingDirectory
 	 * @param mergedCompareFilePath
 	 * @param localCompareFilePath
 	 * @param remoteCompareFilePath
 	 * @param baseCompareFilePath
-	 * @param mergeCmd
+	 * @param toolCmd
 	 * @param tempDir
 	 * @return the exit code
+	 * @throws InterruptedException
+	 * @throws IOException
 	 */
-	public static int executeTool(String mergedCompareFilePath,
+	public static int executeTool(File workingDirectory,
+			String mergedCompareFilePath,
 			String localCompareFilePath, String remoteCompareFilePath,
-			String baseCompareFilePath, String mergeCmd, File tempDir) {
+			String baseCompareFilePath, String toolCmd, File tempDir)
+					throws IOException, InterruptedException {
 		if (mergedCompareFilePath != null && localCompareFilePath != null
-				&& remoteCompareFilePath != null && mergeCmd != null) {
+				&& remoteCompareFilePath != null && toolCmd != null) {
 			if (baseCompareFilePath == null) {
 				baseCompareFilePath = ""; //$NON-NLS-1$
 			}
 			String osname = System.getProperty("os.name", "") //$NON-NLS-1$ //$NON-NLS-2$
 					.toLowerCase();
-			int indexLast = mergeCmd.indexOf(".sh"); //$NON-NLS-1$
+			int indexLast = toolCmd.indexOf(".sh"); //$NON-NLS-1$
 			if (osname.indexOf("windows") != -1 //$NON-NLS-1$
 					&& indexLast != -1) {
-				return runExternalToolMsysBash(mergeCmd,
+				return runExternalToolMsysBash(workingDirectory, toolCmd,
 						mergedCompareFilePath, localCompareFilePath,
 						remoteCompareFilePath, baseCompareFilePath, tempDir);
 			} else {
-				return runExternalToolNative(mergeCmd,
+				return runExternalToolNative(workingDirectory, toolCmd,
 						mergedCompareFilePath, localCompareFilePath,
 						remoteCompareFilePath, baseCompareFilePath);
 			}
@@ -182,25 +187,31 @@ public class ToolsUtils {
 	}
 
 	/**
+	 * @param workingDirectory
 	 * @param command
 	 * @param mergedCompareFilePath
 	 * @param localCompareFilePath
 	 * @param remoteCompareFilePath
 	 * @param baseCompareFilePath
 	 * @return the exit code
+	 * @throws InterruptedException
+	 * @throws IOException
 	 */
-	public static int runExternalToolNative(String command,
+	public static int runExternalToolNative(File workingDirectory,
+			String command,
 			String mergedCompareFilePath, String localCompareFilePath,
-			String remoteCompareFilePath, String baseCompareFilePath) {
+			String remoteCompareFilePath, String baseCompareFilePath)
+					throws IOException, InterruptedException {
 		command = command.replace("$MERGED", mergedCompareFilePath); //$NON-NLS-1$
 		command = command.replace("$LOCAL", localCompareFilePath); //$NON-NLS-1$
 		command = command.replace("$REMOTE", remoteCompareFilePath); //$NON-NLS-1$
 		command = command.replace("$BASE", baseCompareFilePath); //$NON-NLS-1$
 		String[] envp = null;
-		return runCommand(command, envp);
+		return runCommand(command, envp, workingDirectory);
 	}
 
 	/**
+	 * @param workingDirectory
 	 * @param cmd
 	 * @param mergedCompareFilePath
 	 * @param localCompareFilePath
@@ -208,34 +219,31 @@ public class ToolsUtils {
 	 * @param baseCompareFilePath
 	 * @param reusedTempDir
 	 * @return the exit code
+	 * @throws InterruptedException
+	 * @throws IOException
 	 */
-	public static int runExternalToolMsysBash(String cmd,
+	public static int runExternalToolMsysBash(File workingDirectory, String cmd,
 			String mergedCompareFilePath, String localCompareFilePath,
 			String remoteCompareFilePath, String baseCompareFilePath,
-			File reusedTempDir) {
+			File reusedTempDir) throws IOException, InterruptedException {
 		String command = cmd;
 		String cmdFilePath = null;
 		File tempDir = null;
-		try {
-			if (reusedTempDir == null) {
-				tempDir = createTempDirectory();
-			} else {
-				tempDir = reusedTempDir;
-			}
-			File cmdFile = new File(tempDir, "jgit-windows.sh"); //$NON-NLS-1$
-			cmdFilePath = cmdFile.getAbsolutePath();
-			cmdFilePath = cmdFilePath.replace("\\", "/"); //$NON-NLS-1$ //$NON-NLS-2$
-			// command = command.replace("$LOCAL", leftCompareFilePath);
-			// //$NON-NLS-1$
-			// command = command.replace("$REMOTE", rightCompareFilePath);
-			// //$NON-NLS-1$
-			Files.write(cmdFile.toPath(), command.getBytes(),
-					StandardOpenOption.CREATE, StandardOpenOption.WRITE,
-					StandardOpenOption.TRUNCATE_EXISTING);
-
-		} catch (IOException e) {
-			e.printStackTrace();
+		if (reusedTempDir == null) {
+			tempDir = createTempDirectory();
+		} else {
+			tempDir = reusedTempDir;
 		}
+		File cmdFile = new File(tempDir, "jgit-windows.sh"); //$NON-NLS-1$
+		cmdFilePath = cmdFile.getAbsolutePath();
+		cmdFilePath = cmdFilePath.replace("\\", "/"); //$NON-NLS-1$ //$NON-NLS-2$
+		// command = command.replace("$LOCAL", leftCompareFilePath);
+		// //$NON-NLS-1$
+		// command = command.replace("$REMOTE", rightCompareFilePath);
+		// //$NON-NLS-1$
+		Files.write(cmdFile.toPath(), command.getBytes(),
+				StandardOpenOption.CREATE, StandardOpenOption.WRITE,
+				StandardOpenOption.TRUNCATE_EXISTING);
 		command = "cmd.exe /C start /wait \"$bash-name\" \"$bash-cmd\" --login -c \"" //$NON-NLS-1$
 				+ cmdFilePath + "\""; //$NON-NLS-1$
 		command = command.replace("$bash-name", "bash"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -246,14 +254,8 @@ public class ToolsUtils {
 				"REMOTE=" + remoteCompareFilePath, //$NON-NLS-1$
 				"BASE=" + baseCompareFilePath //$NON-NLS-1$
 		}; // $NON-NLS-1$
-		int exitCode = runCommand(command, envp);
-		if (tempDir != null && reusedTempDir == null) {
-			try {
-				deleteTempDirectory(tempDir);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+		int exitCode = runCommand(command, envp, workingDirectory);
+		deleteTempDirectory(tempDir);
 		return exitCode;
 	}
 
@@ -277,32 +279,28 @@ public class ToolsUtils {
 		return fop;
 	}
 
-	private static int runCommand(String command, String[] envp) {
+	private static int runCommand(String command, String[] envp,
+			File workingDirectory)
+			throws IOException, InterruptedException {
 		int exitCode = 0;
 		System.out.println("command: " + command); //$NON-NLS-1$
 		String[] cmdarray = command.split("\\s+"); //$NON-NLS-1$
-		try {
-			Process p = Runtime.getRuntime().exec(cmdarray, envp);
-			System.out.println("Waiting for command..."); //$NON-NLS-1$
-			exitCode = p.waitFor();
-			System.out.println("command done."); //$NON-NLS-1$
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		Process p = Runtime.getRuntime().exec(cmdarray, envp, workingDirectory);
+		System.out.println("Waiting for command..."); //$NON-NLS-1$
+		exitCode = p.waitFor();
+		System.out.println("command done."); //$NON-NLS-1$
 		return exitCode;
 	}
 
 	/**
-	 * @param baseDir
+	 * @param baseDirPath
 	 * @param fileName
 	 * @param subName
 	 * @param revision
 	 * @param writeToTemp
 	 * @return the temp file name loaded
 	 */
-	public static String loadToTempFile(File baseDir, String fileName,
+	public static String loadToTempFile(File baseDirPath, String fileName,
 			String subName, FileRevisionTypedElement revision,
 			boolean writeToTemp) {
 		String tempFileName = null;
@@ -310,16 +308,16 @@ public class ToolsUtils {
 			System.out.println("revision.getName: " //$NON-NLS-1$
 					+ revision.getName());
 			String revisionFilePath = revision.getPath();
-			if (baseDir != null && revisionFilePath != null) {
+			if (baseDirPath != null && revisionFilePath != null) {
 				System.out.println("revision.getPath: " //$NON-NLS-1$
 						+ revisionFilePath);
 				try {
 					if (writeToTemp) {
-						File subPath = createSubDirectory(baseDir, subName);
+						File subPath = createSubDirectory(baseDirPath, subName);
 						tempFileName = subPath.getAbsolutePath()
 								+ File.separator + fileName;
 					} else {
-						tempFileName = baseDir.getAbsolutePath()
+						tempFileName = baseDirPath.getAbsolutePath()
 								+ File.separator + fileName + "." //$NON-NLS-1$
 								+ subName;
 					}
@@ -344,6 +342,19 @@ public class ToolsUtils {
 			String message) {
 		MessageBox mbox = new MessageBox(Display.getCurrent().getActiveShell(),
 				SWT.ICON_QUESTION | SWT.YES | SWT.NO | SWT.CANCEL);
+		mbox.setText(textHeader);
+		mbox.setMessage(message);
+		return mbox.open();
+	}
+
+	/**
+	 * @param textHeader
+	 * @param message
+	 * @return yes or no
+	 */
+	public static int informUserAboutError(String textHeader, String message) {
+		MessageBox mbox = new MessageBox(Display.getCurrent().getActiveShell(),
+				SWT.ICON_ERROR | SWT.OK);
 		mbox.setText(textHeader);
 		mbox.setMessage(message);
 		return mbox.open();
