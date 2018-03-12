@@ -463,9 +463,6 @@ public class UIText extends NLS {
 	public static String RepositoryActionHandler_CouldNotGetSelection_message;
 
 	/** */
-	public static String RepositoryActionHandler_NoSelectionMessage;
-
-	/** */
 	public static String RepositorySearchDialog_browse;
 
 	/** */
