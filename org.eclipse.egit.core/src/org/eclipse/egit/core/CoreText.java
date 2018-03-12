@@ -66,9 +66,6 @@ public class CoreText extends NLS {
 	public static String CommitOperation_couldNotFindRepositoryMapping;
 
 	/** */
-	public static String ConfigureFetchAfterCloneTask_couldNotFetch;
-
-	/** */
 	public static String ConnectProviderOperation_connecting;
 
 	/** */
@@ -79,15 +76,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String DeleteTagOperation_exceptionMessage;
-
-	/** */
-	public static String DiffHeaderFormat_Email;
-
-	/** */
-	public static String DiffHeaderFormat_None;
-
-	/** */
-	public static String DiffHeaderFormat_Oneline;
 
 	/** */
 	public static String DiscardChangesOperation_discardFailed;
@@ -186,9 +174,6 @@ public class CoreText extends NLS {
 	public static String ResetOperation_updatingFailed;
 
 	/** */
-	public static String MergeOperation_CheckoutConflict;
-
-	/** */
 	public static String MergeOperation_InternalError;
 
 	/** */
@@ -225,16 +210,10 @@ public class CoreText extends NLS {
 	public static String CreateLocalBranchOperation_CreatingBranchMessage;
 
 	/** */
+	public static String CreatePatchOperation_commitRequired;
+
+	/** */
 	public static String CreatePatchOperation_repoRequired;
-
-	/** */
-	public static String CreatePatchOperation_cannotCreatePatchForMergeCommit;
-
-	/** */
-	public static String CreatePatchOperation_cannotCreatePatchForFirstCommit;
-
-	/** */
-	public static String CreatePatchOperation_patchFileCouldNotBeWritten;
 
 	/** */
 	public static String IndexDiffCacheEntry_reindexing;
@@ -370,12 +349,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitRemoteFolder_fetchingMembers;
-
-	/** */
-	public static String GitURI_InvalidSCMURL;
-
-	/** */
-	public static String GitURI_InvalidURI;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
