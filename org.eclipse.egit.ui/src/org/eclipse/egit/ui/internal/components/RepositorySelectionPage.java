@@ -178,7 +178,8 @@ public class RepositorySelectionPage extends BaseWizardPage {
 					URIish u = new URIish(text);
 					if (Transport.canHandleProtocol(u, FS.DETECTED)) {
 						String s = u.getScheme();
-						if (s.equals(DEFAULT_SCHEMES[S_GIT])
+						// s may be null if an existing local directory was in text
+						if (s != null && s.equals(DEFAULT_SCHEMES[S_GIT])
 								|| s.equals(DEFAULT_SCHEMES[S_SSH])
 								|| text.endsWith(Constants.DOT_GIT))
 							preset = text;
@@ -325,8 +326,10 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		newLabel(g, UIText.RepositorySelectionPage_promptURI + ":"); //$NON-NLS-1$
 		uriText = new Text(g, SWT.BORDER);
 
-		if (presetUri != null)
+		if (presetUri != null) {
 			uriText.setText(presetUri);
+			uriText.selectAll();
+		}
 
 		uriText.setLayoutData(createFieldGridData());
 		uriText.addModifyListener(new ModifyListener() {
