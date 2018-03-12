@@ -52,7 +52,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.URIish;
 
 /**
  * Content Provider for the Git Repositories View
@@ -131,7 +130,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 						refs.add(new RefNode(node, repo, refEntry.getValue()));
 				}
 			} catch (IOException e) {
-				return handleException(e, node);
+				handleException(e, node);
 			}
 
 			return refs.toArray();
@@ -147,7 +146,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 						refs.add(new RefNode(node, repo, refEntry.getValue()));
 				}
 			} catch (IOException e) {
-				return handleException(e, node);
+				handleException(e, node);
 			}
 
 			return refs.toArray();
@@ -161,7 +160,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 					refs.add(new TagNode(node, repo, refEntry.getValue()));
 				}
 			} catch (IOException e) {
-				return handleException(e, node);
+				handleException(e, node);
 			}
 
 			return refs.toArray();
@@ -178,7 +177,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 								.getValue()));
 				}
 			} catch (IOException e) {
-				return handleException(e, node);
+				handleException(e, node);
 			}
 
 			return refs.toArray();
@@ -286,33 +285,23 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 				rc = new RemoteConfig(node.getRepository().getConfig(),
 						remoteName);
 			} catch (URISyntaxException e) {
-				return handleException(e, node);
+				handleException(e, node);
+				return children.toArray();
 			}
 
 			if (!rc.getURIs().isEmpty())
 				children.add(new FetchNode(node, node.getRepository(), rc
 						.getURIs().get(0).toPrivateString()));
 
-			int uriCount = rc.getPushURIs().size();
-			if (!rc.getURIs().isEmpty())
-				uriCount++;
-
-			// show push if either a fetch or push uri is specified and
-			// at least one push specification
-			if (uriCount > 0 && !rc.getPushRefSpecs().isEmpty()) {
-				URIish firstUri;
-				if (!rc.getURIs().isEmpty())
-					firstUri = rc.getURIs().get(0);
+			if (!rc.getPushURIs().isEmpty())
+				if (rc.getPushURIs().size() == 1)
+					children.add(new PushNode(node, node.getRepository(), rc
+							.getPushURIs().get(0).toPrivateString()));
 				else
-					firstUri = rc.getPushURIs().get(0);
+					children.add(new PushNode(node, node.getRepository(), rc
+							.getPushURIs().get(0).toPrivateString()
+							+ "...")); //$NON-NLS-1$
 
-				if (uriCount == 1)
-					children.add(new PushNode(node, node.getRepository(),
-							firstUri.toPrivateString()));
-				else
-					children.add(new PushNode(node, node.getRepository(),
-							firstUri.toPrivateString() + "...")); //$NON-NLS-1$
-			}
 			return children.toArray();
 
 		}
@@ -338,17 +327,11 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 	}
 
-	private Object[] handleException(Exception e, RepositoryTreeNode parentNode) {
+	private void handleException(Exception e, RepositoryTreeNode parentNode) {
 		Activator.handleError(e.getMessage(), e, false);
 		// add a node indicating that there was an Exception
-		String message = e.getMessage();
-		if (message == null)
-			return new Object[] { new ErrorNode(parentNode, parentNode
-					.getRepository(),
-					UIText.RepositoriesViewContentProvider_ExceptionNodeText) };
-		else
-			return new Object[] { new ErrorNode(parentNode, parentNode
-					.getRepository(), message) };
+		new ErrorNode(parentNode, parentNode.getRepository(),
+				UIText.RepositoriesViewContentProvider_ExceptionNodeText);
 	}
 
 	public Object getParent(Object element) {
