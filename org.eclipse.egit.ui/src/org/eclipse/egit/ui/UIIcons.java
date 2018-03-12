@@ -170,6 +170,18 @@ public class UIIcons {
 	/** Signed Off By icon */
 	public final static ImageDescriptor SIGNED_OFF;
 
+	/** Check all icon */
+	public final static ImageDescriptor CHECK_ALL;
+
+	/** Uncheck all icon */
+	public final static ImageDescriptor UNCHECK_ALL;
+
+	/** Amend commit icon */
+	public final static ImageDescriptor AMEND_COMMIT;
+
+	/** Untracked file icon */
+	public final static ImageDescriptor UNTRACKED_FILE;
+
 	/** base URL */
 	public final static URL base;
 
@@ -231,6 +243,10 @@ public class UIIcons {
 		EXPAND_ALL = map("wizban/expandall.gif"); //$NON-NLS-1$
 		CHECKOUT = map("obj16/checkout.gif"); //$NON-NLS-1$
 		SIGNED_OFF = map("obj16/signed-off.png"); //$NON-NLS-1$
+		CHECK_ALL = map("obj16/check_all.gif"); //$NON-NLS-1$
+		UNCHECK_ALL = map("obj16/uncheck_all.gif"); //$NON-NLS-1$
+		AMEND_COMMIT = map("obj16/commit_amend.gif"); //$NON-NLS-1$
+		UNTRACKED_FILE = map("obj16/untracked_file.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {
