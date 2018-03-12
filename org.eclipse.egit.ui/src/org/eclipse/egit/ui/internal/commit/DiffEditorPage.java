@@ -10,12 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
-import static java.util.Arrays.asList;
-
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -37,7 +32,6 @@ import org.eclipse.jface.text.source.CompositeRuler;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
@@ -107,25 +101,6 @@ public class DiffEditorPage extends FormPage {
 		this(editor, "diffPage", UIText.DiffEditorPage_Title); //$NON-NLS-1$
 	}
 
-	/**
-	 * @param commit
-	 * @return diffs for changes of of a commit
-	 */
-	protected FileDiff[] getDiffs(RepositoryCommit commit) {
-		List<FileDiff> diffResult = new ArrayList<FileDiff>();
-
-		diffResult.addAll(asList(commit.getDiffs()));
-
-		if (commit.getRevCommit().getParentCount() > 2) {
-			RevCommit untrackedCommit = commit.getRevCommit().getParent(
-					StashEditorPage.PARENT_COMMIT_UNTRACKED);
-			diffResult.addAll(asList(new RepositoryCommit(commit
-					.getRepository(), untrackedCommit).getDiffs()));
-		}
-		Collections.sort(diffResult, FileDiff.PATH_COMPARATOR);
-		return diffResult.toArray(new FileDiff[0]);
-	}
-
 	private void formatDiff() {
 		final IDocument document = new Document();
 		formatter = new DiffStyleRangeFormatter(document);
@@ -136,18 +111,19 @@ public class DiffEditorPage extends FormPage {
 			protected IStatus run(IProgressMonitor monitor) {
 				RepositoryCommit commit = (RepositoryCommit) getEditor()
 						.getAdapter(RepositoryCommit.class);
-				FileDiff diffs[] = getDiffs(commit);
+				FileDiff diffs[] = commit.getDiffs();
 				monitor.beginTask("", diffs.length); //$NON-NLS-1$
 				Repository repository = commit.getRepository();
 				for (FileDiff diff : diffs) {
 					if (monitor.isCanceled())
 						break;
 					monitor.setTaskName(diff.getPath());
-					try {
-						formatter.write(repository, diff);
-					} catch (IOException ignore) {
-						// Ignored
-					}
+					if (diff.getBlobs().length == 2)
+						try {
+							formatter.write(repository, diff);
+						} catch (IOException ignore) {
+							// Ignored
+						}
 					monitor.worked(1);
 				}
 				monitor.done();
