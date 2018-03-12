@@ -19,7 +19,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public class ResetHandler extends AbstractReflogCommandHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Repository repository = getRepository(event);
 		String resetMode = event.getParameter(ResetMenu.RESET_MODE);

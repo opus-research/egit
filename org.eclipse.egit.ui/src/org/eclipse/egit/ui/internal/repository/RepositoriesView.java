@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -200,7 +200,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 				.getRepositoryCache();
 
 		configurationListener = new IPreferenceChangeListener() {
-			@Override
 			public void preferenceChange(PreferenceChangeEvent event) {
 				lastInputChange = System.currentTimeMillis();
 				scheduleRefresh(DEFAULT_REFRESH_DELAY);
@@ -208,7 +207,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		};
 
 		myRefsChangedListener = new RefsChangedListener() {
-			@Override
 			public void onRefsChanged(RefsChangedEvent e) {
 				lastRepositoryChange = System.currentTimeMillis();
 				scheduleRefresh(DEFAULT_REFRESH_DELAY);
@@ -216,7 +214,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		};
 
 		myIndexChangedListener = new IndexChangedListener() {
-			@Override
 			public void onIndexChanged(IndexChangedEvent event) {
 				lastRepositoryChange = System.currentTimeMillis();
 				scheduleRefresh(DEFAULT_REFRESH_DELAY);
@@ -225,7 +222,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		};
 
 		myConfigChangeListener = new ConfigChangedListener() {
-			@Override
 			public void onConfigChanged(ConfigChangedEvent event) {
 				lastRepositoryChange = System.currentTimeMillis();
 				scheduleRefresh(DEFAULT_REFRESH_DELAY);
@@ -233,7 +229,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		};
 
 		selectionChangedListener = new ISelectionListener() {
-			@Override
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
 				if (!reactOnSelection)
@@ -262,7 +257,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		emptyArea.setBackgroundMode(SWT.INHERIT_FORCE);
 		MenuManager manager = new MenuManager();
 		manager.addMenuListener(new IMenuListener() {
-			@Override
 			public void menuAboutToShow(IMenuManager m) {
 				getNavigatorActionService().fillContextMenu(m);
 			}
@@ -290,7 +284,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		final FormToolkit toolkit = new FormToolkit(emptyArea.getDisplay());
 		emptyArea.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				toolkit.dispose();
 			}
@@ -306,7 +299,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 				UIText.RepositoriesView_linkAdd, SWT.WRAP);
 		addLink.setForeground(linkColor);
 		addLink.addHyperlinkListener(new HyperlinkAdapter() {
-			@Override
 			public void linkActivated(HyperlinkEvent e) {
 				IHandlerService service = CommonUtils.getService(getViewSite(), IHandlerService.class);
 				UIUtils.executeCommand(service,
@@ -324,7 +316,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 				UIText.RepositoriesView_linkClone, SWT.WRAP);
 		cloneLink.setForeground(linkColor);
 		cloneLink.addHyperlinkListener(new HyperlinkAdapter() {
-			@Override
 			public void linkActivated(HyperlinkEvent e) {
 				IHandlerService service = CommonUtils.getService(getViewSite(), IHandlerService.class);
 				UIUtils.executeCommand(service,
@@ -343,7 +334,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		createLink.setForeground(linkColor);
 		createLink.setText(UIText.RepositoriesView_linkCreate);
 		createLink.addHyperlinkListener(new HyperlinkAdapter() {
-			@Override
 			public void linkActivated(HyperlinkEvent e) {
 				IHandlerService service = CommonUtils.getService(getViewSite(), IHandlerService.class);
 				UIUtils.executeCommand(service,
@@ -406,7 +396,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		CommonViewer viewer = super.createCommonViewer(aParent);
 		// handle the double-click event for tags and branches
 		viewer.addDoubleClickListener(new IDoubleClickListener() {
-			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				TreeSelection sel = (TreeSelection) event.getSelection();
 				RepositoryTreeNode element = (RepositoryTreeNode) sel
@@ -424,7 +413,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		});
 		// handle open event for the working directory
 		viewer.addOpenListener(new IOpenListener() {
-			@Override
 			public void open(OpenEvent event) {
 				TreeSelection sel = (TreeSelection) event.getSelection();
 				RepositoryTreeNode element = (RepositoryTreeNode) sel
@@ -588,7 +576,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		}
 
 		Display.getDefault().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				selectReveal(new StructuredSelection(nodesToShow));
 			}
@@ -660,7 +647,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 					return Status.CANCEL_STATUS;
 				PlatformUI.getWorkbench().getDisplay()
 						.asyncExec(new Runnable() {
-					@Override
 					public void run() {
 						if (!UIUtils.isUsable(tv))
 							return;
@@ -752,7 +738,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		myListeners.clear();
 	}
 
-	@Override
 	public boolean show(ShowInContext context) {
 		ISelection selection = context.getSelection();
 		if (selection instanceof IStructuredSelection) {
@@ -786,7 +771,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		return false;
 	}
 
-	@Override
 	public ShowInContext getShowInContext() {
 		IStructuredSelection selection = (IStructuredSelection) getCommonViewer()
 				.getSelection();
@@ -800,7 +784,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		return new ShowInContext(historyPageInput, new StructuredSelection(elements));
 	}
 
-	@Override
 	public String[] getShowInTargetIds() {
 		IStructuredSelection selection = (IStructuredSelection) getCommonViewer()
 				.getSelection();
@@ -879,8 +862,8 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 			if (ssel.getFirstElement() instanceof IResource)
 				showResource((IResource) ssel.getFirstElement());
 			if (ssel.getFirstElement() instanceof IAdaptable) {
-				IResource adapted = CommonUtils.getAdapter(((IAdaptable) ssel
-						.getFirstElement()), IResource.class);
+				IResource adapted = (IResource) ((IAdaptable) ssel
+						.getFirstElement()).getAdapter(IResource.class);
 				if (adapted != null)
 					showResource(adapted);
 			}

@@ -39,7 +39,6 @@ public class CloneCommand extends
 		this.presetURI = presetURI;
 	}
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		GitCloneWizard wizard;
 		if (presetURI == null)

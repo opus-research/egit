@@ -309,7 +309,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		Repository myRepository = lookupRepository(repositoryDir);
 		File gitDir = new File(testDirectory, REPO2);
 		Repository myRemoteRepository = FileRepositoryBuilder.create(gitDir);
-		myRemoteRepository.create(true);
+		myRemoteRepository.create();
 		// double-check that this is bare
 		assertTrue(myRemoteRepository.isBare());
 
@@ -558,7 +558,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (!prj.isAccessible())
 			throw new IllegalStateException("No project found");
 		IFile file = prj.getFile(new Path("folder/test.txt"));
-		file.refreshLocal(0, null);
 		file.setContents(new ByteArrayInputStream(newContent.getBytes(prj
 				.getDefaultCharset())), 0, null);
 	}

@@ -278,7 +278,6 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		// for some reason, checkboxwithlabel doesn't seem to work
 		dialog.bot().checkBox().deselect();
 		dialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		assertNotNull(repo.resolve(Constants.R_HEADS + "NewBranch"));
 	}
 
