@@ -65,22 +65,8 @@ import org.osgi.service.prefs.BackingStoreException;
  */
 public class RepositoryUtil {
 
-	/**
-	 * The preferences to store the absolute paths of all repositories shown in
-	 * the Git Repositories view
-	 *
-	 * @deprecated maintained to ensure compatibility for old EGit versions
-	 */
+	/** The preferences to store the directories known to the Git Repositories view */
 	public static final String PREFS_DIRECTORIES = "GitRepositoriesView.GitDirectories"; //$NON-NLS-1$
-
-	/**
-	 * The preferences to store paths of all repositories shown in the Git
-	 * Repositories view. For repositories located in the Eclipse workspace
-	 * store the relative path to the workspace root to enable moving and
-	 * copying the workspace. For repositories outside the Eclipse workspace
-	 * store their absolute path.
-	 */
-	public static final String PREFS_DIRECTORIES_REL = "GitRepositoriesView.GitDirectories.relative"; //$NON-NLS-1$
 
 	private final Map<String, Map<String, String>> commitMappingCache = new HashMap<String, Map<String, String>>();
 
@@ -89,14 +75,11 @@ public class RepositoryUtil {
 	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
 
-	private java.nio.file.Path workspacePath;
-
 	/**
 	 * Clients should obtain an instance from {@link Activator}
 	 */
 	RepositoryUtil() {
-		workspacePath = ResourcesPlugin.getWorkspace().getRoot().getLocation()
-				.toFile().toPath();
+		// nothing
 	}
 
 	/**
@@ -394,60 +377,24 @@ public class RepositoryUtil {
 	}
 
 	/**
-	 * Get the set of absolute path strings of all configured repositories.
+	 * Returns the configured repositories.
 	 *
-	 * @return set of absolute paths of all configured repositories' .git
-	 *         directories
+	 * @return set of configured repositories' .git directories
 	 *
 	 * @since 4.2
 	 */
 	@NonNull
 	public Set<String> getRepositories() {
-		String dirString;
-		Set<String> dirs;
+		String dirs;
 		synchronized (prefs) {
-			dirString = prefs.get(PREFS_DIRECTORIES_REL, ""); //$NON-NLS-1$
-			if (dirString.equals("")) { //$NON-NLS-1$
-				dirs = migrateAbolutePaths();
-			} else {
-				dirs = toDirSet(dirString);
-			}
+			dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
 		}
-		return dirs;
-	}
-
-	/**
-	 * Migrate set of absolute paths created by an older version of EGit to the
-	 * new format using relative paths for repositories located under the
-	 * Eclipse workspace
-	 *
-	 * @return set of absolute paths of all configured git repositories
-	 */
-	private Set<String> migrateAbolutePaths() {
-		String dirString;
-		Set<String> dirs;
-		dirString = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
-		dirs = toDirSet(dirString);
-		// save migrated list
-		saveDirs(dirs);
-		return dirs;
-	}
-
-	/**
-	 * @param dirs
-	 *            String with repository directories separated by path separator
-	 * @return set of absolute paths of repository directories, relative paths
-	 *         are resolved against the workspace root
-	 */
-	private Set<String> toDirSet(String dirs) {
 		if (dirs == null || dirs.length() == 0)
 			return Collections.emptySet();
 		Set<String> configuredStrings = new HashSet<String>();
 		StringTokenizer tok = new StringTokenizer(dirs, File.pathSeparator);
-		while (tok.hasMoreTokens()) {
-			configuredStrings
-					.add(workspacePath.resolve(tok.nextToken()).toString());
-		}
+		while (tok.hasMoreTokens())
+			configuredStrings.add(tok.nextToken());
 		return configuredStrings;
 	}
 
@@ -511,42 +458,19 @@ public class RepositoryUtil {
 	}
 
 	private void saveDirs(Set<String> gitDirStrings) {
-		StringBuilder sbRelative = new StringBuilder();
-		StringBuilder sbAbsolute = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
 		for (String gitDirString : gitDirStrings) {
-			sbRelative.append(relativizeToWorkspace(gitDirString));
-			sbRelative.append(File.pathSeparatorChar);
-			sbAbsolute.append(gitDirString);
-			sbAbsolute.append(File.pathSeparatorChar);
+			sb.append(gitDirString);
+			sb.append(File.pathSeparatorChar);
 		}
 
-		prefs.put(PREFS_DIRECTORIES_REL, sbRelative.toString());
-		// redundantly store absolute paths to ensure compatibility with older
-		// EGit versions
-		prefs.put(PREFS_DIRECTORIES, sbAbsolute.toString());
+		prefs.put(PREFS_DIRECTORIES, sb.toString());
 		try {
 			prefs.flush();
 		} catch (BackingStoreException e) {
 			IStatus error = new Status(IStatus.ERROR, Activator.getPluginId(),
 					e.getMessage(), e);
 			Activator.getDefault().getLog().log(error);
-		}
-	}
-
-	/**
-	 * @param pathString
-	 *            an absolute path String
-	 * @return if the given {@code pathString} is under the workspace root the
-	 *         relative path of {@code pathString} relative to the workspace
-	 *         root, otherwise the absolute path {@code pathString}. This
-	 *         enables moving or copying the workspace.
-	 */
-	private String relativizeToWorkspace(String pathString) {
-		java.nio.file.Path p = java.nio.file.Paths.get(pathString);
-		if (p.startsWith(workspacePath)) {
-			return workspacePath.relativize(p).toString();
-		} else {
-			return pathString;
 		}
 	}
 
