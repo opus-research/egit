@@ -69,6 +69,8 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 				GitLightweightDecorator.DecorationHelper.FOLDER_FORMAT_DEFAULT);
 		store.setDefault(UIPreferences.DECORATOR_PROJECTTEXT_DECORATION,
 				GitLightweightDecorator.DecorationHelper.PROJECT_FORMAT_DEFAULT);
+		store.setDefault(UIPreferences.DECORATOR_SUBMODULETEXT_DECORATION,
+				GitLightweightDecorator.DecorationHelper.SUBMODULE_FORMAT_DEFAULT);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_TRACKED_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_UNTRACKED_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_STAGED_ICON, true);
@@ -90,6 +92,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.FINDTOOLBAR_IGNORE_CASE, true);
 		store.setDefault(UIPreferences.FINDTOOLBAR_FIND_IN,
 				FindToolbar.PREFS_FINDIN_ALL);
+		store.setDefault(UIPreferences.ALWAYS_USE_STAGING_VIEW, true);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE, true);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE, true);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY, false);

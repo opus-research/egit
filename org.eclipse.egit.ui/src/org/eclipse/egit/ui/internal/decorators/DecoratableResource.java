@@ -8,6 +8,7 @@
  *
  * Contributors:
  *    Thomas Wolf <thomas.wolf@paranor.ch> - Factored out ResourceState
+ *    Andre Bossert <anb0s@anbos.de> - Cleaning up the DecoratableResourceAdapter
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.decorators;
 
@@ -33,6 +34,11 @@ public class DecoratableResource extends ResourceState
 	protected String repositoryName = null;
 
 	/**
+	 * Head commit of the repository of the resource
+	 */
+	protected String commitMessage = null;
+
+	/**
 	 * Current branch of the resource
 	 */
 	protected String branch = null;
@@ -42,6 +48,10 @@ public class DecoratableResource extends ResourceState
 	 */
 	protected String branchStatus = null;
 
+	/**
+	 * is resource a repository container ?
+	 */
+	protected boolean isRepositoryContainer = false;
 
 	/**
 	 * Constructs a new decoratable resource
@@ -54,6 +64,14 @@ public class DecoratableResource extends ResourceState
 	 */
 	protected DecoratableResource(IResource resource) {
 		this.resource = resource;
+	}
+
+	/**
+	 * @param isContainer
+	 *            set to true if the resource is a repository container
+	 */
+	protected void setIsRepositoryContainer(boolean isContainer) {
+		isRepositoryContainer = isContainer;
 	}
 
 	@Override
@@ -72,6 +90,11 @@ public class DecoratableResource extends ResourceState
 	}
 
 	@Override
+	public String getCommitMessage() {
+		return commitMessage;
+	}
+
+	@Override
 	public String getBranch() {
 		return branch;
 	}
@@ -79,6 +102,11 @@ public class DecoratableResource extends ResourceState
 	@Override
 	public String getBranchStatus() {
 		return branchStatus;
+	}
+
+	@Override
+	public boolean isRepositoryContainer() {
+		return isRepositoryContainer;
 	}
 
 }

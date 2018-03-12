@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,11 +27,9 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
-import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.annotations.NonNull;
@@ -141,7 +138,7 @@ public class SelectionUtils {
 	@NonNull
 	public static IPath[] getSelectedLocations(
 			@NonNull IStructuredSelection selection) {
-		Set<IPath> result = new LinkedHashSet<IPath>();
+		Set<IPath> result = new LinkedHashSet<>();
 		for (Object o : selection.toList()) {
 			IResource resource = AdapterUtils.adapt(o, IResource.class);
 			if (resource != null) {
@@ -164,28 +161,13 @@ public class SelectionUtils {
 	}
 
 	/**
-	 * Returns the resources contained in the given selection.
-	 *
 	 * @param selection
 	 * @return the resources in the selection
 	 */
 	@NonNull
 	public static IResource[] getSelectedResources(
 			@NonNull IStructuredSelection selection) {
-		Set<IResource> result = getSelectedResourcesSet(selection);
-		return result.toArray(new IResource[result.size()]);
-	}
-
-	/**
-	 * Returns the resources contained in the given selection.
-	 *
-	 * @param selection
-	 * @return the resources in the selection
-	 */
-	@NonNull
-	private static Set<IResource> getSelectedResourcesSet(
-			@NonNull IStructuredSelection selection) {
-		Set<IResource> result = new LinkedHashSet<IResource>();
+		Set<IResource> result = new LinkedHashSet<>();
 		for (Object o : selection.toList()) {
 			IResource resource = AdapterUtils.adapt(o, IResource.class);
 			if (resource != null)
@@ -193,7 +175,7 @@ public class SelectionUtils {
 			else
 				result.addAll(extractResourcesFromMapping(o));
 		}
-		return result;
+		return result.toArray(new IResource[result.size()]);
 	}
 
 	private static List<IResource> extractResourcesFromMapping(Object o) {
@@ -212,57 +194,12 @@ public class SelectionUtils {
 		if (traversals.length == 0)
 			return Collections.emptyList();
 
-		List<IResource> result = new ArrayList<IResource>();
+		List<IResource> result = new ArrayList<>();
 		for (ResourceTraversal traversal : traversals) {
 			IResource[] resources = traversal.getResources();
 			result.addAll(Arrays.asList(resources));
 		}
 		return result;
-	}
-
-	/**
-	 * Determines the most fitting {@link HistoryPageInput} for the given
-	 * {@link IStructuredSelection}. The {@code mandatoryObject} must be
-	 * contained in the selection and in a repository.
-	 * <p>
-	 * Most fitting means that the input will contain all selected resources
-	 * which are contained in the same repository as the given
-	 * {@code mandatoryObject}.
-	 * </p>
-	 *
-	 * @param selection
-	 *            The selection for which the most fitting HistoryPageInput is
-	 *            to be determined.
-	 * @param mandatoryObject
-	 *            The object to which the HistoryPageInput is tailored. Must be
-	 *            contained in the given selection and in a repository.
-	 * @return The most fitting HistoryPageInput. Will return {@code null} when
-	 *         the {@code mandatoryObject} is not contained in the given
-	 *         selection or in a repository.
-	 */
-	@Nullable
-	public static HistoryPageInput getMostFittingInput(
-			@NonNull IStructuredSelection selection, Object mandatoryObject) {
-		Set<IResource> resources = getSelectedResourcesSet(selection);
-		if (!resources.contains(mandatoryObject)) {
-			return null;
-		}
-
-		Repository repository = getRepository((IResource) mandatoryObject);
-		if (repository == null) {
-			return null;
-		}
-
-		for (Iterator<IResource> it = resources.iterator(); it.hasNext();) {
-			IResource resource = it.next();
-			if (getRepository(resource) != repository) {
-				it.remove();
-			}
-		}
-
-		IResource[] resourceArray = resources.toArray(new IResource[resources
-				.size()]);
-		return new HistoryPageInput(repository, resourceArray);
 	}
 
 	/**
@@ -415,19 +352,6 @@ public class SelectionUtils {
 		IHandlerService hsr = CommonUtils.getService(activeWorkbenchWindow, IHandlerService.class);
 		ctx = hsr.getCurrentState();
 		return ctx;
-	}
-
-	@Nullable
-	private static Repository getRepository(IResource resource) {
-		IPath location = resource.getLocation();
-		if (location != null) {
-			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(location);
-			if (repositoryMapping != null) {
-				return repositoryMapping.getRepository();
-			}
-		}
-		return null;
 	}
 
 }

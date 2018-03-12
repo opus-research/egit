@@ -384,7 +384,7 @@ public class FetchGerritChangePage extends WizardPage {
 		runInBackgroud.setText(UIText.FetchGerritChangePage_RunInBackground);
 
 		// get all available URIs from the repository
-		SortedSet<String> uris = new TreeSet<String>();
+		SortedSet<String> uris = new TreeSet<>();
 		try {
 			for (RemoteConfig rc : RemoteConfig.getAllRemoteConfigs(repository
 					.getConfig())) {
@@ -609,7 +609,7 @@ public class FetchGerritChangePage extends WizardPage {
 							}
 
 							listOp.run(monitor);
-							changeRefs = new ArrayList<Change>();
+							changeRefs = new ArrayList<>();
 							for (Ref ref : listOp.getRemoteRefs()) {
 								Change change = Change.fromRef(ref.getName());
 								if (change != null)
@@ -659,10 +659,16 @@ public class FetchGerritChangePage extends WizardPage {
 
 				@Override
 				public IStatus runInWorkspace(IProgressMonitor monitor) {
-					internalDoFetch(spec, uri, doCheckout, doCreateTag,
-							doCreateBranch, doCheckoutNewBranch,
-							doActivateAdditionalRefs,
-							textForTag, textForBranch, monitor);
+					try {
+						internalDoFetch(spec, uri, doCheckout, doCreateTag,
+								doCreateBranch, doCheckoutNewBranch,
+								doActivateAdditionalRefs, textForTag,
+								textForBranch, monitor);
+					} catch (CoreException ce) {
+						return ce.getStatus();
+					} catch (Exception e) {
+						return Activator.createErrorStatus(e.getLocalizedMessage(), e);
+					}
 					return org.eclipse.core.runtime.Status.OK_STATUS;
 				}
 
@@ -712,9 +718,10 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private void internalDoFetch(RefSpec spec, String uri, boolean doCheckout,
 			boolean doCreateTag, boolean doCreateBranch,
-			boolean doCheckoutNewBranch,
-			boolean doActivateAdditionalRefs, String textForTag,
-			String textForBranch, IProgressMonitor monitor) {
+			boolean doCheckoutNewBranch, boolean doActivateAdditionalRefs,
+			String textForTag, String textForBranch, IProgressMonitor monitor)
+					throws IOException, CoreException, URISyntaxException,
+					GitAPIException {
 
 		int totalWork = 1;
 		if (doCheckout)
@@ -743,8 +750,6 @@ public class FetchGerritChangePage extends WizardPage {
 
 			storeLastUsedUri(uri);
 
-		} catch (Exception e) {
-			Activator.handleError(e.getMessage(), e, true);
 		} finally {
 			monitor.done();
 		}
@@ -756,7 +761,7 @@ public class FetchGerritChangePage extends WizardPage {
 		int timeout = Activator.getDefault().getPreferenceStore()
 				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 
-		List<RefSpec> specs = new ArrayList<RefSpec>(1);
+		List<RefSpec> specs = new ArrayList<>(1);
 		specs.add(spec);
 
 		String taskName = NLS
@@ -856,7 +861,7 @@ public class FetchGerritChangePage extends WizardPage {
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
+				List<IContentProposal> resultList = new ArrayList<>();
 
 				// make the simplest possible pattern check: allow "*"
 				// for multiple characters
@@ -889,7 +894,7 @@ public class FetchGerritChangePage extends WizardPage {
 				try {
 					proposals = getRefsForContentAssist();
 				} catch (InvocationTargetException e) {
-					Activator.handleError(e.getMessage(), e, false);
+					Activator.handleError(e.getMessage(), e, true);
 					return null;
 				} catch (InterruptedException e) {
 					return null;

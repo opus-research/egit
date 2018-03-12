@@ -14,8 +14,7 @@
 package org.eclipse.egit.ui;
 
 import java.io.IOException;
-import java.net.Authenticator;
-import java.net.ProxySelector;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -24,7 +23,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
@@ -41,6 +39,8 @@ import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.ConfigurationChecker;
+import org.eclipse.egit.ui.internal.KnownHosts;
+import org.eclipse.egit.ui.internal.RepositoryCacheRule;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -59,8 +59,6 @@ import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RepositoryEvent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
-import org.eclipse.jgit.transport.SshSessionFactory;
-import org.eclipse.jsch.core.IJSchService;
 import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.eclipse.swt.graphics.Font;
@@ -72,7 +70,6 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.themes.ITheme;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 
 /**
  * This is a plugin singleton mostly controlling logging.
@@ -88,7 +85,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * Property listeners for plugin specific events
 	 */
 	private static List<IPropertyChangeListener> propertyChangeListeners =
-		new ArrayList<IPropertyChangeListener>(5);
+		new ArrayList<>(5);
 
 	/**
 	 * Property constant indicating the decorator configuration has changed.
@@ -110,10 +107,46 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 	/**
+	 * Creates an {@link IStatus} from the parameters. If the throwable is an
+	 * {@link InvocationTargetException}, the status is created from the first
+	 * exception that is either not an InvocationTargetException or that has a
+	 * message. If the message passed is empty, tries to supply a message from
+	 * that exception.
+	 *
+	 * @param severity
+	 *            of the {@link IStatus}
+	 * @param message
+	 *            for the status
+	 * @param throwable
+	 *            that caused the status, may be {@code null}
+	 * @return the status
+	 */
+	private static IStatus toStatus(int severity, String message,
+			Throwable throwable) {
+		Throwable exc = throwable;
+		while (exc instanceof InvocationTargetException) {
+			String msg = exc.getLocalizedMessage();
+			if (msg != null && !msg.isEmpty()) {
+				break;
+			}
+			Throwable cause = exc.getCause();
+			if (cause == null) {
+				break;
+			}
+			exc = cause;
+		}
+		if (exc != null && (message == null || message.isEmpty())) {
+			message = exc.getLocalizedMessage();
+		}
+		return new Status(severity, getPluginId(), message, exc);
+	}
+
+	/**
 	 * Handle an error. The error is logged. If <code>show</code> is
 	 * <code>true</code> the error is shown to the user.
 	 *
-	 * @param message 		a localized message
+	 * @param message
+	 *            a localized message
 	 * @param throwable
 	 * @param show
 	 */
@@ -136,8 +169,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 */
 	public static void handleIssue(int severity, String message, Throwable throwable,
 			boolean show) {
-		IStatus status = new Status(severity, getPluginId(), message,
-				throwable);
+		IStatus status = toStatus(severity, message, throwable);
 		int style = StatusManager.LOG;
 		if (show)
 			style |= StatusManager.SHOW;
@@ -152,8 +184,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * @param throwable
 	 */
 	public static void showError(String message, Throwable throwable) {
-		IStatus status = new Status(IStatus.ERROR, getPluginId(), message,
-				throwable);
+		IStatus status = toStatus(IStatus.ERROR, message, throwable);
 		StatusManager.getManager().handle(status, StatusManager.SHOW);
 	}
 
@@ -166,6 +197,46 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 */
 	public static void showErrorStatus(String message, IStatus status) {
 		StatusManager.getManager().handle(status, StatusManager.SHOW);
+	}
+
+	/**
+	 * @param message
+	 * @param e
+	 */
+	public static void logError(String message, Throwable e) {
+		handleError(message, e, false);
+	}
+
+	/**
+	 * @param message
+	 * @param e
+	 */
+	public static void error(String message, Throwable e) {
+		handleError(message, e, false);
+	}
+
+	/**
+	 * Creates an error status
+	 *
+	 * @param message
+	 *            a localized message
+	 * @param throwable
+	 * @return a new Status object
+	 */
+	public static IStatus createErrorStatus(String message,
+			Throwable throwable) {
+		return toStatus(IStatus.ERROR, message, throwable);
+	}
+
+	/**
+	 * Creates an error status
+	 *
+	 * @param message
+	 *            a localized message
+	 * @return a new Status object
+	 */
+	public static IStatus createErrorStatus(String message) {
+		return toStatus(IStatus.ERROR, message, null);
 	}
 
 	/**
@@ -228,14 +299,12 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		resourceManager = new LocalResourceManager(
 				JFaceResources.getResources());
 		// we want to be notified about debug options changes
-		Dictionary<String, String> props = new Hashtable<String, String>(4);
+		Dictionary<String, String> props = new Hashtable<>(4);
 		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle()
 				.getSymbolicName());
 		context.registerService(DebugOptionsListener.class.getName(), this,
 				props);
 
-		setupSSH(context);
-		setupProxy(context);
 		setupRepoChangeScanner();
 		setupRepoIndexRefresh();
 		setupFocusHandling();
@@ -403,7 +472,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			setSystem(true);
 		}
 
-		private Set<Repository> repositoriesChanged = new LinkedHashSet<Repository>();
+		private Set<Repository> repositoriesChanged = new LinkedHashSet<>();
 
 		@Override
 		public IStatus run(IProgressMonitor monitor) {
@@ -525,6 +594,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	static class RepositoryChangeScanner extends Job {
 		RepositoryChangeScanner() {
 			super(UIText.Activator_repoScanJobName);
+			setRule(new RepositoryCacheRule());
 		}
 
 		// FIXME, need to be more intelligent about this to avoid too much work
@@ -605,29 +675,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		rcs.schedule(RepositoryChangeScanner.REPO_SCAN_INTERVAL);
 	}
 
-	@SuppressWarnings("unchecked")
-	private void setupSSH(final BundleContext context) {
-		final ServiceReference ssh;
-
-		ssh = context.getServiceReference(IJSchService.class.getName());
-		if (ssh != null) {
-			SshSessionFactory.setInstance(new EclipseSshSessionFactory(
-					(IJSchService) context.getService(ssh)));
-		}
-	}
-
-	private void setupProxy(final BundleContext context) {
-		final ServiceReference proxy;
-
-		proxy = context.getServiceReference(IProxyService.class.getName());
-		if (proxy != null) {
-			ProxySelector.setDefault(new EclipseProxySelector(
-					(IProxyService) context.getService(proxy)));
-			Authenticator.setDefault(new EclipseAuthenticator(
-					(IProxyService) context.getService(proxy)));
-		}
-	}
-
 	@Override
 	public void stop(final BundleContext context) throws Exception {
 		if (refreshHandle != null) {
@@ -670,45 +717,11 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		plugin = null;
 	}
 
-	/**
-	 * @param message
-	 * @param e
-	 */
-	public static void logError(String message, Throwable e) {
-		handleError(message, e, false);
+	@Override
+	protected void saveDialogSettings() {
+		KnownHosts.store();
+		super.saveDialogSettings();
 	}
-
-	/**
-	 * @param message
-	 * @param e
-	 */
-	public static void error(String message, Throwable e) {
-		handleError(message, e, false);
-	}
-
-	/**
-	 * Creates an error status
-	 *
-	 * @param message
-	 *            a localized message
-	 * @param throwable
-	 * @return a new Status object
-	 */
-	public static IStatus createErrorStatus(String message, Throwable throwable) {
-		return new Status(IStatus.ERROR, getPluginId(), message, throwable);
-	}
-
-	/**
-	 * Creates an error status
-	 *
-	 * @param message
-	 *            a localized message
-	 * @return a new Status object
-	 */
-	public static IStatus createErrorStatus(String message) {
-		return new Status(IStatus.ERROR, getPluginId(), message);
-	}
-
 	/**
 	 * @return the {@link RepositoryUtil} instance
 	 */

@@ -9,7 +9,6 @@
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
- * Copyright (C) 2015, Stefan Dirix (Stefan Dirix <sdirix@eclipsesource.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -56,7 +55,6 @@ import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jface.action.Action;
@@ -304,7 +302,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		private GitHistoryPage historyPage;
 
 		GitHistoryPageActions(GitHistoryPage historyPage) {
-			actionsToDispose = new ArrayList<IWorkbenchAction>();
+			actionsToDispose = new ArrayList<>();
 			this.historyPage = historyPage;
 			createActions();
 		}
@@ -981,7 +979,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				ISelection selection = event.getSelection();
-				List<FileDiff> diffs = new ArrayList<FileDiff>();
+				List<FileDiff> diffs = new ArrayList<>();
 				if (selection instanceof IStructuredSelection) {
 					IStructuredSelection sel = (IStructuredSelection) selection;
 					for (Object obj : sel.toList())
@@ -1030,7 +1028,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 			}
 		});
-		sf.setWeights(UIPreferences.stringToIntArray(store.getString(key), 2));
+		int[] weights = UIPreferences.stringToIntArray(store.getString(key), 2);
+		if (weights == null) {
+			// Corrupted preferences?
+			weights = UIPreferences
+					.stringToIntArray(store.getDefaultString(key), 2);
+		}
+		sf.setWeights(weights);
 	}
 
 	private Composite createMainPanel(final Composite parent) {
@@ -1337,32 +1341,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	@Override
 	public boolean setInput(Object object) {
 		try {
-			Object useAsInput = object;
-
-			// Workaround for the limitation of GenericHistoryView to only
-			// forward the first part of a selection and adapting it
-			// immediately to IResource.
-			ISelection selection = getSite().getPage().getSelection();
-			if (selection instanceof IStructuredSelection) {
-				IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-				HistoryPageInput mostFittingInput = SelectionUtils
-						.getMostFittingInput(structuredSelection, object);
-				if (mostFittingInput != null) {
-					useAsInput = mostFittingInput;
-				}
-			}
-
 			// hide the warning text initially
 			setWarningText(null);
 			trace = GitTraceLocation.HISTORYVIEW.isActive();
 			if (trace)
 				GitTraceLocation.getTrace().traceEntry(
-						GitTraceLocation.HISTORYVIEW.getLocation(), useAsInput);
+						GitTraceLocation.HISTORYVIEW.getLocation(), object);
 
-			if (useAsInput == getInput())
+			if (object == getInput())
 				return true;
 			this.input = null;
-			return super.setInput(useAsInput);
+			return super.setInput(object);
 		} finally {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
@@ -1889,7 +1878,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			throws IllegalStateException {
 		final ArrayList<FilterPath> paths;
 		if (inResources != null) {
-			paths = new ArrayList<FilterPath>(inResources.length);
+			paths = new ArrayList<>(inResources.length);
 			for (final IResource r : inResources) {
 				final RepositoryMapping map = RepositoryMapping.getMapping(r);
 				if (map == null)
@@ -1925,7 +1914,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			IPath workdirPath = new Path(db.getWorkTree().getPath());
 			IPath gitDirPath = new Path(db.getDirectory().getPath());
 			int segmentCount = workdirPath.segmentCount();
-			paths = new ArrayList<FilterPath>(inFiles.length);
+			paths = new ArrayList<>(inFiles.length);
 			for (File file : inFiles) {
 				IPath filePath;
 				boolean isRegularFile;
@@ -1954,7 +1943,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					paths.add(new FilterPath(pathToAdd.toString(), isRegularFile));
 			}
 		} else
-			paths = new ArrayList<FilterPath>(0);
+			paths = new ArrayList<>(0);
 		return paths;
 	}
 
@@ -2149,24 +2138,24 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				&& allRegularFiles(paths)) {
 			pathFilters = paths;
 
-			List<String> selectedPaths = new ArrayList<String>(paths.size());
+			List<String> selectedPaths = new ArrayList<>(paths.size());
 			for (FilterPath filterPath : paths)
 				selectedPaths.add(filterPath.getPath());
 
-			fileViewerInterestingPaths = new HashSet<String>(selectedPaths);
+			fileViewerInterestingPaths = new HashSet<>(selectedPaths);
 			TreeFilter followFilter = createFollowFilterFor(selectedPaths);
 			walk.setTreeFilter(followFilter);
 			walk.setRevFilter(renameTracker.getFilter());
 
 		} else if (paths.size() > 0) {
 			pathFilters = paths;
-			List<String> stringPaths = new ArrayList<String>(paths.size());
+			List<String> stringPaths = new ArrayList<>(paths.size());
 			for (FilterPath p : paths)
 				stringPaths.add(p.getPath());
 
 			walk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
 					.createFromStrings(stringPaths), TreeFilter.ANY_DIFF));
-			fileViewerInterestingPaths = new HashSet<String>(stringPaths);
+			fileViewerInterestingPaths = new HashSet<>(stringPaths);
 		} else {
 			pathFilters = null;
 			walk.setTreeFilter(TreeFilter.ALL);
@@ -2187,7 +2176,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		DiffConfig diffConfig = currentRepo.getConfig().get(DiffConfig.KEY);
 
-		List<TreeFilter> followFilters = new ArrayList<TreeFilter>(paths.size());
+		List<TreeFilter> followFilters = new ArrayList<>(paths.size());
 		for (String path : paths)
 			followFilters.add(createFollowFilter(path, diffConfig));
 
