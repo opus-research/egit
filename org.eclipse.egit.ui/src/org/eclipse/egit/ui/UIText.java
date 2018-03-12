@@ -151,6 +151,27 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_NoCommits;
 
 	/** */
+	public static String GerritConfigurationPage_configurePushToGerrit;
+
+	/** */
+	public static String GerritConfigurationPage_errorBranchName;
+
+	/** */
+	public static String GerritConfigurationPage_groupPush;
+
+	/** */
+	public static String GerritConfigurationPage_labelDestinationBranch;
+
+	/** */
+	public static String GerritConfigurationPage_PageDescription;
+
+	/** */
+	public static String GerritConfigurationPage_pushUri;
+
+	/** */
+	public static String GerritConfigurationPage_title;
+
+	/** */
 	public static String EGitCredentialsProvider_errorReadingCredentials;
 
 	/** */
@@ -643,15 +664,6 @@ public class UIText extends NLS {
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
-	public static String CheckoutDialog_Message;
-
-	/** */
-	public static String CheckoutDialog_Title;
-
-	/** */
-	public static String CheckoutDialog_WindowTitle;
-
-	/** */
 	public static String CheckoutHandler_SelectBranchMessage;
 
 	/** */
@@ -662,6 +674,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickHandler_NoCherryPickPerformedTitle;
+
+	/** */
+	public static String CherryPickHandler_CherryPickConflictsMessage;
+
+	/** */
+	public static String CherryPickHandler_CherryPickConflictsTitle;
 
 	/** */
 	public static String CherryPickOperation_Failed;
@@ -1339,10 +1357,7 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_notFound;
 
 	/** */
-	public static String PullOperationUI_BranchNotConfiguredForPullMessage;
-
-	/** */
-	public static String PullOperationUI_NoLocalBranchMessage;
+	public static String PullOperationUI_NotTriedMessage;
 
 	/** */
 	public static String PullOperationUI_PullCanceledWindowTitle;
@@ -1351,13 +1366,13 @@ public class UIText extends NLS {
 	public static String PullOperationUI_PullErrorWindowTitle;
 
 	/** */
+	public static String PullOperationUI_PullingMultipleTaskName;
+
+	/** */
 	public static String PullOperationUI_PullingTaskName;
 
 	/** */
 	public static String PullOperationUI_PullOperationCanceledMessage;
-
-	/** */
-	public static String PullOperationUI_UnexpectedExceptionGettingBranchMessage;
 
 	/** */
 	public static String PullResultDialog_DialogTitle;
@@ -1751,15 +1766,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ContinueRebaseCommand_JobName;
-
-	/** */
-	public static String CreateBranchDialog_DialogTitle;
-
-	/** */
-	public static String CreateBranchDialog_SelectRefMessage;
-
-	/** */
-	public static String CreateBranchDialog_WindowTitle;
 
 	/** */
 	public static String CreateBranchPage_BranchNameLabel;
@@ -2732,6 +2738,45 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
+
+	/** */
+	public static String MultiPullResultDialog_DetailsButton;
+
+	/** */
+	public static String MultiPullResultDialog_FetchStatusColumnHeader;
+
+	/** */
+	public static String MultiPullResultDialog_MergeResultMessage;
+
+	/** */
+	public static String MultiPullResultDialog_NothingFetchedStatus;
+
+	/** */
+	public static String MultiPullResultDialog_NothingUpdatedStatus;
+
+	/** */
+	public static String MultiPullResultDialog_OkStatus;
+
+	/** */
+	public static String MultiPullResultDialog_OverallStatusColumnHeader;
+
+	/** */
+	public static String MultiPullResultDialog_RebaseResultMessage;
+
+	/** */
+	public static String MultiPullResultDialog_RepositoryColumnHeader;
+
+	/** */
+	public static String MultiPullResultDialog_UnknownStatus;
+
+	/** */
+	public static String MultiPullResultDialog_UpdatedMessage;
+
+	/** */
+	public static String MultiPullResultDialog_UpdateStatusColumnHeader;
+
+	/** */
+	public static String MultiPullResultDialog_WindowTitle;
 
 	/** */
 	public static String UIIcons_errorDeterminingIconBase;
