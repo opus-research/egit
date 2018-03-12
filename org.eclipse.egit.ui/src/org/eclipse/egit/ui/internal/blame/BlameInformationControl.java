@@ -415,16 +415,9 @@ public class BlameInformationControl extends AbstractInformationControl
 
 	private void showCommitInHistory() {
 		getShell().dispose();
-		IHistoryView part;
-		try {
-			part = (IHistoryView) PlatformUI.getWorkbench()
-					.getActiveWorkbenchWindow().getActivePage()
-					.showView(IHistoryView.VIEW_ID);
-		} catch (PartInitException e) {
-			Activator.logError(e.getLocalizedMessage(), e);
-			return;
-		}
-
+		IHistoryView part = (IHistoryView) PlatformUI.getWorkbench()
+				.getActiveWorkbenchWindow().getActivePage()
+				.findView(IHistoryView.VIEW_ID);
 		if (part == null)
 			return;
 
