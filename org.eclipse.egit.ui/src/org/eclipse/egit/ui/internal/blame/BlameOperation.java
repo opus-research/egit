@@ -40,6 +40,7 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jgit.api.BlameCommand;
 import org.eclipse.jgit.blame.BlameResult;
 import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Shell;
@@ -91,8 +92,6 @@ public class BlameOperation implements IEGitOperation {
 
 		private File nonResourceFile;
 
-		private boolean firstSelectionChange = true;
-
 		private RevisionSelectionHandler(Repository repository, String path,
 				IStorage storage) {
 			if (storage instanceof IFile)
@@ -102,13 +101,6 @@ public class BlameOperation implements IEGitOperation {
 		}
 
 		public void selectionChanged(SelectionChangedEvent event) {
-			// Don't show the commit for the first selection change, as that was
-			// not initiated by the user directly. Instead, show the commit the
-			// first time the user clicks on a revision or line.
-			if (firstSelectionChange) {
-				firstSelectionChange = false;
-				return;
-			}
 			ISelection selection = event.getSelection();
 			if (selection.isEmpty()
 					|| !(selection instanceof IStructuredSelection))
@@ -145,7 +137,7 @@ public class BlameOperation implements IEGitOperation {
 
 	private String path;
 
-	private RevCommit startCommit;
+	private AnyObjectId startCommit;
 
 	private Shell shell;
 
@@ -164,7 +156,7 @@ public class BlameOperation implements IEGitOperation {
 	 * @param page
 	 */
 	public BlameOperation(Repository repository, IStorage storage, String path,
-			RevCommit startCommit, Shell shell, IWorkbenchPage page) {
+			AnyObjectId startCommit, Shell shell, IWorkbenchPage page) {
 		this(repository, storage, path, startCommit, shell, page, -1);
 	}
 
@@ -181,7 +173,7 @@ public class BlameOperation implements IEGitOperation {
 	 *            0-based line number to reveal, -1 for no reveal
 	 */
 	public BlameOperation(Repository repository, IStorage storage, String path,
-			RevCommit startCommit, Shell shell, IWorkbenchPage page,
+			AnyObjectId startCommit, Shell shell, IWorkbenchPage page,
 			int lineNumberToReveal) {
 		this.repository = repository;
 		this.storage = storage;
@@ -278,7 +270,15 @@ public class BlameOperation implements IEGitOperation {
 		try {
 			IHistoryView part = (IHistoryView) page.showView(
 					IHistoryView.VIEW_ID, null, IWorkbenchPage.VIEW_VISIBLE);
-			HistoryPageInput input = createHistoryPageInputWhenEditorOpened();
+			HistoryPageInput input;
+			if (storage instanceof IFile)
+				input = new HistoryPageInput(repository,
+						new IResource[] { (IResource) storage });
+			else if (!repository.isBare())
+				input = new HistoryPageInput(repository, new File[] { new File(
+						repository.getWorkTree(), path) });
+			else
+				input = new HistoryPageInput(repository);
 			part.showHistoryFor(input);
 		} catch (PartInitException e) {
 			Activator.handleError("Error displaying blame annotations", e, //$NON-NLS-1$
@@ -319,30 +319,6 @@ public class BlameOperation implements IEGitOperation {
 					.addSelectionChangedListener(
 							new RevisionSelectionHandler(repository, path,
 									storage));
-	}
-
-	private HistoryPageInput createHistoryPageInputWhenEditorOpened() {
-		if (storage instanceof IFile) {
-			IResource resource = (IResource) storage;
-			if (startCommit != null) {
-				return new BlameHistoryPageInput(repository, startCommit,
-						resource);
-			} else {
-				return new HistoryPageInput(repository,
-						new IResource[] { resource });
-			}
-		} else if (!repository.isBare()) {
-			File file = new File(repository.getWorkTree(), path);
-			if (startCommit != null) {
-				return new BlameHistoryPageInput(repository, startCommit,
-						file);
-			} else {
-				return new HistoryPageInput(repository,
-						new File[] { file });
-			}
-		} else {
-			return new HistoryPageInput(repository);
-		}
 	}
 
 	public ISchedulingRule getSchedulingRule() {
