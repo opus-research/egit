@@ -188,7 +188,7 @@ class GerritConfigurationPage extends WizardPage {
 				.setText(UIText.GerritConfigurationPage_labelDestinationBranch);
 		// we visualize the prefix here
 		Text prefix = new Text(pushConfigurationGroup, SWT.READ_ONLY);
-		prefix.setText(GerritUtil.REFS_FOR);
+		prefix.setText("refs/for/"); //$NON-NLS-1$
 		prefix.setEnabled(false);
 
 		branch = SWTUtils.createText(pushConfigurationGroup);
