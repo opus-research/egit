@@ -95,11 +95,6 @@ public class GitModelBlob extends GitModelCommit {
 	}
 
 	@Override
-	public boolean isContainer() {
-		return false;
-	}
-
-	@Override
 	public ITypedElement getAncestor() {
 		if (objectExist(getAncestorCommit(), ancestorId))
 			return CompareUtils.getFileRevisionTypedElement(gitPath,

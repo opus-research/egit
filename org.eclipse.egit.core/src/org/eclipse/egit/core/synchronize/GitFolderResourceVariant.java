@@ -11,8 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.jgit.lib.ObjectId.zeroId;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,9 +21,7 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.variants.IResourceVariant;
@@ -50,6 +46,10 @@ public class GitFolderResourceVariant extends GitResourceVariant {
 		return null;
 	}
 
+	public byte[] asBytes() {
+		return getName().getBytes();
+	}
+
 	/**
 	 * @param progress
 	 * @return members
@@ -64,32 +64,28 @@ public class GitFolderResourceVariant extends GitResourceVariant {
 				progress.done();
 			}
 
-		Repository repo = getRepository();
-		TreeWalk tw = new TreeWalk(repo);
+		TreeWalk tw = new TreeWalk(getRepository());
 		tw.reset();
-
 		int nth = tw.addTree(getObjectId());
-		int iteratorNth = tw.addTree(new FileTreeIterator(repo));
-
-		tw.setFilter(new NotIgnoredFilter(iteratorNth));
 
 		IProgressMonitor monitor = SubMonitor.convert(progress);
 		monitor.beginTask(
 				NLS.bind(CoreText.GitFolderResourceVariant_fetchingMembers, this),
 				tw.getTreeCount());
 
+		Repository repo = getRepository();
 		List<IResourceVariant> result = new ArrayList<IResourceVariant>();
+
 		try {
 			while (tw.next()) {
 				ObjectId newObjectId = tw.getObjectId(nth);
 				String path = getPath() + "/" + new String(tw.getRawPath()); //$NON-NLS-1$
-				if (!newObjectId.equals(zeroId()))
-					if (tw.isSubtree())
-						result.add(new GitFolderResourceVariant(repo,
-								newObjectId, path));
-					else
-						result.add(new GitBlobResourceVariant(repo,
-								newObjectId, path));
+				if (tw.isSubtree())
+					result.add(new GitFolderResourceVariant(repo, newObjectId,
+							path));
+				else
+					result.add(new GitBlobResourceVariant(repo, newObjectId,
+							path));
 				monitor.worked(1);
 			}
 
