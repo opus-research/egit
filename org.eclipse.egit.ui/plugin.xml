@@ -610,6 +610,14 @@
             id="org.eclipse.egit.ui.GitCategory"
             name="%GitCategory_name">
       </category>
+      <view
+            category="org.eclipse.egit.ui.GitCategory"
+            class="org.eclipse.egit.ui.internal.dialogs.CompareTreeView"
+            icon="icons/obj16/gitrepository.gif"
+            id="org.eclipse.egit.ui.CompareTreeView"
+            name="Git Tree Compare"
+            restorable="false">
+      </view>
    </extension>
    <extension
          point="org.eclipse.ui.perspectives">
@@ -2171,6 +2179,14 @@
             commandId="org.eclipse.egit.ui.RepositoriesViewSkipRebase"
             icon="icons/elcl16/skip.gif">
       </image>
+      <image
+            commandId="org.eclipse.egit.ui.history.Merge"
+            icon="icons/obj16/merge.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.history.RebaseCurrent"
+            icon="icons/obj16/rebase.gif">
+      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -2480,6 +2496,16 @@
             defaultHandler="org.eclipse.egit.ui.internal.history.command.RevertHandler"
             id="org.eclipse.egit.ui.history.Revert"
             name="%RevertCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.MergeHandler"
+            id="org.eclipse.egit.ui.history.Merge"
+            name="%MergeCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.RebaseCurrentHandler"
+            id="org.eclipse.egit.ui.history.RebaseCurrent"
+            name="%RebaseCurrentCommand.name">
       </command>
    </extension>
    <extension

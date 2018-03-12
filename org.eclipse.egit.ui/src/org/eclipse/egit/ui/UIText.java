@@ -398,6 +398,12 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_revertMenuItem;
 
 	/** */
+	public static String GitHistoryPage_mergeMenuItem;
+
+	/** */
+	public static String GitHistoryPage_rebaseMenuItem;
+
+	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
@@ -665,6 +671,42 @@ public class UIText extends NLS {
 	public static String CompareTargetSelectionDialog_WindowTitle;
 
 	/** */
+	public static String CompareTreeView_AddedOnlyTooltip;
+
+	/** */
+	public static String CompareTreeView_AnalyzingRepositoryTaskText;
+
+	/** */
+	public static String CompareTreeView_CollapseAllTooltip;
+
+	/** */
+	public static String CompareTreeView_ComparingTwoVersionDescription;
+
+	/** */
+	public static String CompareTreeView_ComparingWorkspaceVersionDescription;
+
+	/** */
+	public static String CompareTreeView_DeletedOnlyTooltip;
+
+	/** */
+	public static String CompareTreeView_EqualFilesTooltip;
+
+	/** */
+	public static String CompareTreeView_ItemNotFoundInVersionMessage;
+
+	/** */
+	public static String CompareTreeView_NoInputText;
+
+	/** */
+	public static String CompareTreeView_WorkspaceVersionText;
+
+	/** */
+	public static String MergeHandler_SelectBranchMessage;
+
+	/** */
+	public static String MergeHandler_SelectBranchTitle;
+
+	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
 
 	/** */
@@ -792,6 +834,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySelectionPage_uriChoice;
+
+	/** */
+	public static String RepositorySelectionPage_UriMustNotHaveTrailingSpacesMessage;
 
 	/** */
 	public static String SoftResetToRevisionAction_softReset;
