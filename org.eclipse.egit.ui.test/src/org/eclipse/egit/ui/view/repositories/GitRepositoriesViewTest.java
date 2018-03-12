@@ -121,8 +121,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		fileiItem.doubleClick();
 		assertTrue(bot.activeEditor().getTitle().equals(FILE1));
 		bot.activeEditor().close();
-		TestUtil.processUIEvents();
-
 		// open a branch (checkout)
 		checkoutWithDoubleClick(tree, "master");
 		String contentMaster = getTestFileContent();
@@ -140,8 +138,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_CheckoutConfirmationTitle);
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
-		TestUtil.processUIEvents();
-		TestUtil.waitForJobs(50, 5000);
 		refreshAndWait();
 	}
 
