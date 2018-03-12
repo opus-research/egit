@@ -97,6 +97,15 @@ public class UIText extends NLS {
 	public static String AddToIndexCommand_addingFilesFailed;
 
 	/** */
+	public static String BlameInformationControl_Author;
+
+	/** */
+	public static String BlameInformationControl_Commit;
+
+	/** */
+	public static String BlameInformationControl_Committer;
+
+	/** */
 	public static String AssumeUnchanged_assumeUnchanged;
 
 	/** */
@@ -149,6 +158,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SharingWizard_MoveProjectActionLabel;
+
+	/** */
+	public static String ShowBlameHandler_JobName;
 
 	/** */
 	public static String GenerateHistoryJob_BuildingListMessage;
@@ -853,6 +865,9 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_browse;
 
 	/** */
+	public static String RepositorySearchDialog_CheckAllRepositories;
+
+	/** */
 	public static String RepositorySearchDialog_directory;
 
 	/** */
@@ -871,7 +886,7 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_searchRepositoriesMessage;
 
 	/** */
-	public static String RepositorySearchDialog_ToggleSelectionButton;
+	public static String RepositorySearchDialog_UncheckAllRepositories;
 
 	/** */
 	public static String RepositorySelectionPage_BrowseLocalFile;
@@ -1177,6 +1192,9 @@ public class UIText extends NLS {
 	public static String RefSpecPanel_fetch;
 
 	/** */
+	public static String RefSpecPanel_fetchTitle;
+
+	/** */
 	public static String RefSpecPanel_srcFetchDescription;
 
 	/** */
@@ -1229,6 +1247,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefSpecPanel_push;
+
+	/** */
+	public static String RefSpecPanel_pushTitle;
 
 	/** */
 	public static String RefSpecPanel_srcPushDescription;
@@ -3747,6 +3768,39 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_Commit;
+
+	/** */
+	public static String StagingView_commitFailed;
+
+	/** */
+	public static String StagingView_committingNotPossible;
+
+	/** */
+	public static String StagingView_headCommitChanged;
+
+	/** */
+	public static String StagingView_noStagedFiles;
+
+	/** */
+	public static String StagingView_NoSelectionTitle;
+
+	/** */
+	public static String StagingView_OpenNewCommits;
+
+	/** */
+	public static String StagingView_IndexDiffReload;
+
+	/** */
+	public static String StagingView_Refresh;
+
+	/** */
+	public static String StagingView_LinkSelection;
+
+	/** */
+	public static String StagingView_exceptionTitle;
+
+	/** */
+	public static String StagingView_exceptionMessage;
 
 	/** */
 	public static String SynchronizeWithMenu_custom;

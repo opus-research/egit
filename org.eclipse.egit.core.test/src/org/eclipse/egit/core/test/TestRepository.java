@@ -42,7 +42,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.treewalk.TreeOptions;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.FileUtils;
 
@@ -407,21 +406,21 @@ public class TestRepository {
 
 	public boolean inIndex(String path) throws IOException {
 		String repoPath = getRepoRelativePath(path);
-		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS(), new TreeOptions(repository.getConfig()));
+		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
 
 		return dc.getEntry(repoPath) != null;
 	}
 
 	public long lastModifiedInIndex(String path) throws IOException {
 		String repoPath = getRepoRelativePath(path);
-		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS(), new TreeOptions(repository.getConfig()));
+		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
 
 		return dc.getEntry(repoPath).getLastModified();
 	}
 
 	public int getDirCacheEntryLength(String path) throws IOException {
 		String repoPath = getRepoRelativePath(path);
-		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS(), new TreeOptions(repository.getConfig()));
+		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
 
 		return dc.getEntry(repoPath).getLength();
 	}

@@ -89,7 +89,7 @@ class GitSyncInfo extends SyncInfo {
 
 		TreeWalk tw = new TreeWalk(repo);
 		tw.setFilter(AndTreeFilter.create(TreeFilter.ANY_DIFF,
-				PathFilter.create(localPath, tw.getPathEncoding())));
+				PathFilter.create(localPath)));
 		tw.setRecursive(true);
 
 		try {

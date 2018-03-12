@@ -263,12 +263,12 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			if (filterPaths.size() > 1) {
 				List<TreeFilter> suffixFilters = new ArrayList<TreeFilter>();
 				for (String filterPath : filterPaths)
-					suffixFilters.add(PathFilter.create(filterPath, tw.getPathEncoding()));
+					suffixFilters.add(PathFilter.create(filterPath));
 				TreeFilter otf = OrTreeFilter.create(suffixFilters);
 				tw.setFilter(AndTreeFilter.create(otf, notIgnoredFilter));
 			} else if (filterPaths.size() > 0)
 				tw.setFilter(AndTreeFilter.create(PathFilter.create(filterPaths
-						.get(0), tw.getPathEncoding()), notIgnoredFilter));
+						.get(0)), notIgnoredFilter));
 			else
 				tw.setFilter(notIgnoredFilter);
 
