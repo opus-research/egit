@@ -676,15 +676,6 @@ public class UIText extends NLS {
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
-	public static String CheckoutDialog_Message;
-
-	/** */
-	public static String CheckoutDialog_Title;
-
-	/** */
-	public static String CheckoutDialog_WindowTitle;
-
-	/** */
 	public static String CheckoutHandler_SelectBranchMessage;
 
 	/** */
@@ -1840,15 +1831,6 @@ public class UIText extends NLS {
 	public static String ContinueRebaseCommand_JobName;
 
 	/** */
-	public static String CreateBranchDialog_DialogTitle;
-
-	/** */
-	public static String CreateBranchDialog_SelectRefMessage;
-
-	/** */
-	public static String CreateBranchDialog_WindowTitle;
-
-	/** */
 	public static String CreateBranchPage_BranchNameLabel;
 
 	/** */
@@ -2287,6 +2269,39 @@ public class UIText extends NLS {
 	public static String BranchResultDialog_CheckoutConflictsTitle;
 
 	/** */
+	public static String BranchSelectionDialog_TitleCheckout;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotCreateNewRef;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotDeleteRef;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
+
+	/** */
+	public static String BranchSelectionDialog_QuestionNewBranchTitle;
+
+	/** */
+	public static String BranchSelectionDialog_QuestionNewBranchNameMessage;
+
+	/** */
+	public static String BranchSelectionDialog_NewBranch;
+
+	/** */
+	public static String BranchSelectionDialog_OkCheckout;
+
+	/** */
+	public static String BranchSelectionDialog_Refs;
+
+	/** */
+	public static String BranchSelectionDialog_Rename;
+
+	/** */
+	public static String BranchSelectionDialog_Delete;
+
+	/** */
 	public static String CommitDialogPreferencePage_title;
 
 	/** */
@@ -2426,15 +2441,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
-
-	/** */
-	public static String DeleteBranchDialog_DialogMessage;
-
-	/** */
-	public static String DeleteBranchDialog_DialogTitle;
-
-	/** */
-	public static String DeleteBranchDialog_WindowTitle;
 
 	/** */
 	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;

@@ -105,7 +105,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	 * @param repository
 	 *            the {@link Repository}
 	 * @param refToMark
-	 *            the name of the {@link Ref} to mark initially; may be null
+	 *            the name of the {@link Ref} to mark initially
 	 */
 	public AbstractBranchSelectionDialog(Shell parentShell,
 			Repository repository, String refToMark) {
@@ -184,7 +184,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 					branchTree.setExpandedState(node, !branchTree
 							.getExpandedState(node));
 				else if (getButton(Window.OK).isEnabled())
-					buttonPressed(OK);
+					okPressed();
 
 			}
 		});
