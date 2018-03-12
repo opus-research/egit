@@ -12,7 +12,7 @@ package org.eclipse.egit.ui.internal.repository.tree;
 
 import java.io.File;
 
-import org.eclipse.jgit.storage.file.Repository;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Represents a File in the working directory tree

@@ -10,7 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree;
 
-import org.eclipse.jgit.storage.file.Repository;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Represents the "Remote" node

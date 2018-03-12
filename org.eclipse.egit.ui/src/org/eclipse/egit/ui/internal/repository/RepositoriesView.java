@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Dariusz Luksza <dariusz@luksza.org> - add synchronization feature
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -49,8 +50,8 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jgit.lib.IndexChangedEvent;
 import org.eclipse.jgit.lib.RefsChangedEvent;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryListener;
-import org.eclipse.jgit.storage.file.Repository;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorInput;
@@ -572,4 +573,5 @@ public class RepositoriesView extends CommonNavigator {
 	// }
 	//
 	// });
+
 }

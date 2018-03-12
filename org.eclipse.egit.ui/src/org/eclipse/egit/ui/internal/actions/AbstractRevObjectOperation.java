@@ -9,7 +9,7 @@
 package org.eclipse.egit.ui.internal.actions;
 
 import org.eclipse.egit.core.op.IEGitOperation;
-import org.eclipse.jgit.storage.file.Repository;
+import org.eclipse.jgit.lib.Repository;
 
 abstract class AbstractRevObjectOperation implements IEGitOperation {
 
