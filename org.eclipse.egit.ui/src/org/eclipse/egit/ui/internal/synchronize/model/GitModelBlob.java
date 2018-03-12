@@ -8,8 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import static org.eclipse.jgit.lib.ObjectId.zeroId;
-
 import java.io.IOException;
 
 import org.eclipse.compare.ITypedElement;
@@ -102,27 +100,21 @@ public class GitModelBlob extends GitModelCommit implements ICompareInput {
 	}
 
 	public ITypedElement getAncestor() {
-		if (objectExist(getAncestorCommit(), ancestorId))
-			return CompareUtils.getFileRevisionTypedElement(gitPath,
-					getAncestorCommit(), getRepository(), ancestorId);
-
-		return null;
+		return CompareUtils.getFileRevisionTypedElement(gitPath,
+				getAncestorCommit(), getRepository(), ancestorId);
 	}
 
 	public ITypedElement getLeft() {
-		if (objectExist(getRemoteCommit(), remoteId))
-		return CompareUtils.getFileRevisionTypedElement(gitPath,
-				getRemoteCommit(), getRepository(), remoteId);
+		if (getBaseCommit() != null && baseId != null)
+			return CompareUtils.getFileRevisionTypedElement(gitPath,
+					getBaseCommit(), getRepository(), baseId);
 
 		return null;
 	}
 
 	public ITypedElement getRight() {
-		if (objectExist(getBaseCommit(), baseId))
-			return CompareUtils.getFileRevisionTypedElement(gitPath,
-					getBaseCommit(), getRepository(), baseId);
-
-		return null;
+		return CompareUtils.getFileRevisionTypedElement(gitPath,
+				getRemoteCommit(), getRepository(), remoteId);
 	}
 
 	public void addCompareInputChangeListener(
@@ -139,10 +131,6 @@ public class GitModelBlob extends GitModelCommit implements ICompareInput {
 
 	public void copy(boolean leftToRight) {
 		// do nothing, we should disallow coping content between commits
-	}
-
-	private boolean objectExist(RevCommit commit, ObjectId id) {
-		return commit != null && id != null && !id.equals(zeroId());
 	}
 
 }

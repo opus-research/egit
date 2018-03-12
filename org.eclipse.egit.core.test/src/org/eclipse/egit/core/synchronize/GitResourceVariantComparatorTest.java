@@ -186,7 +186,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		expect(local.getFullPath()).andReturn(iPath).anyTimes();
 		replay(local);
 
- 		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo,
+		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo,
 				commit, path);
 
 		// then

@@ -42,7 +42,6 @@ import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -67,7 +66,7 @@ import org.osgi.framework.Bundle;
  */
 public class GitCreatePatchWizard extends Wizard {
 
-	private RevCommit commit;
+	private SWTCommit commit;
 
 	private TreeWalk walker;
 
@@ -89,7 +88,7 @@ public class GitCreatePatchWizard extends Wizard {
 	 * @param walker
 	 * @param db
 	 */
-	public static void run(IWorkbenchPart part, final RevCommit commit,
+	public static void run(IWorkbenchPart part, final SWTCommit commit,
 			TreeWalk walker, Repository db) {
 		final String title = UIText.GitCreatePatchWizard_CreatePatchTitle;
 		final GitCreatePatchWizard wizard = new GitCreatePatchWizard(commit,
@@ -109,7 +108,7 @@ public class GitCreatePatchWizard extends Wizard {
 	 * @param walker
 	 * @param db
 	 */
-	public GitCreatePatchWizard(RevCommit commit, TreeWalk walker, Repository db) {
+	public GitCreatePatchWizard(SWTCommit commit, TreeWalk walker, Repository db) {
 		this.commit = commit;
 		this.walker = walker;
 		this.db = db;
@@ -465,6 +464,7 @@ public class GitCreatePatchWizard extends Wizard {
 	 * A wizard Page used to specify options of the created patch
 	 */
 	public static class OptionsPage extends WizardPage {
+
 		private Button gitFormat;
 
 		/**
@@ -495,5 +495,7 @@ public class GitCreatePatchWizard extends Wizard {
 			Dialog.applyDialogFont(composite);
 			setControl(composite);
 		}
+
 	}
+
 }
