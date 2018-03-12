@@ -10,7 +10,6 @@ package org.eclipse.egit.ui.internal.decorators;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.WeakHashMap;
 
 import org.eclipse.core.resources.IResource;
@@ -68,9 +67,7 @@ class GitDocument extends Document implements RefsChangedListener {
 
 	private GitDocument(IResource resource) {
 		this.resource = resource;
-		synchronized (doc2repo) {
-			doc2repo.put(this, getRepository());
-		}
+		GitDocument.doc2repo.put(this, getRepository());
 	}
 
 	private void setResolved(final AnyObjectId commit, final AnyObjectId tree,
@@ -96,11 +93,6 @@ class GitDocument extends Document implements RefsChangedListener {
 		if (GitTraceLocation.QUICKDIFF.isActive())
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.QUICKDIFF.getLocation(), resource);
-
-		// Do not populate if already disposed
-		if (myRefsChangedHandle == null)
-			return;
-
 		TreeWalk tw = null;
 		RevWalk rw = null;
 		try {
@@ -216,9 +208,8 @@ class GitDocument extends Document implements RefsChangedListener {
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.QUICKDIFF.getLocation(),
 					"(GitDocument) dispose: " + resource); //$NON-NLS-1$
-		synchronized (doc2repo) {
-			doc2repo.remove(this);
-		}
+		doc2repo.remove(this);
+
 		if (myRefsChangedHandle != null) {
 			myRefsChangedHandle.remove();
 			myRefsChangedHandle = null;
@@ -247,12 +238,10 @@ class GitDocument extends Document implements RefsChangedListener {
 	 * @throws IOException
 	 */
 	static void refreshRelevant(final Repository repository) throws IOException {
-		final Entry[] docs;
-		synchronized (doc2repo) {
-			docs = doc2repo.entrySet().toArray(new Entry[doc2repo.size()]);
+		for (Map.Entry<GitDocument, Repository> i : doc2repo.entrySet()) {
+			if (i.getValue() == repository) {
+				i.getKey().populate();
+			}
 		}
-		for (Entry doc : docs)
-			if (doc.getValue() == repository)
-				((GitDocument) doc.getKey()).populate();
 	}
 }
