@@ -327,7 +327,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 	}
 
-	static class TreeDecoratingLabelProvider extends DecoratingLabelProvider {
+	class TreeDecoratingLabelProvider extends DecoratingLabelProvider {
 
 		ILabelProvider provider;
 
