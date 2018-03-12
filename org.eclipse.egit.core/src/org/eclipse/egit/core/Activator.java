@@ -142,6 +142,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	public void stop(final BundleContext context) throws Exception {
 		GitProjectData.detachFromWorkspace();
 		repositoryCache = null;
+		indexDiffCache = null;
 		repositoryUtil.dispose();
 		repositoryUtil = null;
 		secureStore = null;

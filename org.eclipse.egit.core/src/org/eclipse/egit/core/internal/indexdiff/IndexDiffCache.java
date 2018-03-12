@@ -41,7 +41,7 @@ public class IndexDiffCache {
 	 */
 	public IndexDiffCacheEntry getIndexDiffCacheEntry(Repository repository) {
 		IndexDiffCacheEntry entry;
-		synchronized(entries) {
+		synchronized (entries) {
 			entry = entries.get(repository);
 			if (entry != null)
 				return entry;
@@ -53,9 +53,10 @@ public class IndexDiffCache {
 	}
 
 	/**
-	 * Adds a listener for IndexDiff changes.
-	 * Note that only caches are available for those repositories
-	 * for which getIndexDiffCacheEntry was called.
+	 * Adds a listener for IndexDiff changes. Note that only caches are
+	 * available for those repositories for which getIndexDiffCacheEntry was
+	 * called.
+	 *
 	 * @param listener
 	 */
 	public void addIndexDiffChangedListener(IndexDiffChangedListener listener) {

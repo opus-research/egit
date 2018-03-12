@@ -91,6 +91,9 @@ public class IndexDiffCacheEntry {
 	}
 
 	/**
+	 * Use this method to register an {@link IndexDiffChangedListener}. The
+	 * listener is notified when a new index diff is available.
+	 *
 	 * @param listener
 	 */
 	public void addIndexDiffChangedListener(IndexDiffChangedListener listener) {
@@ -109,13 +112,16 @@ public class IndexDiffCacheEntry {
 	}
 
 	/**
-	 *
+	 * Trigger a new index diff calculation manually
 	 */
 	public void refresh() {
 		scheduleReloadJob();
 	}
 
 	/**
+	 * The method returns the current index diff or null. Null is returned if
+	 * the first index diff calculation has not completed yet.
+	 *
 	 * @return index diff
 	 */
 	public IndexDiffData getIndexDiff() {
@@ -229,7 +235,7 @@ public class IndexDiffCacheEntry {
 	private String getReloadJobName() {
 		String repoName = Activator.getDefault().getRepositoryUtil()
 				.getRepositoryName(repository);
-		return MessageFormat.format(CoreText.IndexDiffCacheEntry_0, repoName);
+		return MessageFormat.format(CoreText.IndexDiffCacheEntry_reindexing, repoName);
 	}
 
 	private void createResourceChangeListener() {
@@ -290,7 +296,6 @@ public class IndexDiffCacheEntry {
 		};
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				resourceChangeListener, IResourceChangeEvent.POST_CHANGE);
-
 	}
 
 }
