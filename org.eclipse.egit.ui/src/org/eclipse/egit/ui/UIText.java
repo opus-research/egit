@@ -2566,12 +2566,6 @@ public class UIText extends NLS {
 	public static String BranchOperationUI_DetachedHeadMessage;
 
 	/** */
-	public static String BranchResultDialog_buttonCommit;
-
-	/** */
-	public static String BranchResultDialog_buttonReset;
-
-	/** */
 	public static String BranchResultDialog_CheckoutConflictsMessage;
 
 	/** */
