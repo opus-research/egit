@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -88,7 +87,7 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		// then
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
-		assertTrue(syncItems[0].getText().endsWith(GitModelWorkingTree_workingTree));
+		assertEquals(GitModelWorkingTree_workingTree, syncItems[0].getText());
 	}
 
 	@Test
@@ -399,8 +398,6 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		assertNotNull(syncItems[0].getNode(PROJ1).getNode(newFileName));
 	}
 
-	// TODO: stabilize test and reenable it
-	@Ignore
 	@Test
 	public void shouldRefreshSyncResultAfterRepositoryChange() throws Exception {
 		// given
@@ -412,7 +409,7 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		// preconditions - sync result should contain two uncommitted changes
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
-		assertTrue(syncItems[0].getText().endsWith(GitModelWorkingTree_workingTree));
+		assertEquals(GitModelWorkingTree_workingTree, syncItems[0].getText());
 		syncItems[0].doubleClick();
 		assertEquals(2,
 				syncItems[0].getItems()[0].getItems()[0].getItems().length);

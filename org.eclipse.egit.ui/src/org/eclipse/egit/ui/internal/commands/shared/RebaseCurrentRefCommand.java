@@ -31,6 +31,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.ISources;
 
 /**
  * Implements "Rebase" to the currently checked out {@link Ref}
@@ -52,8 +53,6 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 			ref = null;
 
 		final Repository repository = getRepository(event);
-		if (repository == null)
-			return null;
 
 		BasicConfigurationDialog.show(repository);
 
@@ -89,7 +88,8 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 	public void setEnabled(Object evaluationContext) {
 		if (evaluationContext instanceof IEvaluationContext) {
 			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
-			Object selection = getSelection(ctx);
+			Object selection = ctx
+					.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
 			if (selection instanceof ISelection) {
 				Repository repo = getRepository((ISelection) selection);
 				if (repo != null) {
