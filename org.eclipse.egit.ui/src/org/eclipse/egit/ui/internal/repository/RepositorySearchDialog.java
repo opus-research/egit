@@ -231,7 +231,7 @@ public class RepositorySearchDialog extends Dialog {
 				1, 1));
 		search.setText(UIText.RepositorySearchDialog_SearchButton);
 
-		tv = CheckboxTableViewer.newCheckList(main, SWT.BORDER);
+		tv = CheckboxTableViewer.newCheckList(main, SWT.NONE);
 		tab = tv.getTable();
 		tab.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 3, 1));
 		tab.setEnabled(false);
