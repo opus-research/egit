@@ -587,9 +587,6 @@ public class UIText extends NLS {
 	public static String RepositoryPropertySource_RepositoryConfigurationCategory;
 
 	/** */
-	public static String RepositoryPropertySource_SystemConfigurationMenu;
-
-	/** */
 	public static String RepositoryPropertySource_SelectModeTooltip;
 
 	/** */
@@ -1466,9 +1463,6 @@ public class UIText extends NLS {
 	public static String ConfigurationEditorComponent_NewValueButton;
 
 	/** */
-	public static String ConfigurationEditorComponent_NoConfigLocationKnown;
-
-	/** */
 	public static String ConfigurationEditorComponent_NoEntrySelectedMessage;
 
 	/** */
@@ -1479,9 +1473,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_OpenEditorTooltip;
-
-	/** */
-	public static String ConfigurationEditorComponent_ReadOnlyLocationFormat;
 
 	/** */
 	public static String ConfigurationEditorComponent_RemoveAllButton;
@@ -1509,12 +1500,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_WrongNumberOfTokensMessage;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_systemSettingTabTitle;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_userSettingTabTitle;
 
 	/** */
 	public static String ConfigureRemoteWizard_WizardTitle_Change;
