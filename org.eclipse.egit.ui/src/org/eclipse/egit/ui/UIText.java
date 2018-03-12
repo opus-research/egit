@@ -3758,9 +3758,6 @@ public class UIText extends NLS {
 	public static String StagingView_OpenNewCommits;
 
 	/** */
-	public static String StagingView_IndexDiffReload;
-
-	/** */
 	public static String SynchronizeWithMenu_custom;
 
 	/** */

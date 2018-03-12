@@ -1,14 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2011 SAP AG.
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Mathias Kinzler (SAP AG) - initial implementation
- *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
 import java.io.IOException;
@@ -45,12 +34,13 @@ public abstract class BooleanPrefAction extends Action implements
 
 	public void run() {
 		store.setValue(prefName, isChecked());
-		if (store.needsSaving())
+		if (store.needsSaving()) {
 			try {
 				store.save();
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, false);
 			}
+		}
 	}
 
 	/**
