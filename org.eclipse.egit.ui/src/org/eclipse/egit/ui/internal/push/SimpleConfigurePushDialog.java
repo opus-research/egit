@@ -88,8 +88,6 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 
 	private RemoteConfig config;
 
-	private final boolean showBranchInfo;
-
 	private Text commonUriText;
 
 	private TableViewer uriViewer;
@@ -113,8 +111,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 	 */
 	public static Dialog getDialog(Shell shell, Repository repository) {
 		RemoteConfig configToUse = getConfiguredRemote(repository);
-		return new SimpleConfigurePushDialog(shell, repository, configToUse,
-				true);
+		return new SimpleConfigurePushDialog(shell, repository, configToUse);
 	}
 
 	/**
@@ -133,8 +130,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			Activator.handleError(e.getMessage(), e, true);
 			return null;
 		}
-		return new SimpleConfigurePushDialog(shell, repository, configToUse,
-				false);
+		return new SimpleConfigurePushDialog(shell, repository, configToUse);
 	}
 
 	/**
@@ -182,23 +178,13 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		return configToUse;
 	}
 
-	/**
-	 *
-	 * @param shell
-	 * @param repository
-	 * @param config
-	 * @param showBranchInfo
-	 *            should be true if this is used for upstream configuration; if
-	 *            false, branch information will be hidden in the dialog
-	 */
 	private SimpleConfigurePushDialog(Shell shell, Repository repository,
-			RemoteConfig config, boolean showBranchInfo) {
+			RemoteConfig config) {
 		super(shell);
 		setHelpAvailable(false);
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repository = repository;
 		this.config = config;
-		this.showBranchInfo = showBranchInfo;
 	}
 
 	@Override
@@ -223,24 +209,20 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		repositoryText.setText(Activator.getDefault().getRepositoryUtil()
 				.getRepositoryName(repository));
 
-		if (showBranchInfo) {
-			Label branchLabel = new Label(repositoryGroup, SWT.NONE);
-			branchLabel.setText(UIText.SimpleConfigurePushDialog_BranchLabel);
-			String branch;
-			try {
-				branch = repository.getBranch();
-			} catch (IOException e2) {
-				branch = null;
-			}
-			if (branch == null || ObjectId.isId(branch)) {
-				branch = UIText.SimpleConfigurePushDialog_DetachedHeadMessage;
-			}
-			Text branchText = new Text(repositoryGroup, SWT.BORDER
-					| SWT.READ_ONLY);
-			GridDataFactory.fillDefaults().grab(true, false)
-					.applyTo(branchText);
-			branchText.setText(branch);
+		Label branchLabel = new Label(repositoryGroup, SWT.NONE);
+		branchLabel.setText(UIText.SimpleConfigurePushDialog_BranchLabel);
+		String branch;
+		try {
+			branch = repository.getBranch();
+		} catch (IOException e2) {
+			branch = null;
 		}
+		if (branch == null || ObjectId.isId(branch)) {
+			branch = UIText.SimpleConfigurePushDialog_DetachedHeadMessage;
+		}
+		Text branchText = new Text(repositoryGroup, SWT.BORDER | SWT.READ_ONLY);
+		GridDataFactory.fillDefaults().grab(true, false).applyTo(branchText);
+		branchText.setText(branch);
 
 		Group remoteGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		remoteGroup.setLayout(new GridLayout());
@@ -729,8 +711,6 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 	 * @param parent
 	 */
 	private void addDefaultOriginWarningIfNeeded(Composite parent) {
-		if (!showBranchInfo)
-			return;
 		List<String> otherBranches = new ArrayList<String>();
 		String currentBranch;
 		try {
