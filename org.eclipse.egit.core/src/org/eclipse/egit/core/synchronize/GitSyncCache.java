@@ -22,8 +22,6 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -111,10 +109,8 @@ class GitSyncCache {
 
 		try {
 			// setup local tree
-			FileTreeIterator fti = null;
 			if (gsd.shouldIncludeLocal()) {
-				fti = new FileTreeIterator(repo);
-				tw.addTree(fti);
+				tw.addTree(new FileTreeIterator(repo));
 				if (filter != null)
 					tw.setFilter(AndTreeFilter.create(filter,
 							new NotIgnoredFilter(0)));
@@ -137,12 +133,6 @@ class GitSyncCache {
 			else
 				tw.addTree(new EmptyTreeIterator());
 
-			DirCacheIterator dci = null;
-			if (fti != null) {
-				dci = new DirCacheIterator(DirCache.read(repo));
-				tw.addTree(dci);
-				fti.setDirCacheIterator(tw, 3);
-			}
 			List<ThreeWayDiffEntry> diffEntrys = ThreeWayDiffEntry.scan(tw);
 			tw.release();
 
