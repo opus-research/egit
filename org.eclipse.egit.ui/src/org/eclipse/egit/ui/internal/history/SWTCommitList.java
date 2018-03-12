@@ -54,7 +54,6 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 
 	public void dispose() {
 		clear();
-
 		for (Color color : allColors)
 			color.dispose();
 		if (!control.isDisposed())
