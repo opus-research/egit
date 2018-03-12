@@ -440,8 +440,6 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 		layout();
 
 		Repository.addAnyRepositoryChangedListener(this);
-
-		getSite().setSelectionProvider(revObjectSelectionProvider);
 	}
 
 	private void openInCompare(CompareEditorInput input) {
