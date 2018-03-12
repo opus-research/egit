@@ -449,10 +449,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if (userEnteredCommmitMessage())
-					saveCommitMessageComponentState();
-				else
-					deleteCommitMessageComponentState();
 				resources.dispose();
 				toolkit.dispose();
 			}
@@ -1986,7 +1982,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private boolean isValidRepo(final Repository repository) {
 		return repository != null
 				&& !repository.isBare()
-				&& repository.getWorkTree().exists();
+				&& repository.getWorkTree().exists()
+				&& org.eclipse.egit.core.Activator.getDefault()
+						.getRepositoryUtil().contains(repository);
 	}
 
 	/**
