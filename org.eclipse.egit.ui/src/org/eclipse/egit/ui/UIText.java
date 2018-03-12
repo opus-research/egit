@@ -424,6 +424,9 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
 
 	/** */
+	public static String GitPreferenceRoot_fetchBeforeSynchronization;
+
+	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
 
 	/** */
@@ -3032,10 +3035,7 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_repositories;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_destination;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
+	public static String GitBranchSynchronizeWizardPage_branches;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
@@ -3147,6 +3147,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NonDeletedFilesTree_ResourcePathsButton;
+
+	/** */
+	public static String NoteDetailsPage_ContentSection;
+
+	/** */
+	public static String NotesBlock_NotesSection;
+
+	/** */
+	public static String NotesEditorPage_Title;
 
 	/** */
 	public static String OpenWorkingFileAction_text;
@@ -3666,6 +3675,21 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SynchronizeWithMenu_custom;
+
+	/** */
+	public static String SynchronizeFetchJob_JobName;
+
+	/** */
+	public static String SynchronizeFetchJob_TaskName;
+
+	/** */
+	public static String SynchronizeFetchJob_SubTaskName;
+
+	/** */
+	public static String SynchronizeFetchJob_FetchFailedTitle;
+
+	/** */
+	public static String SynchronizeFetchJob_FetchFailedMessage;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
