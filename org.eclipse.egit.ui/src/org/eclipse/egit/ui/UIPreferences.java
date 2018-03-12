@@ -7,6 +7,7 @@
  * Copyright (C) 2013, Tobias Pfeifer <to.pfeifer@sap.com>
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
+ * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -65,6 +66,8 @@ public class UIPreferences {
 	public final static String FINDTOOLBAR_FIND_IN = "findtoolbar_find_in"; //$NON-NLS-1$
 	/** */
 	public final static String COMMIT_DIALOG_HARD_WRAP_MESSAGE = "commit_dialog_hard_wrap_message"; //$NON-NLS-1$
+	/** */
+	public final static String COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE = "commit_dialog_warn_about_message_second_line"; //$NON-NLS-1$
 	/** */
 	public final static String COMMIT_DIALOG_SIGNED_OFF_BY = "commit_dialog_signed_off_by"; //$NON-NLS-1$
 	/** */
@@ -157,13 +160,6 @@ public class UIPreferences {
 	/** Holds true if the logical model should be used. */
 	public static final String USE_LOGICAL_MODEL = "enable_logical_model"; //$NON-NLS-1$
 
-	/**
-	 * When reading this preference, use
-	 * {@link UIUtils#getDefaultRepositoryDir()} instead (for variable
-	 * substitution).
-	 */
-	public static final String DEFAULT_REPO_DIR = "default_repository_dir"; //$NON-NLS-1$
-
 	/** */
 	public static final String MERGE_MODE = "merge_mode"; //$NON-NLS-1$
 	/** */
@@ -190,6 +186,9 @@ public class UIPreferences {
 	public static final String HISTORY_MAX_TAG_LENGTH = "HistoryView_MaxTagLength"; //$NON-NLS-1$
 	/** */
 	public static final String HISTORY_MAX_BRANCH_LENGTH = "HistoryView_MaxBranchLength"; //$NON-NLS-1$
+	/** */
+	public static final String HISTORY_MAX_DIFF_LINES = "HistoryView_MaxDiffLines"; //$NON-NLS-1$
+
 	/** */
 	public static final String HISTORY_CUT_AT_START = "HistoryView_CutAtStart"; //$NON-NLS-1$
 	/** */
