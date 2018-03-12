@@ -25,7 +25,6 @@ import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.ResourcePropertyTester;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
@@ -36,8 +35,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -54,8 +51,8 @@ import org.eclipse.ui.commands.ICommandService;
 /**
  * Label Provider for the Git Repositories View
  */
-public class RepositoriesViewLabelProvider extends ColumnLabelProvider
-		implements IStateListener, IStyledLabelProvider {
+public class RepositoriesViewLabelProvider extends GitLabelProvider implements
+		IStateListener {
 
 	/**
 	 * A map of regular images to their decorated counterpart.
@@ -349,8 +346,7 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 				if (node.getParent() != null
 						&& node.getParent().getType() == RepositoryTreeNodeType.SUBMODULES)
 					return getStyledTextForSubmodule(node);
-				return GitLabelProvider.getStyledTextFor((Repository) node
-						.getObject());
+				return getStyledTextFor((Repository) node.getObject());
 			case ADDITIONALREF:
 				Ref ref = (Ref) node.getObject();
 				// shorten the name
@@ -472,21 +468,11 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 		}
 	}
 
-	@Override
-	public String getToolTipText(Object element) {
-		if (element instanceof AdditionalRefNode) {
-			AdditionalRefNode additionalRefNode = (AdditionalRefNode) element;
-			Ref ref = additionalRefNode.getObject();
-			return GitLabelProvider.getRefDescription(ref);
-		}
-		return null;
-	}
-
 	private String getSimpleText(RepositoryTreeNode node) {
 		switch (node.getType()) {
 		case REPO:
 			Repository repository = (Repository) node.getObject();
-			return GitLabelProvider.getSimpleTextFor(repository);
+			return super.getText(repository);
 		case FILE:
 			// fall through
 		case FOLDER:

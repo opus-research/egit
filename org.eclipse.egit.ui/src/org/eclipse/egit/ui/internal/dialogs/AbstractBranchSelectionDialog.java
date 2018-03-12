@@ -25,6 +25,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
+import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
@@ -37,7 +38,7 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -268,9 +269,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		FilteredTree tree = new FilteredTree(composite, selectionModel | SWT.BORDER,
 				new PatternFilter(), true);
 		branchTree = tree.getViewer();
-		branchTree.setLabelProvider(new RepositoriesViewLabelProvider());
+		branchTree.setLabelProvider(new DelegatingStyledCellLabelProvider(
+				new RepositoriesViewLabelProvider()));
 		branchTree.setContentProvider(new RepositoriesViewContentProvider());
-		ColumnViewerToolTipSupport.enableFor(branchTree);
 
 		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300).applyTo(
 				tree);
@@ -295,7 +296,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 						&& type != RepositoryTreeNodeType.ADDITIONALREF)
 					branchTree.setExpandedState(node,
 							!branchTree.getExpandedState(node));
-				else if (getButton(Window.OK).isEnabled())
+				else if (isOkButtonEnabled())
 					buttonPressed(OK);
 			}
 		});
@@ -326,7 +327,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		// complete after the dialog is first shown. If automatic selections
 		// happen after this (making the user inputs complete), the button will
 		// be enabled.
-		getButton(Window.OK).setEnabled(false);
+		setOkButtonEnabled(false);
 
 		List<RepositoryTreeNode> roots = new ArrayList<RepositoryTreeNode>();
 		if ((settings & SHOW_LOCAL_BRANCHES) != 0)
@@ -362,6 +363,30 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	}
 
 	/**
+	 * Enables the OK button. No-op in case Dialog#createButtonsForButtonBar has
+	 * been overridden and the button has not been created.
+	 * 
+	 * @param enabled
+	 * 
+	 * @see org.eclipse.jface.dialogs.Dialog#createButtonsForButtonBar(Composite)
+	 */
+	protected void setOkButtonEnabled(boolean enabled) {
+		if (getButton(Window.OK) != null)
+			getButton(Window.OK).setEnabled(enabled);
+	}
+
+	/**
+	 * Returns <code>true</code> if the OK button has been created and is
+	 * enabled.
+	 * 
+	 * @return the OK button's enabled state or <code>false</code> if the button
+	 *         has not been created.
+	 */
+	protected boolean isOkButtonEnabled() {
+		return getButton(Window.OK) != null && getButton(Window.OK).isEnabled();
+	}
+
+	/**
 	 * Set the selection to a {@link Ref} if possible
 	 *
 	 * @param refName
@@ -386,6 +411,11 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 				if (ref == null)
 					return false;
 				node = new RefNode(remoteBranches, repo, ref);
+			} else if (Constants.HEAD.equals(refName)) {
+				Ref ref = repo.getRef(refName);
+				if (ref == null)
+					return false;
+				node = new AdditionalRefNode(references, repo, ref);
 			} else {
 				String mappedRef = Activator.getDefault().getRepositoryUtil()
 						.mapCommitToRef(repo, refName, false);
