@@ -16,14 +16,10 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
-import org.eclipse.jface.text.Document;
-import org.eclipse.jface.text.TextViewer;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -39,7 +35,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.TextTransfer;
@@ -66,19 +61,9 @@ class CommitFileDiffViewer extends TableViewer {
 
 	private boolean compareMode;
 
-	private SashForm sash;
-
-	private TextViewer errorText;
-
 	CommitFileDiffViewer(final Composite parent) {
-		super(new SashForm(parent, SWT.HORIZONTAL), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER
+		super(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER
 				| SWT.FULL_SELECTION);
-		sash = (SashForm) getTable().getParent();
-
-		errorText = new TextViewer(sash, SWT.NONE);
-		// same font as in message viewer
-		errorText.getTextWidget().setFont(UIUtils.getFont(UIPreferences.THEME_CommitMessageFont));
-		errorText.setDocument(new Document(UIText.CommitFileDiffViewer_SelectOneCommitMessage));
 
 		final Table rawTable = getTable();
 		rawTable.setHeaderVisible(true);
@@ -111,15 +96,6 @@ class CommitFileDiffViewer extends TableViewer {
 				clipboard.dispose();
 			}
 		});
-	}
-
-	@Override
-	protected void inputChanged(Object input, Object oldInput) {
-		if (input == null)
-			sash.setMaximizedControl(errorText.getControl());
-		else
-			sash.setMaximizedControl(getTable());
-		super.inputChanged(input, oldInput);
 	}
 
 	private void openFileInEditor(FileDiff d) {
