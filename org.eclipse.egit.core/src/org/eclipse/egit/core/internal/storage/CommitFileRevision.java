@@ -56,12 +56,11 @@ class CommitFileRevision extends GitFileRevision {
 			final String fileName, final ObjectId blob) {
 		super(fileName);
 		db = repo;
-		if (rc.getRawBuffer() == null)
-			try {
-				new RevWalk(db).parseBody(rc);
-			} catch (IOException e) {
-				Activator.logError(e.getMessage(), e);
-			}
+		try {
+			new RevWalk(db).parseBody(rc);
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+		}
 		commit = rc;
 		author = rc.getAuthorIdent();
 		path = fileName;
