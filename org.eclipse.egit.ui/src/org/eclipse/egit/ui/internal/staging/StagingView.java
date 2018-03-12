@@ -1441,8 +1441,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		case MISSING:
 		case MISSING_AND_CHANGED:
 		case MODIFIED:
-		case MODIFIED_AND_CHANGED:
-		case MODIFIED_AND_ADDED:
+		case PARTIALLY_MODIFIED:
 		case CONFLICTING:
 		case UNTRACKED:
 		default:
@@ -1926,8 +1925,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			break;
 		case CONFLICTING:
 		case MODIFIED:
-		case MODIFIED_AND_CHANGED:
-		case MODIFIED_AND_ADDED:
+		case PARTIALLY_MODIFIED:
 		case UNTRACKED:
 			addPaths.add(entry.getPath());
 			break;
