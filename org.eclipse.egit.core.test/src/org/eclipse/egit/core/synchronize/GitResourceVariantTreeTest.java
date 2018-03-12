@@ -10,6 +10,7 @@ package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.eclipse.jgit.lib.Constants.MASTER;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -213,8 +214,15 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 
 		// then
 		IResourceVariant actual = grvt.getResourceVariant(mainJava);
-		// null variant indicates that resource wasn't changed
-		assertNull(actual);
+		assertNotNull(actual);
+		assertEquals(fileName, actual.getName());
+
+		InputStream actualIn = actual.getStorage(new NullProgressMonitor())
+				.getContents();
+		byte[] actualByte = getBytesAndCloseStream(actualIn);
+		InputStream expectedIn = mainJava.getContents();
+		byte[] expectedByte = getBytesAndCloseStream(expectedIn);
+		assertArrayEquals(expectedByte, actualByte);
 	}
 
 	/**
