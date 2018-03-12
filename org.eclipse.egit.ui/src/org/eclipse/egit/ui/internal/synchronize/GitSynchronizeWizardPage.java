@@ -67,8 +67,6 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 	private Image repositoryImage = UIIcons.REPOSITORY.createImage();
 
-	private IProject[] selectProjects;
-
 	GitSynchronizeWizardPage() {
 		super(GitSynchronizeWizardPage.class.getName());
 		setTitle(UIText.GitBranchSynchronizeWizardPage_title);
@@ -252,10 +250,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 		final Object[] array = repositories.keySet().toArray();
 		treeViewer.setInput(array);
-		if (selectProjects == null)
-			treeViewer.setCheckedElements(array);
-		else
-			treeViewer.setCheckedElements(selectProjects);
+		treeViewer.setCheckedElements(array);
 		repositoriesColumn.getColumn().pack();
 
 		save();
@@ -351,10 +346,6 @@ class GitSynchronizeWizardPage extends WizardPage {
 					break;
 				}
 		setPageComplete(complete);
-	}
-
-	void selectProjects(IProject[] projs) {
-		this.selectProjects = projs;
 	}
 
 	Map<Repository, String> getSelectedBranches() {
