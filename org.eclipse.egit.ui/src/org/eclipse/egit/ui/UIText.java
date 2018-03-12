@@ -1525,9 +1525,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_CheckingOutMessage;
 
 	/** */
-	public static String RepositoriesView_Synchronize_MenuItem;
-
-	/** */
 	public static String RepositoriesView_CheckOut_MenuItem;
 
 	/** */
@@ -1582,6 +1579,9 @@ public class UIText extends NLS {
 	public static String RepositoriesView_DeleteRepoDeterminProjectsMessage;
 
 	/** */
+	public static String RepositoriesView_DoFetchMenu;
+
+	/** */
 	public static String RepositoriesView_DoPushMenuItem;
 
 	/** */
@@ -1631,6 +1631,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_PasteRepoAlreadyThere;
+
+	/** */
+	public static String RepositoriesView_PushMenu;
 
 	/** */
 	public static String RepositoriesView_Refresh_Button;
@@ -1932,69 +1935,6 @@ public class UIText extends NLS {
 	 * able to find the corresponding bundle file.
 	 */
 	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.uitext"; //$NON-NLS-1$
-
-	/** */
-	public static String CommitAction_commit;
-
-	/** */
-	public static String GitResourceVariantTree_couldNotFindBlob;
-
-	/** */
-	public static String GitResourceVariantTree_fetchingMembers;
-
-	/** */
-	public static String GitResourceVariantTree_fetchingVariant;
-
-	/** */
-	public static String GitResourceVariantTree_unableToReadRepository;
-
-	/** */
-	public static String GitSynchronizeWizard_synchronize;
-
-	/** */
-	public static String GitSynchronizeWizard_gitResourceSynchronization;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_title;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_description;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_repositories;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_branches;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_selectAll;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_deselectAll;
-
-	/** */
-	public static String GitBranchSubscriberParticipant_git;
-
-	/** */
-	public static String GitBranchResourceVariantTreeSubscriber_gitBranches;
-
-	/** */
-	public static String RemoteSelectionCombo_remote;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_manageRepositories;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_header;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_setAsDefault;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_selectProject;
-
-	/** */
-	public static String SynchronizeWithAction_localRepoName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

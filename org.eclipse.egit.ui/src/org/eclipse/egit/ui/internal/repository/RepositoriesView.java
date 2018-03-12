@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Dariusz Luksza <dariusz@luksza.org> - add synchronization feature
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -18,10 +17,8 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
@@ -54,9 +51,10 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneWizard;
 import org.eclipse.egit.ui.internal.clone.GitCreateProjectViaWizardWizard;
 import org.eclipse.egit.ui.internal.fetch.FetchConfiguredRemoteAction;
+import org.eclipse.egit.ui.internal.fetch.FetchWizard;
 import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
+import org.eclipse.egit.ui.internal.push.PushWizard;
 import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
-import org.eclipse.egit.ui.internal.synchronize.GitSynchronize;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
@@ -532,8 +530,6 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			if (!ref.isSymbolic()) {
 
 				if (!isBare) {
-					addSynchtonizeItem(men, node, ref);
-
 					MenuItem checkout = new MenuItem(men, SWT.PUSH);
 					checkout.setText(UIText.RepositoriesView_CheckOut_MenuItem);
 
@@ -599,6 +595,42 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 					// TODO progress monitoring/cancellation
 					removeRepository(new NullProgressMonitor(), repo);
 				}
+			});
+
+			new MenuItem(men, SWT.SEPARATOR);
+
+			MenuItem fetchItem = new MenuItem(men, SWT.PUSH);
+			fetchItem.setText(UIText.RepositoriesView_FetchMenu);
+			fetchItem.setImage(UIIcons.FETCH.createImage());
+			fetchItem.addSelectionListener(new SelectionAdapter() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					try {
+						new WizardDialog(getSite().getShell(), new FetchWizard(
+								repo)).open();
+					} catch (URISyntaxException e1) {
+						Activator.handleError(e1.getMessage(), e1, true);
+					}
+				}
+
+			});
+
+			MenuItem pushItem = new MenuItem(men, SWT.PUSH);
+			pushItem.setText(UIText.RepositoriesView_PushMenu);
+			pushItem.setImage(UIIcons.PUSH.createImage());
+			pushItem.addSelectionListener(new SelectionAdapter() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					try {
+						new WizardDialog(getSite().getShell(), new PushWizard(
+								repo)).open();
+					} catch (URISyntaxException e1) {
+						Activator.handleError(e1.getMessage(), e1, true);
+					}
+				}
+
 			});
 
 			// TODO delete does not work because of file locks on .pack-files
@@ -875,7 +907,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			final String configName = (String) node.getParent().getObject();
 
 			MenuItem doFetch = new MenuItem(men, SWT.PUSH);
-			doFetch.setText(UIText.RepositoriesView_FetchMenu);
+			doFetch.setText(UIText.RepositoriesView_DoFetchMenu);
 			doFetch.addSelectionListener(new SelectionAdapter() {
 
 				@Override
@@ -1497,7 +1529,6 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 						// we must dispose ourselves
 						clip.dispose();
 					if (errorMessage != null)
-						// TODO String ext
 						MessageDialog.openWarning(getSite().getShell(),
 								UIText.RepositoriesView_PasteFailureTitle,
 								errorMessage);
@@ -1714,14 +1745,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			try {
 				File dir = new File(dirString);
 				if (dir.exists() && dir.isDirectory()) {
-					IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(dir.getParentFile().getName());
-					Repository repo;
-					if (project.exists()) {
-						RepositoryMapping repoMapping = RepositoryMapping.getMapping(project);
-						repo = repoMapping.getRepository();
-					} else {
-						repo = new Repository(dir);
-					}
+					Repository repo = new Repository(dir);
 					// reset repository change events here so that check for
 					// repository changes does not trigger an unnecessary
 					// refresh
@@ -1948,31 +1972,6 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 					IWorkspace.AVOID_UPDATE, monitor);
 		} catch (CoreException e1) {
 			Activator.logError(e1.getMessage(), e1);
-		}
-	}
-
-	private void addSynchtonizeItem(Menu men, final RepositoryTreeNode node,
-			final Ref ref) {
-		final Repository repo = node.getRepository();
-		String projectName = repo.getDirectory().getParentFile().getName();
-		final IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
-
-		MenuItem sync = new MenuItem(men, SWT.PUSH);
-		sync.setText(UIText.RepositoriesView_Synchronize_MenuItem);
-
-		boolean projectExist = project.exists();
-		sync.setEnabled(projectExist);
-
-		if (projectExist) {
-			sync.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					Map<Repository, String> branches = new HashMap<Repository, String>();
-					branches.put(repo, ref.getName());
-
-					new GitSynchronize(branches, new IResource[] {project});
-				}
-			});
 		}
 	}
 }
