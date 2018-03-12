@@ -690,8 +690,6 @@ public class CommitFileDiffViewer extends TableViewer {
 	 */
 	void setInterestingPaths(Set<String> interestingPaths) {
 		((FileDiffContentProvider) getContentProvider()).setInterestingPaths(interestingPaths);
-		((FileDiffLabelProvider) getLabelProvider())
-				.setAllInteresting(interestingPaths == null);
 	}
 
 	void selectFirstInterestingElement() {
