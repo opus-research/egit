@@ -12,9 +12,9 @@ import java.io.IOException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
-import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
@@ -62,10 +62,13 @@ public class CreateBranchOnCommitHandler extends AbstractHistoryCommanndHandler 
 
 	@Override
 	public boolean isEnabled() {
-		GitHistoryPage page = getPage();
-		if (page == null)
+		try {
+			IStructuredSelection sel = getSelection(null);
+			return sel.size() == 1
+					&& sel.getFirstElement() instanceof RevCommit;
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, false);
 			return false;
-		IStructuredSelection sel = getSelection(page);
-		return sel.size() == 1 && sel.getFirstElement() instanceof RevCommit;
+		}
 	}
 }
