@@ -29,8 +29,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.RepositoryCache.FileKey;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
 
 /**
@@ -130,10 +128,8 @@ public class RepositoryFinder {
 				assert fsLoc.isAbsolute();
 				final File ownCfg = configFor(fsLoc);
 				final IResource[] children;
-				final FS fs = FS.detect();
 
-				if (ownCfg.isFile()
-						&& FileKey.isGitRepository(ownCfg.getParentFile(), fs)) {
+				if (ownCfg.isFile()) {
 					register(c, ownCfg.getParentFile());
 				}
 				if (c instanceof IProject) {
@@ -146,9 +142,7 @@ public class RepositoryFinder {
 									"Looking at candidate dir: " //$NON-NLS-1$
 											+ p);
 						final File pCfg = configFor(p);
-						if (pCfg.isFile()
-								&& FileKey.isGitRepository(
-										pCfg.getParentFile(), fs)) {
+						if (pCfg.isFile()) {
 							register(c, pCfg.getParentFile());
 						}
 						if (ceilingDirectories.contains(p.getPath()))
