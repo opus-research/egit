@@ -462,6 +462,15 @@
       </page>
       <page
             category="org.eclipse.egit.ui.GitPreferences"
+            class="org.eclipse.egit.ui.internal.preferences.StagingViewPreferencePage"
+            id="org.eclipse.egit.ui.internal.preferences.StagingViewPreferencePage"
+            name="%GitPreferences_StagingViewPreferencePage_name">
+         <keywordReference
+               id="org.eclipse.egit.ui.keyword.git">
+         </keywordReference>
+      </page>
+      <page
+            category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.DialogsPreferencePage"
             id="org.eclipse.egit.ui.internal.preferences.DialogsPreferencePage"
             name="%DialogsPreferencePage.name">
@@ -4699,7 +4708,7 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ImportChangedProjectsCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.ImportChangedProjectsCommand"
             id="org.eclipse.egit.ui.ImportChangedProjectsCommandId"
             name="%ImportChangedProjectsCommand"
             description="%ImportProjectsCommand_description">
