@@ -12,6 +12,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -162,6 +163,13 @@ public class PushBranchPage extends WizardPage {
 	public void createControl(Composite parent) {
 		try {
 			this.remoteConfigs = RemoteConfig.getAllRemoteConfigs(repository.getConfig());
+			Collections.sort(remoteConfigs, new Comparator<RemoteConfig>() {
+
+				public int compare(RemoteConfig first, RemoteConfig second) {
+					return String.CASE_INSENSITIVE_ORDER.compare(
+							first.getName(), second.getName());
+				}
+			});
 		} catch (URISyntaxException e) {
 			this.remoteConfigs = new ArrayList<RemoteConfig>();
 			handleError(e);
@@ -192,7 +200,7 @@ public class PushBranchPage extends WizardPage {
 			branchIconLabel
 					.setLayoutData(new RowData(branchIcon.getBounds().width,
 							branchIcon.getBounds().height));
-			branchIconLabel.setBackgroundImage(branchIcon);
+			branchIconLabel.setImage(branchIcon);
 			Label localBranchLabel = new Label(sourceComposite, SWT.NONE);
 			localBranchLabel.setText(Repository.shortenRefName(this.ref
 					.getName()));
@@ -201,10 +209,10 @@ public class PushBranchPage extends WizardPage {
 			spacer.setLayoutData(new RowData(3, SWT.DEFAULT));
 		}
 
-		Image commitIcon = UIIcons.COMMIT.createImage();
+		Image commitIcon = UIIcons.CHANGESET.createImage();
 		this.disposables.add(commitIcon);
 		Label commitIconLabel = new Label(sourceComposite, SWT.NONE);
-		commitIconLabel.setBackgroundImage(commitIcon);
+		commitIconLabel.setImage(commitIcon);
 		commitIconLabel.setLayoutData(new RowData(commitIcon.getBounds().width,
 				commitIcon.getBounds().height));
 

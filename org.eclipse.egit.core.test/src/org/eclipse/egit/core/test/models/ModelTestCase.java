@@ -48,7 +48,7 @@ import org.eclipse.team.core.mapping.ResourceMappingMerger;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.junit.Before;
 
-public class ModelTestCase extends GitTestCase {
+public abstract class ModelTestCase extends GitTestCase {
 	protected static final String SAMPLE_FILE_EXTENSION = SampleModelProvider.SAMPLE_FILE_EXTENSION;
 
 	@Before
