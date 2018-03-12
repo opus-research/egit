@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.0"?>
 <plugin>
-   <extension-point id="commitMessageProvider" name="%CommitMessageProviderExtension-point.name" schema="schema/commitMessageProvider.exsd"/>
+   <extension-point id="commitMessageProvider" name="CommitMessageProvider" schema="schema/commitMessageProvider.exsd"/>
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.eclipse.egit.ui.PluginPreferenceInitializer"/>
    </extension>
@@ -85,7 +85,7 @@
                definitionId="org.eclipse.egit.ui.team.SimplePush"
                icon="icons/obj16/push.gif"
                id="org.eclipse.egit.ui.team.SimplePush"
-               label="%PushToUpstreamAction.label"
+               label="Push to Upstream"
                menubarPath="team.main/group1">
          </action>
          <action
@@ -93,7 +93,7 @@
                definitionId="org.eclipse.egit.ui.team.SimpleFetch"
                icon="icons/obj16/fetch.gif"
                id="org.eclipse.egit.ui.team.SimpleFetch"
-               label="%FetchFromUpstreamAction.label"
+               label="Fetch from Upstream"
                menubarPath="team.main/group1">
          </action>
      </objectContribution>
@@ -138,7 +138,7 @@
          <action
                class="org.eclipse.egit.ui.internal.actions.CompareWithRefAction"
                id="org.eclipse.egit.ui.internal.actions.CompareWithRefAction"
-               label="%CompareWithBranchOrTagAction.label"
+               label="&amp;Branch or Tag..."
                menubarPath="compareWithMenu/gitCompareWithGroup">
          </action>
          <action
@@ -195,13 +195,13 @@
                definitionId="org.eclipse.egit.ui.team.MergeTool"
                icon="icons/obj16/mergetool.gif"
                id="org.eclipse.egit.ui.internal.actions.MergeTool"
-               label="%MergeToolAction.label"
+               label="Merge Tool"
                menubarPath="team.main/group4">
          </action>
          <action
                class="org.eclipse.egit.ui.internal.actions.CompareWithCommitAction"
                id="org.eclipse.egit.ui.internal.actions.CompareWithCommitAction"
-               label="%CompareWithCommitAction.label"
+               label="Commit..."
                menubarPath="compareWithMenu/gitCompareWithGroup">
          </action>
 	  </objectContribution>
@@ -635,7 +635,7 @@
             class="org.eclipse.egit.ui.internal.dialogs.CompareTreeView"
             icon="icons/obj16/gitrepository.gif"
             id="org.eclipse.egit.ui.CompareTreeView"
-            name="%TreeCompareView.name"
+            name="Git Tree Compare"
             restorable="false">
       </view>
    </extension>
@@ -908,7 +908,7 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewRebase"
                icon="icons/obj16/rebase.gif"
-               label="%RebaseCommand.label"
+               label="Rebase"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -1270,7 +1270,7 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewPushConfigured"
                icon="icons/obj16/push.gif"
-               label="%PushToUpstreamCommand.label"
+               label="Push to Upstream"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -1291,7 +1291,7 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewFetchConfigured"
                icon="icons/obj16/fetch.gif"
-               label="%FetchFromUpstreamCommand.label"
+               label="Fetch from Upstream"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -1416,7 +1416,7 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewRebaseWithDialog"
                icon="icons/obj16/rebase.gif"
-               label="%RebaseCommand.label2"
+               label="Rebase..."
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -1439,10 +1439,10 @@
          </command>
          <menu
                icon="icons/obj16/rebase.gif"
-               label="%RebaseMenu.label">
+               label="Rebase">
             <command
                   commandId="org.eclipse.egit.ui.RepositoriesViewAbortRebase"
-                  label="%AbortCommand.label"
+                  label="Abort"
                   style="push">
                <visibleWhen
                      checkEnabled="false">
@@ -1465,7 +1465,7 @@
             </command>
             <command
                   commandId="org.eclipse.egit.ui.RepositoriesViewContinueRebase"
-                  label="%ContinueCommand.label"
+                  label="&amp;Continue"
                   style="push">
                <visibleWhen
                      checkEnabled="false">
@@ -1488,7 +1488,7 @@
             </command>
             <command
                   commandId="org.eclipse.egit.ui.RepositoriesViewSkipRebase"
-                  label="%SkipCommand.label"
+                  label="&amp;Skip"
                   style="push">
                <visibleWhen
                      checkEnabled="false">
@@ -1546,7 +1546,7 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
                icon="icons/obj16/history.gif"
-               label="%ShowInHistoryCommand.label"
+               label="Show in History"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -2056,7 +2056,7 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ShowInHistoryCommand"
             id="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
-            name="%ShowInHistoryCommand.name2">
+            name="Show in History">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -2068,31 +2068,31 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RebaseCurrentRefCommand"
             id="org.eclipse.egit.ui.RepositoriesViewRebase"
-            name="%RebaseCommand.name">
+            name="Rebase">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RebaseCurrentRefCommand"
             id="org.eclipse.egit.ui.RepositoriesViewRebaseWithDialog"
-            name="%RebaseWithDialogCommand.name">
+            name="Rebase...">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.AbortRebaseCommand"
             id="org.eclipse.egit.ui.RepositoriesViewAbortRebase"
-            name="%AbortRebaseCommand.name">
+            name="Abort Rebase">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.SkipRebaseCommand"
             id="org.eclipse.egit.ui.RepositoriesViewSkipRebase"
-            name="%SkipRebaseCommand.name">
+            name="Skip Rebase">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ContinueRebaseCommand"
             id="org.eclipse.egit.ui.RepositoriesViewContinueRebase"
-            name="%ContinueRebaseCommand.name">
+            name="Continue Rebase">
       </command>
    </extension>
    <extension
@@ -2470,29 +2470,29 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.MergeToolActionHandler"
             id="org.eclipse.egit.ui.team.MergeTool"
-            name="%MergeToolCommand.name">
+            name="Merge Tool">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.SimplePushActionHandler"
             id="org.eclipse.egit.ui.team.SimplePush"
-            name="%PushUpstreamCommand.name">
+            name="PushUpstream">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.SimpleFetchActionHandler"
             id="org.eclipse.egit.ui.team.SimpleFetch"
-            name="%FetchUpstreamCommand.name">
+            name="FetchUpstream">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.actions.ConfigureFetchActionHandler"
             id="org.eclipse.egit.ui.ConfigureUpstreamFetch"
-            name="%ConfigureUpstreamFetchCommand.name">
+            name="Configure Upstream Fetch">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.actions.ConfigurePushActionHandler"
             id="org.eclipse.egit.ui.ConfigureUpstreamPush"
-            name="%ConfigureUpstreamPushCommand.name">
+            name="Configure Upstream Push">
       </command>
    </extension>
    <extension
@@ -2585,7 +2585,7 @@
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.OpenInTextEditorHandler"
             id="org.eclipse.egit.ui.history.OpenInTextEditorCommand"
-            name="%OpenInTextEditorCommand.name">
+            name="Open in Text Editor">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CherryPickHandler"
@@ -2660,7 +2660,7 @@
             locationURI="popup:org.eclipse.ui.popup.any?after=additions">
          <menu
                id="team.main"
-               label="%TeamMenu.label">
+               label="Te&amp;am">
             <separator
                   name="group1"
                   visible="true">
@@ -2687,12 +2687,12 @@
                </separator>
                <command
                      commandId="org.eclipse.egit.ui.ConfigureUpstreamFetch"
-                     label="%ConfigureFetchFromUpstreamCommand.label"
+                     label="Configure Fetch from Upstream..."
                      style="push">
                </command>
                <command
                      commandId="org.eclipse.egit.ui.ConfigureUpstreamPush"
-                     label="%ConfigurePushToUpstreamCommand.label"
+                     label="Configure Push to Upstream..."
                      style="push">
                </command>
                <visibleWhen
