@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -39,10 +38,10 @@ class DecoratableResourceAdapter extends DecoratableResource {
 
 	private IndexDiffData indexDiffData;
 
-	@SuppressWarnings("fallthrough")
-	public DecoratableResourceAdapter(IResource resourceToWrap)
+	public DecoratableResourceAdapter(IndexDiffData indexDiffData, IResource resourceToWrap)
 			throws IOException {
 		super(resourceToWrap);
+		this.indexDiffData = indexDiffData;
 		trace = GitTraceLocation.DECORATION.isActive();
 		long start = 0;
 		if (trace) {
@@ -60,15 +59,9 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			repository = mapping.getRepository();
 			if (repository == null)
 				return;
-			indexDiffData = Activator.getDefault().getIndexDiffCache()
-					.getIndexDiffCacheEntry(repository).getIndexDiff();
-			if (indexDiffData == null)
-				return;
-
 			repositoryName = DecoratableResourceHelper
 					.getRepositoryName(repository);
 			branch = DecoratableResourceHelper.getShortBranch(repository);
-
 			switch (resource.getType()) {
 			case IResource.FILE:
 				extractResourceProperties();
@@ -123,13 +116,13 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		String repoRelativePath = makeRepoRelative(resource) + "/"; //$NON-NLS-1$
 
 		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
+		Set<String> untrackedFolders = indexDiffData.getUntrackedFolders();
 		ignored = containsPrefixPath(ignoredFiles, repoRelativePath);
 
-		// only file can be not tracked.
 		if (ignored)
 			tracked = false;
 		else
-			tracked = true; // TODO: implement decoration for untracked folders
+			tracked = !containsPrefixPath(untrackedFolders, repoRelativePath);
 
 		// containers are marked as staged whenever file was added, removed or
 		// changed
