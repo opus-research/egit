@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2012, 2014 GitHub Inc and others.
+ *  Copyright (c) 2012 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -37,15 +37,13 @@ public class StashCreateOperation implements IEGitOperation {
 
 	private RevCommit commit;
 
-	private boolean includeUntracked;
-
 	/**
 	 * Create operation for repository
 	 *
 	 * @param repository
 	 */
 	public StashCreateOperation(final Repository repository) {
-		this(repository, null, false);
+		this(repository, null);
 	}
 
 	/**
@@ -54,23 +52,9 @@ public class StashCreateOperation implements IEGitOperation {
 	 * @param repository
 	 * @param message
 	 */
-	public StashCreateOperation(final Repository repository,
-			final String message) {
-		this(repository, message, false);
-	}
-
-	/**
-	 * Create operation for repository
-	 *
-	 * @param repository
-	 * @param message
-	 * @param includeUntracked
-	 */
-	public StashCreateOperation(final Repository repository,
-			final String message, final boolean includeUntracked) {
+	public StashCreateOperation(final Repository repository, final String message) {
 		this.repository = repository;
 		this.message = message;
-		this.includeUntracked = includeUntracked;
 	}
 
 	/**
@@ -90,7 +74,6 @@ public class StashCreateOperation implements IEGitOperation {
 					StashCreateCommand command = Git.wrap(repository).stashCreate();
 					if (message != null)
 						command.setWorkingDirectoryMessage(message);
-					command.setIncludeUntracked(includeUntracked);
 					commit = command.call();
 				} catch (JGitInternalException e) {
 					throw new TeamException(e.getLocalizedMessage(),
