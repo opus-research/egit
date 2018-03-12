@@ -54,6 +54,12 @@
                label="%SynchronizeWith_label"
                menubarPath="team.main/group3"/>
          <action
+               class="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspaceAction"
+               id="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspace"
+               icon="$nl$/icons/obj16/remotespec.gif"
+               label="%SynchronizeWorkspace_label"
+               menubarPath="team.main/group3"/>
+         <action
                class="org.eclipse.egit.ui.internal.actions.MergeAction"
                definitionId="org.eclipse.egit.ui.team.Merge"
                icon="$nl$/icons/obj16/merge.gif"
@@ -778,9 +784,14 @@
                      value="+">
                </count>
                <iterate>
-                  <adapt
+                  <or>
+                    <adapt
                         type="org.eclipse.core.resources.IResource">
-                  </adapt>
+                    </adapt>
+                    <adapt
+                        type="org.eclipse.core.resources.mapping.ResourceMapping">
+                    </adapt>
+                  </or>
                </iterate>
             </and>
          </activeWhen>
@@ -2098,6 +2109,35 @@
                visible="true">
          </separator>
          <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewAddToIndex"
+               icon="/icons/obj16/add.gif"
+               label="%RepoViewAddToIndex.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="+">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
                commandId="org.eclipse.egit.ui.team.ShowHistory"
                icon="icons/obj16/history.gif"
                label="%ShowInHistoryCommand.label"
@@ -2831,6 +2871,12 @@
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.OpenInTextEditorCommand"
             id="org.eclipse.egit.ui.RepositoriesViewOpenInTextEditor"
             name="%OpenInEditorCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.AddToIndexCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewAddToIndex"
+            name="%AddToIndexCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
