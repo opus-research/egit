@@ -334,10 +334,8 @@
       <page name="%GitPreferences_name"
             category="org.eclipse.team.ui.TeamPreferences"
             class="org.eclipse.egit.ui.internal.preferences.GitPreferenceRoot"
-            id="org.eclipse.egit.ui.GitPreferences">
-	      <keywordReference
-	            id="org.eclipse.egit.ui.keyword.refresh"/>
-      </page>
+            id="org.eclipse.egit.ui.GitPreferences" />
+
       <page name="%GitPreferences_WindowCachePreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.WindowCachePreferencePage"
@@ -1845,7 +1843,7 @@
                   checkEnabled="false">
                <and>
                   <count
-                        value="+">
+                        value="1">
                   </count>
                   <iterate>
                      <and>
@@ -1926,7 +1924,7 @@
                icon="icons/obj16/rebase.gif"
                label="%RebaseMenu.label">
             <command
-                  commandId="org.eclipse.egit.ui.org.eclipse.egit.ui.AbortRebase"
+                  commandId="org.eclipse.egit.ui.RepositoriesViewAbortRebase"
                   label="%AbortCommand.label"
                   style="push">
                <visibleWhen
@@ -1949,7 +1947,7 @@
                </visibleWhen>
             </command>
             <command
-                  commandId="org.eclipse.egit.ui.ContinueRebase"
+                  commandId="org.eclipse.egit.ui.RepositoriesViewContinueRebase"
                   label="%ContinueCommand.label"
                   style="push">
                <visibleWhen
@@ -1972,7 +1970,7 @@
                </visibleWhen>
             </command>
             <command
-                  commandId="org.eclipse.egit.ui.SkipRebase"
+                  commandId="org.eclipse.egit.ui.RepositoriesViewSkipRebase"
                   label="%SkipCommand.label"
                   style="push">
                <visibleWhen
@@ -2425,50 +2423,6 @@
                   name="group5"
                   visible="true">
             </separator>
-           <command
-                 commandId="org.eclipse.egit.ui.RepositoriesViewRebase" style="push"
-                 label="%RebaseWithDialog_label">
-	           <visibleWhen checkEnabled="false">
-	              <and>
-	                 <iterate>
-	                    <and>
-	                       <adapt
-	                             type="org.eclipse.core.resources.IProject">
-	                          <test
-	                                property="GitResource.isSafe">
-	                          </test>
-	                       </adapt>
-	                    </and>
-	                 </iterate>
-	              </and>
-	           </visibleWhen>
-           </command>
-           <menu
-               icon="icons/obj16/rebase.gif"
-               label="%RebaseMenu.label">
-	           <command
-	                 commandId="org.eclipse.egit.ui.org.eclipse.egit.ui.AbortRebase" style="push" />
-	            <command
-	                 commandId="org.eclipse.egit.ui.SkipRebase" style="push" />
-	            <command
-	                 commandId="org.eclipse.egit.ui.ContinueRebase" style="push" />
-	           <visibleWhen checkEnabled="false">
-	              <and>
-	                 <iterate>
-	                    <and>
-	                       <adapt
-	                             type="org.eclipse.core.resources.IProject">
-	                          <not>
-		                          <test
-		                                property="GitResource.isSafe">
-		                          </test>
-	                          </not>
-	                       </adapt>
-	                    </and>
-	                 </iterate>
-	              </and>
-	           </visibleWhen>
-            </menu>
             <separator
                   name="group6"
                   visible="true">
@@ -2671,26 +2625,26 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.commands.shared.RebaseCurrentRefCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RebaseCurrentRefCommand"
             id="org.eclipse.egit.ui.RepositoriesViewRebase"
             name="%RebaseCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.commands.shared.AbortRebaseCommand"
-            id="org.eclipse.egit.ui.org.eclipse.egit.ui.AbortRebase"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.AbortRebaseCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewAbortRebase"
             name="%AbortRebaseCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.commands.shared.SkipRebaseCommand"
-            id="org.eclipse.egit.ui.SkipRebase"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.SkipRebaseCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewSkipRebase"
             name="%SkipRebaseCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.commands.shared.ContinueRebaseCommand"
-            id="org.eclipse.egit.ui.ContinueRebase"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ContinueRebaseCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewContinueRebase"
             name="%ContinueRebaseCommand.name">
       </command>
    </extension>
@@ -2789,15 +2743,15 @@
             icon="icons/obj16/clear.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.org.eclipse.egit.ui.AbortRebase"
+            commandId="org.eclipse.egit.ui.RepositoriesViewAbortRebase"
             icon="icons/elcl16/progress_stop.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.ContinueRebase"
+            commandId="org.eclipse.egit.ui.RepositoriesViewContinueRebase"
             icon="icons/elcl16/continue.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.SkipRebase"
+            commandId="org.eclipse.egit.ui.RepositoriesViewSkipRebase"
             icon="icons/elcl16/skip.gif">
       </image>
       <image
@@ -2805,7 +2759,7 @@
             icon="icons/obj16/merge.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.RebaseCurrent"
+            commandId="org.eclipse.egit.ui.history.RebaseCurrent"
             icon="icons/obj16/rebase.gif">
       </image>
       <image
@@ -2894,7 +2848,7 @@
             class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
             id="org.eclipse.egit.ui.ResourceTester"
             namespace="GitResource"
-            properties="isShared,isSafe"
+            properties="isShared"
             type="org.eclipse.core.resources.IResource">
       </propertyTester>
    </extension>
@@ -3205,7 +3159,7 @@
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.RebaseCurrentHandler"
-            id="org.eclipse.egit.ui.RebaseCurrent"
+            id="org.eclipse.egit.ui.history.RebaseCurrent"
             name="%RebaseCurrentCommand.name">
       </command>
    </extension>
