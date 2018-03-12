@@ -21,37 +21,43 @@ import org.eclipse.osgi.util.NLS;
  * A collection of validators
  */
 public class ValidationUtils {
-
 	/**
 	 * Creates and returns input validator for refNames
 	 *
 	 * @param repo
 	 * @param refPrefix
+	 * @param errorOnEmptyName
 	 * @return input validator for refNames
 	 */
-	public static IInputValidator getRefNameInputValidator(final Repository repo, final String refPrefix) {
+	public static IInputValidator getRefNameInputValidator(
+			final Repository repo, final String refPrefix, final boolean errorOnEmptyName) {
 		return new IInputValidator() {
 			public String isValid(String newText) {
 				if (newText.length() == 0) {
-					// nothing entered, just don't let the user proceed,
-					// no need to prompt them with an error message
-					return null;
+					if (errorOnEmptyName)
+						return UIText.ValidationUtils_PleaseEnterNameMessage;
+					else
+						// ignore this
+						return null;
 				}
-
 				String testFor = refPrefix + newText;
 				try {
 					if (repo.resolve(testFor) != null)
-						return UIText.BranchSelectionDialog_ErrorAlreadyExists;
+						return NLS.bind(
+								UIText.ValidationUtils_RefAlreadyExistsMessage,
+								testFor);
 				} catch (IOException e1) {
 					Activator.logError(NLS.bind(
-							UIText.BranchSelectionDialog_ErrorCouldNotResolve, testFor), e1);
+							UIText.ValidationUtils_CanNotResolveRefMessage,
+							testFor), e1);
 					return e1.getMessage();
 				}
 				if (!Repository.isValidRefName(testFor))
-					return UIText.ValidationUtils_InvalidTagName;
+					return NLS.bind(
+							UIText.ValidationUtils_InvalidRefNameMessage,
+							testFor);
 				return null;
 			}
 		};
 	}
-
 }

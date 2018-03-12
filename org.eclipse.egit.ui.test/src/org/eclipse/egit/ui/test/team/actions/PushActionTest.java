@@ -32,7 +32,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -69,8 +68,6 @@ public class PushActionTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	@Ignore
-	// TODO fails because of a NPE
 	public void testPushToPushDestination() throws Exception {
 		pushTo("push", true);
 		pushTo("push", false);

@@ -9,8 +9,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,6 +26,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.jface.text.DefaultTextDoubleClickStrategy;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
@@ -78,6 +81,9 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 	private Repository db;
 
 	private TreeWalk walker;
+
+	// the encoding for the currently processed file
+	private String currentEncoding = null;
 
 	private static final String SPACE = " "; //$NON-NLS-1$
 
@@ -169,7 +175,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 	private void format() {
 		if (commit == null) {
-			setDocument(new Document());
+			setDocument(new Document(UIText.CommitMessageViewer_SelectOneCommitMessage));
 			return;
 		}
 
@@ -297,19 +303,31 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 	private void addDiff(final StringBuilder d,
 			final ArrayList<StyleRange> styles) {
-		DiffFormatter diffFmt = new DiffFormatter(new OutputStream() {
+		final DiffFormatter diffFmt = new DiffFormatter(
+				new BufferedOutputStream(new ByteArrayOutputStream() {
 
 			@Override
-			public void write(int c) throws IOException {
-				d.append((char) c);
+			public synchronized void write(byte[] b, int off, int len) {
+				super.write(b, off, len);
+				if (currentEncoding == null)
+					d.append(toString());
 
+				else try {
+					d.append(toString(currentEncoding));
+				} catch (UnsupportedEncodingException e) {
+					d.append(toString());
+				}
+				reset();
 			}
-		}) {
+
+		})) {
 			@Override
 			protected void writeHunkHeader(int aCur, int aEnd, int bCur,
 					int bEnd) throws IOException {
+				flush();
 				int start = d.length();
 				super.writeHunkHeader(aCur, aEnd, bCur, bEnd);
+				flush();
 				int end = d.length();
 				styles.add(new StyleRange(start, end - start,
 						sys_hunkHeaderColor, null));
@@ -318,8 +336,10 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			@Override
 			protected void writeAddedLine(RawText b, int bCur)
 					throws IOException {
+				flush();
 				int start = d.length();
 				super.writeAddedLine(b, bCur);
+				flush();
 				int end = d.length();
 				styles.add(new StyleRange(start, end - start,
 						sys_linesAddedColor, null));
@@ -328,8 +348,10 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			@Override
 			protected void writeRemovedLine(RawText b, int bCur)
 					throws IOException {
+				flush();
 				int start = d.length();
 				super.writeRemovedLine(b, bCur);
+				flush();
 				int end = d.length();
 				styles.add(new StyleRange(start, end - start,
 						sys_linesRemovedColor, null));
@@ -344,8 +366,10 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			for (FileDiff diff : diffs) {
 				if (diff.getBlobs().length == 2) {
 					String path = diff.getPath();
+					currentEncoding = CompareUtils.getResourceEncoding(db, path);
 					d.append(formatPathLine(path)).append("\n"); //$NON-NLS-1$
 					diff.outputDiff(d, db, diffFmt, true);
+					diffFmt.flush();
 				}
 			}
 		} catch (IOException e) {
