@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2009, 2013 Yann Simon <yann.simon.fr@gmail.com> and others.
+ * Copyright (C) 2009, Yann Simon <yann.simon.fr@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,8 +27,8 @@ import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
 
 /**
- * Editable revision which supports listening to content changes by adding
- * {@link IContentChangeListener}.
+ * @author simon
+ *
  */
 public class EditableRevision extends FileRevisionTypedElement implements
 		IEditableContent, IContentChangeNotifier {
@@ -133,16 +133,22 @@ public class EditableRevision extends FileRevisionTypedElement implements
 	}
 
 	public void setContent(byte[] newContent) {
-		modifiedContent = newContent;
+		if (newContent != null) {
+			modifiedContent = new byte[newContent.length];
+			System.arraycopy(newContent, 0, modifiedContent, 0,
+					newContent.length);
+		} else
+			modifiedContent = null;
 		fireContentChanged();
 	}
 
 	/**
-	 * @return The modified content for reading. The data is owned by this
-	 *         class, do not modify it.
+	 * @return the modified content
 	 */
 	public byte[] getModifiedContent() {
-		return modifiedContent;
+		byte[] result = new byte[modifiedContent.length];
+		System.arraycopy(modifiedContent, 0, result, 0, modifiedContent.length);
+		return result;
 	}
 
 	public Object getAdapter(Class adapter) {

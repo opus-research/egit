@@ -53,21 +53,19 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 	 * @param dialogMessage
 	 */
 	protected AbstractRebaseCommandHandler(String jobname, String dialogMessage) {
-		this.jobname = jobname;
 		this.dialogMessage = dialogMessage;
+		this.jobname = jobname;
 	}
 
 	/**
-	 * Executes the given {@link RebaseOperation}
-	 *
 	 * @param rebase
+	 * @return the result of the execution. Reserved for future use, must be
+	 *         null.
 	 * @throws ExecutionException
 	 */
-	protected void execute(final RebaseOperation rebase)
+	protected Object execute(final RebaseOperation rebase)
 			throws ExecutionException {
 		final Repository repository = rebase.getRepository();
-		if (repository == null)
-			return;
 		final RebaseCommand.Operation operation = rebase.getOperation();
 
 		JobUtil.scheduleUserJob(rebase, jobname, JobFamilies.REBASE,
@@ -93,8 +91,24 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 						// abort and show exception
 						if (operation == Operation.BEGIN
 								&& result.getSeverity() == IStatus.ERROR) {
-							handleBeginError(repository, result);
-						} else if (result.getSeverity() == IStatus.CANCEL)
+							if (!repository.getRepositoryState().equals(
+									RepositoryState.SAFE)) {
+								Throwable t = result.getException();
+								try {
+									new RebaseOperation(repository,
+											Operation.ABORT).execute(null);
+									Activator.showError(t.getMessage(), t);
+								} catch (CoreException e1) {
+									IStatus mStatus = createMultiStatus(t, e1);
+									CoreException mStatusException = new CoreException(
+											mStatus);
+									Activator.showError(
+											mStatusException.getMessage(),
+											mStatusException);
+								}
+							}
+						}
+						if (result.getSeverity() == IStatus.CANCEL)
 							Display.getDefault().asyncExec(new Runnable() {
 								public void run() {
 									// don't use getShell(event) here since
@@ -115,58 +129,23 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 									repository);
 					}
 				});
-	}
-
-
-
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		Repository repository = getRepository(event);
-		execute(repository);
 		return null;
 	}
 
-	/**
-	 * Create a {@link RebaseOperation} by calling
-	 * {@link AbstractRebaseCommandHandler#createRebaseOperation(Repository)}
-	 * and execute it.
-	 *
-	 * @param repository
-	 * @throws ExecutionException
-	 */
-	public void execute(Repository repository) throws ExecutionException {
-		final RebaseOperation rebase = createRebaseOperation(repository);
-		execute(rebase);
-	}
-
-	private void handleBeginError(final Repository repository, IStatus result) {
-		if (!repository.getRepositoryState().equals(RepositoryState.SAFE)) {
-			Throwable t = result.getException();
-			try {
-				new RebaseOperation(repository, Operation.ABORT).execute(null);
-				Activator.showError(t.getMessage(), t);
-			} catch (CoreException e1) {
-				IStatus childStatus = Activator.createErrorStatus(
-						e1.getMessage(), e1);
-				IStatus mStatus = new MultiStatus(Activator.getPluginId(),
-						IStatus.ERROR, new IStatus[] { childStatus },
-						t.getMessage(), t);
-				CoreException mStatusException = new CoreException(mStatus);
-				Activator.showError(mStatusException.getMessage(),
-						mStatusException);
-			}
-		}
+	public Object execute(ExecutionEvent event) throws ExecutionException {
+		final RebaseOperation rebase = createRebaseOperation(event);
+		if (rebase == null)
+			return null;
+		return execute(rebase);
 	}
 
 	/**
-	 * Factory method delegating creation of RebaseOperation to concrete
-	 * subclasses.
-	 *
-	 * @param repository
+	 * @param event
 	 * @return the {@link RebaseOperation} to be executed
 	 * @throws ExecutionException
 	 */
 	protected abstract RebaseOperation createRebaseOperation(
-			Repository repository) throws ExecutionException;
+			ExecutionEvent event) throws ExecutionException;
 
 	/**
 	 * Retrieve the current selection. The global selection is used if the menu
@@ -195,6 +174,15 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 			return (IEditorInput) editorInput;
 
 		return null;
+	}
+
+	private static IStatus createMultiStatus(Throwable originalException,
+			Throwable e) {
+		IStatus childStatus = Activator.createErrorStatus(
+				originalException.getMessage(),
+				originalException);
+		return new MultiStatus(Activator.getPluginId(), IStatus.ERROR,
+				new IStatus[] { childStatus }, e.getMessage(), e);
 	}
 
 }
