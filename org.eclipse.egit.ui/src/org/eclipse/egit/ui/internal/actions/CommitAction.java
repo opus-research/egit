@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.TimeZone;
 
 import org.eclipse.core.resources.IFile;
@@ -28,6 +27,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -47,6 +47,7 @@ import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
 import org.eclipse.jgit.lib.GitIndex.Entry;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * Scan for modified resources in the same project as the selected resources.
@@ -68,7 +69,7 @@ public class CommitAction extends RepositoryAction {
 		try {
 			buildIndexHeadDiffList();
 		} catch (IOException e) {
-			Utils.handleError(getTargetPart().getSite().getShell(), e, "Error during commit", "Error occurred computing diffs");
+			Utils.handleError(getTargetPart().getSite().getShell(), e, UIText.CommitAction_errorDuringCommit, UIText.CommitAction_errorComputingDiffs);
 			return;
 		}
 
@@ -79,8 +80,8 @@ public class CommitAction extends RepositoryAction {
 			repository = repo;
 			if (!repo.getRepositoryState().canCommit()) {
 				MessageDialog.openError(getTargetPart().getSite().getShell(),
-					"Cannot commit now", "Repository state:"
-							+ repo.getRepositoryState().getDescription());
+					UIText.CommitAction_cannotCommit,
+					NLS.bind(UIText.CommitAction_repositoryState, repo.getRepositoryState().getDescription()));
 				return;
 			}
 		}
@@ -90,13 +91,13 @@ public class CommitAction extends RepositoryAction {
 			if (amendAllowed && previousCommit != null) {
 				boolean result = MessageDialog
 				.openQuestion(getTargetPart().getSite().getShell(),
-						"No files to commit",
-				"No changed items were selected. Do you wish to amend the last commit?");
+						UIText.CommitAction_noFilesToCommit,
+				UIText.CommitAction_amendCommit);
 				if (!result)
 					return;
 				amending = true;
 			} else {
-				MessageDialog.openWarning(getTargetPart().getSite().getShell(), "No files to commit", "Commit/amend not possible. Possible causes:\n\n- No changed items were selected\n- Multiple repositories selected\n- No repositories selected\n- No previous commits");
+				MessageDialog.openWarning(getTargetPart().getSite().getShell(), UIText.CommitAction_noFilesToCommit, UIText.CommitAction_amendNotPossible);
 				return;
 			}
 		}
@@ -135,7 +136,7 @@ public class CommitAction extends RepositoryAction {
 		try {
 			performCommit(commitDialog, commitMessage);
 		} catch (TeamException e) {
-			Utils.handleError(getTargetPart().getSite().getShell(), e, "Error during commit", "Error occurred while committing");
+			Utils.handleError(getTargetPart().getSite().getShell(), e, UIText.CommitAction_errorDuringCommit, UIText.CommitAction_errorOnCommit);
 		}
 	}
 
@@ -156,7 +157,7 @@ public class CommitAction extends RepositoryAction {
 			if (parentId != null)
 				previousCommit = repo.mapCommit(parentId);
 		} catch (IOException e) {
-			Utils.handleError(getTargetPart().getSite().getShell(), e, "Error during commit", "Error occurred retrieving last commit");
+			Utils.handleError(getTargetPart().getSite().getShell(), e, UIText.CommitAction_errorDuringCommit, UIText.CommitAction_errorRetrievingCommit);
 		}
 	}
 
@@ -169,13 +170,13 @@ public class CommitAction extends RepositoryAction {
 		try {
 			prepareTrees(selectedItems, treeMap);
 		} catch (IOException e) {
-			throw new TeamException("Preparing trees", e);
+			throw new TeamException(UIText.CommitAction_errorPreparingTrees, e);
 		}
 
 		try {
 			doCommits(commitDialog, commitMessage, treeMap);
 		} catch (IOException e) {
-			throw new TeamException("Committing changes", e);
+			throw new TeamException(UIText.CommitAction_errorCommittingChanges, e);
 		}
 		for (IProject proj : getProjectsForSelectedResources()) {
 			RepositoryMapping.getMapping(proj).fireRepositoryChanged();
@@ -221,8 +222,9 @@ public class CommitAction extends RepositoryAction {
 			ru.setNewObjectId(commit.getCommitId());
 			ru.setRefLogMessage(buildReflogMessage(commitMessage), false);
 			if (ru.forceUpdate() == RefUpdate.Result.LOCK_FAILURE) {
-				throw new TeamException("Failed to update " + ru.getName()
-						+ " to commit " + commit.getCommitId() + ".");
+				throw new TeamException(
+						NLS.bind(UIText.CommitAction_failedToUpdate, ru.getName(),
+						commit.getCommitId()));
 			}
 		}
 	}
@@ -340,46 +342,26 @@ public class CommitAction extends RepositoryAction {
 				ObjectWriter writer = new ObjectWriter(tree.getRepository());
 				tree.setId(writer.writeTree(tree));
 			} catch (IOException e) {
-				throw new TeamException("Writing trees", e);
+				throw new TeamException(UIText.CommitAction_errorWritingTrees, e);
 			}
 		}
 	}
 
 	private void buildIndexHeadDiffList() throws IOException {
-		HashMap<Repository, HashSet<IProject>> repositories = new HashMap<Repository, HashSet<IProject>>();
-
 		for (IProject project : getProjectsInRepositoryOfSelectedResources()) {
 			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(project);
 			assert repositoryMapping != null;
-
 			Repository repository = repositoryMapping.getRepository();
-
-			HashSet<IProject> projects = repositories.get(repository);
-
-			if (projects == null) {
-				projects = new HashSet<IProject>();
-				repositories.put(repository, projects);
-			}
-
-			projects.add(project);
-		}
-
-		for (Map.Entry<Repository, HashSet<IProject>> entry : repositories.entrySet()) {
-			Repository repository = entry.getKey();
-			HashSet<IProject> projects = entry.getValue();
-
 			Tree head = repository.mapTree(Constants.HEAD);
 			GitIndex index = repository.getIndex();
 			IndexDiff indexDiff = new IndexDiff(head, index);
 			indexDiff.diff();
 
-			for (IProject project : projects) {
-				includeList(project, indexDiff.getAdded(), indexChanges);
-				includeList(project, indexDiff.getChanged(), indexChanges);
-				includeList(project, indexDiff.getRemoved(), indexChanges);
-				includeList(project, indexDiff.getMissing(), notIndexed);
-				includeList(project, indexDiff.getModified(), notIndexed);
-			}
+			includeList(project, indexDiff.getAdded(), indexChanges);
+			includeList(project, indexDiff.getChanged(), indexChanges);
+			includeList(project, indexDiff.getRemoved(), indexChanges);
+			includeList(project, indexDiff.getMissing(), notIndexed);
+			includeList(project, indexDiff.getModified(), notIndexed);
 		}
 	}
 
