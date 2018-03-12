@@ -69,9 +69,8 @@
         <artifactId>tycho-surefire-plugin</artifactId>
         <version>${tycho-version}</version>
         <configuration>
-          <includes>
-            <include>**/Test.java</include>
-          </includes>
+          <testSuite>org.eclipse.egit.mylyn.ui.test</testSuite>
+          <testClass>org.eclipse.egit.internal.mylyn.AllMylynTests</testClass>
           <useUIHarness>true</useUIHarness>
           <useUIThread>true</useUIThread>
           <product>org.eclipse.sdk.ide</product>
