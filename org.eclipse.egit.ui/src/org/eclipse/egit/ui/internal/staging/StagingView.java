@@ -68,7 +68,6 @@ import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
@@ -656,18 +655,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private ShowInContext getShowInContext(TableViewer tableViewer) {
 		IStructuredSelection selection = (IStructuredSelection) tableViewer.getSelection();
-		List<Object> elements = new ArrayList<Object>();
-		for (Object selectedElement : selection.toList()) {
-			if (selectedElement instanceof StagingEntry) {
-				StagingEntry entry = (StagingEntry) selectedElement;
+		List<IResource> resources = new ArrayList<IResource>();
+		for (Object element : selection.toList()) {
+			if (element instanceof StagingEntry) {
+				StagingEntry entry = (StagingEntry) element;
 				IFile file = entry.getFile();
 				if (file != null)
-					elements.add(file);
-				else
-					elements.add(entry.getLocation());
+					resources.add(file);
 			}
 		}
-		return new ShowInContext(null, new StructuredSelection(elements));
+		return new ShowInContext(null, new StructuredSelection(resources));
 	}
 
 	private int getStagingFormOrientation() {
@@ -962,17 +959,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 					menuMgr.add(new DeleteAction(selection));
 				if (addLaunchMergeTool)
 					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION, tableViewer));
-
-				menuMgr.add(new Separator());
-				menuMgr.add(createShowInMenu());
 			}
 		});
 
-	}
-
-	private IContributionItem createShowInMenu() {
-		IWorkbenchWindow workbenchWindow = getSite().getWorkbenchWindow();
-		return UIUtils.createShowInMenu(workbenchWindow);
 	}
 
 	private class ReplaceAction extends Action {
