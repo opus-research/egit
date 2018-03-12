@@ -67,12 +67,12 @@ public class GitSynchronizeData {
 		repo = repository;
 
 		ObjectWalk ow = new ObjectWalk(repo);
-		if (srcRev.length() > 0)
+		if (!srcRev.isEmpty())
 			this.srcRev = ow.parseCommit(repo.resolve(srcRev));
 		else
 			this.srcRev = null;
 
-		if (dstRev.length() > 0)
+		if (!dstRev.isEmpty())
 			this.dstRev = ow.parseCommit(repo.resolve(dstRev));
 		else
 			this.dstRev = null;
