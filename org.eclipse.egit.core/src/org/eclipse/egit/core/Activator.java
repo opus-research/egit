@@ -82,11 +82,7 @@ public class Activator extends Plugin {
 		}
 
 		repositoryCache = new RepositoryCache();
-		try {
-			GitProjectData.reconfigureWindowCache();
-		} catch (RuntimeException e) {
-			logError(CoreText.Activator_ReconfigureWindowCacheError, e);
-		}
+		GitProjectData.reconfigureWindowCache();
 		GitProjectData.attachToWorkspace(true);
 	}
 
