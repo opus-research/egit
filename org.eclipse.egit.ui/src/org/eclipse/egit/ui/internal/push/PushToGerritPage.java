@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.internal.push;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +38,6 @@ import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -214,7 +212,7 @@ class PushToGerritPage extends WizardPage {
 		}
 	}
 
-	void doPush() {
+	void doPush(IProgressMonitor monitor) {
 		try {
 			URIish uri = new URIish(uriCombo.getText());
 			Ref currentHead = repository.getRef(Constants.HEAD);
@@ -225,35 +223,21 @@ class PushToGerritPage extends WizardPage {
 			PushOperationSpecification spec = new PushOperationSpecification();
 
 			spec.addURIRefUpdates(uri, Arrays.asList(update));
-			final PushOperationUI op = new PushOperationUI(repository, spec,
-					false);
+			PushOperationUI op = new PushOperationUI(repository, spec, false);
 			op.setCredentialsProvider(new EGitCredentialsProvider());
-			final PushOperationResult[] result = new PushOperationResult[1];
-			getContainer().run(true, true, new IRunnableWithProgress() {
-				public void run(IProgressMonitor monitor)
-						throws InvocationTargetException, InterruptedException {
-					try {
-						result[0] = op.execute(monitor);
-					} catch (CoreException e) {
-						throw new InvocationTargetException(e);
-					}
-				}
-			});
+			PushOperationResult result = op.execute(monitor);
 			PushResultDialog dlg = new PushResultDialog(getShell(), repository,
-					result[0], op.getDestinationString());
+					result, op.getDestinationString());
 			dlg.showConfigureButton(false);
 			dlg.open();
 			storeLastUsedUri(uriCombo.getText());
 			storeLastUsedBranch(branchText.getText());
+		} catch (CoreException e) {
+			Activator.handleError(e.getMessage(), e, true);
 		} catch (URISyntaxException e) {
 			Activator.handleError(e.getMessage(), e, true);
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
-		} catch (InvocationTargetException e) {
-			Throwable cause = e.getCause();
-			Activator.handleError(cause.getMessage(), cause, true);
-		} catch (InterruptedException e) {
-			// cancellation
 		}
 	}
 

@@ -45,11 +45,11 @@ public enum RepositoryTreeNodeType {
 	/** */
 	TAG(UIIcons.TAG.createImage()), //
 	/**	 */
-	FOLDER(PlatformUI.getWorkbench().getSharedImages().getImage(
-			ISharedImages.IMG_OBJ_FOLDER)), //
-	/**	 */
 	FILE(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FILE)), //
+	/**	 */
+	FOLDER(PlatformUI.getWorkbench().getSharedImages().getImage(
+			ISharedImages.IMG_OBJ_FOLDER)), //
 	/**	 */
 	REMOTES(UIIcons.REMOTE_REPOSITORY.createImage()), //
 	/**	 */

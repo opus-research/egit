@@ -117,7 +117,6 @@ public class DeleteRepositoryConfirmDialog extends TitleAreaDialog {
 								Integer.valueOf(numberOfProjects)));
 		} else
 			removeProjects.setVisible(false);
-		deleteGitDir.setFocus();
 		return main;
 	}
 
