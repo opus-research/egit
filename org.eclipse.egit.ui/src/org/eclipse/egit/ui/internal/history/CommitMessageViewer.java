@@ -15,8 +15,6 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import org.eclipse.core.runtime.ListenerList;
@@ -28,6 +26,7 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
+import org.eclipse.egit.ui.internal.history.FormatJob.FormatResult;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
@@ -40,6 +39,10 @@ import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -69,13 +72,23 @@ import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
-class CommitMessageViewer extends SourceViewer {
+class CommitMessageViewer extends SourceViewer implements
+		ISelectionChangedListener {
 
 	private static final Color SYS_LINKCOLOR = PlatformUI.getWorkbench()
 			.getDisplay().getSystemColor(SWT.COLOR_BLUE);
 
 	private static final Color SYS_DARKGRAY = PlatformUI.getWorkbench()
 			.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY);
+
+	private static final Color SYS_HUNKHEADER_COLOR = PlatformUI.getWorkbench()
+			.getDisplay().getSystemColor(SWT.COLOR_BLUE);
+
+	private static final Color SYS_LINES_ADDED_COLOR = PlatformUI
+			.getWorkbench().getDisplay().getSystemColor(SWT.COLOR_DARK_GREEN);
+
+	private static final Color SYS_LINES_REMOVED_COLOR = PlatformUI
+			.getWorkbench().getDisplay().getSystemColor(SWT.COLOR_DARK_RED);
 
 	private static final Cursor SYS_LINK_CURSOR = PlatformUI.getWorkbench()
 			.getDisplay().getSystemCursor(SWT.CURSOR_HAND);
@@ -84,6 +97,9 @@ class CommitMessageViewer extends SourceViewer {
 
 	// notified when clicking on a link in the message (branch, commit...)
 	private final ListenerList navListeners = new ListenerList();
+
+	// set by selecting files in the file list
+	private final List<FileDiff> currentDiffs = new ArrayList<FileDiff>();
 
 	// listener to detect changes in the wrap and fill preferences
 	private final IPropertyChangeListener listener;
@@ -112,7 +128,7 @@ class CommitMessageViewer extends SourceViewer {
 	private BooleanPrefAction fillParagraphsPrefAction;
 
 	CommitMessageViewer(final Composite parent, final IPageSite site, IWorkbenchPartSite partSite) {
-		super(parent, null, SWT.READ_ONLY);
+		super(parent, null, SWT.H_SCROLL | SWT.V_SCROLL | SWT.READ_ONLY);
 		this.partSite = partSite;
 
 		final StyledText t = getTextWidget();
@@ -154,6 +170,11 @@ class CommitMessageViewer extends SourceViewer {
 		listener = new IPropertyChangeListener() {
 			public void propertyChange(PropertyChangeEvent event) {
 				if (event.getProperty().equals(
+						UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP)) {
+					setWrap(((Boolean) event.getNewValue()).booleanValue());
+					return;
+				}
+				if (event.getProperty().equals(
 						UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL)) {
 					setFill(((Boolean) event.getNewValue()).booleanValue());
 					return;
@@ -169,6 +190,8 @@ class CommitMessageViewer extends SourceViewer {
 		store.addPropertyChangeListener(listener);
 		fill = store
 				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL);
+		setWrap(store
+				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP));
 
 		// global action handlers for select all and copy
 		final IAction selectAll = new Action() {
@@ -263,43 +286,7 @@ class CommitMessageViewer extends SourceViewer {
 				final FormatJob job = (FormatJob) event.getJob();
 				text.getDisplay().asyncExec(new Runnable() {
 					public void run() {
-						if (text.isDisposed())
-							return;
-
-						setDocument(new Document(job.getFormatResult()
-								.getCommitInfo()));
-
-						// Combine the style ranges from the format job and the
-						// style ranges for hyperlinks found by registered
-						// hyperlink detectors.
-						List<StyleRange> styleRangeList = new ArrayList<StyleRange>();
-						for (StyleRange styleRange : job.getFormatResult()
-								.getStyleRange())
-							styleRangeList.add(styleRange);
-
-						StyleRange[] hyperlinkDetectorStyleRanges = UIUtils
-								.getHyperlinkDetectorStyleRanges(
-										CommitMessageViewer.this,
-										fHyperlinkDetectors);
-						for (StyleRange styleRange : hyperlinkDetectorStyleRanges)
-							styleRangeList.add(styleRange);
-
-						StyleRange[] styleRanges = new StyleRange[styleRangeList
-								.size()];
-						styleRangeList.toArray(styleRanges);
-
-						// Style ranges must be in order.
-						Arrays.sort(styleRanges, new Comparator<StyleRange>() {
-							public int compare(StyleRange o1, StyleRange o2) {
-								if (o2.start > o1.start)
-									return -1;
-								if (o1.start > o2.start)
-									return 1;
-								return 0;
-							}
-						});
-
-						text.setStyleRanges(styleRanges);
+						applyFormatJobResultInUI(job.getFormatResult());
 					}
 				});
 			}
@@ -338,6 +325,7 @@ class CommitMessageViewer extends SourceViewer {
 		// so we only rebuild this when the commit did in fact change
 		if (input == commit)
 			return;
+		currentDiffs.clear();
 		commit = (PlotCommit<?>) input;
 		if (refsChangedListener != null) {
 			refsChangedListener.remove();
@@ -398,8 +386,10 @@ class CommitMessageViewer extends SourceViewer {
 				.getAdapter(IWorkbenchSiteProgressService.class);
 		if (siteService == null)
 			return;
-		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(
-				getRepository(), commit, fill, SYS_LINKCOLOR, SYS_DARKGRAY,
+		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(getRepository(),
+				commit, fill, currentDiffs, SYS_LINKCOLOR, SYS_DARKGRAY,
+				SYS_HUNKHEADER_COLOR, SYS_LINES_ADDED_COLOR,
+				SYS_LINES_REMOVED_COLOR,
 				allRefs);
 		formatJob = new FormatJob(formatRequest);
 		addDoneListenerToFormatJob();
@@ -407,6 +397,29 @@ class CommitMessageViewer extends SourceViewer {
 														 * use the half-busy
 														 * cursor in the part
 														 */);
+	}
+
+	private void applyFormatJobResultInUI(FormatResult formatResult) {
+		StyledText text = getTextWidget();
+		if (!UIUtils.isUsable(text))
+			return;
+
+		setDocument(new Document(formatResult.getCommitInfo()));
+
+		// Set style ranges from format job. We know that they are already
+		// ordered and don't overlap.
+		text.setStyleRanges(formatResult.getStyleRange());
+
+		StyleRange[] hyperlinkStyleRanges = UIUtils
+				.getHyperlinkDetectorStyleRanges(CommitMessageViewer.this,
+						fHyperlinkDetectors);
+
+		// Apply hyperlink style ranges one by one. setStyleRange takes care to
+		// do the right thing in case they overlap with an existing style range.
+		// If we combined them with the above style ranges and set them all at
+		// once, we would have to manually remove overlapping ones.
+		for (StyleRange styleRange : hyperlinkStyleRanges)
+			text.setStyleRange(styleRange);
 	}
 
 	static final class ObjectLink extends StyleRange {
@@ -432,8 +445,24 @@ class CommitMessageViewer extends SourceViewer {
 		}
 	}
 
+	private void setWrap(boolean wrap) {
+		getTextWidget().setWordWrap(wrap);
+	}
+
 	private void setFill(boolean fill) {
 		this.fill = fill;
+		format();
+	}
+
+	public void selectionChanged(SelectionChangedEvent event) {
+		currentDiffs.clear();
+		ISelection selection = event.getSelection();
+		if (selection instanceof IStructuredSelection) {
+			IStructuredSelection sel = (IStructuredSelection) selection;
+			for (Object obj : sel.toList())
+				if (obj instanceof FileDiff)
+					currentDiffs.add((FileDiff) obj);
+		}
 		format();
 	}
 
@@ -458,5 +487,4 @@ class CommitMessageViewer extends SourceViewer {
 		else
 			return null;
 	}
-
 }
