@@ -53,12 +53,13 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	public static void beforeClass() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
+		waitInUI();
 		// now let's clone the remote repository
 		URIish uri = new URIish("file:///" + remoteRepositoryFile.getPath());
 		File workdir = new File(testDirectory, "ClonedRepo");
 
 		CloneOperation op = new CloneOperation(uri, true, null, workdir,
-				"refs/heads/master", "origin", 0);
+				"refs/heads/master", "origin");
 		op.run(null);
 
 		clonedRepositoryFile = new File(workdir, Constants.DOT_GIT);
@@ -68,7 +69,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		workdir = new File(testDirectory, "ClonedRepo2");
 
 		op = new CloneOperation(uri, true, null, workdir, "refs/heads/master",
-				"origin", 0);
+				"origin");
 		op.run(null);
 
 		clonedRepositoryFile2 = new File(workdir, Constants.DOT_GIT);

@@ -10,10 +10,11 @@ package org.eclipse.egit.ui.internal.history.command;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.history.GitCreatePatchWizard;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
@@ -27,11 +28,16 @@ public class CreatePatchHandler extends AbstractHistoryCommanndHandler {
 		IStructuredSelection selection = getSelection(getPage());
 		if (selection.size() == 1) {
 			RevCommit commit = (RevCommit) selection.getFirstElement();
-            Repository repo = getRepository(event);
-			TreeWalk fileWalker = new TreeWalk(repo);
+			Object input = getInput(event);
+			if (!(input instanceof IResource))
+				return null;
+			RepositoryMapping mapping = RepositoryMapping
+					.getMapping((IResource) getInput(event));
+
+			TreeWalk fileWalker = new TreeWalk(mapping.getRepository());
 			fileWalker.setRecursive(true);
 			fileWalker.setFilter(TreeFilter.ANY_DIFF);
-			GitCreatePatchWizard.run(getPart(event), commit, fileWalker, repo);
+			GitCreatePatchWizard.run(getPart(event), commit, fileWalker, mapping.getRepository());
 		}
 		return null;
 	}

@@ -330,7 +330,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		URIish uri = new URIish("file:///" + myRepository.getDirectory());
 		File workdir = new File(testDirectory, CHILDREPO);
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir,
-				"refs/heads/master", "origin", 0);
+				"refs/heads/master", "origin");
 		clop.run(null);
 		return new File(workdir, Constants.DOT_GIT);
 	}
@@ -351,20 +351,16 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		updateRef.update();
 	}
 
-	protected void assertClickOpens(SWTBotTree tree, String menu, String window) {
+	protected void assertClickOpens(SWTBotTree tree, String menu, String window)
+			throws InterruptedException {
 		ContextMenuHelper.clickContextMenu(tree, menu);
 		SWTBotShell shell = bot.shell(window);
 		shell.activate();
+		waitInUI();
 		shell.bot().button(IDialogConstants.CANCEL_LABEL).click();
 		shell.close();
 	}
 
-	/**
-	 *  This method should only be used in exceptional cases.
-	 *  Try to avoid using it e.g. by joining execution jobs
-	 *  instead of waiting a given amount of time {@link TestUtil#joinJobs(Object)}
-	 * @throws InterruptedException
-	 */
 	protected static void waitInUI() throws InterruptedException {
 		Thread.sleep(1000);
 	}
@@ -429,7 +425,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		String message = commitMessage;
 		if (message == null)
 			message = newContent;
-		// TODO: remove after replacing GitIndex in CommitOperation
 		waitInUI();
 		CommitOperation op = new CommitOperation(commitables,
 				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
