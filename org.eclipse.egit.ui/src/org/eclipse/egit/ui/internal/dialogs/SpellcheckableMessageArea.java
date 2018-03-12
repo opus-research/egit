@@ -515,8 +515,7 @@ public class SpellcheckableMessageArea extends Composite {
 		Action proposalAction = new Action() {
 			public void run() {
 				if (textOperationTarget
-						.canDoOperation(ISourceViewer.CONTENTASSIST_PROPOSALS)
-						&& getTextWidget().isFocusControl())
+						.canDoOperation(ISourceViewer.CONTENTASSIST_PROPOSALS))
 					textOperationTarget
 							.doOperation(ISourceViewer.CONTENTASSIST_PROPOSALS);
 			}

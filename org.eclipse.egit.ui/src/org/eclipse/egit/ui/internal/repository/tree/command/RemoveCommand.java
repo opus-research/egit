@@ -264,13 +264,9 @@ public class RemoveCommand extends
 						IDialogConstants.YES_LABEL, IDialogConstants.NO_LABEL,
 						IDialogConstants.CANCEL_LABEL }, 0);
 		int index = dlg.open();
-		// Return true if 'Yes' was selected
-		if (index == 0)
-			return true;
-		// Return false if 'No' was selected
-		if (index == 1)
-			return false;
-		// Cancel operation in all other cases
-		throw new OperationCanceledException();
+		if (index == 2)
+			throw new OperationCanceledException();
+
+		return index == 0;
 	}
 }

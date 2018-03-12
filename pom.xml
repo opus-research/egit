@@ -21,7 +21,7 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>1.2.0-SNAPSHOT</version>
+  <version>1.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>EGit Parent</name>
@@ -62,7 +62,7 @@
   </licenses>
 
   <properties>
-    <egit-version>1.2.0-SNAPSHOT</egit-version>
+    <egit-version>1.1.0-SNAPSHOT</egit-version>
     <tycho-version>0.12.0</tycho-version>
     <mockito-version>1.8.4</mockito-version>
     <junit-version>4.8.1</junit-version>
@@ -211,33 +211,6 @@
         <configuration>
           <resolver>p2</resolver>
           <pomDependencies>consider</pomDependencies>
-          <environments>
-            <environment>
-              <os>linux</os>
-              <ws>gtk</ws>
-              <arch>x86</arch>
-            </environment>
-            <environment>
-              <os>linux</os>
-              <ws>gtk</ws>
-              <arch>x86_64</arch>
-            </environment>
-            <environment>
-              <os>win32</os>
-              <ws>win32</ws>
-              <arch>x86</arch>
-            </environment>
-            <environment>
-              <os>win32</os>
-              <ws>win32</ws>
-              <arch>x86_64</arch>
-            </environment>
-            <environment>
-              <os>macosx</os>
-              <ws>cocoa</ws>
-              <arch>x86_64</arch>
-            </environment>
-          </environments>
         </configuration>
       </plugin>
     </plugins>
@@ -252,12 +225,16 @@
           </configuration>
         </plugin>
         <plugin>
+          <!-- TODO remove workaround when
+             https://issues.sonatype.org/browse/TYCHO-473
+             is fixed -->
           <groupId>org.eclipse.tycho</groupId>
           <artifactId>tycho-source-plugin</artifactId>
           <version>${tycho-version}</version>
           <executions>
             <execution>
               <id>attach-source</id>
+              <phase>process-classes</phase>
               <goals>
                 <goal>plugin-source</goal>
               </goals>
@@ -320,7 +297,7 @@
         <plugin>
           <groupId>org.eclipse.dash.maven</groupId>
           <artifactId>eclipse-signing-maven-plugin</artifactId>
-          <version>1.0.3</version>
+          <version>1.0.2</version>
         </plugin>
       </plugins>
     </pluginManagement>

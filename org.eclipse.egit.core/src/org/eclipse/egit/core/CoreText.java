@@ -24,12 +24,6 @@ public class CoreText extends NLS {
 	private static final String BUNDLE_NAME = "org.eclipse.egit.core.coretext"; //$NON-NLS-1$
 
 	/** */
-	public static String Activator_AutoShareJobName;
-
-	/** */
-	public static String Activator_AutoSharingFailed;
-
-	/** */
 	public static String Activator_ReconfigureWindowCacheError;
 
 	/** */
@@ -213,9 +207,6 @@ public class CoreText extends NLS {
 	public static String CreatePatchOperation_repoRequired;
 
 	/** */
-	public static String IndexDiffCacheEntry_reindexing;
-
-	/** */
 	public static String IndexFileRevision_errorLookingUpPath;
 
 	/** */
@@ -297,7 +288,7 @@ public class CoreText extends NLS {
 	public static String OperationNotYetExecuted;
 
 	/** */
-	public static String ProjectReference_InvalidTokensCount;
+	public static String GitProjectSetCapability_InvalidTokensCount;
 
 	/** */
 	public static String GitProjectSetCapability_CloneToExistingDirectory;
@@ -334,15 +325,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitProjectData_repositoryChangedTaskName;
-
-	/** */
-	public static String GitResourceVariantTreeSubscriber_fetchTaskName;
-
-	/** */
-	public static String GitSyncObjectCache_noData;
-
-	/** */
-	public static String GitRemoteFolder_fetchingMembers;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
