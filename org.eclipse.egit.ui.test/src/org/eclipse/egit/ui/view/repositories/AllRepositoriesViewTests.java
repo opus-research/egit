@@ -18,7 +18,9 @@ import org.junit.runners.Suite.SuiteClasses;
 @SuiteClasses( { GitRepositoriesViewBranchHandlingTest.class,//
 		GitRepositoriesViewRepoHandlingTest.class,//
 		GitRepositoriesViewRemoteHandlingTest.class,//
-		// TODO reactivate GitRepositoriesViewFetchAndPushTest.class,
+		// TODO reactivate once the bugs are fixed
+		// GitRepositoriesViewFetchAndPushTest.class,//
+		GitRepositoriesViewTagHandlingTest.class,//
 		GitRepositoriesViewTest.class //
 })
 public class AllRepositoriesViewTests {
