@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,7 +9,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.core.runtime.IPath;
 
@@ -24,7 +27,7 @@ public class GitModelTree extends GitModelObjectContainer {
 	 */
 	protected final IPath path;
 
-	private GitModelObject[] children;
+	final Map<String, GitModelObject> cachedTreeMap = new HashMap<String, GitModelObject>();
 
 	/**
 	 * @param parent
@@ -63,7 +66,9 @@ public class GitModelTree extends GitModelObjectContainer {
 
 	@Override
 	public GitModelObject[] getChildren() {
-		return children;
+		Collection<GitModelObject> values = cachedTreeMap.values();
+
+		return values.toArray(new GitModelObject[values.size()]);
 	}
 
 	@Override
@@ -73,11 +78,10 @@ public class GitModelTree extends GitModelObjectContainer {
 
 	@Override
 	public void dispose() {
-		if (children != null) {
-			for (GitModelObject object : children)
-				object.dispose();
-			children = null;
-		}
+		for (GitModelObject value : cachedTreeMap.values())
+			value.dispose();
+
+		cachedTreeMap.clear();
 	}
 
 	@Override
@@ -114,10 +118,6 @@ public class GitModelTree extends GitModelObjectContainer {
 	@Override
 	public String toString() {
 		return "ModelTree[location=" + getLocation() + "]"; //$NON-NLS-1$ //$NON-NLS-2$
-	}
-
-	void setChildren(List<GitModelObject> children) {
-		this.children = children.toArray(new GitModelObject[children.size()]);
 	}
 
 }
