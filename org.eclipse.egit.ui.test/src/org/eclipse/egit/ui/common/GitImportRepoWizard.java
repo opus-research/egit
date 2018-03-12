@@ -33,12 +33,12 @@ public class GitImportRepoWizard {
 		bot.button("Next >").click();
 	}
 
-	public RepoPropertiesPage openRepoPropertiesPage() {
+	public RepoPropertiesPage openCloneWizard() {
 		bot.shell("Import Projects from Git").activate();
 
-		bot.tree().select("Custom URI");
+		bot.button("Clone...").click();
 
-		bot.button("Next >").click();
+		bot.shell("Clone Git Repository").activate();
 
 		return new RepoPropertiesPage();
 	}

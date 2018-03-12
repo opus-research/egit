@@ -2983,9 +2983,6 @@ public class UIText extends NLS {
 	public static String GitImportWithDirectoriesPage_SelectFolderMessage;
 
 	/** */
-	public static String GitImportWizard_errorParsingURI;
-
-	/** */
 	public static String GitImportWizard_WizardTitle;
 
 	/** */
