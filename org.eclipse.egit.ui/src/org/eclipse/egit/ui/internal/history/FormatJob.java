@@ -33,7 +33,7 @@ class FormatJob extends Job {
 
 	@Override
 	public boolean belongsTo(Object family) {
-		if (JobFamilies.FORMAT_COMMIT_INFO.equals(family))
+		if (family.equals(JobFamilies.FORMAT_COMMIT_INFO))
 			return true;
 		return super.belongsTo(family);
 	}

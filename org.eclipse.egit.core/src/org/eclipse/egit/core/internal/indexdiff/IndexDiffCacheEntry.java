@@ -274,10 +274,10 @@ public class IndexDiffCacheEntry {
 				try {
 					reloadJobIsInitializing = true;
 					waitForWorkspaceLock(monitor);
+					lock.lock();
 				} finally {
 					reloadJobIsInitializing = false;
 				}
-				lock.lock();
 				try {
 					if (monitor.isCanceled())
 						return Status.CANCEL_STATUS;
@@ -321,7 +321,7 @@ public class IndexDiffCacheEntry {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.INDEX_DIFF_CACHE_UPDATE.equals(family))
+				if (family.equals(JobFamilies.INDEX_DIFF_CACHE_UPDATE))
 					return true;
 				return super.belongsTo(family);
 			}
@@ -400,7 +400,7 @@ public class IndexDiffCacheEntry {
 			}
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.INDEX_DIFF_CACHE_UPDATE.equals(family))
+				if (family.equals(JobFamilies.INDEX_DIFF_CACHE_UPDATE))
 					return true;
 				return super.belongsTo(family);
 			}
