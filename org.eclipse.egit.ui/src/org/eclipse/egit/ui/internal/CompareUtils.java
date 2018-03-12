@@ -377,18 +377,15 @@ public class CompareUtils {
 			setChecked(CompareUtils.isReuseOpenEditor());
 		}
 
-		@Override
 		public void run() {
 			CompareUtils.setReuseOpenEditor(isChecked());
 		}
 
-		@Override
 		public void dispose() {
 			// stop listening
 			node.removePreferenceChangeListener(this);
 		}
 
-		@Override
 		public void preferenceChange(PreferenceChangeEvent event) {
 			setChecked(isReuseOpenEditor());
 
@@ -416,13 +413,7 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkspace(Repository repository,
 			IFile file) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
-		if (mapping == null) {
-			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-					file.getLocation(), repository), null);
-			return;
-		}
-		String path = mapping.getRepoRelativePath(
+		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
 				file);
 		ITypedElement base = getHeadTypedElement(repository, path);
 		if (base == null)
@@ -470,11 +461,6 @@ public class CompareUtils {
 				}
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
-				if (mapping == null) {
-					return Activator.createErrorStatus(
-							NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-									file.getLocation(), repository));
-				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 				final ITypedElement base = SaveableCompareEditorInput
 						.createFileElement(file);
@@ -514,7 +500,6 @@ public class CompareUtils {
 		// safety check: make sure we open compare editor from UI thread
 		if (Display.getCurrent() == null) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
 					openCompareEditorRunnable(page, in);
 				}
@@ -667,11 +652,6 @@ public class CompareUtils {
 				final IFile file = (IFile) resources[0];
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
-				if (mapping == null) {
-					Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-							file.getLocation(), repository), null);
-					return;
-				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 
 				compareBetween(repository, gitPath, leftRev, rightRev, page);
@@ -969,11 +949,6 @@ public class CompareUtils {
 	public static ITypedElement getIndexTypedElement(final IFile baseFile)
 			throws IOException {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
-		if (mapping == null) {
-			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-					baseFile.getLocation(), null), null);
-			return null;
-		}
 		final Repository repository = mapping.getRepository();
 		final String gitPath = mapping.getRepoRelativePath(baseFile);
 		final String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
@@ -1001,7 +976,6 @@ public class CompareUtils {
 		final EditableRevision next = new EditableRevision(nextFile, encoding);
 
 		IContentChangeListener listener = new IContentChangeListener() {
-			@Override
 			public void contentChanged(IContentChangeNotifier source) {
 				final byte[] newContent = next.getModifiedContent();
 				setIndexEntryContents(repository, gitPath, newContent);

@@ -37,7 +37,6 @@ import org.eclipse.jgit.lib.Repository;
 public class SubmoduleAddCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode<?>> {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		List<RepositoryTreeNode<?>> nodes = getSelectedNodes(event);
 		if (nodes.isEmpty())

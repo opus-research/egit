@@ -109,11 +109,8 @@ public class GitSynchronizeWizard extends Wizard {
 
 				int type = res.getType();
 				if (type == IResource.FOLDER) {
-					RepositoryMapping mapping = RepositoryMapping.getMapping(res);
-					if (mapping == null) {
-						continue;
-					}
-					Repository selRepo = mapping.getRepository();
+					Repository selRepo = RepositoryMapping.getMapping(res)
+							.getRepository();
 					if (workTree.equals(selRepo.getWorkTree()))
 						result.add(res);
 				}

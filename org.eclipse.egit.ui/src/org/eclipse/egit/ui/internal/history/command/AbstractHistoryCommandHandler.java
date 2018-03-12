@@ -129,16 +129,15 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 		Repository repo = getRepository(event);
 		Collection<Ref> revTags = repo.getTags().values();
 		List<RevTag> tags = new ArrayList<RevTag>();
-		try (RevWalk walk = new RevWalk(repo)) {
-			for (Ref ref : revTags) {
-				try {
-					tags.add(walk.parseTag(repo.resolve(ref.getName())));
-				} catch (IOException e) {
-					throw new ExecutionException(e.getMessage(), e);
-				}
+		RevWalk walk = new RevWalk(repo);
+		for (Ref ref : revTags) {
+			try {
+				tags.add(walk.parseTag(repo.resolve(ref.getName())));
+			} catch (IOException e) {
+				throw new ExecutionException(e.getMessage(), e);
 			}
-			return tags;
 		}
+		return tags;
 	}
 
 	protected GitHistoryPage getPage() {

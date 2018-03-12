@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, 2015 Laurent Goubet <laurent.goubet@obeo.fr>
+ * Copyright (C) 2012, 2013 Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *
  * All rights reserved. This program and the accompanying materials
@@ -45,8 +45,6 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.team.core.RepositoryProvider;
@@ -68,13 +66,13 @@ public class ResourceUtil {
 	 *            the path to check
 	 * @return the resources, or null
 	 */
-	@Nullable
-	public static IResource getResourceForLocation(@NonNull IPath location) {
-		IFile file = getFileForLocation(location);
-		if (file != null) {
+	public static IResource getResourceForLocation(IPath location) {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		URI uri = URIUtil.toURI(location);
+		IFile file = getFileForLocationURI(root, uri);
+		if (file != null)
 			return file;
-		}
-		return getContainerForLocation(location);
+		return getContainerForLocationURI(root, uri);
 	}
 
 	/**
@@ -87,36 +85,10 @@ public class ResourceUtil {
 	 * @param location
 	 * @return the file, or null
 	 */
-	@Nullable
-	public static IFile getFileForLocation(@NonNull IPath location) {
+	public static IFile getFileForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IFile file = root.getFileForLocation(location);
-		if (file == null) {
-			return null;
-		}
-		if (isValid(file)) {
-			return file;
-		}
 		URI uri = URIUtil.toURI(location);
 		return getFileForLocationURI(root, uri);
-	}
-
-	/**
-	 * sort out closed, linked or not shared resources
-	 *
-	 * @param resource
-	 * @return true if the resource is shared with git, not a link and
-	 *         accessible in Eclipse
-	 */
-	private static boolean isValid(@NonNull IResource resource) {
-		return resource.isAccessible()
-				&& !resource.isLinked(IResource.CHECK_ANCESTORS)
-				&& isSharedWithGit(resource);
-	}
-
-	private static boolean isSharedWithGit(@NonNull IResource resource) {
-		return RepositoryProvider.getProvider(resource.getProject(),
-				GitProvider.ID) != null;
 	}
 
 	/**
@@ -129,16 +101,8 @@ public class ResourceUtil {
 	 * @param location
 	 * @return the container, or null
 	 */
-	@Nullable
-	public static IContainer getContainerForLocation(@NonNull IPath location) {
+	public static IContainer getContainerForLocation(IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IContainer dir = root.getContainerForLocation(location);
-		if (dir == null) {
-			return null;
-		}
-		if (isValid(dir)) {
-			return dir;
-		}
 		URI uri = URIUtil.toURI(location);
 		return getContainerForLocationURI(root, uri);
 	}
@@ -156,9 +120,8 @@ public class ResourceUtil {
 	 *            the repository-relative path of the file to search for
 	 * @return the IFile corresponding to this path, or null
 	 */
-	@Nullable
-	public static IFile getFileForLocation(@NonNull Repository repository,
-			@NonNull String repoRelativePath) {
+	public static IFile getFileForLocation(Repository repository,
+			String repoRelativePath) {
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
 		return getFileForLocation(path);
 	}
@@ -174,9 +137,8 @@ public class ResourceUtil {
 	 *            the repository-relative path of the container to search for
 	 * @return the IContainer corresponding to this path, or null
 	 */
-	@Nullable
-	public static IContainer getContainerForLocation(
-			@NonNull Repository repository, @NonNull String repoRelativePath) {
+	public static IContainer getContainerForLocation(Repository repository,
+			String repoRelativePath) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
 		return root.getContainerForLocation(path);
@@ -193,37 +155,15 @@ public class ResourceUtil {
 	 * @return {@code true} if the path in the given repository refers to a
 	 *         symbolic link
 	 */
-	public static boolean isSymbolicLink(@NonNull Repository repository,
-			@NonNull String repoRelativePath) {
+	public static boolean isSymbolicLink(Repository repository,
+			String repoRelativePath) {
 		try {
 			File f = new Path(repository.getWorkTree().getAbsolutePath())
 					.append((repoRelativePath)).toFile();
 			return FS.DETECTED.isSymLink(f);
-		} catch (IOException e) {
+		} catch (@SuppressWarnings("unused") IOException e) {
 			return false;
 		}
-	}
-
-	/**
-	 * Returns a resource handle for this path in the workspace. Note that
-	 * neither the resource nor the result need exist in the workspace : this
-	 * may return inexistant or otherwise non-accessible IResources.
-	 *
-	 * @param path
-	 *            Path for which we need a resource handle.
-	 * @return The resource handle for the given path in the workspace.
-	 */
-	@NonNull
-	public static IResource getResourceHandleForLocation(@NonNull IPath path) {
-		final IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace()
-				.getRoot();
-
-		final IResource resource;
-		if (path.segmentCount() > 1)
-			resource = workspaceRoot.getFile(path);
-		else
-			resource = workspaceRoot.getProject(path.toString());
-		return resource;
 	}
 
 	/**
@@ -299,18 +239,17 @@ public class ResourceUtil {
 	 * @return {@code true} when given resource is not imported into workspace,
 	 *         {@code false} otherwise
 	 */
-	public static boolean isNonWorkspace(@NonNull IResource resource) {
+	public static boolean isNonWorkspace(IResource resource) {
 		return resource.getLocation() == null;
 	}
 
-	private static IFile getFileForLocationURI(@NonNull IWorkspaceRoot root,
-			@NonNull URI uri) {
+	private static IFile getFileForLocationURI(IWorkspaceRoot root, URI uri) {
 		IFile[] files = root.findFilesForLocationURI(uri);
 		return getExistingMappedResourceWithShortestPath(files);
 	}
 
 	private static IContainer getContainerForLocationURI(IWorkspaceRoot root,
-			@NonNull URI uri) {
+			URI uri) {
 		IContainer[] containers = root.findContainersForLocationURI(uri);
 		return getExistingMappedResourceWithShortestPath(containers);
 	}
@@ -320,12 +259,12 @@ public class ResourceUtil {
 		int shortestPathSegmentCount = Integer.MAX_VALUE;
 		T shortestPath = null;
 		for (T resource : resources) {
-			if (!resource.exists()) {
+			if (!resource.exists())
 				continue;
-			}
-			if (!isSharedWithGit(resource)) {
+			RepositoryProvider provider = RepositoryProvider.getProvider(
+					resource.getProject(), GitProvider.ID);
+			if (provider == null)
 				continue;
-			}
 			IPath fullPath = resource.getFullPath();
 			int segmentCount = fullPath.segmentCount();
 			if (segmentCount < shortestPathSegmentCount) {
@@ -336,8 +275,8 @@ public class ResourceUtil {
 		return shortestPath;
 	}
 
-	private static void addPathToMap(@NonNull Repository repository,
-			@Nullable String path, Map<Repository, Collection<String>> result) {
+	private static void addPathToMap(Repository repository,
+			String path, Map<Repository, Collection<String>> result) {
 		if (path != null) {
 			Collection<String> resourcesList = result.get(repository);
 			if (resourcesList == null) {
@@ -359,8 +298,7 @@ public class ResourceUtil {
 	 *            Context from which remote content could be retrieved.
 	 * @return All mappings available for that file.
 	 */
-	public static ResourceMapping[] getResourceMappings(
-			@NonNull IResource resource,
+	public static ResourceMapping[] getResourceMappings(IResource resource,
 			ResourceMappingContext context) {
 		final IModelProviderDescriptor[] modelDescriptors = ModelProvider
 				.getModelProviderDescriptors();
@@ -390,7 +328,7 @@ public class ResourceUtil {
 	 *
 	 * @param repository
 	 */
-	public static void saveLocalHistory(@NonNull Repository repository) {
+	public static void saveLocalHistory(Repository repository) {
 		IndexDiffCacheEntry indexDiffCacheEntry = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
 				.getIndexDiffCacheEntry(repository);
@@ -419,7 +357,7 @@ public class ResourceUtil {
 		}
 	}
 
-	private static void saveLocalHistory(@NonNull IResource resource)
+	private static void saveLocalHistory(IResource resource)
 			throws CoreException {
 		if (!resource.isSynchronized(IResource.DEPTH_ZERO))
 			resource.refreshLocal(IResource.DEPTH_ZERO, null);

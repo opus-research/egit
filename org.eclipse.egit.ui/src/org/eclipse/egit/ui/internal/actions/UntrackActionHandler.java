@@ -27,7 +27,6 @@ import org.eclipse.egit.ui.internal.UIText;
  * @see UntrackOperation
  */
 public class UntrackActionHandler extends RepositoryActionHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IResource[] resources = getSelectedResources();
 		if (resources.length == 0)

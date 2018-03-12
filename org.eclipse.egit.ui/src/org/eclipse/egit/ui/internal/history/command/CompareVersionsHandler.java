@@ -29,7 +29,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
  * Compare the file contents of two commits.
  */
 public class CompareVersionsHandler extends AbstractHistoryCommandHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IStructuredSelection selection = getSelection(event);
 		if (selection.size() == 2) {
@@ -46,13 +45,11 @@ public class CompareVersionsHandler extends AbstractHistoryCommandHandler {
 				IFile resource = (IFile) input;
 				final RepositoryMapping map = RepositoryMapping
 						.getMapping(resource);
-				if (map != null) {
-					final String gitPath = map.getRepoRelativePath(resource);
-					final String commit1Path = getRenamedPath(gitPath, commit1);
-					final String commit2Path = getRenamedPath(gitPath, commit2);
-					CompareUtils.openInCompare(commit1, commit2, commit1Path,
-							commit2Path, map.getRepository(), workBenchPage);
-				}
+				final String gitPath = map.getRepoRelativePath(resource);
+				final String commit1Path = getRenamedPath(gitPath, commit1);
+				final String commit2Path = getRenamedPath(gitPath, commit2);
+				CompareUtils.openInCompare(commit1, commit2, commit1Path,
+						commit2Path, map.getRepository(), workBenchPage);
 			} else if (input instanceof File) {
 				File fileInput = (File) input;
 				final String gitPath = getRepoRelativePath(repo, fileInput);

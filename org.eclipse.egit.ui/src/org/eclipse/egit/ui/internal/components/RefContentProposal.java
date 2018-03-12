@@ -108,17 +108,14 @@ public class RefContentProposal implements IContentProposal {
 		this.objectId = objectId;
 	}
 
-	@Override
 	public String getContent() {
 		return refName;
 	}
 
-	@Override
 	public int getCursorPosition() {
 		return refName.length();
 	}
 
-	@Override
 	public String getDescription() {
 		if (objectId == null)
 			return null;
@@ -132,18 +129,15 @@ public class RefContentProposal implements IContentProposal {
 
 			switch (loader.getType()) {
 			case Constants.OBJ_COMMIT:
-				try (RevWalk rw = new RevWalk(db)) {
-					RevCommit c = rw.parseCommit(objectId);
-					appendObjectSummary(sb, UIText.RefContentProposal_commit,
-							c.getAuthorIdent(), c.getFullMessage());
-				}
+				RevCommit c = new RevWalk(db).parseCommit(objectId);
+				appendObjectSummary(sb, UIText.RefContentProposal_commit, c
+						.getAuthorIdent(), c.getFullMessage());
 				break;
 			case Constants.OBJ_TAG:
-				try (RevWalk rw = new RevWalk(db)) {
-					RevTag t = rw.parseTag(objectId);
-					appendObjectSummary(sb, UIText.RefContentProposal_tag,
-							t.getTaggerIdent(), t.getFullMessage());
-				}
+				RevWalk walk = new RevWalk(db);
+				RevTag t = walk.parseTag(objectId);
+				appendObjectSummary(sb, UIText.RefContentProposal_tag, t
+						.getTaggerIdent(), t.getFullMessage());
 				break;
 			case Constants.OBJ_TREE:
 				sb.append(UIText.RefContentProposal_tree);
@@ -162,7 +156,6 @@ public class RefContentProposal implements IContentProposal {
 		}
 	}
 
-	@Override
 	public String getLabel() {
 		for (int i = 0; i < PREFIXES.length; i++)
 			if (refName.startsWith(PREFIXES[i]))

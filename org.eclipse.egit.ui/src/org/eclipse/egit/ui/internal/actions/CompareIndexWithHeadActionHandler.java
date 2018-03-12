@@ -47,7 +47,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 
 		final Repository repository = getRepository(true, event);
@@ -94,7 +93,6 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 				UIText.CompareIndexWithHeadActionHandler_fileNotStaged,
 				location.toOSString());
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				MessageDialog.openInformation(null, title, message);
 
@@ -166,11 +164,7 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 		if (location == null || location.toFile().isDirectory()) {
 			return false;
 		}
-		RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-		if (mapping == null) {
-			return false;
-		}
-		String resRelPath = mapping.getRepoRelativePath(location);
+		String resRelPath = RepositoryMapping.getMapping(location).getRepoRelativePath(location);
 
 		// This action at the moment only works for files anyway
 		if (resRelPath == null || resRelPath.length() == 0) {

@@ -39,7 +39,6 @@ import org.eclipse.swt.widgets.Shell;
 public class DeleteBranchCommand extends
 		RepositoriesViewCommandHandler<RefNode> {
 
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final List<RefNode> nodes = getSelectedNodes(event);
 		final AtomicReference<List<RefNode>> unmergedNodesRef = new AtomicReference<List<RefNode>>();
@@ -48,7 +47,6 @@ public class DeleteBranchCommand extends
 		try {
 			new ProgressMonitorDialog(shell).run(true, false,
 					new IRunnableWithProgress() {
-						@Override
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
@@ -72,7 +70,6 @@ public class DeleteBranchCommand extends
 		try {
 			new ProgressMonitorDialog(shell).run(true, false,
 					new IRunnableWithProgress() {
-						@Override
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
@@ -97,7 +94,6 @@ public class DeleteBranchCommand extends
 		try {
 			ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
 
-				@Override
 				public void run(IProgressMonitor monitor) throws CoreException {
 					monitor.beginTask(UIText.DeleteBranchCommand_DeletingBranchesProgress, nodes.size());
 					for (RefNode refNode : nodes) {

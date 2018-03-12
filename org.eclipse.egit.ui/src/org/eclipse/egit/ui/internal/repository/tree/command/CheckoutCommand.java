@@ -29,7 +29,6 @@ import org.eclipse.ui.menus.UIElement;
 public class CheckoutCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> implements
 		IElementUpdater {
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final RepositoryTreeNode node = getSelectedNodes(event).get(0);
 		if (!(node.getObject() instanceof Ref))
@@ -44,7 +43,6 @@ public class CheckoutCommand extends
 		return null;
 	}
 
-	@Override
 	public void updateElement(UIElement element, Map parameters) {
 		List<RepositoryTreeNode> nodes = getSelectedNodes();
 		if (!nodes.isEmpty()) {

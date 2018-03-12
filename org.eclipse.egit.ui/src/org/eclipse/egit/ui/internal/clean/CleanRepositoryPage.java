@@ -64,7 +64,6 @@ public class CleanRepositoryPage extends WizardPage {
 		setMessage(UIText.CleanRepositoryPage_message);
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
@@ -113,7 +112,6 @@ public class CleanRepositoryPage extends WizardPage {
 		setPageComplete(false);
 		cleanTable.addCheckStateListener(new ICheckStateListener() {
 
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				updatePageComplete();
 			}
@@ -181,7 +179,6 @@ public class CleanRepositoryPage extends WizardPage {
 
 		if(visible)
 			getShell().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
 					updateCleanItems();
 				}
@@ -191,7 +188,6 @@ public class CleanRepositoryPage extends WizardPage {
 	private void updateCleanItems() {
 		try {
 			getContainer().run(true, false, new IRunnableWithProgress() {
-				@Override
 				public void run(IProgressMonitor monitor) throws InvocationTargetException,
 						InterruptedException {
 					monitor.beginTask(UIText.CleanRepositoryPage_findingItems, IProgressMonitor.UNKNOWN);
@@ -204,7 +200,6 @@ public class CleanRepositoryPage extends WizardPage {
 						final Set<String> paths = command.call();
 
 						getShell().getDisplay().syncExec(new Runnable() {
-							@Override
 							public void run() {
 								cleanTable.setInput(paths);
 							}
@@ -255,7 +250,6 @@ public class CleanRepositoryPage extends WizardPage {
 			final Set<String> itemsToClean = getItemsToClean();
 
 			getContainer().run(true, false, new IRunnableWithProgress() {
-				@Override
 				public void run(IProgressMonitor monitor) throws InvocationTargetException,
 						InterruptedException {
 					monitor.beginTask(UIText.CleanRepositoryPage_cleaningItems, IProgressMonitor.UNKNOWN);

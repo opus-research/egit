@@ -161,7 +161,8 @@ public class RepositoryUtil {
 			}
 
 			Map<String, Date> tagMap = new HashMap<String, Date>();
-			try (RevWalk rw = new RevWalk(repository)) {
+			try {
+				RevWalk rw = new RevWalk(repository);
 				Map<String, Ref> tags = repository.getRefDatabase().getRefs(
 						Constants.R_TAGS);
 				for (Ref tagRef : tags.values()) {
@@ -450,15 +451,20 @@ public class RepositoryUtil {
 	 * @since 2.2
 	 */
 	public RevCommit parseHeadCommit(Repository repository) {
-		try (RevWalk walk = new RevWalk(repository)) {
+		RevWalk walk = null;
+		try {
 			Ref head = repository.getRef(Constants.HEAD);
 			if (head == null || head.getObjectId() == null)
 				return null;
 
+			walk = new RevWalk(repository);
 			RevCommit commit = walk.parseCommit(head.getObjectId());
 			return commit;
 		} catch (IOException e) {
 			return null;
+		} finally {
+			if (walk != null)
+				walk.close();
 		}
 	}
 
@@ -482,7 +488,8 @@ public class RepositoryUtil {
 		if (treeIterator == null)
 			return true;
 		String repoRelativePath = mapping.getRepoRelativePath(path);
-		try (TreeWalk walk = new TreeWalk(repository)) {
+		TreeWalk walk = new TreeWalk(repository);
+		try {
 			walk.addTree(treeIterator);
 			walk.setFilter(PathFilter.create(repoRelativePath));
 			while (walk.next()) {
@@ -494,6 +501,8 @@ public class RepositoryUtil {
 						.equals(FileMode.TREE))
 					walk.enterSubtree();
 			}
+		} finally {
+			walk.close();
 		}
 		return false;
 	}

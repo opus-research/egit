@@ -138,16 +138,8 @@ public class IgnoreOperation implements IEGitOperation {
 		String entry = b.toString();
 
 		if (container == null || container instanceof IWorkspaceRoot) {
-			RepositoryMapping mapping = RepositoryMapping.getMapping(
-					path);
-			if (mapping == null) {
-				String message = NLS.bind(
-						CoreText.IgnoreOperation_parentOutsideRepo,
-						path.toOSString(), null);
-				IStatus status = Activator.error(message, null);
-				throw new CoreException(status);
-			}
-			Repository repository = mapping.getRepository();
+			Repository repository = RepositoryMapping.getMapping(
+					path).getRepository();
 			// .gitignore is not accessible as resource
 			IPath gitIgnorePath = parent.append(Constants.GITIGNORE_FILENAME);
 			IPath repoPath = new Path(repository.getWorkTree()
