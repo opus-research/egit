@@ -220,6 +220,15 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_errorReadingHeadCommit;
 
 	/** */
+	public static String GitHistoryPage_CreatePatch;
+
+	/** */
+	public static String GitHistoryPage_Date;
+
+	/** */
+	public static String GitHistoryPage_ErrorNotWritten;
+
+	/** */
 	public static String GitHistoryPage_FileNotInCommit;
 
 	/** */
@@ -236,6 +245,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_openFailed;
+
+	/** */
+	public static String GitHistoryPage_seeLog;
+
+	/** */
+	public static String GitHistoryPage_From;
+
+	/** */
+	public static String GitHistoryPage_Subject;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -1735,6 +1753,9 @@ public class UIText extends NLS {
 	public static String RepositoriesViewContentProvider_ExceptionNodeText;
 
 	/** */
+	public static String RepositoriesViewLabelProvider_BareRepositoryMessage;
+
+	/** */
 	public static String RepositoriesViewLabelProvider_LocalBranchesNodetext;
 
 	/** */
@@ -1796,6 +1817,36 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCreateGeneralProjectPage_ProjectNameLabel;
+
+	/** */
+	public static String GitCreatePatchWizard_Browse;
+
+	/** */
+	public static String GitCreatePatchWizard_Clipboard;
+
+	/** */
+	public static String GitCreatePatchWizard_CreatePatchTitle;
+
+	/** */
+	public static String GitCreatePatchWizard_File;
+
+	/** */
+	public static String GitCreatePatchWizard_GitFormat;
+
+	/** */
+	public static String GitCreatePatchWizard_InternalError;
+
+	/** */
+	public static String GitCreatePatchWizard_SelectLocationDescription;
+
+	/** */
+	public static String GitCreatePatchWizard_SelectLocationTitle;
+
+	/** */
+	public static String GitCreatePatchWizard_SelectOptionsDescription;
+
+	/** */
+	public static String GitCreatePatchWizard_SelectOptionsTitle;
 
 	/** */
 	public static String GitCreateProjectViaWizardWizard_AbortedMessage;
@@ -1910,78 +1961,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String Update_update;
-
-	/** */
-	public static String TagAction_cannotCheckout;
-
-	/** */
-	public static String TagAction_cannotGetBranchName;
-
-	/** */
-	public static String TagAction_repositoryState;
-
-	/** */
-	public static String TagAction_errorCreatingTag;
-
-	/** */
-	public static String TagAction_unableToCreateTag;
-
-	/** */
-	public static String TagAction_errorDuringTagging;
-
-	/** */
-	public static String TagAction_errorWhileGettingRevCommits;
-
-	/** */
-	public static String TagAction_unableToResolveHeadObjectId;
-
-	/** */
-	public static String TagAction_errorWhileMappingRevTag;
-
-	/** */
-	public static String TagAction_creating;
-
-	/** */
-	public static String TagAction_taggingFailed;
-
-	/** */
-	public static String CreateTagDialog_tagName;
-
-	/** */
-	public static String CreateTagDialog_tagMessage;
-
-	/** */
-	public static String CreateTagDialog_questionNewTagTitle;
-
-	/** */
-	public static String CreateTagDialog_overwriteTag;
-
-	/** */
-	public static String CreateTagDialog_overwriteTagToolTip;
-
-	/** */
-	public static String CreateTagDialog_existingTags;
-
-	/** */
-	public static String CreateTagDialog_advanced;
-
-	/** */
-	public static String CreateTagDialog_advancedToolTip;
-
-	/** */
-	public static String CreateTagDialog_advancedMessage;
-
-	/** */
-	public static String CreateTagDialog_tagNameToolTip;
-
-	/** */
-	public static String CreateTagDialog_clearButton;
-
-	/** */
-	public static String CreateTagDialog_clearButtonTooltip;
-
-	/** */
-	public static String CommitCombo_showSuggestedCommits;
 
 	static {
 		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$

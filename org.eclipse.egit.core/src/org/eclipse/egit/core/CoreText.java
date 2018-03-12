@@ -23,10 +23,7 @@ public class CoreText extends NLS {
 	public static String AssumeUnchangedOperation_writingIndex;
 
 	/** */
-	public static String UpdateJob_updatingIndex;
-
-	/** */
-	public static String UpdateJob_writingIndex;
+	public static String UpdateOperation_writingIndex;
 
 	/** */
 	public static String UpdateOperation_updating;
@@ -237,15 +234,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String BranchOperation_performingBranch;
-
-	/** */
-	public static String TagOperation_performingTagging;
-
-	/** */
-	public static String TagOperation_taggingFailure;
-
-	/** */
-	public static String TagOperation_objectIdNotFound;
 
 	static {
 		initializeMessages("org.eclipse.egit.core.coretext", //$NON-NLS-1$
