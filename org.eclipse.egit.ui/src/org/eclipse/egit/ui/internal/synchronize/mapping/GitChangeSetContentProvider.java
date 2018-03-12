@@ -113,9 +113,6 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 	public void dispose() {
 		if (provider != null)
 			provider.dispose();
-		if (modelRoot != null)
-			modelRoot.dispose();
-		traversalCache.clear();
 
 		super.dispose();
 	}

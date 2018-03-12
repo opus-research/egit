@@ -101,14 +101,6 @@ public class GitModelCommit extends GitModelObjectContainer implements
 	}
 
 	@Override
-	public void dispose() {
-		for (GitModelObject value : cachedTreeMap.values())
-			value.dispose();
-
-		cachedTreeMap.clear();
-	}
-
-	@Override
 	public boolean equals(Object obj) {
 		if (obj == this)
 			return true;

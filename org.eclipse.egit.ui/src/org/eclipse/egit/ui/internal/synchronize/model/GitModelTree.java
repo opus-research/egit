@@ -77,14 +77,6 @@ public class GitModelTree extends GitModelObjectContainer {
 	}
 
 	@Override
-	public void dispose() {
-		for (GitModelObject value : cachedTreeMap.values())
-			value.dispose();
-
-		cachedTreeMap.clear();
-	}
-
-	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
