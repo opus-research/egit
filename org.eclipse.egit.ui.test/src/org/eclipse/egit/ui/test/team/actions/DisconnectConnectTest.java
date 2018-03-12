@@ -19,7 +19,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
@@ -86,7 +85,6 @@ public class DisconnectConnectTest extends LocalRepositoryTestCase {
 		touch("File modified");
 		clickOnDisconnect();
 		TestUtil.waitForJobs(500, 5000);
-		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		TestUtil.waitForDecorations();
 		assertFalse("Project should not have git decorations",
 				getProjectItem(projectExplorerTree, PROJ1).getText()
@@ -94,7 +92,6 @@ public class DisconnectConnectTest extends LocalRepositoryTestCase {
 		SWTBotShell connectDialog = openConnectDialog();
 		connectDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 		TestUtil.waitForJobs(500, 5000);
-		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		TestUtil.waitForDecorations();
 		assertTrue("Project should have git decorations",
 				getProjectItem(projectExplorerTree, PROJ1).getText()

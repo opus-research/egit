@@ -35,7 +35,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.CheckoutResult.Status;
@@ -65,7 +64,7 @@ public class BranchOperation extends BaseOperation {
 
 	private final String target;
 
-	private @NonNull CheckoutResult result = CheckoutResult.NOT_TRIED_RESULT;
+	private CheckoutResult result;
 
 	private boolean delete;
 
@@ -180,7 +179,6 @@ public class BranchOperation extends BaseOperation {
 	/**
 	 * @return the result of the operation
 	 */
-	@NonNull
 	public CheckoutResult getResult() {
 		return result;
 	}
