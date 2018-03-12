@@ -1853,6 +1853,12 @@ public class UIText extends NLS {
 	public static String FetchAction_wrongURIMessage;
 
 	/** */
+	public static String FetchConfiguredRemoteAction_NoSpecsDefinedMessage;
+
+	/** */
+	public static String FetchConfiguredRemoteAction_NoUrisDefinedMessage;
+
+	/** */
 	public static String FetchOperationUI_FetchJobName;
 
 	/** */
@@ -2788,6 +2794,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_PleaseEnterNameMessage;
+
+	/** */
+	public static String GitMergeEditorInput_CalculatingDiffTaskName;
+
+	/** */
+	public static String GitMergeEditorInput_CheckingResourcesTaskName;
 
 	/** */
 	public static String GitMergeEditorInput_MergeEditorTitle;

@@ -69,6 +69,8 @@ public class RefSpecPage extends WizardPage {
 
 	private String transportError;
 
+	private String configName;
+
 	private UserPasswordCredentials credentials;
 
 	private String helpContext = null;
@@ -150,6 +152,15 @@ public class RefSpecPage extends WizardPage {
 		Dialog.applyDialogFont(panel);
 		setControl(panel);
 		checkPage();
+	}
+
+	/**
+	 * Special mode: the configuration is determined by the wizard
+	 *
+	 * @param configName
+	 */
+	public void setConfigName(String configName) {
+		this.configName = configName;
 	}
 
 	/**
@@ -268,14 +279,19 @@ public class RefSpecPage extends WizardPage {
 		}
 
 		this.validatedRepoSelection = newRepoSelection;
+		final String actRemoteName;
+		if (configName == null)
+			actRemoteName = validatedRepoSelection.getConfigName();
+		else
+			actRemoteName = configName;
 
 		specsPanel.setAssistanceData(local, listRemotesOp.getRemoteRefs(),
-				currentRepoSelection.getConfig());
+				actRemoteName);
 
 		if (newRepoSelection.isConfigSelected()) {
 			saveButton.setVisible(true);
 			saveButton.setText(NLS.bind(UIText.RefSpecPage_saveSpecifications,
-					currentRepoSelection.getConfigName()));
+					actRemoteName));
 			saveButton.getParent().layout();
 
 			if (!pushPage) {
