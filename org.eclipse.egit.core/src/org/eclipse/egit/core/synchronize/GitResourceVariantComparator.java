@@ -88,7 +88,7 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 			if (!remote.isContainer() || (local.exists() ^ gitVariant.exists()))
 				return false;
 
-			return local.getLocation().equals(gitVariant.getLocation());
+			return local.getFullPath().equals(gitVariant.getFullPath());
 		}
 		return false;
 	}
@@ -111,24 +111,20 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 
 	private InputStream getLocal(IResource resource) throws CoreException {
 		if (gsd.getData(resource.getProject().getName()).shouldIncludeLocal())
-			return getSynchronizedFile(resource).getContents();
+			return ((IFile) resource).getContents();
 		else
 			try {
-				if (resource.getType() == IResource.FILE)
-					return getSynchronizedFile(resource).getContents();
-				else
+				if (resource.getType() == IResource.FILE) {
+					IFile file = ((IFile) resource);
+					if (!file.isSynchronized(0))
+						file.refreshLocal(0, null);
+
+					return file.getContents();
+				} else
 					return new ByteArrayInputStream(new byte[0]);
 			} catch (TeamException e) {
 				throw new CoreException(e.getStatus());
 			}
-	}
-
-	private IFile getSynchronizedFile(IResource resource) throws CoreException {
-		IFile file = ((IFile) resource);
-		if (!file.isSynchronized(0))
-			file.refreshLocal(0, null);
-
-		return file;
 	}
 
 	private void logException(Exception e) {

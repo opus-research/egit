@@ -27,7 +27,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 /**
  * Check out of a commit.
  */
-public class CheckoutCommitHandler extends AbstractHistoryCommandHandler {
+public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
 	private static final class BranchMessageDialog extends AmbiguousBranchDialog {
 
 		public BranchMessageDialog(Shell parentShell, List<RefNode> nodes) {

@@ -3,7 +3,7 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (c) 2010, Stefan Lay <stefan.lay@sap.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2010-2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,12 +33,9 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
-import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -65,15 +62,12 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevSort;
-import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
@@ -476,11 +470,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	/** Last HEAD */
 	private AnyObjectId currentHeadId;
 
-	/** Repository of the last input*/
-	private Repository currentRepo;
-
-	private boolean currentShowAllBranches;
-
 	/**
 	 * Highlight flag that can be applied to commits to make them stand out.
 	 * <p>
@@ -584,7 +573,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				graphDetailSplit);
 		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr);
 		revInfoSplit = new SashForm(graphDetailSplit, SWT.HORIZONTAL);
-		commentViewer = new CommitMessageViewer(revInfoSplit, getSite(), getPartSite());
+		commentViewer = new CommitMessageViewer(revInfoSplit, getSite());
 		fileViewer = new CommitFileDiffViewer(revInfoSplit, getSite());
 		findToolbar = new FindToolbar(historyControl);
 
@@ -909,39 +898,24 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					Repository repo = mapping.getRepository();
 					input = new HistoryPageInput(repo,
 							new IResource[] { (IResource) o });
-					showHead(repo);
 				}
 			} else if (o instanceof RepositoryTreeNode) {
 				RepositoryTreeNode repoNode = (RepositoryTreeNode) o;
-				Repository repo = repoNode.getRepository();
 				switch (repoNode.getType()) {
 				case FILE:
 					File file = ((FileNode) repoNode).getObject();
-					input = new HistoryPageInput(repo, new File[] { file });
-					showHead(repo);
+					input = new HistoryPageInput(repoNode.getRepository(),
+							new File[] { file });
 					break;
 				case FOLDER:
 					File folder = ((FolderNode) repoNode).getObject();
-					input = new HistoryPageInput(repo, new File[] { folder });
-					showHead(repo);
-					break;
-				case REF:
-					input = new HistoryPageInput(repo);
-					showRef(((RefNode) repoNode).getObject(), repo);
-					break;
-				case ADDITIONALREF:
-					input = new HistoryPageInput(repo);
-					showRef(((AdditionalRefNode) repoNode).getObject(), repo);
-					break;
-				case TAG:
-					input = new HistoryPageInput(repo);
-					showTag(((TagNode) repoNode).getObject(), repo);
+					input = new HistoryPageInput(repoNode.getRepository(),
+							new File[] { folder });
 					break;
 				default:
-					input = new HistoryPageInput(repo);
-					showHead(repo);
-					break;
+					input = new HistoryPageInput(repoNode.getRepository());
 				}
+
 			} else if (o instanceof HistoryPageInput)
 				input = (HistoryPageInput) o;
 			else if (o instanceof IAdaptable) {
@@ -956,12 +930,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				}
 			}
 			if (input == null) {
-				this.name = ""; //$NON-NLS-1$
-				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
-				return false;
-			}
-			Repository db = input.getRepository();
-			if (resolveHead(db, true) == null) {
 				this.name = ""; //$NON-NLS-1$
 				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
 				return false;
@@ -986,7 +954,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			actions.showAllResourceVersionsAction.setEnabled(filtersActive);
 
 			try {
-				initAndStartRevWalk(false);
+				initAndStartRevWalk(true);
 			} catch (IllegalStateException e) {
 				Activator.handleError(e.getMessage(), e, true);
 				return false;
@@ -997,45 +965,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
 						GitTraceLocation.HISTORYVIEW.getLocation());
-		}
-	}
-
-	private void showHead(Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
-			ObjectId head = repo.resolve(Constants.HEAD);
-			RevCommit c = rw.parseCommit(head);
-			graph.selectCommitStored(c);
-		} catch (IOException e) {
-			Activator.handleError(e.getMessage(), e, true);
-		}
-	}
-
-	private void showRef(Ref ref, Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
-			RevCommit c = rw.parseCommit(ref.getLeaf().getObjectId());
-			graph.selectCommit(c);
-		} catch (IOException e) {
-			Activator.handleError(e.getMessage(), e, true);
-		}
-	}
-
-	private void showTag(Ref ref, Repository repo) {
-		RevWalk rw = new RevWalk(repo);
-		try {
-			RevCommit c = null;
-			RevObject any = rw.parseAny(ref.getLeaf().getObjectId());
-			if (any instanceof RevCommit) {
-				c = (RevCommit) any;
-			} else if (any instanceof RevTag) {
-				RevTag t = rw.parseTag(any);
-				c = rw.parseCommit(t.getObject());
-			}
-			if (c != null)
-				graph.selectCommit(c);
-		} catch (IOException e) {
-			Activator.handleError(e.getMessage(), e, true);
 		}
 	}
 
@@ -1256,27 +1185,28 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 			cancelRefreshJob();
 			Repository db = input.getRepository();
-			AnyObjectId headId = resolveHead(db, false);
+			AnyObjectId headId = resolveHead(db);
 
 			List<String> paths = buildFilterPaths(input.getItems(), input
 					.getFileList(), db);
 
-			if (forceNewWalk || shouldRedraw(db, headId, paths)) {
+			if (forceNewWalk || pathChange(pathFilters, paths)
+					|| currentWalk == null || !headId.equals(currentHeadId)) {
 				// TODO Do not dispose SWTWalk just because HEAD changed
 				// In theory we should be able to update the graph and
 				// not dispose of the SWTWalk, even if HEAD was reset to
 				// HEAD^1 and the old HEAD commit should not be visible.
 				//
 				createNewWalk(db, headId);
-				setWalkStartPoints(db, headId);
+			} else {
+				currentWalk.reset();
+			}
+			setWalkStartPoints(db, headId);
 
-				setupFileViewer(db, paths);
-				setupCommentViewer(db);
+			setupFileViewer(db, paths);
+			setupCommentViewer(db);
 
-				scheduleNewGenerateHistoryJob();
-			} else
-				// needed for context menu and double click
-				graph.setHistoryPageInput(input);
+			scheduleNewGenerateHistoryJob();
 		} finally {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
@@ -1285,26 +1215,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		}
 	}
 
-	private boolean shouldRedraw(Repository db, AnyObjectId headId, List<String> paths) {
-		boolean pathChanged = pathChanged(pathFilters, paths);
-		boolean headChanged = !headId.equals(currentHeadId);
-		boolean repoChanged = false;
-
-		boolean allBranchesChanged = currentShowAllBranches != store
-			.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES);
-		currentShowAllBranches = store
-			.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES);
-
-		if (!db.equals(currentRepo)) {
-			repoChanged = true;
-			currentRepo = db;
-		}
-
-		return pathChanged
-			|| currentWalk == null || headChanged || repoChanged || allBranchesChanged;
-	}
-
-	private AnyObjectId resolveHead(Repository db, boolean acceptNull) {
+	private AnyObjectId resolveHead(Repository db) {
 		AnyObjectId headId;
 		try {
 			headId = db.resolve(Constants.HEAD);
@@ -1312,9 +1223,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorParsingHead, Activator
 							.getDefault().getRepositoryUtil()
-							.getRepositoryName(db)), e);
+							.getRepositoryName(db)));
 		}
-		if (headId == null && !acceptNull)
+		if (headId == null)
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorParsingHead, Activator
 							.getDefault().getRepositoryUtil()
@@ -1397,7 +1308,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		return paths;
 	}
 
-	private boolean pathChanged(final List<String> o, final List<String> n) {
+	private boolean pathChange(final List<String> o, final List<String> n) {
 		if (o == null)
 			return !n.isEmpty();
 		return !o.equals(n);
@@ -1485,16 +1396,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		schedule(rj);
 	}
 
-	private IWorkbenchPartSite getPartSite() {
+	private void schedule(final Job j) {
 		final IWorkbenchPart part = getHistoryPageSite().getPart();
 		IWorkbenchPartSite site = null;
 		if (part != null)
 			site = part.getSite();
-		return site;
-	}
-
-	private void schedule(final Job j) {
-		IWorkbenchPartSite site = getPartSite();
 		if (site != null) {
 			final IWorkbenchSiteProgressService p;
 			p = (IWorkbenchSiteProgressService) site

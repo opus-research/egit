@@ -924,17 +924,9 @@
                </count>
                <and>
                   <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                     </or>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
                   </iterate>
                </and>
             </and>
@@ -1162,6 +1154,15 @@
                </instanceof></possibleDropTargets>
          </dropAssistant>
       </navigatorContent>
+      <actionProvider
+            class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewActionProvider"
+            id="RepositoriesViewActionProvider">
+         <enablement>
+            <instanceof
+                  value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
+            </instanceof>
+         </enablement>
+      </actionProvider>
    </extension>
    <extension
          point="org.eclipse.ui.navigator.viewer">
@@ -1179,6 +1180,14 @@
             </contentExtension>
          </includes>
       </viewerContentBinding>
+      <viewerActionBinding
+            viewerId="org.eclipse.egit.ui.RepositoriesView">
+         <includes>
+            <actionExtension
+                  pattern="RepositoriesViewActionProvider">
+            </actionExtension>
+         </includes>
+      </viewerActionBinding>
    </extension>
    <extension
          point="org.eclipse.ui.menus">
@@ -2896,7 +2905,7 @@
    <extension point="org.eclipse.ui.navigator.viewer">
        <viewer viewerId="org.eclipse.egit.ui.compareSynchronization">
            <popupMenu
-                allowsPlatformContributions="true"
+                allowsPlatformContributions="false"
                 id="org.eclipse.egit.ui.compareSynchronizationMenu">
              <insertionPoint name="gitActions" separator="true"/>
              <insertionPoint name="file"/>
@@ -3019,18 +3028,6 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+M3+M">
       </key>
-      <key
-            commandId="org.eclipse.egit.ui.RepositoriesViewPaste"
-            contextId="org.eclipse.egit.ui.RepositoriesView"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+V">
-      </key>
-      <key
-            commandId="org.eclipse.egit.ui.RepositoriesViewCopyPath"
-            contextId="org.eclipse.egit.ui.RepositoriesView"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+C">
-      </key>
    </extension>
    <extension
          name="%HistoryViewCommands.extension.name"
@@ -3145,27 +3142,5 @@
             id="org.eclipse.egit.ui.wizardCategory"
             name="%Git">
       </category>
-   </extension>
-   <extension
-         point="org.eclipse.ui.perspectiveExtensions">
-      <perspectiveExtension
-            targetID="*">
-         <view
-               id="org.eclipse.egit.ui.RepositoriesView"
-               minimized="false"
-               ratio="0.6"
-               relationship="bottom"
-               relative="org.eclipse.jdt.ui.PackageExplorer"
-               visible="false">
-         </view>
-      </perspectiveExtension>
-   </extension>
-   <extension
-         point="org.eclipse.ui.contexts">
-      <context
-            id="org.eclipse.egit.ui.RepositoriesView"
-            name="%RepositoriesViewContext.name"
-            parentId="org.eclipse.ui.contexts.window">
-      </context>
    </extension>
 </plugin>

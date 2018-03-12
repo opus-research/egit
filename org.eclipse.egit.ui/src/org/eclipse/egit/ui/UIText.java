@@ -172,9 +172,6 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_errorComputingHistory;
 
 	/** */
-	public static String GenerateHistoryJob_NoCommits;
-
-	/** */
 	public static String EGitCredentialsProvider_errorReadingCredentials;
 
 	/** */
@@ -1777,6 +1774,9 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_committer;
 
 	/** */
+	public static String CommitMessageViewer_errorGettingFileDifference;
+
+	/** */
 	public static String CommitMessageViewer_FormattingMessageTaskName;
 
 	/** */
@@ -2212,9 +2212,6 @@ public class UIText extends NLS {
 	public static String FindToolbar_PreviousTooltip;
 
 	/** */
-	public static String FormatJob_buildingCommitInfo;
-
-	/** */
 	public static String WindowCachePreferencePage_title;
 
 	/** */
@@ -2257,12 +2254,6 @@ public class UIText extends NLS {
 	public static String BranchAction_repositoryState;
 
 	/** */
-	public static String BranchOperationUI_DetachedHeadTitle;
-
-	/** */
-	public static String BranchOperationUI_DetachedHeadMessage;
-
-	/** */
 	public static String BranchResultDialog_CheckoutConflictsMessage;
 
 	/** */
@@ -2287,6 +2278,9 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_QuestionNewBranchNameMessage;
 
 	/** */
+	public static String BranchSelectionDialog_QuestionNewBranchMessage;
+
+	/** */
 	public static String BranchSelectionDialog_NewBranch;
 
 	/** */
@@ -2309,24 +2303,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialogPreferencePage_hardWrapMessageTooltip;
-
-	/** */
-	public static String CommitDialogPreferencePage_createChangeId;
-
-	/** */
-	public static String CommitDialogPreferencePage_createChangeIdTooltip;
-
-	/** */
-	public static String CommitDialogPreferencePage_footers;
-
-	/** */
-	public static String CommitDialogPreferencePage_formatting;
-
-	/** */
-	public static String CommitDialogPreferencePage_signedOffBy;
-
-	/** */
-	public static String CommitDialogPreferencePage_signedOffByTooltip;
 
 	/** */
 	public static String Decorator_exceptionMessage;
@@ -2942,6 +2918,9 @@ public class UIText extends NLS {
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
+	public static String GitSynchronizeWizard_gitResourceSynchronization;
+
+	/** */
 	public static String GitBranchSynchronizeWizardPage_title;
 
 	/** */
@@ -2958,6 +2937,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_deselectAll;
+
+	/** */
+	public static String GitLightweightDecorator_AsynchronousDecorationError;
+
+	/** */
+	public static String GitLightweightDecorator_ResourceError;
 
 	/** */
 	public static String GitTraceConfigurationDialog_ApplyButton;
@@ -3045,15 +3030,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NonDeletedFilesTree_ResourcePathsButton;
-
-	/** */
-	public static String OpenWorkingFileAction_text;
-
-	/** */
-	public static String OpenWorkingFileAction_tooltip;
-
-	/** */
-	public static String OpenWorkingFileAction_openWorkingFileShellTitle;
 
 	/** */
 	public static String RemoteConnectionPreferencePage_TimeoutLabel;
@@ -3412,10 +3388,6 @@ public class UIText extends NLS {
 	/** */
 	public static String GitActionContributor_ExpandAll;
 
-	/** */
-	public static String DecoratableResourceHelper_noHead;
-
-	/** */
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
