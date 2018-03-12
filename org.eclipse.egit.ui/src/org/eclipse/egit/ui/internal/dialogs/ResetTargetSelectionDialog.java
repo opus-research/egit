@@ -42,7 +42,9 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public ResetTargetSelectionDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo);
+		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
+				| SHOW_TAGS | SHOW_REFERENCES | EXPAND_LOCAL_BRANCHES_NODE
+				| SELECT_CURRENT_REF);
 		super.setHelpAvailable(false);
 	}
 
@@ -60,7 +62,8 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		soft.setText(UIText.ResetTargetSelectionDialog_ResetTypeSoftButton);
 		soft.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
-				resetType = ResetType.SOFT;
+				if (((Button) event.widget).getSelection())
+					resetType = ResetType.SOFT;
 			}
 		});
 
@@ -69,7 +72,8 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		medium.setText(UIText.ResetTargetSelectionDialog_ResetTypeMixedButton);
 		medium.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
-				resetType = ResetType.MIXED;
+				if (((Button) event.widget).getSelection())
+					resetType = ResetType.MIXED;
 			}
 		});
 
@@ -77,7 +81,8 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		hard.setText(UIText.ResetTargetSelectionDialog_ResetTypeHardButton);
 		hard.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
-				resetType = ResetType.HARD;
+				if (((Button) event.widget).getSelection())
+					resetType = ResetType.HARD;
 			}
 		});
 	}
