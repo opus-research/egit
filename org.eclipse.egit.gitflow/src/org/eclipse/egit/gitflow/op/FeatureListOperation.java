@@ -58,7 +58,7 @@ public final class FeatureListOperation extends GitFlowOperation {
 		String uriString = FILE
 				+ repository.getRepository().getDirectory().getPath();
 		try {
-			operationResult = fetch(monitor, timeout);
+			operationResult = fetch(monitor);
 
 			URIish uri = new URIish(uriString);
 			ListRemoteOperation listRemoteOperation = new ListRemoteOperation(

@@ -20,7 +20,7 @@ import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.Activator;
@@ -29,7 +29,6 @@ import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.internal.synchronize.GitSynchronizeWizard;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -197,16 +196,20 @@ public class SynchronizeWithMenu extends ContributionItem implements
 		branchImage.dispose();
 	}
 
-	@Nullable
 	private IResource getSelection() {
 		ISelection sel = srv.getSelection();
 
-		if (!(sel instanceof IStructuredSelection)) {
+		if (!(sel instanceof IStructuredSelection))
 			return null;
-		}
 
 		Object selected = ((IStructuredSelection) sel).getFirstElement();
-		return AdapterUtils.adapt(selected, IResource.class);
+		if (selected instanceof IAdaptable)
+			return CommonUtils.getAdapter(((IAdaptable) selected), IResource.class);
+
+		if (selected instanceof IResource)
+			return (IResource) selected;
+
+		return null;
 	}
 
 	private boolean excludeTag(Ref ref, Repository repo) {

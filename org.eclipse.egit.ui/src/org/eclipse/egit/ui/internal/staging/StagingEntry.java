@@ -24,7 +24,6 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 
 
@@ -197,7 +196,6 @@ public class StagingEntry extends PlatformObject
 	/**
 	 * @return the location (path) of the entry
 	 */
-	@NonNull
 	public IPath getLocation() {
 		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
 		return absolutePath;

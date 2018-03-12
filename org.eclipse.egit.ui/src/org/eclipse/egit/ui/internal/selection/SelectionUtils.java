@@ -21,6 +21,7 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -28,8 +29,8 @@ import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -211,9 +212,9 @@ public class SelectionUtils {
 	 *            must be provided if warn = true
 	 * @return repository for current project, or null
 	 */
-	@Nullable
 	private static Repository getRepository(boolean warn,
-			@NonNull IStructuredSelection selection, Shell shell) {
+			IStructuredSelection selection, Shell shell) {
+		RepositoryMapping mapping = null;
 
 		IPath[] locations = getSelectedLocations(selection);
 		if (GitTraceLocation.SELECTION.isActive())
@@ -221,39 +222,32 @@ public class SelectionUtils {
 					GitTraceLocation.SELECTION.getLocation(), "selection=" //$NON-NLS-1$
 							+ selection + ", locations=" //$NON-NLS-1$
 							+ Arrays.toString(locations));
-		boolean hadNull = false;
-		Repository result = null;
+
 		for (IPath location : locations) {
-			RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-			Repository repo;
-			if (mapping != null) {
-				repo = mapping.getRepository();
-			} else {
-				// location is outside workspace
-				repo = org.eclipse.egit.core.Activator.getDefault()
-						.getRepositoryCache().getRepository(location);
-			}
-			if (repo == null) {
-				hadNull = true;
-			}
-			if (result == null) {
-				result = repo;
-			}
-			boolean mismatch = hadNull && result != null;
-			if (mismatch || result != repo) {
-				if (warn) {
+			RepositoryMapping repositoryMapping = RepositoryMapping
+					.getMapping(location);
+			if (repositoryMapping == null)
+				return null;
+			if (mapping == null)
+				mapping = repositoryMapping;
+			if (mapping.getRepository() != repositoryMapping.getRepository()) {
+				if (warn)
 					MessageDialog.openError(shell,
 							UIText.RepositoryAction_multiRepoSelectionTitle,
 							UIText.RepositoryAction_multiRepoSelection);
-				}
 				return null;
 			}
 		}
-
-		if (result == null) {
+		Repository result = null;
+		if (mapping == null)
 			for (Object o : selection.toArray()) {
-				Repository nextRepo = AdapterUtils.adapt(o, Repository.class);
-				if (nextRepo != null && result != null && result != nextRepo) {
+				Repository nextRepo = null;
+				if (o instanceof Repository)
+					nextRepo = (Repository) o;
+				else if (o instanceof PlatformObject)
+					nextRepo = CommonUtils.getAdapter(((PlatformObject) o), Repository.class);
+				if (nextRepo != null && result != null
+						&& !result.equals(nextRepo)) {
 					if (warn)
 						MessageDialog
 								.openError(
@@ -264,8 +258,8 @@ public class SelectionUtils {
 				}
 				result = nextRepo;
 			}
-		}
-
+		else
+			result = mapping.getRepository();
 		if (result == null) {
 			if (warn)
 				MessageDialog.openError(shell,
