@@ -30,10 +30,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.preferences.ConfigurationScope;
-import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.IScopeContext;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.VariablesPlugin;
@@ -119,33 +116,12 @@ public class RepositoryUtil {
 	public static String getDefaultRepositoryDir() {
 		String key = GitCorePreferences.core_defaultRepositoryDir;
 		String dir = migrateRepoRootPreference();
-		if (dir != null) {
-			// put the directory from old location to new one.
-			IEclipsePreferences p = InstanceScope.INSTANCE
-					.getNode(Activator.getPluginId());
-			p.put(key, dir);
-			// p.flush(); not necessary here, as migrateRepoRootPreference()
-			// does not flush, too.
+		IEclipsePreferences p = InstanceScope.INSTANCE
+				.getNode(Activator.getPluginId());
+		if (dir == null) {
+			dir = p.get(key, getDefaultDefaultRepositoryDir());
 		} else {
-			// Search for directory in all 3 scopes:
-			// instance (workspace) - InstanceScope.INSTANCE
-			// configuration (Eclipse) - ConfigurationScope.INSTANCE
-			// default (plug-in or feature) - DefaultScope.INSTANCE
-			// (fixes [Bug 496737] New: Default core_defaultRepositoryDir in
-			// plugin_customization.ini is ignored)
-			IScopeContext[] contexts = new IScopeContext[] {
-					InstanceScope.INSTANCE, ConfigurationScope.INSTANCE,
-					DefaultScope.INSTANCE };
-			for (IScopeContext context : contexts) {
-				dir = context.getNode(Activator.getPluginId()).get(key, null);
-				if (dir != null) {
-					break;
-				}
-			}
-			if (dir == null) {
-				// Nowhere found in preferences. Take DefaultDefault
-				dir = getDefaultDefaultRepositoryDir();
-			}
+			p.put(key, dir);
 		}
 		IStringVariableManager manager = VariablesPlugin.getDefault()
 				.getStringVariableManager();

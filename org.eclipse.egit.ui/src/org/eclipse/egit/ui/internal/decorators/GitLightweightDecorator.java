@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
@@ -188,8 +189,10 @@ public class GitLightweightDecorator extends LabelProvider implements
 			return;
 		}
 
-		// Don't decorate if the workbench is not running
-		if (!PlatformUI.isWorkbenchRunning()) {
+		// Don't decorate if the workbench is not running or the workspace is
+		// not yet ready or already shut down
+		if (!PlatformUI.isWorkbenchRunning()
+				|| ResourcesPlugin.getWorkspace() == null) {
 			return;
 		}
 
@@ -446,6 +449,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 				IDecoratableResource resource) {
 			String format = ""; //$NON-NLS-1$
 			switch (resource.getType()) {
+			default:
 			case IResource.FILE:
 				format = store
 						.getString(UIPreferences.DECORATOR_FILETEXT_DECORATION);

@@ -8,6 +8,7 @@
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
  * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -68,6 +69,8 @@ public class UIPreferences {
 	public final static String COMMIT_DIALOG_HARD_WRAP_MESSAGE = "commit_dialog_hard_wrap_message"; //$NON-NLS-1$
 	/** */
 	public final static String ALWAYS_USE_STAGING_VIEW = "always_use_staging_view"; //$NON-NLS-1$
+	/** */
+	public final static String AUTO_STAGE_ON_COMMIT = "auto_stage_on_commit"; //$NON-NLS-1$
 	/** */
 	public final static String COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE = "commit_dialog_warn_about_message_second_line"; //$NON-NLS-1$
 	/** */
@@ -160,6 +163,9 @@ public class UIPreferences {
 	public static final String DEFAULT_DATE_FORMAT_CHOICE = DATE_FORMAT_CUSTOM;
 	/** */
 	public static final String DEFAULT_CHANGESET_FORMAT = "[{author}] ({date}) {short_message}"; //$NON-NLS-1$
+
+	/** interval in seconds to check for repositories index changes */
+	public static final String REFESH_INDEX_INTERVAL = "refesh_index_interval"; //$NON-NLS-1$
 	/** */
 	public static final String REFESH_ON_INDEX_CHANGE = "refesh_on_index_change"; //$NON-NLS-1$
 	/** */
@@ -176,6 +182,10 @@ public class UIPreferences {
 	public static final String SHOW_REBASE_CONFIRM = "show_rebase_confirm"; //$NON-NLS-1$
 	/** */
 	public static final String SHOW_INITIAL_CONFIG_DIALOG = "show_initial_config_dialog"; //$NON-NLS-1$
+	/** */
+	public static final String SHOW_FETCH_POPUP_SUCCESS = "show_fetch_success_dialog"; //$NON-NLS-1$
+	/** */
+	public static final String SHOW_PUSH_POPUP_SUCCESS = "show_push_success_dialog"; //$NON-NLS-1$
 	/** */
 	public static final String SHOW_HOME_DIR_WARNING = "show_home_drive_warning"; //$NON-NLS-1$
 	/** */

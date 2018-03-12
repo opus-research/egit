@@ -15,12 +15,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
+import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.UIUtils.IRefListProvider;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.components.BranchRebaseModeCombo;
 import org.eclipse.egit.ui.internal.components.RefContentAssistProvider;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.IRemoteSelectionListener;
@@ -34,7 +34,9 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.lib.BranchConfig;
+import org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -74,13 +76,11 @@ public class PullWizardPage extends WizardPage {
 
 	private String fullBranch;
 
-	private Button mergeRadio;
-
-	private Button rebaseRadio;
-
 	private Button rememberConfigForBranch;
 
-	private UpstreamConfig upstreamConfig;
+	private BranchRebaseModeCombo upstreamConfigComponent;
+
+	private BranchRebaseMode upstreamConfig;
 
 	private Ref head;
 
@@ -166,16 +166,12 @@ public class PullWizardPage extends WizardPage {
 		GridDataFactory.fillDefaults().grab(true, false).span(2, 1)
 				.applyTo(remoteBranchNameText);
 		UIUtils.addRefContentProposalToText(remoteBranchNameText,
-				this.repository, new IRefListProvider() {
-
-					@Override
-					public List<Ref> getRefList() {
-						if (PullWizardPage.this.assist != null) {
-							return PullWizardPage.this.assist
-									.getRefsForContentAssist(false, true);
-						}
-						return Collections.emptyList();
+				this.repository, () -> {
+					if (PullWizardPage.this.assist != null) {
+						return PullWizardPage.this.assist
+								.getRefsForContentAssist(false, true);
 					}
+					return Collections.emptyList();
 				});
 		remoteBranchNameText.setText(getSuggestedBranchName());
 		remoteBranchNameText.addModifyListener(new ModifyListener() {
@@ -185,30 +181,16 @@ public class PullWizardPage extends WizardPage {
 			}
 		});
 
-		this.mergeRadio = new Button(res, SWT.RADIO);
-		this.mergeRadio.setText(UIText.UpstreamConfigComponent_MergeRadio);
-		this.mergeRadio.setLayoutData(
-				new GridData(SWT.BEGINNING, SWT.CENTER, false, false, 3, 1));
-		this.mergeRadio.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				upstreamConfig = UpstreamConfig.MERGE;
-			}
-		});
-		this.rebaseRadio = new Button(res, SWT.RADIO);
-		this.rebaseRadio.setText(UIText.UpstreamConfigComponent_RebaseRadio);
-		this.rebaseRadio.setLayoutData(
-				new GridData(SWT.BEGINNING, SWT.CENTER, false, false, 3, 1));
-		this.mergeRadio.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				upstreamConfig = UpstreamConfig.REBASE;
-			}
-		});
-		this.mergeRadio
-				.setSelection(this.upstreamConfig == UpstreamConfig.MERGE);
-		this.rebaseRadio
-				.setSelection(this.upstreamConfig == UpstreamConfig.REBASE);
+		this.upstreamConfigComponent = new BranchRebaseModeCombo(res);
+		GridDataFactory.fillDefaults().grab(true, false).span(2, 1)
+				.align(SWT.BEGINNING, SWT.CENTER)
+				.applyTo(upstreamConfigComponent.getViewer().getCombo());
+		this.upstreamConfigComponent.getViewer().addSelectionChangedListener(
+				(event) -> upstreamConfig = upstreamConfigComponent
+						.getRebaseMode());
+		if (upstreamConfig != null) {
+			upstreamConfigComponent.setRebaseMode(upstreamConfig);
+		}
 		if (this.fullBranch != null
 				&& this.fullBranch.startsWith(Constants.R_HEADS)) {
 			this.rememberConfigForBranch = new Button(res, SWT.CHECK);
@@ -371,9 +353,6 @@ public class PullWizardPage extends WizardPage {
 			if (!branchConfig.isRemoteLocal() && merge != null
 					&& merge.startsWith(Constants.R_HEADS)) {
 				return Repository.shortenRefName(merge);
-			} else if (merge == null
-					&& fullBranch.startsWith(Constants.R_HEADS)) {
-				return branchName;
 			}
 		}
 		return ""; //$NON-NLS-1$
@@ -383,11 +362,7 @@ public class PullWizardPage extends WizardPage {
 		return this.configureUpstream;
 	}
 
-	boolean isRebaseSelected() {
-		return upstreamConfig == UpstreamConfig.REBASE;
-	}
-
-	UpstreamConfig getUpstreamConfig() {
+	BranchRebaseMode getUpstreamConfig() {
 		return this.upstreamConfig;
 	}
 
@@ -398,19 +373,19 @@ public class PullWizardPage extends WizardPage {
 
 		String remote = branchConfig.getRemote();
 		// No upstream config -> don't show warning
-		if (remote == null)
+		if (remote == null) {
 			return false;
-		if (!remote.equals(remoteConfig.getName()))
+		}
+		if (!remote.equals(remoteConfig.getName())) {
 			return true;
-
+		}
 		String merge = branchConfig.getMerge();
-		if (merge == null || !merge.equals(getFullRemoteReference()))
+		if (merge == null || !merge.equals(getFullRemoteReference())) {
 			return true;
-
-		boolean rebase = branchConfig.isRebase();
-		if (rebase != isRebaseSelected())
+		}
+		if (branchConfig.getRebaseMode() != getUpstreamConfig()) {
 			return true;
-
+		}
 		return false;
 	}
 
@@ -419,13 +394,14 @@ public class PullWizardPage extends WizardPage {
 		BranchConfig branchConfig = new BranchConfig(repository.getConfig(),
 				branchName);
 		boolean alreadyConfigured = branchConfig.getMerge() != null;
-		UpstreamConfig config;
+		BranchRebaseMode config;
 		if (alreadyConfigured) {
-			boolean rebase = branchConfig.isRebase();
-			config = rebase ? UpstreamConfig.REBASE : UpstreamConfig.MERGE;
+			config = PullCommand.getRebaseMode(branchName,
+					repository.getConfig());
 		} else {
-			config = UpstreamConfig.getDefault(repository, Constants.R_REMOTES
-					+ Constants.DEFAULT_REMOTE_NAME + "/" + branchName); //$NON-NLS-1$
+			config = CreateLocalBranchOperation
+					.getDefaultUpstreamConfig(repository, Constants.R_REMOTES
+							+ Constants.DEFAULT_REMOTE_NAME + "/" + branchName); //$NON-NLS-1$
 		}
 		this.upstreamConfig = config;
 	}

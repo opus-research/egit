@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2015, Max Hohenegger <eclipse@hohenegger.eu>
+ * Copyright (C) 2015, 2016 Max Hohenegger <eclipse@hohenegger.eu> and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,9 +17,9 @@ import java.net.URISyntaxException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
-import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 
 import static org.eclipse.egit.gitflow.Activator.error;
 
@@ -28,6 +28,7 @@ import org.eclipse.egit.gitflow.internal.CoreText;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.CheckoutResult.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.FetchResult;
 
@@ -90,10 +91,11 @@ public final class FeatureTrackOperation extends AbstractFeatureOperation {
 
 	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
+		SubMonitor progress = SubMonitor.convert(monitor, 3);
 		try {
 			String newLocalBranch = repository
 					.getConfig().getFeatureBranchName(featureName);
-			operationResult = fetch(monitor, timeout);
+			operationResult = fetch(progress.newChild(1), timeout);
 
 			if (repository.hasBranch(newLocalBranch)) {
 				String errorMessage = String.format(
@@ -103,12 +105,12 @@ public final class FeatureTrackOperation extends AbstractFeatureOperation {
 			}
 			CreateLocalBranchOperation createLocalBranchOperation = new CreateLocalBranchOperation(
 					repository.getRepository(), newLocalBranch, remoteFeature,
-					UpstreamConfig.MERGE);
-			createLocalBranchOperation.execute(monitor);
+					BranchRebaseMode.NONE);
+			createLocalBranchOperation.execute(progress.newChild(1));
 
 			BranchOperation branchOperation = new BranchOperation(
 					repository.getRepository(), newLocalBranch);
-			branchOperation.execute(monitor);
+			branchOperation.execute(progress.newChild(1));
 			CheckoutResult result = branchOperation.getResult();
 			if (!Status.OK.equals(result.getStatus())) {
 				String errorMessage = String.format(

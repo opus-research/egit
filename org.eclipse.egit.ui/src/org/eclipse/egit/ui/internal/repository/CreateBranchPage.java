@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010, 2016 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -9,6 +9,8 @@
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Dariusz Luksza <dariusz@luksza.org>
  *    Steffen Pingel (Tasktop Technologies) - fixes for bug 352253
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 499482
+ *    Wim Jongman <wim.jongman@remainsoftware.com> - Bug 509878
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -21,17 +23,17 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
-import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 import org.eclipse.egit.ui.IBranchNameProvider;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
+import org.eclipse.egit.ui.internal.components.BranchNameNormalizer;
 import org.eclipse.egit.ui.internal.components.UpstreamConfigComponent;
-import org.eclipse.egit.ui.internal.components.UpstreamConfigComponent.UpstreamConfigSelectionListener;
 import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IInputValidator;
@@ -42,6 +44,7 @@ import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.util.SafeRunnable;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -112,7 +115,7 @@ class CreateBranchPage extends WizardPage {
 
 	private Button checkout;
 
-	private UpstreamConfig upstreamConfig;
+	private BranchRebaseMode upstreamConfig;
 
 	private UpstreamConfigComponent upstreamConfigComponent;
 
@@ -138,17 +141,20 @@ class CreateBranchPage extends WizardPage {
 	public CreateBranchPage(Repository repo, Ref baseRef) {
 		super(CreateBranchPage.class.getName());
 		this.myRepository = repo;
-		if (baseRef != null)
+		if (baseRef != null) {
 			this.myBaseRef = baseRef.getName();
-		else
+		} else {
 			this.myBaseRef = null;
+		}
 		this.myBaseCommit = null;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
 				myRepository, Constants.R_HEADS, false);
-		if (baseRef != null)
-			this.upstreamConfig = UpstreamConfig.getDefault(repo, baseRef.getName());
-		else
-			this.upstreamConfig = UpstreamConfig.NONE;
+		if (baseRef != null) {
+			this.upstreamConfig = CreateLocalBranchOperation
+					.getDefaultUpstreamConfig(repo, baseRef.getName());
+		} else {
+			this.upstreamConfig = null;
+		}
 		setTitle(UIText.CreateBranchPage_Title);
 		setMessage(UIText.CreateBranchPage_ChooseBranchAndNameMessage);
 	}
@@ -170,7 +176,7 @@ class CreateBranchPage extends WizardPage {
 		this.myBaseCommit = baseCommit;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
 				myRepository, Constants.R_HEADS, false);
-		this.upstreamConfig = UpstreamConfig.NONE;
+		this.upstreamConfig = null;
 		setTitle(UIText.CreateBranchPage_Title);
 		setMessage(UIText.CreateBranchPage_ChooseNameMessage);
 	}
@@ -232,19 +238,14 @@ class CreateBranchPage extends WizardPage {
 		GridDataFactory.fillDefaults().grab(true, false).span(3, 1)
 				.applyTo(nameText);
 
-		upstreamConfigComponent = new UpstreamConfigComponent(
-				main, SWT.NONE);
+		upstreamConfigComponent = new UpstreamConfigComponent(main, SWT.NONE);
 		GridDataFactory.fillDefaults().grab(true, false).span(4, 1)
 				.applyTo(upstreamConfigComponent.getContainer());
 
 		upstreamConfigComponent
-				.addUpstreamConfigSelectionListener(new UpstreamConfigSelectionListener() {
-					@Override
-					public void upstreamConfigSelected(
-							UpstreamConfig newUpstreamConfig) {
-						upstreamConfig = newUpstreamConfig;
-						checkPage();
-					}
+				.addUpstreamConfigSelectionListener((newConfig) -> {
+					upstreamConfig = newConfig;
+					checkPage();
 				});
 
 		boolean isBare = myRepository.isBare();
@@ -274,13 +275,10 @@ class CreateBranchPage extends WizardPage {
 			setSourceRef(myBaseRef);
 
 		nameText.setFocus();
-		// add the listener just now to avoid unneeded checkPage()
-		nameText.addModifyListener(new ModifyListener() {
-			@Override
-			public void modifyText(ModifyEvent e) {
-				checkPage();
-			}
-		});
+		// add the listeners just now to avoid unneeded checkPage()
+		nameText.addModifyListener(e -> checkPage());
+		BranchNameNormalizer normalizer = new BranchNameNormalizer(nameText);
+		normalizer.setVisible(false);
 	}
 
 	@Override
@@ -304,7 +302,9 @@ class CreateBranchPage extends WizardPage {
 		sourceRefName = refName;
 
 		suggestBranchName(refName);
-		upstreamConfig = UpstreamConfig.getDefault(myRepository, refName);
+		upstreamConfig = CreateLocalBranchOperation
+				.getDefaultUpstreamConfig(myRepository, refName);
+		updateUpstreamComponent();
 		checkPage();
 	}
 
@@ -315,7 +315,8 @@ class CreateBranchPage extends WizardPage {
 
 		sourceRefName = commit.name();
 
-		upstreamConfig = UpstreamConfig.NONE;
+		upstreamConfig = null;
+		updateUpstreamComponent();
 		checkPage();
 	}
 
@@ -330,27 +331,31 @@ class CreateBranchPage extends WizardPage {
 		}
 	}
 
+	private void updateUpstreamComponent() {
+		upstreamConfigComponent.setUpstreamConfig(upstreamConfig);
+
+		boolean showUpstreamConfig = sourceRefName.startsWith(Constants.R_HEADS)
+				|| sourceRefName.startsWith(Constants.R_REMOTES);
+		Composite container = upstreamConfigComponent.getContainer();
+		GridData gd = (GridData) container.getLayoutData();
+		if (gd.exclude == showUpstreamConfig) {
+			gd.exclude = !showUpstreamConfig;
+			container.setVisible(showUpstreamConfig);
+			container.getParent().layout(true);
+			ensurePreferredHeight(getShell());
+		}
+	}
+
 	private void checkPage() {
 		try {
-			upstreamConfigComponent.setUpstreamConfig(upstreamConfig);
-
-			boolean showUpstreamConfig = sourceRefName
-					.startsWith(Constants.R_HEADS)
-					|| sourceRefName.startsWith(Constants.R_REMOTES);
-			Composite container = upstreamConfigComponent.getContainer();
-			GridData gd = (GridData) container.getLayoutData();
-			if (gd.exclude == showUpstreamConfig) {
-				gd.exclude = !showUpstreamConfig;
-				container.setVisible(showUpstreamConfig);
-				container.getParent().layout(true);
-				ensurePreferredHeight(getShell());
-			}
-
 			boolean basedOnLocalBranch = sourceRefName
 					.startsWith(Constants.R_HEADS);
-			if (basedOnLocalBranch && upstreamConfig != UpstreamConfig.NONE)
+			if (basedOnLocalBranch && upstreamConfig != null) {
 				setMessage(UIText.CreateBranchPage_LocalBranchWarningMessage,
 						IMessageProvider.INFORMATION);
+			} else {
+				setMessage(UIText.CreateBranchPage_ChooseBranchAndNameMessage);
+			}
 
 			if (sourceRefName.length() == 0) {
 				setErrorMessage(UIText.CreateBranchPage_MissingSourceMessage);
@@ -386,10 +391,10 @@ class CreateBranchPage extends WizardPage {
 	 */
 	public void createBranch(String newRefName, boolean checkoutNewBranch,
 			IProgressMonitor monitor)
-			throws CoreException,
-			IOException {
-		monitor.beginTask(UIText.CreateBranchPage_CreatingBranchMessage,
-				IProgressMonitor.UNKNOWN);
+			throws CoreException, IOException {
+		SubMonitor progress = SubMonitor.convert(monitor,
+				checkoutNewBranch ? 2 : 1);
+		progress.setTaskName(UIText.CreateBranchPage_CreatingBranchMessage);
 
 		final CreateLocalBranchOperation cbop;
 
@@ -402,15 +407,12 @@ class CreateBranchPage extends WizardPage {
 					myRepository.findRef(this.sourceRefName),
 					upstreamConfig);
 
-		cbop.execute(monitor);
+		cbop.execute(progress.newChild(1));
 
-		if (checkoutNewBranch) {
-			if (monitor.isCanceled())
-				return;
-			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
-					IProgressMonitor.UNKNOWN);
+		if (checkoutNewBranch && !progress.isCanceled()) {
+			progress.setTaskName(UIText.CreateBranchPage_CheckingOutMessage);
 			BranchOperationUI.checkout(myRepository, Constants.R_HEADS + newRefName)
-					.run(monitor);
+					.run(progress.newChild(1));
 		}
 	}
 
@@ -493,5 +495,4 @@ class CreateBranchPage extends WizardPage {
 			return UIText.CreateBranchPage_SourceSelectionDialogMessage;
 		}
 	}
-
 }

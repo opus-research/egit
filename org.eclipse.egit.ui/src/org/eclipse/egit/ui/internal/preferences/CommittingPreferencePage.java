@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2010, 2013 Robin Stocker <robin@nibor.org> and others.
  * Copyright (C) 2015 SAP SE (Christian Georgi <christian.georgi@sap.com>)
+ * Copyright (C) 2016, 2017 Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,16 +10,21 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.PluginPreferenceInitializer;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
-import org.eclipse.jface.preference.FieldEditorPreferencePage;
+import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.IntegerFieldEditor;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -29,10 +35,15 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 /** Preferences for committing with commit dialog/staging view. */
-public class CommittingPreferencePage extends FieldEditorPreferencePage
+public class CommittingPreferencePage extends DoublePreferencesPreferencePage
 		implements IWorkbenchPreferencePage {
+
+	private BooleanFieldEditor useStagingView;
+
+	private BooleanFieldEditor autoStage;
 
 	private Button warnCheckbox;
 
@@ -43,6 +54,8 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 	private Button blockCheckbox;
 
 	private ComboFieldEditor blockCombo;
+
+	private Group generalGroup;
 
 	/** */
 	public CommittingPreferencePage() {
@@ -61,13 +74,74 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 	}
 
 	@Override
+	protected IPreferenceStore doGetSecondaryPreferenceStore() {
+		return new ScopedPreferenceStore(InstanceScope.INSTANCE,
+				org.eclipse.egit.core.Activator.getPluginId());
+	}
+
+	@Override
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
 
-		BooleanFieldEditor useStagingView = new BooleanFieldEditor(
+		generalGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		generalGroup.setText(UIText.CommittingPreferencePage_general);
+		GridDataFactory.fillDefaults().grab(true, false).span(3, 1)
+				.applyTo(generalGroup);
+
+		useStagingView = new BooleanFieldEditor(
 				UIPreferences.ALWAYS_USE_STAGING_VIEW,
-				UIText.CommittingPreferencePage_AlwaysUseStagingView, main);
+				UIText.CommittingPreferencePage_AlwaysUseStagingView,
+				generalGroup);
 		addField(useStagingView);
+
+		autoStage = new BooleanFieldEditor(UIPreferences.AUTO_STAGE_ON_COMMIT,
+				UIText.CommittingPreferencePage_AutoStageOnCommit,
+				generalGroup);
+		GridDataFactory.fillDefaults().indent(UIUtils.getControlIndent(), 0)
+				.applyTo(autoStage.getDescriptionControl(generalGroup));
+		addField(autoStage);
+		autoStage.setEnabled(getPreferenceStore()
+				.getBoolean(UIPreferences.ALWAYS_USE_STAGING_VIEW),
+				generalGroup);
+
+		BooleanFieldEditor includeUntracked = new BooleanFieldEditor(
+				UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED,
+				UIText.CommittingPreferencePage_includeUntrackedFiles,
+				generalGroup);
+		includeUntracked.getDescriptionControl(generalGroup).setToolTipText(
+				UIText.CommittingPreferencePage_includeUntrackedFilesTooltip);
+		addField(includeUntracked);
+
+		BooleanFieldEditor autoStageDeletion = new BooleanFieldEditor(
+				GitCorePreferences.core_autoStageDeletion,
+				UIText.CommittingPreferencePage_autoStageDeletion,
+				generalGroup) {
+
+			@Override
+			public IPreferenceStore getPreferenceStore() {
+				return getSecondaryPreferenceStore();
+			}
+		};
+		addField(autoStageDeletion);
+
+		BooleanFieldEditor autoStageMoves = new BooleanFieldEditor(
+				GitCorePreferences.core_autoStageMoves,
+				UIText.CommittingPreferencePage_autoStageMoves, generalGroup) {
+
+			@Override
+			public IPreferenceStore getPreferenceStore() {
+				return getSecondaryPreferenceStore();
+			}
+		};
+		addField(autoStageMoves);
+
+		IntegerFieldEditor historySize = new IntegerFieldEditor(
+				UIPreferences.COMMIT_DIALOG_HISTORY_SIZE,
+				UIText.CommittingPreferencePage_commitMessageHistory,
+				generalGroup);
+		addField(historySize);
+
+		updateMargins(generalGroup);
 
 		Group formattingGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		formattingGroup.setText(UIText.CommittingPreferencePage_formatting);
@@ -158,18 +232,32 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 		handleWarnCheckboxSelection(warnCheckbox.getSelection());
 		handleBlockCheckboxSelection(blockCheckbox.getSelection());
 		updateMargins(buildProblemsGroup);
+	}
 
-		BooleanFieldEditor includeUntracked = new BooleanFieldEditor(
-				UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED,
-				UIText.CommittingPreferencePage_includeUntrackedFiles, main);
-		includeUntracked.getDescriptionControl(main).setToolTipText(
-				UIText.CommittingPreferencePage_includeUntrackedFilesTooltip);
-		addField(includeUntracked);
+	@Override
+	protected void initialize() {
+		super.initialize();
+		useStagingView.setPropertyChangeListener(new IPropertyChangeListener() {
+			@Override
+			public void propertyChange(PropertyChangeEvent event) {
+				if (FieldEditor.VALUE.equals(event.getProperty())) {
+					autoStage.setEnabled(
+							((Boolean) event.getNewValue()).booleanValue(),
+							generalGroup);
+				}
+			}
+		});
+	}
 
-		IntegerFieldEditor historySize = new IntegerFieldEditor(
-				UIPreferences.COMMIT_DIALOG_HISTORY_SIZE,
-				UIText.CommittingPreferencePage_commitMessageHistory, main);
-		addField(historySize);
+	@Override
+	protected void performDefaults() {
+		super.performDefaults();
+		// We don't get property changed events when the default values are
+		// restored...
+		autoStage.setEnabled(
+				getPreferenceStore().getDefaultBoolean(
+						UIPreferences.ALWAYS_USE_STAGING_VIEW),
+				generalGroup);
 	}
 
 	private void updateMargins(Group group) {
@@ -202,9 +290,9 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 
 	@Override
 	public boolean performOk() {
-		doGetPreferenceStore().setValue(UIPreferences.WARN_BEFORE_COMMITTING,
+		getPreferenceStore().setValue(UIPreferences.WARN_BEFORE_COMMITTING,
 				warnCheckbox.getSelection());
-		doGetPreferenceStore().setValue(UIPreferences.BLOCK_COMMIT,
+		getPreferenceStore().setValue(UIPreferences.BLOCK_COMMIT,
 				blockCheckbox.getSelection());
 		return super.performOk();
 	}

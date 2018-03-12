@@ -47,9 +47,6 @@ public class ActionCommands {
 	/** "Compare with Commit" action command id */
 	public static final String COMPARE_WITH_COMMIT_ACTION = "org.eclipse.egit.ui.team.CompareWithCommit"; //$NON-NLS-1$
 
-	/** "Compare with revision" action command id */
-	public static final String COMPARE_WITH_REVISION_ACTION = "org.eclipse.egit.ui.team.CompareWithRevision"; //$NON-NLS-1$
-
 	/** "Compare with previous" action command id */
 	public static final String COMPARE_WITH_PREVIOUS_ACTION = "org.eclipse.egit.ui.team.CompareWithPrevious"; //$NON-NLS-1$
 
@@ -95,9 +92,6 @@ public class ActionCommands {
 	/** "Push branch" action command id */
 	public static final String PUSH_BRANCH_ACTION = "org.eclipse.egit.ui.team.PushBranch"; //$NON-NLS-1$
 
-	/** "Rename Branch" action command id */
-	public static final String RENAME_BRANCH_ACTION = "org.eclipse.egit.ui.team.RenameBranch"; //$NON-NLS-1$
-
 	/** "Simple Push" action command id */
 	public static final String SIMPLE_PUSH_ACTION = "org.eclipse.egit.ui.team.SimplePush"; //$NON-NLS-1$
 
@@ -134,6 +128,4 @@ public class ActionCommands {
 	/** "Merge Tool" action command id */
 	public static final String MERGE_TOOL_ACTION = "org.eclipse.egit.ui.team.MergeTool"; //$NON-NLS-1$
 
-	/** "Show Blame Annotations" action command id */
-	public static final String SHOW_BLAME_ACTION = "org.eclipse.egit.ui.team.ShowBlameAnnotations"; //$NON-NLS-1$
 }

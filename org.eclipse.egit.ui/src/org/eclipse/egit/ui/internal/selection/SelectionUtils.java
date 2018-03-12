@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,15 +31,16 @@ import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.team.core.history.IFileRevision;
@@ -48,6 +50,7 @@ import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.part.MultiPageEditorPart;
 
 /**
  * Utilities for working with selections.
@@ -124,10 +127,15 @@ public class SelectionUtils {
 	@NonNull
 	public static IStructuredSelection getStructuredSelection(
 			@NonNull ISelection selection) {
-		if (selection instanceof ITextSelection)
-			return getSelectionFromEditorInput(getEvaluationContext());
-		else if (selection instanceof IStructuredSelection)
+		if (selection instanceof ITextSelection) {
+			IEvaluationContext evaluationContext = getEvaluationContext();
+			if (evaluationContext == null) {
+				return StructuredSelection.EMPTY;
+			}
+			return getSelectionFromEditorInput(evaluationContext);
+		} else if (selection instanceof IStructuredSelection) {
 			return (IStructuredSelection) selection;
+		}
 		return StructuredSelection.EMPTY;
 	}
 
@@ -140,7 +148,7 @@ public class SelectionUtils {
 			@NonNull IStructuredSelection selection) {
 		Set<IPath> result = new LinkedHashSet<>();
 		for (Object o : selection.toList()) {
-			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			IResource resource = AdapterUtils.adaptToAnyResource(o);
 			if (resource != null) {
 				IPath location = resource.getLocation();
 				if (location != null)
@@ -161,21 +169,36 @@ public class SelectionUtils {
 	}
 
 	/**
+	 * Returns the resources contained in the given selection.
+	 *
 	 * @param selection
 	 * @return the resources in the selection
 	 */
 	@NonNull
 	public static IResource[] getSelectedResources(
 			@NonNull IStructuredSelection selection) {
+		Set<IResource> result = getSelectedResourcesSet(selection);
+		return result.toArray(new IResource[result.size()]);
+	}
+
+	/**
+	 * Returns the resources contained in the given selection.
+	 *
+	 * @param selection
+	 * @return the resources in the selection
+	 */
+	@NonNull
+	private static Set<IResource> getSelectedResourcesSet(
+			@NonNull IStructuredSelection selection) {
 		Set<IResource> result = new LinkedHashSet<>();
 		for (Object o : selection.toList()) {
-			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			IResource resource = AdapterUtils.adaptToAnyResource(o);
 			if (resource != null)
 				result.add(resource);
 			else
 				result.addAll(extractResourcesFromMapping(o));
 		}
-		return result.toArray(new IResource[result.size()]);
+		return result;
 	}
 
 	private static List<IResource> extractResourcesFromMapping(Object o) {
@@ -203,23 +226,76 @@ public class SelectionUtils {
 	}
 
 	/**
-	 * Determines a set of either {@link IResource}s or {@link IPath}s from a
-	 * selection. For selection contents that adapt to {@link IResource} or
-	 * {@link ResourceMapping}, the containing {@link IResource}s are included
-	 * in the result set; otherwise for selection contents that adapt to
-	 * {@link IPath} these paths are included.
+	 * Determines the most fitting {@link HistoryPageInput} for the given
+	 * {@link IStructuredSelection}. The {@code mandatoryObject} must be
+	 * contained in the selection and in a repository.
+	 * <p>
+	 * Most fitting means that the input will contain all selected resources
+	 * which are contained in the same repository as the given
+	 * {@code mandatoryObject}.
+	 * </p>
+	 *
+	 * @param selection
+	 *            The selection for which the most fitting HistoryPageInput is
+	 *            to be determined.
+	 * @param mandatoryObject
+	 *            The object to which the HistoryPageInput is tailored. Must be
+	 *            contained in the given selection and in a repository.
+	 * @return The most fitting HistoryPageInput. Will return {@code null} when
+	 *         the {@code mandatoryObject} is not contained in the given
+	 *         selection or in a repository.
+	 */
+	@Nullable
+	public static HistoryPageInput getMostFittingInput(
+			@NonNull IStructuredSelection selection, Object mandatoryObject) {
+		Set<IResource> resources = getSelectedResourcesSet(selection);
+		if (!resources.contains(mandatoryObject)) {
+			return null;
+		}
+
+		Repository repository = ResourceUtil
+				.getRepository((IResource) mandatoryObject);
+		if (repository == null) {
+			return null;
+		}
+
+		for (Iterator<IResource> it = resources.iterator(); it.hasNext();) {
+			IResource resource = it.next();
+			if (ResourceUtil.getRepository(resource) != repository) {
+				it.remove();
+			}
+		}
+
+		IResource[] resourceArray = resources.toArray(new IResource[resources
+				.size()]);
+		return new HistoryPageInput(repository, resourceArray);
+	}
+
+	/**
+	 * Determines a set of either {@link Repository}, {@link IResource}s or
+	 * {@link IPath}s from a selection. For selection contents that adapt to
+	 * {@link Repository}, {@link IResource} or {@link ResourceMapping}, the
+	 * containing {@link Repository}s or {@link IResource}s are included in the
+	 * result set; otherwise for selection contents that adapt to {@link IPath}
+	 * these paths are included.
 	 *
 	 * @param selection
 	 *            to process
-	 * @return the set of {@link IResource} and {@link IPath} objects from the
-	 *         selection; not containing {@code null} values
+	 * @return the set of {@link Repository}, {@link IResource} and
+	 *         {@link IPath} objects from the selection; not containing
+	 *         {@code null} values
 	 */
 	@NonNull
 	private static Set<Object> getSelectionContents(
 			@NonNull IStructuredSelection selection) {
 		Set<Object> result = new HashSet<>();
 		for (Object o : selection.toList()) {
-			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			Repository r = AdapterUtils.adapt(o, Repository.class);
+			if (r != null) {
+				result.add(r);
+				continue;
+			}
+			IResource resource = AdapterUtils.adaptToAnyResource(o);
 			if (resource != null) {
 				result.add(resource);
 				continue;
@@ -253,6 +329,9 @@ public class SelectionUtils {
 	@Nullable
 	private static Repository getRepository(boolean warn,
 			@NonNull IStructuredSelection selection, Shell shell) {
+		if (selection.isEmpty()) {
+			return null;
+		}
 		Set<Object> elements = getSelectionContents(selection);
 		if (GitTraceLocation.SELECTION.isActive())
 			GitTraceLocation.getTrace().trace(
@@ -263,7 +342,9 @@ public class SelectionUtils {
 		Repository result = null;
 		for (Object location : elements) {
 			Repository repo = null;
-			if (location instanceof IResource) {
+			if (location instanceof Repository) {
+				repo = (Repository) location;
+			} else if (location instanceof IResource) {
 				repo = ResourceUtil.getRepository((IResource) location);
 			} else if (location instanceof IPath) {
 				repo = ResourceUtil.getRepository((IPath) location);
@@ -314,13 +395,23 @@ public class SelectionUtils {
 
 	private static IStructuredSelection getSelectionFromEditorInput(
 			IEvaluationContext context) {
-		Object object = context.getVariable(ISources.ACTIVE_EDITOR_INPUT_NAME);
-		if (!(object instanceof IEditorInput)) {
-			Object editor = context.getVariable(ISources.ACTIVE_EDITOR_NAME);
-			if (editor instanceof IEditorPart)
-				object = ((IEditorPart) editor).getEditorInput();
+		Object part = context.getVariable(ISources.ACTIVE_PART_NAME);
+		if (!(part instanceof IEditorPart)) {
+			return StructuredSelection.EMPTY;
 		}
-
+		Object object = context.getVariable(ISources.ACTIVE_EDITOR_INPUT_NAME);
+		Object editor = context.getVariable(ISources.ACTIVE_EDITOR_NAME);
+		if (editor instanceof MultiPageEditorPart) {
+			Object nestedEditor = ((MultiPageEditorPart) editor)
+					.getSelectedPage();
+			if (nestedEditor instanceof IEditorPart) {
+				object = ((IEditorPart) nestedEditor).getEditorInput();
+			}
+		}
+		if (!(object instanceof IEditorInput)
+				&& (editor instanceof IEditorPart)) {
+			object = ((IEditorPart) editor).getEditorInput();
+		}
 		if (object instanceof IEditorInput) {
 			IEditorInput editorInput = (IEditorInput) object;
 			// Note that there is both a getResource(IEditorInput) as well as a
