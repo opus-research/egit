@@ -251,10 +251,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			while (ctIter.hasNext()) {
 				final TemplateContextType contextType = (TemplateContextType) ctIter
 						.next();
-				contextType
-						.addResolver(new GitTemplateVariableResolver(
-								"git_config", //$NON-NLS-1$
-								UIText.GitTemplateVariableResolver_GitConfigDescription));
+				contextType.addResolver(new GitTemplateVariableResolver());
 			}
 		}
 	}
