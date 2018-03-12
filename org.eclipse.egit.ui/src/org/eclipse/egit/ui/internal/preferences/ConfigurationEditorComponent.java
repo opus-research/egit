@@ -398,15 +398,9 @@ public class ConfigurationEditorComponent {
 						else
 							entry.addValue(dlg.getValue());
 						markDirty();
-					} else if (st.countTokens() > 2) {
-						int n = st.countTokens();
+					} else if (st.countTokens() == 3) {
 						String sectionName = st.nextToken();
-						StringBuilder b = new StringBuilder(st.nextToken());
-						for (int i = 0; i < n - 3; i++) {
-							b.append(DOT);
-							b.append(st.nextToken());
-						}
-						String subSectionName = b.toString();
+						String subSectionName = st.nextToken();
 						String entryName = st.nextToken();
 						Entry entry = ((GitConfig) tv.getInput()).getEntry(
 								sectionName, subSectionName, entryName);
@@ -416,12 +410,11 @@ public class ConfigurationEditorComponent {
 						else
 							entry.addValue(dlg.getValue());
 						markDirty();
-					} else {
+					} else
 						Activator
 								.handleError(
 										UIText.ConfigurationEditorComponent_WrongNumberOfTokensMessage,
 										null, true);
-					}
 				}
 			}
 
