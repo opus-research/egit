@@ -2,7 +2,6 @@
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -65,9 +64,8 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		UNTRACKED(EnumSet.of(Action.STAGE, Action.DELETE, Action.IGNORE)),
 
 		/** in conflict */
-		CONFLICTING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX,
-				Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE,
-				Action.LAUNCH_MERGE_TOOL, Action.REPLACE_WITH_OURS_THEIRS_MENU));
+		CONFLICTING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION,
+					Action.STAGE, Action.LAUNCH_MERGE_TOOL));
 
 		private final Set<Action> availableActions;
 
@@ -94,7 +92,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		DELETE,
 		IGNORE,
 		LAUNCH_MERGE_TOOL,
-		REPLACE_WITH_OURS_THEIRS_MENU
 	}
 
 	private final Repository repository;
@@ -107,8 +104,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	private StagingFolderEntry parent;
 
 	private boolean submodule;
-
-	private boolean symlink;
 
 	/**
 	 * @param repository
@@ -136,20 +131,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	 */
 	public boolean isSubmodule() {
 		return submodule;
-	}
-
-	/**
-	 * @param symlink
-	 */
-	public void setSymlink(boolean symlink) {
-		this.symlink = symlink;
-	}
-
-	/**
-	 * @return true if symlink, false otherwise
-	 */
-	public boolean isSymlink() {
-		return symlink;
 	}
 
 	/**
@@ -215,7 +196,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		this.parent = parent;
 	}
 
-	@Override
 	public int getProblemSeverity() {
 		if (file == null)
 			return SEVERITY_NONE;
@@ -227,7 +207,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		}
 	}
 
-	@Override
 	public Object getAdapter(Class adapter) {
 		if (adapter == IResource.class)
 			return getFile();
@@ -236,12 +215,10 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		return null;
 	}
 
-	@Override
 	public int getType() {
 		return IResource.FILE;
 	}
 
-	@Override
 	public String getName() {
 		if (name == null) {
 			IPath parsed = Path.fromOSString(getPath());
@@ -250,38 +227,31 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		return name;
 	}
 
-	@Override
 	public String getRepositoryName() {
 		return null;
 	}
 
-	@Override
 	public String getBranch() {
 		return null;
 	}
 
-	@Override
 	public String getBranchStatus() {
 		return null;
 	}
 
-	@Override
 	public boolean isTracked() {
 		return state != State.UNTRACKED;
 	}
 
-	@Override
 	public boolean isIgnored() {
 		return false;
 	}
 
-	@Override
 	public boolean isDirty() {
 		return state == State.MODIFIED || state == State.MODIFIED_AND_CHANGED
 				|| state == State.MODIFIED_AND_ADDED;
 	}
 
-	@Override
 	public Staged staged() {
 		switch (state) {
 		case ADDED:
@@ -298,12 +268,10 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		}
 	}
 
-	@Override
 	public boolean hasConflicts() {
 		return state == State.CONFLICTING;
 	}
 
-	@Override
 	public boolean isAssumeValid() {
 		return false;
 	}

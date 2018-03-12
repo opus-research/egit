@@ -27,7 +27,6 @@ import org.eclipse.egit.ui.internal.UIText;
  * @see AssumeUnchangedOperation
  */
 public class AssumeUnchangedActionHandler extends RepositoryActionHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IResource[] resources = getSelectedResources(event);
 		if (resources.length == 0)

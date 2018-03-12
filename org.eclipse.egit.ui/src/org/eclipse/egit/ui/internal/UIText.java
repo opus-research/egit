@@ -11,7 +11,6 @@
  * Copyright (C) 2013, Ben Hammen <hammenb@gmail.com>
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * Copyright (C) 2014, Red Hat Inc.
- * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -982,21 +981,6 @@ public class UIText extends NLS {
 	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
 
 	/** */
-	public static String ReplaceWithOursTheirsMenu_CalculatingOursTheirsCommitsError;
-
-	/** */
-	public static String ReplaceWithOursTheirsMenu_OursWithCommitLabel;
-
-	/** */
-	public static String ReplaceWithOursTheirsMenu_OursWithoutCommitLabel;
-
-	/** */
-	public static String ReplaceWithOursTheirsMenu_TheirsWithCommitLabel;
-
-	/** */
-	public static String ReplaceWithOursTheirsMenu_TheirsWithoutCommitLabel;
-
-	/** */
 	public static String ReplaceWithPreviousActionHandler_NoParentCommitDialogMessage;
 
 	/** */
@@ -1153,30 +1137,6 @@ public class UIText extends NLS {
 	public static String CheckoutHandler_SelectBranchTitle;
 
 	/** */
-	public static String CherryPickHandler_NoCherryPickPerformedMessage;
-
-	/** */
-	public static String CherryPickHandler_NoCherryPickPerformedTitle;
-
-	/** */
-	public static String CherryPickHandler_CherryPickConflictsMessage;
-
-	/** */
-	public static String CherryPickHandler_CherryPickConflictsTitle;
-
-	/** */
-	public static String CherryPickHandler_CherryPickFailedMessage;
-
-	/** */
-	public static String CherryPickHandler_CouldNotDeleteFile;
-
-	/** */
-	public static String CherryPickHandler_ErrorMsgTemplate;
-
-	/** */
-	public static String CherryPickHandler_IndexDirty;
-
-	/** */
 	public static String CherryPickHandler_JobName;
 
 	/** */
@@ -1184,12 +1144,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickHandler_ConfirmTitle;
-
-	/** */
-	public static String CherryPickHandler_unknown;
-
-	/** */
-	public static String CherryPickHandler_WorktreeDirty;
 
 	/** */
 	public static String CherryPickOperation_InternalError;
@@ -2440,9 +2394,6 @@ public class UIText extends NLS {
 	public static String CommitMessageComponent_AmendingCommitInRemoteBranch;
 
 	/** */
-	public static String CommitMessageEditorDialog_EditCommitMessageTitle;
-
-	/** */
 	public static String CommitMessageViewer_author;
 
 	/** */
@@ -2501,15 +2452,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
-
-	/** */
-	public static String CompareIndexWithHeadActionHandler_nothingToDoTitle;
-
-	/** */
-	public static String CompareIndexWithHeadActionHandler_fileNotStaged;
-
-	/** */
-	public static String CompareUtils_jobName;
 
 	/** */
 	public static String CompareUtils_errorCommonAncestor;
@@ -3040,9 +2982,6 @@ public class UIText extends NLS {
 	public static String BranchOperationUI_RunningLaunchTitle;
 
 	/** */
-	public static String BranchOperationUI_SearchLaunchConfiguration;
-
-	/** */
 	public static String BranchRenameDialog_Message;
 
 	/** */
@@ -3416,9 +3355,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_WorkingDir_treenode;
-
-	/** */
-	public static String RepositoriesViewActionProvider_OpenWithMenu;
 
 	/** */
 	public static String RepositoriesViewContentProvider_ExceptionNodeText;
@@ -4283,9 +4219,6 @@ public class UIText extends NLS {
 	public static String ImportProjectsSelectionInRepositoryRequired;
 
 	/** */
-	public static String ImportChangedProjectsCommand_ImportingChangedProjects;
-
-	/** */
 	public static String InteractiveRebaseView_abortItem_text;
 
 	/** */
@@ -4799,9 +4732,6 @@ public class UIText extends NLS {
 	public static String CommitHelper_couldNotFindMergeMsg;
 
 	/** */
-	public static String CommitJob_AbortedByHook;
-
-	/** */
 	public static String CommitResultLabelProvider_SectionAuthor;
 
 	/** */
@@ -4970,9 +4900,6 @@ public class UIText extends NLS {
 	public static String GitVariableResolver_VariableReferencesNonExistentResource;
 
 	/** */
-	public static String GitTemplateVariableResolver_GitConfigDescription;
-
-	/** */
 	public static String StagingView_UnstagedChanges;
 
 	/** */
@@ -5051,12 +4978,6 @@ public class UIText extends NLS {
 	public static String StagingView_Refresh;
 
 	/** */
-	public static String StagingView_GetRepo;
-
-	/** */
-	public static String StagingView_ReplaceWith;
-
-	/** */
 	public static String StagingView_LinkSelection;
 
 	/** */
@@ -5096,19 +5017,7 @@ public class UIText extends NLS {
 	public static String StagingView_MergeTool;
 
 	/** */
-	public static String StagingView_AddJob;
-
-	/** */
-	public static String StagingView_RemoveJob;
-
-	/** */
-	public static String StagingView_ResetJob;
-
-	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
-
-	/** */
-	public static String StagingViewLabelProvider_SymlinkError;
 
 	/** */
 	public static String StashApplyCommand_applyFailed;

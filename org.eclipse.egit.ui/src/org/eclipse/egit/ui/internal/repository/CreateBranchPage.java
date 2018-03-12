@@ -174,7 +174,6 @@ class CreateBranchPage extends WizardPage {
 		setMessage(UIText.CreateBranchPage_ChooseNameMessage);
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(4, false));
@@ -212,14 +211,12 @@ class CreateBranchPage extends WizardPage {
 		nameText = new Text(main, SWT.BORDER);
 		// give focus to the nameText if label is activated using the mnemonic
 		nameLabel.addTraverseListener(new TraverseListener() {
-			@Override
 			public void keyTraversed(TraverseEvent e) {
 				nameText.setFocus();
 			}
 		});
 
 		nameText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				nameIsSuggestion = false;
 			}
@@ -236,7 +233,6 @@ class CreateBranchPage extends WizardPage {
 
 		upstreamConfigComponent
 				.addUpstreamConfigSelectionListener(new UpstreamConfigSelectionListener() {
-					@Override
 					public void upstreamConfigSelected(
 							UpstreamConfig newUpstreamConfig) {
 						upstreamConfig = newUpstreamConfig;
@@ -273,7 +269,6 @@ class CreateBranchPage extends WizardPage {
 		nameText.setFocus();
 		// add the listener just now to avoid unneeded checkPage()
 		nameText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -370,23 +365,17 @@ class CreateBranchPage extends WizardPage {
 		return nameText.getText();
 	}
 
-	public boolean checkoutNewBranch() {
-		return checkout.getSelection();
-	}
-
 	/**
-	 * @param newRefName
-	 * @param checkoutNewBranch
 	 * @param monitor
 	 * @throws CoreException
 	 * @throws IOException
 	 */
-	public void createBranch(String newRefName, boolean checkoutNewBranch,
-			IProgressMonitor monitor)
-			throws CoreException,
+	public void createBranch(IProgressMonitor monitor) throws CoreException,
 			IOException {
 		monitor.beginTask(UIText.CreateBranchPage_CreatingBranchMessage,
 				IProgressMonitor.UNKNOWN);
+
+		String newRefName = getBranchName();
 
 		final CreateLocalBranchOperation cbop;
 
@@ -401,7 +390,7 @@ class CreateBranchPage extends WizardPage {
 
 		cbop.execute(monitor);
 
-		if (checkoutNewBranch) {
+		if (checkout.getSelection()) {
 			if (monitor.isCanceled())
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
@@ -449,7 +438,6 @@ class CreateBranchPage extends WizardPage {
 		final IBranchNameProvider branchNameProvider = getBranchNameProvider();
 		if (branchNameProvider != null)
 			SafeRunner.run(new SafeRunnable() {
-				@Override
 				public void run() throws Exception {
 					ref.set(branchNameProvider.getBranchNameSuggestion());
 				}

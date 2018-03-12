@@ -83,17 +83,14 @@ public class CreateBranchWizard extends Wizard {
 
 	@Override
 	public boolean performFinish() {
-		final CreateBranchPage cp = (CreateBranchPage) getPages()[0];
-		newBranchName = cp.getBranchName();
-		final boolean checkoutNewBranch = cp.checkoutNewBranch();
 		try {
-			getContainer().run(true, true, new IRunnableWithProgress() {
-				@Override
+			getContainer().run(false, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
+					CreateBranchPage cp = (CreateBranchPage) getPages()[0];
 					try {
-						cp.createBranch(newBranchName, checkoutNewBranch,
-								monitor);
+						newBranchName = cp.getBranchName();
+						cp.createBranch(monitor);
 					} catch (CoreException ce) {
 						throw new InvocationTargetException(ce);
 					} catch (IOException ioe) {

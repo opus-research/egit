@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2014, 2015 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (C) 2014 Robin Stocker <robin@nibor.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -94,10 +94,10 @@ public class SelectionUtils {
 			selection = context
 					.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
 
-		if (selection instanceof ITextSelection)
-			return getSelectionFromEditorInput(context);
-		else if (selection instanceof IStructuredSelection)
+		if (selection instanceof IStructuredSelection)
 			return (IStructuredSelection) selection;
+		else if (selection instanceof ITextSelection)
+			return getSelectionFromEditorInput(context);
 		return StructuredSelection.EMPTY;
 	}
 
@@ -112,10 +112,10 @@ public class SelectionUtils {
 	 */
 	public static IStructuredSelection getStructuredSelection(
 			ISelection selection) {
-		if (selection instanceof ITextSelection)
-			return getSelectionFromEditorInput(getEvaluationContext());
-		else if (selection instanceof IStructuredSelection)
+		if (selection instanceof IStructuredSelection)
 			return (IStructuredSelection) selection;
+		else if (selection instanceof ITextSelection)
+			return getSelectionFromEditorInput(getEvaluationContext());
 		return StructuredSelection.EMPTY;
 	}
 
@@ -232,7 +232,8 @@ public class SelectionUtils {
 				if (o instanceof Repository)
 					nextRepo = (Repository) o;
 				else if (o instanceof PlatformObject)
-					nextRepo = CommonUtils.getAdapter(((PlatformObject) o), Repository.class);
+					nextRepo = (Repository) ((PlatformObject) o)
+							.getAdapter(Repository.class);
 				if (nextRepo != null && result != null
 						&& !result.equals(nextRepo)) {
 					if (warn)
