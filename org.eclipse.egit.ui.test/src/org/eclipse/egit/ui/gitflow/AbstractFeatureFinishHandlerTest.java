@@ -9,6 +9,7 @@
 package org.eclipse.egit.ui.gitflow;
 
 import static org.eclipse.swtbot.swt.finder.waits.Conditions.shellIsActive;
+import static org.junit.Assert.assertFalse;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.BranchOperation;
@@ -20,7 +21,6 @@ import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.swtbot.eclipse.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.eclipse.ui.PlatformUI;
 import org.junit.runner.RunWith;
 
 /**
@@ -36,12 +36,9 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 				util.getPluginLocalizedValue("TeamMenu.label"),
 				util.getPluginLocalizedValue("TeamGitFlowMenu.name", false, Activator.getDefault().getBundle()),
 				util.getPluginLocalizedValue("TeamGitFlowFeatureFinish.name", false, Activator.getDefault().getBundle()) };
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				ContextMenuHelper.clickContextMenuSync(projectExplorerTree, menuPath);
-			}
-		});
+
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
+		bot.waitUntil(shellIsActive(UIText.FinishFeatureDialog_title));
 		selectOptions();
 		bot.checkBox(UIText.FinishFeatureDialog_saveAsDefault).click();
 		bot.button("OK").click();
@@ -64,15 +61,10 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 				util.getPluginLocalizedValue("TeamGitFlowMenu.name", false, Activator.getDefault().getBundle()),
 				util.getPluginLocalizedValue("TeamGitFlowFeatureStart.name", false, Activator.getDefault().getBundle()) };
 
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				ContextMenuHelper.clickContextMenuSync(projectExplorerTree, menuPath);
-			}
-		});
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
 
 		bot.waitUntil(shellIsActive(UIText.FeatureStartHandler_provideFeatureName));
-		bot.text().typeText(featureName);
+		bot.text().setText(featureName);
 		bot.button("OK").click();
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));
 	}
@@ -86,15 +78,17 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 				util.getPluginLocalizedValue("TeamGitFlowMenu.name", false, Activator.getDefault().getBundle()),
 				util.getPluginLocalizedValue("TeamGitFlowFeatureCheckout.name", false, Activator.getDefault().getBundle()) };
 
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				ContextMenuHelper.clickContextMenuSync(projectExplorerTree, menuPath);
-			}
-		});
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
 
 		bot.waitUntil(shellIsActive(UIText.FeatureCheckoutHandler_selectFeature));
-		bot.table().select(featureName);
+		bot.text().setText("these are not the features you're looking for");
+		// Wait for filter to hit. Minimum delay must be greater than
+		// FilteredTree.getRefreshJobDelay().
+		TestUtil.waitForJobs(500, 5000);
+		assertFalse(bot.tree().hasItems());
+		bot.text().setText(featureName);
+		TestUtil.waitForJobs(500, 5000);
+		bot.tree().select(featureName);
 		bot.button("OK").click();
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));
 	}

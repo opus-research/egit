@@ -5,6 +5,7 @@
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2013, Carsten Pfeiffer <carsten.pfeiffer@gebit.de>
  * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,8 +16,8 @@ package org.eclipse.egit.core.project;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IContainer;
@@ -26,13 +27,11 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.SystemReader;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * Searches for existing Git repositories associated with a project's files.
@@ -56,7 +55,7 @@ import org.eclipse.osgi.util.NLS;
 public class RepositoryFinder {
 	private final IProject proj;
 
-	private final Collection<RepositoryMapping> results = new ArrayList<RepositoryMapping>();
+	private final List<RepositoryMapping> results = new ArrayList<RepositoryMapping>();
 	private final Set<File> gitdirs = new HashSet<File>();
 
 	private final Set<File> ceilingDirectories = new HashSet<File>();
@@ -96,12 +95,13 @@ public class RepositoryFinder {
 	 * @param m
 	 *            a progress monitor to report feedback to; may be null.
 	 * @return all found {@link RepositoryMapping} instances associated with the
-	 *         project supplied to this instance's constructor.
+	 *         project supplied to this instance's constructor, in the order
+	 *         they were found.
 	 * @throws CoreException
 	 *             Eclipse was unable to access its workspace, and threw up on
 	 *             us. We're throwing it back at the caller.
 	 */
-	public Collection<RepositoryMapping> find(IProgressMonitor m)
+	public List<RepositoryMapping> find(IProgressMonitor m)
 			throws CoreException {
 		return find(m, false);
 	}
@@ -114,13 +114,15 @@ public class RepositoryFinder {
 	 * @param searchLinkedFolders
 	 *            specify if linked folders should be included in the search
 	 * @return all found {@link RepositoryMapping} instances associated with the
-	 *         project supplied to this instance's constructor.
+	 *         project supplied to this instance's constructor, in the order
+	 *         they were found.
 	 * @throws CoreException
 	 *             Eclipse was unable to access its workspace, and threw up on
 	 *             us. We're throwing it back at the caller.
 	 * @since 2.3
 	 */
-	public Collection<RepositoryMapping> find(IProgressMonitor m, boolean searchLinkedFolders)
+	public List<RepositoryMapping> find(IProgressMonitor m,
+			boolean searchLinkedFolders)
 			throws CoreException {
 		find(m, proj, searchLinkedFolders);
 		return results;
@@ -129,17 +131,16 @@ public class RepositoryFinder {
 	private void find(final IProgressMonitor m, final IContainer c,
 			boolean searchLinkedFolders)
 				throws CoreException {
-		if (!searchLinkedFolders && c.isLinked())
+		if (!searchLinkedFolders && c.isLinked()) {
 			return; // Ignore linked folders
+		}
 		final IPath loc = c.getLocation();
-
+		if (loc == null) {
+			return; // Either gone, or provided by an EFS
+		}
 		SubMonitor progress = SubMonitor.convert(m, 101);
 		progress.subTask(CoreText.RepositoryFinder_finding);
-		if (loc == null) {
-			throw new CoreException(Activator.error(
-					NLS.bind(CoreText.RepositoryFinder_ResourceDoesNotExist, c),
-					null));
-		}
+
 		final File fsLoc = loc.toFile();
 		assert fsLoc.isAbsolute();
 

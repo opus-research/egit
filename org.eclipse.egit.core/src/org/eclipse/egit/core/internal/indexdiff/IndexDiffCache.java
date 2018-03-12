@@ -1,10 +1,13 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2011, 2016 Jens Baumgart <jens.baumgart@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Thomas Wolf <thomas.wolf@paranor.ch> Bug 483664
  *******************************************************************************/
 package org.eclipse.egit.core.internal.indexdiff;
 
@@ -41,7 +44,7 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class IndexDiffCache {
 
-	private Map<Repository, IndexDiffCacheEntry> entries = new HashMap<Repository, IndexDiffCacheEntry>();
+	private Map<File, IndexDiffCacheEntry> entries = new HashMap<File, IndexDiffCacheEntry>();
 
 	private Set<IndexDiffChangedListener> listeners = new HashSet<IndexDiffChangedListener>();
 
@@ -221,15 +224,18 @@ public class IndexDiffCache {
 	public IndexDiffCacheEntry getIndexDiffCacheEntry(@NonNull Repository repository) {
 		IndexDiffCacheEntry entry;
 		synchronized (entries) {
-			entry = entries.get(repository);
-			if (entry != null)
+			File gitDir = new Path(repository.getDirectory().getAbsolutePath())
+					.toFile();
+			entry = entries.get(gitDir);
+			if (entry != null) {
 				return entry;
-			if (repository.isBare())
+			}
+			if (repository.isBare()) {
 				return null;
-			entry = new IndexDiffCacheEntry(repository);
-			entries.put(repository, entry);
+			}
+			entry = new IndexDiffCacheEntry(repository, globalListener);
+			entries.put(gitDir, entry);
 		}
-		entry.addIndexDiffChangedListener(globalListener);
 		return entry;
 	}
 
@@ -303,6 +309,37 @@ public class IndexDiffCache {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
+	}
+
+	/**
+	 * Removes the {@link IndexDiffCacheEntry} for the given repository.
+	 *
+	 * @param gitDir
+	 *            of the {@link Repository} to remove the cache entry of
+	 */
+	public void remove(@NonNull File gitDir) {
+		synchronized (entries) {
+			IndexDiffCacheEntry cachedEntry = entries.remove(gitDir);
+			if (cachedEntry != null) {
+				cachedEntry.dispose();
+			}
+		}
+	}
+
+	/**
+	 * Retrieves the set of git directories of repositories for which there are
+	 * currently entries in the cache; primarily intended for use in tests.
+	 *
+	 * @return the set of git directories of repositories for which the cache
+	 *         currently has entries
+	 */
+	@NonNull
+	public Set<File> currentCacheEntries() {
+		Set<File> result = null;
+		synchronized (entries) {
+			result = new HashSet<>(entries.keySet());
+		}
+		return result;
 	}
 
 }

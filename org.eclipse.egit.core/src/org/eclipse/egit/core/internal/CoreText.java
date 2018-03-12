@@ -176,6 +176,9 @@ public class CoreText extends NLS {
 	public static String GitProjectData_failedToCacheRepoMapping;
 
 	/** */
+	public static String GitProjectData_failedToUnmapRepoMapping;
+
+	/** */
 	public static String GitProjectData_FailedToMarkTeamPrivate;
 
 	/** */
@@ -189,12 +192,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String RepositoryFinder_finding;
-
-	/** */
-	public static String RepositoryFinder_ResourceDoesNotExist;
-
-	/** */
-	public static String RepositoryMapping_ExceptionSubmoduleWalk;
 
 	/** */
 	public static String RepositoryUtil_DirectoryIsNotGitDirectory;

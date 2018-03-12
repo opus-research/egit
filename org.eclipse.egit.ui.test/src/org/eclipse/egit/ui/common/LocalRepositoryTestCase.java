@@ -36,6 +36,7 @@ import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.RepositoryCache;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.op.AddToIndexOperation;
@@ -47,7 +48,12 @@ import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
+import org.eclipse.egit.ui.internal.rebase.RebaseInteractiveView;
+import org.eclipse.egit.ui.internal.reflog.ReflogView;
+import org.eclipse.egit.ui.internal.repository.RepositoriesView;
+import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -69,10 +75,14 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.core.RepositoryProvider;
+import org.eclipse.team.ui.history.IHistoryView;
+import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 /**
  * Base class for testing with local (file-system based) repositories
@@ -140,12 +150,31 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected static final String FILE2 = "test2.txt";
 
-
-
 	protected final static TestUtils testUtils = new TestUtils();
+
+	private static final String[] VIEWS_TO_CLOSE = { //
+			RebaseInteractiveView.VIEW_ID, //
+			ISynchronizeView.VIEW_ID, //
+			IHistoryView.VIEW_ID, //
+			CompareTreeView.ID, //
+			ReflogView.VIEW_ID, //
+			StagingView.VIEW_ID, //
+			RepositoriesView.VIEW_ID, //
+			"org.eclipse.search.ui.views.SearchView", //
+			"org.eclipse.ui.views.PropertySheet"
+	};
+
+	@Rule
+	public TestName testName = new TestName();
 
 	public File getTestDirectory() {
 		return testDirectory;
+	}
+
+	protected static void closeGitViews() {
+		for (String viewId : VIEWS_TO_CLOSE) {
+			TestUtil.hideView(viewId);
+		}
 	}
 
 	@Before
@@ -153,7 +182,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		testMethodNumber++;
 		// create standalone temporary directory
 		testDirectory = testUtils.createTempDir("LocalRepositoriesTests"
-				+ testMethodNumber);
+				+ testMethodNumber + '_' + testName.getMethodName());
 		if (testDirectory.exists())
 			FileUtils.delete(testDirectory, FileUtils.RECURSIVE
 					| FileUtils.RETRY);
@@ -174,6 +203,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		TestUtil.processUIEvents();
 		// close all editors/dialogs
 		new Eclipse().reset();
+		closeGitViews();
 		TestUtil.processUIEvents();
 		// cleanup
 		for (IProject project : ResourcesPlugin.getWorkspace().getRoot()
@@ -201,6 +231,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				.getPreferenceStore()
 				.setValue(UIPreferences.SHOW_DETACHED_HEAD_WARNING,
 						false);
+		closeGitViews();
 	}
 
 	@AfterClass
@@ -208,11 +239,17 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		testUtils.deleteTempDirs();
 	}
 
-	protected static void shutDownRepositories() {
+	protected static void shutDownRepositories() throws Exception {
 		RepositoryCache cache = Activator.getDefault().getRepositoryCache();
 		for(Repository repository:cache.getAllRepositories())
 			repository.close();
 		cache.clear();
+		IEclipsePreferences prefs = Activator.getDefault().getRepositoryUtil()
+				.getPreferences();
+		synchronized (prefs) {
+			prefs.put(RepositoryUtil.PREFS_DIRECTORIES, "");
+			prefs.flush();
+		}
 	}
 
 	protected static void deleteAllProjects() throws Exception {
@@ -236,13 +273,23 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected File createProjectAndCommitToRepository(String repoName)
 			throws Exception {
+		return createProjectAndCommitToRepository(repoName, PROJ1, PROJ2);
+	}
+
+	protected File createProjectAndCommitToRepository(String repoName,
+			String projectName) throws Exception {
+		return createProjectAndCommitToRepository(repoName, projectName, null);
+	}
+
+	protected File createProjectAndCommitToRepository(String repoName,
+			String project1Name, String project2Name) throws Exception {
 
 		Repository myRepository = createLocalTestRepository(repoName);
 		File gitDir = myRepository.getDirectory();
 
 		// we need to commit into master first
 		IProject firstProject = createStandardTestProjectInRepository(
-				myRepository, PROJ1);
+				myRepository, project1Name);
 
 		try {
 			new ConnectProviderOperation(firstProject, gitDir).execute(null);
@@ -251,20 +298,25 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		}
 		assertConnected(firstProject);
 
-		IProject secondProject = createStandardTestProjectInRepository(
-				myRepository, PROJ2);
+		IProject secondProject = null;
+		if (project2Name != null) {
+			secondProject = createStandardTestProjectInRepository(myRepository,
+					project2Name);
 
-		// TODO we should be able to hide the .project
-		// IFile gitignore = secondPoject.getFile(".gitignore");
-		// gitignore.create(new ByteArrayInputStream("/.project\n"
-		// .getBytes(firstProject.getDefaultCharset())), false, null);
+			// TODO we should be able to hide the .project
+			// IFile gitignore = secondPoject.getFile(".gitignore");
+			// gitignore.create(new ByteArrayInputStream("/.project\n"
+			// .getBytes(firstProject.getDefaultCharset())), false, null);
 
-		try {
-			new ConnectProviderOperation(secondProject, gitDir).execute(null);
-		} catch (Exception e) {
-			Activator.logError("Failed to connect project to repository", e);
+			try {
+				new ConnectProviderOperation(secondProject, gitDir)
+						.execute(null);
+			} catch (Exception e) {
+				Activator.logError("Failed to connect project to repository",
+						e);
+			}
+			assertConnected(secondProject);
 		}
-		assertConnected(secondProject);
 
 		IFile dotProject = firstProject.getFile(".project");
 		assertTrue(".project is not accessible: " + dotProject,
@@ -272,12 +324,17 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		IFolder folder = firstProject.getFolder(FOLDER);
 		IFile textFile = folder.getFile(FILE1);
 		IFile textFile2 = folder.getFile(FILE2);
-		folder = secondProject.getFolder(FOLDER);
-		IFile secondtextFile = folder.getFile(FILE1);
-		IFile secondtextFile2 = folder.getFile(FILE2);
+		IFile[] commitables = null;
+		if (secondProject != null) {
+			folder = secondProject.getFolder(FOLDER);
+			IFile secondtextFile = folder.getFile(FILE1);
+			IFile secondtextFile2 = folder.getFile(FILE2);
 
-		IFile[] commitables = new IFile[] { dotProject,
-				textFile, textFile2, secondtextFile, secondtextFile2 };
+			commitables = new IFile[] { dotProject, textFile, textFile2,
+					secondtextFile, secondtextFile2 };
+		} else {
+			commitables = new IFile[] { dotProject, textFile, textFile2 };
+		}
 		ArrayList<IFile> untracked = new ArrayList<IFile>();
 		untracked.addAll(Arrays.asList(commitables));
 		// commit to stable
@@ -289,7 +346,10 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// now create a stable branch (from master)
 		createStableBranch(myRepository);
 		// and check in some stuff into master again
-		touchAndSubmit(null);
+		String newContent = "Touched at " + System.currentTimeMillis();
+		IFile file = touch(firstProject.getName(), FOLDER + '/' + FILE1,
+				newContent);
+		addAndCommit(file, newContent);
 
 		// Make sure cache entry is already listening for changes
 		IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();

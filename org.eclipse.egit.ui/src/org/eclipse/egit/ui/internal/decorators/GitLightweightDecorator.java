@@ -8,11 +8,15 @@
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Christian Halstrick <christian.halstrick@sap.com>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Andre Bossert <anb0s@anbos.de> - Cleaning up the DecoratableResourceAdapter
  *******************************************************************************/
 
 package org.eclipse.egit.ui.internal.decorators;
@@ -35,6 +39,9 @@ import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ExceptionCollector;
+import org.eclipse.egit.core.project.GitProjectData;
+import org.eclipse.egit.core.project.RepositoryMappingChangeListener;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIIcons;
@@ -103,6 +110,15 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 	private static RGB defaultBackgroundRgb;
 
+	private RepositoryMappingChangeListener mappingChangeListener = new RepositoryMappingChangeListener() {
+
+		@Override
+		public void repositoryChanged(RepositoryMapping which) {
+			fireLabelEvent();
+		}
+
+	};
+
 	/**
 	 * Constructs a new Git resource decorator
 	 */
@@ -116,6 +132,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 				.addPropertyChangeListener(this);
 
 		org.eclipse.egit.core.Activator.getDefault().getIndexDiffCache().addIndexDiffChangedListener(this);
+		GitProjectData.addRepositoryChangeListener(mappingChangeListener);
 	}
 
 	/**
@@ -154,6 +171,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 		TeamUI.removePropertyChangeListener(this);
 		Activator.removePropertyChangeListener(this);
 		org.eclipse.egit.core.Activator.getDefault().getIndexDiffCache().removeIndexDiffChangedListener(this);
+		GitProjectData.removeRepositoryChangeListener(mappingChangeListener);
+		mappingChangeListener = null;
 	}
 
 	/**
@@ -276,6 +295,9 @@ public class GitLightweightDecorator extends LabelProvider implements
 		public static final String BINDING_REPOSITORY_NAME = "repository"; //$NON-NLS-1$
 
 		/** */
+		public static final String BINDING_SHORT_MESSAGE = "short_message"; //$NON-NLS-1$
+
+		/** */
 		public static final String BINDING_DIRTY_FLAG = "dirty"; //$NON-NLS-1$
 
 		/** */
@@ -288,7 +310,10 @@ public class GitLightweightDecorator extends LabelProvider implements
 		public static final String FOLDER_FORMAT_DEFAULT = "{dirty:>} {name}"; //$NON-NLS-1$
 
 		/** */
-		public static final String PROJECT_FORMAT_DEFAULT = "{dirty:>} {name}  [{repository} {branch}{ branch_status}]"; //$NON-NLS-1$
+		public static final String PROJECT_FORMAT_DEFAULT = "{dirty:>} {name} [{repository }{branch}{ branch_status}]"; //$NON-NLS-1$
+
+		/** */
+		public static final String SUBMODULE_FORMAT_DEFAULT = "{dirty:>} {name} [{branch}{ branch_status}]{ short_message}"; //$NON-NLS-1$
 
 		private IPreferenceStore store;
 
@@ -326,7 +351,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 		private static ImageDescriptor conflictImage;
 
-		private static ImageDescriptor assumeValidImage;
+		private static ImageDescriptor assumeUnchangedImage;
 
 		private static ImageDescriptor dirtyImage;
 
@@ -339,7 +364,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 			stagedRemovedImage = new CachedImageDescriptor(
 					UIIcons.OVR_STAGED_REMOVE);
 			conflictImage = new CachedImageDescriptor(UIIcons.OVR_CONFLICT);
-			assumeValidImage = new CachedImageDescriptor(UIIcons.OVR_ASSUMEVALID);
+			assumeUnchangedImage = new CachedImageDescriptor(UIIcons.OVR_ASSUMEUNCHANGED);
 			dirtyImage = new CachedImageDescriptor(UIIcons.OVR_DIRTY);
 		}
 
@@ -427,8 +452,15 @@ public class GitLightweightDecorator extends LabelProvider implements
 				break;
 			case IResource.FOLDER:
 			case DecoratableResourceMapping.RESOURCE_MAPPING:
-				format = store
-						.getString(UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
+				if (resource.isRepositoryContainer()) {
+					// Use the submodule formatting if it's a submodule or
+					// nested repository root
+					format = store.getString(
+							UIPreferences.DECORATOR_SUBMODULETEXT_DECORATION);
+				} else {
+					format = store.getString(
+							UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
+				}
 				break;
 			case DecoratableResourceMapping.WORKING_SET:
 				// working sets will use the project formatting but only if the
@@ -454,7 +486,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 			bindings.put(BINDING_BRANCH_STATUS, resource.getBranchStatus());
 			bindings.put(BINDING_DIRTY_FLAG, resource.isDirty() ? ">" : null); //$NON-NLS-1$
 			bindings.put(BINDING_STAGED_FLAG, resource.isStaged() ? "*" : null); //$NON-NLS-1$
-
+			bindings.put(BINDING_SHORT_MESSAGE, resource.getCommitMessage());
 			decorate(decoration, format, bindings);
 		}
 
@@ -467,9 +499,9 @@ public class GitLightweightDecorator extends LabelProvider implements
 					overlay = trackedImage;
 
 				if (store
-						.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON)
-						&& resource.isAssumeValid())
-					overlay = assumeValidImage;
+						.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON)
+						&& resource.isAssumeUnchanged())
+					overlay = assumeUnchangedImage;
 
 				// Staged overrides tracked
 				StagingState staged = resource.getStagingState();
