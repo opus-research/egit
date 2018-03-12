@@ -9,7 +9,6 @@ package org.eclipse.egit.ui.internal.push;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -426,9 +425,7 @@ public class PushBranchPage extends WizardPage {
 			}
 			String branchName = remoteBranchNameText.getText();
 			if (branchName.length() == 0) {
-				setErrorMessage(MessageFormat.format(
-						UIText.PushBranchPage_ChooseBranchNameError,
-						remoteConfig.getName()));
+				setErrorMessage(UIText.PushBranchPage_ChooseBranchNameError);
 				return;
 			}
 			if (!Repository.isValidRefName(Constants.R_HEADS + branchName)) {
@@ -465,7 +462,7 @@ public class PushBranchPage extends WizardPage {
 	}
 
 	private String getSuggestedBranchName() {
-		if (ref != null && !ref.getName().startsWith(Constants.R_REMOTES)) {
+		if (ref != null) {
 			StoredConfig config = repository.getConfig();
 			String branchName = Repository.shortenRefName(ref.getName());
 
