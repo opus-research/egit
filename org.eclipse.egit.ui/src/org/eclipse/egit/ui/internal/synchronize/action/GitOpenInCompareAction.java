@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org> and others
+ * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.action;
 
-import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 import static org.eclipse.ui.PlatformUI.getWorkbench;
 
 import java.io.IOException;
@@ -19,6 +18,9 @@ import java.util.Iterator;
 
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.synchronize.compare.LocalNonWorkspaceTypedElement;
@@ -81,16 +83,18 @@ public class GitOpenInCompareAction extends Action {
 	private void handleGitObjectComparison(GitModelBlob obj, boolean reuseEditor) {
 		ITypedElement left;
 		ITypedElement right;
-		IFile file = (IFile) obj.getResource();
 		if (obj instanceof GitModelWorkingFile) {
-			if (file.getLocation() == null)
-				left = new LocalNonWorkspaceTypedElement(file.getFullPath().toString());
+			IFile file = ResourceUtil.getFileForLocation(obj.getLocation());
+			if (file == null)
+				left = new LocalNonWorkspaceTypedElement(obj.getLocation());
 			else
-				left= SaveableCompareEditorInput.createFileElement(file);
-			right = getCachedFileElement(file);
+				left = SaveableCompareEditorInput.createFileElement(file);
+			right = getCachedFileElement(obj);
 		} else if (obj instanceof GitModelCacheFile) {
-			left = getCachedFileElement(file);
+			left = getCachedFileElement(obj);
 			right = getHeadFileElement(obj);
+			if (right == null)
+				return;
 		} else {
 			oldAction.run();
 			return;
@@ -115,19 +119,22 @@ public class GitOpenInCompareAction extends Action {
 		return page;
 	}
 
-	private ITypedElement getCachedFileElement(IFile file) {
+	private ITypedElement getCachedFileElement(GitModelBlob blob) {
 		try {
-			return CompareUtils.getHeadTypedElement(file);
+			IPath location = blob.getLocation();
+			RepositoryMapping mapping = RepositoryMapping.getMapping(location);
+			Repository repo = mapping.getRepository();
+			String repoRelativePath = mapping.getRepoRelativePath(location);
+			return CompareUtils.getIndexTypedElement(repo, repoRelativePath);
 		} catch (IOException e) {
 			return null;
 		}
 	}
 
 	private ITypedElement getHeadFileElement(GitModelBlob blob) {
-		Repository repo = blob.getRepository();
-		String gitPath = stripWorkDir(repo.getWorkTree(), blob.getLocation().toFile());
-
-		return CompareUtils.getFileRevisionTypedElement(gitPath, blob.getBaseCommit(), repo);
+		RepositoryMapping mapping = RepositoryMapping.getMapping(blob.getLocation());
+		Repository repo = mapping.getRepository();
+		String gitPath = mapping.getRepoRelativePath(blob.getLocation());
+		return CompareUtils.getHeadTypedElement(repo, gitPath);
 	}
-
 }

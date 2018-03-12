@@ -12,7 +12,7 @@ package org.eclipse.egit.ui.common;
 
 import static org.eclipse.swtbot.swt.finder.waits.Conditions.shellCloses;
 
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
@@ -24,6 +24,8 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 public class GitImportRepoWizard {
 
 	private static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
+
+	private static final TestUtil util = new TestUtil();
 
 	// TODO: speed it up by calling the wizard using direct eclipse API.
 	public void openWizard() {
@@ -38,7 +40,7 @@ public class GitImportRepoWizard {
 	public RepoPropertiesPage openRepoPropertiesPage() {
 		bot.shell("Import Projects from Git").activate();
 
-		bot.tree().select("URI");
+		bot.tree().select(util.getPluginLocalizedValue("CloneUri.label"));
 
 		bot.button("Next >").click();
 

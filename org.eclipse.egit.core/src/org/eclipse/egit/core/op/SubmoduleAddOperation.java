@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2012 GitHub Inc.
+ *  Copyright (c) 2012, 2013 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,9 +7,11 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
+ *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
+import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -19,7 +21,7 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.SubmoduleAddCommand;
-import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.TeamException;
 
@@ -57,15 +59,19 @@ public class SubmoduleAddOperation implements IEGitOperation {
 				add.setPath(path);
 				add.setURI(uri);
 				try {
-					if (add.call() != null)
+					Repository subRepo = add.call();
+					if (subRepo != null) {
+						subRepo.close();
 						repo.notifyIndexChanged();
-				} catch (JGitInternalException e) {
+					}
+				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				}
 			}
 		};
-		ResourcesPlugin.getWorkspace().run(action,
+		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
+				IWorkspace.AVOID_UPDATE,
 				monitor != null ? monitor : new NullProgressMonitor());
 	}
 

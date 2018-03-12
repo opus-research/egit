@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011 SAP AG and others.
+ * Copyright (c) 2011, 2014 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,64 +8,78 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Robin Stocker <robin@nibor.org> - ignore linked resources
+ *    Robin Stocker <robin@nibor.org> - Unify workbench and PathNode tree code
+ *    Marc Khouzam <marc.khouzam@ericsson.com> - Add compare mode toggle
+ *    Marc Khouzam <marc.khouzam@ericsson.com> - Skip expensive computations for equal content (bug 431610)
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.Assert;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
+import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
+import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.FileEditableRevision;
+import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.LocalFileRevision;
+import org.eclipse.egit.ui.internal.ResourceEditableRevision;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView.PathNode.Type;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IMenuListener;
+import org.eclipse.jface.action.IMenuManager;
+import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
-import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.ITreeSelection;
 import org.eclipse.jface.viewers.OpenEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
+import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.dircache.DirCacheIterator;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -73,6 +87,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
@@ -83,22 +98,27 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
-import org.eclipse.ui.model.IWorkbenchAdapter;
-import org.eclipse.ui.model.WorkbenchContentProvider;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
+import org.eclipse.ui.navigator.ICommonMenuConstants;
+import org.eclipse.ui.part.IShowInSource;
+import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 
 /**
  * Shows a tree when opening compare on an {@link IContainer}, or a
  * {@link Repository}
  * <p>
- * If the input is an {@link IContainer}, the tree is similar to the tree shown
- * by the PackageExplorer (based on {@link WorkbenchLabelProvider} and
- * {@link WorkbenchContentProvider}, otherwise a simple tree representing files
- * and folders is used based on {@link PathNode} instances.
+ * In both cases the tree consists of {@link PathNode} instances representing
+ * files and folders. The container nodes are decorated with
+ * {@link WorkbenchLabelProvider} to use the same icons as the workbench. Linked resources
+ * however are ignored and not listed as content.
  * <p>
  * The tree nodes are shown with icons for "Added", "Deleted", and
  * "Same Contents" for files. Files with same content can be hidden using a
@@ -106,8 +126,9 @@ import org.eclipse.ui.part.ViewPart;
  * <p>
  * This view can also show files and folders outside the Eclipse workspace when
  * a {@link Repository} is used as input.
+ * <p>
  */
-public class CompareTreeView extends ViewPart {
+public class CompareTreeView extends ViewPart implements IMenuListener, IShowInSource {
 	/** The "magic" compare version to compare with the index */
 	public static final String INDEX_VERSION = "%%%INDEX%%%"; //$NON-NLS-1$
 
@@ -120,7 +141,8 @@ public class CompareTreeView extends ViewPart {
 	private static final Image FOLDER_IMAGE = PlatformUI.getWorkbench()
 			.getSharedImages().getImage(ISharedImages.IMG_OBJ_FOLDER);
 
-	private final Image SAME_CONTENT = UIIcons.ELCL16_SYNCED.createImage();
+	private final Image SAME_CONTENT = new Image(FILE_IMAGE.getDevice(),
+			FILE_IMAGE, SWT.IMAGE_DISABLE);
 
 	private Image ADDED = UIIcons.ELCL16_ADD.createImage();
 
@@ -132,19 +154,11 @@ public class CompareTreeView extends ViewPart {
 
 	private IWorkbenchAction showEqualsAction;
 
-	private Map<IPath, GitFileRevision> compareVersionMap = new HashMap<IPath, GitFileRevision>();
+	private IWorkbenchAction compareModeAction;
 
-	private Map<IPath, GitFileRevision> baseVersionMap = new HashMap<IPath, GitFileRevision>();
+	private Map<IPath, FileNode> fileNodes = new HashMap<IPath, FileNode>();
 
-	private Set<IPath> addedPaths = new HashSet<IPath>();
-
-	private Set<IPath> equalContentPaths = new HashSet<IPath>();
-
-	private Set<IPath> baseVersionPathsWithChildren = new HashSet<IPath>();
-
-	private Map<IPath, List<PathNodeAdapter>> compareVersionPathsWithChildren = new HashMap<IPath, List<PathNodeAdapter>>();
-
-	private Set<IPath> deletedPaths = new HashSet<IPath>();
+	private Map<IPath, ContainerNode> containerNodes = new HashMap<IPath, ContainerNode>();
 
 	private List<IWorkbenchAction> actionsToDispose = new ArrayList<IWorkbenchAction>();
 
@@ -162,7 +176,7 @@ public class CompareTreeView extends ViewPart {
 		GridLayoutFactory.fillDefaults().spacing(0, 0).applyTo(main);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
 
-		tree = new TreeViewer(main, SWT.BORDER);
+		tree = new TreeViewer(main, SWT.MULTI);
 		tree.setContentProvider(new PathNodeContentProvider());
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tree.getTree());
 
@@ -173,6 +187,9 @@ public class CompareTreeView extends ViewPart {
 		});
 		tree.getTree().setEnabled(false);
 		createActions();
+
+		getViewSite().setSelectionProvider(tree);
+		createContextMenu();
 	}
 
 	private void createActions() {
@@ -180,6 +197,22 @@ public class CompareTreeView extends ViewPart {
 		actionsToDispose.add(reuseCompareEditorAction);
 		getViewSite().getActionBars().getMenuManager().add(
 				reuseCompareEditorAction);
+
+		compareModeAction = new BooleanPrefAction(
+				(IPersistentPreferenceStore) Activator.getDefault()
+						.getPreferenceStore(),
+				UIPreferences.TREE_COMPARE_COMPARE_MODE,
+				UIText.CompareTreeView_CompareModeTooltip) {
+			@Override
+			public void apply(boolean value) {
+				// nothing, just switch the preference
+			}
+		};
+		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
+		compareModeAction.setEnabled(true);
+		actionsToDispose.add(compareModeAction);
+		getViewSite().getActionBars().getToolBarManager()
+				.add(compareModeAction);
 
 		showEqualsAction = new BooleanPrefAction(
 				(IPersistentPreferenceStore) Activator.getDefault()
@@ -191,20 +224,30 @@ public class CompareTreeView extends ViewPart {
 				buildTrees(false);
 			}
 		};
-		showEqualsAction.setImageDescriptor(UIIcons.ELCL16_SYNCED);
+		showEqualsAction.setImageDescriptor(UIIcons.ELCL16_FILTER);
 		showEqualsAction.setEnabled(false);
 		actionsToDispose.add(showEqualsAction);
 		getViewSite().getActionBars().getToolBarManager().add(showEqualsAction);
 
 		IAction expandAllAction = new Action(
+				UIText.CompareTreeView_ExpandAllTooltip) {
+			@Override
+			public void run() {
+				tree.expandAll();
+			}
+		};
+		expandAllAction.setImageDescriptor(UIIcons.EXPAND_ALL);
+		getViewSite().getActionBars().getToolBarManager().add(expandAllAction);
+
+		IAction collapseAllAction = new Action(
 				UIText.CompareTreeView_CollapseAllTooltip) {
 			@Override
 			public void run() {
 				tree.collapseAll();
 			}
 		};
-		expandAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
-		getViewSite().getActionBars().getToolBarManager().add(expandAllAction);
+		collapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
+		getViewSite().getActionBars().getToolBarManager().add(collapseAllAction);
 	}
 
 	private void reactOnOpen(OpenEvent event) {
@@ -212,98 +255,52 @@ public class CompareTreeView extends ViewPart {
 				.getFirstElement();
 		ITypedElement left;
 		ITypedElement right;
-		if (selected instanceof IContainer) {
+		if (selected instanceof ContainerNode) {
 			// open/close folder
 			TreeViewer tv = (TreeViewer) event.getViewer();
 			tv.setExpandedState(selected, !tv.getExpandedState(selected));
-			return;
-		} else if (selected instanceof IFile) {
-			final IFile res = (IFile) selected;
-			LocalFileRevision revision = new LocalFileRevision(res);
-			left = new FileEditableRevision(revision, res, PlatformUI.getWorkbench().getProgressService());
-			GitFileRevision rightRevision = compareVersionMap.get(new Path(
-					repositoryMapping.getRepoRelativePath(res)));
-			if (rightRevision == null) {
-				right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
-						NLS
-								.bind(
-										UIText.CompareTreeView_ItemNotFoundInVersionMessage,
-										res.getName(), getCompareVersion()));
+		} else if (selected instanceof FileNode) {
+			FileNode fileNode = (FileNode) selected;
+
+			boolean compareMode = Activator.getDefault().getPreferenceStore()
+					.getBoolean(UIPreferences.TREE_COMPARE_COMPARE_MODE);
+
+			if (compareMode) {
+				left = getTypedElement(fileNode, fileNode.leftRevision,
+						getBaseVersion());
+				right = getTypedElement(fileNode, fileNode.rightRevision,
+						getCompareVersion());
+
+				GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
+						left, right, PlatformUI.getWorkbench()
+								.getActiveWorkbenchWindow().getActivePage());
+				CompareUtils.openInCompare(PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow().getActivePage(),
+						compareInput);
 			} else {
-				String encoding = CompareCoreUtils.getResourceEncoding(res);
-				right = new FileRevisionTypedElement(rightRevision, encoding);
+				IFile file = fileNode.getFile();
+				if (file != null)
+					openFileInEditor(file.getLocation().toOSString());
 			}
-		} else if (selected instanceof GitFileRevision) {
-			GitFileRevision rightRevision = (GitFileRevision) selected;
-			left = new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS
-					.bind(UIText.CompareTreeView_ItemNotFoundInVersionMessage,
-							rightRevision.getName(), getBaseVersion()));
-			right = new FileRevisionTypedElement(rightRevision);
-		} else if (selected instanceof PathNode) {
-			PathNode node = (PathNode) selected;
-			switch (node.type) {
-			case FILE_BOTH_SIDES_DIFFER:
-				// fall through
-			case FILE_BOTH_SIDES_SAME: {
-				// open a compare editor with both sides filled
-				GitFileRevision rightRevision = compareVersionMap
-						.get(node.path);
-				right = new FileRevisionTypedElement(rightRevision);
-				GitFileRevision leftRevision = baseVersionMap.get(node.path);
-				left = new FileRevisionTypedElement(leftRevision);
-				break;
-			}
-			case FILE_DELETED: {
-				// open compare editor with left side empty
-				GitFileRevision rightRevision = compareVersionMap
-						.get(node.path);
-				right = new FileRevisionTypedElement(rightRevision);
-				left = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
-						NLS
-								.bind(
-										UIText.CompareTreeView_ItemNotFoundInVersionMessage,
-										rightRevision.getName(),
-										getBaseVersion()));
-				break;
-			}
-			case FILE_ADDED: {
-				// open compare editor with right side empty
-				GitFileRevision leftRevision = baseVersionMap.get(node.path);
-				left = new FileRevisionTypedElement(leftRevision);
-				right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
-						NLS
-								.bind(
-										UIText.CompareTreeView_ItemNotFoundInVersionMessage,
-										leftRevision.getName(),
-										getCompareVersion()));
-				break;
-			}
-			case FOLDER:
-				// open/close folder
-				TreeViewer tv = (TreeViewer) event.getViewer();
-				tv.setExpandedState(selected, !tv.getExpandedState(selected));
-				return;
-			default:
-				return;
-			}
+		}
+	}
 
-		} else if (selected instanceof PathNodeAdapter) {
-			// deleted in workspace
-			PathNodeAdapter node = (PathNodeAdapter) selected;
-			GitFileRevision rightRevision = compareVersionMap
-					.get(node.pathNode.path);
-			right = new FileRevisionTypedElement(rightRevision);
-			left = new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS
-					.bind(UIText.CompareTreeView_ItemNotFoundInVersionMessage,
-							node.pathNode.path.lastSegment(), getBaseVersion()));
-		} else
-			return;
-
-		GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
-				left, right, PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow().getActivePage());
-		CompareUtils.openInCompare(PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getActivePage(), compareInput);
+	private ITypedElement getTypedElement(FileNode node, IFileRevision fileRevision, String versionName) {
+		if (fileRevision instanceof LocalFileRevision) {
+			LocalFileRevision localFileRevision = (LocalFileRevision) fileRevision;
+			return new ResourceEditableRevision(fileRevision, localFileRevision.getFile(), PlatformUI.getWorkbench().getProgressService());
+		} else if (fileRevision == null) {
+			return new GitCompareFileRevisionEditorInput.EmptyTypedElement(
+					NLS.bind(
+							UIText.CompareTreeView_ItemNotFoundInVersionMessage,
+							node.getPath(), versionName));
+		} else {
+			Repository repository = getRepository();
+			String encoding = repository == null ? null
+					: CompareCoreUtils.getResourceEncoding(repository,
+							node.getRepoRelativePath());
+			return new FileRevisionTypedElement(fileRevision, encoding);
+		}
 	}
 
 	private String getBaseVersion() {
@@ -314,7 +311,10 @@ public class CompareTreeView extends ViewPart {
 	}
 
 	private String getCompareVersion() {
-		return compareVersion;
+		if (compareVersion.equals(INDEX_VERSION))
+			return UIText.CompareTreeView_IndexVersionText;
+		else
+			return compareVersion;
 	}
 
 	@Override
@@ -429,9 +429,7 @@ public class CompareTreeView extends ViewPart {
 				setContentDescription(NLS
 						.bind(
 								UIText.CompareTreeView_ComparingWorkspaceVersionDescription,
-								name,
-								compareVersion.equals(INDEX_VERSION) ? UIText.CompareTreeView_IndexVersionText
-										: compareVersion));
+								name, getCompareVersion()));
 			else
 				setContentDescription(NLS
 						.bind(
@@ -439,8 +437,7 @@ public class CompareTreeView extends ViewPart {
 								new String[] {
 										baseVersion,
 										name,
-										compareVersion.equals(INDEX_VERSION) ? UIText.CompareTreeView_IndexVersionText
-												: compareVersion }));
+										getCompareVersion() }));
 		}
 	}
 
@@ -450,15 +447,11 @@ public class CompareTreeView extends ViewPart {
 
 		tree.setInput(null);
 
-		if (baseVersion == null) {
-			tree.setContentProvider(new WorkbenchTreeContentProvider());
-			tree.setComparator(new WorkbenchTreeComparator());
-			tree.setLabelProvider(new WorkbenchTreeLabelProvider());
-		} else {
-			tree.setContentProvider(new PathNodeContentProvider());
-			tree.setComparator(new PathNodeTreeComparator());
-			tree.setLabelProvider(new PathNodeLabelProvider());
-		}
+		tree.setContentProvider(new PathNodeContentProvider());
+		tree.setComparator(new PathNodeTreeComparator());
+		tree.setLabelProvider(new PathNodeLabelProvider());
+		tree.setFilters(new PathNodeFilter[] { new PathNodeFilter() });
+
 		for (IWorkbenchAction action : actionsToDispose)
 			action.setEnabled(false);
 
@@ -536,14 +529,10 @@ public class CompareTreeView extends ViewPart {
 			throws InterruptedException, IOException {
 		monitor.beginTask(UIText.CompareTreeView_AnalyzingRepositoryTaskText,
 				IProgressMonitor.UNKNOWN);
+		long previousTimeMilliseconds = System.currentTimeMillis();
 		boolean useIndex = compareVersion.equals(INDEX_VERSION);
-		deletedPaths.clear();
-		equalContentPaths.clear();
-		baseVersionMap.clear();
-		compareVersionMap.clear();
-		compareVersionPathsWithChildren.clear();
-		addedPaths.clear();
-		baseVersionPathsWithChildren.clear();
+		fileNodes.clear();
+		containerNodes.clear();
 		boolean checkIgnored = false;
 		TreeWalk tw = new TreeWalk(repository);
 		try {
@@ -603,98 +592,147 @@ public class CompareTreeView extends ViewPart {
 						compareTreeIndex, AbstractTreeIterator.class);
 				AbstractTreeIterator baseVersionIterator = tw.getTree(
 						baseTreeIndex, AbstractTreeIterator.class);
+
+				IFileRevision left = null;
+				IFileRevision right = null;
+				String repoRelativePath = baseVersionIterator != null
+						? baseVersionIterator.getEntryPathString()
+						: compareVersionIterator.getEntryPathString();
+				IPath currentPath = new Path(repoRelativePath);
+
+				// Updating the progress bar is slow, so just sample it. To
+				// make sure slow compares are reflected in the progress
+				// monitor also update before comparing large files.
+				long currentTimeMilliseconds = System.currentTimeMillis();
+				long size1 = -1;
+				long size2 = -1;
 				if (compareVersionIterator != null
 						&& baseVersionIterator != null) {
-					monitor.setTaskName(baseVersionIterator
-							.getEntryPathString());
-					IPath currentPath = new Path(baseVersionIterator
-							.getEntryPathString());
-					if (!useIndex)
-						compareVersionMap
-								.put(currentPath, GitFileRevision.inCommit(
-										repository, compareCommit,
-										baseVersionIterator
-												.getEntryPathString(), tw
-												.getObjectId(compareTreeIndex)));
-					else
-						compareVersionMap.put(currentPath, GitFileRevision
-								.inIndex(repository, baseVersionIterator
-										.getEntryPathString()));
-					if (baseCommit != null)
-						baseVersionMap.put(currentPath, GitFileRevision
-								.inCommit(repository, baseCommit,
-										baseVersionIterator
-												.getEntryPathString(), tw
-												.getObjectId(baseTreeIndex)));
+					size1 = getEntrySize(tw, compareVersionIterator);
+					size2 = getEntrySize(tw, baseVersionIterator);
+				}
+				final long REPORTSIZE = 100000;
+				if (size1 > REPORTSIZE
+						|| size2 > REPORTSIZE
+						|| currentTimeMilliseconds - previousTimeMilliseconds > 500) {
+					monitor.setTaskName(currentPath.toString());
+					previousTimeMilliseconds = currentTimeMilliseconds;
+				}
+
+				Type type = null;
+				if (compareVersionIterator != null
+						&& baseVersionIterator != null) {
 					boolean equalContent = compareVersionIterator
 							.getEntryObjectId().equals(
 									baseVersionIterator.getEntryObjectId());
-					if (equalContent)
-						equalContentPaths.add(currentPath);
-
-					if (equalContent && !showEquals)
-						continue;
-
-					while (currentPath.segmentCount() > 0) {
-						currentPath = currentPath.removeLastSegments(1);
-						if (!baseVersionPathsWithChildren.add(currentPath))
-							break;
-					}
-
-				} else if (baseVersionIterator != null
-						&& compareVersionIterator == null) {
-					monitor.setTaskName(baseVersionIterator
-							.getEntryPathString());
-					// only on base side
-					IPath currentPath = new Path(baseVersionIterator
-							.getEntryPathString());
-					addedPaths.add(currentPath);
-					if (baseCommit != null)
-						baseVersionMap.put(currentPath, GitFileRevision
-								.inCommit(repository, baseCommit,
-										baseVersionIterator
-												.getEntryPathString(), tw
-												.getObjectId(baseTreeIndex)));
-					while (currentPath.segmentCount() > 0) {
-						currentPath = currentPath.removeLastSegments(1);
-						if (!baseVersionPathsWithChildren.add(currentPath))
-							break;
-					}
-
+					type = equalContent ? Type.FILE_BOTH_SIDES_SAME
+							: Type.FILE_BOTH_SIDES_DIFFER;
 				} else if (compareVersionIterator != null
 						&& baseVersionIterator == null) {
-					monitor.setTaskName(compareVersionIterator
-							.getEntryPathString());
-					// only on compare side
-					IPath currentPath = new Path(compareVersionIterator
-							.getEntryPathString());
-					deletedPaths.add(currentPath);
-					List<PathNodeAdapter> children = compareVersionPathsWithChildren
-							.get(currentPath.removeLastSegments(1));
-					if (children == null) {
-						children = new ArrayList<PathNodeAdapter>(1);
-						compareVersionPathsWithChildren.put(currentPath
-								.removeLastSegments(1), children);
-					}
-					children.add(new PathNodeAdapter(new PathNode(currentPath,
-							Type.FILE_DELETED)));
+					type = Type.FILE_DELETED;
+				} else if (compareVersionIterator == null
+						&& baseVersionIterator != null) {
+					type = Type.FILE_ADDED;
+				}
 
+				IFile file = null;
+				if (type != Type.FILE_BOTH_SIDES_SAME) {
+
+					file = ResourceUtil.getFileForLocation(repository,
+						repoRelativePath);
+				}
+
+				if (baseVersionIterator != null) {
+					if (baseCommit == null) {
+						if (file != null)
+							left = new LocalFileRevision(file);
+						else {
+							IPath path = getRepositoryPath().append(
+									repoRelativePath);
+							left = new WorkingTreeFileRevision(
+									path.toFile());
+						}
+					} else {
+						left = GitFileRevision
+								.inCommit(repository, baseCommit,
+										repoRelativePath,
+										tw.getObjectId(baseTreeIndex));
+					}
+				}
+
+				if (compareVersionIterator != null) {
 					if (!useIndex)
-						compareVersionMap
-								.put(currentPath, GitFileRevision.inCommit(
-										repository, compareCommit,
-										compareVersionIterator
-												.getEntryPathString(), tw
-												.getObjectId(compareTreeIndex)));
+						right = GitFileRevision.inCommit(repository,
+								compareCommit, repoRelativePath,
+								tw.getObjectId(compareTreeIndex));
 					else
-						compareVersionMap.put(currentPath, GitFileRevision
-								.inIndex(repository, compareVersionIterator
-										.getEntryPathString()));
+						right = GitFileRevision.inIndex(repository,
+								repoRelativePath);
+				}
+
+				IPath containerPath = currentPath.removeLastSegments(1);
+				ContainerNode containerNode = getOrCreateContainerNode(
+						containerPath, type);
+
+				FileNode fileNode = new FileNode(currentPath, file, type, left,
+						right);
+				containerNode.addChild(fileNode);
+				fileNodes.put(currentPath, fileNode);
+
+				// If a file is not "equal content", the container nodes up to
+				// the root must be shown in any case, so propagate the
+				// change of the "only equal content" flag.
+				if (type != Type.FILE_BOTH_SIDES_SAME) {
+					IPath path = currentPath;
+					while (path.segmentCount() > 0) {
+						path = path.removeLastSegments(1);
+						ContainerNode node = containerNodes.get(path);
+						node.setOnlyEqualContent(false);
+					}
 				}
 			}
 		} finally {
 			tw.release();
 			monitor.done();
+		}
+	}
+
+	private long getEntrySize(TreeWalk tw, AbstractTreeIterator iterator)
+			throws MissingObjectException, IncorrectObjectTypeException,
+			IOException {
+		if (iterator instanceof ContainerTreeIterator)
+			return ((ContainerTreeIterator) iterator).getEntryContentLength();
+		if (iterator instanceof FileTreeIterator)
+			return ((FileTreeIterator) iterator).getEntryContentLength();
+		try {
+			return tw.getObjectReader().getObjectSize(
+					iterator.getEntryObjectId(), Constants.OBJ_BLOB);
+		} catch (MissingObjectException e) {
+			// in case the object is not stored as a blob and not
+			// one of the known iterator types above, say zero.
+			return 0;
+		}
+	}
+
+	private ContainerNode getOrCreateContainerNode(IPath containerPath, Type fileType) {
+		ContainerNode containerNode = containerNodes.get(containerPath);
+		if (containerNode != null) {
+			return containerNode;
+		} else {
+			Repository repository = getRepository();
+			IContainer resource = repository == null ? null : ResourceUtil
+					.getContainerForLocation(repository,
+							containerPath.toString());
+			ContainerNode node = new ContainerNode(containerPath, resource);
+			node.setOnlyEqualContent(fileType == Type.FILE_BOTH_SIDES_SAME);
+			containerNodes.put(containerPath, node);
+			if (containerPath.segmentCount() > 0) {
+				IPath parentPath = containerPath.removeLastSegments(1);
+				ContainerNode parentNode = getOrCreateContainerNode(parentPath,
+						fileType);
+				parentNode.addChild(node);
+			}
+			return node;
 		}
 	}
 
@@ -708,7 +746,10 @@ public class CompareTreeView extends ViewPart {
 		SAME_CONTENT.dispose();
 	}
 
-	final static class PathNode {
+	/**
+	 * Base class of tree nodes.
+	 */
+	static abstract class PathNode {
 		/** Type; note that the ordinal is used to sort the tree */
 		public enum Type {
 			/** Folder */
@@ -723,17 +764,23 @@ public class CompareTreeView extends ViewPart {
 			FILE_BOTH_SIDES_SAME
 		}
 
-		public final IPath path;
-
-		public final Type type;
+		private final IPath path;
 
 		/**
 		 * @param path
-		 * @param type
 		 */
-		public PathNode(IPath path, Type type) {
+		public PathNode(IPath path) {
 			this.path = path;
-			this.type = type;
+		}
+
+		public abstract Type getType();
+
+		public IPath getPath() {
+			return path;
+		}
+
+		public String getRepoRelativePath() {
+			return path.toString();
 		}
 
 		@Override
@@ -741,7 +788,7 @@ public class CompareTreeView extends ViewPart {
 			final int prime = 31;
 			int result = 1;
 			result = prime * result + path.hashCode();
-			result = prime * result + type.hashCode();
+			result = prime * result + getType().hashCode();
 			return result;
 		}
 
@@ -756,109 +803,96 @@ public class CompareTreeView extends ViewPart {
 			PathNode other = (PathNode) obj;
 			if (!path.equals(other.path))
 				return false;
-			if (!type.equals(other.type))
+			if (!getType().equals(other.getType()))
 				return false;
 			return true;
 		}
 
 		@Override
 		public String toString() {
-			return type.name() + ": " + path.toString(); //$NON-NLS-1$
-		}
-	}
-
-	private final class WorkbenchTreeLabelProvider extends
-			WorkbenchLabelProvider {
-		@Override
-		protected ImageDescriptor decorateImage(ImageDescriptor baseImage,
-				Object element) {
-			if (!(element instanceof IFile)) {
-				return super.decorateImage(baseImage, element);
-			}
-			IPath elementPath = new Path(repositoryMapping
-					.getRepoRelativePath((IFile) element));
-			// decorate with + for files not found in the repository and = for
-			// "same" files
-			if (addedPaths.contains(elementPath)) {
-				return UIIcons.ELCL16_ADD;
-			}
-			if (deletedPaths.contains(elementPath)) {
-				return UIIcons.ELCL16_DELETE;
-			}
-			if (equalContentPaths.contains(elementPath)) {
-				return UIIcons.ELCL16_SYNCED;
-			}
-			return super.decorateImage(baseImage, element);
+			return getType().name() + ": " + path.toString(); //$NON-NLS-1$
 		}
 	}
 
 	/**
-	 * Sorts the workbench tree by type and state (Folder, Added, Deleted,
-	 * Changed, Unchanged Files)
+	 * Subclass for container (folder) tree nodes.
 	 */
-	private final class WorkbenchTreeComparator extends ViewerComparator {
-		private static final int FOLDERCATEGORY = 5;
+	static class ContainerNode extends PathNode {
 
-		private static final int ADDEDCATEGORY = 10;
+		private final List<PathNode> children = new ArrayList<PathNode>();
+		private final IContainer resource;
+		private boolean onlyEqualContent = false;
 
-		private static final int DELETEDCATEGORY = 15;
-
-		private static final int CHANGEDCATEGORY = 20;
-
-		private static final int UNCHANGEDCATEGORY = 30;
-
-		private static final int UNKNOWNCATEGORY = 50;
-
-		@Override
-		public int category(Object element) {
-			IResource adapter = (IResource) getAdapter(element, IResource.class);
-			if (adapter != null) {
-				if (adapter instanceof IContainer) {
-					return FOLDERCATEGORY;
-				}
-				if (adapter instanceof IFile) {
-					IFile file = (IFile) adapter;
-					IPath path = new Path(repositoryMapping
-							.getRepoRelativePath(file));
-					if (addedPaths.contains(path))
-						return ADDEDCATEGORY;
-					if (equalContentPaths.contains(path))
-						return UNCHANGEDCATEGORY;
-					return CHANGEDCATEGORY;
-				}
-			}
-			if (element instanceof PathNodeAdapter)
-				return DELETEDCATEGORY;
-
-			return UNKNOWNCATEGORY;
+		/**
+		 * @param path
+		 * @param resource container resource, may be null
+		 */
+		public ContainerNode(IPath path, IContainer resource) {
+			super(path);
+			this.resource = resource;
 		}
 
-		private Object getAdapter(Object sourceObject, Class adapterType) {
-			Assert.isNotNull(adapterType);
-			if (sourceObject == null)
-				return null;
+		@Override
+		public Type getType() {
+			return Type.FOLDER;
+		}
 
-			if (adapterType.isInstance(sourceObject))
-				return sourceObject;
+		public List<PathNode> getChildren() {
+			return children;
+		}
 
-			if (sourceObject instanceof IAdaptable) {
-				IAdaptable adaptable = (IAdaptable) sourceObject;
+		public void addChild(PathNode child) {
+			children.add(child);
+		}
 
-				Object result = adaptable.getAdapter(adapterType);
-				if (result != null) {
-					// Sanity-check
-					Assert.isTrue(adapterType.isInstance(result));
-					return result;
-				}
-			}
+		public IContainer getResource() {
+			return resource;
+		}
 
-			if (!(sourceObject instanceof PlatformObject)) {
-				Object result = Platform.getAdapterManager().getAdapter(
-						sourceObject, adapterType);
-				if (result != null)
-					return result;
-			}
-			return null;
+		public void setOnlyEqualContent(boolean onlyEqualContent) {
+			this.onlyEqualContent = onlyEqualContent;
+		}
+
+		public boolean isOnlyEqualContent() {
+			return onlyEqualContent;
+		}
+	}
+
+	/**
+	 * Subclass for file tree nodes.
+	 */
+	static class FileNode extends PathNode {
+
+		private final IFile file;
+		private final Type type;
+		private final IFileRevision leftRevision;
+		private final IFileRevision rightRevision;
+
+		/**
+		 * @param path
+		 * @param file
+		 * @param type
+		 * @param leftRevision
+		 *            left revision, may be null
+		 * @param rightRevision
+		 *            right revision, may be null
+		 */
+		public FileNode(IPath path, IFile file, Type type,
+				IFileRevision leftRevision, IFileRevision rightRevision) {
+			super(path);
+			this.file = file;
+			this.type = type;
+			this.leftRevision = leftRevision;
+			this.rightRevision = rightRevision;
+		}
+
+		@Override
+		public Type getType() {
+			return type;
+		}
+
+		public IFile getFile() {
+			return file;
 		}
 	}
 
@@ -872,163 +906,73 @@ public class CompareTreeView extends ViewPart {
 		@Override
 		public int category(Object element) {
 			if (element instanceof PathNode) {
-				return ((PathNode) element).type.ordinal();
+				return ((PathNode) element).getType().ordinal();
 			}
 			return UNKNOWNCATEGORY;
 		}
 	}
 
 	/**
-	 * Used to render the "local" (workspace) side of a tree compare where one
-	 * side is the workspace
+	 * Content provider working with {@link PathNode} elements.
 	 */
-	private final class WorkbenchTreeContentProvider extends
-			WorkbenchContentProvider {
-		@Override
-		public Object[] getChildren(Object element) {
-			boolean rebuildArray = false;
-			Object[] children;
-			if (element == input)
-				children = (Object[]) input;
-			else
-				children = super.getChildren(element);
-			List<Object> childList = new ArrayList<Object>(children.length);
-			for (Object child : children) {
-				IPath path = new Path(repositoryMapping
-						.getRepoRelativePath((IResource) child));
-				boolean isFile = ((IResource) child).getType() == IResource.FILE;
+	private final class PathNodeContentProvider implements ITreeContentProvider {
 
-				// each path that is not ignored creates an entry in either
-				// compareVersionMap or addedPaths, so we can check if a path
-				// was ignored by looking into these tables
-				if (isFile && !compareVersionMap.containsKey(path)
-						&& !addedPaths.contains(path)) {
-					rebuildArray = true;
-					continue;
-				}
-				if (!showEquals && equalContentPaths.contains(path)) {
-					rebuildArray = true;
-					continue;
-				}
-				if (child instanceof IContainer
-						&& !baseVersionPathsWithChildren.contains(path)) {
-					rebuildArray = true;
-					continue;
-				}
-				if (!showEquals && equalContentPaths.contains(path)) {
-					rebuildArray = true;
-					continue;
-				}
-				childList.add(child);
-			}
-			if (element instanceof IContainer) {
-				List<PathNodeAdapter> deletedChildren = compareVersionPathsWithChildren
-						.get(new Path(repositoryMapping
-								.getRepoRelativePath((IResource) element)));
-				if (deletedChildren != null) {
-					rebuildArray = true;
-					for (IWorkbenchAdapter path : deletedChildren)
-						childList.add(path);
-				}
-			}
-			if (rebuildArray)
-				return childList.toArray();
-			return children;
-		}
-	}
-
-	/**
-	 * Used to render the tree in case we have no workspace
-	 */
-	private final class PathNodeContentProvider extends ArrayContentProvider
-			implements ITreeContentProvider {
-		@Override
 		public Object[] getElements(Object inputElement) {
-			if (baseVersionPathsWithChildren.isEmpty() && addedPaths.isEmpty())
+			ContainerNode rootContainer = containerNodes.get(new Path("")); //$NON-NLS-1$
+			if (rootContainer.isOnlyEqualContent() && !showEquals)
 				return new String[] { UIText.CompareTreeView_NoDifferencesFoundMessage };
+
 			if (input instanceof IResource[]) {
 				IResource[] resources = (IResource[]) input;
 				PathNode[] nodes = new PathNode[resources.length];
 				for (int i = 0; i < resources.length; i++) {
 					IResource resource = resources[i];
-					if (resource instanceof IFile) {
-						IPath path = new Path(repositoryMapping
-								.getRepoRelativePath(resource));
-						Type type;
-						if (addedPaths.contains(path))
-							type = Type.FILE_ADDED;
-						else if (equalContentPaths.contains(path))
-							type = Type.FILE_BOTH_SIDES_SAME;
-						else
-							type = Type.FILE_BOTH_SIDES_DIFFER;
-						nodes[i] = new PathNode(path, type);
-					} else
-						nodes[i] = new PathNode(new Path(repositoryMapping
-								.getRepoRelativePath(resource)), Type.FOLDER);
+					IPath path = new Path(repositoryMapping
+							.getRepoRelativePath(resource));
+					if (resource instanceof IFile)
+						nodes[i] = fileNodes.get(path);
+					else
+						nodes[i] = containerNodes.get(path);
 				}
 				return nodes;
-			}
-			return new PathNode[] { new PathNode(new Path(""), Type.FOLDER) }; //$NON-NLS-1$
+			} else
+				return new PathNode[] { rootContainer };
 		}
 
 		public Object[] getChildren(Object parentElement) {
-			PathNode parentNode = (PathNode) parentElement;
-			IPath parent = parentNode.path;
-			List<PathNode> children = new ArrayList<PathNode>();
-			for (IPath childPath : baseVersionPathsWithChildren) {
-				if (childPath.segmentCount() > 0
-						&& childPath.removeLastSegments(1).equals(parent)) {
-					children.add(new PathNode(childPath, Type.FOLDER));
-				}
-			}
-			for (IPath mapPath : baseVersionMap.keySet()) {
-				if (mapPath.removeLastSegments(1).equals(parent)
-						&& (showEquals || !equalContentPaths.contains(mapPath))) {
-					if (addedPaths.contains(mapPath))
-						children.add(new PathNode(mapPath, Type.FILE_ADDED));
-					else if (equalContentPaths.contains(mapPath))
-						children.add(new PathNode(mapPath,
-								Type.FILE_BOTH_SIDES_SAME));
-					else
-						children.add(new PathNode(mapPath,
-								Type.FILE_BOTH_SIDES_DIFFER));
-				}
-			}
-			if (parentNode.type == Type.FOLDER) {
-				List<PathNodeAdapter> deletedChildren = compareVersionPathsWithChildren
-						.get(parent);
-				if (deletedChildren != null)
-					for (PathNodeAdapter path : deletedChildren)
-						children.add(path.pathNode);
-
-			}
-			return children.toArray();
+			if (parentElement instanceof ContainerNode) {
+				ContainerNode containerNode = (ContainerNode) parentElement;
+				return containerNode.getChildren().toArray();
+			} else
+				return new Object[] {};
 		}
 
 		public boolean hasChildren(Object element) {
-			if (!(element instanceof PathNode))
+			if (element instanceof ContainerNode) {
+				ContainerNode containerNode = (ContainerNode) element;
+				return !containerNode.getChildren().isEmpty();
+			} else
 				return false;
-			IPath parent = ((PathNode) element).path;
-			for (IPath childPath : baseVersionPathsWithChildren) {
-				if (childPath.removeLastSegments(1).equals(parent))
-					return true;
-			}
-			for (IPath mapPath : baseVersionMap.keySet()) {
-				if (mapPath.removeLastSegments(1).equals(parent)
-						&& (showEquals || !equalContentPaths.contains(mapPath))) {
-					return true;
-				}
-			}
-			return false;
 		}
 
 		public Object getParent(Object element) {
-			if (!(element instanceof PathNode))
+			if (element instanceof PathNode) {
+				PathNode pathNode = (PathNode) element;
+				IPath path = pathNode.getPath();
+				if (path.segmentCount() == 0)
+					return null;
+				else
+					return containerNodes.get(path.removeLastSegments(1));
+			} else
 				return null;
-			IPath currentPath = ((PathNode) element).path;
-			if (currentPath.segmentCount() > 0)
-				return currentPath.removeLastSegments(1);
-			return null;
+		}
+
+		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+			// Do nothing
+		}
+
+		public void dispose() {
+			// Do nothing
 		}
 	}
 
@@ -1037,15 +981,30 @@ public class CompareTreeView extends ViewPart {
 	 */
 	private final class PathNodeLabelProvider extends BaseLabelProvider
 			implements ILabelProvider {
+
+		private final WorkbenchLabelProvider workbenchLabelProvider = new WorkbenchLabelProvider();
+
 		public Image getImage(Object element) {
 			if (element instanceof String)
 				return null;
-			Type type = ((PathNode) element).type;
+			if (element instanceof ContainerNode) {
+				ContainerNode containerNode = (ContainerNode) element;
+				IContainer resource = containerNode.getResource();
+				if (resource != null && resource.isAccessible())
+					return workbenchLabelProvider.getImage(resource);
+				else
+					return FOLDER_IMAGE;
+			}
+			FileNode fileNode = (FileNode) element;
+			Type type = fileNode.getType();
 			switch (type) {
 			case FILE_BOTH_SIDES_SAME:
 				return SAME_CONTENT;
 			case FILE_BOTH_SIDES_DIFFER:
-				return FILE_IMAGE;
+				if (fileNode.getFile() != null)
+					return workbenchLabelProvider.getImage(fileNode.getFile());
+				else
+					return FILE_IMAGE;
 			case FILE_ADDED:
 				return ADDED;
 			case FILE_DELETED:
@@ -1059,38 +1018,159 @@ public class CompareTreeView extends ViewPart {
 		public String getText(Object element) {
 			if (element instanceof String)
 				return (String) element;
-			IPath path = ((PathNode) element).path;
+			IPath path = ((PathNode) element).getPath();
 			if (path.segmentCount() == 0)
 				return UIText.CompareTreeView_RepositoryRootName;
 			return path.lastSegment();
+		}
 
+		@Override
+		public void dispose() {
+			super.dispose();
+			workbenchLabelProvider.dispose();
 		}
 	}
 
-	private final static class PathNodeAdapter implements IWorkbenchAdapter {
-		private final static Object[] EMPTYARRAY = new Object[0];
-
-		PathNode pathNode;
-
-		public PathNodeAdapter(PathNode path) {
-			pathNode = path;
+	/**
+	 * Filter out equal path nodes if "show equals" is disabled.
+	 */
+	private final class PathNodeFilter extends ViewerFilter {
+		@Override
+		public boolean select(Viewer viewer, Object parentElement,
+				Object element) {
+			if (showEquals)
+				return true;
+			else {
+				if (element instanceof FileNode) {
+					FileNode fileNode = (FileNode) element;
+					return fileNode.getType() != Type.FILE_BOTH_SIDES_SAME;
+				} else if (element instanceof ContainerNode) {
+					ContainerNode containerNode = (ContainerNode) element;
+					return !containerNode.isOnlyEqualContent();
+				} else if (element instanceof String)
+					return true;
+			}
+			return true;
 		}
+	}
 
-		public Object[] getChildren(Object o) {
-			return EMPTYARRAY;
+	/*
+	 * @see org.eclipse.jface.action.IMenuListener#menuAboutToShow(org.eclipse.jface.action.IMenuManager)
+	 * @since 2.1
+	 */
+	public void menuAboutToShow(IMenuManager manager) {
+		ITreeSelection selection = (ITreeSelection) tree.getSelection();
+		if (selection.isEmpty())
+			return;
+
+		manager.add(new Separator(ICommonMenuConstants.GROUP_OPEN));
+		manager.add(new Separator(ICommonMenuConstants.GROUP_ADDITIONS));
+
+		IAction openAction = createOpenAction(selection);
+		if (openAction != null)
+			manager.appendToGroup(ICommonMenuConstants.GROUP_OPEN, openAction);
+
+		MenuManager showInSubMenu = UIUtils.createShowInMenu(
+				getSite().getWorkbenchWindow());
+		manager.appendToGroup(ICommonMenuConstants.GROUP_OPEN, showInSubMenu);
+	}
+
+	/*
+	 * @see org.eclipse.ui.part.IShowInSource#getShowInContext()
+	 * @since 2.1
+	 */
+	public ShowInContext getShowInContext() {
+		IPath repoPath = getRepositoryPath();
+		ITreeSelection selection = (ITreeSelection) tree.getSelection();
+		List<IResource> resources = new ArrayList<IResource>();
+		for (Iterator it = selection.iterator(); it.hasNext();) {
+			Object obj = it.next();
+			if (obj instanceof IResource)
+				resources.add((IResource) obj);
+			else if (obj instanceof PathNode && repoPath != null) {
+				PathNode pathNode = (PathNode) obj;
+				IResource resource = ResourceUtil
+						.getResourceForLocation(repoPath.append(pathNode
+								.getRepoRelativePath()));
+				if (resource != null)
+					resources.add(resource);
+			}
 		}
+		return new ShowInContext(null, new StructuredSelection(resources));
+	}
 
-		public ImageDescriptor getImageDescriptor(Object object) {
-			return UIIcons.ELCL16_DELETE;
+	private void createContextMenu() {
+		MenuManager manager = new MenuManager("#PopupMenu"); //$NON-NLS-1$
+		manager.setRemoveAllWhenShown(true);
+		manager.addMenuListener(this);
+
+		Menu contextMenu = manager.createContextMenu(tree.getControl());
+		tree.getControl().setMenu(contextMenu);
+		getSite().registerContextMenu(manager, tree);
+	}
+
+	private void openFileInEditor(String filePath) {
+		IWorkbenchWindow window = PlatformUI.getWorkbench()
+				.getActiveWorkbenchWindow();
+		File file = new File(filePath);
+		if (!file.exists()) {
+			String message = NLS.bind(UIText.CommitFileDiffViewer_FileDoesNotExist, filePath);
+			Activator.showError(message, null);
 		}
+		IWorkbenchPage page = window.getActivePage();
+		EgitUiEditorUtils.openEditor(file, page);
+	}
 
-		public String getLabel(Object o) {
-			return pathNode.path.lastSegment();
-		}
-
-		public Object getParent(Object o) {
-			// doesn't seem to hurt to simply return null
+	private IAction createOpenAction(ITreeSelection selection) {
+		final List<String> pathsToOpen = getSelectedPaths(selection);
+		if (pathsToOpen == null || pathsToOpen.isEmpty())
 			return null;
-		}
+
+		return new Action(
+				UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel) {
+			@Override
+			public void run() {
+				for (String filePath : pathsToOpen)
+					openFileInEditor(filePath);
+			}
+		};
 	}
+
+	private List<String> getSelectedPaths(ITreeSelection selection) {
+		IPath repoPath = getRepositoryPath();
+		List<String> pathsToOpen = new ArrayList<String>();
+		for (Iterator it = selection.iterator(); it.hasNext();) {
+			Object obj = it.next();
+			if (obj instanceof IFile) {
+				pathsToOpen.add(((IFile) obj).getLocation().toOSString());
+			} else if (obj instanceof PathNode && repoPath != null) {
+				PathNode pathNode = (PathNode) obj;
+				if (pathNode.getType() == PathNode.Type.FOLDER
+						|| pathNode.getType() == PathNode.Type.FILE_DELETED)
+					return null;
+				pathsToOpen.add(repoPath.append(pathNode.getPath()).toOSString());
+			} else {
+				return null; // fail if one of the selected elements does not fit
+			}
+		}
+		return pathsToOpen;
+	}
+
+	private IPath getRepositoryPath() {
+		Repository repo = getRepository();
+		if (repo != null)
+			return new Path(repo.getWorkTree().getAbsolutePath());
+
+		return null;
+	}
+
+	private Repository getRepository() {
+		if (repositoryMapping != null)
+			return repositoryMapping.getRepository();
+		else if (input instanceof Repository)
+			return (Repository) input;
+
+		return null;
+	}
+
 }

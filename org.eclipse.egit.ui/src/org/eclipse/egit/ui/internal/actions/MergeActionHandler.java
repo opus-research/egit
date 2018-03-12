@@ -13,6 +13,7 @@ package org.eclipse.egit.ui.internal.actions;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -22,7 +23,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.MergeTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
@@ -56,9 +57,12 @@ public class MergeActionHandler extends RepositoryActionHandler {
 
 			String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
 			final MergeOperation op = new MergeOperation(repository, refName);
-			Job job = new Job(jobname) {
+			op.setSquash(mergeTargetSelectionDialog.isMergeSquash());
+			op.setFastForwardMode(mergeTargetSelectionDialog.getFastForwardMode());
+			op.setCommit(mergeTargetSelectionDialog.isCommit());
+			Job job = new WorkspaceJob(jobname) {
 				@Override
-				protected IStatus run(IProgressMonitor monitor) {
+				public IStatus runInWorkspace(IProgressMonitor monitor) {
 					try {
 						op.execute(monitor);
 					} catch (final CoreException e) {
@@ -96,7 +100,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
-								new MergeResultDialog(shell, repository, op
+								MergeResultDialog.getDialog(shell, repository, op
 										.getResult()).open();
 							}
 						});

@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +25,7 @@ import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
@@ -174,7 +175,7 @@ class ConfirmationPage extends WizardPage {
 
 		final List<RefSpec> fetchSpecs;
 		if (displayedRepoSelection.isConfigSelected())
-			fetchSpecs = displayedRepoSelection.getConfig().getPushRefSpecs();
+			fetchSpecs = displayedRepoSelection.getConfig().getFetchRefSpecs();
 		else
 			fetchSpecs = null;
 

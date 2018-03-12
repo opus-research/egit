@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,13 +16,16 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CreateTagDialog;
+import org.eclipse.egit.ui.internal.push.PushTagsWizard;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Constants;
@@ -41,10 +44,8 @@ import org.eclipse.osgi.util.NLS;
  */
 public class TagActionHandler extends RepositoryActionHandler {
 
-	private Repository repo;
-
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		repo = getRepository(true, event);
+		final Repository repo = getRepository(true, event);
 		if (repo == null)
 			return null;
 
@@ -73,7 +74,7 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 		final TagBuilder tag = new TagBuilder();
 		PersonIdent personIdent = new PersonIdent(repo);
-		String tagName = dialog.getTagName();
+		final String tagName = dialog.getTagName();
 
 		tag.setTag(tagName);
 		tag.setTagger(personIdent);
@@ -81,7 +82,7 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 		RevObject tagTarget;
 		try {
-			tagTarget = getTagTarget(dialog.getTagCommit());
+			tagTarget = getTagTarget(repo, dialog.getTagCommit());
 		} catch (IOException e1) {
 			Activator.handleError(UIText.TagAction_unableToResolveHeadObjectId,
 					e1, true);
@@ -114,6 +115,16 @@ public class TagActionHandler extends RepositoryActionHandler {
 			}
 		};
 
+		if (dialog.shouldStartPushWizard()) {
+			tagJob.addJobChangeListener(new JobChangeAdapter() {
+				@Override
+				public void done(IJobChangeEvent jobChangeEvent) {
+					if (jobChangeEvent.getResult().isOK())
+						PushTagsWizard.openWizardDialog(repo, tagName);
+				}
+			});
+		}
+
 		tagJob.setUser(true);
 		tagJob.schedule();
 		return null;
@@ -121,11 +132,12 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		Repository repo = getRepository();
+		final Repository repo = getRepository();
 		return repo != null && containsHead(repo);
 	}
 
-	private RevObject getTagTarget(ObjectId objectId) throws IOException {
+	private RevObject getTagTarget(Repository repo, ObjectId objectId)
+			throws IOException {
 		RevWalk rw = new RevWalk(repo);
 		try {
 			if (objectId == null)

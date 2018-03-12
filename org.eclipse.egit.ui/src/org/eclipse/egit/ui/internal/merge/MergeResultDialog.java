@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
- *
+ * Copyright (C) 2010, 2013 Jens Baumgart <jens.baumgart@sap.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,31 +11,36 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
+import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
-import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.ResolveMerger.MergeFailureReason;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.SWT;
@@ -51,6 +55,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.OpenAndLinkWithEditorHelper;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
@@ -66,6 +71,19 @@ public class MergeResultDialog extends Dialog {
 	private final Repository repository;
 
 	private ObjectReader objectReader;
+
+	/**
+	 * @param parentShell
+	 * @param repository
+	 * @param mergeResult
+	 * @return the created dialog
+	 */
+	public static Dialog getDialog(Shell parentShell, Repository repository, MergeResult mergeResult) {
+		if(mergeResult.getMergeStatus() == MergeStatus.CHECKOUT_CONFLICT)
+			return new CheckoutConflictDialog(parentShell, repository, mergeResult.getCheckoutConflicts());
+		else
+			return new MergeResultDialog(parentShell, repository, mergeResult);
+	}
 
 	/**
 	 * @param parentShell
@@ -99,20 +117,55 @@ public class MergeResultDialog extends Dialog {
 		resultLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false,
 				false));
 		Text resultText = new Text(composite, SWT.READ_ONLY);
-		resultText.setText(mergeResult.getMergeStatus().toString());
+		MergeStatus status = mergeResult.getMergeStatus();
+		resultText.setText(status.toString());
+		resultText.setSelection(resultText.getCaretPosition());
 		resultText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		// new head
-		Label newHeadLabel = new Label(composite, SWT.NONE);
-		newHeadLabel.setText(UIText.MergeResultDialog_newHead);
-		newHeadLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false,
-				false));
-		Text newHeadText = new Text(composite, SWT.READ_ONLY);
-		ObjectId newHead = mergeResult.getNewHead();
-		if (newHead != null)
-			newHeadText.setText(getCommitMessage(newHead) + SPACE
-					+ abbreviate(mergeResult.getNewHead(), true));
-		newHeadText
-				.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		if (status == MergeStatus.FAILED) {
+			resultText.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_RED));
+
+			StringBuilder paths = new StringBuilder();
+			Label pathsLabel = new Label(composite, SWT.NONE);
+			pathsLabel.setText(UIText.MergeResultDialog_failed);
+			pathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, false));
+			Text pathsText = new Text(composite, SWT.READ_ONLY);
+			pathsText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
+			Set<Entry<String, MergeFailureReason>> failedPaths = mergeResult.getFailingPaths().entrySet();
+			int n = 0;
+			for (Map.Entry<String, MergeFailureReason> e : failedPaths) {
+				if (n > 0)
+					paths.append(Text.DELIMITER);
+				paths.append(e.getValue());
+				paths.append("\t"); //$NON-NLS-1$
+				paths.append(e.getKey());
+				n++;
+				if (n > 10 && failedPaths.size() > 15)
+					break;
+			}
+			if (n < failedPaths.size()) {
+				paths.append(Text.DELIMITER);
+				paths.append(MessageFormat.format(UIText.MergeResultDialog_nMore, Integer.valueOf(n - failedPaths.size())));
+			}
+			pathsText.setText(paths.toString());
+		}
+
+		if (status == MergeStatus.FAST_FORWARD
+				|| status == MergeStatus.FAST_FORWARD_SQUASHED
+				|| status == MergeStatus.MERGED) {
+			// new head
+			Label newHeadLabel = new Label(composite, SWT.NONE);
+			newHeadLabel.setText(UIText.MergeResultDialog_newHead);
+			newHeadLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false,
+					false));
+			Text newHeadText = new Text(composite, SWT.READ_ONLY);
+			ObjectId newHead = mergeResult.getNewHead();
+			if (newHead != null)
+				newHeadText.setText(getCommitMessage(newHead) + SPACE
+						+ abbreviate(mergeResult.getNewHead(), true));
+			newHeadText
+					.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		}
+
 		// Merge Input
 		Label mergeInputLabel = new Label(composite, SWT.NONE);
 		mergeInputLabel.setText(UIText.MergeResultDialog_mergeInput);
@@ -176,18 +229,65 @@ public class MergeResultDialog extends Dialog {
 				.align(SWT.FILL, SWT.FILL).span(2, 1)
 				.applyTo(viewer.getControl());
 		viewer.setInput(mergeResult);
-		viewer.addOpenListener(new IOpenListener() {
 
-			public void open(OpenEvent event) {
-				ISelection selection = event.getSelection();
+		new OpenAndLinkWithEditorHelper(viewer) {
+			@Override
+			protected void linkToEditor(ISelection selection) {
+				// Not supported
+
+			}
+			@Override
+			protected void open(ISelection selection, boolean activate) {
+				handleOpen(selection, OpenStrategy.activateOnOpen());
+			}
+			@Override
+			protected void activate(ISelection selection) {
+				handleOpen(selection, true);
+			}
+			private void handleOpen(ISelection selection, boolean activateOnOpen) {
 				if (selection instanceof IStructuredSelection)
 					for (Object element : ((IStructuredSelection) selection)
 							.toArray())
 						if (element instanceof RepositoryCommit)
-							CommitEditor.openQuiet((RepositoryCommit) element);
+							CommitEditor.openQuiet((RepositoryCommit) element, activateOnOpen);
 			}
-		});
+		};
+
 		return composite;
+	}
+
+	/**
+	 * @param mergeStatus
+	 * @return text describing merge status in short form
+	 */
+	public static String getStatusText(MergeStatus mergeStatus) {
+		switch (mergeStatus) {
+		case FAST_FORWARD:
+			return UIText.MergeResultDialog_StatusFastForward;
+		case FAST_FORWARD_SQUASHED:
+			return UIText.MergeResultDialog_StatusFastForwardSquashed;
+		case ALREADY_UP_TO_DATE:
+			return UIText.MergeResultDialog_StatusAlreadyUpToDate;
+		case FAILED:
+			return UIText.MergeResultDialog_StatusFailed;
+		case MERGED:
+			return UIText.MergeResultDialog_StatusMerged;
+		case MERGED_SQUASHED:
+			return UIText.MergeResultDialog_StatusMergedSquashed;
+		case MERGED_SQUASHED_NOT_COMMITTED:
+			return UIText.MergeResultDialog_StatusMergedSquashedNotCommitted;
+		case CONFLICTING:
+			return UIText.MergeResultDialog_StatusConflicting;
+		case ABORTED:
+			return UIText.MergeResultDialog_StatusAborted;
+		case MERGED_NOT_COMMITTED:
+			return UIText.MergeResultDialog_StatusMergedNotCommitted;
+		case NOT_SUPPORTED:
+			return UIText.MergeResultDialog_StatusNotSupported;
+		case CHECKOUT_CONFLICT:
+			return UIText.MergeResultDialog_StatusCheckoutConflict;
+		}
+		return mergeStatus.toString();
 	}
 
 	private RepositoryCommit[] getCommits(final ObjectId[] merges) {

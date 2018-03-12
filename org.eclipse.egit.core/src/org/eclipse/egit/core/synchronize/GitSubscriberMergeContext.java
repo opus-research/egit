@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.GitResourceDeltaVisitor;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
@@ -48,6 +48,8 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 	private final IResourceChangeListener resourceChangeListener;
 
+	private final GitResourceVariantTreeSubscriber subscriber;
+
 	/**
 	 * @param subscriber
 	 * @param manager
@@ -56,13 +58,14 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 	public GitSubscriberMergeContext(final GitResourceVariantTreeSubscriber subscriber,
 			ISynchronizationScopeManager manager, GitSynchronizeDataSet gsds) {
 		super(subscriber, manager);
+		this.subscriber = subscriber;
 		this.gsds = gsds;
 
 
 		indexChangeListener = new IndexDiffChangedListener() {
 			public void indexDiffChanged(Repository repository,
 					IndexDiffData indexDiffData) {
-				handleRepositoryChange(subscriber, repository);
+				handleRepositoryChange(repository);
 			}
 		};
 		resourceChangeListener = new IResourceChangeListener() {
@@ -72,7 +75,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 				if (delta == null)
 					return;
 
-				handleResourceChange(subscriber, delta);
+				handleResourceChange(delta);
 			}
 		};
 		IndexDiffCache indexDiffCache = Activator.getDefault().getIndexDiffCache();
@@ -123,14 +126,21 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 			indexDiffCache.removeIndexDiffChangedListener(indexChangeListener);
 
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
+		subscriber.dispose();
 		super.dispose();
 	}
 
-	private void handleRepositoryChange(
-			GitResourceVariantTreeSubscriber subscriber, Repository which) {
-		for (GitSynchronizeData gsd : gsds)
-			if (which.equals(gsd.getRepository()))
+	private void handleRepositoryChange(Repository which) {
+		boolean shouldRefresh = false;
+		for (GitSynchronizeData gsd : gsds) {
+			if (which.equals(gsd.getRepository())) {
 				updateRevs(gsd);
+				shouldRefresh = true;
+			}
+		}
+
+		if (!shouldRefresh)
+			return;
 
 		subscriber.reset(this.gsds);
 		ResourceTraversal[] traversals = getScopeManager().getScope()
@@ -143,8 +153,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 		}
 	}
 
-	private void handleResourceChange(
-			GitResourceVariantTreeSubscriber subscriber, IResourceDelta delta) {
+	private void handleResourceChange(IResourceDelta delta) {
 		IResourceDelta[] children = delta.getAffectedChildren();
 		for (IResourceDelta resourceDelta : children) {
 			IResource resource = resourceDelta.getResource();
@@ -152,13 +161,12 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 			if (mapping == null)
 				continue;
 
-			scanDeltaAndRefresh(subscriber, mapping, resourceDelta);
+			scanDeltaAndRefresh(mapping, resourceDelta);
 		}
 	}
 
-	private void scanDeltaAndRefresh(
-			GitResourceVariantTreeSubscriber subscriber,
-			RepositoryMapping mapping, IResourceDelta delta) {
+	private void scanDeltaAndRefresh(RepositoryMapping mapping,
+			IResourceDelta delta) {
 		Repository repo = mapping.getRepository();
 		GitResourceDeltaVisitor visitor = new GitResourceDeltaVisitor(repo);
 		try {
@@ -169,15 +177,14 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 			for (GitSynchronizeData gsd : gsds) {
 				if (repo.equals(gsd.getRepository()))
-					refreshResources(subscriber, files);
+					refreshResources(files);
 			}
 		} catch (CoreException e) {
 			Activator.logError(e.getMessage(), e);
 		}
 	}
 
-	private void refreshResources(GitResourceVariantTreeSubscriber subscriber,
-			Collection<IFile> resources) {
+	private void refreshResources(Collection<IFile> resources) {
 		IResource[] files = resources.toArray(new IResource[resources
 				.size()]);
 		try {

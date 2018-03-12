@@ -23,12 +23,14 @@ import java.util.Set;
 
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.SWTUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.PreferencePage;
+import org.eclipse.jgit.events.ConfigChangedEvent;
+import org.eclipse.jgit.events.ConfigChangedListener;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
@@ -299,6 +301,13 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 			File configFile = ((FileBasedConfig) repository.getConfig()).getFile();
 			repositoryConfig = new FileBasedConfig(configFile, repository
 					.getFS());
+			repositoryConfig.addChangeListener(new ConfigChangedListener() {
+
+				public void onConfigChanged(ConfigChangedEvent event) {
+					repository.getListenerList().dispatch(
+							new ConfigChangedEvent());
+				}
+			});
 		} else {
 			repositoryConfig = repository.getConfig();
 		}

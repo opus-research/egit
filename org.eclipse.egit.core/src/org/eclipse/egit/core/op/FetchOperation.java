@@ -13,11 +13,10 @@ import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -95,6 +94,13 @@ public class FetchOperation {
 	}
 
 	/**
+	 * @return the operation's credentials provider
+	 */
+	public CredentialsProvider getCredentialsProvider() {
+		return credentialsProvider;
+	}
+
+	/**
 	 * @param tagOpt
 	 */
 	public void setTagOpt(TagOpt tagOpt) {
@@ -129,7 +135,7 @@ public class FetchOperation {
 		} catch (JGitInternalException e) {
 			throw new InvocationTargetException(e.getCause() != null ? e
 					.getCause() : e);
-		} catch (InvalidRemoteException e) {
+		} catch (Exception e) {
 			throw new InvocationTargetException(e);
 		}
 	}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (c) 2012, 2013 Matthias Sohn <matthias.sohn@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,13 +14,13 @@ import static org.junit.Assert.assertNotNull;
 import java.io.File;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
+import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.SubmoduleAddCommand;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -37,7 +37,7 @@ public class GitRepositoriesViewRepoDeletionTest extends
 
 	private static final String DELETE_REPOSITORY_CONTEXT_MENU_LABEL = "RepoViewDeleteRepository.label";
 
-	private static File repositoryFile;
+	private File repositoryFile;
 
 	@Before
 	public void before() throws Exception {
@@ -61,14 +61,17 @@ public class GitRepositoriesViewRepoDeletionTest extends
 				.getPluginLocalizedValue(DELETE_REPOSITORY_CONTEXT_MENU_LABEL));
 		SWTBotShell shell = bot.shell(UIText.DeleteRepositoryConfirmDialog_DeleteRepositoryWindowTitle);
 		shell.activate();
-		FileRepository repo = lookupRepository(repositoryFile);
-		String workDir=repo.getWorkTree().getPath();
-		String checkboxLabel = NLS
-				.bind(UIText.DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox,
-						workDir);
-		shell.bot().checkBox(checkboxLabel).select();
+		shell.bot()
+				.checkBox(
+						UIText.DeleteRepositoryConfirmDialog_DeleteGitDirCheckbox)
+				.select();
+		shell.bot()
+				.checkBox(
+						UIText.DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox)
+				.select();
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
-		waitInUI();
+		TestUtil.joinJobs(JobFamilies.REPOSITORY_DELETE);
+
 		refreshAndWait();
 		assertEmpty();
 		assertProjectExistence(PROJ1, false);
@@ -95,6 +98,7 @@ public class GitRepositoriesViewRepoDeletionTest extends
 		command.setURI(uri);
 		Repository subRepo = command.call();
 		assertNotNull(subRepo);
+		subRepo.close();
 
 		refreshAndWait();
 
@@ -109,13 +113,17 @@ public class GitRepositoriesViewRepoDeletionTest extends
 		SWTBotShell shell = bot
 				.shell(UIText.DeleteRepositoryConfirmDialog_DeleteRepositoryWindowTitle);
 		shell.activate();
-		String workDir = subRepo.getWorkTree().getPath();
-		String checkboxLabel = NLS
-				.bind(UIText.DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox,
-						workDir);
-		shell.bot().checkBox(checkboxLabel).select();
+		shell.bot()
+				.checkBox(
+						UIText.DeleteRepositoryConfirmDialog_DeleteGitDirCheckbox)
+				.select();
+		shell.bot()
+				.checkBox(
+						UIText.DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox)
+				.select();
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
-		waitInUI();
+		TestUtil.joinJobs(JobFamilies.REPOSITORY_DELETE);
+
 		refreshAndWait();
 		assertFalse(subRepo.getDirectory().exists());
 		assertFalse(subRepo.getWorkTree().exists());

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
+ * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -42,6 +42,11 @@ public class JobFamilies {
 	 * Repositories View refresh
 	 */
 	public final static Object REPO_VIEW_REFRESH = new Object();
+
+	/**
+	 * Delete repository job
+	 */
+	public final static Object REPOSITORY_DELETE = new Object();
 
 	/**
 	 * Tag job
@@ -89,6 +94,12 @@ public class JobFamilies {
 	public final static Object DISCONNECT = new Object();
 
 	/**
+	 * Discard Changes
+	 */
+	public final static Object DISCARD_CHANGES = new Object();
+
+
+	/**
 	 * Add to index job
 	 */
 	public static final Object ADD_TO_INDEX = new Object();
@@ -102,6 +113,21 @@ public class JobFamilies {
 	 * Cherry pick commit job
 	 */
 	public static final Object CHERRY_PICK = new Object();
+
+	/**
+	 * Squash commits job
+	 */
+	public static final Object SQUASH = new Object();
+
+	/**
+	 * Reword commit job
+	 */
+	public static final Object REWORD = new Object();
+
+	/**
+	 * Edit commit job
+	 */
+	public static final Object EDIT = new Object();
 
 	/**
 	 * Revert commit job

@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test.team.actions;
 
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 
 public class LocationPage {
@@ -30,5 +30,10 @@ public class LocationPage {
 	void selectWorkspace(final String path) {
 		shell.bot().radio(UIText.GitCreatePatchWizard_Workspace).click();
 		shell.bot().text(1).setText(path);
+	}
+
+	public OptionsPage nextToOptionsPage() {
+		shell.bot().button("Next >").click();
+		return new OptionsPage(shell);
 	}
 }
