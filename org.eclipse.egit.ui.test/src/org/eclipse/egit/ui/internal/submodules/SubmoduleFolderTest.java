@@ -195,7 +195,7 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		SWTBotTreeItem node = TestUtil.navigateTo(projectExplorerTree,
 				file.getFullPath().segments());
-		TestUtil.waitForDecorations();
+		waitForDecorations();
 		assertTrue(node.getText().startsWith("> " + file.getName()));
 		node.select();
 		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
@@ -207,7 +207,7 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 		IResourceState state = ResourceStateFactory.getInstance()
 				.get(cache.getIndexDiff(), file);
 		assertTrue("File should be staged", state.isStaged());
-		TestUtil.waitForDecorations();
+		waitForDecorations();
 		assertFalse(node.getText().startsWith("> "));
 		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
 				util.getPluginLocalizedValue("RemoveFromIndexAction_label"));
@@ -216,7 +216,7 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 				file);
 		assertFalse("File should not be staged", state.isStaged());
 		assertTrue("File should be dirty", state.isDirty());
-		TestUtil.waitForDecorations();
+		waitForDecorations();
 		assertTrue(node.getText().startsWith("> " + file.getName()));
 	}
 
@@ -267,15 +267,15 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		SWTBotTreeItem node = TestUtil.navigateTo(projectExplorerTree,
 				childFolder.getFullPath().segments());
-		TestUtil.waitForDecorations();
+		waitForDecorations();
 		assertTrue("Folder should have repo/branch decoration",
 				node.getText().contains("[master"));
 		node = TestUtil.getChildNode(node.expand(), CHILDPROJECT);
-		TestUtil.waitForDecorations();
+		waitForDecorations();
 		assertFalse("Folder should not have repo/branch decoration",
 				node.getText().contains("["));
 		node = TestUtil.navigateTo(projectExplorerTree, CHILDPROJECT);
-		TestUtil.waitForDecorations();
+		waitForDecorations();
 		assertTrue("Project should have subrepo/branch decoration",
 				node.getText().contains("[child"));
 	}
@@ -344,4 +344,9 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 				historyBot.bot().table().rowCount());
 	}
 
+	@SuppressWarnings("restriction")
+	private void waitForDecorations() throws Exception {
+		TestUtil.joinJobs(
+				org.eclipse.ui.internal.decorators.DecoratorManager.FAMILY_DECORATE);
+	}
 }
