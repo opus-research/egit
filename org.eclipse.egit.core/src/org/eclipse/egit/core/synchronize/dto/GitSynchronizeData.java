@@ -55,15 +55,19 @@ public class GitSynchronizeData {
 
 	private final String dstMerge;
 
-	private final RevCommit srcRevCommit;
+	private RevCommit srcRevCommit;
 
-	private final RevCommit dstRevCommit;
+	private RevCommit dstRevCommit;
 
-	private final RevCommit ancestorRevCommit;
+	private RevCommit ancestorRevCommit;
 
 	private final Set<IProject> projects;
 
 	private final String repoParentPath;
+
+	private final String srcRev;
+
+	private final String dstRev;
 
 	private static class RemoteConfig {
 		final String remote;
@@ -91,6 +95,9 @@ public class GitSynchronizeData {
 		isNotNull(srcRev);
 		isNotNull(dstRev);
 		repo = repository;
+		this.srcRev = srcRev;
+		this.dstRev = dstRev;
+		this.includeLocal = includeLocal;
 
 		RemoteConfig srcRemoteConfig = extractRemoteName(srcRev);
 		RemoteConfig dstRemoteConfig = extractRemoteName(dstRev);
@@ -101,6 +108,24 @@ public class GitSynchronizeData {
 		dstRemote = dstRemoteConfig.remote;
 		dstMerge = dstRemoteConfig.merge;
 
+		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();
+
+		projects = new HashSet<IProject>();
+		final IProject[] workspaceProjects = ROOT.getProjects();
+		for (IProject project : workspaceProjects) {
+			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+			if (mapping != null && mapping.getRepository() == repo)
+				projects.add(project);
+		}
+		updateRevs();
+	}
+
+	/**
+	 * Recalculates source, destination and ancestor Rev commits
+	 *
+	 * @throws IOException
+	 */
+	public void updateRevs() throws IOException {
 		ObjectWalk ow = new ObjectWalk(repo);
 		if (srcRev.length() > 0)
 			this.srcRevCommit = ow.parseCommit(repo.resolve(srcRev));
@@ -117,18 +142,6 @@ public class GitSynchronizeData {
 					this.dstRevCommit);
 		else
 			this.ancestorRevCommit = null;
-
-		this.includeLocal = includeLocal;
-		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();
-
-		projects = new HashSet<IProject>();
-		final IProject[] workspaceProjects = ROOT.getProjects();
-		for (IProject project : workspaceProjects) {
-			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-			if (mapping != null && mapping.getRepository() == repo)
-				projects.add(project);
-		}
-
 	}
 
 	/**
