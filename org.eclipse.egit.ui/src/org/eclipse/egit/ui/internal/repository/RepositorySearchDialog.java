@@ -62,7 +62,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
-import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.osgi.service.prefs.BackingStoreException;
@@ -353,9 +352,7 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				for (TreeItem item : fTreeViewer.getTree().getItems()) {
-					fTreeViewer.setSubtreeChecked(item.getData(), true);
-				}
+				fTreeViewer.setAllChecked(true);
 				enableOk();
 			}
 
@@ -372,9 +369,7 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				for (TreeItem item : fTreeViewer.getTree().getItems()) {
-					fTreeViewer.setSubtreeChecked(item.getData(), false);
-				}
+				fTreeViewer.setAllChecked(false);
 				enableOk();
 			}
 

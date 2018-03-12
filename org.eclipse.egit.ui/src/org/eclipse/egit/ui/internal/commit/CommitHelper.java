@@ -99,9 +99,6 @@ public class CommitHelper {
 	}
 
 	private static RevCommit getHeadCommit(Repository repository) {
-		if (repository == null) {
-			return null;
-		}
 		RevCommit headCommit = null;
 		try (RevWalk rw = new RevWalk(repository)) {
 			ObjectId parentId = repository.resolve(Constants.HEAD);
