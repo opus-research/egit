@@ -54,7 +54,7 @@ public class JobFamilies {
 	public static final Object RESET = new Object();
 
 	/**
-	 * Format job
+	 * Pull job
 	 */
-	public static Object FORMAT_COMMIT_INFO;
+	public final static Object PULL = new Object();
 }
