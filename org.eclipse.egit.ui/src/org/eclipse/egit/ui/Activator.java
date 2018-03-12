@@ -436,7 +436,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * A Job that looks at the repository meta data and triggers a refresh of
 	 * the resources in the affected projects.
 	 */
-	static class RepositoryChangeScanner extends Job {
+	static class RepositoryChangeScanner extends WorkspaceJob {
 		RepositoryChangeScanner() {
 			super(UIText.Activator_repoScanJobName);
 		}
@@ -451,7 +451,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		}
 
 		@Override
-		protected IStatus run(IProgressMonitor monitor) {
+		public IStatus runInWorkspace(IProgressMonitor monitor) {
 			// The core plugin might have been stopped before we could cancel
 			// this job.
 			RepositoryCache repositoryCache = org.eclipse.egit.core.Activator
