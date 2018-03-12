@@ -28,6 +28,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
+import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -93,10 +94,10 @@ public class SelectionUtils {
 			selection = context
 					.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
 
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
-		else if (selection instanceof ITextSelection)
+		if (selection instanceof ITextSelection)
 			return getSelectionFromEditorInput(context);
+		else if (selection instanceof IStructuredSelection)
+			return (IStructuredSelection) selection;
 		return StructuredSelection.EMPTY;
 	}
 
@@ -111,10 +112,10 @@ public class SelectionUtils {
 	 */
 	public static IStructuredSelection getStructuredSelection(
 			ISelection selection) {
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
-		else if (selection instanceof ITextSelection)
+		if (selection instanceof ITextSelection)
 			return getSelectionFromEditorInput(getEvaluationContext());
+		else if (selection instanceof IStructuredSelection)
+			return (IStructuredSelection) selection;
 		return StructuredSelection.EMPTY;
 	}
 
@@ -201,7 +202,15 @@ public class SelectionUtils {
 	private static Repository getRepository(boolean warn,
 			IStructuredSelection selection, Shell shell) {
 		RepositoryMapping mapping = null;
-		for (IPath location : getSelectedLocations(selection)) {
+
+		IPath[] locations = getSelectedLocations(selection);
+		if (GitTraceLocation.SELECTION.isActive())
+			GitTraceLocation.getTrace().trace(
+					GitTraceLocation.SELECTION.getLocation(), "selection=" //$NON-NLS-1$
+							+ selection + ", locations=" //$NON-NLS-1$
+							+ Arrays.toString(locations));
+
+		for (IPath location : locations) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
 					.getMapping(location);
 			if (mapping == null)
