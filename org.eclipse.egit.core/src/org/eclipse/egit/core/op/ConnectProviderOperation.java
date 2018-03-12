@@ -51,7 +51,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 	 *            the project to connect to the Git team provider.
 	 */
 	public ConnectProviderOperation(final IProject proj) {
-		this(proj, proj.getLocation().append("/").append(Constants.DOT_GIT).toFile());
+		this(proj, new File(Constants.DOT_GIT));
 	}
 
 	/**
@@ -60,7 +60,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 	 * @param proj
 	 *            the project to connect to the Git team provider.
 	 * @param pathToRepo
-	 *            absolute path to the repository
+	 *            relative path to the repository
 	 */
 	public ConnectProviderOperation(final IProject proj, File pathToRepo) {
 		this.projects.put(proj, pathToRepo);
