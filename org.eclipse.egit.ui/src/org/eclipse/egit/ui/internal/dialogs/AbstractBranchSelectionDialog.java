@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
+import static org.eclipse.egit.ui.internal.CommonUtils.STRING_ASCENDING_COMPARATOR;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +40,7 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -236,6 +239,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 			}
 		});
 
+		branchTree.setComparator(new ViewerComparator(
+				STRING_ASCENDING_COMPARATOR));
+
 		createCustomArea(parent);
 
 		setTitle(getTitle());
@@ -254,6 +260,12 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	@Override
 	public void create() {
 		super.create();
+
+		// Initially disable OK button, as the required user inputs may not be
+		// complete after the dialog is first shown. If automatic selections
+		// happen after this (making the user inputs complete), the button will
+		// be enabled.
+		getButton(Window.OK).setEnabled(false);
 
 		List<RepositoryTreeNode> roots = new ArrayList<RepositoryTreeNode>();
 		if ((settings & SHOW_LOCAL_BRANCHES) != 0)
@@ -286,8 +298,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		} catch (IOException e) {
 			// ignore
 		}
-
-		getButton(Window.OK).setEnabled(false);
 	}
 
 	/**
