@@ -76,7 +76,6 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.dircache.DirCacheIterator;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -520,51 +519,11 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		}
 	}
 
-	static class SamplingMonitor {
-		String currentFile;
-
-		private Thread thread;
-
-		private IProgressMonitor monitor;
-
-		private volatile String taskName;
-
-		SamplingMonitor(IProgressMonitor monitor) {
-			this.monitor = monitor;
-
-		}
-		void start() {
-			thread = new Thread() {
-				public void run() {
-					for (;;) {
-						try {
-							Thread.sleep(5);
-							monitor.setTaskName(taskName);
-						} catch (InterruptedException e) {
-							break;
-						}
-						if (monitor.isCanceled())
-							break;
-					}
-					System.out.println("DONNNE"); //$NON-NLS-1$
-				}
-			};
-		}
-
-		void stop() {
-			thread.interrupt();
-		}
-
-		void setTaskName(String name) {
-			taskName = name;
-		}
-	}
 	private void buildMaps(Repository repository, RevCommit baseCommit,
 			RevCommit compareCommit, IProgressMonitor monitor)
 			throws InterruptedException, IOException {
 		monitor.beginTask(UIText.CompareTreeView_AnalyzingRepositoryTaskText,
 				IProgressMonitor.UNKNOWN);
-		long previousTimeMilliseconds = System.currentTimeMillis();
 		boolean useIndex = compareVersion.equals(INDEX_VERSION);
 		fileNodes.clear();
 		containerNodes.clear();
@@ -635,37 +594,14 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 						: compareVersionIterator.getEntryPathString();
 				IPath currentPath = new Path(repoRelativePath);
 
-				// Updating the progress bar is slow, so just sample it. To
-				// make sure slow compares are reflected in the progress
-				// monitor also update before comparing large files.
-				long currentTimeMilliseconds = System.currentTimeMillis();
-				if (compareVersionIterator != null
-						&& baseVersionIterator != null) {
-					long size1 = tw.getObjectReader().getObjectSize(
-							compareVersionIterator.getEntryObjectId(),
-							Constants.OBJ_BLOB);
-					long size2 = tw.getObjectReader().getObjectSize(
-							baseVersionIterator.getEntryObjectId(),
-							Constants.OBJ_BLOB);
-					final long REPORTSIZE = 100000;
-					if (size1 > REPORTSIZE || size2 > REPORTSIZE) {
-						monitor.setTaskName(currentPath.toString());
-						previousTimeMilliseconds = currentTimeMilliseconds;
-					}
-				} else if (currentTimeMilliseconds - previousTimeMilliseconds > 500) {
-					monitor.setTaskName(currentPath.toString());
-					previousTimeMilliseconds = currentTimeMilliseconds;
-				}
-
 				Type type = null;
 				if (compareVersionIterator != null
 						&& baseVersionIterator != null) {
 					boolean equalContent = compareVersionIterator
 							.getEntryObjectId().equals(
 									baseVersionIterator.getEntryObjectId());
-					if (equalContent)
-						continue;
-					type = Type.FILE_BOTH_SIDES_DIFFER;
+					type = equalContent ? Type.FILE_BOTH_SIDES_SAME
+							: Type.FILE_BOTH_SIDES_DIFFER;
 				} else if (compareVersionIterator != null
 						&& baseVersionIterator == null) {
 					type = Type.FILE_DELETED;
@@ -674,8 +610,13 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 					type = Type.FILE_ADDED;
 				}
 
-				IFile file = ResourceUtil.getFileForLocation(repository,
+				IFile file = null;
+				if (type != Type.FILE_BOTH_SIDES_SAME) {
+					monitor.setTaskName(currentPath.toString());
+
+					file = ResourceUtil.getFileForLocation(repository,
 						repoRelativePath);
+				}
 
 				if (baseVersionIterator != null) {
 					if (baseCommit == null) {
@@ -717,11 +658,13 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				// If a file is not "equal content", the container nodes up to
 				// the root must be shown in any case, so propagate the
 				// change of the "only equal content" flag.
-				IPath path = currentPath;
-				while (path.segmentCount() > 0) {
-					path = path.removeLastSegments(1);
-					ContainerNode node = containerNodes.get(path);
-					node.setOnlyEqualContent(false);
+				if (type != Type.FILE_BOTH_SIDES_SAME) {
+					IPath path = currentPath;
+					while (path.segmentCount() > 0) {
+						path = path.removeLastSegments(1);
+						ContainerNode node = containerNodes.get(path);
+						node.setOnlyEqualContent(false);
+					}
 				}
 			}
 		} finally {
