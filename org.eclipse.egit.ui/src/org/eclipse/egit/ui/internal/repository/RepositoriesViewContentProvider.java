@@ -436,15 +436,10 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 				while (walk.next()) {
 					Repository subRepo = walk.getRepository();
 					if (subRepo != null) {
-						Repository cachedRepo = null;
-						try {
-							cachedRepo = repositoryCache
+						final Repository cachedRepo = repositoryCache
 								.lookupRepository(subRepo.getDirectory());
-						} finally {
-							subRepo.close();
-						}
-						if (cachedRepo != null)
-							children.add(new RepositoryNode(node, cachedRepo));
+						subRepo.close();
+						children.add(new RepositoryNode(node, cachedRepo));
 					}
 				}
 			} catch (IOException e) {
