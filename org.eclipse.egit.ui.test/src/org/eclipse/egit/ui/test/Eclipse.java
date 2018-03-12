@@ -11,6 +11,7 @@ package org.eclipse.egit.ui.test;
 import java.util.List;
 
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
+import org.eclipse.swtbot.eclipse.finder.finders.WorkbenchContentsFinder;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
 import org.eclipse.swtbot.swt.finder.results.BoolResult;
@@ -50,7 +51,7 @@ public class Eclipse {
 		return UIThreadRunnable.syncExec(new BoolResult() {
 
 			public Boolean run() {
-				return PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+				return new WorkbenchContentsFinder().activeWorkbenchWindow()
 						.getShell() == shell.widget;
 			}
 		});
@@ -69,10 +70,10 @@ public class Eclipse {
 			editor.save();
 		}
 	}
-
+	
 	/**
 	 * Opens the Eclipse Preferences and activates the dialog
-	 *
+	 * 
 	 * @param preferencePage
 	 *            previous instance of preference page, maybe null, if passed it
 	 *            will be reopened
