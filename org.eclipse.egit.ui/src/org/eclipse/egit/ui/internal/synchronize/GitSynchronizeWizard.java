@@ -12,21 +12,26 @@
 package org.eclipse.egit.ui.internal.synchronize;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.wizard.Wizard;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Synchronization wizard for Git repositories
  */
 public class GitSynchronizeWizard extends Wizard {
 
-	private GitSynchronizeWizardPage page2;
-	private GitPreconfiguredSynchronizeWizardPage page1;
+	private GitSynchronizeWizardPage page;
 
 	/**
 	 * Instantiates a new wizard for synchronizing resources that are being
@@ -38,32 +43,28 @@ public class GitSynchronizeWizard extends Wizard {
 
 	@Override
 	public void addPages() {
-		page1 = new GitPreconfiguredSynchronizeWizardPage();
-		page2 = new GitSynchronizeWizardPage();
-		addPage(page1);
-		addPage(page2);
-	}
-
-	@Override
-	public boolean canFinish() {
-		if (page1.requiresCustomeConfiguration())
-			return page2.isPageComplete();
-
-		return page1.isPageComplete();
+		page = new GitSynchronizeWizardPage();
+		addPage(page);
 	}
 
 	@Override
 	public boolean performFinish() {
-		try {
-			GitSynchronizeDataSet syncData = page1.getSyncData();
-			List<IProject> projects = page1.getProjects();
-			syncData.addAll(page2.getSyncData());
-			projects.addAll(page2.getProjects());
-			GitModelSynchronize.launch(syncData,
-					projects.toArray(new IProject[projects.size()]));
-		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
-		}
+		GitSynchronizeDataSet gsdSet = new GitSynchronizeDataSet();
+
+		Map<Repository, String> branches = page.getSelectedBranches();
+		for (Entry<Repository, String> branchesEntry : branches.entrySet())
+			try {
+				gsdSet.add(new GitSynchronizeData(branchesEntry.getKey(),
+						Constants.HEAD, branchesEntry.getValue(), false));
+			} catch (IOException e) {
+				Activator.logError(e.getMessage(), e);
+			}
+
+		Set<IProject> selectedProjects
+				 = page.getSelectedProjects();
+		GitModelSynchronize.launch(gsdSet, selectedProjects
+				.toArray(new IResource[selectedProjects
+				.size()]));
 
 		return true;
 	}
