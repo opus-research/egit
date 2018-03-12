@@ -1,10 +1,22 @@
+/*******************************************************************************
+ * Copyright (C) 2011, Tasktop Technologies Inc.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Benjamin Muskalla (benjamin.muskalla@tasktop.com) - initial implementation
+ *******************************************************************************/
 package org.eclipse.egit.ui.internal.operations;
 
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.ui.IWorkbenchPart;
 
 /**
- * @author bmuskalla
+ * Factory to create {@link GitScopeOperation}s. Used to replace
+ * the ScopeOperations on the fly.
  *
  */
 public class GitScopeOperationFactory {

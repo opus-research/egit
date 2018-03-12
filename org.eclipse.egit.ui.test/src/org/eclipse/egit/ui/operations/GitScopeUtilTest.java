@@ -139,18 +139,14 @@ public class GitScopeUtilTest extends EGitTestCase {
 			UnsupportedEncodingException {
 		IProject modelProject = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(PROJ1);
-	
+
 		if (modelProject.exists())
 			modelProject.delete(true, null);
 		IProjectDescription desc = ResourcesPlugin.getWorkspace()
 				.newProjectDescription(PROJ1);
-		// desc.setLocation(new Path(new File(myRepository.getWorkTree(), PROJ1)
-		// .getPath()));
 		modelProject.create(desc, null);
 		modelProject.open(null);
-	
-		// IFolder folder = firstProject.getFolder(FOLDER);
-		// folder.create(false, true, null);
+
 		IFile modelFile = modelProject.getFile(MODEL_FILE);
 		modelFile.create(
 				new ByteArrayInputStream("This is the base model"
@@ -175,7 +171,7 @@ public class GitScopeUtilTest extends EGitTestCase {
 	/**
 	 * Model provider that requires for all given {@link IResource}s an
 	 * additional {@link IResource}s with an appended extension ".extension"
-	 * 
+	 *
 	 */
 	public static class MockModelProvider extends ModelProvider {
 

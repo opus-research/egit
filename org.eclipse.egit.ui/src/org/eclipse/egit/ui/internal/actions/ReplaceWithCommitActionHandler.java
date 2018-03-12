@@ -7,13 +7,12 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Benjamin Muskalla (Tasktop Technologies Inc.) - support for model scoping
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.egit.core.op.DiscardChangesOperation;
 import org.eclipse.egit.ui.internal.history.CommitSelectionDialog;
 import org.eclipse.jface.window.Window;
 
@@ -23,12 +22,12 @@ import org.eclipse.jface.window.Window;
 public class ReplaceWithCommitActionHandler extends DiscardChangesActionHandler {
 
 	@Override
-	protected String gatherRevision(ExecutionEvent event) throws ExecutionException {
+	protected DiscardChangesOperation createOperation(ExecutionEvent event)
+			throws ExecutionException {
 		CommitSelectionDialog dlg = new CommitSelectionDialog(getShell(event),
 				getRepository(true, event));
-		if (dlg.open() == Window.OK)
-			return dlg.getCommitId().name();
-		else
-			throw new OperationCanceledException();
+		return dlg.open() == Window.OK ? new DiscardChangesOperation(
+				getSelectedResources(event), dlg.getCommitId().name()) : null;
 	}
+
 }
