@@ -38,7 +38,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * This wizard page allows user easy selection of specifications for push or
@@ -69,9 +68,9 @@ public class RefSpecPage extends WizardPage {
 
 	private String transportError;
 
-	private UserPasswordCredentials credentials;
+	private String configName;
 
-	private String helpContext = null;
+	private UserPasswordCredentials credentials;
 
 	/**
 	 * Create specifications selection page for provided context.
@@ -153,6 +152,15 @@ public class RefSpecPage extends WizardPage {
 	}
 
 	/**
+	 * Special mode: the configuration is determined by the wizard
+	 *
+	 * @param configName
+	 */
+	public void setConfigName(String configName) {
+		this.configName = configName;
+	}
+
+	/**
 	 * @return ref specifications as selected by user. Returned collection is a
 	 *         copy, so it may be modified by caller.
 	 */
@@ -193,21 +201,6 @@ public class RefSpecPage extends WizardPage {
 	 */
 	public boolean specsSelectionEquals(final List<RefSpec> specs) {
 		return getRefSpecs().equals(specs);
-	}
-
-	/**
-	 * Set the ID for context sensitive help
-	 *
-	 * @param id
-	 *            help context
-	 */
-	public void setHelpContext(String id) {
-		helpContext = id;
-	}
-
-	@Override
-	public void performHelp() {
-		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
 	}
 
 	private void revalidate() {
@@ -268,14 +261,19 @@ public class RefSpecPage extends WizardPage {
 		}
 
 		this.validatedRepoSelection = newRepoSelection;
+		final String actRemoteName;
+		if (configName == null)
+			actRemoteName = validatedRepoSelection.getConfigName();
+		else
+			actRemoteName = configName;
 
 		specsPanel.setAssistanceData(local, listRemotesOp.getRemoteRefs(),
-				currentRepoSelection.getConfig());
+				actRemoteName);
 
 		if (newRepoSelection.isConfigSelected()) {
 			saveButton.setVisible(true);
 			saveButton.setText(NLS.bind(UIText.RefSpecPage_saveSpecifications,
-					currentRepoSelection.getConfigName()));
+					actRemoteName));
 			saveButton.getParent().layout();
 
 			if (!pushPage) {

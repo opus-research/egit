@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,9 +8,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import static org.eclipse.jgit.treewalk.filter.TreeFilter.ANY_DIFF;
+
 import java.io.IOException;
 
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.ObjectId;
@@ -19,7 +19,8 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.IndexDiffFilter;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
+import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
 
 /**
  * Representation of working tree in EGit ChangeSet model
@@ -38,10 +39,10 @@ public class GitModelWorkingTree extends GitModelCache {
 		super(parent, commit, new FileModelFactory() {
 			public GitModelBlob createFileModel(
 					GitModelObjectContainer modelParent, RevCommit modelCommit,
-					ObjectId repoId, ObjectId cacheId, IPath location)
+					ObjectId repoId, ObjectId cacheId, String name)
 					throws IOException {
 				return new GitModelWorkingFile(modelParent, modelCommit,
-						repoId, location);
+						repoId, name);
 			}
 		});
 	}
@@ -57,10 +58,12 @@ public class GitModelWorkingTree extends GitModelCache {
 		tw.setRecursive(true);
 
 		Repository repo = getRepository();
-		dirCacheIteratorNth = tw.addTree(new DirCacheIterator(repo.readDirCache()));
-		int ftIndex = tw.addTree(new FileTreeIterator(repo));
-		IndexDiffFilter idf = new IndexDiffFilter(dirCacheIteratorNth, ftIndex, true);
-		tw.setFilter(idf);
+		tw.addTree(new DirCacheIterator(repo.readDirCache()));
+		tw.addTree(new FileTreeIterator(repo));
+		dirCacheIteratorNth = 0;
+
+		NotIgnoredFilter notIgnoredFilter = new NotIgnoredFilter(1);
+		tw.setFilter(AndTreeFilter.create(ANY_DIFF, notIgnoredFilter));
 
 		return tw;
 	}
