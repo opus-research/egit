@@ -88,7 +88,7 @@ public class RevertCommitOperation implements IEGitOperation {
 				pm.worked(1);
 
 				ProjectUtil.refreshValidProjects(
-						ProjectUtil.getValidOpenProjects(repo),
+						ProjectUtil.getValidProjects(repo),
 						new SubProgressMonitor(pm, 1));
 
 				pm.done();

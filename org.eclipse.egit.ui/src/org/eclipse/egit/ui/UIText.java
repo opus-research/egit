@@ -40,9 +40,6 @@ public class UIText extends NLS {
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
-	public static String AbstractReflogCommandHandler_NoInput;
-
-	/** */
 	public static String Activator_DefaultRepoFolderIsFile;
 
 	/** */
@@ -316,12 +313,6 @@ public class UIText extends NLS {
 	public static String GitCloneWizard_errorCannotCreate;
 
 	/** */
-	public static String GitCloneWizard_MissingNotesMessage;
-
-	/** */
-	public static String GitCloneWizard_MissingNotesTitle;
-
-	/** */
 	public static String GitDecoratorPreferencePage_bindingRepositoryNameFlag;
 
 	/** */
@@ -511,9 +502,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_FollowRenames;
-
-	/** */
 	public static String GitHistoryPage_FilterSubMenuLabel;
 
 	/** */
@@ -581,9 +569,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_SynchronizeView;
-
-	/** */
-	public static String ProjectsPreferencePage_AutoShareProjects;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -877,9 +862,6 @@ public class UIText extends NLS {
 	public static String CompareTargetSelectionDialog_CompareTitle;
 
 	/** */
-	public static String CompareTargetSelectionDialog_CompareTitleEmptyPath;
-
-	/** */
 	public static String CompareTargetSelectionDialog_WindowTitle;
 
 	/** */
@@ -1171,22 +1153,16 @@ public class UIText extends NLS {
 	public static String RefContentProposal_unknownObject;
 
 	/** */
-	public static String ReflogView_CommitterColumnHeader;
-
-	/** */
-	public static String ReflogView_CommitterMe;
-
-	/** */
-	public static String ReflogView_DateColumnHeader;
-
-	/** */
 	public static String ReflogView_ErrorOnOpenCommit;
+
+	/** */
+	public static String ReflogView_FromColumnHeader;
 
 	/** */
 	public static String ReflogView_MessageColumnHeader;
 
 	/** */
-	public static String ReflogView_CommitColumnHeader;
+	public static String ReflogView_ToColumnHeader;
 
 	/** */
 	public static String RefSelectionDialog_Messsage;
@@ -1916,12 +1892,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
-
-	/** */
-	public static String SpellcheckableMessageArea_redo;
-
-	/** */
-	public static String SpellcheckableMessageArea_undo;
 
 	/** */
 	public static String SpellCheckingMessageArea_copy;
@@ -2719,18 +2689,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_ExceptionLookingUpRepoMessage;
 
 	/** */
-	public static String RepositoriesView_linkAdd;
-
-	/** */
-	public static String RepositoriesView_linkClone;
-
-	/** */
-	public static String RepositoriesView_linkCreate;
-
-	/** */
-	public static String RepositoriesView_messsageEmpty;
-
-	/** */
 	public static String RepositoriesView_NothingToPasteMessage;
 
 	/** */
@@ -3317,9 +3275,6 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_CompareWithEachOtherInTreeMenuLabel;
 
 	/** */
-	public static String CommitGraphTable_messageColumn;
-
-	/** */
 	public static String CommitGraphTable_OpenCommitLabel;
 
 	/** */
@@ -3501,9 +3456,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefUpdateElement_CommitRangeDecoration;
-
-	/** */
-	public static String RefUpdateElement_statusRejectedNonFastForward;
 
 	/** */
 	public static String RefUpdateElement_UrisDecoration;
