@@ -151,27 +151,6 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_NoCommits;
 
 	/** */
-	public static String GerritConfigurationPage_configurePushToGerrit;
-
-	/** */
-	public static String GerritConfigurationPage_errorBranchName;
-
-	/** */
-	public static String GerritConfigurationPage_groupPush;
-
-	/** */
-	public static String GerritConfigurationPage_labelDestinationBranch;
-
-	/** */
-	public static String GerritConfigurationPage_PageDescription;
-
-	/** */
-	public static String GerritConfigurationPage_pushUri;
-
-	/** */
-	public static String GerritConfigurationPage_title;
-
-	/** */
 	public static String EGitCredentialsProvider_errorReadingCredentials;
 
 	/** */
@@ -674,12 +653,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickHandler_NoCherryPickPerformedTitle;
-
-	/** */
-	public static String CherryPickHandler_CherryPickConflictsMessage;
-
-	/** */
-	public static String CherryPickHandler_CherryPickConflictsTitle;
 
 	/** */
 	public static String CherryPickOperation_Failed;

@@ -73,7 +73,8 @@ public class GitChangeSetLabelProvider extends SynchronizationLabelProvider
 	private final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
 			store.getString(UIPreferences.DATE_FORMAT));
 
-	private static final ILabelProvider workbenchLabelProvider = new WorkbenchLabelProvider();
+	private static final ILabelProvider workbenchLabelProvider = WorkbenchLabelProvider
+			.getDecoratingWorkbenchLabelProvider();
 
 	private LabelProvider delegateLabelProvider;
 

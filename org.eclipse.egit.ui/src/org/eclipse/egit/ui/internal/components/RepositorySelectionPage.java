@@ -51,6 +51,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -874,11 +875,11 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void updateRemoteAndURIPanels() {
-		UIUtils.setEnabledRecursively(uriPanel, isURISelected());
+		setEnabledRecursively(uriPanel, isURISelected());
 		if (uriPanel.getEnabled())
 			updateAuthGroup();
 		if (configuredRemotes != null)
-			UIUtils.setEnabledRecursively(remotePanel, !isURISelected());
+			setEnabledRecursively(remotePanel, !isURISelected());
 	}
 
 	private void updateAuthGroup() {
@@ -886,7 +887,7 @@ public class RepositorySelectionPage extends WizardPage {
 		if (p != null) {
 			hostText.setEnabled(p.hasHost());
 			portText.setEnabled(p.hasPort());
-			UIUtils.setEnabledRecursively(authGroup, p.canAuthenticate());
+			setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
 	}
 
@@ -941,6 +942,14 @@ public class RepositorySelectionPage extends WizardPage {
 	@Override
 	public void performHelp() {
 		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
+	}
+
+	private void setEnabledRecursively(final Control control,
+			final boolean enable) {
+		control.setEnabled(enable);
+		if (control instanceof Composite)
+			for (final Control child : ((Composite) control).getChildren())
+				setEnabledRecursively(child, enable);
 	}
 
 	private void updateFields(final String text) {
