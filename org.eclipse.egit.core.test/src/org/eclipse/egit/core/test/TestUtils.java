@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,29 +46,32 @@ public class TestUtils {
 
 	public final static String COMMITTER = "The Commiter <The.committer@some.com>";
 
-	private final static File rootDir = customTestDirectory();
-
 	/**
-	 * Allow to set a custom directory for running tests
+	 * allow to overwrite user.home for tests
 	 *
-	 * @return custom directory defined by system property
-	 *         {@code egit.test.tmpdir} or {@code ~/egit.test.tmpdir} if this
-	 *         property isn't defined
+	 * @return custom user home defined by system property
+	 *         {@code custom.user.home} or {@code null} if this property isn't
+	 *         defined
 	 */
-	private static File customTestDirectory() {
-		final String p = System.getProperty("egit.test.tmpdir"); //$NON-NLS-1$
-		File testDir = null;
-		boolean isDefault = true;
-		if (p == null || p.length() == 0)
-			testDir = new File(FS.DETECTED.userHome(), "egit.test.tmpdir"); //$NON-NLS-1$
-		else {
-			isDefault = false;
-			testDir = new File(p).getAbsoluteFile();
-		}
-		System.out.println("egit.test.tmpdir" //$NON-NLS-1$
-				+ (isDefault ? "[default]: " : ": ") //$NON-NLS-1$ $NON-NLS-2$
-				+ testDir.getAbsolutePath());
-		return testDir;
+	private static File customUserHome() {
+		final String home = AccessController
+				.doPrivileged(new PrivilegedAction<String>() {
+					public String run() {
+						return System.getProperty("custom.user.home"); //$NON-NLS-1$
+					}
+				});
+		if (home == null || home.length() == 0)
+			return null;
+		return new File(home).getAbsoluteFile();
+	}
+
+	private File rootDir;
+
+	public TestUtils() {
+		File userHome = customUserHome();
+		if (userHome == null)
+			userHome = FS.DETECTED.userHome();
+		rootDir = new File(userHome, "EGitTestTempDir");
 	}
 
 	/**
@@ -74,8 +79,9 @@ public class TestUtils {
 	 * Current implementation returns a "temporary" folder in the user home.
 	 *
 	 * @return a "temporary" folder in the user home that may not exist.
+	 * @throws IOException
 	 */
-	public File getBaseTempDir() {
+	public File getBaseTempDir() throws IOException {
 		return rootDir;
 	}
 
@@ -92,7 +98,6 @@ public class TestUtils {
 		File result = new File(getBaseTempDir(), name);
 		if (result.exists())
 			FileUtils.delete(result, FileUtils.RECURSIVE | FileUtils.RETRY);
-		FileUtils.mkdirs(result, true);
 		return result;
 	}
 
