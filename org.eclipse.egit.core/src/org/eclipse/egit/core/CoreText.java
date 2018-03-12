@@ -213,9 +213,6 @@ public class CoreText extends NLS {
 	public static String CloneOperation_checkingOutFiles;
 
 	/** */
-	public static String CloneOperation_failed_cleanup;
-
-	/** */
 	public static String CloneOperation_initializingRepository;
 
 	/** */
