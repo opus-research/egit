@@ -14,8 +14,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
-import static org.eclipse.egit.core.internal.util.ResourceUtil.getResourceMappings;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +46,7 @@ import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
@@ -716,8 +715,8 @@ public class CompareUtils {
 		 * trying to determine if the local file can be compared alone, this can
 		 * be done by relying on the local model only.
 		 */
-		final ResourceMapping[] mappings = getResourceMappings(file,
-				ResourceMappingContext.LOCAL_CONTEXT);
+		final ResourceMapping[] mappings = ResourceUtil.getResourceMappings(
+				file, ResourceMappingContext.LOCAL_CONTEXT);
 
 		for (ResourceMapping mapping : mappings) {
 			try {

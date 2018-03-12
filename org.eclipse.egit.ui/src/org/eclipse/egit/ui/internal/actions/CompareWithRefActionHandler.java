@@ -9,9 +9,6 @@
 
 package org.eclipse.egit.ui.internal.actions;
 
-import static org.eclipse.egit.ui.internal.CompareUtils.canDirectlyOpenInCompare;
-import static org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize.synchronizeModelWithWorkspace;
-
 import java.io.IOException;
 
 import org.eclipse.compare.CompareUI;
@@ -20,14 +17,21 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.mapping.ResourceMapping;
+import org.eclipse.core.resources.mapping.ResourceMappingContext;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
+import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.dialogs.CompareTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
+import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.jface.window.Window;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -56,7 +60,7 @@ public class CompareWithRefActionHandler extends RepositoryActionHandler {
 			if (resources.length == 1 && resources[0] instanceof IFile) {
 				final IFile baseFile = (IFile) resources[0];
 
-				if (canDirectlyOpenInCompare(baseFile)) {
+				if (CompareUtils.canDirectlyOpenInCompare(baseFile)) {
 					showSingleFileComparison(baseFile, dlg.getRefName());
 				} else {
 					synchronizeModel(baseFile, repo, dlg.getRefName());
@@ -100,7 +104,17 @@ public class CompareWithRefActionHandler extends RepositoryActionHandler {
 	private void synchronizeModel(final IFile file, Repository repo,
 			String refName) {
 		try {
-			synchronizeModelWithWorkspace(file, repo, refName);
+			final GitSynchronizeData data = new GitSynchronizeData(repo,
+					Constants.HEAD, refName, true);
+			final GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(
+					data);
+
+			// use all available local mappings for proper model support
+			final ResourceMapping[] mappings = ResourceUtil
+					.getResourceMappings(file,
+							ResourceMappingContext.LOCAL_CONTEXT);
+
+			GitModelSynchronize.launch(dataSet, mappings);
 		} catch (IOException e) {
 			Activator.handleError(
 					UIText.CompareWithRefAction_errorOnSynchronize, e, true);
