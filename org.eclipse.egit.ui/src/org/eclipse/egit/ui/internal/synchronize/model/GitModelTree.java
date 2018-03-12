@@ -94,27 +94,12 @@ public class GitModelTree extends GitModelCommit {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-
-		if (obj instanceof GitModelTree && !(obj instanceof GitModelCacheTree)) {
-			GitModelTree objTree = (GitModelTree) obj;
-			return objTree.location.equals(location)
-					&& objTree.baseCommit.equals(baseCommit);
-		}
-
-		return false;
+		return super.equals(obj);
 	}
 
 	@Override
 	public int hashCode() {
-		return baseCommit.hashCode() ^ location.hashCode();
-	}
-
-	@Override
-	public String toString() {
-		return "ModelTree[baseCommit=" + baseCommit.getId() + ", location=" //$NON-NLS-1$ //$NON-NLS-2$
-				+ getLocation() + "]"; //$NON-NLS-1$
+		return super.hashCode();
 	}
 
 	protected GitModelObject[] getChildrenImpl() {
