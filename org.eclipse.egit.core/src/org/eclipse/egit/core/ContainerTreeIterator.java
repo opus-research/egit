@@ -340,8 +340,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		@Override
 		public long getLength() {
 			if (length < 0)
-				if (rsrc instanceof IFile || fileMode == FileMode.SYMLINK
-						|| fileMode == FileMode.GITLINK) {
+				if (rsrc instanceof IFile || fileMode == FileMode.SYMLINK) {
 					try {
 						File file = asFile();
 						if (file != null)
