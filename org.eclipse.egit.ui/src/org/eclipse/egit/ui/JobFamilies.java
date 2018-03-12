@@ -34,6 +34,11 @@ public class JobFamilies {
 	public final static Object PUSH = new Object();
 
 	/**
+	 * Fetch job
+	 */
+	public final static Object FETCH = new Object();
+
+	/**
 	 * Repositories View refresh
 	 */
 	public final static Object REPO_VIEW_REFRESH = new Object();
@@ -42,4 +47,9 @@ public class JobFamilies {
 	 * Tag job
 	 */
 	public final static Object TAG = new Object();
+
+	/**
+	 * Reset job
+	 */
+	public static final Object RESET = new Object();
 }

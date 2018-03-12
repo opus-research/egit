@@ -16,10 +16,12 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
+import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -35,7 +37,9 @@ public class CompareVersionsHandler extends AbstractHistoryCommanndHandler {
 			RevCommit commit1 = (RevCommit) it.next();
 			RevCommit commit2 = (RevCommit) it.next();
 
-			Object input = getPage().getInputInternal().getSingleFile();
+			Object input = getPage().getInputInternal().getSingleItem();
+			Repository repository = getPage().getInputInternal()
+					.getRepository();
 			if (input instanceof IFile) {
 				IFile resource = (IFile) input;
 				final RepositoryMapping map = RepositoryMapping
@@ -51,8 +55,7 @@ public class CompareVersionsHandler extends AbstractHistoryCommanndHandler {
 				CompareEditorInput in = new GitCompareFileRevisionEditorInput(
 						base, next, null);
 				openInCompare(event, in);
-			}
-			if (input instanceof File) {
+			} else if (input instanceof File) {
 				File fileInput = (File) input;
 				Repository repo = getRepository(event);
 				final String gitPath = getRepoRelativePath(repo, fileInput);
@@ -64,6 +67,14 @@ public class CompareVersionsHandler extends AbstractHistoryCommanndHandler {
 				CompareEditorInput in = new GitCompareFileRevisionEditorInput(
 						base, next, null);
 				openInCompare(event, in);
+			} else if (input instanceof IResource) {
+				GitCompareEditorInput compareInput = new GitCompareEditorInput(
+						commit1.name(), commit2.name(), (IResource) input);
+				openInCompare(event, compareInput);
+			} else if (input == null) {
+				GitCompareEditorInput compareInput = new GitCompareEditorInput(
+						commit1.name(), commit2.name(), repository);
+				openInCompare(event, compareInput);
 			}
 		}
 		return null;
@@ -74,9 +85,6 @@ public class CompareVersionsHandler extends AbstractHistoryCommanndHandler {
 		GitHistoryPage page = getPage();
 		if (page == null)
 			return false;
-		int size = getSelection(page).size();
-		if (size != 2)
-			return false;
-		return page.getInputInternal().isSingleFile();
+		return getSelection(page).size() == 2;
 	}
 }

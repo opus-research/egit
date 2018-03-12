@@ -14,7 +14,7 @@ package org.eclipse.egit.core.op;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
@@ -79,9 +79,9 @@ public class CommitOperation implements IEGitOperation {
 	// needed for amending
 	private Repository[] repos;
 
-	private ArrayList<IFile> notIndexed;
+	private Collection<IFile> notIndexed;
 
-	private ArrayList<IFile> notTracked;
+	private Collection<IFile> notTracked;
 
 	private boolean createChangeId;
 
@@ -100,8 +100,8 @@ public class CommitOperation implements IEGitOperation {
 	 * @param message
 	 *            the commit message
 	 */
-	public CommitOperation(IFile[] filesToCommit, ArrayList<IFile> notIndexed,
-			ArrayList<IFile> notTracked, String author, String committer,
+	public CommitOperation(IFile[] filesToCommit, Collection<IFile> notIndexed,
+			Collection<IFile> notTracked, String author, String committer,
 			String message) {
 		this.filesToCommit = filesToCommit;
 		this.notIndexed = notIndexed;
@@ -236,8 +236,11 @@ public class CommitOperation implements IEGitOperation {
 			TreeEntry treeMember = projTree.findBlobMember(repoRelativePath);
 			// we always want to delete it from the current tree, since if it's
 			// updated, we'll add it again
-			if (treeMember != null)
+			Tree treeWithDeletedEntry = null;
+			if (treeMember != null) {
+				treeWithDeletedEntry = treeMember.getParent();
 				treeMember.delete();
+			}
 
 			Entry idxEntry = index.getEntry(string);
 			if (notIndexed.contains(file)) {
@@ -250,6 +253,11 @@ public class CommitOperation implements IEGitOperation {
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.CORE.getLocation(),
 								"Phantom file, so removing from index"); //$NON-NLS-1$
+					while (treeWithDeletedEntry.memberCount() == 0) {
+						Tree toDelete = treeWithDeletedEntry;
+						treeWithDeletedEntry = treeWithDeletedEntry.getParent();
+						toDelete.delete();
+					}
 					continue;
 				} else {
 					idxEntry.update(thisfile);

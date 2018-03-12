@@ -27,45 +27,45 @@ import org.eclipse.jgit.treewalk.TreeWalk;
  */
 public class GitModelTree extends GitModelCommit {
 
-	private final String name;
-
 	private final ObjectId baseId;
 
 	private final ObjectId remoteId;
 
 	private final ObjectId ancestorId;
 
-	private IPath location;
+	private final IPath location;
 
 	/**
 	 * @param parent
 	 *            parent of this tree
 	 * @param commit
 	 *            commit associated with this tree
+	 * @param ancestorCommit
+	 *            common ancestor commit associated with this tree
 	 * @param ancestorId
 	 *            id of common ancestor tree for this on
 	 * @param baseId
 	 *            id of base tree
 	 * @param remoteId
 	 *            this tree id
-	 * @param name
-	 *            name resource associated with this tree
+	 * @param location
+	 *            location of tree
 	 * @throws IOException
 	 */
 	public GitModelTree(GitModelObjectContainer parent, RevCommit commit,
-			ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, String name)
-			throws IOException {
+			RevCommit ancestorCommit, ObjectId ancestorId, ObjectId baseId,
+			ObjectId remoteId, IPath location) throws IOException {
 		// only direction is important for us, therefore we mask rest of bits in kind
-		super(parent, commit, parent.getKind() & (LEFT | RIGHT));
-		this.name = name;
+		super(parent, commit, ancestorCommit, parent.getKind() & (LEFT | RIGHT));
 		this.baseId = baseId;
 		this.remoteId = remoteId;
 		this.ancestorId = ancestorId;
+		this.location = location;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return location.lastSegment();
 	}
 
 	/**
@@ -89,10 +89,17 @@ public class GitModelTree extends GitModelCommit {
 
 	@Override
 	public IPath getLocation() {
-		if (location == null)
-			location = getParent().getLocation().append(name);
-
 		return location;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return super.equals(obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
 	}
 
 	protected GitModelObject[] getChildrenImpl() {
@@ -111,8 +118,8 @@ public class GitModelTree extends GitModelCommit {
 				ancestorNth = tw.addTree(ancestorId);
 
 			while (tw.next()) {
-				GitModelObject obj = getModelObject(tw, ancestorNth, baseNth,
-						remoteNth);
+				GitModelObject obj = getModelObject(tw, ancestorCommit, ancestorNth,
+						baseNth, remoteNth);
 				if (obj != null)
 					result.add(obj);
 			}

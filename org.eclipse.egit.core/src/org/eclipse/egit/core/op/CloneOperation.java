@@ -31,6 +31,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchResult;
@@ -38,6 +39,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -54,7 +56,7 @@ public class CloneOperation {
 
 	private final File gitdir;
 
-	private final String branch;
+	private final Ref ref;
 
 	private final String remoteName;
 
@@ -82,8 +84,8 @@ public class CloneOperation {
 	 * @param workdir
 	 *            working directory to clone to. The directory may or may not
 	 *            already exist.
-	 * @param branch
-	 *            branch to initially clone from.
+	 * @param ref
+	 *            ref to be checked out after clone.
 	 * @param remoteName
 	 *            name of created remote config as source remote (typically
 	 *            named "origin").
@@ -91,13 +93,13 @@ public class CloneOperation {
 	 */
 	public CloneOperation(final URIish uri, final boolean allSelected,
 			final Collection<Ref> selectedBranches, final File workdir,
-			final String branch, final String remoteName, int timeout) {
+			final Ref ref, final String remoteName, int timeout) {
 		this.uri = uri;
 		this.allSelected = allSelected;
 		this.selectedBranches = selectedBranches;
 		this.workdir = workdir;
 		this.gitdir = new File(workdir, Constants.DOT_GIT);
-		this.branch = branch;
+		this.ref = ref;
 		this.remoteName = remoteName;
 		this.timeout = timeout;
 	}
@@ -136,7 +138,11 @@ public class CloneOperation {
 				closeLocal();
 			}
 		} catch (final Exception e) {
-			delete(workdir);
+			try {
+				FileUtils.delete(workdir, FileUtils.RECURSIVE);
+			} catch (IOException ioe) {
+				throw new InvocationTargetException(ioe);
+			}
 			if (monitor.isCanceled())
 				throw new InterruptedException();
 			else
@@ -168,11 +174,14 @@ public class CloneOperation {
 		local = new FileRepository(gitdir);
 		local.create();
 
-		final RefUpdate head = local.updateRef(Constants.HEAD);
-		head.disableRefLog();
-		head.link(branch);
+		if (ref.getName().startsWith(Constants.R_HEADS)) {
+			final RefUpdate head = local.updateRef(Constants.HEAD);
+			head.disableRefLog();
+			head.link(ref.getName());
+		}
 
-		remoteConfig = new RemoteConfig(local.getConfig(), remoteName);
+		FileBasedConfig config = local.getConfig();
+		remoteConfig = new RemoteConfig(config, remoteName);
 		remoteConfig.addURI(uri);
 
 		final String dst = Constants.R_REMOTES + remoteConfig.getName();
@@ -184,26 +193,27 @@ public class CloneOperation {
 		if (allSelected) {
 			remoteConfig.addFetchRefSpec(wcrs);
 		} else {
-			for (final Ref ref : selectedBranches)
-				if (wcrs.matchSource(ref))
-					remoteConfig.addFetchRefSpec(wcrs.expandFromSource(ref));
+			for (final Ref selectedRef : selectedBranches)
+				if (wcrs.matchSource(selectedRef))
+					remoteConfig.addFetchRefSpec(wcrs.expandFromSource(selectedRef));
 		}
 
 		// we're setting up for a clone with a checkout
-		local.getConfig().setBoolean(
+		config.setBoolean(
 				"core", null, "bare", false); //$NON-NLS-1$ //$NON-NLS-2$
 
-		remoteConfig.update(local.getConfig());
+		remoteConfig.update(config);
 
 		// branch is like 'Constants.R_HEADS + branchName', we need only
 		// the 'branchName' part
-		String branchName = branch.substring(Constants.R_HEADS.length());
+		if (ref.getName().startsWith(Constants.R_HEADS)) {
+			String branchName = ref.getName().substring(Constants.R_HEADS.length());
 
-		// setup the default remote branch for branchName
-		local.getConfig().setString("branch", branchName, "remote", remoteName); //$NON-NLS-1$ //$NON-NLS-2$
-		local.getConfig().setString("branch", branchName, "merge", branch); //$NON-NLS-1$ //$NON-NLS-2$
-
-		local.getConfig().save();
+			// setup the default remote branch for branchName
+			config.setString("branch", branchName, "remote", remoteName); //$NON-NLS-1$ //$NON-NLS-2$
+			config.setString("branch", branchName, "merge", ref.getName()); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		config.save();
 	}
 
 	private void doFetch(final IProgressMonitor monitor)
@@ -222,7 +232,7 @@ public class CloneOperation {
 	}
 
 	private void doCheckout(final IProgressMonitor monitor) throws IOException {
-		final Ref head = fetchResult.getAdvertisedRef(branch);
+		final Ref head = fetchResult.getAdvertisedRef(ref.getName());
 		if (head == null || head.getObjectId() == null)
 			return;
 
@@ -236,7 +246,8 @@ public class CloneOperation {
 
 		final RefUpdate u;
 
-		u = local.updateRef(Constants.HEAD);
+		boolean detached = !head.getName().startsWith(Constants.R_HEADS);
+		u = local.updateRef(Constants.HEAD, detached);
 		u.setNewObjectId(mapCommit.getId());
 		u.forceUpdate();
 
@@ -249,16 +260,5 @@ public class CloneOperation {
 			// this should never happen when writing in an empty folder
 			throw new IOException("Internal error occured on checking out files"); //$NON-NLS-1$
 		monitor.setTaskName(CoreText.CloneOperation_writingIndex);
-	}
-
-	private static void delete(final File d) {
-		if (d.isDirectory()) {
-			final File[] items = d.listFiles();
-			if (items != null) {
-				for (final File c : items)
-					delete(c);
-			}
-		}
-		d.delete();
 	}
 }

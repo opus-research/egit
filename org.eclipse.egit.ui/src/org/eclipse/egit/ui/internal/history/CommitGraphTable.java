@@ -109,6 +109,9 @@ class CommitGraphTable {
 
 	private SWTCommitList allCommits;
 
+	// used for resolving PlotCommit objects by ids
+	private HashMap<String, PlotCommit> commitsMap = null;
+
 	private RevFlag highlight;
 
 	private HistoryPageInput input;
@@ -117,8 +120,7 @@ class CommitGraphTable {
 
 	MenuListener menuListener;
 
-	CommitGraphTable(final Composite parent, final IPageSite site,
-			final MenuManager menuMgr) {
+	CommitGraphTable(Composite parent){
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 
@@ -154,7 +156,6 @@ class CommitGraphTable {
 			}
 		});
 
-		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		copy = createStandardAction(ActionFactory.COPY);
 
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
@@ -162,7 +163,12 @@ class CommitGraphTable {
 				copy.setEnabled(canDoCopy());
 			}
 		});
+	}
 
+	CommitGraphTable(final Composite parent, final IPageSite site,
+			final MenuManager menuMgr) {
+		this(parent);
+		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
 			public void focusLost(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
@@ -217,6 +223,7 @@ class CommitGraphTable {
 		});
 
 		Control c = getControl();
+		menuMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 		c.setMenu(menuMgr.createContextMenu(c));
 		c.addMenuDetectListener(menuListener = new MenuListener(menuMgr,
 				getTableView(), site, copy));
@@ -227,8 +234,14 @@ class CommitGraphTable {
 	}
 
 	void selectCommit(final RevCommit c) {
-		table.setSelection(new StructuredSelection(c));
-		table.reveal(c);
+		if (c instanceof PlotCommit) {
+			table.setSelection(new StructuredSelection(c));
+			table.reveal(c);
+		} else {
+			PlotCommit swtCommit = commitsMap.get(c.getId().name());
+			table.setSelection(new StructuredSelection(swtCommit));
+			table.reveal(swtCommit);
+		}
 	}
 
 	void addSelectionChangedListener(final ISelectionChangedListener l) {
@@ -265,17 +278,26 @@ class CommitGraphTable {
 	void setInput(final RevFlag hFlag, final SWTCommitList list,
 			final SWTCommit[] asArray, HistoryPageInput input) {
 		this.input = input;
-		menuListener.setInput(input);
+		if (menuListener != null)
+			menuListener.setInput(input);
 		final SWTCommitList oldList = allCommits;
 		highlight = hFlag;
 		allCommits = list;
 		table.setInput(asArray);
 		if (asArray != null && asArray.length > 0) {
-			if (oldList != list)
+			if (oldList != list) {
 				selectCommit(asArray[0]);
+				initCommitsMap();
+			}
 		} else {
 			table.getTable().deselectAll();
 		}
+	}
+
+	private void initCommitsMap() {
+		commitsMap = new HashMap<String, PlotCommit>();
+		for (PlotCommit commit : allCommits)
+			commitsMap.put(commit.getId().name(), commit);
 	}
 
 	private void createColumns(final Table rawTable, final TableLayout layout) {
@@ -300,8 +322,8 @@ class CommitGraphTable {
 		final TableColumn commitId = new TableColumn(rawTable, SWT.NONE);
 		commitId.setResizable(true);
 		commitId.setText(UIText.CommitGraphTable_CommitId);
-		commitId.setWidth(100);
-		layout.addColumnData(new ColumnWeightData(5, true));
+		commitId.setWidth(50);
+		layout.addColumnData(new ColumnWeightData(3, true));
 
 		final TableColumn committer = new TableColumn(rawTable, SWT.NONE);
 		committer.setResizable(true);
@@ -435,11 +457,6 @@ class CommitGraphTable {
 								.add(getCommandContributionItem(
 										HistoryViewCommands.COMPARE_WITH_TREE,
 										UIText.GitHistoryPage_CompareWithCurrentHeadMenu));
-				else if (selectionSize == 2)
-					popupMgr
-							.add(getCommandContributionItem(
-									HistoryViewCommands.COMPARE_VERSIONS,
-									UIText.GitHistoryPage_CompareWithEachOtherMenuLabel));
 				if (selectionSize > 0) {
 					popupMgr.add(getCommandContributionItem(
 							HistoryViewCommands.OPEN,
@@ -467,6 +484,15 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CHERRYPICK,
 						UIText.GitHistoryPage_cherryPickMenuItem));
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.REVERT,
+						UIText.GitHistoryPage_revertMenuItem));
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.MERGE,
+						UIText.GitHistoryPage_mergeMenuItem));
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.REBASECURRENT,
+						UIText.GitHistoryPage_rebaseMenuItem));
 				popupMgr.add(new Separator());
 
 				MenuManager resetManager = new MenuManager(
@@ -490,6 +516,15 @@ class CommitGraphTable {
 				resetManager.add(getCommandContributionItem(
 						HistoryViewCommands.RESET,
 						UIText.GitHistoryPage_ResetHardMenuLabel, parameters));
+			} else if (selectionSize == 2) {
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.COMPARE_VERSIONS,
+						UIText.GitHistoryPage_CompareWithEachOtherMenuLabel));
+				if (!input.isSingleFile())
+					popupMgr
+							.add(getCommandContributionItem(
+									HistoryViewCommands.COMPARE_VERSIONS_IN_TREE,
+									UIText.CommitGraphTable_CompareWithEachOtherInTreeMenuLabel));
 			}
 			popupMgr.add(new Separator());
 

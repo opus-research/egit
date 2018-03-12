@@ -44,6 +44,7 @@ import org.eclipse.osgi.util.NLS;
 /**
  * The operation discards changes on a set of resources. In case of a folder
  * resource all file resources in the sub tree are processed.
+ * Untracked files are ignored.
  */
 public class DiscardChangesOperation implements IEGitOperation {
 
@@ -156,10 +157,15 @@ public class DiscardChangesOperation implements IEGitOperation {
 		String resRelPath = RepositoryMapping.getMapping(res)
 				.getRepoRelativePath(res);
 		DirCache dc = repository.lockDirCache();
-		DirCacheEntry entry = dc.getEntry(resRelPath);
-		File file = new File(res.getLocationURI());
-		DirCacheCheckout.checkoutEntry(repository, file, entry);
-		dc.unlock();
+		try {
+			DirCacheEntry entry = dc.getEntry(resRelPath);
+			if (entry != null) {
+				File file = new File(res.getLocationURI());
+				DirCacheCheckout.checkoutEntry(repository, file, entry);
+			}
+		} finally {
+			dc.unlock();
+		}
 	}
 
 	/**

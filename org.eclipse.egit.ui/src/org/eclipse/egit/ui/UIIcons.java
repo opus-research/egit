@@ -2,7 +2,6 @@
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -41,6 +40,9 @@ public class UIIcons {
 
 	/** Decoration for tracked resources that are dirty. */
 	public final static ImageDescriptor OVR_DIRTY;
+
+	/** Decoration for lightweight tags **/
+	public final static ImageDescriptor OVR_LIGHTTAG;
 
 	/** Find icon */
 	public final static ImageDescriptor ELCL16_FIND;
@@ -146,9 +148,6 @@ public class UIIcons {
 	/** Changeset Icon */
 	public final static ImageDescriptor CHANGESET;
 
-	/** Gerrit Icon */
-	public final static ImageDescriptor GERRIT;
-
 	/** base URL */
 	public final static URL base;
 
@@ -161,6 +160,7 @@ public class UIIcons {
 		OVR_CONFLICT = map("ovr/conflict.gif"); //$NON-NLS-1$
 		OVR_ASSUMEVALID = map("ovr/assume_valid.gif"); //$NON-NLS-1$
 		OVR_DIRTY = map("ovr/dirty.gif"); //$NON-NLS-1$
+		OVR_LIGHTTAG = map("ovr/lighttag.gif"); //$NON-NLS-1$
 		ELCL16_FIND = map("elcl16/find.gif"); //$NON-NLS-1$
 		ELCL16_COMPARE_VIEW = map("elcl16/compare_view.gif"); //$NON-NLS-1$
 		ELCL16_NEXT = map("elcl16/next.gif"); //$NON-NLS-1$
@@ -202,7 +202,6 @@ public class UIIcons {
 		CLONEGIT = map("obj16/cloneGit.gif"); //$NON-NLS-1$
 		RESET = map("obj16/reset.gif"); //$NON-NLS-1$
 		CHANGESET = map("obj16/changelog_obj.gif"); //$NON-NLS-1$
-		GERRIT = map("obj16/gerrit_obj.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {
