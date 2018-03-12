@@ -720,18 +720,6 @@ public class UIText extends NLS {
 	public static String GitProjectsImportPage_SearchForNestedProjects;
 
 	/** */
-	public static String GitProjectPropertyPage_GroupAttributes;
-
-	/** */
-	public static String GitProjectPropertyPage_LabelCheckinAttribute;
-
-	/** */
-	public static String GitProjectPropertyPage_LabelCheckoutAttribute;
-
-	/**	 */
-	public static String GitProjectPropertyPage_LabelNone;
-
-	/** */
 	public static String RebaseCurrentRefCommand_RebaseCanceledMessage;
 
 	/** */
@@ -5255,8 +5243,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushMenu_PushBranch;
-
-
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
