@@ -27,11 +27,4 @@ public class JobFamilies {
 	 * Checkout job
 	 */
 	public final static Object CHECKOUT = new Object();
-
-	/**
-	 * Push job
-	 */
-	public final static Object PUSH = new Object();
-
-
 }
