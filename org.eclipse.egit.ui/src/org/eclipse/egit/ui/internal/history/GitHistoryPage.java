@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.IParameter;
@@ -61,7 +60,6 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -129,11 +127,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private IAction compareModeAction;
 
 	private boolean compareMode = false;
-
-	/** Show all branches toggle */
-	private IAction showAllBranchesAction;
-
-	private boolean showAllBranches = false;
 
 	// we need to keep track of these actions so that we can
 	// dispose them when the page is disposed (the history framework
@@ -371,24 +364,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		barManager.add(compareModeAction);
 	}
 
-	private void createShowAllBranchesAction() {
-		final IToolBarManager barManager = getSite().getActionBars()
-				.getToolBarManager();
-		showAllBranchesAction = new Action(UIText.GitHistoryPage_showAllBranches,
-				IAction.AS_CHECK_BOX) {
-			public void run() {
-				showAllBranches = !showAllBranches;
-				setChecked(showAllBranches);
-				refresh();
-			}
-		};
-		showAllBranchesAction.setImageDescriptor(UIIcons.BRANCH);
-		showAllBranchesAction.setChecked(showAllBranches);
-		showAllBranchesAction.setToolTipText(UIText.GitHistoryPage_showAllBranches);
-		barManager.add(showAllBranchesAction);
-	}
-
-
 	/**
 	 * @param compareMode
 	 *            switch compare mode button of the view on / off
@@ -471,7 +446,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		createLocalToolbarActions();
 		createResourceFilterActions();
 		createCompareModeAction();
-		createShowAllBranchesAction();
 		createStandardActions();
 
 		getSite().registerContextMenu(POPUP_ID, popupMgr, graph.getTableView());
@@ -1038,7 +1012,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			return false;
 		}
 
-		if (pathChange(pathFilters, paths)
+		if (currentWalk == null || pathChange(pathFilters, paths)
 				|| headId != null && !headId.equals(currentHeadId)) {
 			// TODO Do not dispose SWTWalk just because HEAD changed
 			// In theory we should be able to update the graph and
@@ -1055,19 +1029,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 		if (headId == null)
 			return false;
-
 		try {
-			if (showAllBranches) {
-				for (Entry<String, Ref> refEntry : db.getRefDatabase()
-						.getRefs(Constants.R_HEADS).entrySet()) {
-					Ref ref = refEntry.getValue();
-					if (ref.isSymbolic())
-						continue;
-					currentWalk.markStart(currentWalk.parseCommit(ref
-							.getObjectId()));
-				}
-			} else
-				currentWalk.markStart(currentWalk.parseCommit(headId));
+			currentWalk.markStart(currentWalk.parseCommit(headId));
 		} catch (IOException e) {
 			Activator.logError(NLS.bind(
 					UIText.GitHistoryPage_errorReadingHeadCommit, headId, db
