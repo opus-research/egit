@@ -32,7 +32,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
- * Retrieves list of checked in commits and changes associated with each commit
+ * Retrieves list of commits and the changes associated with each commit
  */
 public class GitCommitsModelCache {
 
