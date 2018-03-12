@@ -12,8 +12,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.eclipse.core.expressions.PropertyTester;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
@@ -34,21 +32,37 @@ public class SelectionPropertyTester extends PropertyTester {
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
 		Collection<?> collection = (Collection<?>) receiver;
-		if (collection.isEmpty())
-			return false;
 		if ("projectSingleRepository".equals(property)) { //$NON-NLS-1$
 			if (collection.size() != 1)
 				return false;
 
 			Repository repository = getRepositoryOfProjects(collection, true);
-			return testRepositoryProperties(repository, args);
+			if (repository == null)
+				return false;
+
+			for (Object arg : args) {
+				String s = (String) arg;
+				if (!ResourcePropertyTester.testRepositoryState(repository, s))
+					return false;
+			}
+			return true;
 
 		} else if ("projectsWithRepositories".equals(property)) { //$NON-NLS-1$
 			Repository repository = getRepositoryOfProjects(collection, false);
 			return repository != null;
 
 		} else if ("resourcesSingleRepository".equals(property)) { //$NON-NLS-1$
-			IStructuredSelection selection = getStructuredSelection(collection);
+			if (collection.isEmpty())
+				return false;
+
+			Object firstElement = collection.iterator().next();
+			IStructuredSelection selection;
+			if (collection.size() == 1 && firstElement instanceof ITextSelection) {
+				selection = SelectionUtils.getStructuredSelection((ITextSelection) firstElement);
+			} else {
+				selection = new StructuredSelection(new ArrayList<Object>(
+						collection));
+			}
 
 			// It may seem like we could just use SelectionUtils.getRepository
 			// here. The problem: It would also return a repository for a node
@@ -56,49 +70,9 @@ public class SelectionPropertyTester extends PropertyTester {
 			IResource[] resources = SelectionUtils
 					.getSelectedResources(selection);
 			Repository repository = getRepositoryOfResources(resources);
-			return testRepositoryProperties(repository, args);
-
-		} else if ("fileOrFolderInRepository".equals(property)) { //$NON-NLS-1$
-			if (collection.size() != 1)
-				return false;
-
-			IStructuredSelection selection = getStructuredSelection(collection);
-			if (selection.size() != 1)
-				return false;
-
-			Object firstElement = selection.getFirstElement();
-			IResource resource = AdapterUtils.adapt(firstElement,
-					IResource.class);
-			if (resource instanceof IFile || resource instanceof IFolder) {
-				RepositoryMapping m = RepositoryMapping.getMapping(resource);
-				if (m != null)
-					return testRepositoryProperties(m.getRepository(), args);
-			}
+			return repository != null;
 		}
 		return false;
-	}
-
-	private static IStructuredSelection getStructuredSelection(
-			Collection<?> collection) {
-		Object firstElement = collection.iterator().next();
-		if (collection.size() == 1 && firstElement instanceof ITextSelection)
-			return SelectionUtils
-					.getStructuredSelection((ITextSelection) firstElement);
-		else
-			return new StructuredSelection(new ArrayList<Object>(collection));
-	}
-
-	private static boolean testRepositoryProperties(Repository repository,
-			Object[] properties) {
-		if (repository == null)
-			return false;
-
-		for (Object arg : properties) {
-			String s = (String) arg;
-			if (!ResourcePropertyTester.testRepositoryState(repository, s))
-				return false;
-		}
-		return true;
 	}
 
 	/**
