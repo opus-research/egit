@@ -26,7 +26,6 @@ import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.MergeTargetSelectionDialog;
-import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Constants;
@@ -99,7 +98,9 @@ public class MergeActionHandler extends RepositoryActionHandler {
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
-								new MergeResultDialog(shell, repository, op.getResult()).open();
+								MessageDialog.openInformation(shell,
+										UIText.MergeAction_MergeResultTitle, op
+												.getResult().toString());
 							}
 						});
 					}
