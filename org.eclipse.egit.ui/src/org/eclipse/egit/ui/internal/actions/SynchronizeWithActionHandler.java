@@ -21,7 +21,7 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.synchronize.GitSynchronize;
+import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.internal.synchronize.SelectSynchronizeResourceDialog;
 import org.eclipse.egit.ui.internal.synchronize.SyncRepoEntity;
 import org.eclipse.egit.ui.internal.synchronize.SyncRepoEntity.SyncRefEntity;
@@ -67,7 +67,8 @@ public class SynchronizeWithActionHandler extends RepositoryActionHandler {
 			}
 		}
 
-		new GitSynchronize(gsdSet);
+		GitModelSynchronize.launch(gsdSet, getSelectedResources(event));
+
 		return null;
 	}
 

@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.view.repositories;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -38,7 +37,6 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.Before;
@@ -99,10 +97,10 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				.getPluginLocalizedValue("CreateBranchCommand"));
 
 		SWTBotShell createPage = bot
-				.shell(UIText.RepositoriesView_NewBranchTitle);
+				.shell(UIText.CreateBranchWizard_NewBranchTitle);
 		createPage.activate();
 		// getting text with label doesn't work
-		createPage.bot().text(1).setText("newLocal");
+		createPage.bot().textWithId("BranchName").setText("newLocal");
 		createPage.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
 				.deselect();
 		createPage.bot().button(IDialogConstants.FINISH_LABEL).click();
@@ -173,9 +171,9 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		item.getNode("origin/stable").select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("CreateBranchCommand"));
-		SWTBotShell shell = bot.shell(UIText.RepositoriesView_NewBranchTitle);
+		SWTBotShell shell = bot.shell(UIText.CreateBranchWizard_NewBranchTitle);
 		shell.activate();
-		assertEquals("stable", shell.bot().text(1).getText());
+		assertEquals("stable", shell.bot().textWithId("BranchName").getText());
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
 		item = myRepoViewUtil.getLocalBranchesItem(tree, clonedRepositoryFile)
@@ -259,10 +257,10 @@ public class GitRepositoriesViewBranchHandlingTest extends
 					.getPluginLocalizedValue("CreateBranchCommand"));
 
 			SWTBotShell createPage = bot
-					.shell(UIText.RepositoriesView_NewBranchTitle);
+					.shell(UIText.CreateBranchWizard_NewBranchTitle);
 			createPage.activate();
 			assertEquals("Wrong suggested branch name", "stable", createPage
-					.bot().text(1).getText());
+					.bot().textWithId("BranchName").getText());
 			createPage.close();
 
 		} finally {
@@ -271,41 +269,5 @@ public class GitRepositoriesViewBranchHandlingTest extends
 			if (listener != null)
 				Job.getJobManager().removeJobChangeListener(listener);
 		}
-	}
-
-	@Test
-	public void testRenameBranch() throws Exception {
-		Activator.getDefault().getRepositoryUtil()
-				.addConfiguredRepository(clonedRepositoryFile);
-
-		SWTBotTree tree = getOrOpenView().bot().tree();
-
-		SWTBotTreeItem item = myRepoViewUtil.getLocalBranchesItem(tree,
-				clonedRepositoryFile).expand();
-
-		// make sure to checkout master
-		item.getNode(0).select();
-		ContextMenuHelper.clickContextMenu(tree,
-				myUtil.getPluginLocalizedValue("RenameBranchCommand"));
-		refreshAndWait();
-
-		SWTBotShell renameDialog = bot
-				.shell(UIText.RepositoriesView_RenameBranchTitle);
-		SWTBotText newBranchNameText = renameDialog.bot().text(0);
-		assertEquals("master", newBranchNameText.getText());
-		newBranchNameText.setText("invalid~name");
-
-		renameDialog.bot().text(
-				UIText.BranchSelectionDialog_ErrorInvalidRefName);
-		assertFalse(renameDialog.bot().button(IDialogConstants.OK_LABEL)
-				.isEnabled());
-		newBranchNameText.setText("newmaster");
-		renameDialog.bot().button(IDialogConstants.OK_LABEL).click();
-
-		refreshAndWait();
-
-		item = myRepoViewUtil.getLocalBranchesItem(tree, clonedRepositoryFile)
-				.expand();
-		assertEquals("newmaster", item.getNode(0).getText());
 	}
 }

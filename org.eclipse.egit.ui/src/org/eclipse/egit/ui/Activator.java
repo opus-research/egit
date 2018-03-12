@@ -14,7 +14,9 @@ import java.io.IOException;
 import java.net.Authenticator;
 import java.net.ProxySelector;
 import java.util.ArrayList;
+import java.util.Dictionary;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -32,29 +34,30 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
-import org.eclipse.jgit.lib.IndexChangedEvent;
-import org.eclipse.jgit.lib.RefsChangedEvent;
+import org.eclipse.jgit.events.IndexChangedEvent;
+import org.eclipse.jgit.events.IndexChangedListener;
+import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jsch.core.IJSchService;
 import org.eclipse.osgi.service.debug.DebugOptions;
+import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.themes.ITheme;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
-import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * This is a plugin singleton mostly controlling logging.
  */
-public class Activator extends AbstractUIPlugin {
+public class Activator extends AbstractUIPlugin implements DebugOptionsListener {
 
 	/**
 	 *  The one and only instance
@@ -71,8 +74,6 @@ public class Activator extends AbstractUIPlugin {
 	 * Property constant indicating the decorator configuration has changed.
 	 */
 	public static final String DECORATORS_CHANGED = "org.eclipse.egit.ui.DECORATORS_CHANGED"; //$NON-NLS-1$
-
-	private RepositoryUtil repositoryUtil;
 
 	/**
 	 * @return the {@link Activator} singleton.
@@ -154,6 +155,7 @@ public class Activator extends AbstractUIPlugin {
 
 	private RCS rcs;
 	private RIRefresh refreshJob;
+	private ListenerHandle refreshHandle;
 
 	/**
 	 * Constructor for the egit ui plugin singleton
@@ -164,16 +166,13 @@ public class Activator extends AbstractUIPlugin {
 
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
-		repositoryUtil = new RepositoryUtil();
 
-		if (isDebugging()) {
-			ServiceTracker debugTracker = new ServiceTracker(context,
-					DebugOptions.class.getName(), null);
-			debugTracker.open();
-
-			DebugOptions opts = (DebugOptions) debugTracker.getService();
-			GitTraceLocation.initializeFromOptions(opts, true);
-		}
+		// we want to be notified about debug options changes
+		Dictionary<String, String> props = new Hashtable<String, String>(4);
+		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle()
+				.getSymbolicName());
+		context.registerService(DebugOptionsListener.class.getName(), this,
+				props);
 
 		setupSSH(context);
 		setupProxy(context);
@@ -181,9 +180,15 @@ public class Activator extends AbstractUIPlugin {
 		setupRepoIndexRefresh();
 	}
 
+	public void optionsChanged(DebugOptions options) {
+		// initialize the trace stuff
+		GitTraceLocation.initializeFromOptions(options, isDebugging());
+	}
+
 	private void setupRepoIndexRefresh() {
 		refreshJob = new RIRefresh();
-		Repository.addAnyRepositoryChangedListener(refreshJob);
+		refreshHandle = Repository.getGlobalListenerList()
+				.addIndexChangedListener(refreshJob);
 	}
 
 	/**
@@ -219,7 +224,7 @@ public class Activator extends AbstractUIPlugin {
 			listener.propertyChange(event);
 	}
 
-	static class RIRefresh extends Job implements RepositoryListener {
+	static class RIRefresh extends Job implements IndexChangedListener {
 
 		RIRefresh() {
 			super(UIText.Activator_refreshJobName);
@@ -256,7 +261,7 @@ public class Activator extends AbstractUIPlugin {
 			return Status.OK_STATUS;
 		}
 
-		public void indexChanged(IndexChangedEvent e) {
+		public void onIndexChanged(IndexChangedEvent e) {
 			// Check the workspace setting "refresh automatically" setting first
 			boolean autoRefresh = new InstanceScope().getNode(
 					ResourcesPlugin.getPlugin().getBundle().getSymbolicName())
@@ -278,11 +283,6 @@ public class Activator extends AbstractUIPlugin {
 			if (projectsToScan.size() > 0)
 				schedule();
 		}
-
-		public void refsChanged(RefsChangedEvent e) {
-			// Do not react here
-		}
-
 	}
 
 	static class RCS extends Job {
@@ -370,6 +370,10 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	public void stop(final BundleContext context) throws Exception {
+		if (refreshHandle != null) {
+			refreshHandle.remove();
+			refreshHandle = null;
+		}
 
 		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(
@@ -392,8 +396,6 @@ public class Activator extends AbstractUIPlugin {
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(), "Jobs terminated"); //$NON-NLS-1$
 
-		repositoryUtil.dispose();
-		repositoryUtil = null;
 		super.stop(context);
 		plugin = null;
 	}
@@ -430,6 +432,7 @@ public class Activator extends AbstractUIPlugin {
 	 * @return the {@link RepositoryUtil} instance
 	 */
 	public RepositoryUtil getRepositoryUtil() {
-		return repositoryUtil;
+		return org.eclipse.egit.core.Activator.getDefault().getRepositoryUtil();
 	}
+
 }

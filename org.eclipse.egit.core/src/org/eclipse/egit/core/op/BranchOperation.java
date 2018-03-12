@@ -23,15 +23,17 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.errors.CheckoutConflictException;
-import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.Tag;
-import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.WorkDirCheckout;
 import org.eclipse.jgit.lib.RefUpdate.Result;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 
@@ -45,25 +47,39 @@ public class BranchOperation implements IEGitOperation {
 
 	private final String refName;
 
+	private final ObjectId commitId;
+
 	/**
-	 * Construct a {@link BranchOperation} object.
+	 * Construct a {@link BranchOperation} object for a {@link Ref}.
 	 * @param repository
 	 * @param refName Name of git ref to checkout
 	 */
 	public BranchOperation(Repository repository, String refName) {
 		this.repository = repository;
 		this.refName = refName;
+		this.commitId = null;
 	}
 
-	private Tree oldTree;
+	/**
+	 * Construct a {@link BranchOperation} object for a commit.
+	 * @param repository
+	 * @param commit
+	 */
+	public BranchOperation(Repository repository, ObjectId commit) {
+		this.repository = repository;
+		this.refName = null;
+		this.commitId = commit;
+	}
+
+	private RevTree oldTree;
 
 	private GitIndex index;
 
-	private Tree newTree;
+	private RevTree newTree;
 
-	private Commit oldCommit;
+	private RevCommit oldCommit;
 
-	private Commit newCommit;
+	private RevCommit newCommit;
 
 
 
@@ -77,7 +93,7 @@ public class BranchOperation implements IEGitOperation {
 		else
 			monitor = m;
 
-		if (!refName.startsWith(Constants.R_REFS))
+		if (refName !=null && !refName.startsWith(Constants.R_REFS))
 			throw new TeamException(NLS.bind(
 					CoreText.BranchOperation_CheckoutOnlyBranchOrTag, refName));
 
@@ -125,19 +141,19 @@ public class BranchOperation implements IEGitOperation {
 		// in case of a non-local branch or a tag,
 		// we "detach" HEAD, i.e. point it to the
 		// underlying commit instead of to the Ref
-		if (!refName.startsWith(Constants.R_HEADS))
+		if (refName == null || !refName.startsWith(Constants.R_HEADS))
 			detach = true;
 		try {
 			RefUpdate u = repository.updateRef(Constants.HEAD, detach);
 			Result res;
 			if (detach) {
-				u.setNewObjectId(newCommit.getCommitId());
+				u.setNewObjectId(newCommit.getId());
 				// using forceUpdate instead of update avoids
 				// the merge tests which would otherwise make
 				// this fail
 				u.setRefLogMessage(NLS.bind(
 						CoreText.BranchOperation_checkoutMovingTo, newCommit
-								.getCommitId().toString()), false);
+								.getId().name()), false);
 				res = u.forceUpdate();
 			} else {
 				u.setRefLogMessage(NLS.bind(
@@ -170,8 +186,9 @@ public class BranchOperation implements IEGitOperation {
 
 	private void checkoutTree() throws TeamException {
 		try {
-			new WorkDirCheckout(repository, repository.getWorkDir(), oldTree,
-					index, newTree).checkout();
+			new WorkDirCheckout(repository, repository.getWorkTree(),
+					repository.mapTree(oldTree), index, repository
+							.mapTree(newTree)).checkout();
 		} catch (CheckoutConflictException e) {
 			TeamException teamException = new TeamException(e.getMessage());
 			throw teamException;
@@ -191,20 +208,21 @@ public class BranchOperation implements IEGitOperation {
 	}
 
 	private void lookupRefs() throws TeamException {
+		RevWalk walk = new RevWalk(repository);
 		try {
-			// if we have a tag, we have to make an indirection
-			if (refName.startsWith(Constants.R_TAGS)) {
-				Tag tag = repository.mapTag(refName);
-				newCommit = repository.mapCommit(tag.getObjId());
-			} else
-				newCommit = repository.mapCommit(refName);
+			if (refName != null) {
+				newCommit = walk.parseCommit(repository.resolve(refName));
+			}
+			if (commitId != null) {
+				newCommit = walk.parseCommit(commitId);
+			}
 		} catch (IOException e) {
 			throw new TeamException(NLS.bind(
 					CoreText.BranchOperation_mappingCommit, refName), e);
 		}
 
 		try {
-			oldCommit = repository.mapCommit(Constants.HEAD);
+			oldCommit = walk.parseCommit(repository.resolve(Constants.HEAD));
 		} catch (IOException e) {
 			throw new TeamException(CoreText.BranchOperation_mappingCommitHead,
 					e);

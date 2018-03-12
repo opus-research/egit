@@ -149,7 +149,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	public void testExpandWorkDir() throws Exception {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		Repository myRepository = lookupRepository(repositoryFile);
-		List<String> children = Arrays.asList(myRepository.getWorkDir().list());
+		List<String> children = Arrays
+				.asList(myRepository.getWorkTree().list());
 		List<String> treeChildren = myRepoViewUtil.getWorkdirItem(tree,
 				repositoryFile).expand().getNodes();
 		assertTrue(children.containsAll(treeChildren)
@@ -292,6 +293,21 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
 				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
+		// switch to a sub directory and see if this is used
+		shell.bot().button(IDialogConstants.BACK_LABEL).click();
+		shell.bot().tree().getAllItems()[0].expand().getNode(PROJ2).expand()
+				.getNode(FOLDER).select();
+		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		String name = shell.bot().textWithLabel(
+				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText();
+		assertEquals(FOLDER, name);
+		shell.bot().button(IDialogConstants.BACK_LABEL).click();
+		// switch back to the root directory
+		shell.bot().tree().getAllItems()[0].expand().getNode(PROJ2).select();
+		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
+		assertEquals(PROJ2, shell.bot().textWithLabel(
+				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
+
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		waitInUI();
 		assertProjectExistence(PROJ2, true);
@@ -584,8 +600,9 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTreeItem masterNode = localBranchesItem.getNode("master");
 		masterNode.select();
 		ContextMenuHelper.clickContextMenu(tree, "Create Branch...");
-		SWTBotShell createBranchShell = bot.shell("Create Branch");
-		createBranchShell.bot().text("").setText("abc");
+		SWTBotShell createBranchShell = bot
+				.shell(UIText.CreateBranchWizard_NewBranchTitle);
+		createBranchShell.bot().textWithId("BranchName").setText("abc");
 		createBranchShell.bot().checkBox().deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
@@ -616,14 +633,15 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		// create first branch (abc)
 		masterNode.select();
 		ContextMenuHelper.clickContextMenu(tree, "Create Branch...");
-		SWTBotShell createBranchShell = bot.shell("Create Branch");
-		createBranchShell.bot().text("").setText("abc");
+		SWTBotShell createBranchShell = bot
+				.shell(UIText.CreateBranchWizard_NewBranchTitle);
+		createBranchShell.bot().textWithId("BranchName").setText("abc");
 		createBranchShell.bot().checkBox().deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		// create second branch (123)
 		ContextMenuHelper.clickContextMenu(tree, "Create Branch...");
-		createBranchShell = bot.shell("Create Branch");
-		createBranchShell.bot().text("").setText("123");
+		createBranchShell = bot.shell(UIText.CreateBranchWizard_NewBranchTitle);
+		createBranchShell.bot().textWithId("BranchName").setText("123");
 		createBranchShell.bot().checkBox().deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();

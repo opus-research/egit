@@ -19,6 +19,6 @@ public class CompareWithIndexAction extends RepositoryAction {
 	 *
 	 */
 	public CompareWithIndexAction() {
-		super(ActionCommands.COMPARE_WITH_INDEX_ACTION);
+		super(ActionCommands.COMPARE_WITH_INDEX_ACTION, new CompareWithIndexActionHandler());
 	}
 }
