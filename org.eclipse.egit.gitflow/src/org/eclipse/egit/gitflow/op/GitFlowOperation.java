@@ -30,7 +30,6 @@ import org.eclipse.egit.gitflow.internal.CoreText;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.CheckoutResult.Status;
 import org.eclipse.jgit.api.MergeResult;
-import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -50,11 +49,6 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 * repository that is operated on.
 	 */
 	protected GitFlowRepository repository;
-
-	/**
-	 * the status of the latest merge from this operation
-	 */
-	protected MergeStatus mergeResult = MergeResult.MergeStatus.FAILED;
 
 	/**
 	 * @param repository
@@ -102,15 +96,16 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 *
 	 * @param monitor
 	 * @param branchName
+	 * @return result of merging back to develop branch
 	 * @throws CoreException
 	 */
-	protected void finish(IProgressMonitor monitor, String branchName)
+	protected MergeResult finish(IProgressMonitor monitor, String branchName)
 			throws CoreException {
 		try {
-			mergeResult = mergeTo(monitor, branchName,
+			MergeResult mergeResult = mergeTo(monitor, branchName,
 					repository.getConfig().getDevelop());
-			if (!mergeResult.isSuccessful()) {
-				return;
+			if (!mergeResult.getMergeStatus().isSuccessful()) {
+				return mergeResult;
 			}
 
 			Ref branch = repository.findBranch(branchName);
@@ -120,6 +115,8 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			}
 			new DeleteBranchOperation(repository.getRepository(), branch, false)
 					.execute(monitor);
+
+			return mergeResult;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -132,7 +129,7 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 * @return result of merging back to targetBranchName
 	 * @throws CoreException
 	 */
-	protected MergeStatus mergeTo(IProgressMonitor monitor, String branchName,
+	protected MergeResult mergeTo(IProgressMonitor monitor, String branchName,
 			String targetBranchName) throws CoreException {
 		try {
 			if (!repository.hasBranch(targetBranchName)) {
@@ -154,7 +151,7 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			MergeOperation mergeOperation = new MergeOperation(
 					repository.getRepository(), branchName);
 			mergeOperation.execute(monitor);
-			return mergeOperation.getResult().getMergeStatus();
+			return mergeOperation.getResult();
 		} catch (GitAPIException e) {
 			throw new RuntimeException(e);
 		}
@@ -173,12 +170,5 @@ abstract public class GitFlowOperation implements IEGitOperation {
 				repository.getRepository(), config, 0, false);
 		fetchOperation.run(monitor);
 		return fetchOperation.getOperationResult();
-	}
-
-	/**
-	 * @return The result of the merge this operation performs
-	 */
-	public MergeStatus getMergeResult() {
-		return mergeResult;
 	}
 }

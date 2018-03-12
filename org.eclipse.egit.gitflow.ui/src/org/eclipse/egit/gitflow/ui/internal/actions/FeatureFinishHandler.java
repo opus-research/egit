@@ -16,17 +16,12 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.jobs.IJobManager;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.egit.gitflow.op.FeatureFinishOperation;
 import org.eclipse.egit.gitflow.ui.internal.JobFamilies;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jgit.api.MergeResult.MergeStatus;
 
 /**
  * git flow feature finish
@@ -41,17 +36,7 @@ public class FeatureFinishHandler extends AbstractHandler {
 			JobUtil.scheduleUserWorkspaceJob(operation,
 					UIText.FeatureFinishHandler_finishingFeature,
 					JobFamilies.GITFLOW_FAMILY);
-			IJobManager jobMan = Job.getJobManager();
-			jobMan.join(JobFamilies.GITFLOW_FAMILY, null);
-
-			MergeStatus mergeResult = operation.getMergeResult();
-			if (MergeStatus.CONFLICTING.equals(mergeResult)) {
-				MessageDialog.openWarning(null,
-						UIText.FeatureFinishHandler_Conflicts,
-						UIText.FeatureFinishHandler_featureFinishConflicts);
-			}
-		} catch (WrongGitFlowStateException | CoreException | IOException
-				| OperationCanceledException | InterruptedException e) {
+		} catch (WrongGitFlowStateException | CoreException | IOException e) {
 			return error(e.getMessage(), e);
 		}
 
