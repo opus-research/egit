@@ -42,8 +42,7 @@ import org.eclipse.team.ui.mapping.SaveableComparison;
 /**
  * Git commit object representation in Git ChangeSet
  */
-public class GitModelCommit extends GitModelObject implements
-		ISynchronizationCompareInput {
+public class GitModelCommit extends GitModelObject implements ISynchronizationCompareInput {
 
 	private final RevCommit baseCommit;
 
@@ -163,38 +162,12 @@ public class GitModelCommit extends GitModelObject implements
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof GitModelCommit) {
-			GitModelCommit objCommit = (GitModelCommit) obj;
-
-			boolean equalsBaseCommit;
-			RevCommit objBaseCommit = objCommit.getBaseCommit();
-			if (objBaseCommit != null)
-				equalsBaseCommit = objBaseCommit.equals(baseCommit);
-			else
-				equalsBaseCommit = baseCommit == null;
-
-			// it is impossible that to have different common ancestor commit if
-			// remote and base commit are equal, therefore we don't compare
-			// common ancestor's
-
-			return equalsBaseCommit
-					&& objCommit.getRemoteCommit().equals(remoteCommit)
-					&& objCommit.getLocation().equals(getLocation());
-		}
-
-		return false;
+		return remoteCommit.equals(obj);
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + getLocation().hashCode();
-		result = prime * result + remoteCommit.hashCode();
-		if (baseCommit != null)
-			result = prime * result + baseCommit.hashCode();
-
-		return result;
+		return remoteCommit.hashCode();
 	}
 
 	public Image getImage() {
