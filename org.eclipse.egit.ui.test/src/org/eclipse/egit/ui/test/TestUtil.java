@@ -166,12 +166,22 @@ public class TestUtil {
 		Job.getJobManager().join(family, null);
 	}
 
-	/** Process all queued UI events. */
+	/**
+	 * Process all queued UI events. If called from background thread, blocks
+	 * until all pending events are processed in UI thread.
+	 */
 	public static void processUIEvents() {
 		if (Display.getCurrent() != null) {
-			while (PlatformUI.getWorkbench().getDisplay().readAndDispatch()) {
+			while (Display.getCurrent().readAndDispatch()) {
 				// process queued ui events
 			}
+		} else {
+			// synchronously refresh UI
+			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+				public void run() {
+					processUIEvents();
+				}
+			});
 		}
 	}
 
@@ -591,6 +601,23 @@ public class TestUtil {
 		assertNotNull("View with ID " + viewId + " not found via SWTBot.",
 				viewbot);
 		return viewbot;
+	}
+
+	public static void hideView(final String viewId) {
+		Display.getDefault().syncExec(new Runnable() {
+			public void run() {
+				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow();
+				IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
+				IViewReference[] views = workbenchPage.getViewReferences();
+				for (int i = 0; i < views.length; i++) {
+					IViewReference view = views[i];
+					if (viewId.equals(view.getId())) {
+						workbenchPage.hideView(view);
+					}
+				}
+			}
+		});
 	}
 
 	public static SWTBotView showHistoryView() {
