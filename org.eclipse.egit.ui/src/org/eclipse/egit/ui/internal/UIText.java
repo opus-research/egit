@@ -954,6 +954,9 @@ public class UIText extends NLS {
 	public static String CheckoutConflictDialog_conflictMessage;
 
 	/** */
+	public static String CheckoutDialog_Message;
+
+	/** */
 	public static String CheckoutDialog_OkCheckout;
 
 	/** */
@@ -961,6 +964,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CheckoutDialog_Title;
+
+	/** */
+	public static String CheckoutDialog_WindowTitle;
 
 	/** */
 	public static String CheckoutHandler_SelectBranchMessage;
@@ -2487,9 +2493,6 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_AfterFetchGroup;
 
 	/** */
-	public static String FetchGerritChangePage_BranchEditButton;
-
-	/** */
 	public static String FetchGerritChangePage_BranchNameText;
 
 	/** */
@@ -2790,40 +2793,28 @@ public class UIText extends NLS {
 	public static String BranchResultDialog_DetachedHeadWarningDontShowAgain;
 
 	/** */
-	public static String BranchSelectionAndEditDialog_Message;
+	public static String CheckoutDialog_ErrorCouldNotCreateNewRef;
 
 	/** */
-	public static String BranchSelectionAndEditDialog_Title;
+	public static String CheckoutDialog_ErrorCouldNotDeleteRef;
 
 	/** */
-	public static String BranchSelectionAndEditDialog_WindowTitle;
+	public static String CheckoutDialog_ErrorCouldNotRenameRef;
 
 	/** */
-	public static String BranchSelectionAndEditDialog_OkClose;
+	public static String CheckoutDialog_QuestionNewBranchTitle;
 
 	/** */
-	public static String BranchSelectionAndEditDialog_ErrorCouldNotCreateNewRef;
+	public static String CheckoutDialog_QuestionNewBranchNameMessage;
 
 	/** */
-	public static String BranchSelectionAndEditDialog_ErrorCouldNotDeleteRef;
+	public static String CheckoutDialog_NewBranch;
 
 	/** */
-	public static String BranchSelectionAndEditDialog_ErrorCouldNotRenameRef;
+	public static String CheckoutDialog_Rename;
 
 	/** */
-	public static String BranchSelectionAndEditDialog_QuestionNewBranchTitle;
-
-	/** */
-	public static String BranchSelectionAndEditDialog_QuestionNewBranchNameMessage;
-
-	/** */
-	public static String BranchSelectionAndEditDialog_NewBranch;
-
-	/** */
-	public static String BranchSelectionAndEditDialog_Rename;
-
-	/** */
-	public static String BranchSelectionAndEditDialog_Delete;
+	public static String CheckoutDialog_Delete;
 
 	/** */
 	public static String CommitDialogPreferencePage_commitMessageHistory;
@@ -3039,6 +3030,15 @@ public class UIText extends NLS {
 	public static String RepositoriesView_Branches_Nodetext;
 
 	/** */
+	public static String RepositoriesView_CheckoutConfirmationMessage;
+
+	/** */
+	public static String RepositoriesView_CheckoutConfirmationTitle;
+
+	/** */
+	public static String RepositoriesView_CheckoutConfirmationToggleMessage;
+
+	/** */
 	public static String RepositoriesView_ClipboardContentNoGitRepoMessage;
 
 	/** */
@@ -3133,6 +3133,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
+
+	/** */
+	public static String DialogsPreferencePage_ShowCheckoutConfirmation;
 
 	/** */
 	public static String DialogsPreferencePage_ShowCloneFailedDialog;
@@ -4808,9 +4811,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitScmUrlImportWizardPage_counter;
-
-	/** */
-	public static String BranchEditDialog_Title;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
