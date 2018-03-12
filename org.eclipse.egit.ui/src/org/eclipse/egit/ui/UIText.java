@@ -2327,9 +2327,6 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_CommitId;
 
 	/** */
-	public static String CommitGraphTable_Committer;
-
-	/** */
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */

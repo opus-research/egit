@@ -195,12 +195,6 @@ class CommitGraphTable {
 		commitId.setText(UIText.CommitGraphTable_CommitId);
 		commitId.setWidth(100);
 		layout.addColumnData(new ColumnWeightData(5, true));
-
-		final TableColumn committer = new TableColumn(rawTable, SWT.NONE);
-		committer.setResizable(true);
-		committer.setText(UIText.CommitGraphTable_Committer);
-		committer.setWidth(100);
-		layout.addColumnData(new ColumnWeightData(5, true));
 	}
 
 	private void createPaintListener(final Table rawTable) {
@@ -208,7 +202,7 @@ class CommitGraphTable {
 		//
 		rawTable.addListener(SWT.EraseItem, new Listener() {
 			public void handleEvent(final Event event) {
-				if (0 <= event.index && event.index <= 4)
+				if (0 <= event.index && event.index <= 3)
 					event.detail &= ~SWT.FOREGROUND;
 			}
 		});
