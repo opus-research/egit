@@ -29,6 +29,7 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.Before;
@@ -111,10 +112,11 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		// first time: expect new branch
 		TestUtil.joinJobs(JobFamilies.PUSH);
 		SWTBotShell confirmed = bot.shell(dialogTitle);
-		SWTBotTreeItem[] treeItems = confirmed.bot().tree().getAllItems();
+		SWTBotTable table = confirmed.bot().table();
+		int rowCount = table.rowCount();
 		boolean newBranch = false;
-		for (SWTBotTreeItem item : treeItems) {
-			newBranch = item.getText().contains(
+		for (int i = 0; i < rowCount; i++) {
+			newBranch = table.getTableItem(i).getText(3).equals(
 					UIText.PushResultTable_statusOkNewBranch);
 			if (newBranch)
 				break;
@@ -129,10 +131,11 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimplePushCommand"));
 
 		confirmed = bot.shell(dialogTitle);
-		treeItems = confirmed.bot().tree().getAllItems();
+		table = confirmed.bot().table();
+		rowCount = table.rowCount();
 		boolean uptodate = false;
-		for (SWTBotTreeItem item : treeItems) {
-			uptodate = item.getText().contains(
+		for (int i = 0; i < rowCount; i++) {
+			uptodate = table.getTableItem(i).getText(3).equals(
 					UIText.PushResultTable_statusUpToDate);
 			if (uptodate)
 				break;
@@ -152,10 +155,12 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				.getPluginLocalizedValue("SimplePushCommand"));
 
 		confirmed = bot.shell(dialogTitle);
-		treeItems = confirmed.bot().tree().getAllItems();
+		table = confirmed.bot().table();
+		rowCount = table.rowCount();
 		newBranch = false;
-		for (SWTBotTreeItem item : treeItems) {
-			newBranch = item.getText().contains(objectIdBefore);
+		for (int i = 0; i < rowCount; i++) {
+			newBranch = table.getTableItem(i).getText(3).startsWith(
+					objectIdBefore);
 			if (newBranch)
 				break;
 		}
