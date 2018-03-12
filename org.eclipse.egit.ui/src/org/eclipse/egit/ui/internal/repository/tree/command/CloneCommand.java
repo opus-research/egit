@@ -24,7 +24,7 @@ public class CloneCommand extends
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		WizardDialog dlg = new WizardDialog(getShell(event),
 				new GitCloneWizard());
-		dlg.setHelpAvailable(true);
+		dlg.setHelpAvailable(false);
 		dlg.open();
 		return null;
 	}
