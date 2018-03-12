@@ -44,9 +44,19 @@ public class GitModelCacheTree extends GitModelTree {
 	public GitModelCacheTree(GitModelObjectContainer parent, RevCommit commit,
 			ObjectId repoId, ObjectId cacheId, String name,
 			FileModelFactory factory) throws IOException {
-		super(parent, commit, null, repoId, repoId, cacheId, name);
+		super(parent, commit, repoId, repoId, cacheId, name);
 		this.factory = factory;
 		cacheTreeMap = new HashMap<String, GitModelObject>();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return super.equals(obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
 	}
 
 	void addChild(ObjectId repoId, ObjectId cacheId, String path)
