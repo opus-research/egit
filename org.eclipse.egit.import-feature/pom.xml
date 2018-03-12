@@ -19,8 +19,7 @@
     <version>2.0.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.eclipse.egit.feature</groupId>
-  <artifactId>org.eclipse.egit.import</artifactId>
+  <artifactId>org.eclipse.egit.import-feature</artifactId>
   <packaging>eclipse-feature</packaging>
 
   <name>EGit Import Support</name>
