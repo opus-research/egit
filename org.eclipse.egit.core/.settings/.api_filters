@@ -3,12 +3,7 @@
     <resource path="src/org/eclipse/egit/core/CoreText.java" type="org.eclipse.egit.core.CoreText">
         <filter id="1143996420">
             <message_arguments>
-                <message_argument value="MoveDeleteHook_unmergedFileError"/>
-            </message_arguments>
-        </filter>
-        <filter id="1143996420">
-            <message_arguments>
-                <message_argument value="MoveDeleteHook_unmergedFileInFolderError"/>
+                <message_argument value="CommitOperation_errorParsingPersonIdent"/>
             </message_arguments>
         </filter>
     </resource>
