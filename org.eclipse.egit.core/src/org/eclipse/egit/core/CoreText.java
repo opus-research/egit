@@ -110,9 +110,6 @@ public class CoreText extends NLS {
 	public static String DiscardChangesOperation_refreshFailed;
 
 	/** */
-	public static String DiscardChangesOperation_repoNotFound;
-
-	/** */
 	public static String DeleteResourcesOperation_deletingResources;
 
 	/** */
@@ -225,6 +222,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String MoveDeleteHook_operationError;
+
+	/** */
+	public static String MoveDeleteHook_unmergedFileError;
+
+	/** */
+	public static String MoveDeleteHook_unmergedFileInFolderError;
 
 	/** */
 	public static String Error_CanonicalFile;
