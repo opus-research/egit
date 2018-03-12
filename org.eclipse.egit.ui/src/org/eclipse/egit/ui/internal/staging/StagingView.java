@@ -296,9 +296,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private Presentation presentation = Presentation.LIST;
 
-	private Set<IPath> pathsToExpandInStaged = new HashSet<>();
+	private Set<IPath> pathsToExpandInStaged = new HashSet<IPath>();
 
-	private Set<IPath> pathsToExpandInUnstaged = new HashSet<>();
+	private Set<IPath> pathsToExpandInUnstaged = new HashSet<IPath>();
 
 	/**
 	 * Presentation mode of the staged/unstaged files.
@@ -362,7 +362,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 
 			if (FileTransfer.getInstance().isSupportedType(event.dataType)) {
-				List<String> files = new ArrayList<>();
+				List<String> files = new ArrayList<String>();
 				for (Object selected : selection.toList())
 					if (selected instanceof StagingEntry) {
 						StagingEntry entry = (StagingEntry) selected;
@@ -964,7 +964,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		this.commitAndPushButton = toolkit.createButton(commitButtonsContainer,
 				UIText.StagingView_CommitAndPush, SWT.PUSH);
-		commitAndPushButton.setImage(getImage(UIIcons.PUSH));
 		commitAndPushButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1091,8 +1090,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			public void updateChangeIdToggleSelection(boolean selection) {
 				addChangeIdAction.setChecked(selection);
 				commitAndPushButton
-						.setImage(getImage(
-								selection ? UIIcons.GERRIT : UIIcons.PUSH));
+						.setImage(selection ? getImage(UIIcons.GERRIT) : null);
 			}
 
 			@Override
@@ -1275,7 +1273,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		String[] parts = s.split(","); //$NON-NLS-1$
 		int[] ints = new int[parts.length];
 		for (int i = 0; i < parts.length; i++) {
-			ints[i] = Integer.parseInt(parts[i]);
+			ints[i] = Integer.valueOf(parts[i]).intValue();
 		}
 		return ints;
 	}
@@ -1519,7 +1517,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private ShowInContext getShowInContext(TreeViewer treeViewer) {
 		IStructuredSelection selection = (IStructuredSelection) treeViewer.getSelection();
-		List<Object> elements = new ArrayList<>();
+		List<Object> elements = new ArrayList<Object>();
 		for (Object selectedElement : selection.toList()) {
 			if (selectedElement instanceof StagingEntry) {
 				StagingEntry entry = (StagingEntry) selectedElement;
@@ -1553,7 +1551,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (isDisposed())
 			return;
 		enableCommitWidgets(enabled);
-		commitMessageText.setEnabled(enabled);
 		enableStagingWidgets(enabled);
 	}
 
@@ -1565,9 +1562,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void enableCommitWidgets(boolean enabled) {
-		if (isDisposed()) {
+		if (isDisposed())
 			return;
-		}
+
+		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		enableAuthorText(enabled);
 		amendPreviousCommitAction.setEnabled(enabled);
@@ -2008,7 +2006,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				if (selection.isEmpty())
 					return;
 
-				List<StagingEntry> stagingEntryList = new ArrayList<>();
+				List<StagingEntry> stagingEntryList = new ArrayList<StagingEntry>();
 
 				boolean submoduleSelected = false;
 				boolean folderSelected = false;
@@ -2347,7 +2345,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private static List<IPath> getSelectedPaths(IStructuredSelection selection) {
-		List<IPath> paths = new ArrayList<>();
+		List<IPath> paths = new ArrayList<IPath>();
 		Iterator iterator = selection.iterator();
 		while (iterator.hasNext()) {
 			StagingEntry stagingEntry = (StagingEntry) iterator.next();
@@ -2507,8 +2505,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		StagingViewContentProvider contentProvider = getContentProvider(unstagedViewer);
 		final Git git = new Git(currentRepository);
 		Iterator iterator = selection.iterator();
-		final List<String> addPaths = new ArrayList<>();
-		final List<String> rmPaths = new ArrayList<>();
+		final List<String> addPaths = new ArrayList<String>();
+		final List<String> rmPaths = new ArrayList<String>();
 		resetPathsToExpand();
 		while (iterator.hasNext()) {
 			Object element = iterator.next();
@@ -2657,7 +2655,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private List<String> processUnstageSelection(IStructuredSelection selection) {
-		List<String> paths = new ArrayList<>();
+		List<String> paths = new ArrayList<String>();
 		resetPathsToExpand();
 		for (Object element : selection.toList()) {
 			if (element instanceof StagingEntry) {
@@ -2690,8 +2688,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void resetPathsToExpand() {
-		pathsToExpandInStaged = new HashSet<>();
-		pathsToExpandInUnstaged = new HashSet<>();
+		pathsToExpandInStaged = new HashSet<IPath>();
+		pathsToExpandInUnstaged = new HashSet<IPath>();
 	}
 
 	private static void addExpandedPathsBelowFolder(StagingFolderEntry folder,
@@ -2970,18 +2968,18 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private boolean hasErrorsOrWarnings() {
 		return getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
-						? (getProblemsSeverity() >= Integer
-								.parseInt(getPreferenceStore()
+				? (getProblemsSeverity() >= Integer.valueOf(getPreferenceStore()
 						.getString(UIPreferences.WARN_BEFORE_COMMITTING_LEVEL))
 				&& !ignoreErrors.getSelection()) : false;
 	}
 
+	@SuppressWarnings("boxing")
 	private boolean isCommitBlocked() {
 		return getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT)
 						? (getProblemsSeverity() >= Integer
-								.parseInt(getPreferenceStore().getString(
+								.valueOf(getPreferenceStore().getString(
 										UIPreferences.BLOCK_COMMIT_LEVEL))
 								&& !ignoreErrors.getSelection())
 						: false;
@@ -3017,14 +3015,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (getPresentation() == Presentation.LIST)
 			return;
 
-		Set<IPath> paths = new HashSet<>(additionalPaths);
+		Set<IPath> paths = new HashSet<IPath>(additionalPaths);
 		// Instead of just expanding the previous elements directly, also expand
 		// all parent paths. This makes it work in case of "re-folding" of
 		// compact tree.
 		for (Object element : previous)
 			if (element instanceof StagingFolderEntry)
 				addPathAndParentPaths(((StagingFolderEntry) element).getPath(), paths);
-		List<StagingFolderEntry> expand = new ArrayList<>();
+		List<StagingFolderEntry> expand = new ArrayList<StagingFolderEntry>();
 
 		calculateNodesToExpand(paths, stagedContentProvider.getElements(null),
 				expand);
@@ -3205,7 +3203,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private Collection<String> getStagedFileNames() {
 		StagingViewContentProvider stagedContentProvider = getContentProvider(stagedViewer);
 		StagingEntry[] entries = stagedContentProvider.getStagingEntries();
-		List<String> files = new ArrayList<>();
+		List<String> files = new ArrayList<String>();
 		for (StagingEntry entry : entries)
 			files.add(entry.getPath());
 		return files;

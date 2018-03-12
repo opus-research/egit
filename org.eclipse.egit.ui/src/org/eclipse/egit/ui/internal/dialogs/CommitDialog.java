@@ -371,7 +371,7 @@ public class CommitDialog extends TitleAreaDialog {
 
 	Button ignoreErrors;
 
-	ArrayList<CommitItem> items = new ArrayList<>();
+	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
 	private String commitMessage = null;
 
@@ -386,7 +386,7 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private boolean preselectAll = false;
 
-	private ArrayList<String> selectedFiles = new ArrayList<>();
+	private ArrayList<String> selectedFiles = new ArrayList<String>();
 
 	private boolean amending = false;
 
@@ -1157,10 +1157,11 @@ public class CommitDialog extends TitleAreaDialog {
 
 		boolean ignoreErrorsValue = ignoreErrors == null ? true
 				: !ignoreErrors.getSelection();
+		@SuppressWarnings("boxing")
 		boolean hasErrorsOrWarnings = getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 						? (getProblemsSeverity() >= Integer
-								.parseInt(getPreferenceStore().getString(
+								.valueOf(getPreferenceStore().getString(
 										UIPreferences.WARN_BEFORE_COMMITTING_LEVEL))
 								&& ignoreErrorsValue)
 						: false;
@@ -1182,11 +1183,12 @@ public class CommitDialog extends TitleAreaDialog {
 			}
 		}
 		setMessage(message, type);
+		@SuppressWarnings("boxing")
 		boolean commitBlocked = getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT)
 						? (getProblemsSeverity() >= Integer
-								.parseInt(getPreferenceStore().getString(
+								.valueOf(getPreferenceStore().getString(
 										UIPreferences.BLOCK_COMMIT_LEVEL))
 								&& ignoreErrorsValue)
 						: false;
@@ -1206,7 +1208,7 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private Collection<String> getFileList() {
-		Collection<String> result = new ArrayList<>();
+		Collection<String> result = new ArrayList<String>();
 		for (CommitItem item : items) {
 			result.add(item.path);
 		}

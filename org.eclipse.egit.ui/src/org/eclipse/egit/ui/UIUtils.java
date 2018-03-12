@@ -290,7 +290,7 @@ public class UIUtils {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 
-				List<IContentProposal> resultList = new ArrayList<>();
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
 				// make the simplest possible pattern check: allow "*"
 				// for multiple characters
@@ -387,7 +387,7 @@ public class UIUtils {
 						settings.put(preferenceKey, existingValues);
 					} else {
 
-						List<String> values = new ArrayList<>(
+						List<String> values = new ArrayList<String>(
 								existingValues.length + 1);
 
 						for (String existingValue : existingValues)
@@ -440,7 +440,7 @@ public class UIUtils {
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<>();
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
 				// make the simplest possible pattern check: allow "*"
 				// for multiple characters
@@ -852,7 +852,7 @@ public class UIUtils {
 	@Deprecated
 	public static StyleRange[] getHyperlinkDetectorStyleRanges(
 			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
-		HashSet<StyleRange> styleRangeList = new LinkedHashSet<>();
+		HashSet<StyleRange> styleRangeList = new LinkedHashSet<StyleRange>();
 		if (hyperlinkDetectors != null && hyperlinkDetectors.length > 0) {
 			IDocument doc = textViewer.getDocument();
 			for (int line = 0; line < doc.getNumberOfLines(); line++) {

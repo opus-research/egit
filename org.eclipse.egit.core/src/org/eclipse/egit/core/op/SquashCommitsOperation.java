@@ -109,7 +109,8 @@ public class SquashCommitsOperation implements IEGitOperation {
 						return messageHandler.modifyCommitMessage(oldMessage);
 					}
 				};
-				try (Git git = new Git(repository)) {
+				try {
+					Git git = new Git(repository);
 					RebaseCommand command = git.rebase()
 							.setUpstream(commits.get(0).getParent(0))
 							.runInteractively(handler)

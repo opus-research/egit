@@ -235,7 +235,7 @@ public class CleanRepositoryPage extends WizardPage {
 	 * @return the items to clean.
 	 */
 	public Set<String> getItemsToClean() {
-		Set<String> result = new TreeSet<>();
+		Set<String> result = new TreeSet<String>();
 		for(Object ele : cleanTable.getCheckedElements()) {
 			String str = ele.toString();
 
