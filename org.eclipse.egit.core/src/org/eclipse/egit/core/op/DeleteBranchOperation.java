@@ -104,9 +104,9 @@ public class DeleteBranchOperation implements IEGitOperation {
 							CoreText.DeleteBranchOperation_TaskName, branches
 									.iterator().next().getName());
 				else {
-					StringBuffer names = new StringBuffer();
+					String names = ""; //$NON-NLS-1$
 					for (Ref ref : branches)
-						names.append(ref.getName()).append(", "); //$NON-NLS-1$
+						names = names + ref.getName() + ", "; //$NON-NLS-1$
 					taskName = NLS.bind(
 							CoreText.DeleteBranchOperation_TaskName,
 							names.substring(0, names.length() - 2));
