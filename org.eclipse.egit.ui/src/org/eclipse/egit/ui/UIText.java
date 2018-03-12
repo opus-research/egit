@@ -40,12 +40,6 @@ public class UIText extends NLS {
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
-	public static String Activator_DefaultRepoFolderIsFile;
-
-	/** */
-	public static String Activator_DefaultRepoFolderNotCreated;
-
-	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
@@ -3041,10 +3035,7 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_repositories;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_destination;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
+	public static String GitBranchSynchronizeWizardPage_branches;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
@@ -3156,15 +3147,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NonDeletedFilesTree_ResourcePathsButton;
-
-	/** */
-	public static String NoteDetailsPage_ContentSection;
-
-	/** */
-	public static String NotesBlock_NotesSection;
-
-	/** */
-	public static String NotesEditorPage_Title;
 
 	/** */
 	public static String OpenWorkingFileAction_text;
