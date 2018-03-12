@@ -26,6 +26,7 @@ import java.util.TreeSet;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -38,12 +39,14 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.op.BranchOperation;
+import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
@@ -451,36 +454,84 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	}
 
+	@SuppressWarnings("unchecked")
 	private void addMenuItemsForTreeSelection(Menu men) {
 
 		final IStructuredSelection sel = (IStructuredSelection) tv
 				.getSelection();
 
-		boolean repoOnly = true;
-		for (Object selected : sel.toArray()) {
+		boolean importableProjectsOnly = true;
 
-			if (((RepositoryTreeNode) selected).getType() != RepositoryTreeNodeType.REPO) {
-				repoOnly = false;
+		for (Object node : sel.toArray()) {
+			RepositoryTreeNode tnode = (RepositoryTreeNode) node;
+			importableProjectsOnly = tnode.getType() == RepositoryTreeNodeType.PROJ;
+			if (!importableProjectsOnly)
 				break;
-			}
 		}
 
-		if (sel.size() > 1 && repoOnly) {
-			List nodes = sel.toList();
-			final Repository[] repos = new Repository[nodes.size()];
-			for (int i = 0; i < sel.size(); i++)
-				repos[i] = ((RepositoryTreeNode) nodes.get(i)).getRepository();
+		if (importableProjectsOnly) {
+			MenuItem sync = new MenuItem(men, SWT.PUSH);
+			sync.setText(UIText.RepositoriesView_ImportProject_MenuItem);
 
-			MenuItem remove = new MenuItem(men, SWT.PUSH);
-			remove.setText(UIText.RepositoriesView_Remove_MenuItem);
-			remove.addSelectionListener(new SelectionAdapter() {
+			sync.addSelectionListener(new SelectionAdapter() {
 
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					removeRepository(repos);
-				}
-			});
 
+					IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
+
+						public void run(IProgressMonitor monitor)
+								throws CoreException {
+
+							for (Object selected : sel.toArray()) {
+								RepositoryTreeNode<File> projectNode = (RepositoryTreeNode<File>) selected;
+								File file = projectNode.getObject();
+
+								IProjectDescription pd = ResourcesPlugin
+										.getWorkspace().newProjectDescription(
+												file.getName());
+								IPath locationPath = new Path(file
+										.getAbsolutePath());
+
+								pd.setLocation(locationPath);
+
+								ResourcesPlugin.getWorkspace().getRoot()
+										.getProject(pd.getName()).create(pd,
+												monitor);
+								IProject project = ResourcesPlugin
+										.getWorkspace().getRoot().getProject(
+												pd.getName());
+								project.open(monitor);
+
+								File gitDir = projectNode.getRepository()
+										.getDirectory();
+
+								ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
+										project, gitDir);
+								connectProviderOperation
+										.execute(new SubProgressMonitor(
+												monitor, 20));
+
+							}
+
+						}
+					};
+
+					try {
+
+						ResourcesPlugin.getWorkspace().run(wsr,
+								ResourcesPlugin.getWorkspace().getRoot(),
+								IWorkspace.AVOID_UPDATE,
+								new NullProgressMonitor());
+
+						scheduleRefresh();
+					} catch (CoreException e1) {
+						Activator.logError(e1.getMessage(), e1);
+					}
+
+				}
+
+			});
 		}
 
 		// from here on, we only deal with single selection
@@ -544,8 +595,53 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					removeRepository(repo);
+
+					List<IProject> projectsToDelete = new ArrayList<IProject>();
+					File workDir = repo.getWorkDir();
+					final IPath wdPath = new Path(workDir.getAbsolutePath());
+					for (IProject prj : ResourcesPlugin.getWorkspace()
+							.getRoot().getProjects()) {
+						if (wdPath.isPrefixOf(prj.getLocation())) {
+							projectsToDelete.add(prj);
+						}
+					}
+
+					if (!projectsToDelete.isEmpty()) {
+						boolean confirmed;
+						confirmed = confirmProjectDeletion(projectsToDelete);
+						if (!confirmed) {
+							return;
+						}
+					}
+
+					IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
+
+						public void run(IProgressMonitor monitor)
+								throws CoreException {
+
+							for (IProject prj : ResourcesPlugin.getWorkspace()
+									.getRoot().getProjects()) {
+								if (wdPath.isPrefixOf(prj.getLocation())) {
+									prj.delete(false, false, monitor);
+								}
+							}
+
+							removeDir(repo.getDirectory());
+							scheduleRefresh();
+						}
+					};
+
+					try {
+						ResourcesPlugin.getWorkspace().run(wsr,
+								ResourcesPlugin.getWorkspace().getRoot(),
+								IWorkspace.AVOID_UPDATE,
+								new NullProgressMonitor());
+					} catch (CoreException e1) {
+						Activator.logError(e1.getMessage(), e1);
+					}
+
 				}
+
 			});
 
 			// TODO delete does not work because of file locks on .pack-files
@@ -1736,47 +1832,4 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 		return false;
 	}
 
-	private void removeRepository(final Repository... repository) {
-		final List<IProject> projectsToDelete = new ArrayList<IProject>();
-
-		for (Repository repo : repository) {
-			File workDir = repo.getWorkDir();
-			final IPath wdPath = new Path(workDir.getAbsolutePath());
-			for (IProject prj : ResourcesPlugin.getWorkspace().getRoot()
-					.getProjects()) {
-				if (wdPath.isPrefixOf(prj.getLocation())) {
-					projectsToDelete.add(prj);
-				}
-			}
-		}
-
-		if (!projectsToDelete.isEmpty()) {
-			boolean confirmed;
-			confirmed = confirmProjectDeletion(projectsToDelete);
-			if (!confirmed) {
-				return;
-			}
-		}
-
-		IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
-
-			public void run(IProgressMonitor monitor) throws CoreException {
-
-				for (IProject prj : projectsToDelete) {
-					prj.delete(false, false, monitor);
-				}
-				for (Repository repo : repository)
-					removeDir(repo.getDirectory());
-				scheduleRefresh();
-			}
-		};
-
-		try {
-			ResourcesPlugin.getWorkspace().run(wsr,
-					ResourcesPlugin.getWorkspace().getRoot(),
-					IWorkspace.AVOID_UPDATE, new NullProgressMonitor());
-		} catch (CoreException e1) {
-			Activator.logError(e1.getMessage(), e1);
-		}
-	}
 }

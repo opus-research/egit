@@ -15,6 +15,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
@@ -39,7 +42,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 	// private DefaultInformationControl infoControl;
 
 	/**
-	 * 
+	 *
 	 * @param viewer
 	 */
 	public RepositoriesViewLabelProvider(final ColumnViewer viewer) {
@@ -165,7 +168,11 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 			// fall through
 		case ERROR:
 			return (String) node.getObject();
+		case PROJECTS:
+			return UIText.RepositoriesView_ExistingProjects_Nodetext;
 		case REF:
+			// fall through
+		case HEAD:
 			// fall through
 		case TAG:
 			// fall through
@@ -178,12 +185,17 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 						+ ref.getLeaf().getName();
 			}
 			return refName;
+		case PROJ:
+
+			File file = (File) node.getObject();
+			return file.getName();
+
 		case WORKINGDIR:
 
 			return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
 					+ node.getRepository().getWorkDir().getAbsolutePath();
-		case PUSH:
-			// fall through
+
+		case PUSH: // fall through
 		case FETCH:
 			return (String) node.getObject();
 
@@ -218,6 +230,18 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 				}
 			} catch (IOException e1) {
 				// simply ignore here
+			}
+			return image;
+
+		case PROJ:
+
+			File file = (File) node.getObject();
+
+			for (IProject proj : ResourcesPlugin.getWorkspace().getRoot()
+					.getProjects()) {
+				if (proj.getLocation().equals(new Path(file.getAbsolutePath()))) {
+					return getDecoratedImage(image);
+				}
 			}
 			return image;
 
