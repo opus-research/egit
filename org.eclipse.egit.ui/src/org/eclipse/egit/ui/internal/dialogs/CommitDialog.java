@@ -54,7 +54,6 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
@@ -74,7 +73,6 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.util.ChangeIdUtil;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
@@ -83,6 +81,8 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -261,10 +261,6 @@ public class CommitDialog extends Dialog {
 	private static final String AUTHOR_VALUES_PREF = "CommitDialog.authorValues"; //$NON-NLS-1$
 
 	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
-
-	private static final String SASH_WEIGHTS_PREF_PREFIX = "CommitDialog.sashWeights_"; //$NON-NLS-1$
-
-	SashForm sashForm;
 
 	SpellcheckableMessageArea commitText;
 
@@ -538,21 +534,21 @@ public class CommitDialog extends Dialog {
 
 	@Override
 	protected Control createDialogArea(Composite parent) {
+		Composite container = (Composite) super.createDialogArea(parent);
 		parent.getShell().setText(UIText.CommitDialog_CommitChanges);
 
-		sashForm = new SashForm(parent, SWT.VERTICAL);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(sashForm);
+		GridLayout layout = new GridLayout(2, false);
+		container.setLayout(layout);
 
-		Composite textContainer = new Composite(sashForm, SWT.NONE);
-		GridLayoutFactory.swtDefaults().applyTo(textContainer);
-
-		Label label = new Label(textContainer, SWT.LEFT);
+		Label label = new Label(container, SWT.LEFT);
 		label.setText(UIText.CommitDialog_CommitMessage);
 		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
 
-		commitText = new SpellcheckableMessageArea(textContainer, commitMessage);
+		commitText = new SpellcheckableMessageArea(container, commitMessage);
+		Point size = commitText.getTextWidget().getSize();
+		int minHeight = commitText.getTextWidget().getLineHeight() * 3;
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
-				.align(SWT.FILL, SWT.FILL).create());
+				.hint(size).minSize(size.x, minHeight).align(SWT.FILL, SWT.FILL).create());
 		commitText.setText(calculateCommitMessage());
 
 		// allow to commit with ctrl-enter
@@ -569,18 +565,15 @@ public class CommitDialog extends Dialog {
 			}
 		});
 
-		Composite bottomContainer = new Composite(sashForm, SWT.NONE);
-		GridLayoutFactory.swtDefaults().numColumns(2).applyTo(bottomContainer);
-
-		new Label(bottomContainer, SWT.LEFT).setText(UIText.CommitDialog_Author);
-		authorText = new Text(bottomContainer, SWT.BORDER);
+		new Label(container, SWT.LEFT).setText(UIText.CommitDialog_Author);
+		authorText = new Text(container, SWT.BORDER);
 		authorText.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).create());
 		if (author != null)
 			authorText.setText(author);
 
 		authorHandler = UIUtils.addPreviousValuesContentProposalToText(authorText, AUTHOR_VALUES_PREF);
-		new Label(bottomContainer, SWT.LEFT).setText(UIText.CommitDialog_Committer);
-		committerText = new Text(bottomContainer, SWT.BORDER);
+		new Label(container, SWT.LEFT).setText(UIText.CommitDialog_Committer);
+		committerText = new Text(container, SWT.BORDER);
 		committerText.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).create());
 		if (committer != null)
 			committerText.setText(committer);
@@ -601,11 +594,21 @@ public class CommitDialog extends Dialog {
 
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(committerText, COMMITTER_VALUES_PREF);
 
-		Composite optionsContainer = new Composite(bottomContainer, SWT.NONE);
-		GridDataFactory.fillDefaults().grab(true, false).span(2, 1).applyTo(optionsContainer);
-		GridLayoutFactory.fillDefaults().numColumns(2).applyTo(optionsContainer);
+		Link preferencesLink = new Link(container, SWT.NONE);
+		preferencesLink.setText(UIText.CommitDialog_ConfigureLink);
+		preferencesLink.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				String preferencePageId = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
+				PreferenceDialog dialog = PreferencesUtil
+						.createPreferenceDialogOn(getShell(), preferencePageId,
+								new String[] { preferencePageId }, null);
+				dialog.open();
+				commitText.reconfigure();
+			}
+		});
 
-		amendingButton = new Button(optionsContainer, SWT.CHECK);
+		amendingButton = new Button(container, SWT.CHECK);
 		if (amending) {
 			amendingButton.setSelection(amending);
 			amendingButton.setEnabled(false); // if already set, don't allow any changes
@@ -641,24 +644,9 @@ public class CommitDialog extends Dialog {
 		});
 
 		amendingButton.setText(UIText.CommitDialog_AmendPreviousCommit);
-		amendingButton.setLayoutData(GridDataFactory.fillDefaults().create());
+		amendingButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
 
-		Link preferencesLink = new Link(optionsContainer, SWT.NONE);
-		GridDataFactory.fillDefaults().align(SWT.END, SWT.FILL).applyTo(preferencesLink);
-		preferencesLink.setText(UIText.CommitDialog_ConfigureLink);
-		preferencesLink.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				String preferencePageId = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
-				PreferenceDialog dialog = PreferencesUtil
-						.createPreferenceDialogOn(getShell(), preferencePageId,
-								new String[] { preferencePageId }, null);
-				dialog.open();
-				commitText.reconfigure();
-			}
-		});
-
-		signedOffButton = new Button(optionsContainer, SWT.CHECK);
+		signedOffButton = new Button(container, SWT.CHECK);
 		signedOffButton.setSelection(signedOff);
 		if (!amending)
 			refreshSignedOffBy();
@@ -675,7 +663,7 @@ public class CommitDialog extends Dialog {
 			}
 		});
 
-		changeIdButton = new Button(optionsContainer, SWT.CHECK);
+		changeIdButton = new Button(container, SWT.CHECK);
 		changeIdButton.setText(UIText.CommitDialog_AddChangeIdLabel);
 		changeIdButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
 		changeIdButton.setToolTipText(UIText.CommitDialog_AddChangeIdTooltip);
@@ -695,9 +683,7 @@ public class CommitDialog extends Dialog {
 		if (!amending)
 			refreshChangeIdText();
 
-		new Label(bottomContainer, SWT.NONE);
-
-		showUntrackedButton = new Button(bottomContainer, SWT.CHECK);
+		showUntrackedButton = new Button(container, SWT.CHECK);
 		showUntrackedButton.setText(UIText.CommitDialog_ShowUntrackedFiles);
 		showUntrackedButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
 
@@ -729,7 +715,7 @@ public class CommitDialog extends Dialog {
 		updateSignedOffButton();
 		updateChangeIdButton();
 
-		Table resourcesTable = new Table(bottomContainer, SWT.H_SCROLL | SWT.V_SCROLL
+		Table resourcesTable = new Table(container, SWT.H_SCROLL | SWT.V_SCROLL
 				| SWT.FULL_SELECTION | SWT.MULTI | SWT.CHECK | SWT.BORDER);
 		resourcesTable.setLayoutData(GridDataFactory.fillDefaults().hint(600,
 				200).span(2,1).grab(true, true).create());
@@ -781,11 +767,10 @@ public class CommitDialog extends Dialog {
 			}
 		}
 
-		restoreSashWeights(sashForm, settings, new int[] {1, 3});
-
-		applyDialogFont(sashForm);
+		applyDialogFont(container);
 		resourceCol.pack();
-		return sashForm;
+		container.pack();
+		return container;
 	}
 
 	/**
@@ -1134,55 +1119,6 @@ public class CommitDialog extends Dialog {
 	@Override
 	protected int getShellStyle() {
 		return super.getShellStyle() | SWT.RESIZE;
-	}
-
-	@Override
-	protected IDialogSettings getDialogBoundsSettings() {
-		String sectionName = getClass().getSimpleName() + "_dialogBounds"; //$NON-NLS-1$
-		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault().getDialogSettings();
-		IDialogSettings section = settings.getSection(sectionName);
-		if (section == null) {
-			section = settings.addNewSection(sectionName);
-		}
-		return section;
-	}
-
-	@Override
-	public boolean close() {
-		// store sash weights
-		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault().getDialogSettings();
-		saveSashWeights(sashForm, settings);
-
-		return super.close();
-	}
-
-	/*
-	 * Restores the given sash form's weights with saved values
-	 * or falls back to the given defaults
-	 */
-	private void restoreSashWeights(SashForm form, IDialogSettings settings, int[] defaults) {
-		Control[] children = form.getChildren();
-		if (children.length > 0) {
-			int[] weights = new int[children.length];
-			boolean storedWeightsOk = true;
-			for (int i = 0; i < children.length; i++) {
-				try {
-					weights[i] = settings.getInt(SASH_WEIGHTS_PREF_PREFIX + i);
-				} catch (NumberFormatException e) {
-					// no or invalid value
-					storedWeightsOk = false;
-					break;
-				}
-			}
-			form.setWeights(storedWeightsOk ? weights : defaults);
-		}
-	}
-
-	private void saveSashWeights(SashForm form, IDialogSettings settings) {
-		int[] weights = form.getWeights();
-		for (int i = 0; i < weights.length; i++) {
-			settings.put(SASH_WEIGHTS_PREF_PREFIX + i, weights[i]);
-		}
 	}
 
 }
