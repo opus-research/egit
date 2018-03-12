@@ -47,8 +47,14 @@ public class RebaseInteractivePreferences {
 	 * @return if the view should react on selection changes.
 	 */
 	public static boolean isReactOnSelection() {
-		return getPreferencesStore().getBoolean(
-				UIPreferences.REBASE_INTERACTIVE_SYNC_SELECTION);
+		IPreferenceStore preferenceStore = getPreferencesStore();
+		if (!preferenceStore
+				.contains(UIPreferences.REBASE_INTERACTIVE_SYNC_SELECTION))
+			preferenceStore.setDefault(
+					UIPreferences.REBASE_INTERACTIVE_SYNC_SELECTION, true);
+
+		return preferenceStore
+				.getBoolean(UIPreferences.REBASE_INTERACTIVE_SYNC_SELECTION);
 	}
 
 	/**
