@@ -3782,12 +3782,6 @@ public class UIText extends NLS {
 	public static String StagingView_IndexDiffReload;
 
 	/** */
-	public static String StagingView_Refresh;
-
-	/** */
-	public static String StagingView_LinkSelection;
-
-	/** */
 	public static String SynchronizeWithMenu_custom;
 
 	/** */
