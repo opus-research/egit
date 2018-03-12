@@ -15,7 +15,6 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.compare.structuremergeviewer.ICompareInputChangeListener;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
@@ -160,7 +159,7 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 					UIText.GitCompareFileRevisionEditorInput_RevisionLabel,
 					new Object[] {
 							element.getName(),
-							RevUtils.truncatedRevision(castElement
+							CompareUtils.truncatedRevision(castElement
 									.getContentIdentifier()),
 							castElement.getAuthor() });
 
