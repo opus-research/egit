@@ -52,8 +52,6 @@ class GenerateHistoryJob extends Job {
 
 	private RevFlag highlightFlag;
 
-	private int forcedRedrawsAfterListIsCompleted = 0;
-
 	GenerateHistoryJob(final GitHistoryPage ghp, Control control, RevWalk walk,
 			ResourceManager resources) {
 		super(NLS.bind(UIText.HistoryPage_refreshJob, Activator.getDefault()
@@ -100,14 +98,11 @@ class GenerateHistoryJob extends Job {
 							.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_FINDTOOLBAR);
 					if (loadedCommits.size() > itemToLoad + (BATCH_SIZE / 2) + 1 && loadIncrementally)
 						break;
-					if (oldsz == loadedCommits.size()) {
-						forcedRedrawsAfterListIsCompleted++;
-						break;
-					}
-					if (maxCommits > 0 && loadedCommits.size() > maxCommits) {
+					if (maxCommits > 0 && loadedCommits.size() > maxCommits)
 						incomplete = true;
+					if (incomplete || oldsz == loadedCommits.size())
 						break;
-					}
+
 					if (loadedCommits.size() != 1)
 						monitor.setTaskName(MessageFormat
 								.format(UIText.GenerateHistoryJob_taskFoundMultipleCommits,
@@ -138,8 +133,7 @@ class GenerateHistoryJob extends Job {
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation());
 		try {
-			if (!(forcedRedrawsAfterListIsCompleted == 1) && !incomplete
-					&& loadedCommits.size() == lastUpdateCnt)
+			if (!incomplete && loadedCommits.size() == lastUpdateCnt)
 				return;
 
 			final SWTCommit[] asArray = new SWTCommit[loadedCommits.size()];
