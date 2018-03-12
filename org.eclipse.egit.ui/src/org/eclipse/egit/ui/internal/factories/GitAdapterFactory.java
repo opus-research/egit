@@ -62,11 +62,7 @@ public class GitAdapterFactory implements IAdapterFactory {
 				return root.getFileForLocation(obj.getLocation());
 
 			if (obj instanceof GitModelTree) {
-				IResource res = root.getContainerForLocation(obj.getLocation());
-				if (res == null)
-					res = root.getFolder(obj.getLocation());
-
-				return res;
+				return root.getContainerForLocation(obj.getLocation());
 			}
 		}
 
