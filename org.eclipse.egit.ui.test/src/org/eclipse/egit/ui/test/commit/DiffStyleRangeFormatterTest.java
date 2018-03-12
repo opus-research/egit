@@ -30,8 +30,6 @@ import org.junit.Test;
 
 /**
  * Unit tests for {@link DiffStyleRangeFormatter}
- * 
- * @author Kevin Sawicki (kevin@github.com)
  */
 public class DiffStyleRangeFormatterTest extends LocalRepositoryTestCase {
 
