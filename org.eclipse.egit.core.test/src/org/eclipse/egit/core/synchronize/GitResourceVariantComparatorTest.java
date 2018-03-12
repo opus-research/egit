@@ -50,7 +50,6 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 	private TestRepository testRepo;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();

@@ -41,7 +41,6 @@ abstract public class AbstractGitFlowOperationTest extends GitTestCase {
 
 	protected static final String MY_HOTFIX = "myHotfix";
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -51,7 +50,6 @@ abstract public class AbstractGitFlowOperationTest extends GitTestCase {
 		testRepository.connect(project.getProject());
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();
@@ -77,9 +75,5 @@ abstract public class AbstractGitFlowOperationTest extends GitTestCase {
 				"Hello, world".getBytes("UTF-8"));
 		return testRepository.addAndCommit(project.project,
 				new File(file.getLocationURI()), commitMessage);
-	}
-
-	protected String formatMergeCommitMessage(String branchName) {
-		return String.format("Merge branch '%s'", branchName);
 	}
 }

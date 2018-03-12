@@ -63,7 +63,6 @@ public class HistoryTest extends GitTestCase {
 
 	private IFileHistoryProvider historyProvider;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -107,7 +106,6 @@ public class HistoryTest extends GitTestCase {
 				.getFileHistoryProvider();
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();

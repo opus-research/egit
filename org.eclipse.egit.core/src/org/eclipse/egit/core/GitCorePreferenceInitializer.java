@@ -18,7 +18,6 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 public class GitCorePreferenceInitializer extends AbstractPreferenceInitializer {
 	private static final int MB = 1024 * 1024;
 
-	@Override
 	public void initializeDefaultPreferences() {
 		final IEclipsePreferences p  = DefaultScope.INSTANCE.getNode(Activator.getPluginId());
 
@@ -29,9 +28,5 @@ public class GitCorePreferenceInitializer extends AbstractPreferenceInitializer 
 		p.putInt(GitCorePreferences.core_streamFileThreshold, 50 * MB);
 		p.putBoolean(GitCorePreferences.core_autoShareProjects, true);
 		p.putBoolean(GitCorePreferences.core_autoIgnoreDerivedResources, true);
-
-		String defaultRepoDir = RepositoryUtil.getDefaultDefaultRepositoryDir();
-		p.put(GitCorePreferences.core_defaultRepositoryDir, defaultRepoDir);
 	}
-
 }

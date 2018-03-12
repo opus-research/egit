@@ -34,14 +34,11 @@ import org.eclipse.osgi.util.NLS;
 /**
  * git flow release finish
  */
-public class ReleaseFinishHandler extends AbstractGitFlowHandler {
+public class ReleaseFinishHandler extends AbstractFinishHandler {
 
 	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final GitFlowRepository gfRepo = GitFlowHandlerUtil.getRepository(event);
-		if (gfRepo == null) {
-			return error(UIText.Handlers_noGitflowRepositoryFound);
-		}
 
 		final ReleaseFinishOperation releaseFinishOperation;
 		try {
@@ -63,8 +60,8 @@ public class ReleaseFinishHandler extends AbstractGitFlowHandler {
 			if (handleConflictsOnMaster(gfRepo)) {
 				return null;
 			}
-			MultiStatus status = createMergeConflictInfo(develop, releaseBranch, mergeResult);
-			ErrorDialog.openError(null, UIText.ReleaseFinishHandler_Conflicts, null, status);
+			MultiStatus warning = createConflictWarning(develop, releaseBranch, mergeResult);
+			ErrorDialog.openError(null, UIText.ReleaseFinishHandler_Conflicts, null, warning);
 		} catch (WrongGitFlowStateException | CoreException | IOException
 				| OperationCanceledException | InterruptedException e) {
 			return error(e.getMessage(), e);
