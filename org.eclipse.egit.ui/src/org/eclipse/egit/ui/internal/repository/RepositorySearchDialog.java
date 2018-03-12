@@ -8,7 +8,6 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 479108
- *    Simon Scholz <simon.scholz@vogella.com> - Bug 476505
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -399,8 +398,6 @@ public class RepositorySearchDialog extends WizardPage {
 						doSearch();
 				}
 			});
-
-		fTree.getFilterControl().setFocus();
 	}
 
 	private void findGitDirsRecursive(File root, Set<String> strings,
