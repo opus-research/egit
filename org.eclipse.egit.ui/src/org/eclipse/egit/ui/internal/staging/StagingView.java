@@ -576,7 +576,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		rebaseContinueButton.setImage(getImage(UIIcons.REBASE_CONTINUE));
 		buttonGridData.applyTo(rebaseContinueButton);
 
-		showControl(rebaseSection, false);
+		updateRebaseButtonVisibility(false);
 
 		commitMessageSection = toolkit.createSection(rebaseAndCommitComposite,
 				ExpandableComposite.TITLE_BAR);
@@ -1994,13 +1994,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 				showControl(rebaseSection, isRebasing);
 				rebaseSection.getParent().layout(true);
 			}
-		});
-	}
 
-	private static void showControl(Control c, final boolean show) {
-		c.setVisible(show);
-		GridData g = (GridData) c.getLayoutData();
-		g.exclude = !show;
+			private void showControl(Control c, final boolean show) {
+				c.setVisible(show);
+				GridData g = (GridData) c.getLayoutData();
+				g.exclude = !show;
+			}
+		});
 	}
 
 	/**
