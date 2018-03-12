@@ -7,7 +7,7 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
- *     Chris Aniszczyk <zx@redhat.com> - some cool bug fixes for demo
+ *     Chris Aniszczyk <zx@redhat.com> - bug fix
  *******************************************************************************/
 package org.eclipse.egit.core.internal.util;
 
