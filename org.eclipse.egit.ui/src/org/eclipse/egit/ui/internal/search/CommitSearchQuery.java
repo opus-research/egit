@@ -121,7 +121,7 @@ public class CommitSearchQuery implements ISearchQuery {
 
 	private CommitSearchSettings settings;
 
-	private List<SearchMatcher> matchers = new LinkedList<>();
+	private List<SearchMatcher> matchers = new LinkedList<SearchMatcher>();
 
 	/**
 	 * Create git search query
@@ -198,9 +198,10 @@ public class CommitSearchQuery implements ISearchQuery {
 
 	private void walkRepository(Repository repository, Pattern pattern,
 			IProgressMonitor monitor) throws IOException {
-		try (RevWalk walk = new RevWalk(repository)) {
+		RevWalk walk = new RevWalk(repository);
+		try {
 			walk.setRetainBody(true);
-			List<RevCommit> commits = new LinkedList<>();
+			List<RevCommit> commits = new LinkedList<RevCommit>();
 			if (this.settings.isAllBranches()) {
 				for (Ref ref : repository.getRefDatabase()
 						.getRefs(Constants.R_HEADS).values())
@@ -229,6 +230,8 @@ public class CommitSearchQuery implements ISearchQuery {
 						}
 				}
 			}
+		} finally {
+			walk.dispose();
 		}
 	}
 

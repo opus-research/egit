@@ -19,7 +19,6 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.jface.viewers.StyledString;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.BranchTrackingStatus;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -83,24 +82,6 @@ public class GitLabels {
 	}
 
 	/**
-	 * Returns a {@link StyledString} that is initialized with "> " if the
-	 * repository has any changes, empty otherwise.
-	 *
-	 * @param repository
-	 *            to get the string for
-	 * @return the {@link StyledString}
-	 */
-	public static @NonNull StyledString getChangedPrefix(
-			@NonNull Repository repository) {
-		StyledString string = new StyledString();
-		if (RepositoryUtil.hasChanges(repository)) {
-			string.append('>', StyledString.DECORATIONS_STYLER);
-			string.append(' ');
-		}
-		return string;
-	}
-
-	/**
 	 * Computes detailed repository label that consists of repository name,
 	 * state, checked-out branch and it's status (returned by
 	 * {@linkplain #formatBranchTrackingStatus(BranchTrackingStatus)})
@@ -109,14 +90,12 @@ public class GitLabels {
 	 * @return a styled string for the repository
 	 * @throws IOException
 	 */
-	public static @NonNull StyledString getStyledLabel(
-			@NonNull Repository repository)
+	public static StyledString getStyledLabel(Repository repository)
 			throws IOException {
 		RepositoryUtil repositoryUtil = Activator.getDefault()
 				.getRepositoryUtil();
 
-		StyledString string = getChangedPrefix(repository);
-
+		StyledString string = new StyledString();
 		string.append(repositoryUtil.getRepositoryName(repository));
 
 		String branch = repositoryUtil.getShortBranch(repository);
@@ -159,8 +138,7 @@ public class GitLabels {
 	 * @param repository
 	 * @return repository label
 	 */
-	public static @NonNull StyledString getStyledLabelSafe(
-			@NonNull Repository repository) {
+	public static StyledString getStyledLabelSafe(Repository repository) {
 		try {
 			return getStyledLabel(repository);
 		} catch (IOException e) {
@@ -186,8 +164,7 @@ public class GitLabels {
 	 * @param element
 	 * @return element's label
 	 */
-	public static @NonNull StyledString getStyledLabelExtendedSafe(
-			Object element) {
+	public static StyledString getStyledLabelExtendedSafe(Object element) {
 		Repository repo = asRepository(element);
 
 		if (repo != null) {

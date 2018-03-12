@@ -19,10 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.lang.management.LockInfo;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -242,16 +238,14 @@ public class TestUtils {
 		Set<String> expectedfiles = new HashSet<String>();
 		for (String path : paths)
 			expectedfiles.add(path);
-		try (TreeWalk treeWalk = new TreeWalk(repository)) {
-			treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-			treeWalk.setRecursive(true);
-			while (treeWalk.next()) {
-				String path = treeWalk.getPathString();
-				if (!expectedfiles.contains(path))
-					fail("Repository contains unexpected expected file "
-							+ path);
-				expectedfiles.remove(path);
-			}
+		TreeWalk treeWalk = new TreeWalk(repository);
+		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
+		treeWalk.setRecursive(true);
+		while (treeWalk.next()) {
+			String path = treeWalk.getPathString();
+			if (!expectedfiles.contains(path))
+				fail("Repository contains unexpected expected file " + path);
+			expectedfiles.remove(path);
 		}
 		if (expectedfiles.size() > 0) {
 			StringBuilder message = new StringBuilder(
@@ -279,25 +273,23 @@ public class TestUtils {
 	public void assertRepositoryContainsFilesWithContent(Repository repository,
 			String... args) throws Exception {
 		HashMap<String, String> expectedfiles = mkmap(args);
-		try (TreeWalk treeWalk = new TreeWalk(repository)) {
-			treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-			treeWalk.setRecursive(true);
-			while (treeWalk.next()) {
-				String path = treeWalk.getPathString();
-				assertTrue(expectedfiles.containsKey(path));
-				ObjectId objectId = treeWalk.getObjectId(0);
-				byte[] expectedContent = expectedfiles.get(path)
-						.getBytes("UTF-8");
-				byte[] repoContent = treeWalk.getObjectReader().open(objectId)
-						.getBytes();
-				if (!Arrays.equals(repoContent, expectedContent)) {
-					fail("File " + path + " has repository content "
-							+ new String(repoContent, "UTF-8")
-							+ " instead of expected content "
-							+ new String(expectedContent, "UTF-8"));
-				}
-				expectedfiles.remove(path);
+		TreeWalk treeWalk = new TreeWalk(repository);
+		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
+		treeWalk.setRecursive(true);
+		while (treeWalk.next()) {
+			String path = treeWalk.getPathString();
+			assertTrue(expectedfiles.containsKey(path));
+			ObjectId objectId = treeWalk.getObjectId(0);
+			byte[] expectedContent = expectedfiles.get(path).getBytes("UTF-8");
+			byte[] repoContent = treeWalk.getObjectReader().open(objectId)
+					.getBytes();
+			if (!Arrays.equals(repoContent, expectedContent)) {
+				fail("File " + path + " has repository content "
+						+ new String(repoContent, "UTF-8")
+						+ " instead of expected content "
+						+ new String(expectedContent, "UTF-8"));
 			}
+			expectedfiles.remove(path);
 		}
 		if (expectedfiles.size() > 0) {
 			StringBuilder message = new StringBuilder(
@@ -317,9 +309,9 @@ public class TestUtils {
 	 * @param family
 	 * @throws InterruptedException
 	 */
-	public static void waitForJobs(long maxWaitTime, Object family)
+	public void waitForJobs(long maxWaitTime, Object family)
 			throws InterruptedException {
-		waitForJobs(100, maxWaitTime, family);
+		waitForJobs(maxWaitTime, 50, family);
 	}
 
 	/**
@@ -329,33 +321,22 @@ public class TestUtils {
 	 * @param maxWaitTime
 	 * @param minWaitTime
 	 * @param family
-	 *            can be null which means all job families
 	 * @throws InterruptedException
 	 */
-	public static void waitForJobs(long minWaitTime, long maxWaitTime,
-			Object family)
+	public void waitForJobs(long maxWaitTime, long minWaitTime, Object family)
 			throws InterruptedException {
-		long start = System.currentTimeMillis();
 		Thread.sleep(minWaitTime);
+		long start = System.currentTimeMillis();
 		IJobManager jobManager = Job.getJobManager();
+
 		Job[] jobs = jobManager.find(family);
-		while (busy(jobs)) {
-			Thread.sleep(50);
+		while (jobs.length > 0) {
+			Thread.sleep(100);
 			jobs = jobManager.find(family);
 			if (System.currentTimeMillis() - start > maxWaitTime) {
 				return;
 			}
 		}
-	}
-
-	private static boolean busy(Job[] jobs) {
-		for (Job job : jobs) {
-			int state = job.getState();
-			if (state == Job.RUNNING || state == Job.WAITING) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private static HashMap<String, String> mkmap(String... args) {
@@ -366,36 +347,6 @@ public class TestUtils {
 			map.put(args[i], args[i+1]);
 		}
 		return map;
-	}
-
-	public static String dumpThreads() {
-		final StringBuilder dump = new StringBuilder();
-		final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-		final ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(
-				threadMXBean.isObjectMonitorUsageSupported(),
-				threadMXBean.isSynchronizerUsageSupported());
-		for (ThreadInfo threadInfo : threadInfos) {
-			dump.append("Thread ").append(threadInfo.getThreadId()).append(' ')
-					.append(threadInfo.getThreadName()).append(' ')
-					.append(threadInfo.getThreadState()).append('\n');
-			LockInfo blocked = threadInfo.getLockInfo();
-			if (blocked != null) {
-				dump.append("  Waiting for ").append(blocked);
-				String lockOwner = threadInfo.getLockOwnerName();
-				if (lockOwner != null && !lockOwner.isEmpty()) {
-					dump.append(" held by ").append(lockOwner).append("(id=")
-							.append(threadInfo.getLockOwnerId()).append(')');
-				}
-				dump.append('\n');
-			}
-			for (LockInfo lock : threadInfo.getLockedSynchronizers()) {
-				dump.append("  Holding ").append(lock).append('\n');
-			}
-			for (StackTraceElement s : threadInfo.getStackTrace()) {
-				dump.append("  at ").append(s).append('\n');
-			}
-		}
-		return dump.toString();
 	}
 
 }

@@ -99,14 +99,11 @@ public class CommitHelper {
 	}
 
 	private static RevCommit getHeadCommit(Repository repository) {
-		if (repository == null) {
-			return null;
-		}
 		RevCommit headCommit = null;
-		try (RevWalk rw = new RevWalk(repository)) {
+		try {
 			ObjectId parentId = repository.resolve(Constants.HEAD);
 			if (parentId != null)
-				headCommit = rw.parseCommit(parentId);
+				headCommit = new RevWalk(repository).parseCommit(parentId);
 		} catch (IOException e) {
 			Activator.handleError(UIText.CommitAction_errorRetrievingCommit, e,
 					true);
@@ -127,9 +124,9 @@ public class CommitHelper {
 	}
 
 	private static String getCherryPickOriginalAuthor(Repository mergeRepository) {
-		try (RevWalk rw = new RevWalk(mergeRepository)) {
+		try {
 			ObjectId cherryPickHead = mergeRepository.readCherryPickHead();
-			PersonIdent author = rw.parseCommit(
+			PersonIdent author = new RevWalk(mergeRepository).parseCommit(
 					cherryPickHead).getAuthorIdent();
 			return author.getName() + " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$//$NON-NLS-2$
 		} catch (IOException e) {

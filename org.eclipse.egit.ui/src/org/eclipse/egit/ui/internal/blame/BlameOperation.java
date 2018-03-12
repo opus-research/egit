@@ -227,7 +227,7 @@ public class BlameOperation implements IEGitOperation {
 		if (result == null)
 			return;
 
-		Map<RevCommit, BlameRevision> revisions = new HashMap<>();
+		Map<RevCommit, BlameRevision> revisions = new HashMap<RevCommit, BlameRevision>();
 		int lineCount = result.getResultContents().size();
 		BlameRevision previous = null;
 		for (int i = 0; i < lineCount; i++) {
@@ -263,10 +263,6 @@ public class BlameOperation implements IEGitOperation {
 		}
 		if (previous != null)
 			previous.register();
-
-		if (shell.isDisposed()) {
-			return;
-		}
 
 		shell.getDisplay().asyncExec(new Runnable() {
 			@Override

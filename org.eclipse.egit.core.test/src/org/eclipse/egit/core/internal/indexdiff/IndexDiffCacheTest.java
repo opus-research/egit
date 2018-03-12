@@ -43,32 +43,15 @@ public class IndexDiffCacheTest extends GitTestCase {
 
 	private AtomicReference<IndexDiffData> indexDiffDataResult;
 
-	private IndexDiffChangedListener indexDiffListener;
-
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
 		testRepository = new TestRepository(gitDir);
 		repository = testRepository.getRepository();
-		listenerCalled = new AtomicBoolean(false);
-		indexDiffDataResult = new AtomicReference<>(null);
-		indexDiffListener = new IndexDiffChangedListener() {
-			@Override
-			public void indexDiffChanged(Repository repo,
-					IndexDiffData indexDiffData) {
-				listenerCalled.set(true);
-				indexDiffDataResult.set(indexDiffData);
-			}
-		};
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
-		IndexDiffCache indexDiffCache = Activator.getDefault()
-				.getIndexDiffCache();
-		indexDiffCache.removeIndexDiffChangedListener(indexDiffListener);
 		testRepository.dispose();
 		repository = null;
 		super.tearDown();
@@ -203,7 +186,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 
 		// adding this file will trigger a refresh, so no manual refresh must be
 		// required.
-		project.createFile("sub/.gitignore", "ignored\n".getBytes("UTF-8"));
+		project.createFile("sub/.gitignore", "ignored\n".getBytes());
 
 		IndexDiffData data2 = waitForListenerCalled();
 		assertThat(data2.getIgnoredNotInIndex(),
@@ -267,15 +250,21 @@ public class IndexDiffCacheTest extends GitTestCase {
 	}
 
 	private IndexDiffCacheEntry prepareCacheEntry() {
-		listenerCalled.set(false);
-		indexDiffDataResult.set(null);
-
 		IndexDiffCache indexDiffCache = Activator.getDefault()
 				.getIndexDiffCache();
-		indexDiffCache.addIndexDiffChangedListener(indexDiffListener);
 		// This call should trigger an indexDiffChanged event
 		IndexDiffCacheEntry cacheEntry = indexDiffCache
 				.getIndexDiffCacheEntry(repository);
+		listenerCalled = new AtomicBoolean(false);
+		indexDiffDataResult = new AtomicReference<IndexDiffData>(
+				null);
+		cacheEntry.addIndexDiffChangedListener(new IndexDiffChangedListener() {
+			public void indexDiffChanged(Repository repo,
+					IndexDiffData indexDiffData) {
+				listenerCalled.set(true);
+				indexDiffDataResult.set(indexDiffData);
+			}
+		});
 		return cacheEntry;
 	}
 

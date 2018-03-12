@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,7 +9,7 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.job;
 
-import java.nio.file.Path;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -106,7 +105,7 @@ public class RuleUtil {
 		IResourceRuleFactory ruleFactory = ResourcesPlugin.getWorkspace()
 				.getRuleFactory();
 		for (IPath path : paths) {
-			IResource resource = ResourceUtil.getResourceForLocation(path, false);
+			IResource resource = ResourceUtil.getResourceForLocation(path);
 			if (resource != null) {
 				IContainer container = resource.getParent();
 				ISchedulingRule rule = ruleFactory.modifyRule(container);
@@ -124,19 +123,14 @@ public class RuleUtil {
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		List<IProject> result = new ArrayList<IProject>();
-		final Path workTree = repository.getWorkTree().getAbsoluteFile()
-				.toPath();
+		final File parentFile = repository.getWorkTree();
 		for (IProject p : projects) {
 			IPath projectLocation = p.getLocation();
-			if (projectLocation == null) {
+			if (projectLocation == null)
 				continue;
-			}
-			Path projectPath = projectLocation.toFile().getAbsoluteFile()
-					.toPath();
-			if (projectPath.startsWith(workTree)
-					|| workTree.startsWith(projectPath)) {
+			if (projectLocation.toFile().getAbsolutePath()
+					.startsWith(parentFile.getAbsolutePath()))
 				result.add(p);
-			}
 		}
 		return result.toArray(new IProject[result.size()]);
 	}

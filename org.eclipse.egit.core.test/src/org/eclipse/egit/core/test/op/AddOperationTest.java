@@ -33,7 +33,6 @@ public class AddOperationTest extends GitTestCase {
 
 	TestRepository testRepository;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -43,7 +42,6 @@ public class AddOperationTest extends GitTestCase {
 		testRepository.connect(project.getProject());
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();
@@ -133,9 +131,9 @@ public class AddOperationTest extends GitTestCase {
 
 		testRepository.commit("first commit");
 
-		assertEquals(file1.getLocalTimeStamp() / 1000,
+		assertEquals(file1.getLocalTimeStamp(),
 				testRepository.lastModifiedInIndex(file1.getLocation()
-						.toPortableString()) / 1000);
+						.toPortableString()));
 
 		Thread.sleep(1000);
 
@@ -158,11 +156,9 @@ public class AddOperationTest extends GitTestCase {
 		assertTrue(testRepository.inIndex(file2.getLocation()
 				.toPortableString()));
 
-		assertEquals(file1.getLocalTimeStamp() / 1000,
-				testRepository.lastModifiedInIndex(
-						file1.getLocation().toPortableString()) / 1000);
-		assertEquals(file2.getLocalTimeStamp() / 1000,
-				testRepository.lastModifiedInIndex(
-						file2.getLocation().toPortableString()) / 1000);
+		 assertEquals(file1.getLocalTimeStamp() / 10,
+				 testRepository.lastModifiedInIndex(file1.getLocation().toPortableString()) / 10);
+		 assertEquals(file2.getLocalTimeStamp() / 10,
+				 testRepository.lastModifiedInIndex(file2.getLocation().toPortableString()) / 10);
 	}
 }

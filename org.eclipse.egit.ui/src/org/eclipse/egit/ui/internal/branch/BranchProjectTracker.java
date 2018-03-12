@@ -26,13 +26,14 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.clone.ProjectRecord;
 import org.eclipse.egit.ui.internal.clone.ProjectUtils;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.WorkbenchException;
 import org.eclipse.ui.XMLMemento;
@@ -134,7 +135,8 @@ class BranchProjectTracker {
 				continue;
 			}
 			// Only remember mapped projects
-			if (!ResourceUtil.isSharedWithGit(project)) {
+			if (RepositoryProvider.getProvider(project,
+					GitProvider.ID) == null) {
 				continue;
 			}
 			String fullPath = path.toOSString();
@@ -211,7 +213,7 @@ class BranchProjectTracker {
 		IMemento[] children = memento.getChildren(KEY_PROJECT);
 		if (children.length == 0)
 			return new String[0];
-		List<String> projects = new ArrayList<>(children.length);
+		List<String> projects = new ArrayList<String>(children.length);
 		for (int i = 0; i < children.length; i++) {
 			String path = children[i].getTextData();
 			if (path != null && path.length() > 0)
@@ -243,7 +245,7 @@ class BranchProjectTracker {
 		if (paths.length == 0)
 			return;
 
-		Set<ProjectRecord> records = new LinkedHashSet<>();
+		Set<ProjectRecord> records = new LinkedHashSet<ProjectRecord>();
 		File parent = repository.getWorkTree();
 		for (String path : paths) {
 			File root;

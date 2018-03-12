@@ -29,7 +29,6 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarButton;
-import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -66,7 +65,7 @@ public class SynchronizeViewPushTest extends AbstractSynchronizeViewTest {
 		String trackingBranch = Constants.R_REMOTES + "origin/master";
 		launchSynchronization(Constants.HEAD, trackingBranch, false);
 
-		SWTBotView viewBot = bot.viewById(ISynchronizeView.VIEW_ID);
+		SWTBotView viewBot = bot.viewByTitle("Synchronize");
 		SWTBotToolbarButton pushButton = viewBot.toolbarButton(UIText.GitActionContributor_Push);
 		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.PUSH, 30, TimeUnit.SECONDS);
 		pushButton.click();

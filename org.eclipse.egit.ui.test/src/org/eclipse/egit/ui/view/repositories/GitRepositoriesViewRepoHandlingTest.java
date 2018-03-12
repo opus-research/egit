@@ -73,7 +73,6 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		waitInUI();
 		Display.getDefault().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				Clipboard clp = new Clipboard(Display.getCurrent());
 				clp.clearContents();
@@ -105,7 +104,6 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				UIText.RepositoriesView_messsageEmpty);
 		Display.getDefault().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				Clipboard clip = null;
 				try {
@@ -244,9 +242,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.getText().startsWith(nodeText));
 
 		view.show();
-		SWTBotTreeItem item = TestUtil.expandAndWait(projectItem);
-		item = TestUtil.expandAndWait(item.getNode(FOLDER));
-		item.getNode(FILE1).select();
+		projectItem.expand().getNode(FOLDER).expand().getNode(FILE1).select();
 
 		ContextMenuHelper.clickContextMenuSync(explorerTree, "Show In",
 				viewName);
@@ -269,26 +265,11 @@ public class GitRepositoriesViewRepoHandlingTest extends
 						myUtil
 								.getPluginLocalizedValue("RepoViewAddRepository.tooltip"))
 				.click();
-		TestUtil.processUIEvents();
 		SWTBotShell shell = bot
 				.shell(UIText.RepositorySearchDialog_AddGitRepositories);
 		shell.bot().textWithLabel(UIText.RepositorySearchDialog_directory)
 				.setText(getTestDirectory().getPath());
-
-		assertEquals(0, ModalContext.getModalLevel());
-
 		shell.bot().button(UIText.RepositorySearchDialog_Search).click();
-		TestUtil.processUIEvents(500);
-		int max = 5000;
-		int slept = 0;
-		while (ModalContext.getModalLevel() > 0 && slept < max) {
-			TestUtil.processUIEvents(100);
-			slept += 100;
-		}
-
-		shell.activate();
-		SWTBotTreeItem item = shell.bot().tree().getAllItems()[0];
-		item.check();
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
 		assertHasRepo(repositoryFile);
@@ -392,17 +373,15 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		shell.bot().textWithLabel(UIText.RepositorySearchDialog_directory)
 				.setText(getTestDirectory().getPath());
 
-		assertEquals(0, ModalContext.getModalLevel());
-
 		shell.bot().button(UIText.RepositorySearchDialog_Search).click();
-		TestUtil.processUIEvents(500);
+
 		int max = 5000;
 		int slept = 0;
 		while (ModalContext.getModalLevel() > 0 && slept < max) {
-			TestUtil.processUIEvents(100);
+			Thread.sleep(100);
 			slept += 100;
 		}
-		shell.activate();
+
 		TestUtil.waitUntilTreeHasNodeContainsText(shell.bot(), shell.bot()
 				.tree(), "BareRepository1", 10000);
 		TestUtil.waitUntilTreeHasNodeContainsText(shell.bot(), shell.bot()

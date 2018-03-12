@@ -9,7 +9,6 @@ package org.eclipse.egit.ui.internal.push;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -100,7 +99,7 @@ public class PushBranchPage extends WizardPage {
 	/** Only set if user selected "New Remote" */
 	private AddRemotePage addRemotePage;
 
-	private Set<Resource> disposables = new HashSet<>();
+	private Set<Resource> disposables = new HashSet<Resource>();
 
 	/**
 	 * Create the page.
@@ -174,7 +173,7 @@ public class PushBranchPage extends WizardPage {
 				}
 			});
 		} catch (URISyntaxException e) {
-			this.remoteConfigs = new ArrayList<>();
+			this.remoteConfigs = new ArrayList<RemoteConfig>();
 			handleError(e);
 		}
 
@@ -220,11 +219,12 @@ public class PushBranchPage extends WizardPage {
 				commitIcon.getBounds().height));
 
 		Label commit = new Label(sourceComposite, SWT.NONE);
+		RevWalk revWalk = new RevWalk(repository);
 		StringBuilder commitBuilder = new StringBuilder(this.commitToPush
 				.abbreviate(7).name());
 		StringBuilder commitTooltipBuilder = new StringBuilder(
 				this.commitToPush.getName());
-		try (RevWalk revWalk = new RevWalk(repository)) {
+		try {
 			RevCommit revCommit = revWalk.parseCommit(this.commitToPush);
 			commitBuilder.append("  "); //$NON-NLS-1$
 			commitBuilder.append(Utils.shortenText(revCommit.getShortMessage(),
@@ -426,9 +426,7 @@ public class PushBranchPage extends WizardPage {
 			}
 			String branchName = remoteBranchNameText.getText();
 			if (branchName.length() == 0) {
-				setErrorMessage(MessageFormat.format(
-						UIText.PushBranchPage_ChooseBranchNameError,
-						remoteConfig.getName()));
+				setErrorMessage(UIText.PushBranchPage_ChooseBranchNameError);
 				return;
 			}
 			if (!Repository.isValidRefName(Constants.R_HEADS + branchName)) {
@@ -465,7 +463,7 @@ public class PushBranchPage extends WizardPage {
 	}
 
 	private String getSuggestedBranchName() {
-		if (ref != null && !ref.getName().startsWith(Constants.R_REMOTES)) {
+		if (ref != null) {
 			StoredConfig config = repository.getConfig();
 			String branchName = Repository.shortenRefName(ref.getName());
 

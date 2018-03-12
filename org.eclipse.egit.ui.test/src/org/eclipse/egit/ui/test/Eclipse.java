@@ -48,7 +48,6 @@ public class Eclipse {
 	@SuppressWarnings("boxing")
 	public static boolean isEclipseShell(final SWTBotShell shell) {
 		return UIThreadRunnable.syncExec(new BoolResult() {
-			@Override
 			public Boolean run() {
 				return PlatformUI.getWorkbench().getActiveWorkbenchWindow()
 						.getShell() == shell.widget;
@@ -85,7 +84,6 @@ public class Eclipse {
 		// bot.menu("Window").menu("Preferences").click();
 		// Launch preferences programmatically instead
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow();
@@ -93,7 +91,6 @@ public class Eclipse {
 
 			}
 		});
-		TestUtil.processUIEvents();
 		return bot.shell("Preferences").activate();
 	}
 

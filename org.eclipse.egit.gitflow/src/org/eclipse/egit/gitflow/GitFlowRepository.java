@@ -16,9 +16,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.egit.gitflow.internal.CoreText;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -44,7 +43,8 @@ public class GitFlowRepository {
 	/**
 	 * @param repository
 	 */
-	public GitFlowRepository(@NonNull Repository repository) {
+	public GitFlowRepository(Repository repository) {
+		Assert.isNotNull(repository);
 		this.repository = repository;
 		this.config = new GitFlowConfig(repository);
 	}
@@ -85,7 +85,7 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public Ref findBranch(String branchName) throws IOException {
-		return repository.exactRef(R_HEADS + branchName);
+		return repository.getRef(R_HEADS + branchName);
 	}
 
 	/**
@@ -93,9 +93,8 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public boolean isFeature() throws IOException {
-		String branch = repository.getBranch();
-		return branch != null
-				&& branch.startsWith(getConfig().getFeaturePrefix());
+		return repository.getBranch()
+				.startsWith(getConfig().getFeaturePrefix());
 	}
 
 	/**
@@ -103,8 +102,7 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public boolean isDevelop() throws IOException {
-		String branch = repository.getBranch();
-		return branch != null && branch.equals(getConfig().getDevelop());
+		return repository.getBranch().equals(getConfig().getDevelop());
 	}
 
 	/**
@@ -112,8 +110,7 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public boolean isMaster() throws IOException {
-		String branch = repository.getBranch();
-		return branch != null && branch.equals(getConfig().getMaster());
+		return repository.getBranch().equals(getConfig().getMaster());
 	}
 
 	/**
@@ -121,9 +118,7 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public boolean isRelease() throws IOException {
-		String branch = repository.getBranch();
-		return branch != null
-				&& branch.startsWith(getConfig().getReleasePrefix());
+		return repository.getBranch().startsWith(getConfig().getReleasePrefix());
 	}
 
 	/**
@@ -131,9 +126,7 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public boolean isHotfix() throws IOException {
-		String branch = repository.getBranch();
-		return branch != null
-				&& branch.startsWith(getConfig().getHotfixPrefix());
+		return repository.getBranch().startsWith(getConfig().getHotfixPrefix());
 	}
 
 	/**
@@ -159,17 +152,12 @@ public class GitFlowRepository {
 
 	/**
 	 * @param branchName
-	 * @return HEAD commit on branch branchName or {@literal null} if
-	 *         {@code branchName} could not be resolved.
+	 * @return HEAD commit on branch branchName
 	 */
-	public @Nullable RevCommit findHead(String branchName) {
+	public RevCommit findHead(String branchName) {
 		try (RevWalk walk = new RevWalk(repository)) {
 			try {
-				String revstr = R_HEADS + branchName;
-				ObjectId head = repository.resolve(revstr);
-				if (head == null) {
-					return null;
-				}
+				ObjectId head = repository.resolve(R_HEADS + branchName);
 				return walk.parseCommit(head);
 			} catch (RevisionSyntaxException | IOException e) {
 				throw new RuntimeException(e);
@@ -257,7 +245,7 @@ public class GitFlowRepository {
 			throws MissingObjectException, IncorrectObjectTypeException,
 			IOException {
 		try (RevWalk revWalk = new RevWalk(repository)) {
-			Ref tagRef = repository.exactRef(R_TAGS + tagName);
+			Ref tagRef = repository.getRef(R_TAGS + tagName);
 			if (tagRef == null) {
 				return null;
 			}
@@ -296,35 +284,5 @@ public class GitFlowRepository {
 	 */
 	public GitFlowConfig getConfig() {
 		return this.config;
-	}
-
-	/**
-	 * Check if the given commit is an ancestor of the current HEAD on the
-	 * develop branch.
-	 *
-	 * @param selectedCommit
-	 * @return Whether or not the selected commit is on the develop branch.
-	 * @throws IOException
-	 * @since 4.3
-	 */
-	public boolean isOnDevelop(@NonNull RevCommit selectedCommit) throws IOException {
-		String develop = config.getDevelopFull();
-		return isOnBranch(selectedCommit, develop);
-	}
-
-	private boolean isOnBranch(RevCommit commit, String fullBranch)
-			throws IOException {
-		Ref branchRef = repository.exactRef(fullBranch);
-		if (branchRef == null) {
-			return false;
-		}
-		try {
-			List<Ref> list = Git.wrap(repository).branchList().setContains(commit.name()).call();
-
-			return list.contains(branchRef);
-		} catch (GitAPIException e) {
-			// ListBranchCommand can only throw a wrapped IOException
-			throw new IOException(e);
-		}
 	}
 }

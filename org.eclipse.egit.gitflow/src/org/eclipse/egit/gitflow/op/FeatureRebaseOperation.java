@@ -20,8 +20,6 @@ import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.egit.gitflow.internal.CoreText;
 import org.eclipse.jgit.api.RebaseResult;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
 
 /**
  * git flow feature rebase
@@ -44,9 +42,9 @@ public final class FeatureRebaseOperation extends GitFlowOperation {
 						CoreText.FeatureRebaseOperation_notOnAFeatureBranch);
 			}
 
-			Repository jgitRepo = repository.getRepository();
-			Ref develop = jgitRepo.exactRef(repository.getConfig().getDevelopFull());
-			RebaseOperation op = new RebaseOperation(jgitRepo, develop);
+			RebaseOperation op = new RebaseOperation(
+					repository.getRepository(), repository.getRepository()
+							.getRef(repository.getConfig().getDevelopFull()));
 			op.execute(null);
 
 			operationResult = op.getResult();

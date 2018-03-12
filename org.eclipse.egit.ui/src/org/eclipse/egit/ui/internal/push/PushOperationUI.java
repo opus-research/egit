@@ -186,13 +186,13 @@ public class PushOperationUI {
 			// to add the default push RefSpec here
 			spec = new PushOperationSpecification();
 
-			List<URIish> urisToPush = new ArrayList<>();
+			List<URIish> urisToPush = new ArrayList<URIish>();
 			for (URIish uri : config.getPushURIs())
 				urisToPush.add(uri);
 			if (urisToPush.isEmpty() && !config.getURIs().isEmpty())
 				urisToPush.add(config.getURIs().get(0));
 
-			List<RefSpec> pushRefSpecs = new ArrayList<>();
+			List<RefSpec> pushRefSpecs = new ArrayList<RefSpec>();
 			pushRefSpecs.addAll(config.getPushRefSpecs());
 
 			for (URIish uri : urisToPush) {
@@ -250,7 +250,7 @@ public class PushOperationUI {
 				if (expectedResult == null || !expectedResult.equals(result)) {
 					if (event.getResult().isOK())
 						PushResultDialog.show(repository, result,
-								destinationString, showConfigureButton, false);
+								destinationString, showConfigureButton);
 					else
 						Activator.handleError(event.getResult().getMessage(),
 								event.getResult().getException(), true);

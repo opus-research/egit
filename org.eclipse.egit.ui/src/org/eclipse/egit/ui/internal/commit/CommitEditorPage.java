@@ -28,9 +28,9 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -292,7 +292,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 	private List<Ref> getTags() {
 		Repository repository = getCommit().getRepository();
-		List<Ref> tags = new ArrayList<>(repository.getTags().values());
+		List<Ref> tags = new ArrayList<Ref>(repository.getTags().values());
 		Collections.sort(tags, new Comparator<Ref>() {
 
 			@Override
@@ -465,7 +465,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 	}
 
 	RepositoryCommit getCommit() {
-		return AdapterUtils.adapt(getEditor(), RepositoryCommit.class);
+		return CommonUtils.getAdapter(getEditor(), RepositoryCommit.class);
 	}
 
 	/**
@@ -507,7 +507,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		RepositoryCommit repoCommit = getCommit();
 		RevCommit commit = repoCommit.getRevCommit();
 		Repository repository = repoCommit.getRepository();
-		List<Ref> tags = new ArrayList<>();
+		List<Ref> tags = new ArrayList<Ref>();
 		for (Ref tag : getTags()) {
 			tag = repository.peel(tag);
 			ObjectId id = tag.getPeeledObjectId();
@@ -523,8 +523,9 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 	private List<Ref> loadBranches() {
 		Repository repository = getCommit().getRepository();
 		RevCommit commit = getCommit().getRevCommit();
-		try (RevWalk revWalk = new RevWalk(repository)) {
-			Map<String, Ref> refsMap = new HashMap<>();
+		RevWalk revWalk = new RevWalk(repository);
+		try {
+			Map<String, Ref> refsMap = new HashMap<String, Ref>();
 			refsMap.putAll(repository.getRefDatabase().getRefs(
 					Constants.R_HEADS));
 			refsMap.putAll(repository.getRefDatabase().getRefs(

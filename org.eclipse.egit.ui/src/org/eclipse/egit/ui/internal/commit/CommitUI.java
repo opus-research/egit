@@ -42,7 +42,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -194,27 +193,19 @@ public class CommitUI  {
 		}
 		if (commitDialog.isAmending())
 			commitOperation.setAmending(true);
-
-		final boolean gerritMode = commitDialog.getCreateChangeId();
-
-		PushMode pushMode = null;
-		if (commitDialog.isPushRequested()) {
-			pushMode = gerritMode ? PushMode.GERRIT : PushMode.UPSTREAM;
-		}
-
-		commitOperation.setComputeChangeId(gerritMode);
+		commitOperation.setComputeChangeId(commitDialog.getCreateChangeId());
 		commitOperation.setCommitAll(commitHelper.isMergedResolved);
 		if (commitHelper.isMergedResolved)
 			commitOperation.setRepository(repo);
-		Job commitJob = new CommitJob(repo, commitOperation)
-				.setPushUpstream(pushMode);
+		Job commitJob = new CommitJob(repo, commitOperation).
+				setPushUpstream(commitDialog.isPushRequested());
 		commitJob.schedule();
 
 		return true;
 	}
 
 	private IProject[] getProjectsOfRepositories() {
-		Set<IProject> ret = new HashSet<>();
+		Set<IProject> ret = new HashSet<IProject>();
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		for (IProject project : projects) {
@@ -226,10 +217,10 @@ public class CommitUI  {
 	}
 
 	private void resetState() {
-		files = new LinkedHashSet<>();
-		notIndexed = new LinkedHashSet<>();
-		indexChanges = new LinkedHashSet<>();
-		notTracked = new LinkedHashSet<>();
+		files = new LinkedHashSet<String>();
+		notIndexed = new LinkedHashSet<String>();
+		indexChanges = new LinkedHashSet<String>();
+		notTracked = new LinkedHashSet<String>();
 		amending = false;
 		indexDiff = null;
 	}
@@ -244,7 +235,7 @@ public class CommitUI  {
 	 *         the user's selection
 	 */
 	private Set<String> getSelectedFiles() {
-		Set<String> preselectionCandidates = new LinkedHashSet<>();
+		Set<String> preselectionCandidates = new LinkedHashSet<String>();
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		// iterate through all the files that may be committed
 		for (String fileName : files) {

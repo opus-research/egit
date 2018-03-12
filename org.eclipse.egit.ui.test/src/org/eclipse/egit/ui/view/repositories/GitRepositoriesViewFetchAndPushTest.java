@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.view.repositories;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -24,7 +23,6 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -95,7 +93,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				clonedRepositoryFile);
 		shareProjects(clonedRepositoryFile);
-
+		SWTBotTree tree = getOrOpenView().bot().tree();
+		tree.select(0);
 
 		Repository repository = lookupRepository(clonedRepositoryFile);
 		// add the configuration for push
@@ -109,10 +108,6 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		new Git(repository).branchRename().setOldName(currentBranch)
 				.setNewName("" + System.currentTimeMillis()).call();
 
-		SWTBotTree tree = getOrOpenView().bot().tree();
-		tree.select(0);
-
-		TestUtil.waitForJobs(50, 5000);
 		selectNode(tree, useRemote, false);
 
 		runPush(tree);
@@ -152,16 +147,14 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		confirmed.close();
 		assertTrue("Up to date expected", uptodate);
 		// touch and run again: expect new branch
-		String objectIdBefore = repository.exactRef(repository.getFullBranch())
+		String objectIdBefore = repository.getRef(repository.getFullBranch())
 				.getLeaf().getObjectId().name();
 		objectIdBefore = objectIdBefore.substring(0, 7);
 		touchAndSubmit(null);
 
-		SWTBotTree updatedTree = getOrOpenView().bot().tree();
-		updatedTree.select(0);
-		selectNode(updatedTree, useRemote, false);
+		selectNode(tree, useRemote, false);
 
-		runPush(updatedTree);
+		runPush(tree);
 
 		confirmed = bot.shell(dialogTitle);
 		treeItems = confirmed.bot().tree().getAllItems();
@@ -173,26 +166,6 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		}
 		confirmed.close();
 		assertTrue("New branch expected", newBranch);
-	}
-
-	@Test
-	public void testNoHeadSimplePushDisabled() throws Exception {
-		Repository emptyRepo = createLocalTestRepository("empty");
-		File gitDir = emptyRepo.getDirectory();
-		Activator.getDefault().getRepositoryUtil()
-				.addConfiguredRepository(gitDir);
-		GitRepositoriesViewTestUtils viewUtil = new GitRepositoriesViewTestUtils();
-		SWTBotTree tree = getOrOpenView().bot().tree();
-		SWTBotTreeItem repoItem = viewUtil.getRootItem(tree, gitDir);
-		repoItem.select();
-		boolean enabled = ContextMenuHelper.isContextMenuItemEnabled(tree,
-				NLS.bind(UIText.PushMenu_PushBranch, "master"));
-		assertFalse("Push branch should be disabled if there is no HEAD",
-				enabled);
-		enabled = ContextMenuHelper.isContextMenuItemEnabled(tree,
-				util.getPluginLocalizedValue("PushToUpstreamCommand.label"));
-		assertFalse("Push to upstream should be disabled if there is no HEAD",
-				enabled);
 	}
 
 	@Test
@@ -236,7 +209,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		deleteAllProjects();
 		shareProjects(clonedRepositoryFile2);
-		String objid = repository.exactRef("refs/heads/master").getTarget()
+		String objid = repository.getRef("refs/heads/master").getTarget()
 				.getObjectId().name();
 		objid = objid.substring(0, 7);
 		touchAndSubmit(null);
@@ -277,16 +250,13 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 	private void selectNode(SWTBotTree tree, boolean useRemote, boolean fetchMode)
 			throws Exception {
-		SWTBotTreeItem remotesNode = myRepoViewUtil.getRemotesItem(tree,
-				clonedRepositoryFile);
-		SWTBotTreeItem originNode = TestUtil.expandAndWait(remotesNode)
-				.getNode("origin");
-		if (useRemote) {
-			originNode.select();
-		} else {
-			TestUtil.expandAndWait(originNode).getNode(fetchMode ? 0 : 1)
+		if (useRemote)
+			myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand()
+					.getNode("origin").select();
+		else
+			myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand()
+					.getNode("origin").expand().getNode(fetchMode ? 0 : 1)
 					.select();
-		}
 	}
 
 	private void runPush(SWTBotTree tree) {
