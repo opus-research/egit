@@ -29,12 +29,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -44,8 +45,8 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter.DiffStyleRange;
-import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter.FileDiffRange;
+import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter.DiffRegion;
+import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter.FileDiffRegion;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.history.FileDiff;
 import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
@@ -75,10 +76,10 @@ import org.eclipse.jface.text.rules.DefaultDamagerRepairer;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.rules.ITokenScanner;
 import org.eclipse.jface.text.rules.Token;
-import org.eclipse.jface.text.source.CompositeRuler;
+import org.eclipse.jface.text.source.IOverviewRuler;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.text.source.IVerticalRuler;
-import org.eclipse.jface.text.source.LineNumberRulerColumn;
+import org.eclipse.jface.text.source.SourceViewerConfiguration;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -99,9 +100,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.EditorsUI;
-import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
-import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
 import org.eclipse.ui.themes.IThemeManager;
 
 /**
@@ -117,8 +116,6 @@ public class DiffViewer extends HyperlinkSourceViewer {
 	private final Map<String, IToken> tokens = new HashMap<>();
 
 	private final Map<String, Color> backgroundColors = new HashMap<>();
-
-	private LineNumberRulerColumn lineNumberRuler;
 
 	private IPropertyChangeListener themeListener = new IPropertyChangeListener() {
 
@@ -150,12 +147,67 @@ public class DiffViewer extends HyperlinkSourceViewer {
 	};
 
 	/**
-	 * Creates a new {@link DiffViewer} and
-	 * {@link #configure(org.eclipse.jface.text.source.SourceViewerConfiguration)
-	 * configures} it with a {@link PresentationReconciler} and syntax coloring,
-	 * and an {@link IHyperlinkDetector} to provide hyperlinks to open the files
-	 * being diff'ed if the document used with the viewer is a
-	 * {@link DiffDocument}.
+	 * A configuration to use with a {@link DiffViewer}, setting up the syntax
+	 * coloring for a diff and adding the {@link IHyperlinkDetector} for the
+	 * links.
+	 */
+	public static class Configuration
+			extends HyperlinkSourceViewer.Configuration {
+
+		/**
+		 * Creates a new {@link Configuration} connected to the given
+		 * {@link IPreferenceStore}.
+		 *
+		 * @param preferenceStore
+		 *            to connect to
+		 */
+		public Configuration(IPreferenceStore preferenceStore) {
+			super(preferenceStore);
+		}
+
+		@Override
+		public int getHyperlinkStateMask(ISourceViewer sourceViewer) {
+			return SWT.NONE;
+		}
+
+		@Override
+		protected IHyperlinkDetector[] internalGetHyperlinkDetectors(
+				ISourceViewer sourceViewer) {
+			Assert.isTrue(sourceViewer instanceof DiffViewer);
+			IHyperlinkDetector[] result = { new HyperlinkDetector() };
+			return result;
+		}
+
+		@Override
+		public String[] getConfiguredContentTypes(ISourceViewer sourceViewer) {
+			Assert.isTrue(sourceViewer instanceof DiffViewer);
+			DiffViewer viewer = (DiffViewer) sourceViewer;
+			return viewer.tokens.keySet()
+					.toArray(new String[viewer.tokens.size()]);
+		}
+
+		@Override
+		public IPresentationReconciler getPresentationReconciler(
+				ISourceViewer sourceViewer) {
+			Assert.isTrue(sourceViewer instanceof DiffViewer);
+			DiffViewer viewer = (DiffViewer) sourceViewer;
+			PresentationReconciler reconciler = new PresentationReconciler();
+			reconciler.setDocumentPartitioning(
+					getConfiguredDocumentPartitioning(viewer));
+			for (String contentType : viewer.tokens.keySet()) {
+				DefaultDamagerRepairer damagerRepairer = new DefaultDamagerRepairer(
+						new SingleTokenScanner(
+								() -> viewer.tokens.get(contentType)));
+				reconciler.setDamager(damagerRepairer, contentType);
+				reconciler.setRepairer(damagerRepairer, contentType);
+			}
+			return reconciler;
+		}
+
+	}
+
+	/**
+	 * Creates a new {@link DiffViewer}.
 	 *
 	 * @param parent
 	 *            to contain the viewer
@@ -163,33 +215,39 @@ public class DiffViewer extends HyperlinkSourceViewer {
 	 *            for the viewer (left side)
 	 * @param styles
 	 *            for the viewer
-	 * @param showCursorLine
-	 *            if {@code true},the current line is highlighted
 	 */
-	public DiffViewer(Composite parent, IVerticalRuler ruler, int styles,
-			boolean showCursorLine) {
-		super(parent, ruler, styles);
-		setDocument(new Document());
-		SourceViewerDecorationSupport support = new SourceViewerDecorationSupport(
-				this, null, null, EditorsUI.getSharedTextColors());
-		if (showCursorLine) {
-			support.setCursorLinePainterPreferenceKeys(
-					AbstractDecoratedTextEditorPreferenceConstants.EDITOR_CURRENT_LINE,
-					AbstractDecoratedTextEditorPreferenceConstants.EDITOR_CURRENT_LINE_COLOR);
-		}
-		support.install(EditorsUI.getPreferenceStore());
-		if (ruler instanceof CompositeRuler) {
-			lineNumberRuler = new LineNumberRulerColumn();
-			((CompositeRuler) ruler).addDecorator(0, lineNumberRuler);
-		}
+	public DiffViewer(Composite parent, IVerticalRuler ruler, int styles) {
+		this(parent, ruler, null, false, styles);
+	}
+
+	/**
+	 * Creates a new {@link DiffViewer}.
+	 *
+	 * @param parent
+	 *            to contain the viewer
+	 * @param ruler
+	 *            for the viewer (left side)
+	 * @param overviewRuler
+	 *            ruler for overview annotations
+	 * @param showsAnnotationOverview
+	 *            whether to show overview annotations
+	 * @param styles
+	 *            for the viewer
+	 */
+	public DiffViewer(Composite parent, IVerticalRuler ruler,
+			IOverviewRuler overviewRuler, boolean showsAnnotationOverview,
+			int styles) {
+		super(parent, ruler, overviewRuler, showsAnnotationOverview, styles);
 		getTextWidget().setAlwaysShowScrollBars(false);
+		setEditable(false);
+		setDocument(new Document());
 		initListeners();
 		getControl().addDisposeListener(new DisposeListener() {
 
 			@Override
 			public void widgetDisposed(DisposeEvent e) {
-				EditorsUI.getPreferenceStore().removePropertyChangeListener(
-						editorPrefListener);
+				EditorsUI.getPreferenceStore()
+						.removePropertyChangeListener(editorPrefListener);
 				PlatformUI.getWorkbench().getThemeManager()
 						.removePropertyChangeListener(themeListener);
 				colors.dispose();
@@ -197,42 +255,12 @@ public class DiffViewer extends HyperlinkSourceViewer {
 		});
 		refreshDiffStyles();
 		styleViewer();
-		configure(new HyperlinkSourceViewer.Configuration(
-				EditorsUI.getPreferenceStore()) {
+	}
 
-			@Override
-			public int getHyperlinkStateMask(ISourceViewer sourceViewer) {
-				return SWT.NONE;
-			}
-
-			@Override
-			protected IHyperlinkDetector[] internalGetHyperlinkDetectors(
-					ISourceViewer sourceViewer) {
-				IHyperlinkDetector[] result = { new HyperlinkDetector() };
-				return result;
-			}
-
-			@Override
-			public String[] getConfiguredContentTypes(
-					ISourceViewer sourceViewer) {
-				return tokens.keySet().toArray(new String[tokens.size()]);
-			}
-
-			@Override
-			public IPresentationReconciler getPresentationReconciler(
-					ISourceViewer viewer) {
-				PresentationReconciler reconciler = new PresentationReconciler();
-				reconciler.setDocumentPartitioning(
-						getConfiguredDocumentPartitioning(viewer));
-				for (String contentType : tokens.keySet()) {
-					DefaultDamagerRepairer damagerRepairer = new DefaultDamagerRepairer(
-							new SingleTokenScanner(contentType));
-					reconciler.setDamager(damagerRepairer, contentType);
-					reconciler.setRepairer(damagerRepairer, contentType);
-				}
-				return reconciler;
-			}
-		});
+	@Override
+	public void configure(SourceViewerConfiguration config) {
+		Assert.isTrue(config instanceof Configuration);
+		super.configure(config);
 	}
 
 	private void refreshDiffStyles() {
@@ -277,8 +305,11 @@ public class DiffViewer extends HyperlinkSourceViewer {
 			IDocument document = getDocument();
 			if (document instanceof DiffDocument) {
 				try {
+					// We are in SWT land here: we get widget offsets.
+					int modelOffset = widgetOffset2ModelOffset(
+							event.lineOffset);
 					ITypedRegion partition = ((DiffDocument) document)
-							.getPartition(event.lineOffset);
+							.getPartition(modelOffset);
 					if (partition != null) {
 						Color color = backgroundColors.get(partition.getType());
 						if (color != null) {
@@ -329,16 +360,11 @@ public class DiffViewer extends HyperlinkSourceViewer {
 		text.setSelectionForeground(selectionForeground);
 		text.setSelectionBackground(selectionBackground);
 		text.setFont(JFaceResources.getFont(JFaceResources.TEXT_FONT));
-		if (lineNumberRuler != null) {
-			lineNumberRuler.setFont(text.getFont());
-			lineNumberRuler.setForeground(foreground);
-			lineNumberRuler.setBackground(background);
-		}
 	}
 
-	private class SingleTokenScanner implements ITokenScanner {
+	private static class SingleTokenScanner implements ITokenScanner {
 
-		private final String contentType;
+		private final Supplier<IToken> token;
 
 		private int currentOffset;
 
@@ -346,8 +372,8 @@ public class DiffViewer extends HyperlinkSourceViewer {
 
 		private int tokenStart;
 
-		public SingleTokenScanner(String contentType) {
-			this.contentType = contentType;
+		public SingleTokenScanner(Supplier<IToken> supplier) {
+			this.token = supplier;
 		}
 
 		@Override
@@ -362,7 +388,7 @@ public class DiffViewer extends HyperlinkSourceViewer {
 			tokenStart = currentOffset;
 			if (currentOffset < end) {
 				currentOffset = end;
-				return tokens.get(contentType);
+				return token.get();
 			}
 			return Token.EOF;
 		}
@@ -379,7 +405,7 @@ public class DiffViewer extends HyperlinkSourceViewer {
 
 	}
 
-	private class HyperlinkDetector extends AbstractHyperlinkDetector
+	private static class HyperlinkDetector extends AbstractHyperlinkDetector
 			implements IHyperlinkDetectorExtension2 {
 
 		private final Pattern HUNK_LINE_PATTERN = Pattern
@@ -389,47 +415,44 @@ public class DiffViewer extends HyperlinkSourceViewer {
 		public IHyperlink[] detectHyperlinks(ITextViewer textViewer,
 				IRegion region, boolean canShowMultipleHyperlinks) {
 			IDocument document = textViewer.getDocument();
-			if (textViewer != DiffViewer.this
-					|| !(document instanceof DiffDocument)
+			if (!(document instanceof DiffDocument)
 					|| document.getLength() == 0) {
 				return null;
 			}
-			DiffStyleRange[] ranges = ((DiffDocument) document).getRanges();
-			FileDiffRange[] fileRanges = ((DiffDocument) document)
-					.getFileRanges();
-			if (ranges == null || ranges.length == 0 || fileRanges == null
-					|| fileRanges.length == 0) {
+			DiffDocument diffDocument = (DiffDocument) document;
+			DiffRegion[] regions = diffDocument.getRegions();
+			FileDiffRegion[] fileRegions = diffDocument.getFileRegions();
+			if (regions == null || regions.length == 0 || fileRegions == null
+					|| fileRegions.length == 0) {
 				return null;
 			}
 			int start = region.getOffset();
 			int end = region.getOffset() + region.getLength();
-			DiffStyleRange key = new DiffStyleRange();
-			key.start = start;
-			key.length = region.getLength();
-			int i = Arrays.binarySearch(ranges, key, (a, b) -> {
-				if (a.start > b.start + b.length) {
+			DiffRegion key = new DiffRegion(start, 0);
+			int i = Arrays.binarySearch(regions, key, (a, b) -> {
+				if (a.getOffset() > b.getOffset() + b.getLength()) {
 					return 1;
 				}
-				if (a.start + a.length < b.start) {
+				if (a.getOffset() + a.getLength() < b.getOffset()) {
 					return -1;
 				}
 				return 0;
 			});
 			List<IHyperlink> links = new ArrayList<>();
-			FileDiffRange fileRange = null;
-			for (; i >= 0 && i < ranges.length; i++) {
-				DiffStyleRange range = ranges[i];
-				if (range.start >= end) {
+			FileDiffRegion fileRange = null;
+			for (; i >= 0 && i < regions.length; i++) {
+				DiffRegion range = regions[i];
+				if (range.getOffset() >= end) {
 					break;
 				}
-				if (range.start + range.length <= start) {
+				if (range.getOffset() + range.getLength() <= start) {
 					continue;
 				}
 				// Range overlaps region
 				switch (range.diffType) {
 				case HEADLINE:
-					fileRange = findFileRange(fileRanges, fileRange,
-							range.start);
+					fileRange = findFileRange(diffDocument, fileRange,
+							range.getOffset());
 					if (fileRange != null) {
 						DiffEntry.ChangeType change = fileRange.getDiff()
 								.getChange();
@@ -438,10 +461,11 @@ public class DiffViewer extends HyperlinkSourceViewer {
 						case DELETE:
 							break;
 						default:
-							if (getString(document, range.start, range.length)
-									.startsWith("diff")) { //$NON-NLS-1$
+							if (getString(document, range.getOffset(),
+									range.getLength()).startsWith("diff")) { //$NON-NLS-1$
 								// "diff" is at the beginning
-								IRegion linkRegion = new Region(range.start, 4);
+								IRegion linkRegion = new Region(
+										range.getOffset(), 4);
 								if (TextUtilities.overlaps(region,
 										linkRegion)) {
 									links.add(new CompareLink(linkRegion,
@@ -453,11 +477,11 @@ public class DiffViewer extends HyperlinkSourceViewer {
 					}
 					break;
 				case HEADER:
-					fileRange = findFileRange(fileRanges, fileRange,
-							range.start);
+					fileRange = findFileRange(diffDocument, fileRange,
+							range.getOffset());
 					if (fileRange != null) {
-						String line = getString(document, range.start,
-								range.length);
+						String line = getString(document, range.getOffset(),
+								range.getLength());
 						createHeaderLinks((DiffDocument) document, region,
 								fileRange, range, line, DiffEntry.Side.OLD,
 								links);
@@ -467,15 +491,15 @@ public class DiffViewer extends HyperlinkSourceViewer {
 					}
 					break;
 				case HUNK:
-					fileRange = findFileRange(fileRanges, fileRange,
-							range.start);
+					fileRange = findFileRange(diffDocument, fileRange,
+							range.getOffset());
 					if (fileRange != null) {
-						String line = getString(document, range.start,
-								range.length);
+						String line = getString(document, range.getOffset(),
+								range.getLength());
 						Matcher m = HUNK_LINE_PATTERN.matcher(line);
 						if (m.find()) {
 							int lineOffset = getContextLines(document, range,
-									i + 1 < ranges.length ? ranges[i + 1]
+									i + 1 < regions.length ? regions[i + 1]
 											: null);
 							createHunkLinks(region, fileRange, range, m,
 									lineOffset, links);
@@ -500,15 +524,17 @@ public class DiffViewer extends HyperlinkSourceViewer {
 			}
 		}
 
-		private int getContextLines(IDocument document, DiffStyleRange hunk,
-				DiffStyleRange next) {
+		private int getContextLines(IDocument document, DiffRegion hunk,
+				DiffRegion next) {
 			if (next != null) {
 				switch (next.diffType) {
 				case ADD:
 				case REMOVE:
 					try {
-						int diffLine = document.getLineOfOffset(next.start);
-						int hunkLine = document.getLineOfOffset(hunk.start);
+						int diffLine = document
+								.getLineOfOffset(next.getOffset());
+						int hunkLine = document
+								.getLineOfOffset(hunk.getOffset());
 						return diffLine - hunkLine - 1;
 					} catch (BadLocationException e) {
 						// Ignore
@@ -521,27 +547,17 @@ public class DiffViewer extends HyperlinkSourceViewer {
 			return 0;
 		}
 
-		private FileDiffRange findFileRange(FileDiffRange[] ranges,
-				FileDiffRange candidate, int offset) {
-			if (candidate != null && candidate.getStartOffset() <= offset
-					&& candidate.getEndOffset() > offset) {
+		private FileDiffRegion findFileRange(DiffDocument document,
+				FileDiffRegion candidate, int offset) {
+			if (candidate != null && TextUtilities.overlaps(candidate,
+					new Region(offset, 0))) {
 				return candidate;
 			}
-			FileDiffRange key = new FileDiffRange(null, null, offset, offset);
-			int i = Arrays.binarySearch(ranges, key, (a, b) -> {
-				if (a.getStartOffset() > b.getEndOffset()) {
-					return 1;
-				}
-				if (b.getStartOffset() > a.getEndOffset()) {
-					return -1;
-				}
-				return 0;
-			});
-			return i >= 0 ? ranges[i] : null;
+			return document.findFileRegion(offset);
 		}
 
 		private void createHeaderLinks(DiffDocument document, IRegion region,
-				FileDiffRange fileRange, DiffStyleRange range, String line,
+				FileDiffRegion fileRange, DiffRegion range, String line,
 				DiffEntry.Side side, List<IHyperlink> links) {
 			Pattern p = document.getPathPattern(side);
 			if (p == null) {
@@ -563,7 +579,7 @@ public class DiffViewer extends HyperlinkSourceViewer {
 			}
 			Matcher m = p.matcher(line);
 			if (m.find()) {
-				IRegion linkRegion = new Region(range.start + m.start(),
+				IRegion linkRegion = new Region(range.getOffset() + m.start(),
 						m.end() - m.start());
 				if (TextUtilities.overlaps(region, linkRegion)) {
 					if (side == DiffEntry.Side.NEW) {
@@ -580,12 +596,12 @@ public class DiffViewer extends HyperlinkSourceViewer {
 			}
 		}
 
-		private void createHunkLinks(IRegion region, FileDiffRange fileRange,
-				DiffStyleRange range, Matcher m, int lineOffset,
+		private void createHunkLinks(IRegion region, FileDiffRegion fileRange,
+				DiffRegion range, Matcher m, int lineOffset,
 				List<IHyperlink> links) {
 			DiffEntry.ChangeType change = fileRange.getDiff().getChange();
 			if (change != DiffEntry.ChangeType.ADD) {
-				IRegion linkRegion = new Region(range.start + m.start(1),
+				IRegion linkRegion = new Region(range.getOffset() + m.start(1),
 						m.end(1) - m.start(1));
 				if (TextUtilities.overlaps(linkRegion, region)) {
 					int lineNo = Integer.parseInt(m.group(2)) - 1 + lineOffset;
@@ -598,7 +614,7 @@ public class DiffViewer extends HyperlinkSourceViewer {
 				}
 			}
 			if (change != DiffEntry.ChangeType.DELETE) {
-				IRegion linkRegion = new Region(range.start + m.start(3),
+				IRegion linkRegion = new Region(range.getOffset() + m.start(3),
 						m.end(3) - m.start(3));
 				if (TextUtilities.overlaps(linkRegion, region)) {
 					int lineNo = Integer.parseInt(m.group(4)) - 1 + lineOffset;
@@ -675,7 +691,7 @@ public class DiffViewer extends HyperlinkSourceViewer {
 
 		protected final FileDiff fileDiff;
 
-		public CompareLink(IRegion region, FileDiffRange fileRange,
+		public CompareLink(IRegion region, FileDiffRegion fileRange,
 				int lineNo) {
 			super(region, lineNo);
 			this.repository = fileRange.getRepository();
@@ -700,7 +716,7 @@ public class DiffViewer extends HyperlinkSourceViewer {
 
 		private final DiffEntry.Side side;
 
-		public OpenLink(IRegion region, FileDiffRange fileRange,
+		public OpenLink(IRegion region, FileDiffRegion fileRange,
 				DiffEntry.Side side, int lineNo) {
 			super(region, fileRange, lineNo);
 			this.side = side;
@@ -841,8 +857,7 @@ public class DiffViewer extends HyperlinkSourceViewer {
 					: null;
 			try {
 				if (file != null) {
-					IResource[] resources = new IResource[] { file, };
-					CompareUtils.compare(resources, repository, np, op,
+					CompareUtils.compare(file, repository, np, op,
 							newCommit.getName(), oldCommit.getName(), false,
 							page);
 				} else {
