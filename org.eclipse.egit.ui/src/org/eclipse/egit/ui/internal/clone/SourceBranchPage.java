@@ -4,6 +4,7 @@
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (c) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (c) 2012, IBM Corporation
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +25,8 @@ import java.util.List;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
@@ -62,6 +65,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.PatternFilter;
+import org.eclipse.ui.progress.WorkbenchJob;
 
 class SourceBranchPage extends WizardPage {
 
@@ -123,17 +127,27 @@ class SourceBranchPage extends WizardPage {
 		label = new Label(panel, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-		PatternFilter filter = new PatternFilter() {
-			@Override
-			public boolean isElementVisible(Viewer viewer, Object element) {
-				if (getSelectedBranches().contains(element))
-					return true;
-				return super.isElementVisible(viewer, element);
+		FilteredCheckboxTree fTree = new FilteredCheckboxTree(panel, null,
+				SWT.NONE, new PatternFilter()) {
+			/*
+			 * Overridden to check page when refreshing is done.
+			 */
+			protected WorkbenchJob doCreateRefreshJob() {
+				WorkbenchJob refreshJob = super.doCreateRefreshJob();
+				refreshJob.addJobChangeListener(new JobChangeAdapter() {
+					public void done(IJobChangeEvent event) {
+						if (event.getResult().isOK()) {
+							getDisplay().asyncExec(new Runnable() {
+								public void run() {
+									checkPage();
+								}
+							});
+						}
+					}
+				});
+				return refreshJob;
 			}
 		};
-
-		FilteredCheckboxTree fTree = new FilteredCheckboxTree(panel, null, SWT.NONE,
-				filter);
 		refsViewer = fTree.getCheckboxTreeViewer();
 
 		ITreeContentProvider provider = new ITreeContentProvider() {
@@ -329,15 +343,20 @@ class SourceBranchPage extends WizardPage {
 
 		final Ref idHEAD = listRemoteOp.getRemoteRef(Constants.HEAD);
 		head = null;
+		boolean headIsMaster = false;
+		final String masterBranchRef = Constants.R_HEADS + Constants.MASTER;
 		for (final Ref r : listRemoteOp.getRemoteRefs()) {
 			final String n = r.getName();
 			if (!n.startsWith(Constants.R_HEADS))
 				continue;
 			availableRefs.add(r);
-			if (idHEAD == null || head != null)
+			if (idHEAD == null || headIsMaster)
 				continue;
-			if (r.getObjectId().equals(idHEAD.getObjectId()))
-				head = r;
+			if (r.getObjectId().equals(idHEAD.getObjectId())) {
+				headIsMaster = masterBranchRef.equals(r.getName());
+				if (head == null || headIsMaster)
+					head = r;
+			}
 		}
 		Collections.sort(availableRefs, new Comparator<Ref>() {
 			public int compare(final Ref o1, final Ref o2) {
