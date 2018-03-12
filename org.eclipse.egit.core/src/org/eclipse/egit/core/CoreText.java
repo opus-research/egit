@@ -75,6 +75,9 @@ public class CoreText extends NLS {
 	public static String DeleteBranchOperation_TaskName;
 
 	/** */
+	public static String DeleteTagOperation_exceptionMessage;
+
+	/** */
 	public static String DiscardChangesOperation_discardFailed;
 
 	/** */
@@ -231,6 +234,9 @@ public class CoreText extends NLS {
 	public static String ProjectUtil_refreshing;
 
 	/** */
+	public static String ProjectUtil_taskCheckingDirectory;
+
+	/** */
 	public static String PullOperation_DetachedHeadMessage;
 
 	/** */
@@ -297,7 +303,7 @@ public class CoreText extends NLS {
 	public static String OperationNotYetExecuted;
 
 	/** */
-	public static String GitProjectSetCapability_InvalidTokensCount;
+	public static String ProjectReference_InvalidTokensCount;
 
 	/** */
 	public static String GitProjectSetCapability_CloneToExistingDirectory;
@@ -343,6 +349,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitRemoteFolder_fetchingMembers;
+
+	/** */
+	public static String GitURI_InvalidSCMURL;
+
+	/** */
+	public static String GitURI_InvalidURI;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
