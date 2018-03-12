@@ -55,7 +55,6 @@ import org.eclipse.team.internal.core.mapping.SyncInfoToDiffConverter;
 /**
  *
  */
-@SuppressWarnings("restriction")
 public class GitResourceVariantTreeSubscriber extends
 		ResourceVariantTreeSubscriber {
 
