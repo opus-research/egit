@@ -70,10 +70,7 @@ public class CommitAction extends RepositoryAction {
 		try {
 			buildIndexHeadDiffList();
 		} catch (IOException e) {
-			handle(
-					new TeamException(UIText.CommitAction_errorComputingDiffs,
-							e), UIText.CommitAction_errorDuringCommit,
-					UIText.CommitAction_errorComputingDiffs);
+			Utils.handleError(getTargetPart().getSite().getShell(), e, UIText.CommitAction_errorDuringCommit, UIText.CommitAction_errorComputingDiffs);
 			return;
 		}
 
@@ -140,8 +137,7 @@ public class CommitAction extends RepositoryAction {
 		try {
 			performCommit(commitDialog, commitMessage);
 		} catch (TeamException e) {
-			handle(e, UIText.CommitAction_errorDuringCommit,
-					UIText.CommitAction_errorOnCommit);
+			Utils.handleError(getTargetPart().getSite().getShell(), e, UIText.CommitAction_errorDuringCommit, UIText.CommitAction_errorOnCommit);
 		}
 	}
 
