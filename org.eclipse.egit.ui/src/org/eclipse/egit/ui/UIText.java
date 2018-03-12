@@ -316,9 +316,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_MultiResourcesType;
 
 	/** */
-	public static String GitHistoryPage_OpenInTextEditorLabel;
-
-	/** */
 	public static String GitHistoryPage_OpenMenuLabel;
 
 	/** */
