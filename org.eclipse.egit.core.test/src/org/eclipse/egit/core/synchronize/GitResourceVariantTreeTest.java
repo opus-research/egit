@@ -16,7 +16,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
@@ -71,11 +70,9 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 	 * roots() method should return list of projects that are associated with
 	 * given repository. In this case there is only one project associated with
 	 * this repository therefore only one root should be returned.
-	 *
-	 * @throws IOException
 	 */
 	@Test
-	public void shouldReturnOneRoot() throws IOException {
+	public void shouldReturnOneRoot() {
 		// when
 		GitSynchronizeData data = new GitSynchronizeData(repo, "", "", false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
@@ -217,10 +214,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 				"initial commit");
 		IFile mainJava = testRepo.getIFile(iProject, file);
 
-		testRepo.createAndCheckoutBranch(Constants.R_HEADS + Constants.MASTER,
-				Constants.R_HEADS + "test");
-		testRepo.appendContentAndCommit(iProject, file, "// test",
-				"first commit");
+		testRepo.createAndCheckoutBranch(Constants.R_HEADS + Constants.MASTER, Constants.R_HEADS + "test");
+		testRepo.appendContentAndCommit(iProject, file, "// test", "first commit");
 		GitSynchronizeData data = new GitSynchronizeData(repo, Constants.HEAD,
 				Constants.MASTER, false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
@@ -234,7 +229,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		assertEquals(fileName, actual.getName());
 
 		InputStream actualIn = actual.getStorage(new NullProgressMonitor())
-				.getContents();
+		.getContents();
 		byte[] actualByte = getBytesAndCloseStream(actualIn);
 		InputStream expectedIn = mainJava.getContents();
 		byte[] expectedByte = getBytesAndCloseStream(expectedIn);
