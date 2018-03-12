@@ -7,6 +7,7 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -48,7 +49,6 @@ import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent.CommitStatus;
-import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -57,7 +57,6 @@ import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
@@ -82,17 +81,13 @@ import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
-import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.IndexDiff;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
@@ -107,7 +102,6 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
@@ -306,6 +300,11 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
 
+	/**
+	 * A constant used for the 'commit and push button' button
+	 */
+	public static final int COMMIT_AND_PUSH_ID = 30;
+
 	FormToolkit toolkit;
 
 	CommitMessageComponent commitMessageComponent;
@@ -329,6 +328,8 @@ public class CommitDialog extends TitleAreaDialog {
 	Section filesSection;
 
 	Button commitButton;
+
+	Button commitAndPushButton;
 
 	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
@@ -359,7 +360,7 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private Repository repository;
 
-	private boolean pushEnabled = false;
+	private boolean isPushRequested = false;
 
 	/**
 	 * @param parentShell
@@ -515,21 +516,32 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	/**
-	 * Returns whether we are pushing after the commit
-	 * @return pushing
+	 * @return true if push shall be executed
 	 */
-	public boolean isPushEnabled() {
-		return pushEnabled;
+	public boolean isPushRequested() {
+		return isPushRequested;
 	}
 
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
 		toolkit.adapt(parent, false, false);
+		commitAndPushButton = createButton(parent, COMMIT_AND_PUSH_ID,
+				UIText.CommitDialog_CommitAndPush, false);
 		commitButton = createButton(parent, IDialogConstants.OK_ID,
 				UIText.CommitDialog_Commit, true);
 		createButton(parent, IDialogConstants.CANCEL_ID,
 				IDialogConstants.CANCEL_LABEL, false);
 		updateMessage();
+	}
+
+	protected void buttonPressed(int buttonId) {
+		if (IDialogConstants.OK_ID == buttonId)
+			okPressed();
+		else if (COMMIT_AND_PUSH_ID == buttonId) {
+			isPushRequested = true;
+			okPressed();
+		} else if (IDialogConstants.CANCEL_ID == buttonId)
+			cancelPressed();
 	}
 
 	@Override
@@ -570,11 +582,8 @@ public class CommitDialog extends TitleAreaDialog {
 
 			public void widgetSelected(SelectionEvent e) {
 				String[] pages = new String[] { UIPreferences.PAGE_COMMIT_PREFERENCES };
-				PreferenceDialog dialog = PreferencesUtil
-						.createPreferenceDialogOn(getShell(), pages[0], pages,
-								null);
-				if (Window.OK == dialog.open())
-					commitText.reconfigure();
+				PreferencesUtil.createPreferenceDialogOn(getShell(), pages[0],
+						pages, null).open();
 			}
 
 		});
@@ -756,50 +765,6 @@ public class CommitDialog extends TitleAreaDialog {
 		commitMessageComponent.updateUI();
 		commitMessageComponent.enableListers(true);
 
-		boolean isDetached = false;
-		String branch;
-		try {
-			branch = repository.getBranch();
-			if (ObjectId.isId(branch)) {
-				branch = NLS.bind(UIText.CommitDialog_DetachedHead, branch.substring(0,7));
-				isDetached = true;
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			branch = "[err:" + e.getMessage() + "]";  //$NON-NLS-1$//$NON-NLS-2$
-		}
-		RepositoryState state = repository.getRepositoryState();
-
-		Section infoSection = toolkit.createSection(container, ExpandableComposite.TITLE_BAR|ExpandableComposite.CLIENT_INDENT);
-		infoSection.setText("Repo info"); //$NON-NLS-1$
-		Composite infoArea = toolkit.createComposite(container);
-		toolkit.paintBordersFor(infoArea);
-		GridLayoutFactory.swtDefaults().numColumns(3).applyTo(infoArea);
-		GridDataFactory.fillDefaults().grab(false, false).applyTo(infoArea);
-
-		toolkit.createLabel(infoArea, "Current branch") //$NON-NLS-1$
-				.setForeground(
-						toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
-		Label branchLabel = toolkit.createLabel(infoArea, null);
-		branchLabel.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(false, false).minSize(0, 0).create());
-		branchLabel.setText(branch);
-		Label branchWarningLabel = toolkit.createLabel(infoArea, null);
-		branchWarningLabel.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, false).align(SWT.BEGINNING, SWT.CENTER). create());
-		toolkit.createLabel(infoArea, "Repo state") //$NON-NLS-1$
-				.setForeground(
-						toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
-		if (isDetached) {
-			Image warningImage = JFaceResources.getImage(Dialog.DLG_IMG_MESSAGE_WARNING);
-			branchWarningLabel.setImage(warningImage);
-			branchWarningLabel.setToolTipText("You are not on a checked out branch, also known as a 'detached HEAD'.\nUnless you are careful you could lose the resulting commit.\n\nPerhaps you want to checkout or create a branch before committing?"); //$NON-NLS-1$
-		}
-		Label stateLabel = toolkit.createLabel(infoArea, null);
-		stateLabel.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(false, false).create());
-		stateLabel.setText(state.getDescription());
-
 		filesSection = toolkit.createSection(container,
 				ExpandableComposite.TITLE_BAR
 						| ExpandableComposite.CLIENT_INDENT);
@@ -846,9 +811,16 @@ public class CommitDialog extends TitleAreaDialog {
 		filesViewer.setUseHashlookup(true);
 		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
 				.getDialogSettings();
-		if (settings.get(SHOW_UNTRACKED_PREF) != null)
+		if (settings.get(SHOW_UNTRACKED_PREF) != null) {
+			// note, no matter how the dialog settings are, if
+			// the preferences force us to include untracked files
+			// we must show them
 			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
-					.booleanValue();
+					.booleanValue()
+					|| getPreferenceStore().getBoolean(
+							UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED);
+		}
+
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items.toArray());
 		filesViewer.getTable().setMenu(getContextMenu());
@@ -939,32 +911,6 @@ public class CommitDialog extends TitleAreaDialog {
 			}
 		}
 
-		Section pushSection = toolkit.createSection(container,
-				ExpandableComposite.TITLE_BAR
-						| ExpandableComposite.CLIENT_INDENT);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(pushSection);
-		Composite pushArea = toolkit.createComposite(pushSection);
-		pushSection.setClient(pushArea);
-		toolkit.paintBordersFor(pushArea);
-		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
-				.applyTo(pushArea);
-		pushSection.setText(UIText.CommitDialog_PushSectionTitle);
-		final Button pushCheckbox = toolkit.createButton(pushArea,
-				UIText.CommitDialog_PushUpstream, SWT.CHECK);
-		pushCheckbox.setSelection(getPreferenceStore().getBoolean(
-					UIPreferences.COMMIT_DIALOG_PUSH_UPSTREAM));
-		pushEnabled = getPreferenceStore().getBoolean(
-				UIPreferences.COMMIT_DIALOG_PUSH_UPSTREAM);
-		pushCheckbox.addSelectionListener(new SelectionAdapter() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				pushEnabled = pushCheckbox.getSelection();
-				getPreferenceStore().setValue(
-						UIPreferences.COMMIT_DIALOG_PUSH_UPSTREAM, pushEnabled);
-			}
-		});
-
 		applyDialogFont(container);
 		statCol.pack();
 		resourceCol.pack();
@@ -1034,8 +980,10 @@ public class CommitDialog extends TitleAreaDialog {
 		}
 
 		setMessage(message, type);
-		commitButton.setEnabled(type == IMessageProvider.WARNING
-				|| type == IMessageProvider.NONE);
+		boolean commitEnabled = type == IMessageProvider.WARNING
+				|| type == IMessageProvider.NONE;
+		commitButton.setEnabled(commitEnabled);
+		commitAndPushButton.setEnabled(commitEnabled);
 	}
 
 	private boolean isCommitWithoutFilesAllowed() {

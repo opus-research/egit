@@ -5,6 +5,9 @@
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
+ * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -792,6 +795,9 @@ public class UIText extends NLS {
 	public static String ReplaceTargetSelectionDialog_ReplaceTitle;
 
 	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceTitleEmptyPath;
+
+	/** */
 	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
 
 	/** */
@@ -978,6 +984,9 @@ public class UIText extends NLS {
 	public static String CompareTreeView_AnalyzingRepositoryTaskText;
 
 	/** */
+	public static String CompareTreeView_ExpandAllTooltip;
+
+	/** */
 	public static String CompareTreeView_CollapseAllTooltip;
 
 	/** */
@@ -1009,9 +1018,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareTreeView_WorkspaceVersionText;
-
-	/** */
-	public static String CompareTreeView_ShowIn_label;
 
 	/** */
 	public static String CompareUtils_errorGettingEncoding;
@@ -1863,6 +1869,9 @@ public class UIText extends NLS {
 	public static String CommitDialog_Commit;
 
 	/** */
+	public static String CommitDialog_CommitAndPush;
+
+	/** */
 	public static String CommitDialog_CommitChanges;
 
 	/** */
@@ -1953,9 +1962,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_ContentAssist;
 
 	/** */
-	public static String CommitDialog_DetachedHead;
-
-	/** */
 	public static String CommitDialog_Files;
 
 	/** */
@@ -1971,28 +1977,10 @@ public class UIText extends NLS {
 	public static String CommitDialog_Title;
 
 	/** */
-	public static String CommitDialog_PushSectionTitle;
-
-	/** */
-	public static String CommitDialog_PushUpstream;
-
-	/** */
 	public static String ConfigurationChecker_gitPrefixWarningMessage;
 
 	/** */
-	public static String ConfigurationChecker_gitPrefixWarningTitle;
-
-	/** */
-	public static String ConfigurationChecker_checkHomeDirectory;
-
-	/** */
 	public static String ConfigurationChecker_checkConfiguration;
-
-	/** */
-	public static String ConfigurationChecker_doNotShowAgain;
-
-	/** */
-	public static String ConfigurationChecker_doNotShowGitPrefixWarningAgain;
 
 	/** */
 	public static String ConfigurationChecker_homeNotSet;
@@ -2172,6 +2160,9 @@ public class UIText extends NLS {
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
+	public static String CompareWithRefAction_errorOnSynchronize;
+
+	/** */
 	public static String CompareWithPreviousActionHandler_MessageRevisionNotFound;
 
 	/** */
@@ -2179,6 +2170,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
+
+	/** */
+	public static String CompareUtils_errorCommonAncestor;
 
 	/** */
 	public static String ConfirmationPage_cantConnectToAnyTitle;
@@ -3081,6 +3075,9 @@ public class UIText extends NLS {
 	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
 
 	/** */
+	public static String DialogsPreferencePage_HideWarningGroupHeader;
+
+	/** */
 	public static String DialogsPreferencePage_HomeDirWarning;
 
 	/** */
@@ -3396,6 +3393,9 @@ public class UIText extends NLS {
 	public static String MergeResultDialog_id;
 
 	/** */
+	public static String MergeResultDialog_failed;
+
+	/** */
 	public static String MergeResultDialog_mergeInput;
 
 	/** */
@@ -3403,6 +3403,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeResultDialog_newHead;
+
+	/** */
+	public static String MergeResultDialog_nMore;
 
 	/** */
 	public static String MergeResultDialog_result;
@@ -3496,6 +3499,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIUtils_StartTypingForPreviousValuesMessage;
+
+	/** */
+	public static String UIUtils_ShowInMenuLabel;
 
 	/** */
 	public static String UnmergedBranchDialog_Message;
@@ -3754,6 +3760,9 @@ public class UIText extends NLS {
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
+	public static String GitChangeSetModelProviderLabel;
+
+	/** */
 	public static String GitBranchSynchronizeWizardPage_title;
 
 	/** */
@@ -3812,6 +3821,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LocalFileRevision_currentVersionTag;
+
+	/** */
+	public static String LocalNonWorkspaceTypedElement_errorWritingContents;
 
 	/** */
 	public static String LoginDialog_changeCredentials;
@@ -4465,6 +4477,9 @@ public class UIText extends NLS {
 	public static String StagingView_CommitMessage;
 
 	/** */
+	public static String StagingView_CommitAndPush;
+
+	/** */
 	public static String StagingView_Committer;
 
 	/** */
@@ -4532,6 +4547,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_StageItemMenuLabel;
+
+	/** */
+	public static String StagingView_IgnoreItemMenuLabel;
 
 	/** */
 	public static String StagingView_DeleteItemMenuLabel;
