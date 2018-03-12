@@ -212,7 +212,6 @@ class RefUpdateElement extends WorkbenchAdapter {
 
 	/**
 	 * Get styled text
-	 * @param object
 	 *
 	 * @return styled string
 	 */
