@@ -2257,12 +2257,6 @@ public class UIText extends NLS {
 	public static String BranchAction_repositoryState;
 
 	/** */
-	public static String BranchOperationUI_DetachedHeadTitle;
-
-	/** */
-	public static String BranchOperationUI_DetachedHeadMessage;
-
-	/** */
 	public static String BranchResultDialog_CheckoutConflictsMessage;
 
 	/** */
