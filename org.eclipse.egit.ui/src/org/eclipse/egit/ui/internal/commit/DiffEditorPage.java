@@ -147,9 +147,7 @@ public class DiffEditorPage extends FormPage {
 						break;
 					monitor.setTaskName(diff.getPath());
 					try {
-						if (diff.hasDiffEntry()) {
-							formatter.write(repository, diff);
-						}
+						formatter.write(repository, diff);
 					} catch (IOException ignore) {
 						// Ignored
 					}
