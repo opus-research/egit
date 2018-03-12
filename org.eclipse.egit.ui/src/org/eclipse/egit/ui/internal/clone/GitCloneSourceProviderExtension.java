@@ -42,9 +42,8 @@ public class GitCloneSourceProviderExtension {
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
 		IConfigurationElement[] config = registry
 				.getConfigurationElementsFor(CLONE_SOURCE_PROVIDER_ID);
-		if (config.length > 0) {
+		if (config.length > 0)
 			addCloneSourceProvider(cloneSourceProvider, config, 0);
-		}
 
 		return cloneSourceProvider;
 	}
@@ -62,7 +61,8 @@ public class GitCloneSourceProviderExtension {
 			String iconPath = config[myIndex].getAttribute("icon"); //$NON-NLS-1$
 			ImageDescriptor icon = null;
 			if (iconPath != null) {
-				Bundle declaringBundle = Platform.getBundle(config[myIndex].getDeclaringExtension().getNamespaceIdentifier());
+				Bundle declaringBundle = Platform.getBundle(config[myIndex]
+						.getDeclaringExtension().getNamespaceIdentifier());
 				icon = ImageDescriptor.createFromURL(declaringBundle.getResource(iconPath));
 			}
 			myIndex++;
@@ -96,7 +96,7 @@ public class GitCloneSourceProviderExtension {
 	public static class CloneSourceProvider {
 
 		/**
-		 * The constant provider for used for local repositories
+		 * The constant provider used for local repositories
 		 */
 		public static final CloneSourceProvider LOCAL = new CloneSourceProvider(
 				"Local", null, null, true, UIIcons.REPOSITORY); //$NON-NLS-1$
@@ -127,7 +127,7 @@ public class GitCloneSourceProviderExtension {
 
 		/**
 		 * @return label the human readable name of a type of servers which
-		 *         contains repositories
+		 *         contain repositories
 		 */
 		public String getLabel() {
 			return label;
@@ -141,9 +141,9 @@ public class GitCloneSourceProviderExtension {
 		}
 
 		/**
-		 * @return a class which Provides a list of servers which host git
+		 * @return a class which provides a list of servers which host git
 		 *         repositories. This class is newly created on each invocation
-		 *         of this method. A client is responsible of caching this
+		 *         of this method. Clients are responsible to cache this
 		 *         class.
 		 * @throws CoreException
 		 */
@@ -160,9 +160,10 @@ public class GitCloneSourceProviderExtension {
 		}
 
 		/**
-		 * @return A wizard page which can can return information of a git
+		 * @return A wizard page which can return information of a git
 		 *         repository. This class is newly created on each invocation of
-		 *         this method. A client is responsible of caching this class.
+		 *         this method. Clients are responsible to cache this
+		 *         class.
 		 * @throws CoreException
 		 */
 		public WizardPage getRepositorySearchPage() throws CoreException {
