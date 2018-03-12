@@ -15,12 +15,13 @@ package org.eclipse.egit.ui.internal.clone;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 
-import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.provisional.wizards.NoRepositoryInfoException;
+import org.eclipse.egit.ui.internal.SecureStoreUtils;
+import org.eclipse.egit.ui.internal.components.RepositorySelection;
+import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.util.FileUtils;
 
@@ -30,6 +31,8 @@ import org.eclipse.jgit.util.FileUtils;
 public class GitCloneWizard extends AbstractGitCloneWizard {
 
 	private static final String HELP_CONTEXT = "org.eclipse.egit.ui.GitCloneWizard"; //$NON-NLS-1$
+
+	RepositorySelectionPage cloneSource;
 
 	/**
 	 * The default constructor
@@ -52,16 +55,28 @@ public class GitCloneWizard extends AbstractGitCloneWizard {
 		setNeedsProgressMonitor(true);
 		validSource.setHelpContext(HELP_CONTEXT);
 		cloneDestination.setHelpContext(HELP_CONTEXT);
+		cloneSource = new RepositorySelectionPage(true, presetURI);
+		cloneSource.setHelpContext(HELP_CONTEXT);
 		gerritConfiguration = new GerritConfigurationPage() {
 
 			@Override
 			public void setVisible(boolean visible) {
 				if (visible)
-					setSelection(getRepositorySelection());
+					setSelection(cloneSource.getSelection());
 				super.setVisible(visible);
 			}
 		};
 		gerritConfiguration.setHelpContext(HELP_CONTEXT);
+	}
+
+	@Override
+	protected RepositorySelection getRepositorySelection() {
+		return cloneSource.getSelection();
+	}
+
+	@Override
+	protected UserPasswordCredentials getCredentials() {
+		return cloneSource.getCredentials();
 	}
 
 	/**
@@ -95,7 +110,7 @@ public class GitCloneWizard extends AbstractGitCloneWizard {
 
 	@Override
 	protected void addPreClonePages() {
-		// no pages to add
+		addPage(cloneSource);
 	}
 
 	@Override
@@ -112,16 +127,15 @@ public class GitCloneWizard extends AbstractGitCloneWizard {
 	@Override
 	public boolean performFinish() {
 		try {
-			return performClone(currentSearchResult.getGitRepositoryInfo());
-		} catch (URISyntaxException e) {
-			Activator.error(UIText.GitImportWizard_errorParsingURI, e);
-		} catch (NoRepositoryInfoException e) {
-			Activator.error(UIText.GitImportWizard_noRepositoryInfo, e);
-		} catch (Exception e) {
-			Activator.error(e.getMessage(), e);
+			if (cloneSource.getStoreInSecureStore()) {
+				if (!SecureStoreUtils.storeCredentials(cloneSource
+						.getCredentials(), cloneSource.getSelection().getURI()))
+					return false;
+			}
+			cloneSource.saveUriInPrefs();
+			return performClone(cloneSource.getSelection().getURI(), cloneSource.getCredentials());
 		} finally {
 			setWindowTitle(UIText.GitCloneWizard_title);
 		}
-		return false;
 	}
 }
