@@ -28,6 +28,7 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryCache;
@@ -48,7 +49,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.IO;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
@@ -100,7 +100,7 @@ import org.junit.BeforeClass;
 public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	// the temporary directory
-	protected static File testDirectory;
+	private static File testDirectory;
 
 	protected static final String REPO1 = "FirstRepository";
 
@@ -120,13 +120,18 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected static final String FOLDER = "folder";
 
+	public static File getTestDirectory() {
+		return testDirectory;
+	}
+	
 	@BeforeClass
 	public static void beforeClassBase() throws Exception {
 		deleteAllProjects();
 		// create our temporary directory in the user space
 		File userHome = FS.DETECTED.userHome();
 		testDirectory = new File(userHome, "LocalRepositoriesTests");
-		FileUtils.delete(testDirectory, FileUtils.RECURSIVE | FileUtils.RETRY);
+		if (testDirectory.exists())
+			deleteRecursive(testDirectory);
 		testDirectory.mkdir();
 		// we don't want to clone into <user_home> but into our test directory
 		File repoRoot = new File(testDirectory, "RepositoryRoot");
@@ -142,7 +147,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// cleanup
 		deleteAllProjects();
 		shutDownRepositories();
-		FileUtils.delete(testDirectory, FileUtils.RECURSIVE | FileUtils.RETRY);
+		deleteRecursive(testDirectory);
 		Activator.getDefault().getRepositoryCache().clear();
 	}
 
@@ -153,16 +158,37 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		cache.clear();
 	}
 
-	protected static void deleteAllProjects() throws Exception {
+	protected static void deleteRecursive(File dirOrFile) throws IOException {
+		if (dirOrFile.isDirectory()) {
+			for (File file : dirOrFile.listFiles()) {
+				deleteRecursive(file);
+			}
+		}
+		boolean deleted = false;
+		for(int i=0; i<10; i++) {
+			deleted = dirOrFile.delete();
+			if (deleted)
+				break;
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// ignore
+			}
+		}
+		if (!deleted) {
+			throw new IOException("could not delete " + dirOrFile.getPath());
+		}
+	}
+
+	protected static void deleteAllProjects() throws CoreException {
 		for (IProject prj : ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects())
 			if (prj.getName().equals(PROJ1))
 				prj.delete(false, false, null);
 			else if (prj.getName().equals(PROJ2)) {
 				// delete the .project on disk
-				FileUtils.delete(EFS.getStore(
-						prj.getFile(".project").getLocationURI()).toLocalFile(
-						EFS.NONE, null), FileUtils.RETRY);
+				EFS.getStore(prj.getFile(".project").getLocationURI())
+						.toLocalFile(EFS.NONE, null).delete();
 				prj.delete(false, false, null);
 			}
 

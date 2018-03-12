@@ -139,7 +139,9 @@ public class EditableRevision extends FileRevisionTypedElement implements
 	 * @return the modified content
 	 */
 	public byte[] getModifiedContent() {
-		return modifiedContent;
+		byte[] result = new byte[modifiedContent.length];
+		System.arraycopy(modifiedContent, 0, result, 0, modifiedContent.length);
+		return result;
 	}
 
 	public Object getAdapter(Class adapter) {
