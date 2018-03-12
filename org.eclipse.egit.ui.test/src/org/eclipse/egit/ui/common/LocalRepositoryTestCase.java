@@ -47,7 +47,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
@@ -257,8 +256,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		untracked.addAll(Arrays.asList(commitables));
 		// commit to stable
 		CommitOperation op = new CommitOperation(commitables,
-				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
-				TestUtil.TESTCOMMITTER, "Initial commit");
+				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
+				"Initial commit");
 		op.execute(null);
 
 		// now create a stable branch (from master)
@@ -311,8 +310,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		myRepository.getConfig().save();
 		// and push
-		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
-		PushOperationUI pa = new PushOperationUI(myRepository, config, 0, false);
+		PushOperationUI pa = new PushOperationUI(myRepository, "push", 0, false);
 		pa.execute(null);
 
 		try {
@@ -438,8 +436,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// TODO: remove after replacing GitIndex in CommitOperation
 		waitInUI();
 		CommitOperation op = new CommitOperation(commitables,
-				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
-				TestUtil.TESTCOMMITTER, message);
+				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
+				message);
 		op.execute(null);
 	}
 
@@ -452,8 +450,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		ArrayList<IFile> untracked = new ArrayList<IFile>();
 		untracked.addAll(Arrays.asList(commitables));
 		CommitOperation op = new CommitOperation(commitables,
-				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
-				TestUtil.TESTCOMMITTER, commitMessage);
+				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
+				commitMessage);
 		op.execute(null);
 	}
 

@@ -149,6 +149,8 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			Activator.handleError(e.getMessage(), e, true);
 			return null;
 		}
+		if (branch == null)
+			return null;
 
 		String remoteName;
 		if (ObjectId.isId(branch)) {
@@ -571,9 +573,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			uriViewer.setInput(null);
 
 		if (config.getPushRefSpecs().isEmpty())
-			specViewer.setInput(new String[] { NLS.bind(
-					UIText.SimpleConfigurePushDialog_PushAllBranchesMessage,
-					PushOperationUI.DEFAULT_PUSH_REF_SPEC) });
+			specViewer.setInput(new String[] { UIText.SimpleConfigurePushDialog_DefaultPushNoRefspec});
 		else
 			specViewer.setInput(config.getPushRefSpecs());
 
@@ -662,7 +662,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 											.getPreferenceStore()
 											.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 									PushOperationUI op = new PushOperationUI(
-											repository, config, timeout, false);
+											repository, config.getName(), timeout, false);
 									op.start();
 								}
 							});

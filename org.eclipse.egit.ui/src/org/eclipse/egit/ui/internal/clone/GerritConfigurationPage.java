@@ -51,7 +51,9 @@ public class GerritConfigurationPage extends WizardPage {
 
 	private Text branch;
 
-	private Group branchGroup;
+	private Group pushConfigurationGroup;
+
+	private Group fetchConfigurationGroup;
 
 	private Group uriGroup;
 
@@ -79,17 +81,18 @@ public class GerritConfigurationPage extends WizardPage {
 
 		createGerritCheckbox(panel);
 		createURIGroup(panel);
-		createBranchGroup(panel);
+		createPushConfigurationGroup(panel);
+		createFetchConfigurationGroup(panel);
 
 		Dialog.applyDialogFont(panel);
 		setControl(panel);
-		UIUtils.setEnabledRecursively(branchGroup,
+		UIUtils.setEnabledRecursively(pushConfigurationGroup,
 				configureGerrit.getSelection());
 	}
 
 	private void createGerritCheckbox(Composite panel) {
 		Composite comp = SWTUtils.createHFillComposite(panel,
-				SWTUtils.MARGINS_NONE, 2);
+				SWTUtils.MARGINS_NONE, 1);
 		configureGerrit = new Button(comp, SWT.CHECK);
 		configureGerrit.addSelectionListener(new SelectionListener() {
 			public void widgetSelected(SelectionEvent e) {
@@ -102,7 +105,8 @@ public class GerritConfigurationPage extends WizardPage {
 				checkPage();
 			}
 		});
-		new Label(comp, SWT.NULL).setText(UIText.GerritConfigurationPage_configurePushToGerrit);
+		configureGerrit
+				.setText(UIText.GerritConfigurationPage_configurePushToGerrit);
 	}
 
 	private void createURIGroup(Composite panel) {
@@ -175,18 +179,28 @@ public class GerritConfigurationPage extends WizardPage {
 		});
 	}
 
-	private void createBranchGroup(Composite panel) {
-		branchGroup = SWTUtils.createHFillGroup(panel,
+	private void createPushConfigurationGroup(Composite panel) {
+		pushConfigurationGroup = SWTUtils.createHFillGroup(panel,
 				UIText.GerritConfigurationPage_groupPush,
 				SWTUtils.MARGINS_DEFAULT, 2);
-		new Label(branchGroup, SWT.NULL).setText(UIText.GerritConfigurationPage_labelDestinationBranch);
-		branch = SWTUtils.createText(branchGroup);
+		new Label(pushConfigurationGroup, SWT.NULL)
+				.setText(UIText.GerritConfigurationPage_labelDestinationBranch);
+		branch = SWTUtils.createText(pushConfigurationGroup);
 		branch.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
 				checkPage();
 			}
 		});
 	}
+
+	private void createFetchConfigurationGroup(Composite panel) {
+		fetchConfigurationGroup = SWTUtils.createHFillGroup(panel,
+				UIText.GerritConfigurationPage_groupFetch,
+				SWTUtils.MARGINS_DEFAULT, 2);
+		new Label(fetchConfigurationGroup, SWT.NULL)
+				.setText(UIText.GerritConfigurationPage_ConfigureFetchReviewNotes);
+	}
+
 
 	/**
 	 * @return true if Gerrit configuration should be done
@@ -234,7 +248,7 @@ public class GerritConfigurationPage extends WizardPage {
 	}
 
 	private void updateEnablement() {
-		UIUtils.setEnabledRecursively(branchGroup,
+		UIUtils.setEnabledRecursively(pushConfigurationGroup,
 				configureGerrit.getSelection());
 		UIUtils.setEnabledRecursively(uriGroup, configureGerrit.getSelection());
 	}
@@ -251,7 +265,9 @@ public class GerritConfigurationPage extends WizardPage {
 			newPushURI = prependGerritHttpPathPrefix(newPushURI);
 		}
 		uriText.setText(newPushURI.toString());
-		scheme.select(scheme.indexOf(newPushURI.getScheme()));
+		final String uriScheme = newPushURI.getScheme();
+		if (uriScheme != null)
+			scheme.select(scheme.indexOf(uriScheme));
 		branch.setText(Constants.MASTER);
 	}
 

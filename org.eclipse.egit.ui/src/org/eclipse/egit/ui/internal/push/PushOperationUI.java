@@ -41,10 +41,6 @@ import org.eclipse.osgi.util.NLS;
  * UI Wrapper for {@link PushOperation}
  */
 public class PushOperationUI {
-	/** The default RefSpec */
-	public static final RefSpec DEFAULT_PUSH_REF_SPEC = new RefSpec(
-			"refs/heads/*:refs/heads/*"); //$NON-NLS-1$
-
 	private final Repository repository;
 
 	private final int timeout;
@@ -61,6 +57,28 @@ public class PushOperationUI {
 
 	private PushOperation op;
 
+	private final String remoteName;
+
+	/**
+	 * @param repository
+	 * @param remoteName
+	 * @param timeout
+	 * @param dryRun
+	 *
+	 */
+	public PushOperationUI(Repository repository, String remoteName,
+			int timeout, boolean dryRun) {
+		this.repository = repository;
+		this.spec = null;
+		this.config = null;
+		this.remoteName = remoteName;
+		this.timeout = timeout;
+		this.dryRun = dryRun;
+		destinationString = NLS.bind("{0} - {1}", repository.getDirectory() //$NON-NLS-1$
+				.getParentFile().getName(), remoteName);
+	}
+
+
 	/**
 	 * @param repository
 	 * @param config
@@ -73,6 +91,7 @@ public class PushOperationUI {
 		this.repository = repository;
 		this.spec = null;
 		this.config = config;
+		this.remoteName = null;
 		this.timeout = timeout;
 		this.dryRun = dryRun;
 		destinationString = NLS.bind("{0} - {1}", repository.getDirectory() //$NON-NLS-1$
@@ -90,6 +109,7 @@ public class PushOperationUI {
 		this.repository = repository;
 		this.spec = spec;
 		this.config = null;
+		this.remoteName = null;
 		this.timeout = timeout;
 		this.dryRun = dryRun;
 		if (spec.getURIsNumber() == 1)
@@ -115,9 +135,30 @@ public class PushOperationUI {
 	 * @return the result of the operation
 	 * @throws CoreException
 	 */
+
 	public PushOperationResult execute(IProgressMonitor monitor)
 			throws CoreException {
+		createPushOperation();
+		if (credentialsProvider != null)
+			op.setCredentialsProvider(credentialsProvider);
+		try {
+			op.run(monitor);
+			return op.getOperationResult();
+		} catch (InvocationTargetException e) {
+			throw new CoreException(Activator.createErrorStatus(e.getCause()
+					.getMessage(), e.getCause()));
+		}
+	}
+
+
+	private void createPushOperation() throws CoreException {
+		if (remoteName != null) {
+			op = new PushOperation(repository, remoteName, dryRun, timeout);
+			return;
+		}
+
 		if (spec == null) {
+			// spec == null => config was supplied in constructor
 			// we don't use the configuration directly, as it may contain
 			// unsaved changes and as we may need
 			// to add the default push RefSpec here
@@ -131,9 +172,6 @@ public class PushOperationUI {
 
 			List<RefSpec> pushRefSpecs = new ArrayList<RefSpec>();
 			pushRefSpecs.addAll(config.getPushRefSpecs());
-			if (pushRefSpecs.isEmpty())
-				// default push to all branches
-				pushRefSpecs.add(DEFAULT_PUSH_REF_SPEC);
 
 			for (URIish uri : urisToPush) {
 				try {
@@ -148,18 +186,7 @@ public class PushOperationUI {
 				}
 			}
 		}
-
 		op = new PushOperation(repository, spec, dryRun, timeout);
-		if (credentialsProvider != null)
-			op.setCredentialsProvider(credentialsProvider);
-
-		try {
-			op.run(monitor);
-			return op.getOperationResult();
-		} catch (InvocationTargetException e) {
-			throw new CoreException(Activator.createErrorStatus(e.getCause()
-					.getMessage(), e.getCause()));
-		}
 	}
 
 	/**
