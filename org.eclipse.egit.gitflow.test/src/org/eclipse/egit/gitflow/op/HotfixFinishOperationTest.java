@@ -8,10 +8,9 @@
  *******************************************************************************/
 package org.eclipse.egit.gitflow.op;
 
-import static org.eclipse.egit.gitflow.GitFlowDefaults.DEVELOP;
+import static org.eclipse.egit.gitflow.GitFlowDefaults.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 
@@ -24,7 +23,7 @@ import org.junit.Test;
 
 public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 	@Test
-	public void testHotfixFinishSingleCommit() throws Exception {
+	public void testHotfixFinish() throws Exception {
 		testRepository
 				.createInitialCommit("testHotfixFinish\n\nfirst commit\n");
 
@@ -34,8 +33,7 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 
 		new HotfixStartOperation(gfRepo, MY_HOTFIX).execute(null);
 
-		RevCommit branchCommit = testRepository
-				.createInitialCommit("testHotfixFinish\n\nbranch commit\n");
+		testRepository.createInitialCommit("testHotfixFinish\n\nbranch commit\n");
 
 		new HotfixFinishOperation(gfRepo).execute(null);
 
@@ -45,16 +43,10 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 
 		// tag created?
 		RevCommit taggedCommit = gfRepo.findCommitForTag(MY_HOTFIX);
-		assertEquals(formatMergeCommitMessage(branchName), taggedCommit.getShortMessage());
+		assertEquals(String.format("Merge branch '%s' into develop", branchName), taggedCommit.getFullMessage());
 
 		// branch removed?
 		assertEquals(findBranch(repository, branchName), null);
-
-		RevCommit developHead = gfRepo.findHead(DEVELOP);
-		assertNotEquals(branchCommit, developHead);
-
-		RevCommit masterHead = gfRepo.findHead(MY_MASTER);
-		assertEquals(formatMergeCommitMessage(branchName), masterHead.getShortMessage());
 	}
 
 	@Test
@@ -74,14 +66,12 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 
 		testRepository.appendContentAndCommit(project.getProject(), file,
 				"Hello Release", "Release Commit");
-		testRepository.appendContentAndCommit(project.getProject(), file,
-				"Hello Merge Commit", "Release Commit 2");
 
 		new ReleaseFinishOperation(gfRepo).execute(null);
 
 		new HotfixStartOperation(gfRepo, MY_HOTFIX).execute(null);
 		// modify on first branch
-		testRepository.appendContentAndCommit(
+		RevCommit hotfixCommit = testRepository.appendContentAndCommit(
 				project.getProject(), file, "Hello Hotfix", "Hotfix Commit");
 		new BranchOperation(repository, gfRepo.getConfig().getDevelop()).execute(null);
 		assertEquals(gfRepo.getConfig().getDevelopFull(), repository.getFullBranch());
@@ -96,8 +86,8 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 				gfRepo);
 		hotfixFinishOperation.execute(null);
 
-		// TODO: check if the reference implementation cleans up in this case
-		assertNotNull(gfRepo.findCommitForTag(MY_HOTFIX));
+		// tag not created?
+		assertNotEquals(hotfixCommit, gfRepo.findCommitForTag(MY_HOTFIX));
 
 		// branch not removed?
 		assertNotEquals(findBranch(repository, branchName), null);
