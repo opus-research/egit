@@ -292,16 +292,24 @@ class CommitFileDiffViewer extends TableViewer {
 
 	@Override
 	protected void inputChanged(final Object input, final Object oldInput) {
-		if (oldInput == null && input == null)
-			return;
-		if (input == null && stackLayout.topControl != noInputText) {
-			stackLayout.topControl = noInputText;
-			getTable().getParent().layout(false);
-		} else if (input != null && stackLayout.topControl != getTable()) {
-			stackLayout.topControl = getTable();
-			getTable().getParent().layout(false);
+		boolean inputChanged;
+		if (oldInput == null && input == null) {
+			inputChanged = false;
+		} else if (oldInput == null || input == null) {
+			inputChanged = true;
+		} else {
+			inputChanged = !input.equals(oldInput);
 		}
-		super.inputChanged(input, oldInput);
+		if (inputChanged) {
+			if (input == null && stackLayout.topControl != noInputText) {
+				stackLayout.topControl = noInputText;
+				getTable().getParent().layout(false);
+			} else if (input != null && stackLayout.topControl != getTable()) {
+				stackLayout.topControl = getTable();
+				getTable().getParent().layout(false);
+			}
+			super.inputChanged(input, oldInput);
+		}
 	}
 
 	private void openFileInEditor(String filePath) {
