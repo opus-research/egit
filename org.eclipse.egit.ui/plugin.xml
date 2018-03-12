@@ -684,32 +684,6 @@
             %Theme_DiffHeadlineFont_description
          </description>
       </fontDefinition>
-      <colorDefinition
-        id="org.eclipse.egit.ui.IgnoredResourceForegroundColor"
-        categoryId="org.eclipse.egit.ui.GitTheme"
-        label="%Theme_IgnoredResourceForegroundColor_label"
-        value="COLOR_LIST_FOREGROUND">
-        <description>
-        %Theme_IgnoredResourceForegroundColor_description
-        </description>
-      </colorDefinition>
-      <colorDefinition
-        id="org.eclipse.egit.ui.IgnoredResourceBackgroundColor"
-        categoryId="org.eclipse.egit.ui.GitTheme"
-        label="%Theme_IgnoredResourceBackgroundColor_label"
-        value="COLOR_LIST_BACKGROUND">
-        <description>
-        %Theme_IgnoredResourceBackgroundColor_description
-        </description>
-      </colorDefinition>
-      <fontDefinition
-            categoryId="org.eclipse.egit.ui.GitTheme"
-            id="org.eclipse.egit.ui.IgnoredResourceFont"
-            label="%Theme_IgnoredResourceFont_label">
-        <description>
-        %Theme_IgnoredResourceFont_description
-        </description>
-      </fontDefinition>
    </extension>
 
 <!-- ********** QuickDiff text editor support ************** -->
@@ -1260,7 +1234,7 @@
       <handler
             commandId="org.eclipse.ui.edit.delete">
          <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.RemoveOrDeleteRepositoryCommand">
+               class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteCommand">
          </class>
          <activeWhen>
             <and>
@@ -2903,6 +2877,46 @@
             </visibleWhen>
          </command>
          <command
+               commandId="org.eclipse.egit.ui.team.Push"
+               icon="icons/obj16/push.gif"
+               label="%RepoViewPush.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.team.Fetch"
+               icon="icons/obj16/fetch.gif"
+               label="%RepoViewFetch.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
                commandId="org.eclipse.egit.ui.PushHeadToGerrit"
                label="%PushToGerritMenu.label"
                style="push">
@@ -2913,14 +2927,9 @@
                         value="1">
                   </count>
                   <iterate>
-                     <and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <test
-                              property="GitRepository.hasGerritConfiguration">
-                        </test>
-                     </and>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2936,14 +2945,9 @@
                         value="1">
                   </count>
                   <iterate>
-                     <and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <test
-                              property="GitRepository.hasGerritConfiguration">
-                        </test>
-                     </and>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2972,49 +2976,6 @@
                </and>
             </visibleWhen>
          </command>
-         <menu
-               label="%RemoteSubMenu.label">
-            <command
-                  commandId="org.eclipse.egit.ui.team.Push"
-                  icon="icons/obj16/push.gif"
-                  label="%RepoViewPush.label"
-                  style="push">
-               <visibleWhen
-                     checkEnabled="false">
-                  <and>
-                     <count
-                           value="1">
-                     </count>
-                     <iterate>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                     </iterate>
-                  </and>
-               </visibleWhen>
-            </command>
-            <command
-                  commandId="org.eclipse.egit.ui.team.Fetch"
-                  icon="icons/obj16/fetch.gif"
-                  label="%RepoViewFetch.label"
-                  style="push">
-               <visibleWhen
-                     checkEnabled="false">
-                  <and>
-                     <count
-                           value="1">
-                     </count>
-                     <iterate
-                           ifEmpty="false"
-                           operator="and">
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                     </iterate>
-                  </and>
-               </visibleWhen>
-            </command>
-         </menu>
       </menuContribution>
       <menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=repo-2">
@@ -3358,7 +3319,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewDelete"
+               commandId="org.eclipse.ui.edit.delete"
                label="%RepoViewDeleteRepository.label"
                style="push">
             <visibleWhen
@@ -3658,49 +3619,11 @@
                      commandId="org.eclipse.egit.ui.FetchGerritChange"
                      label="%FetchFromGerritCommand.label"
                      style="push">
-                  <visibleWhen
-                        checkEnabled="false">
-                     <and>
-                        <count
-                              value="1">
-                        </count>
-                        <iterate>
-                           <adapt
-                                 type="org.eclipse.core.resources.IProject">
-                              <test
-                                    property="GitResource.isShared">
-                              </test>
-                              <test
-                                    property="GitResource.hasGerritConfiguration">
-                              </test>
-                           </adapt>
-                        </iterate>
-                     </and>
-                  </visibleWhen>
                </command>
                <command
                      commandId="org.eclipse.egit.ui.PushHeadToGerrit"
                      label="%PushToGerritMenu.label"
                      style="push">
-                  <visibleWhen
-                        checkEnabled="false">
-                     <and>
-                        <count
-                              value="1">
-                        </count>
-                        <iterate>
-                           <adapt
-                                 type="org.eclipse.core.resources.IProject">
-                              <test
-                                    property="GitResource.isShared">
-                              </test>
-                              <test
-                                    property="GitResource.hasGerritConfiguration">
-                              </test>
-                           </adapt>
-                        </iterate>
-                     </and>
-                  </visibleWhen>
                </command>
                <separator
                      name="org.eclipse.egit.ui.remote.group1"
@@ -4391,10 +4314,6 @@
             icon="icons/obj16/changelog_obj.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewDelete"
-            icon="icons/obj16/delete_obj.gif">
-      </image>
-      <image
             commandId="org.eclipse.egit.ui.RepositoriesViewRemove"
             icon="icons/obj16/clear.gif">
       </image>
@@ -4565,14 +4484,14 @@
             class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewPropertyTester"
             id="org.eclipse.egit.ui.RepositoryTester"
             namespace="GitRepository"
-            properties="isBare,isSafe,canCommit,canAmend,canResetHead,canStash,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase,canContinueRebase,isSubmodule,containsHead,hasGerritConfiguration"
+            properties="isBare,isSafe,canCommit,canAmend,canResetHead,canStash,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase,canContinueRebase,isSubmodule,containsHead"
             type="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
       </propertyTester>
       <propertyTester
             class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
             id="org.eclipse.egit.ui.ResourceTester"
             namespace="GitResource"
-            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,hasGerritConfiguration"
+            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead"
             type="org.eclipse.core.resources.IResource">
       </propertyTester>
    </extension>

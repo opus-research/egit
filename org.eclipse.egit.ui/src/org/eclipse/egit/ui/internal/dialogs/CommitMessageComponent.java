@@ -7,7 +7,7 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -40,9 +40,9 @@ import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
-import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -395,8 +395,6 @@ public class CommitMessageComponent {
 	 */
 	public void enableListeners(boolean enable) {
 		this.listenersEnabled = enable;
-		if (enable)
-			listener.statusUpdated();
 	}
 
 	/**
@@ -492,13 +490,6 @@ public class CommitMessageComponent {
 	private void addListeners() {
 		authorHandler = UIUtils.addPreviousValuesContentProposalToText(
 				authorText, AUTHOR_VALUES_PREF);
-		authorText.addModifyListener(new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled)
-					return;
-				listener.statusUpdated();
-			}
-		});
 		committerText.addModifyListener(new ModifyListener() {
 			String oldCommitter = committerText.getText();
 
@@ -515,7 +506,6 @@ public class CommitMessageComponent {
 							oldSignOff, newSignOff));
 					oldCommitter = newCommitter;
 				}
-				listener.statusUpdated();
 			}
 		});
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
@@ -526,7 +516,6 @@ public class CommitMessageComponent {
 					return;
 				updateSignedOffButton();
 				updateChangeIdButton();
-				listener.statusUpdated();
 			}
 		});
 	}
@@ -535,12 +524,12 @@ public class CommitMessageComponent {
 	 * Sets the defaults for change id and signed off
 	 */
 	public void setDefaults() {
-		if (repository != null)
-			createChangeId = GerritUtil.getCreateChangeId(repository
-					.getConfig());
+		createChangeId = repository.getConfig().getBoolean(
+				ConfigConstants.CONFIG_GERRIT_SECTION,
+				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false);
 		signedOff = org.eclipse.egit.ui.Activator.getDefault()
-				.getPreferenceStore()
-				.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
+		.getPreferenceStore()
+		.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
 	}
 
 	/**

@@ -301,8 +301,7 @@ public class RemoveCommand extends
 			final IPath wdPath = new Path(workDir.getAbsolutePath());
 			for (IProject prj : ResourcesPlugin.getWorkspace()
 					.getRoot().getProjects()) {
-				IPath location = prj.getLocation();
-				if (location != null && wdPath.isPrefixOf(location)) {
+				if (wdPath.isPrefixOf(prj.getLocation())) {
 					projectsToDelete.add(prj);
 				}
 			}
