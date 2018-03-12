@@ -6,16 +6,16 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.actions;
+package org.eclipse.egit.ui.internal.history.command;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.op.TagOperation;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.dialogs.CreateTagDialog;
+import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
@@ -24,20 +24,20 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
- * Create a tag based on a commit
+ * Create a tag based on a commit.
  */
-public class CreateTagOnCommitActionHandler extends RepositoryActionHandler {
-
+public class CreateTagOnCommitHandler extends AbstractHistoryCommanndHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		PlotCommit commit = (PlotCommit) getSelection(event).getFirstElement();
-		final Repository repo = getRepository(false, event);
+		PlotCommit commit = (PlotCommit) getSelection(getPage()).getFirstElement();
+		final Repository repo = getRepository(event);
 
-		CreateTagDialog dialog = new CreateTagDialog(getShell(event),
-				ValidationUtils
-						.getRefNameInputValidator(repo, Constants.R_TAGS),
-				commit.getId());
+		CreateTagDialog dialog = new CreateTagDialog(HandlerUtil
+				.getActiveShellChecked(event), ValidationUtils
+				.getRefNameInputValidator(repo, Constants.R_TAGS), commit
+				.getId());
 
 		dialog.setExistingTags(getRevTags(event));
 		if (dialog.open() != Window.OK)
@@ -64,13 +64,10 @@ public class CreateTagOnCommitActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		try {
-			IStructuredSelection sel = getSelection(null);
-			return sel.size() == 1
-					&& sel.getFirstElement() instanceof RevCommit;
-		} catch (ExecutionException e) {
-			Activator.handleError(e.getMessage(), e, false);
+		GitHistoryPage page = getPage();
+		if (page == null)
 			return false;
-		}
+		IStructuredSelection sel = getSelection(page);
+		return sel.size() == 1 && sel.getFirstElement() instanceof RevCommit;
 	}
 }
