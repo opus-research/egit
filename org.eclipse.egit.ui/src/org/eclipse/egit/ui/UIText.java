@@ -674,9 +674,6 @@ public class UIText extends NLS {
 	public static String CompareTargetSelectionDialog_WindowTitle;
 
 	/** */
-	public static String CompareTreeView_AddedOnlyTooltip;
-
-	/** */
 	public static String CompareTreeView_AnalyzingRepositoryTaskText;
 
 	/** */
@@ -687,9 +684,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareTreeView_ComparingWorkspaceVersionDescription;
-
-	/** */
-	public static String CompareTreeView_DeletedOnlyTooltip;
 
 	/** */
 	public static String CompareTreeView_EqualFilesTooltip;
@@ -1865,6 +1859,9 @@ public class UIText extends NLS {
 	public static String FetchConfiguredRemoteAction_NoUrisDefinedMessage;
 
 	/** */
+	public static String FetchOperationUI_FetchJobName;
+
+	/** */
 	public static String FetchResultDialog_labelEmptyResult;
 
 	/** */
@@ -2378,13 +2375,22 @@ public class UIText extends NLS {
 	public static String GitSelectRepositoryPage_PleaseSelectMessage;
 
 	/** */
+	public static String GitSelectWizardPage_AutoShareButton;
+
+	/** */
 	public static String GitSelectWizardPage_ImportAsGeneralButton;
 
 	/** */
 	public static String GitSelectWizardPage_ImportExistingButton;
 
 	/** */
+	public static String GitSelectWizardPage_NoShareButton;
+
+	/** */
 	public static String GitSelectWizardPage_ProjectCreationHeader;
+
+	/** */
+	public static String GitSelectWizardPage_SharingProjectsHeader;
 
 	/** */
 	public static String GitSelectWizardPage_UseNewProjectsWizardButton;

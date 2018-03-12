@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.clone;
 
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,9 +20,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
@@ -150,7 +147,7 @@ public class GitImportWizard extends Wizard implements ProjectCreator,
 
 				switch (importWithDirectoriesPage.getWizardSelection()) {
 				case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
-					projectsImportPage.createProjects(selectRepoPage.getRepository());
+					projectsImportPage.createProjects();
 					break;
 				case GitSelectWizardPage.NEW_WIZARD:
 					new NewWizardAction(PlatformUI.getWorkbench()
@@ -183,9 +180,6 @@ public class GitImportWizard extends Wizard implements ProjectCreator,
 												.getProject(desc.getName());
 										prj.create(desc, monitor);
 										prj.open(monitor);
-										File repoDir = selectRepoPage.getRepository().getDirectory();
-										ConnectProviderOperation cpo = new ConnectProviderOperation(prj, repoDir);
-										cpo.execute(new NullProgressMonitor());
 
 										ResourcesPlugin.getWorkspace()
 												.getRoot().refreshLocal(

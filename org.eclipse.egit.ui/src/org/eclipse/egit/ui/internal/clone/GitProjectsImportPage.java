@@ -34,13 +34,11 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
@@ -56,7 +54,6 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -499,12 +496,11 @@ public class GitProjectsImportPage extends WizardPage {
 
 	/**
 	 * Create the selected projects
-	 * @param repository
 	 *
 	 * @return boolean <code>true</code> if all project creations were
 	 *         successful.
 	 */
-	boolean createProjects(final Repository repository) {
+	boolean createProjects() {
 		final Set<ProjectRecord> selected = getCheckedProjects();
 		WorkspaceModifyOperation op = new WorkspaceModifyOperation() {
 			protected void execute(IProgressMonitor monitor)
@@ -515,15 +511,8 @@ public class GitProjectsImportPage extends WizardPage {
 						throw new OperationCanceledException();
 					}
 					for (ProjectRecord projectRecord : selected) {
-						IProject project = createExistingProject(projectRecord,
+						createExistingProject(projectRecord,
 								new SubProgressMonitor(monitor, 1));
-						ConnectProviderOperation cpo = new ConnectProviderOperation(
-								project, repository.getDirectory());
-						try {
-							cpo.execute(new NullProgressMonitor());
-						} catch (CoreException e) {
-							throw new InvocationTargetException(e);
-						}
 					}
 				} finally {
 					monitor.done();
@@ -568,7 +557,7 @@ public class GitProjectsImportPage extends WizardPage {
 	 * @throws InvocationTargetException
 	 * @throws InterruptedException
 	 */
-	private IProject createExistingProject(final ProjectRecord record,
+	private boolean createExistingProject(final ProjectRecord record,
 			IProgressMonitor monitor) throws InvocationTargetException,
 			InterruptedException {
 		String projectName = record.getProjectName();
@@ -597,12 +586,13 @@ public class GitProjectsImportPage extends WizardPage {
 					30));
 			project.open(IResource.BACKGROUND_REFRESH, new SubProgressMonitor(
 					monitor, 50));
-			return project;
 		} catch (CoreException e) {
 			throw new InvocationTargetException(e);
 		} finally {
 			monitor.done();
 		}
+
+		return true;
 	}
 
 	/**
