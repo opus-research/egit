@@ -1634,11 +1634,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_RADIO_BUTTON) {
 			@Override
 			public void run() {
-				if (!isChecked()) {
+				if (!isChecked())
 					return;
-				}
 				presentation = Presentation.LIST;
-				setPresentation(presentation, false);
+				getPreferenceStore().setValue(
+						UIPreferences.STAGING_VIEW_PRESENTATION,
+						Presentation.LIST.name());
 				treePresentationAction.setChecked(false);
 				compactTreePresentationAction.setChecked(false);
 				setExpandCollapseActionsVisible(false);
@@ -1652,14 +1653,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_RADIO_BUTTON) {
 			@Override
 			public void run() {
-				if (!isChecked()) {
+				if (!isChecked())
 					return;
-				}
 				presentation = Presentation.TREE;
-				setPresentation(presentation, false);
+				getPreferenceStore().setValue(
+						UIPreferences.STAGING_VIEW_PRESENTATION,
+						Presentation.TREE.name());
 				listPresentationAction.setChecked(false);
 				compactTreePresentationAction.setChecked(false);
-				setExpandCollapseActionsVisible(isExpandAllowed());
+				setExpandCollapseActionsVisible(true);
 				refreshViewers();
 			}
 		};
@@ -1670,19 +1672,30 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IAction.AS_RADIO_BUTTON) {
 			@Override
 			public void run() {
-				if (!isChecked()) {
+				if (!isChecked())
 					return;
-				}
-				switchToCompactModeInternal(false);
+				presentation = Presentation.COMPACT_TREE;
+				getPreferenceStore().setValue(
+						UIPreferences.STAGING_VIEW_PRESENTATION,
+						Presentation.COMPACT_TREE.name());
+				listPresentationAction.setChecked(false);
+				treePresentationAction.setChecked(false);
+				setExpandCollapseActionsVisible(true);
 				refreshViewers();
 			}
-
 		};
 		compactTreePresentationAction.setImageDescriptor(UIIcons.COMPACT);
 		presentationMenu.add(compactTreePresentationAction);
 
-		presentation = readPresentation(UIPreferences.STAGING_VIEW_PRESENTATION,
-				Presentation.LIST);
+		String presentationString = getPreferenceStore().getString(
+				UIPreferences.STAGING_VIEW_PRESENTATION);
+		if (presentationString.length() > 0) {
+			try {
+				presentation = Presentation.valueOf(presentationString);
+			} catch (IllegalArgumentException e) {
+				// Use already set value of presentation
+			}
+		}
 		switch (presentation) {
 		case LIST:
 			listPresentationAction.setChecked(true);
@@ -1715,32 +1728,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		actionBars.updateActionBars();
 	}
 
-	private Presentation readPresentation(String key, Presentation def) {
-		String presentationString = getPreferenceStore().getString(key);
-		if (presentationString.length() > 0) {
-			try {
-				return Presentation.valueOf(presentationString);
-			} catch (IllegalArgumentException e) {
-				// Use given default
-			}
-		}
-		return def;
-	}
-
-	private void setPresentation(Presentation newOne, boolean auto) {
-		Presentation old = presentation;
-		presentation = newOne;
-		IPreferenceStore store = getPreferenceStore();
-		store.setValue(UIPreferences.STAGING_VIEW_PRESENTATION, newOne.name());
-		if (auto && old != newOne) {
-			// remember user choice if we switch mode automatically
-			store.setValue(UIPreferences.STAGING_VIEW_PRESENTATION_CHANGED,
-					true);
-		} else {
-			store.setToDefault(UIPreferences.STAGING_VIEW_PRESENTATION_CHANGED);
-		}
-	}
-
 	private void setExpandCollapseActionsVisible(boolean visible) {
 		for (IContributionItem item : unstagedToolBarManager.getItems())
 			item.setVisible(visible);
@@ -1752,19 +1739,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		stagedCollapseAllAction.setEnabled(visible);
 		unstagedToolBarManager.update(true);
 		stagedToolBarManager.update(true);
-	}
-
-	boolean isExpandAllowed() {
-		StagingViewContentProvider contentProvider = getContentProvider(
-				stagedViewer);
-		if (contentProvider.getCount() > getMaxLimitForListMode()) {
-			return false;
-		}
-		contentProvider = getContentProvider(unstagedViewer);
-		if (contentProvider.getCount() > getMaxLimitForListMode()) {
-			return false;
-		}
-		return true;
 	}
 
 	private TreeViewer createTree(Composite composite) {
@@ -2712,32 +2686,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 						.getExpandedElements();
 				Object[] stagedExpanded = stagedViewer
 						.getExpandedElements();
-
-				int elementsCount = updateAutoExpand(unstagedViewer,
-						getUnstaged(indexDiff));
-				elementsCount += updateAutoExpand(stagedViewer,
-						getStaged(indexDiff));
-
-				if (elementsCount > getMaxLimitForListMode()) {
-					listPresentationAction.setEnabled(false);
-					if (presentation == Presentation.LIST) {
-						compactTreePresentationAction.setChecked(true);
-						switchToCompactModeInternal(true);
-					} else {
-						setExpandCollapseActionsVisible(false);
-					}
-				} else {
-					listPresentationAction.setEnabled(true);
-					boolean changed = getPreferenceStore().getBoolean(
-							UIPreferences.STAGING_VIEW_PRESENTATION_CHANGED);
-					if (changed) {
-						listPresentationAction.setChecked(true);
-						listPresentationAction.run();
-					} else if (presentation != Presentation.LIST) {
-						setExpandCollapseActionsVisible(true);
-					}
-				}
-
 				unstagedViewer.setInput(update);
 				stagedViewer.setInput(update);
 				expandPreviousExpandedAndPaths(unstagedExpanded, unstagedViewer,
@@ -2765,57 +2713,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 
 		});
-	}
-
-	/**
-	 * The max number of changed files we can handle in the "list" presentation
-	 * without freezing Eclipse UI for a too long time.
-	 *
-	 * @return default is 10000
-	 */
-	int getMaxLimitForListMode() {
-		return Activator.getDefault().getPreferenceStore()
-				.getInt(UIPreferences.STAGING_VIEW_MAX_LIMIT_LIST_MODE);
-	}
-
-	static int getUnstaged(@Nullable IndexDiffData indexDiff) {
-		if (indexDiff == null) {
-			return 0;
-		}
-		int size = indexDiff.getUntracked().size();
-		size += indexDiff.getMissing().size();
-		size += indexDiff.getModified().size();
-		size += indexDiff.getConflicting().size();
-		return size;
-	}
-
-	static int getStaged(@Nullable IndexDiffData indexDiff) {
-		if (indexDiff == null) {
-			return 0;
-		}
-		int size = indexDiff.getAdded().size();
-		size += indexDiff.getChanged().size();
-		size += indexDiff.getRemoved().size();
-		return size;
-	}
-
-	private int updateAutoExpand(TreeViewer viewer, int newSize) {
-		if (newSize > getMaxLimitForListMode()) {
-			// auto expand with too many nodes freezes eclipse
-			disableAutoExpand(viewer);
-		}
-		return newSize;
-	}
-
-	void switchToCompactModeInternal(boolean auto) {
-		setPresentation(Presentation.COMPACT_TREE, auto);
-		listPresentationAction.setChecked(false);
-		treePresentationAction.setChecked(false);
-		if (auto) {
-			setExpandCollapseActionsVisible(false);
-		} else {
-			setExpandCollapseActionsVisible(isExpandAllowed());
-		}
 	}
 
 	private static boolean noConflicts(IndexDiffData indexDiff) {
@@ -2861,16 +2758,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private void expandPreviousExpandedAndPaths(Object[] previous,
 			TreeViewer viewer, Set<IPath> additionalPaths) {
-
-		StagingViewContentProvider stagedContentProvider = getContentProvider(
-				viewer);
-		int count = stagedContentProvider.getCount();
-		updateAutoExpand(viewer, count);
-
 		// Auto-expand is on, so don't change expanded items
-		if (viewer.getAutoExpandLevel() == AbstractTreeViewer.ALL_LEVELS) {
+		if (viewer.getAutoExpandLevel() == AbstractTreeViewer.ALL_LEVELS)
 			return;
-		}
 
 		// No need to expand anything
 		if (getPresentation() == Presentation.LIST)
@@ -2884,7 +2774,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			if (element instanceof StagingFolderEntry)
 				addPathAndParentPaths(((StagingFolderEntry) element).getPath(), paths);
 		List<StagingFolderEntry> expand = new ArrayList<StagingFolderEntry>();
-
+		StagingViewContentProvider stagedContentProvider = getContentProvider(viewer);
 		calculateNodesToExpand(paths, stagedContentProvider.getElements(null),
 				expand);
 		viewer.setExpandedElements(expand.toArray());
