@@ -1996,9 +1996,6 @@ public class UIText extends NLS {
 	public static String SpellcheckableMessageArea_redo;
 
 	/** */
-	public static String SpellcheckableMessageArea_showWhitespace;
-
-	/** */
 	public static String SpellcheckableMessageArea_undo;
 
 	/** */
