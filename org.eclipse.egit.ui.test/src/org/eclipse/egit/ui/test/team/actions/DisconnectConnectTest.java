@@ -19,6 +19,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
@@ -26,6 +27,7 @@ import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
+import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -63,6 +65,7 @@ public class DisconnectConnectTest extends LocalRepositoryTestCase {
 				.select();
 		connectDialog.bot().tree().getAllItems()[0].select();
 		connectDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+		bot.waitUntil(Conditions.shellCloses(connectDialog));
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
 				IResource.DEPTH_INFINITE, null);
 		TestUtil.waitForJobs(500, 5000);
@@ -85,13 +88,16 @@ public class DisconnectConnectTest extends LocalRepositoryTestCase {
 		touch("File modified");
 		clickOnDisconnect();
 		TestUtil.waitForJobs(500, 5000);
+		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		TestUtil.waitForDecorations();
 		assertFalse("Project should not have git decorations",
 				getProjectItem(projectExplorerTree, PROJ1).getText()
 						.contains("["));
 		SWTBotShell connectDialog = openConnectDialog();
 		connectDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+		bot.waitUntil(Conditions.shellCloses(connectDialog));
 		TestUtil.waitForJobs(500, 5000);
+		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		TestUtil.waitForDecorations();
 		assertTrue("Project should have git decorations",
 				getProjectItem(projectExplorerTree, PROJ1).getText()
