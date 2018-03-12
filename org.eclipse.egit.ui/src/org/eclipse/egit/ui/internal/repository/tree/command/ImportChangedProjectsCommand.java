@@ -35,9 +35,6 @@ import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jgit.errors.CorruptObjectException;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -58,6 +55,7 @@ import org.eclipse.ui.internal.ide.IDEWorkbenchPlugin;
  */
 public class ImportChangedProjectsCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		List<RepositoryTreeNode> selectedNodes = getSelectedNodes(event);
 		if (selectedNodes == null || selectedNodes.isEmpty()) {
@@ -84,10 +82,9 @@ public class ImportChangedProjectsCommand extends
 	private List<File> getChangedFiles(RevCommit commit, Repository repo) {
 		try {
 			List<File> files = new ArrayList<File>();
-			TreeWalk tw = new TreeWalk(repo);
-			tw.setRecursive(true);
-			final RevWalk walk = new RevWalk(repo);
-			try {
+			try (TreeWalk tw = new TreeWalk(repo);
+					final RevWalk walk = new RevWalk(repo)) {
+				tw.setRecursive(true);
 				FileDiff[] diffs = FileDiff.compute(repo, tw, commit,
 						TreeFilter.ALL);
 				if (diffs != null && diffs.length > 0) {
@@ -98,17 +95,8 @@ public class ImportChangedProjectsCommand extends
 						files.add(f);
 					}
 				}
-			} finally {
-				tw.release();
-				walk.release();
 			}
 			return files;
-		} catch (MissingObjectException e) {
-			Activator.error(e.getMessage(), e);
-		} catch (IncorrectObjectTypeException e) {
-			Activator.error(e.getMessage(), e);
-		} catch (CorruptObjectException e) {
-			Activator.error(e.getMessage(), e);
 		} catch (IOException e) {
 			Activator.error(e.getMessage(), e);
 		}

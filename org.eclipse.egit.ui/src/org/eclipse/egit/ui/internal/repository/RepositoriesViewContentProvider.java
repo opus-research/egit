@@ -115,6 +115,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 	}
 
+	@Override
 	@SuppressWarnings("unchecked")
 	public Object[] getElements(Object inputElement) {
 
@@ -154,6 +155,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		return nodes.toArray();
 	}
 
+	@Override
 	public void dispose() {
 		commandState.removeListener(this);
 		for (ListenerHandle handle : refsChangedListeners.values())
@@ -161,10 +163,12 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		refsChangedListeners.clear();
 	}
 
+	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		// nothing
 	}
 
+	@Override
 	public Object[] getChildren(Object parentElement) {
 
 		RepositoryTreeNode node = (RepositoryTreeNode) parentElement;
@@ -328,6 +332,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 			File[] childFiles = workingDir.listFiles();
 			Arrays.sort(childFiles, new Comparator<File>() {
+				@Override
 				public int compare(File o1, File o2) {
 					if (o1.isDirectory()) {
 						if (o2.isDirectory()) {
@@ -361,6 +366,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 				return children.toArray();
 
 			Arrays.sort(childFiles, new Comparator<File>() {
+				@Override
 				public int compare(File o1, File o2) {
 					if (o1.isDirectory()) {
 						if (o2.isDirectory()) {
@@ -486,9 +492,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			Repository repo) {
 		List<RepositoryTreeNode<Ref>> nodes = new ArrayList<RepositoryTreeNode<Ref>>();
 
-		RevWalk walk = new RevWalk(repo);
-		walk.setRetainBody(true);
-		try {
+		try (RevWalk walk = new RevWalk(repo)) {
+			walk.setRetainBody(true);
 			Map<String, Ref> tagRefs = getRefs(repo, Constants.R_TAGS);
 			for (Ref tagRef : tagRefs.values()) {
 				ObjectId objectId = tagRef.getLeaf().getObjectId();
@@ -500,8 +505,6 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			}
 		} catch (IOException e) {
 			return handleException(e, parentNode);
-		} finally {
-			walk.release();
 		}
 
 		return nodes.toArray();
@@ -534,12 +537,14 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 					.getRepository(), message) };
 	}
 
+	@Override
 	public Object getParent(Object element) {
 		if (element instanceof RepositoryTreeNode)
 			return ((RepositoryTreeNode) element).getParent();
 		return null;
 	}
 
+	@Override
 	public boolean hasChildren(Object element) {
 		// for some of the nodes we can optimize this call
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
@@ -572,6 +577,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 	}
 
+	@Override
 	public void handleStateChange(State state, Object oldValue) {
 		try {
 			this.branchHierarchyMode = ((Boolean) state.getValue())
@@ -588,6 +594,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			branchRefs.put(repo, allRefs);
 			if (refsChangedListeners.get(repo) == null) {
 				RefsChangedListener listener = new RefsChangedListener() {
+					@Override
 					public void onRefsChanged(RefsChangedEvent event) {
 						synchronized (RepositoriesViewContentProvider.this) {
 							branchRefs.remove(repo);

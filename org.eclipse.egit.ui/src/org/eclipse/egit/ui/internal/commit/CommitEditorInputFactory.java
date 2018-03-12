@@ -97,8 +97,7 @@ public class CommitEditorInputFactory implements IElementFactory {
 		if (id == null)
 			return null;
 
-		RevWalk walk = new RevWalk(repository);
-		try {
+		try (RevWalk walk = new RevWalk(repository)) {
 			RevCommit commit = walk.parseCommit(ObjectId.fromString(id));
 			for (RevCommit parent : commit.getParents())
 				walk.parseBody(parent);
@@ -110,14 +109,13 @@ public class CommitEditorInputFactory implements IElementFactory {
 			return repositoryCommit;
 		} catch (IOException e) {
 			return null;
-		} finally {
-			walk.release();
 		}
 	}
 
 	/**
 	 * @see org.eclipse.ui.IElementFactory#createElement(org.eclipse.ui.IMemento)
 	 */
+	@Override
 	public IAdaptable createElement(IMemento memento) {
 		Repository repository = getRepository(memento);
 		if (repository == null)
