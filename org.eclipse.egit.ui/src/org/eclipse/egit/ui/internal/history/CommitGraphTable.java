@@ -81,7 +81,6 @@ import org.eclipse.swt.events.MouseTrackAdapter;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -450,19 +449,6 @@ class CommitGraphTable {
 	}
 
 	private void createColumns(final Table rawTable, final TableLayout layout) {
-		final TableColumn commitId = new TableColumn(rawTable, SWT.NONE);
-		commitId.setResizable(true);
-		commitId.setText(UIText.CommitGraphTable_CommitId);
-		int minWidth;
-		GC gc = new GC(rawTable.getDisplay());
-		try {
-			gc.setFont(rawTable.getFont());
-			minWidth = gc.stringExtent("0000000").x + 5; //$NON-NLS-1$
-		} finally {
-			gc.dispose();
-		}
-		layout.addColumnData(new ColumnWeightData(3, minWidth, true));
-
 		final TableColumn graph = new TableColumn(rawTable, SWT.NONE);
 		graph.setResizable(true);
 		graph.setText(UIText.CommitGraphTable_messageColumn);
@@ -480,6 +466,12 @@ class CommitGraphTable {
 		date.setText(UIText.HistoryPage_authorDateColumn);
 		date.setWidth(250);
 		layout.addColumnData(new ColumnWeightData(5, true));
+
+		final TableColumn commitId = new TableColumn(rawTable, SWT.NONE);
+		commitId.setResizable(true);
+		commitId.setText(UIText.CommitGraphTable_CommitId);
+		commitId.setWidth(50);
+		layout.addColumnData(new ColumnWeightData(3, true));
 
 		final TableColumn committer = new TableColumn(rawTable, SWT.NONE);
 		committer.setResizable(true);
@@ -518,7 +510,7 @@ class CommitGraphTable {
 		else
 			event.gc.setFont(nFont);
 
-		if (event.index == 1) {
+		if (event.index == 0) {
 			renderer.paint(event, input == null ? null : input.getHead());
 			return;
 		}
