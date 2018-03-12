@@ -33,7 +33,6 @@ import org.eclipse.egit.core.op.DiscardChangesOperation;
 import org.eclipse.egit.core.op.DiscardChangesOperation.Stage;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.action.Action;
@@ -65,8 +64,8 @@ public class ReplaceWithOursTheirsMenu extends CompoundContributionItem
 	protected IContributionItem[] getContributionItems() {
 		List<IContributionItem> items = new ArrayList<IContributionItem>();
 
-		IHandlerService handlerService = CommonUtils.getService(serviceLocator,
-				IHandlerService.class);
+		IHandlerService handlerService = (IHandlerService) serviceLocator
+				.getService(IHandlerService.class);
 		IStructuredSelection selection = SelectionUtils
 				.getSelection(handlerService.getCurrentState());
 		IPath[] locations = SelectionUtils.getSelectedLocations(selection);
