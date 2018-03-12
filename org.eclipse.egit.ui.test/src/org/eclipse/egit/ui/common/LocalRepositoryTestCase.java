@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.StringTokenizer;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -31,7 +32,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryCache;
-import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
@@ -48,6 +48,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
@@ -83,7 +84,7 @@ import org.junit.BeforeClass;
  * <p>
  * A typical code sequence for setting up these two repositories could look
  * like:
- *
+ * 
  * <pre>
  *  private File localRepo;
  *  private File remoteRepo;
@@ -125,7 +126,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	public static File getTestDirectory() {
 		return testDirectory;
 	}
-
+	
 	@BeforeClass
 	public static void beforeClassBase() throws Exception {
 		deleteAllProjects();
@@ -135,24 +136,16 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (testDirectory.exists())
 			FileUtils.delete(testDirectory, FileUtils.RECURSIVE
 					| FileUtils.RETRY);
-		if (!testDirectory.exists())
-			FileUtils.mkdir(testDirectory, true);
+		testDirectory.mkdir();
 		// we don't want to clone into <user_home> but into our test directory
 		File repoRoot = new File(testDirectory, "RepositoryRoot");
-		if (!repoRoot.exists())
-			FileUtils.mkdir(repoRoot, true);
+		repoRoot.mkdir();
 		// make sure the default directory for Repos is not the user home
 		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 		// suppress the configuration dialog
 		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, false);
-		// suppress the detached head warning dialog
-		org.eclipse.egit.ui.Activator
-				.getDefault()
-				.getPreferenceStore()
-				.setValue(UIPreferences.SHOW_DETACHED_HEAD_WARNING,
-						false);
 	}
 
 	@AfterClass
@@ -197,6 +190,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		File gitDir = new File(new File(testDirectory, repoName),
 				Constants.DOT_GIT);
+		gitDir.mkdir();
 		Repository myRepository = new FileRepository(gitDir);
 		myRepository.create();
 
@@ -224,19 +218,19 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		new ConnectProviderOperation(firstProject, gitDir).execute(null);
 
-		IProject secondProject = ResourcesPlugin.getWorkspace().getRoot()
+		IProject secondPoject = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(PROJ2);
 
-		if (secondProject.exists())
-			secondProject.delete(true, null);
+		if (secondPoject.exists())
+			secondPoject.delete(true, null);
 
 		desc = ResourcesPlugin.getWorkspace().newProjectDescription(PROJ2);
 		desc.setLocation(new Path(new File(myRepository.getWorkTree(), PROJ2)
 				.getPath()));
-		secondProject.create(desc, null);
-		secondProject.open(null);
+		secondPoject.create(desc, null);
+		secondPoject.open(null);
 
-		IFolder secondfolder = secondProject.getFolder(FOLDER);
+		IFolder secondfolder = secondPoject.getFolder(FOLDER);
 		secondfolder.create(false, true, null);
 		IFile secondtextFile = secondfolder.getFile(FILE1);
 		secondtextFile.create(new ByteArrayInputStream("Hello, world"
@@ -249,7 +243,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// gitignore.create(new ByteArrayInputStream("/.project\n"
 		// .getBytes(firstProject.getDefaultCharset())), false, null);
 
-		new ConnectProviderOperation(secondProject, gitDir).execute(null);
+		new ConnectProviderOperation(secondPoject, gitDir).execute(null);
 
 		IFile[] commitables = new IFile[] { firstProject.getFile(".project"),
 				textFile, textFile2, secondtextFile, secondtextFile2 };
@@ -257,8 +251,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		untracked.addAll(Arrays.asList(commitables));
 		// commit to stable
 		CommitOperation op = new CommitOperation(commitables,
-				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
-				"Initial commit");
+				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
+				TestUtil.TESTCOMMITTER, "Initial commit");
 		op.execute(null);
 
 		// now create a stable branch (from master)
@@ -311,7 +305,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		myRepository.getConfig().save();
 		// and push
-		PushOperationUI pa = new PushOperationUI(myRepository, "push", 0, false);
+		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
+		PushOperationUI pa = new PushOperationUI(myRepository, config, 0, false);
 		pa.execute(null);
 
 		try {
@@ -335,8 +330,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		Repository myRepository = lookupRepository(repositoryDir);
 		URIish uri = new URIish("file:///" + myRepository.getDirectory());
 		File workdir = new File(testDirectory, CHILDREPO);
+		Ref master = myRepository.getRef("refs/heads/master");
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir,
-				"refs/heads/master", "origin", 0);
+				master, "origin", 0);
 		clop.run(null);
 		return new File(workdir, Constants.DOT_GIT);
 	}
@@ -381,8 +377,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				return name.equals(".project");
 			}
 		};
-		for (File file : myRepository.getWorkTree().listFiles())
-			if (file.isDirectory())
+		for (File file : myRepository.getWorkTree().listFiles()) {
+			if (file.isDirectory()) {
 				if (file.list(projectFilter).length > 0) {
 					IProjectDescription desc = ResourcesPlugin.getWorkspace()
 							.newProjectDescription(file.getName());
@@ -395,6 +391,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 					new ConnectProviderOperation(prj, myRepository
 							.getDirectory()).execute(null);
 				}
+			}
+		}
 	}
 
 	@SuppressWarnings("boxing")
@@ -412,29 +410,19 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	}
 
 	/**
-	 * Modify with a random content and commit.
-	 *
 	 * @param commitMessage
 	 *            may be null
 	 * @throws Exception
 	 */
 	protected static void touchAndSubmit(String commitMessage) throws Exception {
+		IProject prj = ResourcesPlugin.getWorkspace().getRoot().getProject(
+				PROJ1);
+		if (!prj.isAccessible())
+			throw new IllegalStateException("No project to touch");
+		IFile file = prj.getFile(new Path("folder/test.txt"));
 		String newContent = "Touched at " + System.currentTimeMillis();
-		touchAndSubmit(newContent, commitMessage);
-	}
-
-	/**
-	 * Modify with the given content and commit.
-	 *
-	 * @param newContent
-	 *            new file content
-	 * @param commitMessage
-	 *            may be null
-	 * @throws Exception
-	 */
-	protected static void touchAndSubmit(String newContent, String commitMessage)
-			throws Exception {
-		IFile file = touch(newContent);
+		file.setContents(new ByteArrayInputStream(newContent.getBytes(prj
+				.getDefaultCharset())), 0, null);
 
 		IFile[] commitables = new IFile[] { file };
 		ArrayList<IFile> untracked = new ArrayList<IFile>();
@@ -445,52 +433,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// TODO: remove after replacing GitIndex in CommitOperation
 		waitInUI();
 		CommitOperation op = new CommitOperation(commitables,
-				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
-				message);
-		op.execute(null);
-	}
-
-	/**
-	 * Modify with the given content.
-	 *
-	 * @param newContent
-	 *            new file content
-	 * @return the modified file
-	 * @throws Exception
-	 */
-	protected static IFile touch(final String newContent) throws Exception {
-		return touch(PROJ1, "folder/test.txt", newContent);
-	}
-
-	/**
-	 * Modify the specified file with the given content.
-	 *
-	 * @param projectName
-	 *            project name
-	 * @param filePath
-	 *            file path under the given project
-	 * @param newContent
-	 *            new file content
-	 * @return the modified file
-	 * @throws Exception
-	 */
-	protected static IFile touch(String projectName, String filePath,
-			String newContent) throws Exception {
-		IProject prj = ResourcesPlugin.getWorkspace().getRoot()
-				.getProject(projectName);
-		if (!prj.isAccessible())
-			throw new IllegalStateException("No project to touch");
-		IFile file = prj.getFile(new Path(filePath));
-		file.setContents(
-				new ByteArrayInputStream(newContent.getBytes(prj
-						.getDefaultCharset())), 0, null);
-		return file;
-	}
-
-	protected static void stage(IFile file) throws Exception {
-		ArrayList<IFile> unstaged = new ArrayList<IFile>();
-		unstaged.addAll(Arrays.asList(new IFile[] { file }));
-		AddToIndexOperation op = new AddToIndexOperation(unstaged);
+				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
+				TestUtil.TESTCOMMITTER, message);
 		op.execute(null);
 	}
 
@@ -503,8 +447,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		ArrayList<IFile> untracked = new ArrayList<IFile>();
 		untracked.addAll(Arrays.asList(commitables));
 		CommitOperation op = new CommitOperation(commitables,
-				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
-				commitMessage);
+				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
+				TestUtil.TESTCOMMITTER, commitMessage);
 		op.execute(null);
 	}
 
@@ -525,8 +469,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (file.exists()) {
 			byte[] bytes = IO.readFully(file.getLocation().toFile());
 			return new String(bytes, file.getCharset());
-		} else
+		} else {
 			return "";
+		}
 	}
 
 	/**
@@ -537,7 +482,17 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	 */
 	protected SWTBotTreeItem getProjectItem(SWTBotTree projectExplorerTree,
 			String project) {
-		return new TestUtil().getProjectItems(projectExplorerTree, project)[0];
+		for (SWTBotTreeItem item : projectExplorerTree.getAllItems()) {
+			String itemText = item.getText();
+			StringTokenizer tok = new StringTokenizer(itemText, " ");
+			String name = tok.nextToken();
+			// may be a dirty marker
+			if (name.equals(">"))
+				name = tok.nextToken();
+			if (project.equals(name))
+				return item;
+		}
+		return null;
 	}
 
 	protected void pressAltAndChar(SWTBotShell shell, char charToPress) {

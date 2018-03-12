@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,18 +8,27 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import java.io.IOException;
+
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
+import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
+import org.eclipse.egit.ui.internal.synchronize.compare.GitLocalCompareInput;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.revwalk.RevCommit;
 
-/**
- * Representation of working file in Git Change Set model
- */
-public class GitModelWorkingFile extends GitModelBlob {
+class GitModelWorkingFile extends GitModelBlob {
 
-	GitModelWorkingFile(GitModelObjectContainer parent, Repository repo,
-			Change change, IPath path) {
-		super(parent, repo, change, path);
+	public GitModelWorkingFile(GitModelObjectContainer parent,
+			RevCommit commit, ObjectId repoId, IPath location) throws IOException {
+		super(parent, commit, null, repoId, repoId, null, location);
+	}
+
+	@Override
+	protected GitCompareInput getCompareInput(ComparisonDataSource baseData,
+			ComparisonDataSource remoteData, ComparisonDataSource ancestorData) {
+		return new GitLocalCompareInput(getRepository(), ancestorData,
+				baseData, remoteData, gitPath);
 	}
 
 	@Override
@@ -27,20 +36,21 @@ public class GitModelWorkingFile extends GitModelBlob {
 		if (obj == this)
 			return true;
 
-		if (obj == null)
-			return false;
+		if (obj instanceof GitModelWorkingFile)
+			return ((GitModelWorkingFile) obj).getLocation()
+					.equals(getLocation());
 
-		if (obj.getClass() != getClass())
-			return false;
-
-		GitModelWorkingFile objBlob = (GitModelWorkingFile) obj;
-
-		return hashCode() == objBlob.hashCode();
+		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return super.hashCode() + 41;
+		return getLocation().hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return "ModelWorkingFile[" + getLocation() + "]"; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 }

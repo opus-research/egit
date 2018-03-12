@@ -12,7 +12,6 @@ package org.eclipse.egit.core.test.op;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,8 +21,6 @@ import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.test.GitTestCase;
@@ -70,36 +67,21 @@ public class CommitOperationTest extends GitTestCase {
 		testUtils.addFileToProject(project.getProject(), "foo/a.txt", "some text");
 		resources.add(project.getProject().getFolder("foo"));
 		new AddToIndexOperation(resources).execute(null);
-		CommitOperation commitOperation = new CommitOperation(null, null, TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
+		CommitOperation commitOperation = new CommitOperation(null, null, null, TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
 		commitOperation.setCommitAll(true);
-		commitOperation.setRepository(repository);
+		commitOperation.setRepos(new Repository[] {repository});
 		commitOperation.execute(null);
 
 		testUtils.addFileToProject(project.getProject(), "zar/b.txt", "some text");
 		resources.add(project.getProject().getFolder("zar"));
 		new AddToIndexOperation(resources).execute(null);
-		IFile zarFile = project.getProject().getFile("zar/b.txt");
-		IPath zarFilePath = zarFile.getLocation();
-		// delete file and refresh. Deleting using the resource would trigger
-		// GitMoveDeleteHook which removes the file from the index
-		assertTrue("could not delete file " + zarFilePath.toOSString(),
-				zarFilePath.toFile().delete());
-		zarFile.refreshLocal(0, null);
-
+		project.getProject().getFile("zar/b.txt").delete(true, null);
 		assertTrue(!project.getProject().getFile("zar/b.txt").exists());
 
 		IFile[] filesToCommit = new IFile[] { project.getProject().getFile("zar/b.txt") };
-		commitOperation = new CommitOperation(filesToCommit, null, TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
-		commitOperation.setRepository(repository);
-		try {
-			commitOperation.execute(null);
-			// TODO this is very ugly. CommitCommand should be extended
-			// not to throw an JGitInternalException in case of an empty
-			// commit
-			fail("expected CoreException");
-		} catch (CoreException e) {
-			assertEquals("No changes", e.getCause().getMessage());
-		}
+		commitOperation = new CommitOperation(filesToCommit, Arrays.asList(filesToCommit), null, TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
+		commitOperation.setRepos(new Repository[] {repository});
+		commitOperation.execute(null);
 
 		TreeWalk treeWalk = new TreeWalk(repository);
 		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
@@ -120,10 +102,11 @@ public class CommitOperationTest extends GitTestCase {
 
 		resources.add(project.getProject().getFolder("sub"));
 		new AddToIndexOperation(resources).execute(null);
-		CommitOperation commitOperation = new CommitOperation(null, null, TestUtils.AUTHOR,
-				TestUtils.COMMITTER, "first commit");
+		CommitOperation commitOperation = new CommitOperation(null, null, null,
+				TestUtils.AUTHOR, TestUtils.COMMITTER,
+				"first commit");
 		commitOperation.setCommitAll(true);
-		commitOperation.setRepository(repository);
+		commitOperation.setRepos(new Repository[]{repository});
 		commitOperation.execute(null);
 
 		Git git = new Git(repository);
@@ -135,10 +118,11 @@ public class CommitOperationTest extends GitTestCase {
 
 		testUtils.changeContentOfFile(project.getProject(), file1, "changed text");
 
-		commitOperation = new CommitOperation(null, null, TestUtils.AUTHOR,
-				TestUtils.COMMITTER, "second commit");
+		commitOperation = new CommitOperation(null, null, null,
+				TestUtils.AUTHOR, TestUtils.COMMITTER,
+				"second commit");
 		commitOperation.setCommitAll(true);
-		commitOperation.setRepository(repository);
+		commitOperation.setRepos(new Repository[]{repository});
 		commitOperation.execute(null);
 
 		git = new Git(repository);
@@ -164,10 +148,11 @@ public class CommitOperationTest extends GitTestCase {
 		resources.add(project.getProject().getFolder("sub1"));
 		resources.add(project.getProject().getFolder("sub2"));
 		new AddToIndexOperation(resources).execute(null);
-		CommitOperation commitOperation = new CommitOperation(null, null, TestUtils.AUTHOR,
-				TestUtils.COMMITTER, "first commit");
+		CommitOperation commitOperation = new CommitOperation(null, null, null,
+				TestUtils.AUTHOR, TestUtils.COMMITTER,
+				"first commit");
 		commitOperation.setCommitAll(true);
-		commitOperation.setRepository(repository);
+		commitOperation.setRepos(new Repository[]{repository});
 		commitOperation.execute(null);
 
 		Git git = new Git(repository);
@@ -192,10 +177,13 @@ public class CommitOperationTest extends GitTestCase {
 		ArrayList<IFile> notIndexed = new ArrayList<IFile>();
 		notIndexed.add(filesToCommit[0]);
 		ArrayList<IFile> notTracked = new ArrayList<IFile>();
-		commitOperation = new CommitOperation(filesToCommit, notTracked, TestUtils.AUTHOR, TestUtils.COMMITTER, "second commit");
+		Thread.sleep(1100); // Trouble in "fresh" detection of something
+		// Do this like the commit dialog does it
+		commitOperation = new CommitOperation(filesToCommit, notIndexed, notTracked, TestUtils.AUTHOR, TestUtils.COMMITTER, "second commit");
 		commitOperation.setCommitAll(false);
 		commitOperation.execute(null);
 
+		Thread.sleep(1100); // Trouble in "fresh" detection of something
 		git = new Git(repository);
 		commits = git.log().call().iterator();
 		secondCommit = commits.next();
@@ -220,8 +208,8 @@ public class CommitOperationTest extends GitTestCase {
 				"some text");
 		IFile[] filesToCommit = { fileA, fileB };
 		CommitOperation commitOperation = new CommitOperation(filesToCommit,
-				Arrays.asList(filesToCommit), TestUtils.AUTHOR,
-				TestUtils.COMMITTER, "first commit");
+				EMPTY_FILE_LIST, Arrays.asList(filesToCommit),
+				TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
 		commitOperation.execute(null);
 		testUtils.assertRepositoryContainsFiles(repository, getRepoRelativePaths(filesToCommit));
 	}
@@ -241,9 +229,10 @@ public class CommitOperationTest extends GitTestCase {
 				"foo/b.txt", "some text");
 		IFile[] filesToCommit = { fileA, fileB };
 		CommitOperation commitOperation = new CommitOperation(filesToCommit,
-				Arrays.asList(filesToCommit), TestUtils.AUTHOR,
-				TestUtils.COMMITTER, "first commit");
+				EMPTY_FILE_LIST, Arrays.asList(filesToCommit),
+				TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
 		commitOperation.execute(null);
+		Thread.sleep(1100); // TODO: remove when GitIndex is no longer used
 		testUtils.changeContentOfFile(project.getProject(), fileA,
 				"new content of A");
 		testUtils.changeContentOfFile(project.getProject(), fileB,
@@ -252,7 +241,8 @@ public class CommitOperationTest extends GitTestCase {
 		resources.add(fileB);
 		new AddToIndexOperation(resources).execute(null);
 		commitOperation = new CommitOperation(filesToCommit, EMPTY_FILE_LIST,
-				TestUtils.AUTHOR, TestUtils.COMMITTER, "second commit");
+				EMPTY_FILE_LIST, TestUtils.AUTHOR, TestUtils.COMMITTER,
+				"second commit");
 		commitOperation.execute(null);
 
 		testUtils.assertRepositoryContainsFilesWithContent(repository,
@@ -268,9 +258,10 @@ public class CommitOperationTest extends GitTestCase {
 				"foo/b.txt", "some text");
 		IFile[] filesToCommit = { fileA, fileB };
 		CommitOperation commitOperation = new CommitOperation(filesToCommit,
-				Arrays.asList(filesToCommit), TestUtils.AUTHOR,
-				TestUtils.COMMITTER, "first commit");
+				EMPTY_FILE_LIST, Arrays.asList(filesToCommit),
+				TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
 		commitOperation.execute(null);
+		Thread.sleep(1100); // TODO: remove when GitIndex is no longer used
 		testUtils.changeContentOfFile(project.getProject(), fileA,
 				"new content of A");
 		testUtils.changeContentOfFile(project.getProject(), fileB,
@@ -280,7 +271,8 @@ public class CommitOperationTest extends GitTestCase {
 		new AddToIndexOperation(resources).execute(null);
 		IFile[] filesToCommit2 = { fileA };
 		commitOperation = new CommitOperation(filesToCommit2, EMPTY_FILE_LIST,
-				TestUtils.AUTHOR, TestUtils.COMMITTER, "second commit");
+				EMPTY_FILE_LIST, TestUtils.AUTHOR, TestUtils.COMMITTER,
+				"second commit");
 		commitOperation.execute(null);
 
 		testUtils.assertRepositoryContainsFilesWithContent(repository,
@@ -295,8 +287,8 @@ public class CommitOperationTest extends GitTestCase {
 				"foo/b.txt", "some text");
 		IFile[] filesToCommit = { fileA, fileB };
 		CommitOperation commitOperation = new CommitOperation(filesToCommit,
-				Arrays.asList(filesToCommit), TestUtils.AUTHOR,
-				TestUtils.COMMITTER, "first commit");
+				EMPTY_FILE_LIST, Arrays.asList(filesToCommit),
+				TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
 		commitOperation.execute(null);
 
 		testUtils.changeContentOfFile(project.getProject(), fileA,
@@ -306,8 +298,8 @@ public class CommitOperationTest extends GitTestCase {
 		resources.add(fileA);
 		resources.add(fileB);
 		commitOperation = new CommitOperation(filesToCommit,
-				EMPTY_FILE_LIST, TestUtils.AUTHOR,
-				TestUtils.COMMITTER, "first commit");
+				Arrays.asList(filesToCommit), EMPTY_FILE_LIST,
+				TestUtils.AUTHOR, TestUtils.COMMITTER, "first commit");
 		commitOperation.execute(null);
 
 		testUtils.assertRepositoryContainsFilesWithContent(repository,

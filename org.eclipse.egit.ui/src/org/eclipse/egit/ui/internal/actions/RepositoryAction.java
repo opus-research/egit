@@ -27,7 +27,6 @@ import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.services.IServiceLocator;
@@ -69,42 +68,24 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	}
 
 	public void run(IAction action) {
-		if (!shouldRunAction())
-			return;
 
-        ExecutionEvent event = createExecutionEvent();
+		ICommandService srv = (ICommandService) serviceLocator
+				.getService(ICommandService.class);
+		IHandlerService hsrv = (IHandlerService) serviceLocator
+				.getService(IHandlerService.class);
+		Command command = srv.getCommand(commandId);
+
+		ExecutionEvent event = hsrv.createExecutionEvent(command, null);
+		if (event.getApplicationContext() instanceof IEvaluationContext) {
+			((IEvaluationContext) event.getApplicationContext()).addVariable(
+					ISources.ACTIVE_CURRENT_SELECTION_NAME, mySelection);
+		}
 
 		try {
 			this.handler.execute(event);
 		} catch (ExecutionException e) {
 			Activator.handleError(e.getMessage(), e, true);
 		}
-	}
-
-	/**
-	 * Creates {@link ExecutionEvent} based on current selection
-	 *
-	 * @return {@link ExecutionEvent} with current selection
-	 */
-	protected ExecutionEvent createExecutionEvent() {
-		IServiceLocator locator = getServiceLocator();
-		ICommandService srv = (ICommandService) locator
-				.getService(ICommandService.class);
-		IHandlerService hsrv = (IHandlerService) locator
-				.getService(IHandlerService.class);
-		Command command = srv.getCommand(commandId);
-
-		ExecutionEvent event = hsrv.createExecutionEvent(command, null);
-		if (event.getApplicationContext() instanceof IEvaluationContext)
-			((IEvaluationContext) event.getApplicationContext()).addVariable(
-					ISources.ACTIVE_CURRENT_SELECTION_NAME, mySelection);
-		return event;
-	}
-
-	private IServiceLocator getServiceLocator() {
-		if (serviceLocator == null)
-			serviceLocator = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		return serviceLocator;
 	}
 
 	public final void selectionChanged(IAction action, ISelection selection) {
@@ -115,10 +96,7 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	}
 
 	public final Object execute(ExecutionEvent event) throws ExecutionException {
-		if (!shouldRunAction())
-			return null;
-
-		ICommandService srv = (ICommandService) getServiceLocator()
+		ICommandService srv = (ICommandService) serviceLocator
 				.getService(ICommandService.class);
 		Command command = srv.getCommand(commandId);
 		try {
@@ -142,16 +120,5 @@ public abstract class RepositoryAction extends AbstractHandler implements
 
 	public void init(IWorkbenchWindow window) {
 		this.serviceLocator = window;
-	}
-
-	/**
-	 * By default always return true. Allow implementers decide does given
-	 * action should be run or not
-	 *
-	 * @return {@code true} when action should be executed, {@code false}
-	 *         otherwise
-	 */
-	protected boolean shouldRunAction() {
-		return true;
 	}
 }

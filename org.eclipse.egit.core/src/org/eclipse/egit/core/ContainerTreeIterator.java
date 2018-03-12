@@ -18,7 +18,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.Constants;
@@ -121,6 +120,9 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		super(p);
 		node = base;
 		init(entries());
+		Repository repository = RepositoryMapping.getMapping(base)
+				.getRepository();
+		initRootIterator(repository);
 	}
 
 	@Override
@@ -164,12 +166,12 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 	}
 
 	private boolean isEntryIgnoredByTeamProvider(IResource resource) {
-		if (resource.getType() == IResource.ROOT
-				|| resource.getType() == IResource.PROJECT)
+		if (resource.getType() == IResource.ROOT)
 			return false;
 		if (Team.isIgnoredHint(resource))
 			return true;
 		return isEntryIgnoredByTeamProvider(resource.getParent());
+
 	}
 
 	/**
@@ -223,11 +225,12 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 		@Override
 		public long getLength() {
-			if (length < 0)
+			if (length < 0) {
 				if (rsrc instanceof IFile)
 					length = asFile().length();
 				else
 					length = 0;
+			}
 			return length;
 		}
 
@@ -238,7 +241,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 
 		@Override
 		public InputStream openInputStream() throws IOException {
-			if (rsrc.getType() == IResource.FILE)
+			if (rsrc.getType() == IResource.FILE) {
 				try {
 					return ((IFile) rsrc).getContents(true);
 				} catch (CoreException err) {
@@ -246,6 +249,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 					ioe.initCause(err);
 					throw ioe;
 				}
+			}
 			throw new IOException("Not a regular file: " + rsrc);  //$NON-NLS-1$
 		}
 
@@ -263,15 +267,4 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 		}
 	}
 
-	private File asFile() {
-		final IPath location = node.getLocation();
-		return location != null ? location.toFile() : null;
-	}
-
-	protected byte[] idSubmodule(Entry e) {
-		File nodeFile = asFile();
-		if (nodeFile != null)
-			return idSubmodule(nodeFile, e);
-		return super.idSubmodule(e);
-	}
 }

@@ -30,11 +30,7 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.QualifiedName;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -42,7 +38,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
-import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -57,7 +52,6 @@ import org.eclipse.team.core.RepositoryProvider;
  * a Git repository.
  */
 public class GitProjectData {
-
 	private static final Map<IProject, GitProjectData> projectDataCache = new HashMap<IProject, GitProjectData>();
 
 	private static Set<RepositoryChangeListener> repositoryChangeListeners = new HashSet<RepositoryChangeListener>();
@@ -145,35 +139,8 @@ public class GitProjectData {
 	 *            the repository which has had changes occur within it.
 	 */
 	static void fireRepositoryChanged(final RepositoryMapping which) {
-		Job job = new Job(CoreText.GitProjectData_repositoryChangedJobName) {
-
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				RepositoryChangeListener[] listeners = getRepositoryChangeListeners();
-				monitor.beginTask(
-						CoreText.GitProjectData_repositoryChangedTaskName,
-						listeners.length);
-
-				for (RepositoryChangeListener listener : listeners) {
-					listener.repositoryChanged(which);
-					monitor.worked(1);
-				}
-
-				monitor.done();
-
-				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (JobFamilies.REPOSITORY_CHANGED.equals(family))
-					return true;
-
-				return super.belongsTo(family);
-			}
-		};
-
-		job.schedule();
+		for (RepositoryChangeListener listener : getRepositoryChangeListeners())
+			listener.repositoryChanged(which);
 	}
 
 	/**
@@ -274,7 +241,6 @@ public class GitProjectData {
 		c.setPackedGitWindowSize(p.getInt(GitCorePreferences.core_packedGitWindowSize, d.getInt(GitCorePreferences.core_packedGitWindowSize, 0)));
 		c.setPackedGitMMAP(p.getBoolean(GitCorePreferences.core_packedGitMMAP, d.getBoolean(GitCorePreferences.core_packedGitMMAP, false)));
 		c.setDeltaBaseCacheLimit(p.getInt(GitCorePreferences.core_deltaBaseCacheLimit, d.getInt(GitCorePreferences.core_deltaBaseCacheLimit, 0)));
-		c.setStreamFileThreshold(p.getInt(GitCorePreferences.core_streamFileThreshold, d.getInt(GitCorePreferences.core_streamFileThreshold, 0)));
 		WindowCache.reconfigure(c);
 	}
 

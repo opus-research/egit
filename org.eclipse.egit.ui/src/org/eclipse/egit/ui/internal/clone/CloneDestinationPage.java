@@ -17,16 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.variables.IStringVariableManager;
-import org.eclipse.core.variables.VariablesPlugin;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -49,9 +44,7 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.dialogs.WorkingSetGroup;
 
 /**
  * Wizard page that allows the user entering the location of a repository to be
@@ -67,27 +60,13 @@ class CloneDestinationPage extends WizardPage {
 
 	private Ref validatedHEAD;
 
-	private boolean showProjectImport;
-
 	private ComboViewer initialBranch;
 
 	private Text directoryText;
 
 	private Text remoteText;
 
-	private Button importProjectsButton;
-
-	private Button cloneSubmodulesButton;
-
-	private WorkingSetGroup workingSetGroup;
-
 	private String helpContext = null;
-
-	private File clonedDestination;
-
-	private Ref clonedInitialBranch;
-
-	private String clonedRemote;
 
 	CloneDestinationPage() {
 		super(CloneDestinationPage.class.getName());
@@ -102,9 +81,6 @@ class CloneDestinationPage extends WizardPage {
 
 		createDestinationGroup(panel);
 		createConfigGroup(panel);
-		if (showProjectImport)
-			createProjectGroup(panel);
-
 		Dialog.applyDialogFont(panel);
 		setControl(panel);
 		checkPage();
@@ -112,9 +88,11 @@ class CloneDestinationPage extends WizardPage {
 
 	@Override
 	public void setVisible(final boolean visible) {
-		if (visible)
-			if (this.availableRefs.isEmpty())
+		if (visible) {
+			if (this.availableRefs.isEmpty()) {
 				initialBranch.getCombo().setEnabled(false);
+			}
+		}
 		super.setVisible(visible);
 		if (visible)
 			directoryText.setFocus();
@@ -194,11 +172,6 @@ class CloneDestinationPage extends WizardPage {
 					return ((Ref)element).getName().substring(Constants.R_HEADS.length());
 				return ((Ref)element).getName();
 			} });
-
-		cloneSubmodulesButton = new Button(g, SWT.CHECK);
-		cloneSubmodulesButton
-				.setText(UIText.CloneDestinationPage_cloneSubmodulesButton);
-		GridDataFactory.swtDefaults().span(2, 1).applyTo(cloneSubmodulesButton);
 	}
 
 	private void createConfigGroup(final Composite parent) {
@@ -214,34 +187,6 @@ class CloneDestinationPage extends WizardPage {
 				checkPage();
 			}
 		});
-	}
-
-	private void createProjectGroup(final Composite parent) {
-		final Group group = createGroup(parent,
-				UIText.CloneDestinationPage_groupProjects);
-
-		GridLayoutFactory.swtDefaults().applyTo(group);
-		importProjectsButton = new Button(group, SWT.CHECK);
-		importProjectsButton.setText(UIText.CloneDestinationPage_importButton);
-		importProjectsButton.setSelection(Activator.getDefault()
-				.getPreferenceStore()
-				.getBoolean(UIPreferences.CLONE_WIZARD_IMPORT_PROJECTS));
-		importProjectsButton.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				Activator
-						.getDefault()
-						.getPreferenceStore()
-						.setValue(UIPreferences.CLONE_WIZARD_IMPORT_PROJECTS,
-								importProjectsButton.getSelection());
-			}
-		});
-
-		// TODO: replace hardcoded ids once bug 245106 is fixed
-		String[] workingSetTypes = new String[] {
-				"org.eclipse.ui.resourceWorkingSetPage", //$NON-NLS-1$
-				"org.eclipse.jdt.ui.JavaWorkingSetPage" //$NON-NLS-1$
-		};
-		workingSetGroup = new WorkingSetGroup(group, null, workingSetTypes);
 	}
 
 	private static Group createGroup(final Composite parent, final String text) {
@@ -263,31 +208,6 @@ class CloneDestinationPage extends WizardPage {
 
 	private static GridData createFieldGridData() {
 		return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-	}
-
-	/**
-	 * @return true to import projects, false otherwise
-	 */
-	public boolean isImportProjects() {
-		return importProjectsButton != null
-				&& importProjectsButton.getSelection();
-	}
-
-	/**
-	 * @return true to clone submodules, false otherwise
-	 */
-	public boolean isCloneSubmodules() {
-		return cloneSubmodulesButton != null
-				&& cloneSubmodulesButton.getSelection();
-	}
-
-	/**
-	 * @return selected working sets
-	 */
-	public IWorkingSet[] getWorkingSets() {
-		if (workingSetGroup == null)
-			return new IWorkingSet[0];
-		return workingSetGroup.getSelectedWorkingSets();
 	}
 
 	/**
@@ -332,11 +252,6 @@ class CloneDestinationPage extends WizardPage {
 	 * Check internal state for page completion status.
 	 */
 	private void checkPage() {
-		if (!cloneSettingsChanged()) {
-			setErrorMessage(null);
-			setPageComplete(true);
-			return;
-		}
 		final String dstpath = directoryText.getText();
 		if (dstpath.length() == 0) {
 			setErrorMessage(UIText.CloneDestinationPage_errorDirectoryRequired);
@@ -374,21 +289,6 @@ class CloneDestinationPage extends WizardPage {
 		setPageComplete(true);
 	}
 
-	void saveSettingsForClonedRepo() {
-		clonedDestination = getDestinationFile();
-		clonedInitialBranch = getInitialBranch();
-		clonedRemote = getRemote();
-	}
-
-	boolean cloneSettingsChanged() {
-		boolean cloneSettingsChanged = false;
-		if (clonedDestination == null || !clonedDestination.equals(getDestinationFile()) ||
-				clonedInitialBranch == null || !clonedInitialBranch.equals(getInitialBranch()) ||
-				clonedRemote == null || !clonedRemote.equals(getRemote()))
-			cloneSettingsChanged = true;
-		return cloneSettingsChanged;
-	}
-
 	private static boolean isEmptyDir(final File dir) {
 		if (!dir.exists())
 			return true;
@@ -421,19 +321,13 @@ class CloneDestinationPage extends WizardPage {
 			// update repo-related selection only if it changed
 			final String n = validatedRepoSelection.getURI().getHumanishName();
 			setDescription(NLS.bind(UIText.CloneDestinationPage_description, n));
-			String defaultRepoDir = Activator.getDefault().getPreferenceStore()
+			String destinationDir = Activator.getDefault().getPreferenceStore()
 					.getString(UIPreferences.DEFAULT_REPO_DIR);
-			IStringVariableManager manager = VariablesPlugin.getDefault().getStringVariableManager();
-			String destinationDir;
-			File parentDir;
-			try {
-				destinationDir = manager.performStringSubstitution(defaultRepoDir);
-				parentDir = new File(destinationDir);
-			} catch (CoreException e) {
-				parentDir = null;
+			File parentDir = new File(destinationDir);
+			if (!parentDir.exists() || !parentDir.isDirectory()) {
+				parentDir = ResourcesPlugin.getWorkspace().getRoot()
+						.getRawLocation().toFile();
 			}
-			if (parentDir == null || !parentDir.exists() || !parentDir.isDirectory())
-				parentDir = ResourcesPlugin.getWorkspace().getRoot().getRawLocation().toFile();
 			directoryText.setText(new File(parentDir, n).getAbsolutePath());
 		}
 
@@ -449,14 +343,4 @@ class CloneDestinationPage extends WizardPage {
 		checkPage();
 	}
 
-	/**
-	 * Set whether to show project import options
-	 *
-	 * @param show
-	 * @return this wizard page
-	 */
-	public CloneDestinationPage setShowProjectImport(boolean show) {
-		showProjectImport = show;
-		return this;
-	}
 }

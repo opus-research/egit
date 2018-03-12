@@ -36,8 +36,9 @@ public class ConfigurationChecker {
 	public static void checkConfiguration() {
 		if (!runsOnWindows())
 			return;
-		if (!Activator.getDefault().getPreferenceStore().getBoolean(
-				UIPreferences.SHOW_HOME_DIR_WARNING))
+		if (!Activator.getDefault().getPreferenceStore()
+				.getString(UIPreferences.SHOW_HOME_DIR_WARNING)
+				.equals(MessageDialogWithToggle.PROMPT))
 			return;
 		// Schedule a job
 		// This avoids that the check is executed too early
@@ -69,15 +70,11 @@ public class ConfigurationChecker {
 		String message = NLS.bind(UIText.ConfigurationChecker_homeNotSet, home);
 		String toggleMessage = UIText.ConfigurationChecker_doNotShowAgain;
 		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-		boolean hidden = !store.getBoolean(UIPreferences.SHOW_HOME_DIR_WARNING);
-		if (!hidden) {
-			MessageDialogWithToggle dialog = MessageDialogWithToggle
-					.openInformation(PlatformUI.getWorkbench()
-							.getActiveWorkbenchWindow().getShell(), title,
-							message, toggleMessage, false, null, null);
-			store.setValue(UIPreferences.SHOW_HOME_DIR_WARNING, !dialog
-					.getToggleState());
-		}
+		MessageDialogWithToggle
+				.openInformation(PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow().getShell(), title, message,
+						toggleMessage, true, store,
+						UIPreferences.SHOW_HOME_DIR_WARNING);
 	}
 
 	private static String calcHomeDir() {

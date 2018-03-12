@@ -38,19 +38,13 @@ public class SelectResetTypePage extends WizardPage {
 	 *            current ref (which will be overwritten)
 	 * @param targetRef
 	 *            target ref (which contains the new content)
-	 * @param targetCommit
-	 *            target commit
 	 */
 	public SelectResetTypePage(String repoName, String currentRef,
-			String targetRef, String targetCommit) {
+			String targetRef) {
 		super(SelectResetTypePage.class.getName());
 		setTitle(NLS.bind(UIText.SelectResetTypePage_PageTitle, repoName));
-		if (currentRef.equals(targetRef))
-			setMessage(NLS.bind(UIText.SelectResetTypePage_PageMessage,
-					new String[] { currentRef, "HEAD", targetCommit })); //$NON-NLS-1$
-		else
-			setMessage(NLS.bind(UIText.SelectResetTypePage_PageMessage,
-					new String[] { currentRef, targetRef, targetCommit }));
+		setMessage(NLS.bind(UIText.SelectResetTypePage_PageMessage, currentRef,
+				targetRef));
 	}
 
 	public void createControl(Composite parent) {
@@ -63,8 +57,7 @@ public class SelectResetTypePage extends WizardPage {
 		soft.setText(UIText.ResetTargetSelectionDialog_ResetTypeSoftButton);
 		soft.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
-				if (((Button) event.widget).getSelection())
-					resetType = ResetType.SOFT;
+				resetType = ResetType.SOFT;
 			}
 		});
 
@@ -73,8 +66,7 @@ public class SelectResetTypePage extends WizardPage {
 		medium.setText(UIText.ResetTargetSelectionDialog_ResetTypeMixedButton);
 		medium.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
-				if (((Button) event.widget).getSelection())
-					resetType = ResetType.MIXED;
+				resetType = ResetType.MIXED;
 			}
 		});
 
@@ -82,8 +74,7 @@ public class SelectResetTypePage extends WizardPage {
 		hard.setText(UIText.ResetTargetSelectionDialog_ResetTypeHardButton);
 		hard.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
-				if (((Button) event.widget).getSelection())
-					resetType = ResetType.HARD;
+				resetType = ResetType.HARD;
 			}
 		});
 		Dialog.applyDialogFont(g);

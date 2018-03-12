@@ -9,13 +9,18 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import java.util.Map;
+import java.io.IOException;
 
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.jgit.dircache.DirCacheIterator;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.IndexDiffFilter;
 
 /**
  * Representation of working tree in EGit ChangeSet model
@@ -24,24 +29,18 @@ public class GitModelWorkingTree extends GitModelCache {
 
 	/**
 	 * @param parent
-	 *            parent object
-	 * @param repo
-	 *            repository associated with this object
-	 * @param cache
-	 *            list of cached changes
+	 *            parent of working tree instance
+	 * @throws IOException
 	 */
-	public GitModelWorkingTree(GitModelRepository parent, Repository repo,
-			Map<String, Change> cache) {
-		super(parent, repo, cache, new FileModelFactory() {
+	public GitModelWorkingTree(GitModelObject parent)
+			throws IOException {
+		super(parent, null, new FileModelFactory() {
 			public GitModelBlob createFileModel(
-					GitModelObjectContainer objParent, Repository nestedRepo,
-					Change change, IPath path) {
-				return new GitModelWorkingFile(objParent, nestedRepo, change,
-						path);
-			}
-
-			public boolean isWorkingTree() {
-				return true;
+					GitModelObjectContainer modelParent, RevCommit modelCommit,
+					ObjectId repoId, ObjectId cacheId, IPath location)
+					throws IOException {
+				return new GitModelWorkingFile(modelParent, modelCommit,
+						repoId, location);
 			}
 		});
 	}
@@ -62,24 +61,36 @@ public class GitModelWorkingTree extends GitModelCache {
 		if (obj == this)
 			return true;
 
-		if (obj == null)
-			return false;
+		if (obj instanceof GitModelWorkingTree) {
+			GitModelCache left = (GitModelCache) obj;
+			return left.getParent().equals(getParent());
+		}
 
-		if (obj.getClass() != getClass())
-			return false;
-
-		GitModelCache left = (GitModelCache) obj;
-		return left.getParent().equals(getParent());
+		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return getParent().hashCode() + 31;
+		return getParent().hashCode();
 	}
 
 	@Override
 	public String toString() {
 		return "ModelWorkingTree"; //$NON-NLS-1$
+	}
+
+	@Override
+	protected TreeWalk createAndConfigureTreeWalk() throws IOException {
+		TreeWalk tw = createTreeWalk();
+		tw.setRecursive(true);
+
+		Repository repo = getRepository();
+		int ftIndex = tw.addTree(new FileTreeIterator(repo));
+		int dirCacheIteratorNth = tw.addTree(new DirCacheIterator(repo.readDirCache()));
+		IndexDiffFilter idf = new IndexDiffFilter(dirCacheIteratorNth, ftIndex, true);
+		tw.setFilter(idf);
+
+		return tw;
 	}
 
 }

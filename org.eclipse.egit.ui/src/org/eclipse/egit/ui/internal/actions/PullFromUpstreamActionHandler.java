@@ -11,13 +11,9 @@
 package org.eclipse.egit.ui.internal.actions;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.pull.PullOperationUI;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -27,12 +23,10 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class PullFromUpstreamActionHandler extends RepositoryActionHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		Repository[] repos = getRepositories(event);
-		if (repos.length == 0)
+		final Repository repository = getRepository(true, event);
+		if (repository == null)
 			return null;
-		Set<Repository> repositories = new LinkedHashSet<Repository>(
-				Arrays.asList(repos));
-		new PullOperationUI(repositories).start();
+		new PullOperationUI(repository).start();
 		return null;
 	}
 
@@ -40,18 +34,14 @@ public class PullFromUpstreamActionHandler extends RepositoryActionHandler {
 	public boolean isEnabled() {
 		// we don't do the full canMerge check here, but
 		// ensure that a branch is checked out
-		Repository[] repos = getRepositories();
-		for (Repository repo : repos)
-			try {
-				String fullBranch = repo.getFullBranch();
-				if (fullBranch == null
-						|| !fullBranch.startsWith(Constants.R_REFS)
-						|| repo.getRef(Constants.HEAD).getObjectId() == null)
-					return false;
-			} catch (IOException e) {
-				Activator.handleError(e.getMessage(), e, false);
-				return false;
-			}
-		return repos.length > 0;
+		Repository repo = getRepository();
+		if (repo == null)
+			return false;
+		try {
+			String fullBranch = repo.getFullBranch();
+			return (fullBranch.startsWith(Constants.R_REFS));
+		} catch (IOException e) {
+			return false;
+		}
 	}
 }

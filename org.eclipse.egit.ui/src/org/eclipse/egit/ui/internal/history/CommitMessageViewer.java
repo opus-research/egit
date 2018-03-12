@@ -12,16 +12,16 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.IJobChangeListener;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -36,11 +36,6 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -108,10 +103,6 @@ class CommitMessageViewer extends TextViewer implements
 
 	private final IWorkbenchPartSite partSite;
 
-	private List<Ref> allRefs;
-
-	private ListenerHandle refsChangedListener;
-
 	CommitMessageViewer(final Composite parent, final IPageSite site, IWorkbenchPartSite partSite) {
 		super(parent, SWT.H_SCROLL | SWT.V_SCROLL | SWT.READ_ONLY);
 		this.partSite = partSite;
@@ -124,7 +115,16 @@ class CommitMessageViewer extends TextViewer implements
 		// set the cursor when hovering over a link
 		t.addListener(SWT.MouseMove, new Listener() {
 			public void handleEvent(final Event e) {
-				if (getStyleRange(e.x, e.y) instanceof ObjectLink)
+				final int o;
+				try {
+					o = t.getOffsetAtLocation(new Point(e.x, e.y));
+				} catch (IllegalArgumentException err) {
+					t.setCursor(sys_normalCursor);
+					return;
+				}
+
+				final StyleRange r = t.getStyleRangeAtOffset(o);
+				if (r instanceof ObjectLink)
 					t.setCursor(SYS_LINK_CURSOR);
 				else
 					t.setCursor(sys_normalCursor);
@@ -135,10 +135,18 @@ class CommitMessageViewer extends TextViewer implements
 			@Override
 			public void mouseDown(final MouseEvent e) {
 				// only process the hyper link if it was a primary mouse click
-				if (e.button != 1)
+				if (e.button != 1) {
 					return;
+				}
 
-				final StyleRange r = getStyleRange(e.x, e.y);
+				final int o;
+				try {
+					o = t.getOffsetAtLocation(new Point(e.x, e.y));
+				} catch (IllegalArgumentException err) {
+					return;
+				}
+
+				final StyleRange r = t.getStyleRangeAtOffset(o);
 				if (r instanceof ObjectLink) {
 					final RevCommit c = ((ObjectLink) r).targetCommit;
 					for (final Object l : navListeners.getListeners())
@@ -213,28 +221,44 @@ class CommitMessageViewer extends TextViewer implements
 	}
 
 	void addDoneListenerToFormatJob() {
-		formatJob.addJobChangeListener(new JobChangeAdapter() {
+		formatJob.addJobChangeListener(new IJobChangeListener() {
+
+			public void sleeping(IJobChangeEvent event) {
+				// empty
+			}
+
+			public void scheduled(IJobChangeEvent event) {
+				// empty
+			}
+
+			public void running(IJobChangeEvent event) {
+				// empty
+			}
 
 			public void done(IJobChangeEvent event) {
-				if (!event.getResult().isOK())
-					return;
-				final StyledText text = getTextWidget();
-				if (text == null || text.isDisposed())
-					return;
-				final FormatJob job = (FormatJob) event.getJob();
-				text.getDisplay().asyncExec(new Runnable() {
-					public void run() {
-						if (text.isDisposed())
-							return;
-						setDocument(new Document(job.getFormatResult()
-								.getCommitInfo()));
-						text.setStyleRanges(job.getFormatResult()
-								.getStyleRange());
-					}
-				});
+				if (event.getResult().isOK()) {
+					if (getTextWidget().isDisposed())
+						return;
+					final FormatJob job = (FormatJob) event.getJob();
+					getTextWidget().getDisplay().asyncExec(new Runnable() {
+						public void run() {
+							setDocument(new Document(job.getFormatResult().getCommitInfo()));
+							getTextWidget().setStyleRanges(job.getFormatResult().getStyleRange());
+						}
+					});
+				}
+			}
+
+			public void awake(IJobChangeEvent event) {
+				// empty
+			}
+
+			public void aboutToRun(IJobChangeEvent event) {
+				// empty
 			}
 		});
 	}
+
 
 	@Override
 	protected void handleDispose() {
@@ -244,9 +268,6 @@ class CommitMessageViewer extends TextViewer implements
 		}
 		Activator.getDefault().getPreferenceStore()
 				.removePropertyChangeListener(listener);
-		if (refsChangedListener != null)
-			refsChangedListener.remove();
-		refsChangedListener = null;
 		super.handleDispose();
 	}
 
@@ -266,15 +287,6 @@ class CommitMessageViewer extends TextViewer implements
 			return;
 		currentDiffs.clear();
 		commit = (PlotCommit<?>) input;
-		allRefs = getBranches();
-		if (refsChangedListener != null)
-			refsChangedListener.remove();
-		refsChangedListener = db.getListenerList().addRefsChangedListener(new RefsChangedListener() {
-
-			public void onRefsChanged(RefsChangedEvent event) {
-				allRefs = getBranches();
-			}
-		});
 		format();
 	}
 
@@ -286,30 +298,15 @@ class CommitMessageViewer extends TextViewer implements
 		this.db = repository;
 	}
 
-	private List<Ref> getBranches()  {
-		List<Ref> ref = new ArrayList<Ref>();
-		try {
-			ref.addAll(db.getRefDatabase().getRefs(Constants.R_HEADS).values());
-			ref.addAll(db.getRefDatabase().getRefs(Constants.R_REMOTES).values());
-		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
-		}
-		return ref;
-	}
-
-	private Repository getRepository() {
-		if (db == null)
-			throw new IllegalStateException("Repository has not been set"); //$NON-NLS-1$
-		return db;
-	}
-
 	private void format() {
 		if (commit == null) {
-			setDocument(new Document("")); //$NON-NLS-1$
+			setDocument(new Document(
+					UIText.CommitMessageViewer_SelectOneCommitMessage));
 			return;
 		}
-		if (formatJob != null && formatJob.getState() != Job.NONE)
+		if (formatJob != null && formatJob.getState() != Job.NONE) {
 			formatJob.cancel();
+		}
 		scheduleFormatJob();
 	}
 
@@ -318,11 +315,10 @@ class CommitMessageViewer extends TextViewer implements
 				.getAdapter(IWorkbenchSiteProgressService.class);
 		if (siteService == null)
 			return;
-		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(getRepository(),
+		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(db,
 				commit, fill, currentDiffs, SYS_LINKCOLOR, SYS_DARKGRAY,
 				SYS_HUNKHEADER_COLOR, SYS_LINES_ADDED_COLOR,
-				SYS_LINES_REMOVED_COLOR,
-				allRefs);
+				SYS_LINES_REMOVED_COLOR);
 		formatJob = new FormatJob(formatRequest);
 		addDoneListenerToFormatJob();
 		siteService.schedule(formatJob, 0 /* now */, true /*
@@ -375,25 +371,6 @@ class CommitMessageViewer extends TextViewer implements
 		format();
 	}
 
-	/**
-	 * Get style range at x/y coordinates
-	 *
-	 * @param x
-	 * @param y
-	 * @return style range, will be null when no style range exists at given
-	 *         coordinates
-	 */
-	private StyleRange getStyleRange(final int x, final int y) {
-		final StyledText t = getTextWidget();
-		final int offset;
-		try {
-			offset = t.getOffsetAtLocation(new Point(x, y));
-		} catch (IllegalArgumentException e) {
-			return null;
-		}
-		if (offset < t.getCharCount())
-			return t.getStyleRangeAtOffset(offset);
-		else
-			return null;
-	}
+
+
 }

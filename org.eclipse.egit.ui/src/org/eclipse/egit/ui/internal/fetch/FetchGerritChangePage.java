@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.op.TagOperation;
@@ -30,11 +31,9 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
@@ -73,15 +72,7 @@ import org.eclipse.swt.widgets.Text;
  * Fetch a change from Gerrit
  */
 public class FetchGerritChangePage extends WizardPage {
-	private static final String FETCH_GERRIT_CHANGE_PAGE_SECTION = "FetchGerritChangePage"; //$NON-NLS-1$
-
-	private static final String LAST_URI_POSTFIX = ".lastUri"; //$NON-NLS-1$
-
 	private final Repository repository;
-
-	private final IDialogSettings settings;
-
-	private final String lastUriKey;
 
 	private Combo uriCombo;
 
@@ -105,36 +96,17 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Text branchText;
 
-	private String refName;
-
-	private Composite warningAdditionalRefNotActive;
-
-	private Button activateAdditionalRefs;
-
 	/**
 	 * @param repository
-	 * @param refName initial value for the ref field
 	 */
-	public FetchGerritChangePage(Repository repository, String refName) {
+	public FetchGerritChangePage(Repository repository) {
 		super(FetchGerritChangePage.class.getName());
 		this.repository = repository;
-		this.refName = refName;
 		setTitle(NLS
 				.bind(UIText.FetchGerritChangePage_PageTitle,
 						Activator.getDefault().getRepositoryUtil()
 								.getRepositoryName(repository)));
 		setMessage(UIText.FetchGerritChangePage_PageMessage);
-		settings = getDialogSettings();
-		lastUriKey = repository + LAST_URI_POSTFIX;
-	}
-
-	protected IDialogSettings getDialogSettings() {
-		IDialogSettings s = Activator.getDefault().getDialogSettings();
-		IDialogSettings section = s
-				.getSection(FETCH_GERRIT_CHANGE_PAGE_SECTION);
-		if (section == null)
-			section = s.addNewSection(FETCH_GERRIT_CHANGE_PAGE_SECTION);
-		return section;
 	}
 
 	public void createControl(Composite parent) {
@@ -176,8 +148,6 @@ public class FetchGerritChangePage extends WizardPage {
 		});
 
 		branchTextlabel = new Label(checkoutGroup, SWT.NONE);
-		GridDataFactory.defaultsFor(branchTextlabel).exclude(false)
-				.applyTo(branchTextlabel);
 		branchTextlabel.setText(UIText.FetchGerritChangePage_BranchNameText);
 		branchText = new Text(checkoutGroup, SWT.SINGLE | SWT.BORDER);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(branchText);
@@ -233,19 +203,6 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		});
 
-		warningAdditionalRefNotActive = new Composite(main, SWT.NONE);
-		GridDataFactory.fillDefaults().span(2, 1).grab(true, false)
-				.exclude(true).applyTo(warningAdditionalRefNotActive);
-		warningAdditionalRefNotActive.setLayout(new GridLayout(2, false));
-		warningAdditionalRefNotActive.setVisible(false);
-
-		activateAdditionalRefs = new Button(warningAdditionalRefNotActive,
-				SWT.CHECK);
-		activateAdditionalRefs
-				.setText(UIText.FetchGerritChangePage_ActivateAdditionalRefsButton);
-		activateAdditionalRefs
-				.setToolTipText(UIText.FetchGerritChangePage_ActivateAdditionalRefsTooltip);
-
 		refText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				Change change = Change.fromRef(refText.getText());
@@ -280,35 +237,10 @@ public class FetchGerritChangePage extends WizardPage {
 		}
 		for (String aUri : uris)
 			uriCombo.add(aUri);
-		selectLastUsedUri();
+		uriCombo.select(0);
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
 		setControl(main);
-		setPageComplete(false);
-	}
-
-
-	private void storeLastUsedUri(String uri) {
-		settings.put(lastUriKey, uri.trim());
-	}
-
-	private void selectLastUsedUri() {
-		String lastUri = settings.get(lastUriKey);
-		if (lastUri != null) {
-			int i = uriCombo.indexOf(lastUri);
-			if (i != -1) {
-				uriCombo.select(i);
-				return;
-			}
-		}
-		uriCombo.select(0);
-	}
-
-	@Override
-	public void setVisible(boolean visible) {
-		super.setVisible(visible);
-		if (visible && refName != null)
-			refText.setText(refName);
 	}
 
 	private void checkPage() {
@@ -330,20 +262,6 @@ public class FetchGerritChangePage extends WizardPage {
 		gd = (GridData) tagTextlabel.getLayoutData();
 		gd.exclude = !createTagSelected;
 		branchText.getParent().layout(true);
-
-		boolean showActivateAdditionalRefs = false;
-		showActivateAdditionalRefs = (checkout.getSelection() || dontCheckout
-				.getSelection())
-				&& !Activator
-						.getDefault()
-						.getPreferenceStore()
-						.getBoolean(
-								UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS);
-
-		gd = (GridData) warningAdditionalRefNotActive.getLayoutData();
-		gd.exclude = !showActivateAdditionalRefs;
-		warningAdditionalRefNotActive.setVisible(showActivateAdditionalRefs);
-		warningAdditionalRefNotActive.getParent().layout(true);
 
 		setErrorMessage(null);
 		try {
@@ -442,8 +360,6 @@ public class FetchGerritChangePage extends WizardPage {
 			final boolean doCheckout = checkout.getSelection();
 			final boolean doCreateTag = createTag.getSelection();
 			final boolean doCreateBranch = createBranch.getSelection();
-			final boolean doActivateAdditionalRefs = (checkout.getSelection() || dontCheckout
-					.getSelection()) && activateAdditionalRefs.getSelection();
 			final String textForTag = tagText.getText();
 			final String textForBranch = branchText.getText();
 			getWizard().getContainer().run(true, true,
@@ -507,30 +423,10 @@ public class FetchGerritChangePage extends WizardPage {
 								}
 								if (doCheckout || doCreateTag) {
 									monitor.setTaskName(UIText.FetchGerritChangePage_CheckingOutTaskName);
-									BranchOperationUI.checkout(repository, commit.name())
-											.run(monitor);
-
+									new BranchOperation(repository, commit)
+											.execute(monitor);
 									monitor.worked(1);
 								}
-								if (doActivateAdditionalRefs) {
-									// do this in the UI thread as it results in a
-									// refresh() on the history page
-									getContainer().getShell().getDisplay()
-											.asyncExec(new Runnable() {
-
-												public void run() {
-													Activator
-															.getDefault()
-															.getPreferenceStore()
-															.setValue(
-																	UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS,
-																	true);
-												}
-											});
-								}
-								storeLastUsedUri(uri);
-							} catch (RuntimeException e) {
-								throw e;
 							} catch (Exception e) {
 								throw new InvocationTargetException(e);
 							} finally {

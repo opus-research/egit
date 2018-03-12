@@ -20,11 +20,6 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.DecorationOverlayDescriptor;
-import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.DiffFormatter;
@@ -44,13 +39,8 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.ui.model.WorkbenchAdapter;
 
-/**
- * A class with information about the changes to a file introduced in a
- * commit.
- */
-public class FileDiff extends WorkbenchAdapter {
+class FileDiff {
 
 	private final RevCommit commit;
 
@@ -64,18 +54,7 @@ public class FileDiff extends WorkbenchAdapter {
 		return r;
 	}
 
-	/**
-	 * Computer file diffs for specified tree walk and commit
-	 *
-	 * @param walk
-	 * @param commit
-	 * @return non-null but possibly empty array of file diffs
-	 * @throws MissingObjectException
-	 * @throws IncorrectObjectTypeException
-	 * @throws CorruptObjectException
-	 * @throws IOException
-	 */
-	public static FileDiff[] compute(final TreeWalk walk, final RevCommit commit)
+	static FileDiff[] compute(final TreeWalk walk, final RevCommit commit)
 			throws MissingObjectException, IncorrectObjectTypeException,
 			CorruptObjectException, IOException {
 		final ArrayList<FileDiff> r = new ArrayList<FileDiff>();
@@ -236,40 +215,20 @@ public class FileDiff extends WorkbenchAdapter {
 		return new RawText(ldr.getCachedBytes(Integer.MAX_VALUE));
 	}
 
-	/**
-	 * Get commit
-	 *
-	 * @return commit
-	 */
 	public RevCommit getCommit() {
 		return commit;
 	}
 
-	/**
-	 * Get path
-	 *
-	 * @return path
-	 */
 	public String getPath() {
 		if (ChangeType.DELETE.equals(diffEntry.getChangeType()))
 			return diffEntry.getOldPath();
 		return diffEntry.getNewPath();
 	}
 
-	/**
-	 * Get change type
-	 *
-	 * @return type
-	 */
 	public ChangeType getChange() {
 		return diffEntry.getChangeType();
 	}
 
-	/**
-	 * Get blob object ids
-	 *
-	 * @return non-null but possibly empty array of object ids
-	 */
 	public ObjectId[] getBlobs() {
 		List<ObjectId> objectIds = new ArrayList<ObjectId>();
 		if (diffEntry.getOldId() != null)
@@ -279,11 +238,6 @@ public class FileDiff extends WorkbenchAdapter {
 		return objectIds.toArray(new ObjectId[]{});
 	}
 
-	/**
-	 * Get file modes
-	 *
-	 * @return non-null but possibly empty array of file modes
-	 */
 	public FileMode[] getModes() {
 		List<FileMode> modes = new ArrayList<FileMode>();
 		if (diffEntry.getOldMode() != null)
@@ -293,50 +247,9 @@ public class FileDiff extends WorkbenchAdapter {
 		return modes.toArray(new FileMode[]{});
 	}
 
-	/**
-	 * Create a file diff for a specified {@link RevCommit} and
-	 * {@link DiffEntry}
-	 *
-	 * @param c
-	 * @param entry
-	 */
-	public FileDiff(final RevCommit c, final DiffEntry entry) {
+	FileDiff(final RevCommit c, final DiffEntry entry) {
 		diffEntry = entry;
 		commit = c;
-	}
-
-	/**
-	 * Is this diff a submodule?
-	 *
-	 * @return true if submodule, false otherwise
-	 */
-	public boolean isSubmodule() {
-		if (diffEntry == null)
-			return false;
-		return diffEntry.getOldMode() == FileMode.GITLINK
-				|| diffEntry.getNewMode() == FileMode.GITLINK;
-	}
-
-	public ImageDescriptor getImageDescriptor(Object object) {
-		final ImageDescriptor base;
-		if (!isSubmodule())
-			base = UIUtils.getEditorImage(getPath());
-		else
-			base = UIIcons.REPOSITORY;
-		switch (getChange()) {
-		case ADD:
-			return new DecorationOverlayDescriptor(base,
-					UIIcons.OVR_STAGED_ADD, IDecoration.BOTTOM_RIGHT);
-		case DELETE:
-			return new DecorationOverlayDescriptor(base,
-					UIIcons.OVR_STAGED_REMOVE, IDecoration.BOTTOM_RIGHT);
-		default:
-			return base;
-		}
-	}
-
-	public String getLabel(Object object) {
-		return getPath();
 	}
 
 	private static class FileDiffForMerges extends FileDiff {

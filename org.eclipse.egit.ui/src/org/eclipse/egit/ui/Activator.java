@@ -36,7 +36,7 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
+import org.eclipse.egit.ui.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -124,17 +124,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	public static void showError(String message, Throwable throwable) {
 		IStatus status = new Status(IStatus.ERROR, getPluginId(), message,
 				throwable);
-		StatusManager.getManager().handle(status, StatusManager.SHOW);
-	}
-
-	/**
-	 * Shows an error. The error is NOT logged.
-	 *
-	 * @param message
-	 *            a localized message
-	 * @param status
-	 */
-	public static void showErrorStatus(String message, IStatus status) {
 		StatusManager.getManager().handle(status, StatusManager.SHOW);
 	}
 
@@ -331,8 +320,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				ISchedulingRule rule = p.getWorkspace().getRuleFactory().refreshRule(p);
 				try {
 					getJobManager().beginRule(rule, monitor);
-					if(p.exists()) // handle missing projects after branch switch
-						p.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
+					p.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
 				} catch (CoreException e) {
 					handleError(UIText.Activator_refreshFailed, e, false);
 					return new Status(IStatus.ERROR, getPluginId(), e.getMessage());

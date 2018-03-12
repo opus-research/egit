@@ -14,6 +14,7 @@
 package org.eclipse.egit.ui.internal.components;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,15 +23,11 @@ import java.util.regex.Pattern;
 
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo;
-import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -54,6 +51,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -66,7 +64,7 @@ import org.eclipse.ui.PlatformUI;
  * Wizard page that allows the user entering the location of a remote repository
  * by specifying URL manually or selecting a preconfigured remote repository.
  */
-public class RepositorySelectionPage extends WizardPage implements IRepositorySearchResult {
+public class RepositorySelectionPage extends WizardPage {
 
 	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
@@ -122,7 +120,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 	private String password = EMPTY_STRING;
 
-	private boolean storeInSecureStore;
+	private boolean storeInSecureStore = true;
 
 	private String helpContext = null;
 
@@ -283,9 +281,10 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		 * @return protocol handling this URI
 		 */
 		public static Protocol fromUri(URIish uri) {
-			for (Protocol p : protocols.values())
+			for (Protocol p : protocols.values()) {
 				if (p.handles(uri))
 					return p;
+			}
 			return null;
 		}
 	}
@@ -331,10 +330,11 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					if (index > 0)
 						text = text.substring(0, index);
 					URIish u = new URIish(text);
-					if (canHandleProtocol(u))
+					if (canHandleProtocol(u)) {
 						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
-								|| text.endsWith(Constants.DOT_GIT_EXT))
+								|| text.endsWith(Constants.DOT_GIT))
 							preset = text;
+					}
 				}
 			} catch (URISyntaxException e) {
 				// ignore, preset is null
@@ -355,9 +355,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			setTitle(UIText.RepositorySelectionPage_destinationSelectionTitle);
 			setDescription(UIText.RepositorySelectionPage_destinationSelectionDescription);
 		}
-
-		storeInSecureStore = getPreferenceStore().getBoolean(
-				UIPreferences.CLONE_WIZARD_STORE_SECURESTORE);
 	}
 
 	/**
@@ -374,14 +371,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	public RepositorySelectionPage(final boolean sourceSelection,
 			String presetUri) {
 		this(sourceSelection, null, presetUri);
-	}
-
-	/**
-	 * No args constructor; needed because the page is provided by the extension
-	 * point {@code org.eclipse.egit.ui.cloneSourceProvider}
-	 */
-	public RepositorySelectionPage() {
-		this(true, null);
 	}
 
 	/**
@@ -516,36 +505,27 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		browseButton.addSelectionListener(new SelectionAdapter() {
 
 			@Override
-			public void widgetSelected(SelectionEvent evt) {
+			public void widgetSelected(SelectionEvent e) {
 				DirectoryDialog dialog = new DirectoryDialog(getShell());
-				// if a file was selected before, let's try to open
+				// if a file-uri was selected before, let's try to open
 				// the directory dialog on the same directory
-				if (!uriText.getText().equals(EMPTY_STRING))
+				if (!uriText.getText().equals(EMPTY_STRING)) {
 					try {
-						// first we try if this is a simple file name
-						File testFile = new File(uriText.getText());
-						if (testFile.exists())
-							dialog.setFilterPath(testFile.getPath());
-						else {
-							// this could still be a file URIish
-							URIish testUri = new URIish(uriText.getText());
-							if (testUri.getScheme().equals(
-									Protocol.FILE.defaultScheme)) {
-								testFile = new File(uri.getPath());
-								if (testFile.exists())
-									dialog.setFilterPath(testFile.getPath());
-							}
+						URI testUri = URI.create(uriText.getText().replace(
+								'\\', '/'));
+						if (testUri.getScheme().equals("file")) { //$NON-NLS-1$
+							String path = testUri.getPath();
+							if (path.length() > 1 && path.startsWith("/")) //$NON-NLS-1$
+								path = path.substring(1);
+
+							dialog.setFilterPath(path);
 						}
-					} catch (IllegalArgumentException e) {
-						// ignore here, we just' don't set the directory in the
-						// browser
-					} catch (URISyntaxException e) {
+					} catch (IllegalArgumentException e1) {
 						// ignore here, we just' don't set the directory in the
 						// browser
 					}
-				// if nothing else, we start the search from the default folder for repositories
-				if (EMPTY_STRING.equals(dialog.getFilterPath()))
-					dialog.setFilterPath(Activator.getDefault().getPreferenceStore().getString(UIPreferences.DEFAULT_REPO_DIR));
+
+				}
 				String result = dialog.open();
 				if (result != null)
 					uriText.setText("file:///" + result); //$NON-NLS-1$
@@ -621,8 +601,9 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 		newLabel(g, UIText.RepositorySelectionPage_promptScheme + ":"); //$NON-NLS-1$
 		scheme = new Combo(g, SWT.DROP_DOWN | SWT.READ_ONLY);
-		for (Protocol p : Protocol.values())
+		for (Protocol p : Protocol.values()) {
 			scheme.add(p.getDefaultScheme());
+		}
 		scheme.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(final SelectionEvent e) {
 				final int idx = scheme.getSelectionIndex();
@@ -654,12 +635,13 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 				final String val = nullString(portText.getText());
 				if (val == null)
 					setURI(uri.setPort(-1));
-				else
+				else {
 					try {
 						setURI(uri.setPort(Integer.parseInt(val)));
 					} catch (NumberFormatException err) {
 						// Ignore it for now.
 					}
+				}
 			}
 		});
 	}
@@ -746,13 +728,14 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		sb.append(": "); //$NON-NLS-1$
 		boolean first = true;
 		List<URIish> uris;
-		if (sourceSelection)
+		if (sourceSelection) {
 			uris = rc.getURIs();
-		else {
+		} else {
 			uris = rc.getPushURIs();
 			// if no push URIs are defined, use fetch URIs instead
-			if (uris.isEmpty())
+			if (uris.isEmpty()) {
 				uris = rc.getURIs();
+			}
 		}
 
 		for (final URIish u : uris) {
@@ -892,11 +875,11 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	}
 
 	private void updateRemoteAndURIPanels() {
-		UIUtils.setEnabledRecursively(uriPanel, isURISelected());
+		setEnabledRecursively(uriPanel, isURISelected());
 		if (uriPanel.getEnabled())
 			updateAuthGroup();
 		if (configuredRemotes != null)
-			UIUtils.setEnabledRecursively(remotePanel, !isURISelected());
+			setEnabledRecursively(remotePanel, !isURISelected());
 	}
 
 	private void updateAuthGroup() {
@@ -904,7 +887,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		if (p != null) {
 			hostText.setEnabled(p.hasHost());
 			portText.setEnabled(p.hasPort());
-			UIUtils.setEnabledRecursively(authGroup, p.canAuthenticate());
+			setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
 	}
 
@@ -961,6 +944,14 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
 	}
 
+	private void setEnabledRecursively(final Control control,
+			final boolean enable) {
+		control.setEnabled(enable);
+		if (control instanceof Composite)
+			for (final Control child : ((Composite) control).getChildren())
+				setEnabledRecursively(child, enable);
+	}
+
 	private void updateFields(final String text) {
 		try {
 			eventDepth++;
@@ -1000,17 +991,4 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		}
 		checkPage();
 	}
-
-	private IPreferenceStore getPreferenceStore() {
-		return Activator.getDefault().getPreferenceStore();
-	}
-
-	public GitRepositoryInfo getGitRepositoryInfo() {
-		GitRepositoryInfo info = new GitRepositoryInfo(uri.toString());
-		info.setCredentials(user, password);
-		info.setShouldSaveCredentialsInSecureStore(storeInSecureStore);
-		uriProposalHandler.updateProposals();
-		return info;
-	}
-
 }
