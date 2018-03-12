@@ -5263,15 +5263,6 @@ public class UIText extends NLS {
 	public static String StagingView_MessageErrors;
 
 	/** */
-	public static String StagingView_openingProjectFailed;
-
-	/** */
-	public static String StagingView_ProjectIsClosed;
-
-	/** */
-	public static String StagingView_OpenProject;
-
-	/** */
 	public static String StashApplyCommand_applyFailed;
 
 	/** */
