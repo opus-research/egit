@@ -30,6 +30,7 @@ import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevFlagSet;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Representation of Git repository in Git ChangeSet model.
@@ -43,6 +44,8 @@ public class GitModelRepository extends GitModelObject {
 	private final RevCommit dstRev;
 
 	private final Set<IProject> projects;
+
+	private final TreeFilter pathFilter;
 
 	private final boolean includeLocal;
 
@@ -60,6 +63,7 @@ public class GitModelRepository extends GitModelObject {
 		repo = data.getRepository();
 		includeLocal = data.shouldIncludeLocal();
 		projects = data.getProjects();
+		pathFilter = data.getPathFilter();
 
 		srcRev = data.getSrcRevCommit();
 		dstRev = data.getDstRevCommit();
@@ -152,17 +156,25 @@ public class GitModelRepository extends GitModelObject {
 
 		RevWalk rw = new RevWalk(repo);
 		rw.setRetainBody(true);
+		if (pathFilter != null)
+			rw.setTreeFilter(pathFilter);
+
 		try {
 			RevCommit srcCommit = rw.parseCommit(srcRev);
 
 			if (includeLocal) {
-				GitModelCache gitModelCache = new GitModelCache(this, srcCommit);
-				if (gitModelCache.getChildren().length > 0)
-					result.add(gitModelCache);
+				GitModelCache gitCache = new GitModelCache(this, srcCommit,
+						pathFilter);
+				int gitCacheLen = gitCache.getChildren().length;
 
-				GitModelWorkingTree gitModelWorkingTree = getLocaWorkingTreeChanges();
-				if (gitModelWorkingTree != null)
-					result.add(gitModelWorkingTree);
+				GitModelWorkingTree gitWorkingTree = getLocaWorkingTreeChanges();
+				int gitWorkingTreeLen = gitWorkingTree != null ? gitWorkingTree
+						.getChildren().length : 0;
+
+				if (gitCacheLen > 0 || gitWorkingTreeLen > 0) {
+					result.add(gitCache);
+					result.add(gitWorkingTree);
+				}
 			}
 
 			if (srcRev.equals(dstRev))
@@ -187,9 +199,11 @@ public class GitModelRepository extends GitModelObject {
 					break;
 
 				if (nextCommit.has(localFlag))
-					result.add(new GitModelCommit(this, nextCommit, RIGHT));
+					result.add(new GitModelCommit(this, nextCommit, RIGHT,
+							pathFilter));
 				else if (nextCommit.has(remoteFlag))
-					result.add(new GitModelCommit(this, nextCommit, LEFT));
+					result.add(new GitModelCommit(this, nextCommit, LEFT,
+							pathFilter));
 			}
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
@@ -200,10 +214,7 @@ public class GitModelRepository extends GitModelObject {
 
 	private GitModelWorkingTree getLocaWorkingTreeChanges() {
 		try {
-			GitModelWorkingTree gitModelWorkingTree = new GitModelWorkingTree(this);
-
-			if (gitModelWorkingTree.getChildren().length > 0)
-				return gitModelWorkingTree;
+			return new GitModelWorkingTree(this, pathFilter);
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}
