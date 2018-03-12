@@ -1,78 +1,71 @@
 /*******************************************************************************
- * Copyright (C) 2009, Yann Simon <yann.simon.fr@gmail.com>
+ * Copyright (C) 2009, Stefan Lay <stefan.lay@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-
 package org.eclipse.egit.ui.internal.actions;
 
-import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.compare.CompareUI;
-import org.eclipse.compare.IContentChangeListener;
-import org.eclipse.compare.IContentChangeNotifier;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.EditableRevision;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jgit.lib.GitIndex;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.team.core.TeamException;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.team.internal.ui.history.FileRevisionTypedElement;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
 
 /**
- * The "compare with index" action. This action opens a diff editor comparing
- * the file as found in the working directory and the version found in the index
- * of the repository.
+ * Compares the working tree content of a file with the version of the file
+ * in the HEAD commit.
  */
-@SuppressWarnings("restriction")
-public class CompareWithIndexAction extends RepositoryAction {
+public class CompareWithHeadAction extends RepositoryAction {
 
-	@Override
-	public void execute(IAction action) {
+	public void execute(IAction action) throws InvocationTargetException {
 		final IResource resource = getSelectedResources()[0];
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(resource.getProject());
 		final Repository repository = mapping.getRepository();
 		final String gitPath = mapping.getRepoRelativePath(resource);
 
-		final IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
 
 		final IFile baseFile = (IFile) resource;
 		final ITypedElement base = SaveableCompareEditorInput.createFileElement(baseFile);
 
-		final EditableRevision next = new EditableRevision(nextFile);
+		ITypedElement next;
+		try {
+			Ref head = repository.getRef(Constants.HEAD);
+			RevWalk rw = new RevWalk(repository);
+			RevCommit commit = rw.parseCommit(head.getObjectId());
 
-		IContentChangeListener listener = new IContentChangeListener() {
-			public void contentChanged(IContentChangeNotifier source) {
-				final byte[] newContent = next.getModifiedContent();
-				try {
-					final GitIndex index = repository.getIndex();
-					final File file = new File(baseFile.getLocation().toString());
-					index.add(mapping.getWorkDir(), file, newContent);
-					index.write();
-				} catch (IOException e) {
-					handle(
-							new TeamException(
-									UIText.CompareWithIndexAction_errorOnAddToIndex,
-									e),
-							UIText.CompareWithIndexAction_errorOnAddToIndex,
-							UIText.CompareWithIndexAction_errorOnAddToIndex);
-					return;
-				}
+			next = new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS.bind(UIText.GitHistoryPage_FileNotInCommit,
+					resource.getName(), commit));
+			TreeWalk w = TreeWalk.forPath(repository, gitPath, commit.getTree());
+			// check if file is contained in commit
+			if (w != null) {
+				final IFileRevision nextFile = GitFileRevision.inCommit(repository, commit, gitPath, null);
+				next = new FileRevisionTypedElement(nextFile);
 			}
-		};
+		} catch (IOException e) {
+			// this exception is handled by TeamAction.run
+			throw new InvocationTargetException(e);
+		}
 
-		next.addContentChangeListener(listener);
 
 		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 				base, next, null);
@@ -92,5 +85,6 @@ public class CompareWithIndexAction extends RepositoryAction {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(resource.getProject());
 		return mapping != null;
 	}
+
 
 }

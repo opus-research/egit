@@ -40,6 +40,8 @@ public class UIIcons {
 
 	/** Find icon */
 	public static final ImageDescriptor ELCL16_FIND;
+	/** Compare / View icon */
+	public static final ImageDescriptor ELCL16_COMPARE_VIEW;
 	/** Next arrow icon */
 	public static final ImageDescriptor ELCL16_NEXT;
 	/** Previous arrow icon */
@@ -118,6 +120,7 @@ public class UIIcons {
 		OVR_CONFLICT = map("ovr/conflict.gif"); //$NON-NLS-1$
 		OVR_ASSUMEVALID = map("ovr/assume_valid.gif"); //$NON-NLS-1$
 		ELCL16_FIND = map("elcl16/find.gif"); //$NON-NLS-1$
+		ELCL16_COMPARE_VIEW = map("elcl16/compare_view.gif"); //$NON-NLS-1$
 		ELCL16_NEXT = map("elcl16/next.gif"); //$NON-NLS-1$
 		ELCL16_PREVIOUS = map("elcl16/previous.gif"); //$NON-NLS-1$
 		WIZBAN_IMPORT_REPO = map("wizban/import_wiz.png"); //$NON-NLS-1$
@@ -152,7 +155,7 @@ public class UIIcons {
 			try {
 				return ImageDescriptor.createFromURL(new URL(base, icon));
 			} catch (MalformedURLException mux) {
-				Activator.logError("Can't load plugin image.", mux);
+				Activator.logError(UIText.UIIcons_errorLoadingPluginImage, mux);
 			}
 		}
 		return ImageDescriptor.getMissingImageDescriptor();
@@ -163,7 +166,7 @@ public class UIIcons {
 			return new URL(Activator.getDefault().getBundle().getEntry("/"), //$NON-NLS-1$
 					"icons/"); //$NON-NLS-1$
 		} catch (MalformedURLException mux) {
-			Activator.logError("Can't determine icon base.", mux);
+			Activator.logError(UIText.UIIcons_errorDeterminingIconBase, mux);
 			return null;
 		}
 	}

@@ -60,6 +60,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
@@ -84,15 +85,9 @@ public class GitProjectsImportPage extends WizardPage {
 	 */
 	public static final String METADATA_FOLDER = ".metadata"; //$NON-NLS-1$
 
-	/**
-	 * The import structure provider.
-	 */
 	private IImportStructureProvider structureProvider;
 
-	/**
-	 * The git directory which will contain the repository
-	 */
-	private File gitDir;
+	private File gitRepositoryDir;
 
 	class ProjectRecord {
 		File projectSystemFile;
@@ -215,6 +210,10 @@ public class GitProjectsImportPage extends WizardPage {
 
 	private Button shareCheckBox;
 
+	private Button selectAll;
+
+	private Button deselectAll;
+
 	private boolean share;
 
 	/**
@@ -236,13 +235,6 @@ public class GitProjectsImportPage extends WizardPage {
 		setDescription(UIText.WizardProjectsImportPage_ImportProjectsDescription);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see
-	 * org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.widgets
-	 * .Composite)
-	 */
 	public void createControl(Composite parent) {
 
 		initializeDialogUnits(parent);
@@ -316,6 +308,20 @@ public class GitProjectsImportPage extends WizardPage {
 				return super.isElementVisible(viewer, element);
 			}
 
+			@Override
+			public void setPattern(String patternString) {
+				super.setPattern(patternString);
+				// TODO: is there a better way to react on changes in the tree?
+				// disable select all button when tree becomes empty due to
+				// filtering
+				Display.getDefault().asyncExec(new Runnable() {
+					public void run() {
+						enableSelectAllButtons();
+					}
+				});
+
+			}
+
 		};
 
 		FilteredTree filteredTree = new FilteredTree(listComposite, SWT.CHECK
@@ -328,66 +334,26 @@ public class GitProjectsImportPage extends WizardPage {
 
 		projectsList.setContentProvider(new ITreeContentProvider() {
 
-			/*
-			 * (non-Javadoc)
-			 *
-			 * @see
-			 * org.eclipse.jface.viewers.ITreeContentProvider#getChildren(java
-			 * .lang.Object)
-			 */
 			public Object[] getChildren(Object parentElement) {
 				return null;
 			}
 
-			/*
-			 * (non-Javadoc)
-			 *
-			 * @see
-			 * org.eclipse.jface.viewers.IStructuredContentProvider#getElements
-			 * (java.lang.Object)
-			 */
 			public Object[] getElements(Object inputElement) {
 				return getValidProjects();
 			}
 
-			/*
-			 * (non-Javadoc)
-			 *
-			 * @see
-			 * org.eclipse.jface.viewers.ITreeContentProvider#hasChildren(java
-			 * .lang.Object)
-			 */
 			public boolean hasChildren(Object element) {
 				return false;
 			}
 
-			/*
-			 * (non-Javadoc)
-			 *
-			 * @see
-			 * org.eclipse.jface.viewers.ITreeContentProvider#getParent(java
-			 * .lang.Object)
-			 */
 			public Object getParent(Object element) {
 				return null;
 			}
 
-			/*
-			 * (non-Javadoc)
-			 *
-			 * @see org.eclipse.jface.viewers.IContentProvider#dispose()
-			 */
 			public void dispose() {
 
 			}
 
-			/*
-			 * (non-Javadoc)
-			 *
-			 * @see
-			 * org.eclipse.jface.viewers.IContentProvider#inputChanged(org.eclipse
-			 * .jface.viewers.Viewer, java.lang.Object, java.lang.Object)
-			 */
 			public void inputChanged(Viewer viewer, Object oldInput,
 					Object newInput) {
 			}
@@ -412,12 +378,6 @@ public class GitProjectsImportPage extends WizardPage {
 		});
 
 		projectsList.setLabelProvider(new LabelProvider() {
-			/*
-			 * (non-Javadoc)
-			 *
-			 * @see
-			 * org.eclipse.jface.viewers.LabelProvider#getText(java.lang.Object)
-			 */
 			public String getText(Object element) {
 				// Need to set the checked item state. FIXME This is clumsy.
 				for (final TreeItem item : projectsList.getTree().getItems()) {
@@ -450,7 +410,7 @@ public class GitProjectsImportPage extends WizardPage {
 		buttonsComposite.setLayoutData(new GridData(
 				GridData.VERTICAL_ALIGN_BEGINNING));
 
-		Button selectAll = new Button(buttonsComposite, SWT.PUSH);
+		selectAll = new Button(buttonsComposite, SWT.PUSH);
 		selectAll.setText(UIText.WizardProjectsImportPage_selectAll);
 		selectAll.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
@@ -466,16 +426,9 @@ public class GitProjectsImportPage extends WizardPage {
 		Dialog.applyDialogFont(selectAll);
 		setButtonLayoutData(selectAll);
 
-		Button deselectAll = new Button(buttonsComposite, SWT.PUSH);
+		deselectAll = new Button(buttonsComposite, SWT.PUSH);
 		deselectAll.setText(UIText.WizardProjectsImportPage_deselectAll);
 		deselectAll.addSelectionListener(new SelectionAdapter() {
-			/*
-			 * (non-Javadoc)
-			 *
-			 * @see
-			 * org.eclipse.swt.events.SelectionAdapter#widgetSelected(org.eclipse
-			 * .swt.events.SelectionEvent)
-			 */
 			public void widgetSelected(SelectionEvent e) {
 				checkedItems.clear();
 				// only the root has children
@@ -510,10 +463,6 @@ public class GitProjectsImportPage extends WizardPage {
 
 	}
 
-	/*
-	 * (non-Javadoc) Method declared on IDialogPage. Set the focus on path
-	 * fields when page becomes visible.
-	 */
 	public void setVisible(boolean visible) {
 		super.setVisible(visible);
 	}
@@ -524,7 +473,7 @@ public class GitProjectsImportPage extends WizardPage {
 	 * @param gitDir
 	 */
 	public void setGitDir(File gitDir) {
-		this.gitDir = gitDir;
+		this.gitRepositoryDir = gitDir;
 	}
 
 	/**
@@ -558,13 +507,6 @@ public class GitProjectsImportPage extends WizardPage {
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
 
-				/*
-				 * (non-Javadoc)
-				 *
-				 * @see
-				 * org.eclipse.jface.operation.IRunnableWithProgress#run(org
-				 * .eclipse.core.runtime.IProgressMonitor)
-				 */
 				public void run(IProgressMonitor monitor) {
 
 					monitor.beginTask(
@@ -611,7 +553,18 @@ public class GitProjectsImportPage extends WizardPage {
 		} else {
 			setMessage(UIText.WizardProjectsImportPage_ImportProjectsDescription);
 		}
+		enableSelectAllButtons();
 		setPageComplete(checkedItems.size() > 0);
+	}
+
+	private void enableSelectAllButtons() {
+		if (projectsList.getTree().getItemCount()>0){
+			selectAll.setEnabled(true);
+			deselectAll.setEnabled(true);
+		} else {
+			selectAll.setEnabled(false);
+			deselectAll.setEnabled(false);
+		}
 	}
 
 	/**
@@ -775,7 +728,7 @@ public class GitProjectsImportPage extends WizardPage {
 					monitor, openTicks));
 			if (share) {
 				ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
-						project, gitDir);
+						project, gitRepositoryDir);
 				connectProviderOperation
 						.run(new SubProgressMonitor(monitor, 20));
 			}
