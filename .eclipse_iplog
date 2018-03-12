@@ -2,6 +2,14 @@
 	name = EGit
 	license = Eclipse Public License v1.0
 
+[review]
+	url = http://egit.eclipse.org/r/r/
+
+[consumes "technology.jgit"]
+	name = JGit
+	version = 0.8.0
+	license = Eclipse Distribution License v1.0
+
 [CQ "3493"]
 	description = JSch Version: 0.1.41 (PB CQ3040)
 	license = New BSD license
@@ -11,4 +19,10 @@
 [CQ "3589"]
 	description = Junit Version: 3.8.2 (ATO CQ299) (using Orbit CQ2206)
 	license = Common Public License 1.0
+	state = approved
+
+[CQ "3905"]
+	description = jsch Version: 0.1.37 (using Orbit CQ2002)
+	license = New BSD license
+	use = unmodified source & binary
 	state = approved

@@ -9,6 +9,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
+import java.io.IOException;
 import java.net.Authenticator;
 import java.net.ProxySelector;
 import java.util.ArrayList;
@@ -68,6 +69,8 @@ public class Activator extends AbstractUIPlugin {
 	 * Property constant indicating the decorator configuration has changed.
 	 */
 	public static final String DECORATORS_CHANGED = "org.eclipse.egit.ui.DECORATORS_CHANGED"; //$NON-NLS-1$
+
+	private RepositoryUtil repositoryUtil;
 
 	/**
 	 * @return the {@link Activator} singleton.
@@ -159,6 +162,7 @@ public class Activator extends AbstractUIPlugin {
 
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
+		repositoryUtil = new RepositoryUtil();
 
 		if (isDebugging()) {
 			ServiceTracker debugTracker = new ServiceTracker(context,
@@ -293,59 +297,42 @@ public class Activator extends AbstractUIPlugin {
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
+			Repository[] repos = org.eclipse.egit.core.Activator.getDefault()
+					.getRepositoryCache().getAllReposiotries();
+			if (repos.length == 0)
+				return Status.OK_STATUS;
+			monitor.beginTask(UIText.Activator_scanningRepositories,
+					repos.length);
 			try {
-				// A repository can contain many projects, only scan once
-				// (a project could in theory be distributed among many
-				// repositories. We discard that as being ugly and stupid for
-				// the moment.
-				IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
-				monitor.beginTask(UIText.Activator_scanningRepositories, projects.length);
-				Set<Repository> scanned = new HashSet<Repository>();
-				for (IProject p : projects) {
-					RepositoryMapping mapping = RepositoryMapping.getMapping(p);
-					if (mapping != null) {
-						Repository r = mapping.getRepository();
-						if (!scanned.contains(r)) {
-							if (monitor.isCanceled())
-								break;
-							// TODO is this the right location?
-							if (GitTraceLocation.UI.isActive())
-								GitTraceLocation.getTrace().trace(
-										GitTraceLocation.UI.getLocation(),
-										"Scanning " + r + " for changes"); //$NON-NLS-1$ //$NON-NLS-2$
-							scanned.add(r);
-							ISchedulingRule rule = p.getWorkspace().getRuleFactory().modifyRule(p);
-							getJobManager().beginRule(rule, monitor);
-							try {
-								r.scanForRepoChanges();
-							} finally {
-								getJobManager().endRule(rule);
-							}
-						}
-					}
+				for (Repository repo : repos) {
+					if (monitor.isCanceled())
+						break;
+					// TODO is this the right location?
+					if (GitTraceLocation.UI.isActive())
+						GitTraceLocation.getTrace().trace(
+								GitTraceLocation.UI.getLocation(),
+								"Scanning " + repo + " for changes"); //$NON-NLS-1$ //$NON-NLS-2$
+
+					repo.scanForRepoChanges();
 					monitor.worked(1);
 				}
-				monitor.done();
-				// TODO is this the right location?
-				if (GitTraceLocation.UI.isActive())
-					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.UI.getLocation(),
-							"Rescheduling " + getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
-				if (doReschedule)
-					schedule(REPO_SCAN_INTERVAL);
-			} catch (Exception e) {
+			} catch (IOException e) {
 				// TODO is this the right location?
 				if (GitTraceLocation.UI.isActive())
 					GitTraceLocation.getTrace().trace(
 							GitTraceLocation.UI.getLocation(),
 							"Stopped rescheduling " + getName() + "job"); //$NON-NLS-1$ //$NON-NLS-2$
-				return new Status(
-						IStatus.ERROR,
-						getPluginId(),
-						0,
-						UIText.Activator_scanError,
-						e);
+				return createErrorStatus(UIText.Activator_scanError, e);
+			} finally {
+				monitor.done();
 			}
+			// TODO is this the right location?
+			if (GitTraceLocation.UI.isActive())
+				GitTraceLocation.getTrace().trace(
+						GitTraceLocation.UI.getLocation(),
+						"Rescheduling " + getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
+			if (doReschedule)
+				schedule(REPO_SCAN_INTERVAL);
 			return Status.OK_STATUS;
 		}
 	}
@@ -401,6 +388,8 @@ public class Activator extends AbstractUIPlugin {
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(), "Jobs terminated"); //$NON-NLS-1$
 
+		repositoryUtil.dispose();
+		repositoryUtil = null;
 		super.stop(context);
 		plugin = null;
 	}
@@ -421,4 +410,22 @@ public class Activator extends AbstractUIPlugin {
 		handleError(message, e, false);
 	}
 
+	/**
+	 * Creates an error status
+	 *
+	 * @param message
+	 *            a localized message
+	 * @param throwable
+	 * @return a new Status object
+	 */
+	public static IStatus createErrorStatus(String message, Throwable throwable) {
+		return new Status(IStatus.ERROR, getPluginId(), message, throwable);
+	}
+
+	/**
+	 * @return the {@link RepositoryUtil} instance
+	 */
+	public RepositoryUtil getRepositoryUtil() {
+		return repositoryUtil;
+	}
 }

@@ -24,19 +24,22 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
-import org.eclipse.jface.fieldassist.ControlDecoration;
-import org.eclipse.jface.fieldassist.FieldDecorationRegistry;
 import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -50,6 +53,7 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
@@ -162,7 +166,23 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 		this.uri = new URIish();
 		this.sourceSelection = sourceSelection;
-		this.presetUri = presetUri;
+
+		String preset = null;
+		if (presetUri == null) {
+			Clipboard clippy = new Clipboard(Display.getCurrent());
+			String text = (String) clippy.getContents(TextTransfer.getInstance());
+			try {
+				if(text != null) {
+					text = text.trim();
+					if(Transport.canHandleProtocol(new URIish(text), FS.DETECTED))
+						preset = text;
+				}
+			} catch (URISyntaxException e) {
+				preset = null;
+			}
+			clippy.dispose();
+		}
+		this.presetUri = preset;
 
 		this.configuredRemotes = getUsableConfigs(configuredRemotes);
 		this.remoteConfig = selectDefaultRemoteConfig();
@@ -222,7 +242,11 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 		createUriPanel(panel);
 
+		if(presetUri != null)
+			updateFields(presetUri);
+
 		updateRemoteAndURIPanels();
+		Dialog.applyDialogFont(panel);
 		setControl(panel);
 
 		checkPage();
@@ -300,51 +324,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		uriText.setLayoutData(createFieldGridData());
 		uriText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
-				try {
-					eventDepth++;
-					if (eventDepth != 1)
-						return;
-
-					final URIish u = new URIish(uriText.getText());
-					safeSet(hostText, u.getHost());
-					safeSet(pathText, u.getPath());
-					safeSet(userText, u.getUser());
-					safeSet(passText, u.getPass());
-
-					if (u.getPort() > 0)
-						portText.setText(Integer.toString(u.getPort()));
-					else
-						portText.setText(""); //$NON-NLS-1$
-
-					if (isFile(u))
-						scheme.select(S_FILE);
-					else if (isSSH(u))
-						scheme.select(S_SSH);
-					else {
-						for (int i = 0; i < DEFAULT_SCHEMES.length; i++) {
-							if (DEFAULT_SCHEMES[i].equals(u.getScheme())) {
-								scheme.select(i);
-								break;
-							}
-						}
-					}
-
-					updateAuthGroup();
-					uri = u;
-				} catch (URISyntaxException err) {
-					// leave uriText as it is, but clean up underlying uri and
-					// decomposed fields
-					uri = new URIish();
-					hostText.setText(""); //$NON-NLS-1$
-					pathText.setText(""); //$NON-NLS-1$
-					userText.setText(""); //$NON-NLS-1$
-					passText.setText(""); //$NON-NLS-1$
-					portText.setText(""); //$NON-NLS-1$
-					scheme.select(0);
-				} finally {
-					eventDepth--;
-				}
-				checkPage();
+				updateFields(uriText.getText());
 			}
 		});
 
@@ -400,6 +380,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 				setURI(uri.setPath(nullString(pathText.getText())));
 			}
 		});
+
 	}
 
 	private Group createAuthenticationGroup(final Composite parent) {
@@ -499,7 +480,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 				|| uri.getPass() != null || uri.getPath() == null)
 			return false;
 		if (uri.getScheme() == null)
-			return FS.resolve(new File("."), uri.getPath()).isDirectory(); //$NON-NLS-1$
+			return FS.DETECTED.resolve(new File("."), uri.getPath()).isDirectory(); //$NON-NLS-1$
 		return false;
 	}
 
@@ -556,7 +537,8 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 		for (RemoteConfig config : remotes)
 			if ((sourceSelection && !config.getURIs().isEmpty() || !sourceSelection
-					&& !config.getPushURIs().isEmpty()))
+					&& (!config.getPushURIs().isEmpty() || !config.getURIs()
+							.isEmpty())))
 				result.add(config);
 
 		if (!result.isEmpty())
@@ -582,8 +564,11 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		if (sourceSelection) {
 			uris = rc.getURIs();
 		} else {
-			// TODO shouldn't this be getPushURIs?
 			uris = rc.getPushURIs();
+			// if no push URIs are defined, use fetch URIs instead
+			if (uris.isEmpty()) {
+				uris = rc.getURIs();
+			}
 		}
 
 		for (final URIish u : uris) {
@@ -640,7 +625,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 						return;
 					}
 
-					final File d = FS.resolve(new File("."), uri.getPath()); //$NON-NLS-1$
+					final File d = FS.DETECTED.resolve(new File("."), uri.getPath()); //$NON-NLS-1$
 					if (!d.exists()) {
 						selectionIncomplete(NLS.bind(
 								UIText.RepositorySelectionPage_fileNotFound, d
@@ -847,17 +832,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 	private void addContentProposalToUriText(Text uriTextField) {
 
-		ControlDecoration dec = new ControlDecoration(uriTextField, SWT.TOP
-				| SWT.LEFT);
-
-		dec.setImage(FieldDecorationRegistry.getDefault().getFieldDecoration(
-				FieldDecorationRegistry.DEC_CONTENT_PROPOSAL).getImage());
-
-		dec.setShowOnlyOnFocus(true);
-		dec.setShowHover(true);
-
-		dec
-				.setDescriptionText(UIText.RepositorySelectionPage_ShowPreviousURIs_HoverText);
+		UIUtils.addBulbDecorator(uriTextField, UIText.RepositorySelectionPage_ShowPreviousURIs_HoverText);
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 
@@ -923,5 +898,53 @@ public class RepositorySelectionPage extends BaseWizardPage {
 				null, null)
 				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 
+	}
+
+	private void updateFields(final String text) {
+		try {
+			eventDepth++;
+			if (eventDepth != 1)
+				return;
+
+			final URIish u = new URIish(text);
+			safeSet(hostText, u.getHost());
+			safeSet(pathText, u.getPath());
+			safeSet(userText, u.getUser());
+			safeSet(passText, u.getPass());
+
+			if (u.getPort() > 0)
+				portText.setText(Integer.toString(u.getPort()));
+			else
+				portText.setText(""); //$NON-NLS-1$
+
+			if (isFile(u))
+				scheme.select(S_FILE);
+			else if (isSSH(u))
+				scheme.select(S_SSH);
+			else {
+				for (int i = 0; i < DEFAULT_SCHEMES.length; i++) {
+					if (DEFAULT_SCHEMES[i].equals(u.getScheme())) {
+						scheme.select(i);
+						break;
+					}
+				}
+			}
+
+			updateAuthGroup();
+			uri = u;
+		} catch (URISyntaxException err) {
+			// leave uriText as it is, but clean up underlying uri and
+			// decomposed fields
+			uri = new URIish();
+			hostText.setText(""); //$NON-NLS-1$
+			pathText.setText(""); //$NON-NLS-1$
+			userText.setText(""); //$NON-NLS-1$
+			passText.setText(""); //$NON-NLS-1$
+			portText.setText(""); //$NON-NLS-1$
+			scheme.select(0);
+		} finally {
+			eventDepth--;
+		}
+		checkPage();
 	}
 }

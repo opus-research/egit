@@ -28,7 +28,9 @@ import org.eclipse.egit.ui.internal.components.BaseWizardPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.egit.ui.internal.components.SelectionChangeListener;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -54,7 +56,7 @@ class SourceBranchPage extends BaseWizardPage {
 
 	private Ref head;
 
-	private List<Ref> availableRefs = new ArrayList<Ref>();
+	private final List<Ref> availableRefs = new ArrayList<Ref>();
 
 	private List<Ref> selectedRefs = new ArrayList<Ref>();
 
@@ -88,12 +90,16 @@ class SourceBranchPage extends BaseWizardPage {
 		return head;
 	}
 
+	boolean isSourceRepoEmpty() {
+		return availableRefs.isEmpty();
+	}
+
 	boolean isAllSelected() {
 		return availableRefs.size() == selectedRefs.size();
 	}
 
-	boolean selectionEquals(final List<Ref> selectedRefs, final Ref head) {
-		return this.selectedRefs.equals(selectedRefs) && this.head == head;
+	boolean selectionEquals(final List<Ref> actSelectedRef, final Ref actHead) {
+		return this.selectedRefs.equals(actSelectedRef) && this.head == actHead;
 	}
 
 	public void createControl(final Composite parent) {
@@ -167,6 +173,7 @@ class SourceBranchPage extends BaseWizardPage {
 			}
 		});
 
+		Dialog.applyDialogFont(panel);
 		setControl(panel);
 		checkPage();
 	}
@@ -183,13 +190,20 @@ class SourceBranchPage extends BaseWizardPage {
 	 * called only when all necessary data from previous form is available.
 	 */
 	private void checkPage() {
+		setMessage(null);
 		if (transportError != null) {
 			setErrorMessage(transportError);
 			setPageComplete(false);
 			return;
 		}
 
-		if (getSelectedBranches().isEmpty()) {
+		if (isSourceRepoEmpty()) {
+			setMessage(UIText.SourceBranchPage_repoEmpty, IMessageProvider.WARNING);
+			setPageComplete(true);
+			return;
+		}
+
+		if ( getSelectedBranches().isEmpty()) {
 			setErrorMessage(UIText.SourceBranchPage_errorBranchRequired);
 			setPageComplete(false);
 			return;

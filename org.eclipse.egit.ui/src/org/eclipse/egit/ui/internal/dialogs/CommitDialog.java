@@ -15,6 +15,7 @@ package org.eclipse.egit.ui.internal.dialogs;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -26,11 +27,13 @@ import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
+
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
@@ -54,14 +57,6 @@ import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
-import org.eclipse.jgit.lib.Commit;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.GitIndex;
-import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.Tree;
-import org.eclipse.jgit.lib.TreeEntry;
-import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
@@ -91,6 +86,14 @@ import org.eclipse.team.core.history.IFileHistoryProvider;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.internal.ui.history.FileRevisionTypedElement;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
+import org.eclipse.jgit.lib.Commit;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.GitIndex;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.Tree;
+import org.eclipse.jgit.lib.TreeEntry;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 
 /**
  * Dialog is shown to user when they request to commit files. Changes in the
@@ -165,6 +168,8 @@ public class CommitDialog extends Dialog {
 
 	private static final String AUTHOR_VALUES_PREF = "CommitDialog.authorValues"; //$NON-NLS-1$
 
+	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
+
 
 	/**
 	 * @param parentShell
@@ -188,10 +193,14 @@ public class CommitDialog extends Dialog {
 	Text committerText;
 	Button amendingButton;
 	Button signedOffButton;
-	Button changeIdButton;
 	Button showUntrackedButton;
 
 	CheckboxTableViewer filesViewer;
+
+	/**
+	 * A collection of files that should be already checked in the table.
+	 */
+	private Collection<IFile> preselectedFiles = Collections.emptyList();
 
 	@Override
 	protected Control createDialogArea(Composite parent) {
@@ -309,24 +318,19 @@ public class CommitDialog extends Dialog {
 			}
 		});
 
-		changeIdButton = new Button(container, SWT.CHECK);
-		changeIdButton.setText(UIText.CommitDialog_AddChangeId);
-		changeIdButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
-		changeIdButton.addSelectionListener(new SelectionListener() {
-
-			public void widgetSelected(SelectionEvent e) {
-				createChangeId = changeIdButton.getSelection();
-			}
-
-			public void widgetDefaultSelected(SelectionEvent e) {
-				// empty
-			}
-		});
-
 		showUntrackedButton = new Button(container, SWT.CHECK);
-		showUntrackedButton.setSelection(showUntracked);
 		showUntrackedButton.setText(UIText.CommitDialog_ShowUntrackedFiles);
 		showUntrackedButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
+
+		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
+				.getDialogSettings();
+		if (settings.get(SHOW_UNTRACKED_PREF) != null) {
+			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
+					.booleanValue();
+		}
+
+		showUntrackedButton.setSelection(showUntracked);
+
 		showUntrackedButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
@@ -342,11 +346,9 @@ public class CommitDialog extends Dialog {
 		commitText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				updateSignedOffButton();
-				updateChangeIdButton();
 			}
 		});
 		updateSignedOffButton();
-		updateChangeIdButton();
 
 		Table resourcesTable = new Table(container, SWT.H_SCROLL | SWT.V_SCROLL
 				| SWT.FULL_SELECTION | SWT.MULTI | SWT.CHECK | SWT.BORDER);
@@ -371,9 +373,19 @@ public class CommitDialog extends Dialog {
 		filesViewer.setLabelProvider(new CommitLabelProvider());
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items);
-		filesViewer.setAllChecked(true);
 		filesViewer.getTable().setMenu(getContextMenu());
 
+		// pre-emptively check any preselected files
+		for (IFile selectedFile : preselectedFiles) {
+			for (CommitItem item : items) {
+				if (item.file.equals(selectedFile)) {
+					filesViewer.setChecked(item, true);
+					break;
+				}
+			}
+		}
+
+		applyDialogFont(container);
 		container.pack();
 		return container;
 	}
@@ -384,17 +396,6 @@ public class CommitDialog extends Dialog {
 			curText += Text.DELIMITER;
 
 		signedOffButton.setSelection(curText.indexOf(getSignedOff() + Text.DELIMITER) != -1);
-	}
-
-	private void updateChangeIdButton() {
-		String curText = commitText.getText();
-		if (!curText.endsWith(Text.DELIMITER))
-			curText += Text.DELIMITER;
-
-		boolean hasId = curText.indexOf(Text.DELIMITER + "Change-Id: ") != -1; //$NON-NLS-1$
-		if (hasId)
-			changeIdButton.setSelection(true);
-		changeIdButton.setEnabled(!hasId);
 	}
 
 	private String getSignedOff() {
@@ -570,8 +571,7 @@ public class CommitDialog extends Dialog {
 	private boolean signedOff = false;
 	private boolean amending = false;
 	private boolean amendAllowed = true;
-	private boolean showUntracked = false;
-	private boolean createChangeId = false;
+	private boolean showUntracked = true;
 
 	private ArrayList<IFile> selectedFiles = new ArrayList<IFile>();
 	private String previousCommitMessage = ""; //$NON-NLS-1$
@@ -590,6 +590,18 @@ public class CommitDialog extends Dialog {
 	 */
 	public IFile[] getSelectedFiles() {
 		return selectedFiles.toArray(new IFile[0]);
+	}
+
+	/**
+	 * Sets the files that should be checked in this table.
+	 *
+	 * @param preselectedFiles
+	 *            the files to be checked in the dialog's table, must not be
+	 *            <code>null</code>
+	 */
+	public void setPreselectedFiles(Collection<IFile> preselectedFiles) {
+		Assert.isNotNull(preselectedFiles);
+		this.preselectedFiles = preselectedFiles;
 	}
 
 	class HeaderSelectionListener extends SelectionAdapter {
@@ -729,6 +741,9 @@ public class CommitDialog extends Dialog {
 		addValueToPrefs(author, AUTHOR_VALUES_PREF);
 		addValueToPrefs(committer, COMMITTER_VALUES_PREF);
 
+		IDialogSettings settings = org.eclipse.egit.ui.Activator
+			.getDefault().getDialogSettings();
+		settings.put(SHOW_UNTRACKED_PREF, showUntracked);
 		super.okPressed();
 	}
 
@@ -869,22 +884,6 @@ public class CommitDialog extends Dialog {
 	}
 
 	/**
-	 * @return whether the untracked files should be shown
-	 */
-	public boolean isShowUntracked() {
-		return showUntracked;
-	}
-
-	/**
-	 * Pre-set whether the untracked files should be shown
-	 *
-	 * @param showUntracked
-	 */
-	public void setShowUntracked(boolean showUntracked) {
-		this.showUntracked = showUntracked;
-	}
-
-	/**
 	 * Set the message from the previous commit for amending.
 	 *
 	 * @param string
@@ -1010,13 +1009,6 @@ public class CommitDialog extends Dialog {
 		adapter
 				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 
-	}
-
-	/**
-	 * @return true if a Change-Id line for Gerrit should be created
-	 */
-	public boolean getCreateChangeId() {
-		return createChangeId;
 	}
 
 }

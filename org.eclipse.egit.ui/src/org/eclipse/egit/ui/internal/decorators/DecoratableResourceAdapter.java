@@ -29,7 +29,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.team.core.Team;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
@@ -47,6 +46,7 @@ import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.team.core.Team;
 
 class DecoratableResourceAdapter implements IDecoratableResource {
 
@@ -60,7 +60,7 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 
 	private final IPreferenceStore store;
 
-	private String branch = ""; //$NON-NLS-1$
+	private final String branch;
 
 	private final String repositoryName;
 
@@ -91,13 +91,8 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 		headId = repository.resolve(Constants.HEAD);
 
 		store = Activator.getDefault().getPreferenceStore();
+		repositoryName = Activator.getDefault().getRepositoryUtil().getRepositoryName(repository);
 
-		File gitDir = repository.getDirectory();
-		if (gitDir != null)
-			repositoryName = repository.getDirectory().getParentFile()
-					.getName();
-		else
-			repositoryName = ""; //$NON-NLS-1$
 		branch = getShortBranch();
 
 		TreeWalk treeWalk = createThreeWayTreeWalk();
@@ -119,13 +114,19 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 	}
 
 	private String getShortBranch() throws IOException {
-		String branch = repository.getBranch();
 		Ref head = repository.getRef(Constants.HEAD);
-		if (head == null)
-			return branch;
-		if (!head.isSymbolic())
-			return branch.substring(0, 6);
-		return branch;
+		if (head != null && !head.isSymbolic()) {
+			String refString = Activator.getDefault().getRepositoryUtil()
+					.mapCommitToRef(repository, repository.getFullBranch(),
+							false);
+			if (refString != null) {
+				return repository.getFullBranch().substring(0, 7)
+						+ "... (" + refString + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+			} else
+				return repository.getFullBranch().substring(0, 7) + "..."; //$NON-NLS-1$
+		}
+
+		return repository.getBranch();
 	}
 
 	private void extractResourceProperties(TreeWalk treeWalk) {
