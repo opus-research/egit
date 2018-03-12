@@ -114,12 +114,14 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 				if (repoRelativePath == null) {
 					return false;
 				}
-				String path = repoRelativePath + "/"; //$NON-NLS-1$
-				if (isIgnoredInOldIndex(path)) {
-					return true; // keep going to catch .gitignore files.
+				if (!repoRelativePath.isEmpty()) {
+					String path = repoRelativePath + "/"; //$NON-NLS-1$
+					if (isIgnoredInOldIndex(path)) {
+						return true; // keep going to catch .gitignore files.
+					}
+					filesToUpdate.add(path);
+					resourcesToUpdate.add(resource);
 				}
-				filesToUpdate.add(path);
-				resourcesToUpdate.add(resource);
 			}
 
 			// continue with children
