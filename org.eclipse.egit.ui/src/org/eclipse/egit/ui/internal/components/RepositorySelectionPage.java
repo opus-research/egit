@@ -177,7 +177,6 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			} catch (URISyntaxException e) {
 				preset = null;
 			}
-			clippy.dispose();
 		}
 		this.presetUri = preset;
 
