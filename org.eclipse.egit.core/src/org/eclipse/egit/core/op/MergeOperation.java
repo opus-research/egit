@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * Copyright (C) 2012, 2013 Tomasz Zarna <tzarna@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
@@ -93,7 +93,6 @@ public class MergeOperation implements IEGitOperation {
 
 	/**
 	 * @param ffmode set the fast forward mode
-	 * @since 3.0
 	 */
 	public void setFastForwardMode(FastForwardMode ffmode) {
 		this.fastForwardMode = ffmode;
