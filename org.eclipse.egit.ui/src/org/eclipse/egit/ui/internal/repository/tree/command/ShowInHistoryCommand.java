@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG. and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -57,7 +57,7 @@ public class ShowInHistoryCommand extends
 					repo = node.getRepository();
 				if (repo != node.getRepository())
 					throw new ExecutionException(
-							UIText.RepositoryAction_multiRepoSelection);
+							UIText.AbstractHistoryCommanndHandler_NoUniqueRepository);
 				if (node.getType() == RepositoryTreeNodeType.FOLDER) {
 					fileList.add(((FolderNode) node).getObject());
 				}

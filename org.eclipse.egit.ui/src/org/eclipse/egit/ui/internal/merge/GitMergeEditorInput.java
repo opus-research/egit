@@ -113,7 +113,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				if (repo != null && repo != map.getRepository())
 					throw new InvocationTargetException(
 							new IllegalStateException(
-									UIText.RepositoryAction_multiRepoSelection));
+									UIText.AbstractHistoryCommanndHandler_NoUniqueRepository));
 				filterPaths.add(map.getRepoRelativePath(resource));
 				repo = map.getRepository();
 			}
@@ -121,7 +121,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			if (repo == null)
 				throw new InvocationTargetException(
 						new IllegalStateException(
-								UIText.RepositoryAction_multiRepoSelection));
+								UIText.AbstractHistoryCommanndHandler_NoUniqueRepository));
 
 			if (monitor.isCanceled())
 				throw new InterruptedException();
