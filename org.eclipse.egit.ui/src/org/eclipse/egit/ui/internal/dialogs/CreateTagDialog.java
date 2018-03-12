@@ -37,6 +37,7 @@ import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -127,8 +128,8 @@ public class CreateTagDialog extends Dialog {
 		}
 
 		public String getLabel(Object o) {
-			if (o instanceof RevTag)
-				return ((RevTag) o).getTagName();
+			if (o instanceof Tag)
+				return ((Tag) o).getTag();
 
 			return null;
 		}
@@ -156,7 +157,7 @@ public class CreateTagDialog extends Dialog {
 		}
 
 		public String getColumnText(Object element, int columnIndex) {
-			return ((RevTag) element).getTagName();
+			return ((Tag) element).getTag();
 		}
 
 		public void dispose() {
@@ -505,10 +506,10 @@ public class CreateTagDialog extends Dialog {
 			@Override
 			public boolean select(Viewer viewer, Object parentElement,
 					Object element) {
-				RevTag actTag = (RevTag) element;
+				Tag actTag = (Tag) element;
 
 				if (tagNamePattern != null)
-					return tagNamePattern.matcher(actTag.getTagName()).find();
+					return tagNamePattern.matcher(actTag.getTag()).find();
 				else
 					return true;
 			}
