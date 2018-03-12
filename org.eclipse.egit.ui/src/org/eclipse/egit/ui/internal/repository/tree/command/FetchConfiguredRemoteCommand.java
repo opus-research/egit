@@ -26,7 +26,7 @@ public class FetchConfiguredRemoteCommand extends
 		RemoteNode remote = (RemoteNode) node.getParent();
 
 		new FetchConfiguredRemoteAction(node.getRepository(), remote
-				.getObject()).run(getShell(event));
+				.getObject()).run(getView(event).getSite().getShell());
 
 		return null;
 	}

@@ -10,121 +10,125 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import org.eclipse.core.commands.AbstractHandler;
-import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.commands.NotEnabledException;
-import org.eclipse.core.commands.NotHandledException;
-import org.eclipse.core.commands.common.NotDefinedException;
-import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.ui.IObjectActionDelegate;
-import org.eclipse.ui.ISources;
-import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
-import org.eclipse.ui.handlers.IHandlerService;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.UIText;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.team.internal.ui.actions.TeamAction;
 
 /**
  * A helper class for Team Actions on Git controlled projects
  */
-public abstract class RepositoryAction extends AbstractHandler implements
-		IObjectActionDelegate {
+public abstract class RepositoryAction extends TeamAction {
 
 	/**
-	 * The command id
+	 * @return the projects hosting the selected resources
 	 */
-	protected final String commandId;
-
-	/**
-	 * The part as set in {@link #setActivePart(IAction, IWorkbenchPart)}
-	 */
-	protected IWorkbenchPart part;
-
-	private final RepositoryActionHandler handler;
-
-	/**
-	 * @param commandId
-	 * @param handler
-	 */
-	protected RepositoryAction(String commandId, RepositoryActionHandler handler) {
-		this.commandId = commandId;
-		this.handler = handler;
+	protected IProject[] getProjectsForSelectedResources() {
+		Set<IProject> ret = new HashSet<IProject>();
+		for (IResource resource : (IResource[])getSelectedAdaptables(getSelection(), IResource.class))
+			ret.add(resource.getProject());
+		return ret.toArray(new IProject[ret.size()]);
 	}
 
 	/**
-	 * @return the current selection
+	 * @param projects
+	 *            a list of projects
+	 * @return the repositories that projects map to iff all projects are mapped
 	 */
-	protected IStructuredSelection getSelection() {
-		// TODO Synchronize CommitOperation overwrites this, can we get rid
-		// of it?
-		ISelection selection;
-
-		IHandlerService hsr = (IHandlerService) PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getService(IHandlerService.class);
-		IEvaluationContext ctx = hsr.getCurrentState();
-		selection = (ISelection) ctx
-				.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
-		return new StructuredSelection();
+	protected Repository[] getRepositoriesFor(final IProject[] projects) {
+		Set<Repository> ret = new HashSet<Repository>();
+		for (IProject project : projects) {
+			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(project);
+			if (repositoryMapping == null)
+				return new Repository[0];
+			ret.add(repositoryMapping.getRepository());
+		}
+		return ret.toArray(new Repository[ret.size()]);
 	}
 
-	public void setActivePart(IAction action, IWorkbenchPart targetPart) {
-		part = targetPart;
+	/**
+	 * List the projects with selected resources, if all projects are connected
+	 * to a Git repository.
+	 *
+	 * @return the tracked projects affected by the current resource selection
+	 */
+	public IProject[] getProjectsInRepositoryOfSelectedResources() {
+		Set<IProject> ret = new HashSet<IProject>();
+		Repository[] repositories = getRepositoriesFor(getProjectsForSelectedResources());
+		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
+		for (IProject project : projects) {
+			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+			for (Repository repository : repositories) {
+				if (mapping != null && mapping.getRepository() == repository) {
+					ret.add(project);
+					break;
+				}
+			}
+		}
+		return ret.toArray(new IProject[ret.size()]);
 	}
 
-	public void run(IAction action) {
-
-		ICommandService srv = (ICommandService) part.getSite().getService(
-				ICommandService.class);
-		IHandlerService hsrv = (IHandlerService) part.getSite().getService(
-				IHandlerService.class);
-		Command command = srv.getCommand(commandId);
-
-		ExecutionEvent event = hsrv.createExecutionEvent(command, null);
-		if (event.getApplicationContext() instanceof IEvaluationContext) {
-			((IEvaluationContext) event.getApplicationContext()).addVariable(
-					ISources.ACTIVE_CURRENT_SELECTION_NAME, getSelection());
+	/**
+	 * Figure out which repository to use. All selected
+	 * resources must map to the same Git repository.
+	 *
+	 * @param warn Put up a message dialog to warn why a resource was not selected
+	 * @return repository for current project, or null
+	 */
+	protected Repository getRepository(boolean warn) {
+		RepositoryMapping mapping = null;
+		for (IProject project : getSelectedProjects()) {
+			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(project);
+			if (mapping == null)
+				mapping = repositoryMapping;
+			if (repositoryMapping == null)
+				return null;
+			if (mapping.getRepository() != repositoryMapping.getRepository()) {
+				if (warn)
+					MessageDialog.openError(getShell(),
+							UIText.RepositoryAction_multiRepoSelectionTitle,
+							UIText.RepositoryAction_multiRepoSelection);
+				return null;
+			}
+		}
+		if (mapping == null) {
+			if (warn)
+				MessageDialog.openError(getShell(),
+						UIText.RepositoryAction_errorFindingRepoTitle,
+						UIText.RepositoryAction_errorFindingRepo);
+			return null;
 		}
 
-		try {
-			this.handler.execute(event);
-		} catch (ExecutionException e) {
-			Activator.handleError(e.getMessage(), e, true);
+		final Repository repository = mapping.getRepository();
+		return repository;
+	}
+
+	/**
+	 * Figure out which repositories to use. All selected
+	 * resources must map to a Git repository.
+	 *
+	 * @return repository for current project, or null
+	 */
+	protected Repository[] getRepositories() {
+		IProject[] selectedProjects = getSelectedProjects();
+		Set<Repository> repos = new HashSet<Repository>(selectedProjects.length);
+		for (IProject project : selectedProjects) {
+			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(project);
+			if (repositoryMapping == null)
+				return new Repository[0];
+			repos.add(repositoryMapping.getRepository());
 		}
+		return repos.toArray(new Repository[repos.size()]);
 	}
 
-	public final void selectionChanged(IAction action, ISelection selection) {
-		action.setEnabled(isEnabled());
-	}
-
-	public final Object execute(ExecutionEvent event) throws ExecutionException {
-		ICommandService srv = (ICommandService) part.getSite().getService(
-				ICommandService.class);
-		Command command = srv.getCommand(commandId);
-		try {
-			return command.executeWithChecks(event);
-		} catch (ExecutionException e) {
-			Activator.handleError(e.getMessage(), e, true);
-		} catch (NotDefinedException e) {
-			Activator.handleError(e.getMessage(), e, true);
-		} catch (NotEnabledException e) {
-			Activator.handleError(e.getMessage(), e, true);
-		} catch (NotHandledException e) {
-			Activator.handleError(e.getMessage(), e, true);
-		}
-		return null;
-	}
-
+	// Re-make isEnabled abstract
 	@Override
-	public final boolean isEnabled() {
-		return handler.isEnabled();
-	}
+	abstract public boolean isEnabled();
 }

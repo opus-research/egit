@@ -14,7 +14,6 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.ui.test.Eclipse;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -26,8 +25,11 @@ import org.junit.runner.RunWith;
 @RunWith(SWTBotJunit4ClassRunner.class)
 public abstract class EGitTestCase {
 
+	static {
+		System.setProperty("org.eclipse.swtbot.playback.delay", "50");
+	}
+
 	protected static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
-	protected static final TestUtil util = new TestUtil();
 
 	@BeforeClass
 	public static void closeWelcomePage() {

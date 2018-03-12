@@ -23,12 +23,13 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ILabelProviderListener;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.osgi.util.NLS;
@@ -82,7 +83,21 @@ public class GitShareProjectsPage extends WizardPage {
 
 		tv.getTable().setHeaderVisible(true);
 
-		tv.setContentProvider(ArrayContentProvider.getInstance());
+		tv.setContentProvider(new IStructuredContentProvider() {
+
+			public void inputChanged(Viewer viewer, Object oldInput,
+					Object newInput) {
+				// nothing
+			}
+
+			public void dispose() {
+				// nothing
+			}
+
+			public Object[] getElements(Object inputElement) {
+				return (Object[]) inputElement;
+			}
+		});
 
 		tv.setLabelProvider(new ITableLabelProvider() {
 

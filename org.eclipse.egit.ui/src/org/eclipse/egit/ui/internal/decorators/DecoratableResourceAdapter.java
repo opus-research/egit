@@ -22,8 +22,6 @@ import java.util.Set;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.ContainerTreeIterator.ResourceEntry;
@@ -31,6 +29,7 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -48,6 +47,7 @@ import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.team.core.Team;
 
 class DecoratableResourceAdapter implements IDecoratableResource {
 
@@ -135,7 +135,7 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 		return repository.getBranch();
 	}
 
-	private void extractResourceProperties(TreeWalk treeWalk) throws IOException {
+	private void extractResourceProperties(TreeWalk treeWalk) {
 		final ContainerTreeIterator workspaceIterator = treeWalk.getTree(
 				T_WORKSPACE, ContainerTreeIterator.class);
 		final ResourceEntry resourceEntry = workspaceIterator != null ? workspaceIterator
@@ -144,7 +144,7 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 		if (resourceEntry == null)
 			return;
 
-		if (workspaceIterator != null && workspaceIterator.isEntryIgnored()) {
+		if (isIgnored(resourceEntry.getResource())) {
 			ignored = true;
 			return;
 		}
@@ -185,10 +185,12 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			dirty = false;
 			assumeValid = true;
 		} else {
-			if (workspaceIterator != null
-					&& workspaceIterator.isModified(indexEntry, true, true,
-							repository.getFS()))
+			if (!timestampMatches(indexEntry, resourceEntry))
 				dirty = true;
+
+			// TODO: Consider doing a content check here, to rule out false
+			// positives, as we might get mismatch between timestamps, even
+			// if the content is the same.
 		}
 	}
 
@@ -210,37 +212,9 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 				throws MissingObjectException, IncorrectObjectTypeException,
 				IOException {
 
-			final WorkingTreeIterator workingTreeIterator = treeWalk.getTree(
-					T_WORKSPACE, WorkingTreeIterator.class);
-			if (workingTreeIterator != null) {
-				if (workingTreeIterator instanceof ContainerTreeIterator) {
-					final ContainerTreeIterator workspaceIterator =
-						(ContainerTreeIterator) workingTreeIterator;
-					ResourceEntry resourceEntry = workspaceIterator
-							.getResourceEntry();
-					if (resource.equals(resourceEntry.getResource())
-							&& workspaceIterator.isEntryIgnored()) {
-						ignored = true;
-						return false;
-					}
-				} else {
-					// For the project resource, it's still the
-					// AdaptableFileTreeIterator. So we have to compare the path
-					// of the resource with path of the iterator
-					IPath wdPath = new Path(repository.getWorkTree()
-							.getAbsolutePath()).append(workingTreeIterator
-							.getEntryPathString());
-					IPath resPath = resource.getLocation();
-					if (wdPath.equals(resPath)
-							&& workingTreeIterator.isEntryIgnored()) {
-						ignored = true;
-						return false;
-					}
-				}
-			}
-			// Note: for obtaining the ignored info we have to go through the
-			// whole working tree and can no longer cut here if the current
-			// entry is not contained in the index and not contained in head
+			if (treeWalk.getFileMode(T_HEAD) == FileMode.MISSING
+					&& treeWalk.getFileMode(T_INDEX) == FileMode.MISSING)
+				return false;
 
 			if (FileMode.TREE.equals(treeWalk.getRawMode(T_WORKSPACE)))
 				return shouldRecurse(treeWalk);
@@ -264,7 +238,7 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			return false;
 		}
 
-		private boolean shouldRecurse(TreeWalk treeWalk) throws IOException {
+		private boolean shouldRecurse(TreeWalk treeWalk) {
 			final WorkingTreeIterator workspaceIterator = treeWalk.getTree(
 					T_WORKSPACE, WorkingTreeIterator.class);
 
@@ -312,6 +286,12 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 	}
 
 	private void extractContainerProperties(TreeWalk treeWalk) throws IOException {
+
+		if (isIgnored(resource)) {
+			ignored = true;
+			return;
+		}
+
 		treeWalk.setFilter(AndTreeFilter.create(treeWalk.getFilter(),
 				new RecursiveStateFilter()));
 		treeWalk.setRecursive(true);
@@ -372,12 +352,12 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			treeWalk.addTree(new EmptyTreeIterator());
 
 		// Index
-		treeWalk.addTree(new DirCacheIterator(repository.readDirCache()));
+		treeWalk.addTree(new DirCacheIterator(DirCache.read(repository)));
 
 		// Working directory
 		IProject project = resource.getProject();
 		IWorkspaceRoot workspaceRoot = resource.getWorkspace().getRoot();
-		File repoRoot = repository.getWorkTree();
+		File repoRoot = repository.getWorkDir();
 
 		if (repoRoot.equals(project.getLocation().toFile()))
 			treeWalk.addTree(new ContainerTreeIterator(project));
@@ -388,6 +368,32 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 					workspaceRoot));
 
 		return treeWalk;
+	}
+
+	private static boolean timestampMatches(DirCacheEntry indexEntry,
+			ResourceEntry resourceEntry) {
+		long tIndex = indexEntry.getLastModified();
+		long tWorkspaceResource = resourceEntry.getLastModified();
+
+
+		// C-Git under Windows stores timestamps with 1-seconds resolution,
+		// so we need to check to see if this is the case here, and possibly
+		// fix the timestamp of the resource to match the resolution of the
+		// index.
+		// It also appears the timestamp in Java on Linux may also be rounded
+		// in which case the index timestamp may have subseconds, but not
+		// the timestamp from the workspace resource.
+		// If either timestamp looks rounded we skip the subscond part.
+		if (tIndex % 1000 == 0 || tWorkspaceResource % 1000 == 0) {
+			return tIndex / 1000 == tWorkspaceResource / 1000;
+		} else {
+			return tIndex == tWorkspaceResource;
+		}
+	}
+
+	private static boolean isIgnored(IResource resource) {
+		// TODO: Also read ignores from .git/info/excludes et al.
+		return Team.isIgnoredHint(resource);
 	}
 
 	public String getName() {

@@ -53,7 +53,7 @@ public class CreateTagCommand extends RepositoriesViewCommandHandler<RepositoryT
 		final Repository repo = node.getRepository();
 
 		if (!repo.getRepositoryState().canCheckout()) {
-			MessageDialog.openError(getShell(event),
+			MessageDialog.openError(getView(event).getSite().getShell(),
 					UIText.TagAction_cannotCheckout, NLS.bind(
 							UIText.TagAction_repositoryState, repo
 									.getRepositoryState().getDescription()));
@@ -123,10 +123,9 @@ public class CreateTagCommand extends RepositoriesViewCommandHandler<RepositoryT
 	private List<Tag> getRevTags(Repository repo) throws ExecutionException {
 		Collection<Ref> revTags = repo.getTags().values();
 		List<Tag> tags = new ArrayList<Tag>();
-		RevWalk walk = new RevWalk(repo);
 		for (Ref ref : revTags) {
 			try {
-				Tag tag = walk.parseTag(repo.resolve(ref.getName())).asTag(walk);
+				Tag tag = repo.mapTag(ref.getName());
 				tags.add(tag);
 			} catch (IOException e) {
 				throw new ExecutionException(NLS

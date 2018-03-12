@@ -40,7 +40,7 @@ public class ProjectUtil {
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		List<IProject> result = new ArrayList<IProject>();
-		final File parentFile = repository.getWorkTree();
+		final File parentFile = repository.getWorkDir();
 		for (IProject p : projects) {
 			String projectFilePath = p.getLocation()
 					.append(".project").toOSString(); //$NON-NLS-1$

@@ -12,11 +12,11 @@
 package org.eclipse.egit.ui.internal.dialogs;
 
 import org.eclipse.egit.core.op.ResetOperation.ResetType;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.window.Window;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -43,17 +43,14 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	 */
 	public ResetTargetSelectionDialog(Shell parentShell, Repository repo) {
 		super(parentShell, repo);
-		super.setHelpAvailable(false);
 	}
 
 	@Override
 	protected void createCustomArea(Composite parent) {
-		Composite main = new Composite(parent, SWT.NONE);
-		main.setLayout(new GridLayout(1, false));
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(main);
-		Group g = new Group(main, SWT.NONE);
+		Group g = new Group(parent, SWT.NONE);
 		g.setText(UIText.ResetTargetSelectionDialog_ResetTypeGroup);
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(g);
+		g.setLayoutData(GridDataFactory.fillDefaults().align(SWT.CENTER,
+				SWT.CENTER).create());
 		g.setLayout(new GridLayout(1, false));
 
 		Button soft = new Button(g, SWT.RADIO);
@@ -84,26 +81,28 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 	@Override
 	protected void refNameSelected(String refName) {
-		getButton(Window.OK).setEnabled(refName != null);
+		// TODO pending bug about missing reset for tags: 317350
+		// boolean tagSelected = refName != null
+		// && refName.startsWith(Constants.R_TAGS);
+
+		boolean branchSelected = refName != null
+				&& (refName.startsWith(Constants.R_HEADS) || refName
+						.startsWith(Constants.R_REMOTES));
+
+		getButton(Window.OK).setEnabled(branchSelected);
+
 	}
 
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
 		super.createButtonsForButtonBar(parent);
-		getButton(Window.OK).setText(
-				UIText.ResetTargetSelectionDialog_ResetButton);
+		getButton(Window.OK).setText(UIText.ResetTargetSelectionDialog_ResetButton);
 	}
 
 	@Override
 	protected String getTitle() {
-		String repoName = Activator.getDefault().getRepositoryUtil()
-				.getRepositoryName(repo);
-		return NLS.bind(UIText.ResetTargetSelectionDialog_ResetTitle, repoName);
-	}
-
-	@Override
-	protected String getWindowTitle() {
-		return UIText.ResetTargetSelectionDialog_WindowTitle;
+		return NLS.bind(UIText.ResetTargetSelectionDialog_ResetTitle, repo
+				.getDirectory().toString());
 	}
 
 	/**
