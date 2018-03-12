@@ -1135,24 +1135,6 @@ public class UIText extends NLS {
 	public static String RefContentProposal_unknownObject;
 
 	/** */
-	public static String ReflogView_ErrorOnOpenCommit;
-
-	/** */
-	public static String ReflogView_FromColumnHeader;
-
-	/** */
-	public static String ReflogView_MessageColumnHeader;
-
-	/** */
-	public static String ReflogView_ToColumnHeader;
-
-	/** */
-	public static String RefSelectionDialog_Messsage;
-
-	/** */
-	public static String RefSelectionDialog_Title;
-
-	/** */
 	public static String RefSpecDialog_AutoSuggestCheckbox;
 
 	/** */
@@ -2782,9 +2764,6 @@ public class UIText extends NLS {
 	public static String GitCreatePatchWizard_Clipboard;
 
 	/** */
-	public static String GitCreatePatchWizard_ContextMustBePositiveInt;
-
-	/** */
 	public static String GitCreatePatchWizard_CreatePatchTitle;
 
 	/** */
@@ -2819,9 +2798,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCreatePatchWizard_FilesystemDirectoryNotExistsError;
-
-	/** */
-	public static String GitCreatePatchWizard_LinesOfContext;
 
 	/** */
 	public static String GitCreateProjectViaWizardWizard_AbortedMessage;
@@ -2960,9 +2936,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MultiPullResultDialog_OkStatus;
-
-	/** */
-	public static String MultiPullResultDialog_FailedStatus;
 
 	/** */
 	public static String MultiPullResultDialog_OverallStatusColumnHeader;
@@ -3203,12 +3176,6 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_OpenCommitLabel;
 
 	/** */
-	public static String CommitGraphTable_UnableToCreatePatch;
-
-	/** */
-	public static String CommitGraphTable_UnableToWritePatch;
-
-	/** */
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
@@ -3225,9 +3192,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_fetchChangesFromRemote;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
@@ -3863,9 +3827,6 @@ public class UIText extends NLS {
 	public static String StagingView_UnstagedChanges;
 
 	/** */
-	public static String StagingView_ShowFileNamesFirst;
-
-	/** */
 	public static String StagingView_StagedChanges;
 
 	/** */
@@ -3906,9 +3867,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_OpenNewCommits;
-
-	/** */
-	public static String StagingView_ColumnLayout;
 
 	/** */
 	public static String StagingView_IndexDiffReload;
