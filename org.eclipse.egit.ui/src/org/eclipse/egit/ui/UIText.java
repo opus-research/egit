@@ -88,9 +88,6 @@ public class UIText extends NLS {
 	public static String AddToIndexAction_addingFiles;
 
 	/** */
-	public static String AddToIndexCommand_addingFilesFailed;
-
-	/** */
 	public static String AssumeUnchanged_assumeUnchanged;
 
 	/** */
