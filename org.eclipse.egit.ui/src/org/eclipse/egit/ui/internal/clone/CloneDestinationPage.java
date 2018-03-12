@@ -37,6 +37,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.transport.URIish;
 
 /**
  * Wizard page that allows the user entering the location of a repository to be
@@ -305,7 +306,7 @@ class CloneDestinationPage extends WizardPage {
 		if (!sourcePage.selectionEquals(validatedRepoSelection)) {
 			validatedRepoSelection = sourcePage.getSelection();
 			// update repo-related selection only if it changed
-			final String n = validatedRepoSelection.getURI().getHumanishName();
+			final String n = URIish.getHumanishName(validatedRepoSelection.getURI().getPath());
 			setDescription(NLS.bind(UIText.CloneDestinationPage_description, n));
 			directoryText.setText(new File(ResourcesPlugin.getWorkspace()
 					.getRoot().getRawLocation().toFile(), n).getAbsolutePath());
