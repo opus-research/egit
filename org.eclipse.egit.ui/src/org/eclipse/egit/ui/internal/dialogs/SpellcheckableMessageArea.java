@@ -10,6 +10,7 @@
  *    Benjamin Muskalla (EclipseSource) - initial implementation
  *    Tomasz Zarna (IBM) - show whitespace action, bug 371353
  *    Wayne Beaton (Eclipse Foundation) - Bug 433721
+ *    Thomas Wolf (Paranor) - Hyperlink syntax coloring; bug 471355
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
@@ -53,6 +54,8 @@ import org.eclipse.jface.text.contentassist.IContentAssistant;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
 import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
+import org.eclipse.jface.text.presentation.IPresentationReconciler;
+import org.eclipse.jface.text.presentation.PresentationReconciler;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
 import org.eclipse.jface.text.quickassist.IQuickAssistProcessor;
 import org.eclipse.jface.text.reconciler.IReconciler;
@@ -71,14 +74,12 @@ import org.eclipse.jgit.util.IntList;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.BidiSegmentEvent;
 import org.eclipse.swt.custom.BidiSegmentListener;
-import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -86,9 +87,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Layout;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.ActiveShellExpression;
 import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
@@ -110,11 +109,6 @@ import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
 public class SpellcheckableMessageArea extends Composite {
 
 	static final int MAX_LINE_WIDTH = 72;
-
-	private static final Cursor SYS_LINK_CURSOR = PlatformUI.getWorkbench()
-			.getDisplay().getSystemCursor(SWT.CURSOR_HAND);
-
-	private final Cursor sys_normalCursor;
 
 	private static class TextViewerAction extends Action implements IUpdate {
 
@@ -279,7 +273,6 @@ public class SpellcheckableMessageArea extends Composite {
 		getTextWidget().setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
 
-		sys_normalCursor = sourceViewer.getTextWidget().getCursor();
 		int endSpacing = 2;
 		int textWidth = getCharWidth() * MAX_LINE_WIDTH + endSpacing;
 		int textHeight = getLineHeight() * 7;
@@ -336,14 +329,7 @@ public class SpellcheckableMessageArea extends Composite {
 			public IHyperlinkPresenter getHyperlinkPresenter(
 					ISourceViewer targetViewer) {
 				return new MultipleHyperlinkPresenter(PlatformUI.getWorkbench()
-						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB()) {
-
-					@Override
-					public void hideHyperlinks() {
-						// We want links to always show.
-					}
-
-				};
+						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB());
 			}
 
 			@Override
@@ -370,13 +356,27 @@ public class SpellcheckableMessageArea extends Composite {
 				return assistant;
 			}
 
+			@Override
+			public IPresentationReconciler getPresentationReconciler(
+					ISourceViewer viewer) {
+				PresentationReconciler reconciler = new PresentationReconciler();
+				reconciler.setDocumentPartitioning(
+						getConfiguredDocumentPartitioning(sourceViewer));
+				HyperlinkDamagerRepairer hyperlinkDamagerRepairer = new HyperlinkDamagerRepairer(
+						new HyperlinkTokenScanner(
+								getHyperlinkDetectors(sourceViewer),
+								sourceViewer));
+				reconciler.setDamager(hyperlinkDamagerRepairer,
+						IDocument.DEFAULT_CONTENT_TYPE);
+				reconciler.setRepairer(hyperlinkDamagerRepairer,
+						IDocument.DEFAULT_CONTENT_TYPE);
+				return reconciler;
+			}
+
 		};
 
 		sourceViewer.configure(configuration);
 		sourceViewer.setDocument(document, annotationModel);
-
-		UIUtils.applyHyperlinkDetectorStyleRanges(sourceViewer,
-				configuration.getHyperlinkDetectors(sourceViewer));
 
 		configureContextMenu();
 
@@ -741,52 +741,17 @@ public class SpellcheckableMessageArea extends Composite {
 
 				});
 
-		if (editable)
+		if (editable) {
 			sourceViewer.addTextListener(new ITextListener() {
-
 				@Override
 				public void textChanged(TextEvent event) {
-					removeHyperlinkStyleRanges();
-					UIUtils.applyHyperlinkDetectorStyleRanges(sourceViewer,
-							configuration.getHyperlinkDetectors(sourceViewer));
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)
 						redoAction.update();
 				}
-
-				private void removeHyperlinkStyleRanges() {
-					StyleRange[] hyperlinkStyleRanges = textWidget.getStyleRanges(true);
-					Color blue = Display.getDefault()
-							.getSystemColor(SWT.COLOR_BLUE);
-					Color white = Display.getDefault()
-							.getSystemColor(SWT.COLOR_WHITE);
-					for (int i = 0; i < hyperlinkStyleRanges.length; i++) {
-						StyleRange styleRange = hyperlinkStyleRanges[i];
-						if (styleRange.underline == true
-								&& styleRange.foreground == blue
-								&& styleRange.background == white) {
-							styleRange = (StyleRange) styleRange.clone();
-							styleRange.background = null;
-							styleRange.foreground = null;
-							styleRange.underline = false;
-							textWidget.setStyleRange(styleRange);
-						}
-					}
-				}
 			});
-
-		// set the cursor when hovering over a link
-		textWidget.addListener(SWT.MouseMove, new Listener() {
-			@Override
-			public void handleEvent(final Event e) {
-				StyleRange styleRange = getStyleRange(e.x, e.y);
-				if (styleRange != null && styleRange.underline)
-					textWidget.setCursor(SYS_LINK_CURSOR);
-				else
-					textWidget.setCursor(sys_normalCursor);
-			}
-		});
+		}
 
 		textWidget.addDisposeListener(new DisposeListener() {
 			@Override
@@ -794,20 +759,6 @@ public class SpellcheckableMessageArea extends Composite {
 				showWhitespaceAction.dispose();
 			}
 		});
-	}
-
-	private StyleRange getStyleRange(final int x, final int y) {
-		final StyledText t = sourceViewer.getTextWidget();
-		final int offset;
-		try {
-			offset = t.getOffsetAtLocation(new Point(x, y));
-		} catch (IllegalArgumentException e) {
-			return null;
-		}
-		if (offset < t.getCharCount())
-			return t.getStyleRangeAtOffset(offset);
-		else
-			return null;
 	}
 
 	private void addProposals(final SubMenuManager quickFixMenu) {
