@@ -169,9 +169,6 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_errorComputingHistory;
 
 	/** */
-	public static String EGitCredentialsProvider_errorReadingCredentials;
-
-	/** */
 	public static String EgitUiUtils_CouldNotOpenEditorMessage;
 
 	/** */
@@ -218,9 +215,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCloneWizard_errorCannotCreate;
-
-	/** */
-	public static String GitCloneWizard_writeToSecureStoreFailed;
 
 	/** */
 	public static String GitDecoratorPreferencePage_bindingRepositoryNameFlag;
@@ -599,9 +593,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
-
-	/** */
-	public static String ChangeCredentialsCommand_writingToSecureStoreFailed;
 
 	/** */
 	public static String CheckoutHandler_SelectBranchMessage;
@@ -1346,9 +1337,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_StatusAddedIndexDiff;
-
-	/** */
-	public static String CommitDialog_StatusAssumeUnchaged;
 
 	/** */
 	public static String CommitDialog_StatusModified;
@@ -2517,21 +2505,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LocalFileRevision_currentVersionTag;
-
-	/** */
-	public static String LoginDialog_changeCredentials;
-
-	/** */
-	public static String LoginDialog_login;
-
-	/** */
-	public static String LoginDialog_password;
-
-	/** */
-	public static String LoginDialog_repository;
-
-	/** */
-	public static String LoginDialog_user;
 
 	/** */
 	public static String NewRemoteWizard_CheckingUriTaskName;
