@@ -43,6 +43,7 @@ import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -853,9 +854,17 @@ public class StagingView extends ViewPart {
 				results.set(indexDiff);
 				return Status.OK_STATUS;
 			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				if (family.equals(JobFamilies.STAGING_VIEW_REFRESH))
+					return true;
+				return super.belongsTo(family);
+			}
+
 		};
 
-		job.setUser(true);
+		job.setUser(false);
 		job.setRule(ResourcesPlugin.getWorkspace().getRoot());
 
 		job.addJobChangeListener(new JobChangeAdapter() {
@@ -985,8 +994,8 @@ public class StagingView extends ViewPart {
 	}
 
 	private void addHeadChangedWarning(String commitMessage) {
-		String message = UIText.StagingView_headCommitChanged + "\n\n" + //$NON-NLS-1$
-				commitMessage;
+		String message = UIText.StagingView_headCommitChanged + Text.DELIMITER
+				+ Text.DELIMITER + commitMessage;
 		commitMessageComponent.setCommitMessage(message);
 	}
 
