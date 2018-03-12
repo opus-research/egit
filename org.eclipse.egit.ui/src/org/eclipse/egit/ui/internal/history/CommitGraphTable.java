@@ -520,8 +520,7 @@ class CommitGraphTable {
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
 			popupMgr.add(new Separator());
-			// popupMgr.add(showCommentAction);
-			// popupMgr.add(showFilesAction);
+
 		}
 
 		private CommandContributionItem getCommandContributionItem(
