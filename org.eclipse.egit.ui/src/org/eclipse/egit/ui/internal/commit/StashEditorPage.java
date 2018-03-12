@@ -101,7 +101,7 @@ public class StashEditorPage extends CommitEditorPage {
 						| SWT.FULL_SELECTION | toolkit.getBorderStyle());
 		stagedDiffViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		GridDataFactory.fillDefaults().grab(true, true)
+		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 80)
 				.applyTo(stagedDiffViewer.getControl());
 		stagedDiffViewer.setContentProvider(ArrayContentProvider
 				.getInstance());
@@ -129,7 +129,6 @@ public class StashEditorPage extends CommitEditorPage {
 								return;
 							fillDiffs(unstagedDiffs);
 							fillStagedDiffs(indexDiffs);
-							form.reflow(true);
 							form.layout(true, true);
 						}
 					});
@@ -188,7 +187,6 @@ public class StashEditorPage extends CommitEditorPage {
 		stagedDiffSection.setText(MessageFormat.format(
 				UIText.StashEditorPage_StagedChanges,
 				Integer.valueOf(diffs.length)));
-		setSectionExpanded(stagedDiffSection, diffs.length != 0);
 	}
 
 	@Override
