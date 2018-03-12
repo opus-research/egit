@@ -337,7 +337,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals(FOLDER, name);
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// switch back to the root directory
-		TestUtil.expandAndWait(shell.bot().tree().getAllItems()[0])
+		item = TestUtil.expandAndWait(shell.bot().tree().getAllItems()[0])
 				.getNode(PROJ2).select();
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		assertEquals(PROJ2, shell.bot().textWithLabel(
