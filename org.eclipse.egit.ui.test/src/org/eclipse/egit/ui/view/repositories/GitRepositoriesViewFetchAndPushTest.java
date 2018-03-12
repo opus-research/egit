@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
@@ -27,14 +26,13 @@ import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,8 +52,6 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	private static File clonedRepositoryFile;
 
 	private static File clonedRepositoryFile2;
-
-	private boolean oldShowPushConfirm;
 
 	@BeforeClass
 	public static void beforeClass() throws Exception {
@@ -86,18 +82,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	public void before() throws Exception {
 		clearView();
 		deleteAllProjects();
-		oldShowPushConfirm = Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.SHOW_PUSH_CONFIRM);
-		Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.SHOW_PUSH_CONFIRM, true);
 	}
-
-	@After
-	public void after() throws Exception {
-		Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.SHOW_PUSH_CONFIRM, oldShowPushConfirm);
-	}
-
 	@Test
 	public void testPushToOriginPushNode() throws Exception {
 		testPushToOrigin(false);
