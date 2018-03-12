@@ -74,10 +74,6 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 			// Ignore the change
 			return true;
 
-		if (resource.isLinked(IResource.CHECK_ANCESTORS))
-			// Ignore linked resources, no need to check children
-			return false;
-
 		if (resource instanceof IFolder
 				&& delta.getKind() == IResourceDelta.ADDED) {
 			filesToUpdate.add(mapping.getRepoRelativePath(resource) + "/"); //$NON-NLS-1$

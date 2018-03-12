@@ -4,6 +4,7 @@
  * Copyright (C) 2006, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -32,7 +34,9 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.PlatformObject;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
@@ -241,16 +245,9 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	private Repository getRepository(boolean warn,
 			IStructuredSelection selection, Shell shell) {
 		RepositoryMapping mapping = null;
-		for (IResource resource : getSelectedResources(selection)) {
-			if (resource.isLinked(IResource.CHECK_ANCESTORS)) {
-				if (warn)
-					MessageDialog.openError(shell,
-							UIText.RepositoryAction_linkedResourceSelectionTitle,
-							UIText.RepositoryAction_linkedResourceSelection);
-				return null;
-			}
+		for (IPath location : getSelectedLocations(selection)) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(resource);
+					.getMapping(location);
 			if (mapping == null)
 				mapping = repositoryMapping;
 			if (repositoryMapping == null)
@@ -491,23 +488,18 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return getSelectedResources(selection);
 	}
 
+	protected IPath[] getSelectedLocations(ExecutionEvent event)
+			throws ExecutionException {
+		IStructuredSelection selection = getSelection(event);
+		return getSelectedLocations(selection);
+	}
+
 	/**
 	 * @return the resources in the selection
 	 */
 	protected IResource[] getSelectedResources() {
 		IStructuredSelection selection = getSelection();
 		return getSelectedResources(selection);
-	}
-
-	/**
-	 * @return true if selection contains one or more linked resources, false otherwise.
-	 */
-	protected boolean selectionContainsLinkedResources() {
-		IResource[] selectedResources = getSelectedResources();
-		for (IResource res: selectedResources)
-			if (res.isLinked(IResource.CHECK_ANCESTORS))
-				return true;
-		return false;
 	}
 
 	/**
@@ -521,12 +513,35 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			if (resource != null)
 				result.add(resource);
 			else
-				extractResourcesFromMapping(result, o);
+				result.addAll(extractResourcesFromMapping(o));
 		}
 		return result.toArray(new IResource[result.size()]);
 	}
 
-	private void extractResourcesFromMapping(Set<IResource> result, Object o) {
+	private IPath[] getSelectedLocations(IStructuredSelection selection) {
+		Set<IPath> result = new LinkedHashSet<IPath>();
+		for (Object o : selection.toList()) {
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			if (resource != null) {
+				IPath location = resource.getLocation();
+				if (location != null)
+					result.add(location);
+			} else {
+				IPath location = AdapterUtils.adapt(o, IPath.class);
+				if (location != null)
+					result.add(location);
+				else
+					for (IResource r : extractResourcesFromMapping(o)) {
+						IPath l = r.getLocation();
+						if (l != null)
+							result.add(l);
+					}
+			}
+		}
+		return result.toArray(new IPath[result.size()]);
+	}
+
+	private List<IResource> extractResourcesFromMapping(Object o) {
 		ResourceMapping mapping = (ResourceMapping) getAdapter(o,
 				ResourceMapping.class);
 		if (mapping != null) {
@@ -535,12 +550,13 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				traversals = mapping.getTraversals(null, null);
 				for (ResourceTraversal traversal : traversals) {
 					IResource[] resources = traversal.getResources();
-					result.addAll(Arrays.asList(resources));
+					return Arrays.asList(resources);
 				}
 			} catch (CoreException e) {
 				Activator.logError(e.getMessage(), e);
 			}
 		}
+		return Collections.emptyList();
 	}
 
 	/**

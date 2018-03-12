@@ -21,6 +21,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.job.JobUtil;
@@ -30,6 +31,7 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
@@ -74,7 +76,6 @@ import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
-import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
@@ -264,10 +265,8 @@ public class CommitFileDiffViewer extends TableViewer {
 		mgr.add(compareWorkingTreeVersion);
 		mgr.add(blame);
 
-		MenuManager showInSubMenu = new MenuManager(
-				UIText.CommitFileDiffViewer_ShowInMenuLabel);
-		showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN
-				.create(site.getWorkbenchWindow()));
+		MenuManager showInSubMenu = UIUtils.createShowInMenu(
+				site.getWorkbenchWindow());
 
 		mgr.add(new Separator());
 		mgr.add(showInSubMenu);
@@ -501,10 +500,10 @@ public class CommitFileDiffViewer extends TableViewer {
 		final ITypedElement base;
 		final ITypedElement next;
 
-		String path = new Path(getRepository().getWorkTree().getAbsolutePath())
-				.append(p).toOSString();
+		IPath path = new Path(getRepository().getWorkTree().getAbsolutePath())
+				.append(p);
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IFile[] files = root.findFilesForLocationURI(new File(path).toURI());
+		IFile[] files = root.findFilesForLocationURI(path.toFile().toURI());
 		if (files.length > 0)
 			next = SaveableCompareEditorInput.createFileElement(files[0]);
 		else

@@ -45,7 +45,7 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return !selectionContainsLinkedResources();
+		return true;
 	}
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -82,8 +82,6 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 		Map<Repository, Set<IContainer>> result = new HashMap<Repository, Set<IContainer>>();
 
 		for (IResource resource : resources) {
-			if (resource.isLinked(IResource.CHECK_ANCESTORS))
-				continue;
 			RepositoryMapping rm = RepositoryMapping.getMapping(resource);
 			if (resource instanceof IProject)
 				result.put(rm.getRepository(), new HashSet<IContainer>());

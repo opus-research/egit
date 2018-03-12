@@ -255,7 +255,7 @@ public class GitResourceVariantTreeSubscriber extends
 	}
 
 	private boolean shouldBeIncluded(IResource res) {
-		if (res == null || res.isLinked(IResource.CHECK_ANCESTORS))
+		if (res == null)
 			return false;
 		final IProject proj = res.getProject();
 		if (proj == null)
