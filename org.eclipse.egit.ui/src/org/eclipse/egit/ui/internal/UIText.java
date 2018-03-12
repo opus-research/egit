@@ -4216,9 +4216,6 @@ public class UIText extends NLS {
 	public static String InteractiveRebaseView_continueItem_text;
 
 	/** */
-	public static String InteractiveRebaseView_LinkSelection;
-
-	/** */
 	public static String InteractiveRebaseView_refreshItem_text;
 
 	/** */

@@ -30,7 +30,6 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.commands.shared.AbortRebaseCommand;
 import org.eclipse.egit.ui.internal.commands.shared.AbstractRebaseCommandHandler;
 import org.eclipse.egit.ui.internal.commands.shared.ContinueRebaseCommand;
@@ -40,14 +39,11 @@ import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
-import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.util.LocalSelectionTransfer;
@@ -88,7 +84,6 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
-import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -283,26 +278,6 @@ public class RebaseInteractiveView extends ViewPart implements
 				return null;
 			}
 		});
-
-		IActionBars actionBars = getViewSite().getActionBars();
-		IToolBarManager toolbar = actionBars.getToolBarManager();
-
-		listenOnRepositoryViewSelection = RebaseInteractivePreferences
-				.isReactOnSelection();
-
-		// link with selection
-		Action linkSelectionAction = new BooleanPrefAction(
-				(IPersistentPreferenceStore) Activator.getDefault()
-						.getPreferenceStore(),
-				UIPreferences.REBASE_INTERACTIVE_SYNC_SELECTION,
-				UIText.InteractiveRebaseView_LinkSelection) {
-			@Override
-			public void apply(boolean value) {
-				listenOnRepositoryViewSelection = value;
-			}
-		};
-		linkSelectionAction.setImageDescriptor(UIIcons.ELCL16_SYNCED);
-		toolbar.add(linkSelectionAction);
 	}
 
 	private void createCommandToolBar(Form theForm, FormToolkit toolkit) {
@@ -613,8 +588,8 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		boolean orderReversed = RebaseInteractivePreferences.isOrderReversed();
-		int direction = (orderReversed ? SWT.DOWN : SWT.UP);
+		int direction = (RebaseInteractivePreferences.isOrderReversed() ? SWT.DOWN
+				: SWT.UP);
 
 		Tree planTree = planTreeViewer.getTree();
 		planTree.setSortColumn(stepColumn.getColumn());
@@ -631,7 +606,12 @@ public class RebaseInteractiveView extends ViewPart implements
 					case EDIT:
 						return UIIcons.getImage(resources, UIIcons.EDITCONFIG);
 					case FIXUP:
-						return UIIcons.getImage(resources, UIIcons.FIXUP);
+						if (RebaseInteractivePreferences.isOrderReversed())
+							return UIIcons.getImage(resources,
+									UIIcons.FIXUP_DOWN);
+						else
+							return UIIcons.getImage(resources,
+									UIIcons.FIXUP_UP);
 					case PICK:
 						return UIIcons.getImage(resources, UIIcons.CHERRY_PICK);
 					case REWORD:
@@ -639,7 +619,12 @@ public class RebaseInteractiveView extends ViewPart implements
 					case SKIP:
 						return UIIcons.getImage(resources, UIIcons.REBASE_SKIP);
 					case SQUASH:
-						return UIIcons.getImage(resources, UIIcons.SQUASH);
+						if (RebaseInteractivePreferences.isOrderReversed())
+							return UIIcons.getImage(resources,
+									UIIcons.SQUASH_DOWN);
+						else
+							return UIIcons.getImage(resources,
+									UIIcons.SQUASH_UP);
 					default:
 						// fall through
 					}
@@ -896,11 +881,11 @@ public class RebaseInteractiveView extends ViewPart implements
 				planViewer, actionToolBarProvider));
 		contextMenuItems.add(new PlanContextMenuAction(
 				UIText.RebaseInteractiveStepActionToolBarProvider_SquashText,
-				UIIcons.SQUASH, RebaseInteractivePlan.ElementAction.SQUASH,
+				UIIcons.SQUASH_UP, RebaseInteractivePlan.ElementAction.SQUASH,
 				planViewer, actionToolBarProvider));
 		contextMenuItems.add(new PlanContextMenuAction(
 				UIText.RebaseInteractiveStepActionToolBarProvider_FixupText,
-				UIIcons.FIXUP, RebaseInteractivePlan.ElementAction.FIXUP,
+				UIIcons.FIXUP_UP, RebaseInteractivePlan.ElementAction.FIXUP,
 				planViewer, actionToolBarProvider));
 		contextMenuItems.add(new PlanContextMenuAction(
 				UIText.RebaseInteractiveStepActionToolBarProvider_RewordText,
