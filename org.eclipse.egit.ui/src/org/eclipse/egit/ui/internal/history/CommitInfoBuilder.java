@@ -305,8 +305,14 @@ public class CommitInfoBuilder {
 		addLink(d, to.getId().name(), styles, to);
 	}
 
-	/*
+	/**
+	 * @param commit
+	 * @param allRefs
+	 * @param db
 	 * @return List of heads from those current commit is reachable
+	 * @throws MissingObjectException
+	 * @throws IncorrectObjectTypeException
+	 * @throws IOException
 	 */
 	private static List<Ref> getBranches(RevCommit commit,
 			Collection<Ref> allRefs, Repository db)
