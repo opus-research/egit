@@ -641,7 +641,6 @@ public class UIText extends NLS {
 	public static String CheckoutHandler_SelectBranchTitle;
 
 	/** */
-<<<<<<< HEAD
 	public static String CherryPickHandler_NoCherryPickPerformedMessage;
 
 	/** */
@@ -652,18 +651,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickOperation_InternalError;
-=======
-	public static String CompareTargetSelectionDialog_CompareButton;
-
-	/** */
-	public static String CompareTargetSelectionDialog_CompareMessage;
-
-	/** */
-	public static String CompareTargetSelectionDialog_CompareTitle;
-
-	/** */
-	public static String CompareTargetSelectionDialog_WindowTitle;
->>>>>>> Add a "Compare with branch or tag" action
 
 	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
