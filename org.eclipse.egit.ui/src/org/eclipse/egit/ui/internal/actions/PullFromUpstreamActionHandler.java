@@ -23,12 +23,10 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class PullFromUpstreamActionHandler extends RepositoryActionHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		Repository[] repos = getRepositories(event);
-		if (repos.length == 0)
+		final Repository repository = getRepository(true, event);
+		if (repository == null)
 			return null;
-
-		for (Repository repo : repos)
-			new PullOperationUI(repo).start();
+		new PullOperationUI(repository).start();
 		return null;
 	}
 
@@ -36,16 +34,14 @@ public class PullFromUpstreamActionHandler extends RepositoryActionHandler {
 	public boolean isEnabled() {
 		// we don't do the full canMerge check here, but
 		// ensure that a branch is checked out
-		Repository[] repos = getRepositories();
-		for (Repository repo : repos) {
-			try {
-				String fullBranch = repo.getFullBranch();
-				if (!fullBranch.startsWith(Constants.R_REFS))
-					return false;
-			} catch (IOException e) {
-				return false;
-			}
+		Repository repo = getRepository();
+		if (repo == null)
+			return false;
+		try {
+			String fullBranch = repo.getFullBranch();
+			return (fullBranch.startsWith(Constants.R_REFS));
+		} catch (IOException e) {
+			return false;
 		}
-		return true;
 	}
 }
