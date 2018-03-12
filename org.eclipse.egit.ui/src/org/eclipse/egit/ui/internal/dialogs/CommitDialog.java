@@ -15,28 +15,38 @@ package org.eclipse.egit.ui.internal.dialogs;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.Assert;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
+
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
+import org.eclipse.jface.bindings.keys.KeyStroke;
+import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.fieldassist.ContentProposalAdapter;
+import org.eclipse.jface.fieldassist.ControlDecoration;
+import org.eclipse.jface.fieldassist.FieldDecorationRegistry;
+import org.eclipse.jface.fieldassist.IContentProposal;
+import org.eclipse.jface.fieldassist.IContentProposalProvider;
+import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
@@ -45,14 +55,7 @@ import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
-import org.eclipse.jgit.lib.Commit;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.GitIndex;
-import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.Tree;
-import org.eclipse.jgit.lib.TreeEntry;
-import org.eclipse.jgit.lib.GitIndex.Entry;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -81,6 +84,14 @@ import org.eclipse.team.core.history.IFileHistoryProvider;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.internal.ui.history.FileRevisionTypedElement;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
+import org.eclipse.jgit.lib.Commit;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.GitIndex;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.Tree;
+import org.eclipse.jgit.lib.TreeEntry;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 
 /**
  * Dialog is shown to user when they request to commit files. Changes in the
@@ -104,7 +115,7 @@ public class CommitDialog extends Dialog {
 
 	}
 
-	static class CommitLabelProvider extends WorkbenchLabelProvider implements
+	class CommitLabelProvider extends WorkbenchLabelProvider implements
 			ITableLabelProvider {
 		public String getColumnText(Object obj, int columnIndex) {
 			CommitItem item = (CommitItem) obj;
@@ -147,11 +158,13 @@ public class CommitDialog extends Dialog {
 
 	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
+	// these activate the value help on author/committer fields; alphanumeric,
+	// space plus some expected special chars
+	private static final char[] VALUE_HELP_ACTIVATIONCHARS = "abcdefghijklmnopqrstuvwxyz0123457890*@ <>".toCharArray(); //$NON-NLS-1$
+
 	private static final String COMMITTER_VALUES_PREF = "CommitDialog.committerValues"; //$NON-NLS-1$
 
 	private static final String AUTHOR_VALUES_PREF = "CommitDialog.authorValues"; //$NON-NLS-1$
-
-	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
 
 
 	/**
@@ -179,11 +192,6 @@ public class CommitDialog extends Dialog {
 	Button showUntrackedButton;
 
 	CheckboxTableViewer filesViewer;
-
-	/**
-	 * A collection of files that should be already checked in the table.
-	 */
-	private Collection<IFile> preselectedFiles = Collections.emptyList();
 
 	@Override
 	protected Control createDialogArea(Composite parent) {
@@ -221,7 +229,7 @@ public class CommitDialog extends Dialog {
 		if (author != null)
 			authorText.setText(author);
 
-		authorHandler = UIUtils.addPreviousValuesContentProposalToText(authorText, AUTHOR_VALUES_PREF);
+		addContentProposalToText(authorText, AUTHOR_VALUES_PREF);
 		new Label(container, SWT.LEFT).setText(UIText.CommitDialog_Committer);
 		committerText = new Text(container, SWT.BORDER);
 		committerText.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).create());
@@ -242,7 +250,7 @@ public class CommitDialog extends Dialog {
 			}
 		});
 
-		committerHandler = UIUtils.addPreviousValuesContentProposalToText(committerText, COMMITTER_VALUES_PREF);
+		addContentProposalToText(committerText, COMMITTER_VALUES_PREF);
 
 		amendingButton = new Button(container, SWT.CHECK);
 		if (amending) {
@@ -302,18 +310,9 @@ public class CommitDialog extends Dialog {
 		});
 
 		showUntrackedButton = new Button(container, SWT.CHECK);
+		showUntrackedButton.setSelection(showUntracked);
 		showUntrackedButton.setText(UIText.CommitDialog_ShowUntrackedFiles);
 		showUntrackedButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
-
-		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
-				.getDialogSettings();
-		if (settings.get(SHOW_UNTRACKED_PREF) != null) {
-			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
-					.booleanValue();
-		}
-
-		showUntrackedButton.setSelection(showUntracked);
-
 		showUntrackedButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
@@ -356,19 +355,9 @@ public class CommitDialog extends Dialog {
 		filesViewer.setLabelProvider(new CommitLabelProvider());
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items);
+		filesViewer.setAllChecked(true);
 		filesViewer.getTable().setMenu(getContextMenu());
 
-		// pre-emptively check any preselected files
-		for (IFile selectedFile : preselectedFiles) {
-			for (CommitItem item : items) {
-				if (item.file.equals(selectedFile)) {
-					filesViewer.setChecked(item, true);
-					break;
-				}
-			}
-		}
-
-		applyDialogFont(container);
 		container.pack();
 		return container;
 	}
@@ -554,13 +543,10 @@ public class CommitDialog extends Dialog {
 	private boolean signedOff = false;
 	private boolean amending = false;
 	private boolean amendAllowed = true;
-	private boolean showUntracked = true;
+	private boolean showUntracked = false;
 
 	private ArrayList<IFile> selectedFiles = new ArrayList<IFile>();
 	private String previousCommitMessage = ""; //$NON-NLS-1$
-	private IPreviousValueProposalHandler authorHandler;
-	private IPreviousValueProposalHandler committerHandler;
-
 
 	/**
 	 * Pre-select suggested set of resources to commit
@@ -576,18 +562,6 @@ public class CommitDialog extends Dialog {
 	 */
 	public IFile[] getSelectedFiles() {
 		return selectedFiles.toArray(new IFile[0]);
-	}
-
-	/**
-	 * Sets the files that should be checked in this table.
-	 *
-	 * @param preselectedFiles
-	 *            the files to be checked in the dialog's table, must not be
-	 *            <code>null</code>
-	 */
-	public void setPreselectedFiles(Collection<IFile> preselectedFiles) {
-		Assert.isNotNull(preselectedFiles);
-		this.preselectedFiles = preselectedFiles;
 	}
 
 	class HeaderSelectionListener extends SelectionAdapter {
@@ -724,13 +698,45 @@ public class CommitDialog extends Dialog {
 			return;
 		}
 
-		authorHandler.updateProposals();
-		committerHandler.updateProposals();
+		addValueToPrefs(author, AUTHOR_VALUES_PREF);
+		addValueToPrefs(committer, COMMITTER_VALUES_PREF);
 
-		IDialogSettings settings = org.eclipse.egit.ui.Activator
-			.getDefault().getDialogSettings();
-		settings.put(SHOW_UNTRACKED_PREF, showUntracked);
 		super.okPressed();
+	}
+
+	private void addValueToPrefs(String value, String prefsName) {
+		// don't store empty values
+		if (value.length() > 0) {
+			// we need to mix the value in
+			IDialogSettings settings = org.eclipse.egit.ui.Activator
+					.getDefault().getDialogSettings();
+			String[] existingValues = settings.getArray(prefsName);
+			if (existingValues == null) {
+				existingValues = new String[] { value };
+				settings.put(prefsName, existingValues);
+			} else {
+
+				List<String> values = new ArrayList<String>(
+						existingValues.length + 1);
+
+				for (String existingValue : existingValues)
+					values.add(existingValue);
+				// if it is already the first value, we don't need to do
+				// anything
+				if (values.indexOf(value) == 0)
+					return;
+
+				values.remove(value);
+				// we insert at the top
+				values.add(0, value);
+
+				while (values.size() > 10)
+					values.remove(values.size() - 1);
+
+				settings.put(prefsName, values
+						.toArray(new String[values.size()]));
+			}
+		}
 	}
 
 	/**
@@ -835,6 +841,22 @@ public class CommitDialog extends Dialog {
 	}
 
 	/**
+	 * @return whether the untracked files should be shown
+	 */
+	public boolean isShowUntracked() {
+		return showUntracked;
+	}
+
+	/**
+	 * Pre-set whether the untracked files should be shown
+	 *
+	 * @param showUntracked
+	 */
+	public void setShowUntracked(boolean showUntracked) {
+		this.showUntracked = showUntracked;
+	}
+
+	/**
 	 * Set the message from the previous commit for amending.
 	 *
 	 * @param string
@@ -856,6 +878,112 @@ public class CommitDialog extends Dialog {
 	protected int getShellStyle() {
 		return super.getShellStyle() | SWT.RESIZE;
 	}
+
+	private void addContentProposalToText(Text textField,
+			final String preferenceKey) {
+
+		KeyStroke stroke;
+		try {
+			stroke = KeyStroke.getInstance("M1+SPACE"); //$NON-NLS-1$
+		} catch (ParseException e1) {
+			org.eclipse.egit.ui.Activator.getDefault().getLog().log(
+					new Status(IStatus.ERROR, org.eclipse.egit.ui.Activator
+							.getPluginId(), e1.getMessage(), e1));
+			return;
+		}
+
+		ControlDecoration dec = new ControlDecoration(textField, SWT.TOP
+				| SWT.LEFT);
+
+		dec.setImage(FieldDecorationRegistry.getDefault().getFieldDecoration(
+				FieldDecorationRegistry.DEC_CONTENT_PROPOSAL).getImage());
+
+		dec.setShowOnlyOnFocus(true);
+		dec.setShowHover(true);
+
+		dec.setDescriptionText(NLS.bind(UIText.CommitDialog_ValueHelp_Message,
+				stroke.format()));
+
+		IContentProposalProvider cp = new IContentProposalProvider() {
+
+			public IContentProposal[] getProposals(String contents, int position) {
+
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
+
+				// make the simplest possible pattern check: allow "*"
+				// for multiple characters
+				String patternString = contents;
+				// ignore spaces in the beginning
+				while (patternString.length() > 0
+						&& patternString.charAt(0) == ' ') {
+					patternString = patternString.substring(1);
+				}
+
+				// we quote the string as it may contain spaces
+				// and other stuff colliding with the Pattern
+				patternString = Pattern.quote(patternString);
+
+				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
+
+				// make sure we add a (logical) * at the end
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
+					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
+
+				// let's compile a case-insensitive pattern (assumes ASCII only)
+				Pattern pattern;
+				try {
+					pattern = Pattern.compile(patternString,
+							Pattern.CASE_INSENSITIVE);
+				} catch (PatternSyntaxException e) {
+					pattern = null;
+				}
+
+				String[] proposals = org.eclipse.egit.ui.Activator.getDefault()
+						.getDialogSettings().getArray(preferenceKey);
+
+				if (proposals != null)
+					for (final String uriString : proposals) {
+
+						if (pattern != null
+								&& !pattern.matcher(uriString).matches())
+							continue;
+
+						IContentProposal propsal = new IContentProposal() {
+
+							public String getLabel() {
+								return null;
+							}
+
+							public String getDescription() {
+								return null;
+							}
+
+							public int getCursorPosition() {
+								return 0;
+							}
+
+							public String getContent() {
+								return uriString;
+							}
+						};
+						resultList.add(propsal);
+					}
+
+				return resultList.toArray(new IContentProposal[resultList
+						.size()]);
+			}
+		};
+
+		ContentProposalAdapter adapter = new ContentProposalAdapter(textField,
+				new TextContentAdapter(), cp, stroke,
+				VALUE_HELP_ACTIVATIONCHARS);
+		// set the acceptance style to always replace the complete content
+		adapter
+				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
+
+	}
+
 }
 
 class CommitItem {

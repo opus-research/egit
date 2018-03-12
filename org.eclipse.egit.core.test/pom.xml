@@ -16,13 +16,26 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.core.test</artifactId>
   <packaging>eclipse-test-plugin</packaging>
 
   <name>Test Plug-in (Incubation)</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit</artifactId>
+      <version>${jgit-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit.junit</artifactId>
+      <version>${jgit-version}</version>
+    </dependency>
+  </dependencies>
 
   <build>
     <plugins>

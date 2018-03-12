@@ -15,54 +15,86 @@ import java.net.URISyntaxException;
 
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
-import org.eclipse.egit.ui.internal.components.RepositorySelection;
+import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * Allows to configure a "Remote".
+ * Used for "remote" configuration of a Repository
+ *
+ * If this is in "create"-mode, there will be the following pages:
+ * <ol>
+ * <li>Selection of a remote name</li>
+ * <li>Fetch URL</li>
+ * <li>Fetch Specification</li>
+ * <li>Push URL</li>
+ * <li>Push Specification</li>
+ * </ol>
  * <p>
- * Asks for a name and whether to configure fetch, push, or both. Depending on
- * the user's decision about what to configure, the fetch, push, or both
- * configurations are performed.
+ * In "edit"-mode, there will be the following pages:
+ *
+ *
+ * <ol>
+ * <li>Fetch or Push URL</li>
+ * <li>Fetch or Push Specification</li>
+ * </ol>
+ *
  */
-public class ConfigureRemoteWizard extends Wizard {
+class ConfigureRemoteWizard extends Wizard {
 
 	final RepositoryConfig myConfiguration;
 
-	RemoteConfig myRemoteConfiguration;
+	final boolean createMode;
 
 	final boolean pushMode;
 
 	final String myRemoteName;
 
-	private ConfigureUriPage configureFetchUriPage;
-
-	private RefSpecPage configureFetchSpecPage;
-
-	private ConfigureUriPage configurePushUriPage;
-
-	private RefSpecPage configurePushSpecPage;
+	/**
+	 * @param repository
+	 */
+	public ConfigureRemoteWizard(Repository repository) {
+		this(repository, null, false);
+	}
 
 	@Override
 	public IWizardPage getNextPage(IWizardPage page) {
 
-		if (page == configureFetchUriPage) {
-			configureFetchSpecPage.setConfigName(myRemoteName);
-			configureFetchSpecPage.setSelection(new RepositorySelection(
-					configureFetchUriPage.getUri(), null));
-		}
 
-		if (page == configurePushUriPage) {
-			// use the first URI
-			configurePushSpecPage.setConfigName(myRemoteName);
-			configurePushSpecPage.setSelection(new RepositorySelection(
-					configurePushUriPage.getUris().get(0), null));
+		if (!createMode) {
+			return super.getNextPage(page);
+		}
+		if (page instanceof SelectRemoteNamePage) {
+			SelectRemoteNamePage srp = (SelectRemoteNamePage) page;
+			if (srp.configureFetch.getSelection()) {
+				return getPages()[1];
+			}
+			if (srp.configurePush.getSelection()) {
+				return getPages()[3];
+			}
+		}
+		if (page == getPages()[1] || page == getPages()[3]) {
+			RefSpecPage next = (RefSpecPage) getPages()[2];
+			next
+					.setConfigName(((SelectRemoteNamePage) getPages()[0]).remoteName
+							.getText());
+			next = (RefSpecPage) getPages()[4];
+			next
+					.setConfigName(((SelectRemoteNamePage) getPages()[0]).remoteName
+							.getText());
+
+		}
+		if (page == getPages()[2]) {
+			SelectRemoteNamePage srp = (SelectRemoteNamePage) getPages()[0];
+			if (srp.configurePush.getSelection()) {
+				return getPages()[3];
+			} else {
+				return null;
+			}
 		}
 
 		return super.getNextPage(page);
@@ -70,7 +102,21 @@ public class ConfigureRemoteWizard extends Wizard {
 
 	@Override
 	public boolean canFinish() {
-
+		if (createMode) {
+			IWizardPage[] pages = getPages();
+			if (pages[0].isPageComplete()) {
+				boolean done = true;
+				SelectRemoteNamePage srp = (SelectRemoteNamePage) pages[0];
+				if (srp.configureFetch.getSelection())
+					done = done & pages[1].isPageComplete()
+							& pages[2].isPageComplete();
+				if (srp.configurePush.getSelection())
+					done = done & pages[3].isPageComplete()
+							& pages[4].isPageComplete();
+				return done;
+			}
+			return false;
+		}
 		return super.canFinish();
 	}
 
@@ -82,47 +128,59 @@ public class ConfigureRemoteWizard extends Wizard {
 	 */
 	public ConfigureRemoteWizard(Repository repository, String remoteName,
 			boolean push) {
-
 		myConfiguration = repository.getConfig();
 		myRemoteName = remoteName;
 		pushMode = push;
+		createMode = remoteName == null;
+		if (createMode) {
+			// selection of a remote name
+			addPage(new SelectRemoteNamePage());
 
-		try {
-			myRemoteConfiguration = new RemoteConfig(myConfiguration,
-					remoteName);
-		} catch (URISyntaxException e) {
-			// handle this by trying to cleanup the configuration entries
-			myConfiguration.unsetSection("remote", remoteName); //$NON-NLS-1$
-			// TODO Exception handling
-			try {
-				myRemoteConfiguration = new RemoteConfig(myConfiguration,
-						remoteName);
-			} catch (URISyntaxException e1) {
-				// panic
-				throw new IllegalStateException(e1.getMessage());
+			// repository selection for fetch
+			RepositorySelectionPage sp = new RepositorySelectionPage(false,
+					null, myConfiguration.getString(RepositoriesView.REMOTE,
+							null, RepositoriesView.URL));
+			addPage(sp);
+
+			// ref spec for fetch
+			RefSpecPage rsp = new RefSpecPage(repository, false, sp);
+			addPage(rsp);
+
+			// repository selection for push
+			sp = new RepositorySelectionPage(true, null, myConfiguration
+					.getString(RepositoriesView.REMOTE, null,
+							RepositoriesView.PUSHURL));
+			addPage(sp);
+
+			// ref spec for push
+			rsp = new RefSpecPage(repository, true, sp);
+			addPage(rsp);
+
+			setWindowTitle(UIText.ConfigureRemoteWizard_WizardTitle_New);
+
+		} else {
+			// edit mode: no remote name page and pre-selected repository
+			// selection page
+			RepositorySelectionPage sp;
+			if (pushMode) {
+				sp = new RepositorySelectionPage(pushMode, null,
+						myConfiguration.getString(RepositoriesView.REMOTE,
+								myRemoteName, RepositoriesView.PUSHURL));
+			} else {
+				sp = new RepositorySelectionPage(pushMode, null,
+						myConfiguration.getString(RepositoriesView.REMOTE,
+								myRemoteName, RepositoriesView.URL));
 			}
+
+			addPage(sp);
+			// and also the corresponding configuration page
+			RefSpecPage rsp = new RefSpecPage(repository, pushMode, sp);
+			rsp.setConfigName(myRemoteName);
+			addPage(rsp);
+			setWindowTitle(NLS.bind(
+					UIText.ConfigureRemoteWizard_WizardTitle_Change,
+					myRemoteName));
 		}
-
-		configureFetchUriPage = new ConfigureUriPage(true,
-				myRemoteConfiguration);
-		if (!pushMode)
-			addPage(configureFetchUriPage);
-
-		configureFetchSpecPage = new RefSpecPage(repository, false);
-		if (!pushMode)
-			addPage(configureFetchSpecPage);
-
-		configurePushUriPage = new ConfigureUriPage(false,
-				myRemoteConfiguration);
-		if (pushMode)
-			addPage(configurePushUriPage);
-
-		configurePushSpecPage = new RefSpecPage(repository, true);
-		if (pushMode)
-			addPage(configurePushSpecPage);
-
-		setWindowTitle(NLS.bind(
-				UIText.ConfigureRemoteWizard_WizardTitle_Change, myRemoteName));
 
 	}
 
@@ -137,25 +195,70 @@ public class ConfigureRemoteWizard extends Wizard {
 	@Override
 	public boolean performFinish() {
 
-		if (pushMode) {
-			while (!myRemoteConfiguration.getPushURIs().isEmpty())
-				myRemoteConfiguration.removePushURI(myRemoteConfiguration
-						.getPushURIs().get(0));
-			for (URIish uri : configurePushUriPage.getUris())
-				myRemoteConfiguration.addPushURI(uri);
-			myRemoteConfiguration.setPushRefSpecs(configurePushSpecPage
-					.getRefSpecs());
+		RemoteConfig config;
+		if (createMode) {
+
+			SelectRemoteNamePage srp = (SelectRemoteNamePage) getPage(SelectRemoteNamePage.class
+					.getName());
+
+			String actRemoteName = srp.remoteName.getText();
+
+			try {
+				config = new RemoteConfig(myConfiguration, actRemoteName);
+			} catch (URISyntaxException e1) {
+				// TODO better Exception handling
+				return false;
+			}
+
+			if (srp.configureFetch.getSelection()) {
+				RepositorySelectionPage sp = (RepositorySelectionPage) getPages()[1];
+				config.addURI(sp.getSelection().getURI());
+				RefSpecPage specPage = (RefSpecPage) getPages()[2];
+				config.setFetchRefSpecs(specPage.getRefSpecs());
+				config.setTagOpt(specPage.getTagOpt());
+				config.update(myConfiguration);
+				sp.saveUriInPrefs(sp.getSelection().getURI().toString());
+
+			}
+			if (srp.configurePush.getSelection()) {
+				RepositorySelectionPage sp = (RepositorySelectionPage) getPages()[3];
+				config.addPushURI(sp.getSelection().getURI());
+				RefSpecPage specPage = (RefSpecPage) getPages()[4];
+				config.setPushRefSpecs(specPage.getRefSpecs());
+				config.update(myConfiguration);
+				sp.saveUriInPrefs(sp.getSelection().getURI().toString());
+			}
+
 		} else {
-			while (!myRemoteConfiguration.getURIs().isEmpty())
-				myRemoteConfiguration.removeURI(myRemoteConfiguration.getURIs()
-						.get(0));
-			myRemoteConfiguration.addURI(configureFetchUriPage.getUri());
-			myRemoteConfiguration.setFetchRefSpecs(configureFetchSpecPage
-					.getRefSpecs());
-			myRemoteConfiguration.setTagOpt(configureFetchSpecPage.getTagOpt());
+
+			RepositorySelectionPage sp = (RepositorySelectionPage) getPage(RepositorySelectionPage.class
+					.getName());
+
+			RefSpecPage specPage = (RefSpecPage) getPage(RefSpecPage.class
+					.getName());
+
+			try {
+				config = new RemoteConfig(myConfiguration, myRemoteName);
+			} catch (URISyntaxException e1) {
+				// TODO better Exception handling
+				return false;
+			}
+
+
+			if (pushMode){
+				config.addPushURI(sp.getSelection().getURI());
+				config.setPushRefSpecs(specPage.getRefSpecs());
+			}
+			else {
+				config.addURI(sp.getSelection().getURI());
+				config.setFetchRefSpecs(specPage.getRefSpecs());
+				config.setTagOpt(specPage.getTagOpt());
+			}
+
+			sp.saveUriInPrefs(sp.getSelection().getURI().toString());
 		}
 
-    	myRemoteConfiguration.update(myConfiguration);
+		config.update(myConfiguration);
 
 		try {
 			myConfiguration.save();

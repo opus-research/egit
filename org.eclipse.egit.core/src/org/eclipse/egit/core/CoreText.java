@@ -17,16 +17,16 @@ import org.eclipse.osgi.util.NLS;
 public class CoreText extends NLS {
 
 	/** */
-	public static String Activator_ReconfigureWindowCacheError;
-
-	/** */
 	public static String AssumeUnchangedOperation_adding;
 
 	/** */
 	public static String AssumeUnchangedOperation_writingIndex;
 
 	/** */
-	public static String UpdateOperation_writingIndex;
+	public static String UpdateJob_updatingIndex;
+
+	/** */
+	public static String UpdateJob_writingIndex;
 
 	/** */
 	public static String UpdateOperation_updating;
@@ -41,43 +41,10 @@ public class CoreText extends NLS {
 	public static String CommitFileRevision_pathNotIn;
 
 	/** */
-	public static String CommitOperation_errorCommittingChanges;
-
-	/** */
-	public static String CommitOperation_errorPreparingTrees;
-
-	/** */
-	public static String CommitOperation_errorWritingTrees;
-
-	/** */
-	public static String CommitOperation_failedToUpdate;
-
-	/** */
-	public static String CommitOperation_PerformingCommit;
-
-	/** */
 	public static String ConnectProviderOperation_connecting;
 
 	/** */
 	public static String ConnectProviderOperation_ConnectingProject;
-
-	/** */
-	public static String DiscardChangesOperation_discardFailed;
-
-	/** */
-	public static String DiscardChangesOperation_discardFailedSeeLog;
-
-	/** */
-	public static String DiscardChangesOperation_discardingChanges;
-
-	/** */
-	public static String DiscardChangesOperation_refreshFailed;
-
-	/** */
-	public static String DiscardChangesOperation_repoNotFound;
-
-	/** */
-	public static String DiscardChangesOperation_writeIndexFailed;
 
 	/** */
 	public static String DisconnectProviderOperation_disconnecting;
@@ -191,18 +158,6 @@ public class CoreText extends NLS {
 	public static String ResetOperation_writingIndex;
 
 	/** */
-	public static String MergeOperation_InternalError;
-
-	/** */
-	public static String MergeOperation_MergeFailedNoHead;
-
-	/** */
-	public static String MergeOperation_MergeFailedRefUpdate;
-
-	/** */
-	public static String MergeOperation_ProgressMerge;
-
-	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;
 
 	/** */
@@ -236,9 +191,6 @@ public class CoreText extends NLS {
 	public static String ProjectUtil_refreshingProjects;
 
 	/** */
-	public static String ProjectUtil_refreshing;
-
-	/** */
 	public static String PushOperation_resultCancelled;
 
 	/** */
@@ -264,30 +216,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String BranchOperation_performingBranch;
-
-	/** */
-	public static String TagOperation_performingTagging;
-
-	/** */
-	public static String TagOperation_taggingFailure;
-
-	/** */
-	public static String TagOperation_objectIdNotFound;
-
-	/** */
-	public static String GitResourceVariantTree_couldNotFindBlob;
-
-	/** */
-	public static String GitResourceVariantTree_fetchingMembers;
-
-	/** */
-	public static String GitResourceVariantTree_fetchingVariant;
-
-	/** */
-	public static String GitResourceVariantTree_unableToReadRepository;
-
-	/** */
-	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
 
 	static {
 		initializeMessages("org.eclipse.egit.core.coretext", //$NON-NLS-1$

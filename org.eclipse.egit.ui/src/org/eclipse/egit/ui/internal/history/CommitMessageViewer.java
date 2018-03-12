@@ -14,8 +14,6 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,7 +21,6 @@ import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.jface.text.DefaultTextDoubleClickStrategy;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
@@ -33,7 +30,10 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.MyersDiff;
 import org.eclipse.jgit.diff.RawText;
+import org.eclipse.jgit.lib.FileMode;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
@@ -63,12 +63,6 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 	private Color sys_darkgray;
 
-	private Color sys_hunkHeaderColor;
-
-	private Color sys_linesAddedColor;
-
-	private Color sys_linesRemovedColor;
-
 	private Cursor sys_linkCursor;
 
 	private Cursor sys_normalCursor;
@@ -79,25 +73,24 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 	private TreeWalk walker;
 
+	private DiffFormatter diffFmt = new DiffFormatter();
+
 	private static final String SPACE = " "; //$NON-NLS-1$
 
 	private static final String LF = "\n"; //$NON-NLS-1$
+
+	private static final String EMPTY = ""; //$NON-NLS-1$
 
 	CommitMessageViewer(final Composite parent) {
 		super(parent, SWT.H_SCROLL | SWT.V_SCROLL | SWT.READ_ONLY);
 		fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
 
 		final StyledText t = getTextWidget();
-		t.setFont(UIUtils.getFont(UIPreferences.THEME_CommitMessageFont));
+		t.setFont(Activator.getFont(UIPreferences.THEME_CommitMessageFont));
 
 		sys_linkColor = t.getDisplay().getSystemColor(SWT.COLOR_BLUE);
 		sys_darkgray = t.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY);
-		sys_hunkHeaderColor = t.getDisplay().getSystemColor(SWT.COLOR_BLUE);
-		sys_linesAddedColor = t.getDisplay().getSystemColor(SWT.COLOR_DARK_GREEN);
-		sys_linesRemovedColor = t.getDisplay().getSystemColor(SWT.COLOR_DARK_RED);
-
 		sys_linkCursor = t.getDisplay().getSystemCursor(SWT.CURSOR_HAND);
-
 		sys_normalCursor = t.getCursor();
 
 		t.addListener(SWT.MouseMove, new Listener() {
@@ -120,11 +113,6 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 		t.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseDown(final MouseEvent e) {
-				// only process the hyperlink if it was a primary mouse click
-				if (e.button != 1) {
-					return;
-				}
-
 				final int o;
 				try {
 					o = t.getOffsetAtLocation(new Point(e.x, e.y));
@@ -244,7 +232,8 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 		d.append(LF);
 
-		addDiff(d, styles);
+		addDiff(d);
+
 
 		Matcher matcher = p.matcher(msg);
 		while (matcher.find()) {
@@ -253,11 +242,6 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 		final StyleRange[] arr = new StyleRange[styles.size()];
 		styles.toArray(arr);
-		Arrays.sort(arr, new Comparator<StyleRange>() {
-			public int compare(StyleRange o1, StyleRange o2) {
-				return o1.start - o2.start;
-			}
-		});
 		setDocument(new Document(d.toString()));
 		getTextWidget().setStyleRanges(arr);
 	}
@@ -295,51 +279,58 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 		styles.add(sr);
 	}
 
-	private void addDiff(final StringBuilder d, final ArrayList<StyleRange> styles) {
-		DiffFormatter diffFmt = new DiffFormatter() {
-			@Override
-			protected void writeHunkHeader(OutputStream out, int aCur,
-					int aEnd, int bCur, int bEnd) throws IOException {
-				int start = d.length();
-				super.writeHunkHeader(out, aCur, aEnd, bCur, bEnd);
-				int end = d.length();
-				styles.add(new StyleRange(start, end - start, sys_hunkHeaderColor, null));
-			}
-			@Override
-			protected void writeAddedLine(OutputStream out, RawText b, int bCur, boolean endOfLineMissing)
-					throws IOException {
-				int start = d.length();
-				super.writeAddedLine(out, b, bCur, endOfLineMissing);
-				int end = d.length();
-				styles.add(new StyleRange(start, end - start, sys_linesAddedColor, null));
-			}
-			@Override
-			protected void writeRemovedLine(OutputStream out, RawText b, int bCur, boolean endOfLineMissing)
-					throws IOException {
-				int start = d.length();
-				super.writeRemovedLine(out, b, bCur, endOfLineMissing);
-				int end = d.length();
-				styles.add(new StyleRange(start, end - start, sys_linesRemovedColor, null));
-			}
-		};
-
+	private void addDiff(final StringBuilder d) {
 		if (!(commit.getParentCount() == 1))
 			return;
 		try {
 			FileDiff[] diffs = FileDiff.compute(walker, commit);
 
 			for (FileDiff diff : diffs) {
-				if (diff.blobs.length == 2) {
-					String path = diff.path;
-					d.append(formatPathLine(path)).append("\n"); //$NON-NLS-1$
-					diff.outputDiff(d, db, diffFmt, false, false);
-				}
+				if (diff.blobs.length == 2)
+					outputDiff(d, diff);
 			}
 		} catch (IOException e) {
-			Activator.handleError(NLS.bind(
+			// TODO throw an exception or log this?
+			Activator.error(NLS.bind(
 					UIText.CommitMessageViewer_errorGettingFileDifference,
-					commit.getId()), e, false);
+					commit.getId()), e);
 		}
+	}
+
+	private void outputDiff(final StringBuilder d, FileDiff fileDiff) throws IOException {
+		String path = fileDiff.path;
+		ObjectId id1 = fileDiff.blobs[0];
+		ObjectId id2 = fileDiff.blobs[1];
+		FileMode mode1 = fileDiff.modes[0];
+		FileMode mode2 = fileDiff.modes[1];
+
+		d.append(formatPathLine(path)).append(LF);
+		if (id1.equals(ObjectId.zeroId())) {
+			d.append(UIText.CommitMessageViewer_newFileMode
+					+ SPACE
+					+ mode2).append(LF);
+		} else if (id2.equals(ObjectId.zeroId())) {
+			d.append(UIText.CommitMessageViewer_deletedFileMode + SPACE + mode1).append(LF);
+		} else if (!mode1.equals(mode2)) {
+			d.append(UIText.CommitMessageViewer_oldMode + SPACE + mode1);
+			d.append(UIText.CommitMessageViewer_newMode + SPACE + mode2).append(LF);
+		}
+		d.append(UIText.CommitMessageViewer_index).append(SPACE).append(id1.abbreviate(db, 7).name()).
+			append("..").append(id2.abbreviate(db, 7).name()). //$NON-NLS-1$
+			append (mode1.equals(mode2) ? SPACE + mode1 : EMPTY). append(LF);
+
+		RawText a = getRawText(id1);
+		RawText b = getRawText(id2);
+		MyersDiff diff = new MyersDiff(a, b);
+		diffFmt.formatEdits(new OutputStream() {
+
+			@Override
+			public void write(int b) throws IOException {
+				d.append((char) b);
+
+			}
+		 } , a, b, diff.getEdits());
+		d.append(LF);
 	}
 
 	private String formatPathLine(String path) {
@@ -357,6 +348,12 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 	}
 
 
+	private RawText getRawText(ObjectId id) throws IOException {
+		if (id.equals(ObjectId.zeroId()))
+			return new RawText(new byte[] { });
+		return new RawText(db.openBlob(id).getCachedBytes());
+	}
+
 	static class ObjectLink extends StyleRange {
 		RevCommit targetCommit;
 
@@ -366,11 +363,6 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			if (targetCommit != ((ObjectLink) style).targetCommit)
 				return false;
 			return super.similarTo(style);
-		}
-
-		@Override
-		public boolean equals(Object object) {
-			return super.equals(object) && targetCommit.equals((RevCommit)object);
 		}
 	}
 
@@ -400,5 +392,4 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 		}
 
 	}
-
 }

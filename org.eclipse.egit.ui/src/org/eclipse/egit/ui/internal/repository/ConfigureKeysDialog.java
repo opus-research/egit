@@ -204,7 +204,6 @@ class ConfigureKeysDialog extends Dialog {
 		tv.setLabelProvider(new LabelProvider());
 		tv.setContentProvider(new ContentProvider());
 		tv.setInput(this.activeKeys);
-		applyDialogFont(main);
 
 		return main;
 	}

@@ -9,7 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
-import java.io.IOException;
 import java.net.Authenticator;
 import java.net.ProxySelector;
 import java.util.ArrayList;
@@ -42,8 +41,8 @@ import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jsch.core.IJSchService;
 import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
-import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.themes.ITheme;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -70,8 +69,6 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	public static final String DECORATORS_CHANGED = "org.eclipse.egit.ui.DECORATORS_CHANGED"; //$NON-NLS-1$
 
-	private RepositoryUtil repositoryUtil;
-
 	/**
 	 * @return the {@link Activator} singleton.
 	 */
@@ -87,34 +84,43 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	/**
-	 * Handle an error. The error is logged. If <code>show</code> is
-	 * <code>true</code> the error is shown to the user.
+	 * Returns the standard display to be used. The method first checks, if the
+	 * thread calling this method has an associated display. If so, this display
+	 * is returned. Otherwise the method returns the default display.
 	 *
-	 * @param message 		a localized message
-	 * @param throwable
-	 * @param show
+	 * @return the display to use
 	 */
-	public static void handleError(String message, Throwable throwable,
-			boolean show) {
-		IStatus status = new Status(IStatus.ERROR, getPluginId(), message,
-				throwable);
-		int style = StatusManager.LOG;
-		if (show)
-			style |= StatusManager.SHOW;
-		StatusManager.getManager().handle(status, style);
+	public static Display getStandardDisplay() {
+		Display display = Display.getCurrent();
+		if (display == null) {
+			display = Display.getDefault();
+		}
+		return display;
 	}
 
 	/**
-	 * Shows an error. The error is NOT logged.
+	 * Instantiate an error status.
 	 *
 	 * @param message
-	 *            a localized message
-	 * @param throwable
+	 *            description of the error
+	 * @param thr
+	 *            cause of the error or null
+	 * @return an initialized error status
 	 */
-	public static void showError(String message, Throwable throwable) {
-		IStatus status = new Status(IStatus.ERROR, getPluginId(), message,
-				throwable);
-		StatusManager.getManager().handle(status, StatusManager.SHOW);
+	public static IStatus error(final String message, final Throwable thr) {
+		return new Status(IStatus.ERROR, getPluginId(), 0, message, thr);
+	}
+
+	/**
+	 * Log an error via the Eclipse logging routines.
+	 *
+	 * @param message
+	 * @param thr
+	 *            cause of error
+	 */
+	public static void logError(final String message, final Throwable thr) {
+		getDefault().getLog().log(
+				new Status(IStatus.ERROR, getPluginId(), 0, message, thr));
 	}
 
 	/**
@@ -162,7 +168,6 @@ public class Activator extends AbstractUIPlugin {
 
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
-		repositoryUtil = new RepositoryUtil();
 
 		if (isDebugging()) {
 			ServiceTracker debugTracker = new ServiceTracker(context,
@@ -244,7 +249,7 @@ public class Activator extends AbstractUIPlugin {
 					getJobManager().beginRule(rule, monitor);
 					p.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
 				} catch (CoreException e) {
-					handleError(UIText.Activator_refreshFailed, e, false);
+					logError(UIText.Activator_refreshFailed, e);
 					return new Status(IStatus.ERROR, getPluginId(), e.getMessage());
 				} finally {
 					getJobManager().endRule(rule);
@@ -297,42 +302,59 @@ public class Activator extends AbstractUIPlugin {
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
-			Repository[] repos = org.eclipse.egit.core.Activator.getDefault()
-					.getRepositoryCache().getAllReposiotries();
-			if (repos.length == 0)
-				return Status.OK_STATUS;
-			monitor.beginTask(UIText.Activator_scanningRepositories,
-					repos.length);
 			try {
-				for (Repository repo : repos) {
-					if (monitor.isCanceled())
-						break;
-					// TODO is this the right location?
-					if (GitTraceLocation.UI.isActive())
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.UI.getLocation(),
-								"Scanning " + repo + " for changes"); //$NON-NLS-1$ //$NON-NLS-2$
-
-					repo.scanForRepoChanges();
+				// A repository can contain many projects, only scan once
+				// (a project could in theory be distributed among many
+				// repositories. We discard that as being ugly and stupid for
+				// the moment.
+				IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
+				monitor.beginTask(UIText.Activator_scanningRepositories, projects.length);
+				Set<Repository> scanned = new HashSet<Repository>();
+				for (IProject p : projects) {
+					RepositoryMapping mapping = RepositoryMapping.getMapping(p);
+					if (mapping != null) {
+						Repository r = mapping.getRepository();
+						if (!scanned.contains(r)) {
+							if (monitor.isCanceled())
+								break;
+							// TODO is this the right location?
+							if (GitTraceLocation.UI.isActive())
+								GitTraceLocation.getTrace().trace(
+										GitTraceLocation.UI.getLocation(),
+										"Scanning " + r + " for changes"); //$NON-NLS-1$ //$NON-NLS-2$
+							scanned.add(r);
+							ISchedulingRule rule = p.getWorkspace().getRuleFactory().modifyRule(p);
+							getJobManager().beginRule(rule, monitor);
+							try {
+								r.scanForRepoChanges();
+							} finally {
+								getJobManager().endRule(rule);
+							}
+						}
+					}
 					monitor.worked(1);
 				}
-			} catch (IOException e) {
+				monitor.done();
+				// TODO is this the right location?
+				if (GitTraceLocation.UI.isActive())
+					GitTraceLocation.getTrace().trace(
+							GitTraceLocation.UI.getLocation(),
+							"Rescheduling " + getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
+				if (doReschedule)
+					schedule(REPO_SCAN_INTERVAL);
+			} catch (Exception e) {
 				// TODO is this the right location?
 				if (GitTraceLocation.UI.isActive())
 					GitTraceLocation.getTrace().trace(
 							GitTraceLocation.UI.getLocation(),
 							"Stopped rescheduling " + getName() + "job"); //$NON-NLS-1$ //$NON-NLS-2$
-				return createErrorStatus(UIText.Activator_scanError, e);
-			} finally {
-				monitor.done();
+				return new Status(
+						IStatus.ERROR,
+						getPluginId(),
+						0,
+						UIText.Activator_scanError,
+						e);
 			}
-			// TODO is this the right location?
-			if (GitTraceLocation.UI.isActive())
-				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.UI.getLocation(),
-						"Rescheduling " + getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
-			if (doReschedule)
-				schedule(REPO_SCAN_INTERVAL);
 			return Status.OK_STATUS;
 		}
 	}
@@ -388,44 +410,8 @@ public class Activator extends AbstractUIPlugin {
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.UI.getLocation(), "Jobs terminated"); //$NON-NLS-1$
 
-		repositoryUtil.dispose();
-		repositoryUtil = null;
 		super.stop(context);
 		plugin = null;
 	}
 
-	/**
-	 * @param message
-	 * @param e
-	 */
-	public static void logError(String message, Throwable e) {
-		handleError(message, e, false);
-	}
-
-	/**
-	 * @param message
-	 * @param e
-	 */
-	public static void error(String message, Throwable e) {
-		handleError(message, e, false);
-	}
-
-	/**
-	 * Creates an error status
-	 *
-	 * @param message
-	 *            a localized message
-	 * @param throwable
-	 * @return a new Status object
-	 */
-	public static IStatus createErrorStatus(String message, Throwable throwable) {
-		return new Status(IStatus.ERROR, getPluginId(), message, throwable);
-	}
-
-	/**
-	 * @return the {@link RepositoryUtil} instance
-	 */
-	public RepositoryUtil getRepositoryUtil() {
-		return repositoryUtil;
-	}
 }
