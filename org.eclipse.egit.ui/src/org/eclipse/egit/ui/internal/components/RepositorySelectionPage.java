@@ -637,7 +637,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					setURI(uri.setScheme(nullString(scheme.getItem(idx))));
 					scheme.setToolTipText(Protocol.values()[idx].getTooltip());
 				}
-				updateGroups();
+				updateAuthGroup();
 			}
 		});
 
@@ -825,7 +825,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 						String p = credentials.getPassword();
 						String uriUser = finalURI.getUser();
 						if (uriUser == null) {
-							if (setSafeUser(u) && setSafePassword(p))
+							if (setSafeUser(u) || setSafePassword(p))
 								setStoreInSecureStore(true);
 						} else if (uriUser.length() != 0 && uriUser.equals(u)) {
 							if (setSafePassword(p))
@@ -905,27 +905,17 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	private void updateRemoteAndURIPanels() {
 		UIUtils.setEnabledRecursively(uriPanel, isURISelected());
 		if (uriPanel.getEnabled())
-			updateGroups();
+			updateAuthGroup();
 		if (configuredRemotes != null)
 			UIUtils.setEnabledRecursively(remotePanel, !isURISelected());
 	}
 
-	private void updateGroups() {
+	private void updateAuthGroup() {
 		Protocol p = getProtocol();
 		if (p != null) {
 			hostText.setEnabled(p.hasHost());
-			if (!p.hasHost())
-				hostText.setText(EMPTY_STRING);
 			portText.setEnabled(p.hasPort());
-			if (!p.hasPort())
-				portText.setText(EMPTY_STRING);
-
 			UIUtils.setEnabledRecursively(authGroup, p.canAuthenticate());
-			if (!p.canAuthenticate()) {
-				userText.setText(EMPTY_STRING);
-				passText.setText(EMPTY_STRING);
-				storeCheckbox.setSelection(false);
-			}
 		}
 	}
 
@@ -1004,7 +994,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 				scheme.notifyListeners(SWT.Selection, new Event());
 			}
 
-			updateGroups();
+			updateAuthGroup();
 			uri = u;
 		} catch (URISyntaxException err) {
 			// leave uriText as it is, but clean up underlying uri and

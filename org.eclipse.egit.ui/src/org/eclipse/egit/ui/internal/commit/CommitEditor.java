@@ -18,7 +18,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.command.CheckoutHandler;
 import org.eclipse.egit.ui.internal.commit.command.CherryPickHandler;
@@ -307,7 +306,8 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	}
 
 	private void addContributions(IToolBarManager toolBarManager) {
-		IMenuService menuService = CommonUtils.getService(getSite(), IMenuService.class);
+		IMenuService menuService = (IMenuService) getSite().getService(
+				IMenuService.class);
 		if (menuService != null
 				&& toolBarManager instanceof ContributionManager) {
 			ContributionManager contributionManager = (ContributionManager) toolBarManager;

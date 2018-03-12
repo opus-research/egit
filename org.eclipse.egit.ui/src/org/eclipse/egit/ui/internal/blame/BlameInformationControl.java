@@ -356,8 +356,7 @@ public class BlameInformationControl extends AbstractInformationControl
 		showAnnotationsLink
 				.addSelectionListener(showAnnotationsLinkSelectionAdapter);
 
-		DiffViewer diffText = new DiffViewer(diffComposite, null, SWT.NONE,
-				false);
+		DiffViewer diffText = new DiffViewer(diffComposite, null, SWT.NONE);
 		diffText.setEditable(false);
 		diffText.getControl().setLayoutData(
 				GridDataFactory.fillDefaults().grab(true, true).create());
