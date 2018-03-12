@@ -229,7 +229,8 @@ class CommitGraphTable {
 					int relativeX = e.x - item.getBounds().x;
 					for (int i = 0; i < commit.getRefCount(); i++) {
 						Point textSpan = renderer.getRefHSpan(commit.getRef(i));
-						if ((relativeX >= textSpan.x && relativeX <= textSpan.y)) {
+						if ((textSpan != null)
+								&& (relativeX >= textSpan.x && relativeX <= textSpan.y)) {
 							hoverShell = new Shell(getTableView().getTable()
 									.getShell(), SWT.ON_TOP | SWT.NO_FOCUS
 									| SWT.TOOL);
@@ -705,12 +706,17 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CHECKOUT,
 						UIText.GitHistoryPage_CheckoutMenuLabel));
+				popupMgr.add(new Separator());
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_BRANCH,
 						UIText.GitHistoryPage_CreateBranchMenuLabel));
 				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.DELETE_BRANCH,
+						UIText.CommitGraphTable_DeleteBranchAction));
+				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_TAG,
 						UIText.GitHistoryPage_CreateTagMenuLabel));
+				popupMgr.add(new Separator());
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CREATE_PATCH,
 						UIText.GitHistoryPage_CreatePatchMenuLabel));
