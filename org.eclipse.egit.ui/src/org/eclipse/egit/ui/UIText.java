@@ -2952,12 +2952,6 @@ public class UIText extends NLS {
 	public static String DeleteTagCommand_titleConfirm;
 
 	/** */
-	public static String DeleteResourcesAction_confirmActionTitle;
-
-	/** */
-	public static String DeleteResourcesAction_confirmActionMessage;
-
-	/** */
 	public static String IgnoreActionHandler_addToGitignore;
 
 	/** */
@@ -4420,9 +4414,6 @@ public class UIText extends NLS {
 	public static String StagingView_checkoutFailed;
 
 	/** */
-	public static String StagingView_deleteFailed;
-
-	/** */
 	public static String StagingView_commitFailed;
 
 	/** */
@@ -4466,9 +4457,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_StageItemMenuLabel;
-
-	/** */
-	public static String StagingView_DeleteItemMenuLabel;
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
