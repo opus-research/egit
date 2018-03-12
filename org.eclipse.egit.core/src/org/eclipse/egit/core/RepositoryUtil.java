@@ -37,6 +37,9 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.storage.file.CheckoutEntry;
+import org.eclipse.jgit.storage.file.ReflogEntry;
+import org.eclipse.jgit.storage.file.ReflogReader;
 import org.eclipse.jgit.util.FS;
 import org.osgi.service.prefs.BackingStoreException;
 
@@ -52,7 +55,7 @@ public class RepositoryUtil {
 
 	private final Map<String, String> repositoryNameCache = new HashMap<String, String>();
 
-	private final IEclipsePreferences prefs = new InstanceScope()
+	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
 
 	/**
@@ -104,6 +107,30 @@ public class RepositoryUtil {
 
 			if (!ObjectId.isId(commitId)) {
 				return null;
+			}
+
+			try {
+				ReflogReader reflogReader = repository.getReflogReader(Constants.HEAD);
+				if (reflogReader != null) {
+					List<ReflogEntry> lastEntry = reflogReader.getReverseEntries();
+					for (ReflogEntry entry : lastEntry) {
+						if (entry.getNewId().name().equals(commitId)) {
+							CheckoutEntry checkoutEntry = entry.parseCheckout();
+							if (checkoutEntry != null) {
+								Ref ref = repository.getRef(checkoutEntry.getToBranch());
+								if (ref != null)
+									ref = repository.peel(ref);
+								if (ref != null) {
+									ObjectId id = ref.getPeeledObjectId();
+									if (id != null && id.getName().equals(commitId))
+										return checkoutEntry.getToBranch();
+								}
+							}
+						}
+					}
+				}
+			} catch (IOException e) {
+				// ignore here
 			}
 
 			Map<String, String> cacheEntry = commitMappingCache.get(repository
@@ -407,5 +434,33 @@ public class RepositoryUtil {
 			return Repository.shortenRefName(ref) + ' ' + id.substring(0, 7);
 		else
 			return id.substring(0, 7);
+	}
+
+	/**
+	 * Resolve HEAD and parse the commit. Returns null if HEAD does not exist or
+	 * could not be parsed.
+	 * <p>
+	 * Only use this if you don't already have to work with a RevWalk.
+	 *
+	 * @param repository
+	 * @return the commit or null if HEAD does not exist or could not be parsed.
+	 * @since 2.2
+	 */
+	public RevCommit parseHeadCommit(Repository repository) {
+		RevWalk walk = null;
+		try {
+			Ref head = repository.getRef(Constants.HEAD);
+			if (head == null || head.getObjectId() == null)
+				return null;
+
+			walk = new RevWalk(repository);
+			RevCommit commit = walk.parseCommit(head.getObjectId());
+			return commit;
+		} catch (IOException e) {
+			return null;
+		} finally {
+			if (walk != null)
+				walk.release();
+		}
 	}
 }
