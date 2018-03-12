@@ -99,7 +99,8 @@ public abstract class GitRepositoriesViewTestBase extends
 		final SWTBotTreeItem[] items = tree.getAllItems();
 		boolean found = false;
 		for (SWTBotTreeItem item : items) {
-			if (item.getText().contains(repositoryDir.getParentFile().getName())) {
+			if (item.getText().startsWith(
+					repositoryDir.getParentFile().getName())) {
 				found = true;
 				break;
 			}

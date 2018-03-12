@@ -530,25 +530,24 @@ public class ResourceUtil {
 		IndexDiffCacheEntry indexDiffCacheEntry = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
 				.getIndexDiffCacheEntry(repository);
+		if (indexDiffCacheEntry == null) {
+			return;
+		}
 		IndexDiffData indexDiffData = indexDiffCacheEntry.getIndexDiff();
 		if (indexDiffData != null) {
 			Collection<IResource> changedResources = indexDiffData
 					.getChangedResources();
-			if (changedResources != null) {
-				for (IResource changedResource : changedResources) {
-					if (changedResource instanceof IFile
-							&& changedResource.exists()) {
-						try {
-							ResourceUtil.saveLocalHistory(changedResource);
-						} catch (CoreException e) {
-							// Ignore error. Failure to save local history must
-							// not interfere with the operation.
-							Activator
-									.logError(
-											MessageFormat
-													.format(CoreText.ResourceUtil_SaveLocalHistoryFailed,
-															changedResource), e);
-						}
+			for (IResource changedResource : changedResources) {
+				if (changedResource instanceof IFile
+						&& changedResource.exists()) {
+					try {
+						ResourceUtil.saveLocalHistory(changedResource);
+					} catch (CoreException e) {
+						// Ignore error. Failure to save local history must
+						// not interfere with the operation.
+						Activator.logError(MessageFormat.format(
+								CoreText.ResourceUtil_SaveLocalHistoryFailed,
+								changedResource), e);
 					}
 				}
 			}
