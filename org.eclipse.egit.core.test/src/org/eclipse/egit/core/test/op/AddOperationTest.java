@@ -58,6 +58,8 @@ public class AddOperationTest extends GitTestCase {
 
 		assertTrue(testRepository.inIndex(file1.getLocation()
 				.toPortableString()));
+		assertTrue(testRepository.getDirCacheEntryLength(file1.getLocation()
+				.toPortableString()) == 9);
 	}
 
 	@Test
@@ -74,6 +76,10 @@ public class AddOperationTest extends GitTestCase {
 				.toPortableString()));
 		assertTrue(testRepository.inIndex(file2.getLocation()
 				.toPortableString()));
+		assertTrue(testRepository.getDirCacheEntryLength(file1.getLocation()
+				.toPortableString()) == 9);
+		assertTrue(testRepository.getDirCacheEntryLength(file2.getLocation()
+				.toPortableString()) == 9);
 	}
 
 	@Test
