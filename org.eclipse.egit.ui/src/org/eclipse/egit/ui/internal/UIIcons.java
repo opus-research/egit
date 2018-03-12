@@ -14,6 +14,7 @@ package org.eclipse.egit.ui.internal;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.jface.resource.ImageDescriptor;
 
 /**
